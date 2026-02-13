@@ -19,8 +19,6 @@ public class RtspConstants {
 
 	/** RTSP URL Protocol */
 	public static final String RTSP_URL_PROTOCOL = "rtsp";
-	/** RTSP URL Path File Extension */
-	public static final String RTSP_URL_PATH_FEXT = ".sdp";
 
 	/** RTSP Session Timeout */
 	public static final int RTSP_SESSION_TIMEOUT = 20;

@@ -51,9 +51,7 @@ public class RtcpPacketBYE {
 
 		//
 		if (xsrcList != null) {
-			for (Integer xsrc : xsrcList) {
-				bdXsrcList.add((int)xsrc);
-			}
+			bdXsrcList.addAll(xsrcList);
 		}
 		this.bdReasonForLeaving = optionalReasonForLeaving;
 
@@ -152,11 +150,7 @@ public class RtcpPacketBYE {
 	 */
 	@SuppressWarnings("unused")
 	public List<Integer> getXsrcList() {
-		List<Integer> tmpList = new ArrayList<>();
-		for (Integer xsrc : bdXsrcList) {
-			tmpList.add((int)xsrc);
-		}
-		return tmpList;
+		return new ArrayList<>(bdXsrcList);
 	}
 
 	/**

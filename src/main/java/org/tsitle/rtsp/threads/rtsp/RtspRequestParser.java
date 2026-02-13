@@ -50,7 +50,7 @@ public class RtspRequestParser {
 		checkCallbackFncs();
 
 		// parse request lines and extract the requestType:
-		String requestLine = "";
+		String requestLine;
 		do {
 			try {
 				requestLine = readOneLine(true);
@@ -101,7 +101,7 @@ public class RtspRequestParser {
 		}
 
 		// parse header lines
-		String headerLine = "";
+		String headerLine;
 		do {
 			try {
 				headerLine = readOneLine(false);
@@ -381,6 +381,7 @@ public class RtspRequestParser {
 	private void parseHeaderLine_useragent(String headerLine) {
 		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_useragent()";
 
+		@SuppressWarnings("unused")
 		String tmpUa = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
 		//System.out.println(FNC_NAME + ": User-Agent='" + tmpUa + "'");
 	}

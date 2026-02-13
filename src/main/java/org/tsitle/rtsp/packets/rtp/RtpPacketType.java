@@ -41,6 +41,7 @@ public enum RtpPacketType {
 	/** Video: H265 (clock rate 90000 Hz) */
 	V_H265((byte)98);  // dynamic, custom payload type
 
+	@SuppressWarnings("unused")
 	public static final byte RTP_PAYLOAD_TYPE_CUSTOM_BOUNDARY_LOWER = 96;
 	@SuppressWarnings("unused")
 	public static final byte RTP_PAYLOAD_TYPE_CUSTOM_BOUNDARY_UPPER = 127;

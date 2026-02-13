@@ -31,6 +31,7 @@ public class RtcpPacketRR {
 	 * @param ssrcSender Sender SSRC
 	 * @param recpReportBlocks Reception Report Blocks (can be empty)
 	 */
+	@SuppressWarnings("unused")
 	public RtcpPacketRR(int ssrcSender, List<RtcpInnerRecpReportBlock> recpReportBlocks) {
 		if (recpReportBlocks != null && recpReportBlocks.size() > 255) {
 			throw new IllegalArgumentException("Invalid RTCP RR packet: invalid number of RRBs");
@@ -107,6 +108,7 @@ public class RtcpPacketRR {
 	 * Returns the total length of the raw RTCP packet, including the header and payload.
 	 * @return Size of the raw packet
 	 */
+	@SuppressWarnings("unused")
 	public int getRawPacketSize() {
 		return (RtcpPacketHeader.HEADER_SIZE + INNER_HEADER_SIZE +
 				(recpReportBlocks.size() * RtcpInnerRecpReportBlock.PAYLOAD_SIZE));

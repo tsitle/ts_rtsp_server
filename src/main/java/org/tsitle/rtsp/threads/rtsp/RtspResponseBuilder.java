@@ -216,7 +216,7 @@ public class RtspResponseBuilder {
 					.append(";")
 					.append(RTSP_RR_HEADER_VALUE_PLA_RI_RTPTIME).append(Integer.toUnsignedString(tmpStreamInfo.rtspRtpTimestampT0));
 		}
-		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RTPINFO + " " + tmpRtpInfoSb.toString());
+		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RTPINFO + " " + tmpRtpInfoSb);
 		contents.add("");
 		internalSendResponse(contents);
 		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +

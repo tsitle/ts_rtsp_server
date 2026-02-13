@@ -73,7 +73,8 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public int getNtpTsLsw() { return bdNtpTsLsw; }
 	public long getNtpTsFull() { return (((long)bdNtpTsMsw << 32) | bdNtpTsLsw); }
-	public Instant getNtpTsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
+	@SuppressWarnings("unused")
+	public Instant getNtpTsAsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
 	@SuppressWarnings("unused")
 	public int getRtpTs() { return bdRtpTs; }
 	@SuppressWarnings("unused")

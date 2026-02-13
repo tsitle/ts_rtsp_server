@@ -106,6 +106,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 	 * @param receivedAt Instant when the packet was received
 	 * @return Round-trip time in milliseconds
 	 */
+	@SuppressWarnings("unused")
 	public Optional<Long> getRoundTripTimeMillis(Instant receivedAt) {
 		if (bdLsr == 0L) {
 			return Optional.empty();

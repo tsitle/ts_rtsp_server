@@ -26,6 +26,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private final BufferExt cacheRecvBuf1 = new BufferExt();
 	private final BufferExt cacheRecvBuf2 = new BufferExt();
 	private final BufferExt cacheRecvBuf3 = new BufferExt();
+	@SuppressWarnings("FieldCanBeLocal")
 	private Instant lastRtcpPacketReceived = null;
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
@@ -181,7 +182,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				for (int i = 0; i < cacheRecvBuf1.getUsed(); i++) {
 					sb.append(String.format("%02X ", cacheRecvBuf1.get(i)));
 				}
-				logInfo(FNC_NAME, "Discarded packet: 0x" + sb.toString());
+				logInfo(FNC_NAME, "Discarded packet: 0x" + sb);
 				break;
 			}
 			if (tmpPktSz < cacheRecvBuf1.getUsed()) {
