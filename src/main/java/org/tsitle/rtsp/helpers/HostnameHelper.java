@@ -1,0 +1,107 @@
+package org.tsitle.rtsp.helpers;
+
+import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+
+import java.net.*;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Hostname/IP Helper.
+ */
+public final class HostnameHelper {
+
+	private HostnameHelper() {}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Returns the first IPv4 address that the given hostname resolves to
+	 * which is also assigned to a local network interface.
+	 * @param hostname Hostname
+	 * @return IP address
+	 */
+	@SuppressWarnings("unused")
+	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(String hostname)
+			throws UnknownHostException, SocketException {
+
+		InetAddress[] resolved = InetAddress.getAllByName(hostname);
+		if (resolved.length == 0) return Optional.empty();
+
+		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses();
+
+		return Arrays.stream(resolved)
+				.filter(localInterfaceAddrs::contains)
+				.findFirst();
+	}
+
+	/**
+	 * Get all IPv4 addresses that the given hostname resolves to.
+	 * @param hostname Hostname
+	 * @return IP addresses
+	 */
+	@SuppressWarnings("unused")
+	public static Set<InetAddress> allLocalIpv4AddressesForHostname(String hostname)
+			throws UnknownHostException, SocketException {
+		InetAddress[] resolved = InetAddress.getAllByName(hostname);
+		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses();
+		Set<InetAddress> matches = new HashSet<>();
+		for (InetAddress addr : resolved) {
+			if (localInterfaceAddrs.contains(addr)) {
+				matches.add(addr);
+			}
+		}
+		return matches;
+	}
+
+	/**
+	 * Convert an RTSP URL into a URI object.
+	 * @param url RTSP URL
+	 * @return URI object
+	 * @throws RtspInvalidUriException If the URL is invalid
+	 */
+	public static URI convertRtspUrlIntoURI(String url) throws RtspInvalidUriException {
+		try {
+			if (! url.startsWith("rtsp://")) {
+				throw new RtspInvalidUriException("Invalid protocol in URL: '" + url + "'");
+			}
+			// we need to replace the protocol here since the URI class does not support 'rtsp://'
+			@SuppressWarnings("HttpUrlsUsage") URI resObj =
+					new URI(url.replaceAll("^rtsp://", "http://"));
+			if (! resObj.getScheme().equals("http")) {
+				throw new RtspInvalidUriException("Invalid protocol: " + resObj.getScheme());
+			}
+			return resObj;
+		} catch (URISyntaxException e) {
+			throw new RtspInvalidUriException(e.getMessage());
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static Set<InetAddress> getAllLocalIpv4InterfaceAddresses() throws SocketException {
+		Set<InetAddress> resSet = new HashSet<>();
+		Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+		while (ifaces.hasMoreElements()) {
+			NetworkInterface ni = ifaces.nextElement();
+			if (! ni.isUp() || ni.isLoopback()) {
+				continue;
+			}
+			Enumeration<InetAddress> addrs = ni.getInetAddresses();
+			while (addrs.hasMoreElements()) {
+				InetAddress tmpAddr = addrs.nextElement();
+				if (! tmpAddr.getClass().equals(Inet4Address.class)) {
+					continue;
+				}
+				resSet.add(tmpAddr);
+			}
+		}
+		return resSet;
+	}
+
+}
