@@ -17,6 +17,9 @@ data/**/*.m4a
 data/**/*.wav
 data/**/*.mjpeg
 
+config-*.json
+!config-SAMPLE.json
+
 docs/internal/
 
 /dist/
