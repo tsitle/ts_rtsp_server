@@ -1,7 +1,8 @@
 package org.tsitle.rtsp.threads.rtp.codec_h264;
 
-import org.tsitle.rtsp.avdata.H264Info;
-import org.tsitle.rtsp.avdata.H264Parser;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.avdata.*;
 import org.tsitle.rtsp.avinputstreams.VideoStreamH264;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH264DataException;
@@ -19,6 +20,8 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -29,6 +32,11 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
+	/** Buffer used to store temporary data for parsing NAL Units */
+	private final BufferExt cacheH264RbspBuf = new BufferExt();
+	private @Nullable H264PictureBoundaryInfo cachePictBoundInfoPrev = null;
+	private final Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext = new HashMap<>();
+	private final Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext = new HashMap<>();
 
 	private int readNalUnitsCounter = 0;
 	private final H264AccessUnit globalTempAu = new H264AccessUnit("TEMP");
@@ -169,8 +177,15 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 		tmpLocalNudPtr.h264Info = H264Parser.parseH264Data(
 				debugStreamOffset,
 				videoStream.getMagicBytesLength(),
-				cacheOrgVideoFrameBuf
+				cacheOrgVideoFrameBuf,
+				cacheH264RbspBuf,
+				mapSpsContext,
+				mapPpsContext,
+				cachePictBoundInfoPrev
 			);
+		if (tmpLocalNudPtr.h264Info.isVclNalUnit) {
+			cachePictBoundInfoPrev = tmpLocalNudPtr.h264Info.pictBoundInfo.clone();
+		}
 
 		// extract the actual RTP/H264 payload
 		tmpLocalNudPtr.rtpPayloadData.copyOf(
@@ -308,8 +323,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 						switch (tmpNud.h264Info.nalUnitTypeEn) {
 							case H264Info.NalUnitType.NVCL_EOS,
 									H264Info.NalUnitType.NVCL_EOB,
-									H264Info.NalUnitType.NVCL_FD,
-									H264Info.NalUnitType.NVCL_SEI_SUFFIX:
+									H264Info.NalUnitType.NVCL_FD:
 								// add to globalCurAu
 								break;
 							default:
