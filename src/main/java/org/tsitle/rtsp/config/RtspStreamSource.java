@@ -143,12 +143,6 @@ public class RtspStreamSource {
 			return;
 		}
 		switch (codec) {
-			case MJPEG:
-				internalCodec = RtpPacketType.V_JPEG;
-				break;
-			case H265:
-				internalCodec = RtpPacketType.V_H265;
-				break;
 			case PCMU:
 				if (getAudioChannelCount() == 1 && getAudioSampleRateHz() == 8000) {
 					internalCodec = RtpPacketType.A_PCMU_8KHZ_MONO;
@@ -167,6 +161,15 @@ public class RtspStreamSource {
 				} else {
 					internalCodec = RtpPacketType.A_LINEAR_PCM_S16_VAR;
 				}
+				break;
+			case MJPEG:
+				internalCodec = RtpPacketType.V_JPEG;
+				break;
+			case H264:
+				internalCodec = RtpPacketType.V_H264;
+				break;
+			case H265:
+				internalCodec = RtpPacketType.V_H265;
 				break;
 			default:
 				internalCodec = RtpPacketType.UNKNOWN;

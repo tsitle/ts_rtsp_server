@@ -9,6 +9,7 @@ x-*.sh
 x-*.cmd
 
 data/**/*.raw
+data/**/*.h264
 data/**/*.h265
 data/**/*.sh
 data/**/*.mp3

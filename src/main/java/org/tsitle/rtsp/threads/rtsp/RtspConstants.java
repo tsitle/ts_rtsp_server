@@ -14,6 +14,7 @@ public class RtspConstants {
 	/** Clock rates per RTP packet type (or codec) */
 	public static final Map<RtpPacketType, Integer> RTP_CODEC_CLOCKRATE_MAPPING = new TreeMap<>() {{
 			put(RtpPacketType.V_JPEG, 90000);
+			put(RtpPacketType.V_H264, 90000);
 			put(RtpPacketType.V_H265, 90000);
 		}};
 

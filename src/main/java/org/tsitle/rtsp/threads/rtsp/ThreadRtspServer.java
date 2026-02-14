@@ -304,6 +304,15 @@ public class ThreadRtspServer extends ThreadBase {
 					);
 				ctfos.rtpThreadSender = builderMjpeg.build();
 				break;
+			case V_H264:
+				BuilderThreadRtpSenderH264.Builder builderH264 = buildThreadVideo(
+						BuilderThreadRtpSenderH264.builder(),
+						tmpStreamInfo,
+						tmpStreamInfo.rtspStreamSource.getVideoFps(),
+						xsrcBlock
+					);
+				ctfos.rtpThreadSender = builderH264.build();
+				break;
 			case V_H265:
 				BuilderThreadRtpSenderH265.Builder builderH265 = buildThreadVideo(
 						BuilderThreadRtpSenderH265.builder(),

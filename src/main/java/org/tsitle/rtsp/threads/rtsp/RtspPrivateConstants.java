@@ -55,6 +55,7 @@ class RtspPrivateConstants {
 			put(RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO, "L16");
 			put(RtpPacketType.A_LINEAR_PCM_S16_VAR, "L16");
 			put(RtpPacketType.V_JPEG, "JPEG");
+			put(RtpPacketType.V_H264, "H264");
 			put(RtpPacketType.V_H265, "H265");
 		}};
 	///

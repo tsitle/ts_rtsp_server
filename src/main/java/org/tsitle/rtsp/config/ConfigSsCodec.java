@@ -7,6 +7,7 @@ public enum ConfigSsCodec {
 	LPCM16,
 
 	MJPEG,
+	H264,
 	H265
 
 }

@@ -37,7 +37,7 @@ public enum RtpPacketType {
 	/** Video: H263 as defined 1998 by ITU-T (clock rate 90000 Hz) */
 	V_H263_1998_UNSUPPORTED((byte)96),  // dynamic, RFC-3551 Section 5.5 + 6
 	/** Video: H264 (clock rate 90000 Hz) */
-	V_H264_UNSUPPORTED((byte)97),  // dynamic, custom payload type
+	V_H264((byte)97),  // dynamic, custom payload type
 	/** Video: H265 (clock rate 90000 Hz) */
 	V_H265((byte)98);  // dynamic, custom payload type
 
@@ -72,7 +72,7 @@ public enum RtpPacketType {
 						V_H261_UNSUPPORTED,
 						V_H263_1996_UNSUPPORTED,
 						V_H263_1998_UNSUPPORTED,
-						V_H264_UNSUPPORTED,
+						V_H264,
 						V_H265
 					-> true;
 				default -> false;
@@ -97,6 +97,10 @@ public enum RtpPacketType {
 		return isPcmAudio();
 	}
 
+	/**
+	 * Check if this codec needs to have a single channel.
+	 * @return True if mono, false otherwise
+	 */
 	public boolean isMonoAudio() {
 		return switch(this) {
 				case
@@ -107,6 +111,10 @@ public enum RtpPacketType {
 			};
 	}
 
+	/**
+	 * Check if this codec needs to have two channels.
+	 * @return True if stereo, false otherwise
+	 */
 	public boolean isStereoAudio() {
 		return (this == A_LINEAR_PCM_S16_441K_STEREO);
 	}
