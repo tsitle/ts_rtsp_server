@@ -1,4 +1,6 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.builders;
+
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 public abstract class BuilderThreadRtpSenderVideoBase<
 			B extends BuilderThreadRtpSenderVideoBase<B, T>,

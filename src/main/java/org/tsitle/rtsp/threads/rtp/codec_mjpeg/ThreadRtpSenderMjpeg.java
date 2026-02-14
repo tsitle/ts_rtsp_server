@@ -1,8 +1,11 @@
-package org.tsitle.rtsp.threads.rtp.mjpeg;
+package org.tsitle.rtsp.threads.rtp.codec_mjpeg;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.*;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.avdata.ImageReencoder;
 import org.tsitle.rtsp.avdata.JpegInfo;

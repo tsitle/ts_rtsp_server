@@ -4,7 +4,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
-import org.tsitle.rtsp.threads.rtp.ParamsThreadRtcp;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

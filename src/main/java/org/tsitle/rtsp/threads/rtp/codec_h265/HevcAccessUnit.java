@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp.h265;
+package org.tsitle.rtsp.threads.rtp.codec_h265;
 
 import java.util.ArrayList;
 import java.util.List;

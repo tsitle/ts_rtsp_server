@@ -1,20 +1,20 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.params;
 
 import java.util.Optional;
 
-public class ParamsThreadRtpSenderVideoCommon {
+public class ParamsThreadRtpSenderAudioCommon {
 
-	/** Path to the video file */
-	private String videoFilePath;
-	private boolean isSetVideoFilePath;
+	/** Path to the audio file */
+	private String audioFilePath;
+	private boolean isSetAudioFilePath;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<String> getVideoFilePath() { return Optional.ofNullable(videoFilePath); }
-	public void setVideoFilePath(String videoFilePath) {
-		this.videoFilePath = videoFilePath;
-		this.isSetVideoFilePath = true;
+	public Optional<String> getAudioFilePath() { return Optional.ofNullable(audioFilePath); }
+	public void setAudioFilePath(String audioFilePath) {
+		this.audioFilePath = audioFilePath;
+		this.isSetAudioFilePath = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -25,13 +25,13 @@ public class ParamsThreadRtpSenderVideoCommon {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderVideoCommon clone() {
+	public ParamsThreadRtpSenderAudioCommon clone() {
 		try {
-			ParamsThreadRtpSenderVideoCommon clone = (ParamsThreadRtpSenderVideoCommon)super.clone();
+			ParamsThreadRtpSenderAudioCommon clone = (ParamsThreadRtpSenderAudioCommon)super.clone();
 			//
-			if (videoFilePath != null) {
+			if (audioFilePath != null) {
 				//noinspection StringOperationCanBeSimplified
-				clone.videoFilePath = new String(videoFilePath);
+				clone.audioFilePath = new String(audioFilePath);
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -43,20 +43,20 @@ public class ParamsThreadRtpSenderVideoCommon {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
-		requireIsSet(isSetVideoFilePath, "videoFilePath");
+		requireIsSet(isSetAudioFilePath, "audioFilePath");
 	}
 
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		requireNonNull(videoFilePath, "videoFilePath");
-		if (videoFilePath.isEmpty()) {
-			throw new IllegalArgumentException(errPrefix + "videoFilePath must not be empty");
+		requireNonNull(audioFilePath, "audioFilePath");
+		if (audioFilePath.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "audioFilePath must not be empty");
 		}
 	}
 
 	private static void requireIsSet(boolean v, @SuppressWarnings("SameParameterValue") String name) {
-		final String errPrefix = ParamsThreadRtpSenderVideoCommon.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtpSenderAudioCommon.class.getSimpleName() + ": ";
 
 		if (! v) {
 			throw new IllegalStateException(errPrefix + name + " must be set!");
@@ -65,7 +65,7 @@ public class ParamsThreadRtpSenderVideoCommon {
 
 	@SuppressWarnings("SameParameterValue")
 	private static <X> void requireNonNull(X v, String name) {
-		final String errPrefix = ParamsThreadRtpSenderVideoCommon.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtpSenderAudioCommon.class.getSimpleName() + ": ";
 
 		if (v == null) {
 			throw new IllegalArgumentException(errPrefix + name + " must not be null");

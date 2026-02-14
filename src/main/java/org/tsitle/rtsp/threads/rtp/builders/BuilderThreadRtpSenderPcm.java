@@ -1,7 +1,8 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.threads.rtp.pcm.ThreadRtpSenderPcm;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
+import org.tsitle.rtsp.threads.rtp.codec_pcm.ThreadRtpSenderPcm;
 
 import java.io.FileNotFoundException;
 

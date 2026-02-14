@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.params;
 
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 

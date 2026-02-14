@@ -1,8 +1,11 @@
-package org.tsitle.rtsp.threads.rtp.h265;
+package org.tsitle.rtsp.threads.rtp.codec_h265;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.*;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.avdata.H265Info;
 import org.tsitle.rtsp.avdata.H265Parser;

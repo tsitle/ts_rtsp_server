@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp.h265;
+package org.tsitle.rtsp.threads.rtp.codec_h265;
 
 import org.tsitle.rtsp.avdata.H265Info;
 import org.tsitle.rtsp.buffers.BufferExt;

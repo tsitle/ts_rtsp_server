@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.params;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;

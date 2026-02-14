@@ -1,4 +1,6 @@
-package org.tsitle.rtsp.threads.rtp;
+package org.tsitle.rtsp.threads.rtp.builders;
+
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 
 public abstract class BuilderThreadRtpSenderAudioBase<
 			B extends BuilderThreadRtpSenderAudioBase<B, T>,
