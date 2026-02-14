@@ -176,11 +176,21 @@ public class BufferExt {
 	}
 
 	/**
-	 * Append data from another buffer into this buffer.
+	 * Append data from another buffer to this buffer.
 	 * @param srcBuf Source buffer
 	 */
 	public void append(BufferExt srcBuf) {
 		copyFrom(srcBuf.getBuf(), 0, used, srcBuf.getUsed());
+	}
+
+	/**
+	 * Append one byte to this buffer.
+	 * @param value The byte to append
+	 */
+	public void append(byte value) {
+		byte[] tmpBuf = new byte[1];
+		tmpBuf[0] = value;
+		copyFrom(tmpBuf, 0, used, 1);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
