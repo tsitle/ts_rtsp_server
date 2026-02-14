@@ -90,7 +90,7 @@ public class H265Info {
 		}
 		@SuppressWarnings("unused")
 		public boolean isVclNalUnitType() {
-			return (value >= VCL_NAL_UNIT_TYPES_BOUND_LOWER) && (value <= VCL_NAL_UNIT_TYPES_BOUND_UPPER);
+			return NalUnitType.isVclNalUnitType(value);
 		}
 		public static boolean isVclNalUnitType(byte value) {
 			return (value >= VCL_NAL_UNIT_TYPES_BOUND_LOWER) && (value <= VCL_NAL_UNIT_TYPES_BOUND_UPPER);
