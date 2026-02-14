@@ -1,5 +1,6 @@
 package org.tsitle.rtsp;
 
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
@@ -7,6 +8,7 @@ import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RtspServerApp {
@@ -15,6 +17,8 @@ public class RtspServerApp {
 
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);
+	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
+	private static final Map<@Nullable Integer, @Nullable ThreadRtspServer> rtspServerThreads = new ConcurrentHashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -30,12 +34,17 @@ public class RtspServerApp {
 
 		// without the Signal handler below, the Shutdown Hook works just fine
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				try {
-					Thread.sleep(200);
+				if (doNeedShutdownHandler.get()) {
+					System.out.println();
 					System.out.println(FNC_NAME + ": Shutting down ...");
 					doStop.set(true);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
+					//
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+						System.out.println(FNC_NAME + ": InterruptedException");
+						Thread.currentThread().interrupt();
+					}
 				}
 			}));
 		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
@@ -51,17 +60,26 @@ public class RtspServerApp {
 			rtspConfig = ConfigReader.readConfigFromFile(argv[0]);
 		} catch (ConfigInvalidException e) {
 			System.err.println(FNC_NAME + ": ConfigInvalidException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		} catch (IOException e) {
 			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		}
 
 		//
 		boolean resB = runServerLoop();
 		if (! resB) {
+			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		}
+
+		//
+		stopThreads();
+
+		//
+		System.out.println(FNC_NAME + ": Server terminated");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -93,6 +111,7 @@ public class RtspServerApp {
 						++clientConnectionCount,
 						socketRtspTcp
 					);
+				rtspServerThreads.put(clientConnectionCount, thread);
 				thread.setDaemon(false);
 				thread.start();
 			}
@@ -104,6 +123,28 @@ public class RtspServerApp {
 			return false;
 		}
 		return true;
+	}
+
+	private static void stopThreads() {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
+
+		for (Map.Entry<Integer, ThreadRtspServer> tmpEntry : rtspServerThreads.entrySet()) {
+			if (tmpEntry.getKey() == null || tmpEntry.getValue() == null) {
+				continue;
+			}
+			if (tmpEntry.getValue().isAlive()) {
+				System.out.println(FNC_NAME + ": Stopping thread #" + tmpEntry.getKey());
+				tmpEntry.getValue().stopThread();  // blocks until the thread has actually stopped
+				try {
+					tmpEntry.getValue().join();
+				} catch (InterruptedException e) {
+					System.err.println(FNC_NAME + ": Interrupted while joining thread " + tmpEntry.getKey());
+				}
+				System.out.println(FNC_NAME + ": Thread #" + tmpEntry.getKey() + " stopped");
+			} else {
+				System.out.println(FNC_NAME + ": Thread #" + tmpEntry.getKey() + " already stopped");
+			}
+		}
 	}
 
 }

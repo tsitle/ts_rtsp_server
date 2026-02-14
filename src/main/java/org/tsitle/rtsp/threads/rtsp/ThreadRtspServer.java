@@ -144,6 +144,8 @@ public class ThreadRtspServer extends ThreadBase {
 
 	protected void stopThreadHook() {
 		try {
+			pauseOrStopChildThreads(false);
+			//
 			rtspSocketTcp.close();
 		} catch (IOException e) {
 			// ignore
@@ -204,7 +206,7 @@ public class ThreadRtspServer extends ThreadBase {
 			return;
 		}
 		if (thread != null) {
-			thread.stopThread();
+			thread.stopThread();  // blocks until the thread has actually stopped
 		}
 	}
 
@@ -396,14 +398,14 @@ public class ThreadRtspServer extends ThreadBase {
 				if (doPause) {
 					ctfos.rtcpThreadSendRecv.pauseThread();
 				} else {
-					ctfos.rtcpThreadSendRecv.stopThread();
+					ctfos.rtcpThreadSendRecv.stopThread();  // blocks until the thread has actually stopped
 				}
 			}
 			if (ctfos.rtpThreadSender != null) {
 				if (doPause) {
 					ctfos.rtpThreadSender.pauseThread();
 				} else {
-					ctfos.rtpThreadSender.stopThread();
+					ctfos.rtpThreadSender.stopThread();  // blocks until the thread has actually stopped
 				}
 			}
 		}
@@ -449,7 +451,9 @@ public class ThreadRtspServer extends ThreadBase {
 		if (ctfosToUse == null) {
 			throw new IllegalStateException(FNC_NAME + ": No stream found for ssrcId: " + ssrcId);
 		}
-		if (ctfosToUse.rtcpThreadSendRecv != null && ctfosToUse.rtcpThreadSendRecv.isRunning()) {
+		if (ctfosToUse.rtcpThreadSendRecv != null &&
+				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
+				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
 			ctfosToUse.rtcpThreadSendRecv.appendToSendQueque(rtcpPacketsBuf);
 		}
 	}
