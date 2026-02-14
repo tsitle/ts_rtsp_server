@@ -36,7 +36,7 @@ public class H265Parser {
 		 * HEVC maintains the NAL unit concept of H.264 with modifications.
 		 * HEVC uses a two-byte NAL unit header.
 		 *
-		 * +---------------+---------------+
+		 *  +---------------+---------------+
 		 *  |0|1|2|3|4|5|6|7|0|1|2|3|4|5|6|7|
 		 *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		 *  |F|   Type    |  LayerId  | TID |
