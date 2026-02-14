@@ -5,8 +5,8 @@ build/
 !**/src/test/**/build/
 .kotlin
 
-x-gradlew-*.sh
-x-gradlew-*.cmd
+x-*.sh
+x-*.cmd
 
 data/**/*.raw
 data/**/*.h265
