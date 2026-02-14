@@ -28,6 +28,9 @@ public class H264Parser {
 			throw new AvInvalidH264DataException(FNC_NAME + ": Invalid H264 data size");
 		}
 		resObj.nalUnitLength = h264Buf.getUsed() - resObj.nalUnitOffset;
+		while (resObj.nalUnitLength > 0 && h264Buf.get(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
+			--resObj.nalUnitLength;  // remove trailing zero bytes
+		}
 
 		/*
 		 * HEVC maintains the NAL unit concept of H.264 with modifications.
