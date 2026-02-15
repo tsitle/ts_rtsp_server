@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtcp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
@@ -35,10 +36,11 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	 * Constructor.
 	 * @param params Thread parameters
 	 */
-	public ThreadRtcpSendRecv(ParamsThreadRtcp params) {
-		if (params == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
+	public ThreadRtcpSendRecv(
+				@NonNull ParamsThreadRtcp params
+			) {
+		super(params.getLogMsgInterface().orElseThrow());
+
 		this.params = params.clone();
 		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
 
@@ -88,7 +90,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		} finally {
 			parRtcpSocketUdp.close();
 			isRunning.set(false);
-			logInfo(FNC_NAME, "Thread ended");
+			logDebug(FNC_NAME, "Thread ended");
 		}
 	}
 
@@ -132,7 +134,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (lastRtcpPacketReceived == null) {
 			throw new IllegalStateException("lastRtcpPacketReceived cannot be null");
 		}
-		/*logInfo(FNC_NAME, "Received RTCP packet on port " +
+		/*logDebug(FNC_NAME, "Received RTCP packet on port " +
 				parRtcpSocketUdp.getLocalPort() + " from port " + cacheDpRecv.getPort());*/
 		cacheRecvBuf1.copyOf(cacheDpRecv.getData(), cacheDpRecv.getOffset(), cacheDpRecv.getLength());
 		handleReceived();
@@ -185,7 +187,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				for (int i = 0; i < cacheRecvBuf1.getUsed(); i++) {
 					sb.append(String.format("%02X ", cacheRecvBuf1.get(i)));
 				}
-				logInfo(FNC_NAME, "Discarded packet: 0x" + sb);
+				logError(FNC_NAME, "Discarded packet: 0x" + sb);
 				break;
 			}
 			if (tmpPktSz < cacheRecvBuf1.getUsed()) {
@@ -221,7 +223,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logInfo(FNC_NAME, "RTCP packet without items");
+			logDebug(FNC_NAME, "RTCP packet without items");
 			return;
 		}
 		// read and validate the packet
@@ -263,7 +265,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketSDES()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logInfo(FNC_NAME, "RTCP packet without items");
+			logDebug(FNC_NAME, "RTCP packet without items");
 			return;
 		}
 		// read and validate the packet
@@ -282,21 +284,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			return;  // only for the linter
 		}
 		logInfo(FNC_NAME, "received BYE");
-	}
-
-	/**
-	 * @TODO
-	 */
-	private void logInfo(String fncName, String msg) {
-		System.out.format("<ses=%s|str=%d|ssrc=%08X> %s: %s%n",
-				params.getDebugSessionId().orElseThrow(), params.getStreamSourceId(), params.getRtspSsrcId(),
-				fncName, msg);
-	}
-
-	private void logError(String fncName, String msg) {
-		System.err.format("<ses=%s|str=%d|ssrc=%08X> %s: %s%n",
-				params.getDebugSessionId().orElseThrow(), params.getStreamSourceId(), params.getRtspSsrcId(),
-				fncName, msg);
 	}
 
 }

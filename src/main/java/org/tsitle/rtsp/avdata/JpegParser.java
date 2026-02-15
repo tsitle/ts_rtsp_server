@@ -1,20 +1,46 @@
 package org.tsitle.rtsp.avdata;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
+import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 public class JpegParser {
 
+	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull String logThreadId;
+	private int debugStreamOffset = 0;
+
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Functional interface for logging messages
+	 * @param logThreadId Thread ID for logging messages
+	 */
+	public JpegParser(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull String logThreadId
+			) {
+		this.logMsgInterface = logMsgInterface;
+		this.logThreadId = logThreadId;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Parses the JPEG data and returns a JpegInfo object with the parsed information.
-	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @param jpegBuf JPEG data
+	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @return Parsed JPEG information
 	 */
-	public static JpegInfo parseJpegData(int debugStreamOffset, BufferExt jpegBuf)
+	public JpegInfo parseJpegData(int debugStreamOffset, @NonNull BufferExt jpegBuf)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseJpegData()";
 
+		this.debugStreamOffset = debugStreamOffset;
+
+		//
 		JpegInfo resObj = new JpegInfo();
 
 		int offs = 0;
@@ -24,8 +50,8 @@ public class JpegParser {
 		// find SOI marker (Start of Image: 0xFFD8)
 		while (offs + 1 < jpegBuf.getUsed()) {
 			if (jpegBuf.get(offs) != (byte)0xFF || jpegBuf.get(offs + 1) != (byte)0xD8) {
-				System.err.format("%s: skipping invalid JPEG data @ 0x%08X: 0x%02X 0x%02X%n",
-						FNC_NAME, offs + debugStreamOffset, jpegBuf.get(offs), jpegBuf.get(offs + 1));
+				logError(FNC_NAME, String.format("skipping invalid JPEG data @ 0x%08X: 0x%02X 0x%02X%n",
+						offs + debugStreamOffset, jpegBuf.get(offs), jpegBuf.get(offs + 1)));
 				if (offs > 20) {
 					throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data - too much garbage");
 				}
@@ -48,23 +74,23 @@ public class JpegParser {
 
 			if (marker == (byte)0xC0) {
 				// SOF0 marker (Start of Frame - Baseline DCT: 0xFFC0)
-				offs = parseBlockSOF0(debugStreamOffset, jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockSOF0(jpegBuf, resObj, curBlockOffset);
 				continue;
 			}
 			if (marker == (byte)0xDA) {
 				// SOS marker (Start of Scan: 0xFFDA) followed immediately by the entropy-coded scan data
-				offs = parseBlockSOS(debugStreamOffset, jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockSOS(jpegBuf, resObj, curBlockOffset);
 				continue;
 			}
 			if (marker == (byte)0xDB) {
 				// DQT marker (Define Quantization Table: 0xFFDB)
-				offs = parseBlockDQT(debugStreamOffset, jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockDQT(jpegBuf, resObj, curBlockOffset);
 				continue;
 			}
 
 			if (marker == (byte)0xD9) {
 				// EOI marker (End of Image: 0xFFD9)
-				//debugLog(FNC_NAME, debugStreamOffset, curBlockOffset, "EOI");
+				//logDebug(FNC_NAME, curBlockOffset, "EOI");
 				resObj.foundEoi = true;
 				break;
 			}
@@ -72,36 +98,36 @@ public class JpegParser {
 			if (marker == (byte)0xC2) {
 				// SOF2 marker (progressive: 0xFFC2)
 				resObj.sof2_isProgressive = true;
-				//debugLog(FNC_NAME, debugStreamOffset, curBlockOffset, "SOF2");
+				//logDebug(FNC_NAME, curBlockOffset, "SOF2");
 			} else if (marker == (byte)0xC4) {
 				// DHT marker (Define Huffman Table: 0xFFC4)
 				++resObj.dht_tableCount;
-				//debugLog(FNC_NAME, debugStreamOffset, curBlockOffset, "DHT");
+				//logDebug(FNC_NAME, curBlockOffset, "DHT");
 			} else if (marker >= (byte)0xD0 && marker <= (byte)0xD7) {
 				// Restart marker (if DRI is used: 0xFFD0..FFD7) - this probably can only occur inside the scan data
-				debugLog(FNC_NAME, debugStreamOffset, curBlockOffset,
+				logDebug(FNC_NAME, curBlockOffset,
 						String.format("RESTART(#%d,0x%02X)", marker - (byte)0xD0, marker));  // @TODO
 			} else if (marker == (byte)0xDD) {
 				// DRI marker (Define Restart Interval: 0xFFDD)
 				resObj.usesDri = true;
-				//debugLog(FNC_NAME, debugStreamOffset, curBlockOffset, "DRI");
+				//logDebug(FNC_NAME, curBlockOffset, "DRI");
 			} else if (marker >= (byte)0xE0 && marker <= (byte)0xEF) {
 				// APPn marker (JFIF/EXIF/etc.: 0xFFE0..FFEF)
 				++resObj.app_blockCount;
-				/*debugLog(FNC_NAME, debugStreamOffset, curBlockOffset,
+				/*logDebug(FNC_NAME, curBlockOffset,
 						String.format("APP(#%d,0x%02X)", marker - (byte)0xE0, marker));*/
 			} else if (marker == (byte)0xFE) {
 				// COM marker (0xFFFE)
 				resObj.foundCom = true;
-				//debugLog(FNC_NAME, debugStreamOffset, curBlockOffset, "COM");
+				//logDebug(FNC_NAME, curBlockOffset, "COM");
 			} else {
 				// unknown marker
-				System.err.format("%s: __ unknown marker @ 0x%08X: 0xFF 0x%02X%n",  // @TODO
-						FNC_NAME, debugStreamOffset + curBlockOffset, marker);
+				logError(FNC_NAME, String.format("__ unknown marker @ 0x%08X: 0xFF 0x%02X%n",
+						debugStreamOffset + curBlockOffset, marker));
 			}
 
 			// skip over the block data
-			int blockLen = parseBlockLength(debugStreamOffset, jpegBuf, curBlockOffset);
+			int blockLen = parseBlockLength(jpegBuf, curBlockOffset);
 			offs += 2 + blockLen;
 		}
 		return resObj;
@@ -110,21 +136,13 @@ public class JpegParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void debugLog(String fncName, int debugStreamOffset, int offset, String msg) {
-		if (debugStreamOffset != 0) { return; }
-		System.out.format("%s: __ @ 0x%08X: %s%n", fncName, debugStreamOffset + offset, msg);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
 	/**
 	 * Parses the length of a block.
-	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @param jpegBuf JPEG data
 	 * @param blockOffset Start offset of the block marker
 	 * @return Block length
 	 */
-	private static int parseBlockLength(int debugStreamOffset, BufferExt jpegBuf, final int blockOffset)
+	private int parseBlockLength(BufferExt jpegBuf, final int blockOffset)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockLength()";
 
@@ -143,19 +161,18 @@ public class JpegParser {
 		if (blockOffset + 2 + blockLen >= jpegBuf.getUsed()) {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data - data too small");
 		}
-		//debugLog(FNC_NAME, debugStreamOffset, curOffs, String.format("__ blockLen %d", blockLen));
+		//logDebug(FNC_NAME, curOffs, String.format("__ blockLen %d", blockLen));
 		return blockLen - 2;
 	}
 
 	/**
 	 * Parses the SOS (Start of Scan: 0xFFDA) block.
-	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @param jpegBuf JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private static int parseBlockSOS(int debugStreamOffset, BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOS(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockSOS()";
 
@@ -165,8 +182,8 @@ public class JpegParser {
 		 * The scan data ends when the decoder encounters the next marker, using “byte stuffing” rules.
 		 * The next marker is an 0xFF followed by a byte that is not 0x00.
 		 */
-		//debugLog(FNC_NAME, debugStreamOffset, blockOffset, "SOS");
-		int blockLen = parseBlockLength(debugStreamOffset, jpegBuf, blockOffset);
+		//logDebug(FNC_NAME, blockOffset, "SOS");
+		int blockLen = parseBlockLength(jpegBuf, blockOffset);
 		int curOffs = blockOffset + 2 + 2 + blockLen;
 		// now find the end of the scan data
 		jpegInfo.sos_scanDataOffs = curOffs;
@@ -179,30 +196,29 @@ public class JpegParser {
 			if (jpegBuf.get(curOffs) == (byte)0xFF &&
 					jpegBuf.get(curOffs + 1) >= (byte)0xD0 && jpegBuf.get(curOffs + 1) <= (byte)0xD7) {
 				jpegInfo.usesDri = true;
-				debugLog(FNC_NAME, debugStreamOffset, curOffs,
+				logDebug(FNC_NAME, curOffs,
 						String.format("RESTART(#%d,0x%02X)", jpegBuf.get(curOffs + 1) - (byte)0xD0, jpegBuf.get(curOffs + 1)));  // @TODO
 			}
 			++curOffs;
 		}
 		jpegInfo.sos_scanDataLength = curOffs - jpegInfo.sos_scanDataOffs;
-		//debugLog(FNC_NAME, debugStreamOffset, curOffs, String.format("__ SOS skipped over %d bytes", jpegInfo.sos_scanDataLength));
+		//logDebug(FNC_NAME, curOffs, String.format("__ SOS skipped over %d bytes", jpegInfo.sos_scanDataLength));
 		return curOffs;
 	}
 
 	/**
 	 * Parses the SOF0 (Start of Frame - Baseline DCT: 0xFFC0) block.
-	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @param jpegBuf JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private static int parseBlockSOF0(int debugStreamOffset, BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOF0(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockSOF0()";
 
-		//debugLog(FNC_NAME, debugStreamOffset, blockOffset, "SOF0");
-		int blockLen = parseBlockLength(debugStreamOffset, jpegBuf, blockOffset);
+		//logDebug(FNC_NAME, blockOffset, "SOF0");
+		int blockLen = parseBlockLength(jpegBuf, blockOffset);
 		int curOffs = blockOffset + 2 + 2;
 
 		if (blockLen < 6) {
@@ -215,16 +231,16 @@ public class JpegParser {
 
 		// precision field
 		jpegInfo.sof0_precision = jpegBuf.get(innerOffs++);
-		//debugLog(FNC_NAME, debugStreamOffset, innerOffs - 1, String.format("__ prec %d", jpegInfo.sof0_precision));
+		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ prec %d", jpegInfo.sof0_precision));
 
 		// image dimensions
 		jpegInfo.sof0_imgHeight = ( ( ((jpegBuf.get(innerOffs++) << 8) & 0xFF00) | (jpegBuf.get(innerOffs++) & 0xFF) ) & 0xFFFF);
 		jpegInfo.sof0_imgWidth = ( ( ((jpegBuf.get(innerOffs++) << 8) & 0xFF00) | (jpegBuf.get(innerOffs++) & 0xFF) ) & 0xFFFF);
-		//debugLog(FNC_NAME, debugStreamOffset, innerOffs - 4, String.format("__ image %d x %d", jpegInfo.sof0_imgWidth, jpegInfo.sof0_imgHeight));
+		//logDebug(FNC_NAME, innerOffs - 4, String.format("__ image %d x %d", jpegInfo.sof0_imgWidth, jpegInfo.sof0_imgHeight));
 
 		// channel encoding (e.g. 'YCbCr 4:2:0')
 		byte paramNf = jpegBuf.get(innerOffs++);
-		//debugLog(FNC_NAME, debugStreamOffset, innerOffs - 1, String.format("__ Nf %d", paramNf));
+		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ Nf %d", paramNf));
 		if (blockLen < 6 + (paramNf * 3)) {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
@@ -245,7 +261,7 @@ public class JpegParser {
 			tmpMaxV = (byte)(Math.max(tmpMaxV, componentVi));
 			byte componentQuantTableSel = jpegBuf.get(innerOffs++);
 			/*String tmpDebugCompName = switch (componentIx) { case 0 -> "Y"; case 1 -> "Cb"; default -> "Cr"; };
-			debugLog(FNC_NAME, debugStreamOffset, innerOffs - 3,
+			logDebug(FNC_NAME, innerOffs - 3,
 					String.format("__ Ci %d (%s), HiVi %d (%d / %d), Tqi %d",
 							componentId, tmpDebugCompName,
 							componentTmpHiVi, componentHi, componentVi,
@@ -272,7 +288,7 @@ public class JpegParser {
 		} else {
 			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.UNKNOWN;
 		}
-		/*debugLog(FNC_NAME, debugStreamOffset, innerOffs,
+		/*logDebug(FNC_NAME, innerOffs,
 				String.format(
 						"__ CE %s (QT Y=%d, Cb=%d, Cr=%d)",
 						jpegInfo.sof0_channelEncoding.name(),
@@ -288,18 +304,17 @@ public class JpegParser {
 
 	/**
 	 * Parses the DQT (Define Quantization Table: 0xFFDB) block.
-	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @param jpegBuf JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private static int parseBlockDQT(int debugStreamOffset, BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockDQT(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockDQT()";
 
-		//debugLog(FNC_NAME, debugStreamOffset, blockOffset, "DQT");
-		int blockLen = parseBlockLength(debugStreamOffset, jpegBuf, blockOffset);
+		//logDebug(FNC_NAME, blockOffset, "DQT");
+		int blockLen = parseBlockLength(jpegBuf, blockOffset);
 		int curOffs = blockOffset + 2 + 2;
 
 		int innerOffs = curOffs;
@@ -338,7 +353,7 @@ public class JpegParser {
 				(tmpPq == 1 && blockLen != jpegInfo.dqt_tables16Bit[tmpTq].tableData.length + 1)) {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
-		//debugLog(FNC_NAME, debugStreamOffset, innerOffs - 1, String.format("__ table ID %d", tmpTq));
+		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
 		int copyLen = (tmpPq == 0 ? jpegInfo.dqt_tables8Bit[tmpTq].tableData.length : jpegInfo.dqt_tables16Bit[tmpTq].tableData.length);
 		jpegBuf.copyInto(
@@ -361,6 +376,25 @@ public class JpegParser {
 		}
 
 		return curOffs + blockLen;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(String fncName, int offset, String msg) {
+		if (debugStreamOffset != 0) { return; }
+		logMsgInterface.addMsgForLogThread(
+				RtxpLogLevel.DEBUG,
+				logThreadId,
+				String.format("%s: __ @ 0x%08X: %s", fncName, debugStreamOffset + offset, msg)
+			);
+	}
+
+	private void logError(String fncName, String msg) {
+		logMsgInterface.addMsgForLogThread(
+				RtxpLogLevel.ERROR,
+				logThreadId,
+				String.format("%s: %s", fncName, msg)
+			);
 	}
 
 }

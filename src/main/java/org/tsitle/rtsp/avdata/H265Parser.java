@@ -95,18 +95,4 @@ public class H265Parser {
 		return resObj;
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("unused")
-	private static void debugLog(
-				String fncName,
-				int debugStreamOffset,
-				@SuppressWarnings("SameParameterValue") int offset,
-				String msg
-			) {
-		//if (debugStreamOffset != 0) { return; }
-		System.out.format("%s: __ @ 0x%08X: %s%n", fncName, debugStreamOffset + offset, msg);
-	}
-
 }

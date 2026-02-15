@@ -52,9 +52,9 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 	 * @throws FileNotFoundException If the video file cannot be opened
 	 */
 	public ThreadRtpSenderH264(
-				ParamsThreadRtpSenderCommon paramsCommon,
-				ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				ParamsThreadRtpSenderH264 paramsH264
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadRtpSenderH264 paramsH264
 			) throws FileNotFoundException {
 		super(
 				paramsCommon,
@@ -65,13 +65,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 			);
 
 		//
-		if (paramsVideoCommon == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsVideoCommon.validate();
-		if (paramsH264 == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsH264.validate();
 		//
 		this.videoStream = new VideoStreamH264(paramsVideoCommon.getVideoFilePath().orElseThrow());
@@ -243,7 +237,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 		}
 
 		if (! (haveEof || videoStream.hasMoreFrames()) && paramsCommon.getDebugRewindMediaFiles()) {
-			System.out.println(FNC_NAME + ": haveEof, rewinding");
+			logDebug(FNC_NAME, "haveEof, rewinding");
 			videoStream.rewind();
 		}
 
@@ -344,17 +338,20 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 		}
 	}
 
+	/**
+	 * For debugging purposes only.
+	 */
 	@SuppressWarnings("unused")
-	private static void debugPrintAu(H264AccessUnit au) {
+	private void debugPrintAu(H264AccessUnit au) {
 		final String FNC_NAME = ThreadRtpSenderH264.class.getSimpleName() + ".debugPrintAu()";
 
-		System.out.println();
-		System.out.println(FNC_NAME + ": " + au);
+		logDebug(FNC_NAME, "--");
+		logDebug(FNC_NAME, au.toString());
 		for (int ix = 0; ix < au.arrNalUnitCount; ix++) {
 			H264NalUnitData nud = au.arrNalUnitData.get(ix);
-			System.out.println(FNC_NAME + ":   " + nud);
+			logDebug(FNC_NAME, "    " + nud);
 		}
-		System.out.println();
+		logDebug(FNC_NAME, "--");
 	}
 
 	private Optional<H264NalUnitData> popCurNalUnitData() {

@@ -1,11 +1,14 @@
 package org.tsitle.rtsp.threads.rtsp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.StringWriter;
 import java.net.*;
@@ -25,12 +28,18 @@ public class RtspResponseBuilder {
 	private static final String SDP_ENCODER_NAME = "TSITLE_RTSP 1.0";  // @TODO make at least version dynamic?
 	private static final String SESSION_NAME = "Just A Session";
 
+	private final @NonNull LogMsgInterface logMsgInterface;
 	private final RtspConfig rtspConfig;
 	private final RtspSessionInfo rtspSessionInfo;
 
 	private Consumer<List<String>> cbWriteDataLines = null;
 
-	public RtspResponseBuilder(RtspConfig rtspConfig, RtspSessionInfo rtspSessionInfo) {
+	public RtspResponseBuilder(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSessionInfo rtspSessionInfo
+			) {
+		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
@@ -82,7 +91,7 @@ public class RtspResponseBuilder {
 		List<String> contents = new ArrayList<>();
 		contents.add("");
 		internalSendResponse(statusCode, contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + statusCode +
+		logDebug(FNC_NAME, "Sent response '" + statusCode +
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
 	}
 
@@ -93,7 +102,7 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_SESSION + " " + rtspSessionInfo.rtspSessionId);
 		contents.add("");
 		internalSendResponse(contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
 	}
 
@@ -109,7 +118,7 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC + " " + String.join(", ", tmpList));
 		contents.add("");
 		internalSendResponse(contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (<" +
 				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
 				">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
@@ -130,7 +139,7 @@ public class RtspResponseBuilder {
 		String des = buildResponseDescribe(rtspInputSource);
 		contents.add(des);
 		internalSendResponse(contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
 	}
 
@@ -154,7 +163,7 @@ public class RtspResponseBuilder {
 		// generate RTSP Session ID
 		if (rtspSessionInfo.rtspSessionId.isBlank()) {
 			rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32());
-			System.out.println(FNC_NAME + ": New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
+			logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
 		}
 
 		//
@@ -189,7 +198,7 @@ public class RtspResponseBuilder {
 		contents.add(tmpLine);
 		contents.add("");
 		internalSendResponse(contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
 	}
 
@@ -219,14 +228,8 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RTPINFO + " " + tmpRtpInfoSb);
 		contents.add("");
 		internalSendResponse(contents);
-		debugPrintMsg(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static void debugPrintMsg(String fncName, String msg) {
-		System.out.println(fncName + ": RTSP Server - " + msg);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -415,7 +418,7 @@ public class RtspResponseBuilder {
 		final String body = buildResponseDescribe_sdp(rtspInputSource);
 
 		if (rtspConfig.getIsDebugPrintSDP()) {
-			System.out.println(FNC_NAME + ": SDP: '" + body + "'");
+			logDebug(FNC_NAME, "SDP: '" + body + "'");
 		}
 
 		//
@@ -445,6 +448,20 @@ public class RtspResponseBuilder {
 			outputLines.add(entry + CRLF);
 		}
 		cbWriteDataLines.accept(outputLines);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void internalLog(
+				@SuppressWarnings("SameParameterValue") @NonNull RtxpLogLevel logLevel,
+				@NonNull String fncName,
+				@NonNull String msg
+			) {
+		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
+				fncName + ": " + msg);
 	}
 
 }

@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_mjpeg;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -25,6 +26,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	private final VideoStreamMjpeg videoStream;
 	private final ImageReencoder imageReencoder;
 
+	private final JpegParser jpegParser;
 	private JpegInfo curFrameJpegInfo = null;
 	/** Buffer used to store some image data */
 	private final BufferExt cacheImageBuf = new BufferExt();
@@ -39,9 +41,9 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	 * @throws FileNotFoundException If the video file cannot be opened
 	 */
 	public ThreadRtpSenderMjpeg(
-				ParamsThreadRtpSenderCommon paramsCommon,
-				ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				ParamsThreadRtpSenderMjpeg paramsMjpeg
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadRtpSenderMjpeg paramsMjpeg
 			) throws FileNotFoundException {
 		super(
 				paramsCommon,
@@ -52,17 +54,16 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 			);
 
 		//
-		if (paramsVideoCommon == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsVideoCommon.validate();
-		if (paramsMjpeg == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsMjpeg.validate();
 		//
 		this.videoStream = new VideoStreamMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
 		this.imageReencoder = new ImageReencoder();
+
+		this.jpegParser = new JpegParser(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				Thread.currentThread().getName()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -100,7 +101,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 
 		try {
 			if (! videoStream.hasMoreFrames() && paramsCommon.getDebugRewindMediaFiles()) {
-				System.out.println(FNC_NAME + ": haveEof, rewinding");
+				logDebug(FNC_NAME, "haveEof, rewinding");
 				videoStream.rewind();
 			}
 			// get the next frame to send from the video, as well as its size
@@ -114,7 +115,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 			cacheFrameData.totalFrameSize = cacheOrgVideoFrameBuf.getUsed();
 
 			//
-			curFrameJpegInfo = JpegParser.parseJpegData(debugStreamOffset, cacheOrgVideoFrameBuf);
+			curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, cacheOrgVideoFrameBuf);
 
 			//
 			BufferExt tmpImageDataPtr;
@@ -143,7 +144,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 				}*/
 
 				//
-				curFrameJpegInfo = JpegParser.parseJpegData(debugStreamOffset, cacheImageBuf);
+				curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, cacheImageBuf);
 
 				//
 				tmpImageDataPtr = cacheImageBuf;
@@ -199,12 +200,15 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * For debugging purposes only.
+	 */
 	@SuppressWarnings({"unused", "SameParameterValue"})
-	private static void writeJpegToFile(BufferExt data, String baseFilename, int frameNr) {
+	private void writeJpegToFile(BufferExt data, String baseFilename, int frameNr) {
 		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(String.format("%s_%06d.jpg", baseFilename, frameNr))) {
 			fos.write(data.getBuf(), 0, data.getUsed());
 		} catch (IOException ex) {
-			System.out.println("writeJpegToFile(): IOException caught: " + ex);
+			logError("writeJpegToFile()", "IOException caught: " + ex);
 		}
 	}
 

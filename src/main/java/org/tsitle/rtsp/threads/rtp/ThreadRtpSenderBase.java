@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
@@ -70,14 +71,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderBase(
-				ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int rtpClockrate,
 				long rtpTicksPerFrame,
-				RtpPacketType rtpPacketType
+				@NonNull RtpPacketType rtpPacketType
 			) {
-		if (paramsCommon == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
+		super(paramsCommon.getLogMsgInterface().orElseThrow());
+
 		paramsCommon.validate();
 		if (rtpClockrate < 1 || rtpClockrate > 90000 * 2) {
 			throw new IllegalArgumentException("Invalid RTP clock rate: " + rtpClockrate);
@@ -146,11 +146,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				}
 			}
 		} catch (InterruptedException e) {
-			System.err.println(FNC_NAME + ": Interrupted while sleeping");
+			logError(FNC_NAME, "Interrupted while sleeping");
 		} finally {
 			isRunning.set(false);
-			System.out.println(FNC_NAME + ": <" + paramsCommon.getDebugSessionId().orElseThrow() +
-					"|sid=" + paramsCommon.getStreamSourceId() + "> Thread ended");
+			logDebug(FNC_NAME, "Thread ended");
 		}
 	}
 
@@ -246,8 +245,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop() throws InterruptedException {
-		//final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
-
 		if (isPaused.get()) {
 			Thread.sleep(100);
 			return true;
@@ -308,7 +305,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			// acquire the next frame from the video stream
 			final FrameData frameData = cbFrameDataSupplier();
 			if (frameData.haveErrorEof) {
-				System.err.println(FNC_NAME + ": haveErrorEof: " + frameData.errorMsg);
+				logError(FNC_NAME, "haveErrorEof: " + frameData.errorMsg);
 				throw new InputStreamEofException();
 			}
 			if (frameData.haveErrorOther) {
@@ -351,7 +348,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 				if (parComRtpSocketUdp.isClosed()) {
 					if (! doStop.get()) {
-						System.err.println(FNC_NAME + ": socket is closed");
+						logError(FNC_NAME, "socket is closed");
 					}
 					return false;
 				}
@@ -383,13 +380,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			siStats.timestampNtpWallclock = getNtpTimestamp();
 			siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
 		} catch (InputStreamEofException ex) {
-			System.err.println(FNC_NAME + ": InputStreamEofException caught: " + ex);
+			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
 			return false;
 		} catch (UdpSocketIoException ex) {
-			System.err.println(FNC_NAME + ": " + ex);
+			logError(FNC_NAME, ex.toString());
 			return false;
 		} catch (RtpFrameDataAcquException ex) {
-			System.err.println(FNC_NAME + ": FrameDataAcquException caught: " + ex.getMessage());
+			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
 			return false;
 		}
 		return true;

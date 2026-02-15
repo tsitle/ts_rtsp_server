@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_pcm;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.PcmInfo;
 import org.tsitle.rtsp.avdata.PcmParser;
 import org.tsitle.rtsp.avinputstreams.AudioStreamPcm;
@@ -42,9 +43,9 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 	 * @throws FileNotFoundException If the audio file cannot be opened
 	 */
 	public ThreadRtpSenderPcm(
-				ParamsThreadRtpSenderCommon paramsCommon,
-				ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
-				ParamsThreadRtpSenderPcm paramsPcm
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
+				@NonNull ParamsThreadRtpSenderPcm paramsPcm
 			) throws FileNotFoundException {
 		super(
 				paramsCommon,
@@ -54,9 +55,6 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 			);
 
 		//
-		if (paramsAudioCommon == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsAudioCommon.validate();
 		paramsPcm.validate();
 
@@ -96,7 +94,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 
 		try {
 			if (! audioStream.hasMoreFrames() && paramsCommon.getDebugRewindMediaFiles()) {
-				System.out.println(FNC_NAME + ": haveEof, rewinding");
+				logDebug(FNC_NAME, "haveEof, rewinding");
 				audioStream.rewind();
 			}
 			// get the next frame to send from the audio, as well as its size

@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_h265;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -42,9 +43,9 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	 * @throws FileNotFoundException If the video file cannot be opened
 	 */
 	public ThreadRtpSenderH265(
-				ParamsThreadRtpSenderCommon paramsCommon,
-				ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				ParamsThreadRtpSenderH265 paramsH265
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadRtpSenderH265 paramsH265
 			) throws FileNotFoundException {
 		super(
 				paramsCommon,
@@ -55,13 +56,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 			);
 
 		//
-		if (paramsVideoCommon == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsVideoCommon.validate();
-		if (paramsH265 == null) {
-			throw new IllegalArgumentException("Thread parameters cannot be null");
-		}
 		paramsH265.validate();
 		//
 		this.videoStream = new VideoStreamH265(paramsVideoCommon.getVideoFilePath().orElseThrow());
@@ -226,7 +221,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		}
 
 		if (! (haveEof || videoStream.hasMoreFrames()) && paramsCommon.getDebugRewindMediaFiles()) {
-			System.out.println(FNC_NAME + ": haveEof, rewinding");
+			logDebug(FNC_NAME, "haveEof, rewinding");
 			videoStream.rewind();
 		}
 
@@ -328,17 +323,20 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		}
 	}
 
+	/**
+	 * For debugging purposes only.
+	 */
 	@SuppressWarnings("unused")
-	private static void debugPrintAu(HevcAccessUnit au) {
+	private void debugPrintAu(HevcAccessUnit au) {
 		final String FNC_NAME = ThreadRtpSenderH265.class.getSimpleName() + ".debugPrintAu()";
 
-		System.out.println();
-		System.out.println(FNC_NAME + ": " + au);
+		logDebug(FNC_NAME, "--");
+		logDebug(FNC_NAME, au.toString());
 		for (int ix = 0; ix < au.arrNalUnitCount; ix++) {
 			HevcNalUnitData nud = au.arrNalUnitData.get(ix);
-			System.out.println(FNC_NAME + ":   " + nud);
+			logDebug(FNC_NAME, "    " + nud);
 		}
-		System.out.println();
+		logDebug(FNC_NAME, "--");
 	}
 
 	private Optional<HevcNalUnitData> popCurNalUnitData() {

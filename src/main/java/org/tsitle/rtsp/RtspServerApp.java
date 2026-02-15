@@ -1,8 +1,11 @@
 package org.tsitle.rtsp;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
 import java.io.*;
@@ -18,6 +21,7 @@ public class RtspServerApp {
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
+	private static RtxpLogger rtxpLoggerThread = new RtxpLogger();
 	private static final Map<@Nullable Integer, @Nullable ThreadRtspServer> rtspServerThreads = new ConcurrentHashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -42,7 +46,7 @@ public class RtspServerApp {
 					try {
 						Thread.sleep(10000);
 					} catch (InterruptedException e) {
-						System.out.println(FNC_NAME + ": InterruptedException");
+						System.err.println(FNC_NAME + ": InterruptedException");
 						Thread.currentThread().interrupt();
 					}
 				}
@@ -68,6 +72,11 @@ public class RtspServerApp {
 			System.exit(1);
 		}
 
+		// start the logger thread
+		rtxpLoggerThread.setName("RTXPLOGGER");
+		rtxpLoggerThread.setDaemon(false);
+		rtxpLoggerThread.start();
+
 		//
 		boolean resB = runServerLoop();
 		if (! resB) {
@@ -90,7 +99,7 @@ public class RtspServerApp {
 
 		// initiate TCP connection with the client for the RTSP session
 		try (ServerSocket listenSocket = new ServerSocket(rtspConfig.getServerTcpPort())) {
-			System.out.println(FNC_NAME + ": Waiting for connections on port " + rtspConfig.getServerTcpPort());
+			logInfo(FNC_NAME, "Waiting for connections on port " + rtspConfig.getServerTcpPort());
 
 			listenSocket.setSoTimeout(50);  // only for accept()
 			Socket socketRtspTcp;
@@ -107,19 +116,21 @@ public class RtspServerApp {
 
 				//
 				ThreadRtspServer thread = new ThreadRtspServer(
+						RtspServerApp::addMsgForLogThread,
 						rtspConfig,
 						++clientConnectionCount,
 						socketRtspTcp
 					);
 				rtspServerThreads.put(clientConnectionCount, thread);
+				thread.setName("RTSP#c" + clientConnectionCount);
 				thread.setDaemon(false);
 				thread.start();
 			}
 		} catch (BindException e) {
-			System.err.println(FNC_NAME + ": BindException caught: " + e.getMessage());
+			logError(FNC_NAME, "BindException caught: " + e.getMessage());
 			return false;
 		} catch (IOException e) {
-			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
+			logError(FNC_NAME, "IOException caught: " + e.getMessage());
 			return false;
 		}
 		return true;
@@ -133,17 +144,49 @@ public class RtspServerApp {
 				continue;
 			}
 			if (tmpEntry.getValue().isAlive()) {
-				System.out.println(FNC_NAME + ": Stopping thread #" + tmpEntry.getKey());
+				logDebug(FNC_NAME, "Stopping thread #" + tmpEntry.getKey());
 				tmpEntry.getValue().stopThread();  // blocks until the thread has actually stopped
 				try {
 					tmpEntry.getValue().join();
 				} catch (InterruptedException e) {
-					System.err.println(FNC_NAME + ": Interrupted while joining thread " + tmpEntry.getKey());
+					logError(FNC_NAME, "Interrupted while joining thread " + tmpEntry.getKey());
 				}
-				System.out.println(FNC_NAME + ": Thread #" + tmpEntry.getKey() + " stopped");
+				logDebug(FNC_NAME, "Thread #" + tmpEntry.getKey() + " stopped");
 			} else {
-				System.out.println(FNC_NAME + ": Thread #" + tmpEntry.getKey() + " already stopped");
+				logDebug(FNC_NAME, "Thread #" + tmpEntry.getKey() + " already stopped");
 			}
+		}
+
+		rtxpLoggerThread.stopThread();
+		try {
+			rtxpLoggerThread.join();
+		} catch (InterruptedException e) {
+			System.err.println(FNC_NAME + ": Interrupted while joining thread RtxpLogger");
+		}
+		rtxpLoggerThread = null;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private static void logInfo(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.INFO, fncName, msg);
+	}
+	private static void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
+	}
+	private static void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
+		addMsgForLogThread(logLevel, Thread.currentThread().getName(), fncName + ": " + msg);
+	}
+	private static synchronized void addMsgForLogThread(
+				@NonNull RtxpLogLevel logLevel,
+				@NonNull String threadId,
+				@NonNull String msg
+			) {
+		if (rtxpLoggerThread != null) {
+			rtxpLoggerThread.log(logLevel, threadId, msg);
 		}
 	}
 

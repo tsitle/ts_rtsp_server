@@ -1,11 +1,18 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.LogMsgInterface;
+
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
 public class ParamsThreadRtcp implements Cloneable {
+
+	/** Logging interface */
+	private LogMsgInterface logMsgInterface;
+	private boolean isSetLogMsgInterface;
 
 	/** Session ID */
 	private String debugSessionId;
@@ -33,12 +40,20 @@ public class ParamsThreadRtcp implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public Optional<LogMsgInterface> getLogMsgInterface() { return Optional.ofNullable(logMsgInterface); }
+	public void setLogMsgInterface(@NonNull LogMsgInterface logMsgInterface) {
+		this.logMsgInterface = logMsgInterface;
+		this.isSetLogMsgInterface = true;
+	}
+
+	@SuppressWarnings("unused")
 	public Optional<String> getDebugSessionId() { return Optional.ofNullable(debugSessionId); }
-	public void setDebugSessionId(String debugSessionId) {
+	public void setDebugSessionId(@NonNull String debugSessionId) {
 		this.debugSessionId = debugSessionId;
 		this.isSetDebugSessionId = true;
 	}
 
+	@SuppressWarnings("unused")
 	public int getStreamSourceId() { return streamSourceId; }
 	public void setStreamSourceId(int streamSourceId) {
 		this.streamSourceId = streamSourceId;
@@ -46,7 +61,7 @@ public class ParamsThreadRtcp implements Cloneable {
 	}
 
 	public Optional<InetAddress> getClientIpAddr() { return Optional.ofNullable(clientIpAddr); }
-	public void setClientIpAddr(InetAddress clientIpAddr) {
+	public void setClientIpAddr(@NonNull InetAddress clientIpAddr) {
 		this.clientIpAddr = clientIpAddr;
 		this.isSetClientIpAddr = true;
 	}
@@ -58,11 +73,12 @@ public class ParamsThreadRtcp implements Cloneable {
 	}
 
 	public Optional<DatagramSocket> getRtcpSocketUdp() { return Optional.ofNullable(rtcpSocketUdp); }
-	public void setRtcpSocketUdp(DatagramSocket rtcpSocketUdp) {
+	public void setRtcpSocketUdp(@NonNull DatagramSocket rtcpSocketUdp) {
 		this.rtcpSocketUdp = rtcpSocketUdp;
 		this.isSetRtcpSocketUdp = true;
 	}
 
+	@SuppressWarnings("unused")
 	public int getRtspSsrcId() { return rtspSsrcId; }
 	public void setRtspSsrcId(int rtspSsrcId) {
 		this.rtspSsrcId = rtspSsrcId;
@@ -99,6 +115,7 @@ public class ParamsThreadRtcp implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
+		requireIsSet(isSetLogMsgInterface, "logMsgInterface");
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
 		requireIsSet(isSetStreamSourceId, "streamSourceId");
 		requireIsSet(isSetClientIpAddr, "clientIpAddr");
@@ -109,6 +126,8 @@ public class ParamsThreadRtcp implements Cloneable {
 
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
+
+		requireNonNull(logMsgInterface, "logMsgInterface");
 
 		requireNonNull(debugSessionId, "debugSessionId");
 		if (debugSessionId.isEmpty()) {

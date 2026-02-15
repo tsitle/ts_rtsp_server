@@ -1,11 +1,14 @@
 package org.tsitle.rtsp.threads.rtsp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.*;
 import java.util.*;
@@ -20,13 +23,19 @@ public class RtspRequestParser {
 
 	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
 
+	private final @NonNull LogMsgInterface logMsgInterface;
 	private final RtspConfig rtspConfig;
 	private final RtspSessionInfo rtspSessionInfo;
 
 	private BooleanSupplier cbCanReadData = null;
 	private Supplier<Optional<String>> cbReadDataLine = null;
 
-	public RtspRequestParser(RtspConfig rtspConfig, RtspSessionInfo rtspSessionInfo) {
+	public RtspRequestParser(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSessionInfo rtspSessionInfo
+			) {
+		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
@@ -55,24 +64,19 @@ public class RtspRequestParser {
 			try {
 				requestLine = readOneLine(true);
 			} catch (InputStreamEofException ex) {
-				System.err.println(FNC_NAME + ": EOF reached");
+				logError(FNC_NAME, "EOF reached");
 				return RequestBasicInfo.createUnknown();
 			}
 			//
 			if (requestLine.isBlank()) {
-				System.err.println(FNC_NAME + ": received empty line");
+				logError(FNC_NAME, "received empty line");
 			}
 		} while (requestLine.isBlank());
-		//
-		/*System.out.println(FNC_NAME + ": RTSP Server - Command received from Client:");
-		System.out.println("-".repeat(20));
-		System.out.println(requestLine);
-		System.out.println("-".repeat(20));*/
 
 		// read requestType from the requestLine
 		final ServerMessageType requestType = parseServerMessageType(requestLine);
 		if (requestType == ServerMessageType.UNKNOWN) {
-			System.err.println(FNC_NAME + ": Unknown request type in requestLine '" + requestLine + "'");
+			logError(FNC_NAME, "Unknown request type in requestLine '" + requestLine + "'");
 			return RequestBasicInfo.createUnknown();
 		}
 
@@ -91,11 +95,11 @@ public class RtspRequestParser {
 			}
 			requestUrlInputOrStreamSource = handleResourceUrl(requestType, resourceUrl);
 		} catch (RtspInvalidUriException e) {
-			System.err.println(FNC_NAME + ": Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+			logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 					"), rejecting request");
 			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 		} catch (RtspInputSourceIdNotFoundException e) {
-			System.err.println(FNC_NAME + ": Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+			logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 					"), rejecting request");
 			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.NOT_FOUND);
 		}
@@ -109,16 +113,16 @@ public class RtspRequestParser {
 			} catch (InputStreamNotReadyException | InputStreamEofException ex) {
 				break;
 			} catch (RtspInvalidRequestException ex) {
-				System.err.println(FNC_NAME + ": InvalidRtspRequestException: " + ex.getMessage());
+				logError(FNC_NAME, "InvalidRtspRequestException: " + ex.getMessage());
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 			} catch (RtspInvalidSessionIdException ex) {
-				System.err.println(FNC_NAME + ": Invalid Session ID, rejecting request");
+				logError(FNC_NAME, "Invalid Session ID, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.SESSION_NOT_FOUND);
 			} catch (RtspUnsupportedAcceptTypeException ex) {
-				System.err.println(FNC_NAME + ": Unsupported Accept Type, rejecting request");
+				logError(FNC_NAME, "Unsupported Accept Type, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 			} catch (RtspUnsupportedTransportException ex) {
-				System.err.println(FNC_NAME + ": Unsupported Transport, rejecting request");
+				logError(FNC_NAME, "Unsupported Transport, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.UNSUPPORTED_TRANSPORT);
 			}
 		} while (! headerLine.isBlank());
@@ -180,7 +184,7 @@ public class RtspRequestParser {
 					if (! (proto.equals(RTSP_RR_CMD_PROTOCOL_VERSION_1) || proto.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2))) {
 						rtspSessionInfo.lastRequestRtspProtoVersion = "-";
 						resEn = ServerMessageType.UNKNOWN;
-						System.err.println(FNC_NAME + ": invalid protocol/version '" + proto + "'");
+						logError(FNC_NAME, "invalid protocol/version '" + proto + "'");
 					} else {
 						rtspSessionInfo.lastRequestRtspProtoVersion = proto;
 					}
@@ -188,7 +192,7 @@ public class RtspRequestParser {
 			}
 			return resEn;
 		} catch (NoSuchElementException ex) {
-			System.err.println(FNC_NAME + ": NoSuchElementException caught: " + ex);
+			logError(FNC_NAME, "NoSuchElementException caught: " + ex);
 			return ServerMessageType.UNKNOWN;
 		}
 	}
@@ -204,11 +208,11 @@ public class RtspRequestParser {
 			String resS = tokens.nextToken();
 			if (! resS.startsWith(RtspConstants.RTSP_URL_PROTOCOL + "://")) {
 				resS = "";
-				System.err.println(FNC_NAME + ": invalid URL '" + resS + "'");
+				logError(FNC_NAME, "invalid URL '" + resS + "'");
 			}
 			return resS;
 		} catch (NoSuchElementException ex) {
-			System.err.println(FNC_NAME + ": NoSuchElementException caught: " + ex);
+			logError(FNC_NAME, "NoSuchElementException caught: " + ex);
 			return "";
 		}
 	}
@@ -366,7 +370,7 @@ public class RtspRequestParser {
 			}
 			parseHeaderLine_range(headerLine);
 		} else {
-			System.err.println(FNC_NAME + ": Received unknown header: '" + headerLine + "'");
+			logError(FNC_NAME, "Received unknown header: '" + headerLine + "'");
 		}
 	}
 
@@ -375,7 +379,7 @@ public class RtspRequestParser {
 
 		String tmpCseq = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
 		rtspSessionInfo.rtspSeqNr = Integer.parseInt(tmpCseq);
-		//System.out.println(FNC_NAME + ": Cseq=" + rtspVariables.rtspSeqNr);
+		//logDebug(FNC_NAME, "Cseq=" + rtspVariables.rtspSeqNr);
 	}
 
 	private void parseHeaderLine_useragent(String headerLine) {
@@ -383,14 +387,14 @@ public class RtspRequestParser {
 
 		@SuppressWarnings("unused")
 		String tmpUa = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
-		//System.out.println(FNC_NAME + ": User-Agent='" + tmpUa + "'");
+		//logDebug(FNC_NAME, "User-Agent='" + tmpUa + "'");
 	}
 
 	private void parseHeaderLine_session(String headerLine) throws RtspInvalidSessionIdException {
 		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_session()";
 
 		String tmpSessId = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_SESSION.length()).strip();
-		//System.out.println(FNC_NAME + ": Session='" + tmpSessId + "'");
+		//logDebug(FNC_NAME, "Session='" + tmpSessId + "'");
 		if (! rtspSessionInfo.rtspSessionId.equals(tmpSessId)) {
 			throw new RtspInvalidSessionIdException();
 		}
@@ -401,7 +405,7 @@ public class RtspRequestParser {
 
 		String tmpDataType = headerLine.substring(RTSP_RR_HEADER_TOKEN_DES_ACCEPT.length()).strip();
 		if (! RTSP_RR_HEADER_VALUE_DES_ACCEPT.equals(tmpDataType)) {
-			System.err.println(FNC_NAME + ": Invalid Accept header value: '" + tmpDataType + "'");
+			logError(FNC_NAME, "Invalid Accept header value: '" + tmpDataType + "'");
 			throw new RtspUnsupportedAcceptTypeException();
 		}
 	}
@@ -423,19 +427,19 @@ public class RtspRequestParser {
 		tmpStreamInfo.tpClientDestPortRtcp = 0;
 		//
 		String tmpTransp = headerLine.substring(RTSP_RR_HEADER_TOKEN_SET_TRANSPORT.length()).strip();
-		//System.out.println(FNC_NAME + ": Transport='" + tmpTransp + "'");
+		//logDebug(FNC_NAME, "Transport='" + tmpTransp + "'");
 		// e.g. 'RTP/AVP;unicast;client_port=1050-1051'
 		StringTokenizer tokens = new StringTokenizer(tmpTransp, ";");
 		while (tokens.hasMoreTokens()) {
 			String curToken = tokens.nextToken();
 			if (RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPUDP.equals(curToken)) {
-				//System.out.println(FNC_NAME + ": type=" + RTSP_RR_HEADER_VALUE_TP_RTPAVPUDP);
+				//logDebug(FNC_NAME, "type=" + RTSP_RR_HEADER_VALUE_TP_RTPAVPUDP);
 				tmpStreamInfo.tpIsUdp = true;
 			} else if (RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP.equals(curToken)) {
-				System.out.println(FNC_NAME + ": type=" + RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP);  // @TODO implement RTP over TCP
+				logDebug(FNC_NAME, "type=" + RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP);  // @TODO implement RTP over TCP
 				tmpStreamInfo.tpIsUdp = false;
 			} else if (RTSP_RR_HEADER_VALUE_SET_TP_UNICAST.equals(curToken)) {
-				//System.out.println(FNC_NAME + ": uni/multi=" + RTSP_RR_HEADER_VALUE_TP_UNICAST);
+				//logDebug(FNC_NAME, "uni/multi=" + RTSP_RR_HEADER_VALUE_TP_UNICAST);
 				tmpStreamInfo.tpIsUnicast = true;
 			} else if (curToken.startsWith(RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT.length());
@@ -445,7 +449,7 @@ public class RtspRequestParser {
 				tmpStreamInfo.tpIsInterleaved = false;
 			} else if (curToken.startsWith(RTSP_RR_HEADER_VALUE_SET_TP_INTERLEAVED)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_VALUE_SET_TP_INTERLEAVED.length());
-				System.out.println(FNC_NAME + ": interleaved=" + tmpSub);  // @TODO implement RTP over TCP
+				logDebug(FNC_NAME, "interleaved=" + tmpSub);  // @TODO implement RTP over TCP
 				tmpStreamInfo.tpIsInterleaved = true;
 			}
 		}
@@ -459,16 +463,16 @@ public class RtspRequestParser {
 		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_range()";
 
 		rtspSessionInfo.clientPlaybackRangeValue = headerLine.substring(RTSP_RR_HEADER_TOKEN_PLA_RANGE.length()).strip();
-		//System.out.println(FNC_NAME + ": Range='" + rtspVariables.clientPlaybackRangeValue + "'");
+		//logDebug(FNC_NAME, "Range='" + rtspVariables.clientPlaybackRangeValue + "'");
 	}
 
 	private void parseHeaderLine_date(String headerLine) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_date()";
 
 		String tmp = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_DATE.length()).strip();
-		//System.out.println(FNC_NAME + ": Date='" + tmp + "'");
+		//logDebug(FNC_NAME, "Date='" + tmp + "'");
 		if (tmp.isBlank()) {
-			System.err.println(FNC_NAME + ": Invalid empty Date header value - ignoring");
+			logError(FNC_NAME, "Invalid empty Date header value - ignoring");
 		}
 	}
 
@@ -480,6 +484,19 @@ public class RtspRequestParser {
 		if (cbCanReadData == null || cbReadDataLine == null) {
 			throw new IllegalStateException(FNC_NAME + ": Callback functions not set");
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
+	}
+	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
+		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
+				fncName + ": " + msg);
 	}
 
 }

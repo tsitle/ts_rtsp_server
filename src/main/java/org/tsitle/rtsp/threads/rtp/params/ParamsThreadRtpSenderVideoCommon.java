@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 import java.util.Optional;
 
 public class ParamsThreadRtpSenderVideoCommon {
@@ -12,7 +14,7 @@ public class ParamsThreadRtpSenderVideoCommon {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<String> getVideoFilePath() { return Optional.ofNullable(videoFilePath); }
-	public void setVideoFilePath(String videoFilePath) {
+	public void setVideoFilePath(@NonNull String videoFilePath) {
 		this.videoFilePath = videoFilePath;
 		this.isSetVideoFilePath = true;
 	}

@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 import java.util.Optional;
 
 public class ParamsThreadRtpSenderAudioCommon {
@@ -12,7 +14,7 @@ public class ParamsThreadRtpSenderAudioCommon {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<String> getAudioFilePath() { return Optional.ofNullable(audioFilePath); }
-	public void setAudioFilePath(String audioFilePath) {
+	public void setAudioFilePath(@NonNull String audioFilePath) {
 		this.audioFilePath = audioFilePath;
 		this.isSetAudioFilePath = true;
 	}

@@ -1,7 +1,9 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -12,6 +14,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ParamsThreadRtpSenderCommon implements Cloneable {
+
+	/** Logging interface */
+	private LogMsgInterface logMsgInterface;
+	private boolean isSetLogMsgInterface;
 
 	/** Debugging: Session ID */
 	private String debugSessionId;
@@ -66,8 +72,15 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public Optional<LogMsgInterface> getLogMsgInterface() { return Optional.ofNullable(logMsgInterface); }
+	public void setLogMsgInterface(@NonNull LogMsgInterface logMsgInterface) {
+		this.logMsgInterface = logMsgInterface;
+		this.isSetLogMsgInterface = true;
+	}
+
+	@SuppressWarnings("unused")
 	public Optional<String> getDebugSessionId() { return Optional.ofNullable(debugSessionId); }
-	public void setDebugSessionId(String debugSessionId) {
+	public void setDebugSessionId(@NonNull String debugSessionId) {
 		this.debugSessionId = debugSessionId;
 		this.isSetDebugSessionId = true;
 	}
@@ -85,7 +98,7 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 	}
 
 	public Optional<InetAddress> getClientIpAddr() { return Optional.ofNullable(clientIpAddr); }
-	public void setClientIpAddr(InetAddress clientIpAddr) {
+	public void setClientIpAddr(@NonNull InetAddress clientIpAddr) {
 		this.clientIpAddr = clientIpAddr;
 		this.isSetClientIpAddr = true;
 	}
@@ -97,7 +110,7 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 	}
 
 	public Optional<DatagramSocket> getRtpSocketUdp() { return Optional.ofNullable(rtpSocketUdp); }
-	public void setRtpSocketUdp(DatagramSocket rtpSocketUdp) {
+	public void setRtpSocketUdp(@NonNull DatagramSocket rtpSocketUdp) {
 		this.rtpSocketUdp = rtpSocketUdp;
 		this.isSetRtpSocketUdp = true;
 	}
@@ -127,25 +140,25 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 	}
 
 	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() { return Optional.ofNullable(xsrcBlockEntry.clone()); }
-	public void setXsrcBlockEntry(RtcpInnerXsrcBlock xsrcBlockEntry) {
+	public void setXsrcBlockEntry(@NonNull RtcpInnerXsrcBlock xsrcBlockEntry) {
 		this.xsrcBlockEntry = xsrcBlockEntry.clone();
 		this.isSetXsrcBlockEntry = true;
 	}
 
-	public Optional<BiConsumer<Integer, BufferExt>> getCbRtcpAppendToOutgoingQueque() { return Optional.ofNullable(cbRtcpAppendToOutgoingQueque); }
-	public void setCbRtcpAppendToOutgoingQueque(BiConsumer<Integer, BufferExt> cbRtcpAppendToOutgoingQueque) {
+	public Optional<BiConsumer<@NonNull Integer, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueque() { return Optional.ofNullable(cbRtcpAppendToOutgoingQueque); }
+	public void setCbRtcpAppendToOutgoingQueque(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> cbRtcpAppendToOutgoingQueque) {
 		this.cbRtcpAppendToOutgoingQueque = cbRtcpAppendToOutgoingQueque;
 		this.isSetCbRtcpAppendToOutgoingQueque = true;
 	}
 
 	public Optional<Consumer<Integer>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
-	public void setCbNotifyThreadReady(Consumer<Integer> cbNotifyThreadReady) {
+	public void setCbNotifyThreadReady(@NonNull Consumer<@NonNull Integer> cbNotifyThreadReady) {
 		this.cbNotifyThreadReady = cbNotifyThreadReady;
 		this.isSetCbNotifyThreadReady = true;
 	}
 
 	public Optional<Supplier<Boolean>> getCbThreadMayStartPlayback() { return Optional.ofNullable(cbThreadMayStartPlayback); }
-	public void setCbThreadMayStartPlayback(Supplier<Boolean> cbThreadMayStartPlayback) {
+	public void setCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> cbThreadMayStartPlayback) {
 		this.cbThreadMayStartPlayback = cbThreadMayStartPlayback;
 		this.isSetCbThreadMayStartPlayback = true;
 	}
@@ -184,6 +197,8 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
+		requireIsSet(isSetLogMsgInterface, "logMsgInterface");
+
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
 
@@ -209,6 +224,8 @@ public class ParamsThreadRtpSenderCommon implements Cloneable {
 
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
+
+		requireNonNull(logMsgInterface, "logMsgInterface");
 
 		requireNonNull(debugSessionId, "debugSessionId");
 		if (debugSessionId.isEmpty()) {

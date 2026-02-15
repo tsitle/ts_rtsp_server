@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 
 public abstract class BuilderThreadRtpSenderAudioBase<
@@ -12,7 +13,7 @@ public abstract class BuilderThreadRtpSenderAudioBase<
 	protected final ParamsThreadRtpSenderAudioCommon threadParamsAudio = new ParamsThreadRtpSenderAudioCommon();
 
 	// Fluent setters
-	public B audAudioFilePath(String v) { this.threadParamsAudio.setAudioFilePath(v); return self(); }
+	public B audAudioFilePath(@NonNull String v) { this.threadParamsAudio.setAudioFilePath(v); return self(); }
 
 	//
 	protected void validateAudioCommon() {
