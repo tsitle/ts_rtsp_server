@@ -92,13 +92,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
 		this.sendIntervalNs = (rtpPacketType.isVideo() ?
-				((long)(1000.0f / paramsCommon.getAvFramesPerSecond()) * 1_000_000L) :
+				((long)(1000.0 / (double)paramsCommon.getAvFramesPerSecond()) * 1_000_000L) :
 				(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
 			);
 		if (this.sendIntervalNs == 0L) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is 0");
 		}
-		this.avFrameIntervalMs = (int)(1000.0f / paramsCommon.getAvFramesPerSecond());
+		this.avFrameIntervalMs = (int)(1000.0 / (double)paramsCommon.getAvFramesPerSecond());
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = rtpTicksPerFrame;
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
@@ -123,6 +123,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		isRunning.set(true);
 
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+
 		try {
 			receiveInitialClientPackets();
 
@@ -135,7 +137,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			siStats.timeSessionStartMono = System.nanoTime();
 
 			//
-			asdStats.nextSendTime = siStats.timeSessionStartWc.plusNanos(sendIntervalNs / 2L);
+			asdStats.nextSendTimeNs = siStats.timeSessionStartMono + (sendIntervalNs / 2L);
 
 			//
 			while (! (doStop.get() || parComRtpSocketUdp.isClosed())) {
@@ -258,9 +260,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				return false;
 			}
 		} else {
-			if (! sleepToAdjustFramerate()) {
-				return false;
-			}
+			sleepToAdjustFramerate();
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp();
 			siStats.rtpTimestamp += (int)(rtpTicksPerFrame / 2L);
@@ -281,17 +281,24 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean sleepToAdjustFramerate() throws InterruptedException {
-		Duration tmpDur = Duration.between(Instant.now(), asdStats.nextSendTime);
-		if (tmpDur.isPositive()) {
-			Thread.sleep(tmpDur);
+	private void sleepToAdjustFramerate() throws InterruptedException {
+		long adjNst = asdStats.nextSendTimeNs - 20_000L;
+		while (true) {
+			long remaining = (adjNst - System.nanoTime());
+			if (remaining <= 0) {
+				break;
+			}
+			if (remaining > 200_000L) {
+				Thread.sleep(Duration.ofNanos(50_000L));
+			} else {
+				// final precision wait (spin)
+				Thread.onSpinWait();
+			}
 		}
 		// "now" should ideally be equal to nextSendTime
 
 		//
-		asdStats.nextSendTime = asdStats.nextSendTime.plusNanos(sendIntervalNs / 2L);
-		return true;
+		asdStats.nextSendTimeNs += (sendIntervalNs / 2L);
 	}
 
 	private boolean sendFrame() throws InterruptedException {
@@ -309,9 +316,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			}
 
 			//
-			if (! sleepToAdjustFramerate()) {
-				return false;
-			}
+			sleepToAdjustFramerate();
 
 			//
 			debugStreamOffset += frameData.totalFrameSize;
