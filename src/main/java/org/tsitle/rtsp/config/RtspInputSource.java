@@ -94,13 +94,12 @@ public class RtspInputSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Not all Stream Source IDs could be mapped " +
 					"for Input Source ID '" + id + "'");
 		}
-		if (getStreamSourceIds().isEmpty()) {
+		Set<Integer> tmpIsSsIdSet = getStreamSourceIds();
+		if (tmpIsSsIdSet.isEmpty()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found for Input Source ID '" + id + "'");
 		}
-		Set<Integer> tmpIsSsIdSet = getStreamSourceIds();
-		if (tmpIsSsIdSet.isEmpty() || tmpIsSsIdSet.size() > 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid number of Stream Sources " +
-					"found for Input Source ID '" + id + "'");
+		if (tmpIsSsIdSet.size() > 2) {
+			throw new ConfigInvalidException(FNC_NAME + ": Input Source ID '" + id + "' contains more than two Stream Sources");
 		}
 		for (int tmpSsId : tmpIsSsIdSet) {
 			if (! streamSources.containsKey(tmpSsId)) {
