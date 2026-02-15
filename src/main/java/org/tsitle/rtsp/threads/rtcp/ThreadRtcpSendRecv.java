@@ -289,13 +289,13 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	 */
 	private void logInfo(String fncName, String msg) {
 		System.out.format("<ses=%s|str=%d|ssrc=%08X> %s: %s%n",
-				params.getDebugSessionId().orElseThrow(), params.getDebugStreamId(), params.getRtspSsrcId(),
+				params.getDebugSessionId().orElseThrow(), params.getStreamSourceId(), params.getRtspSsrcId(),
 				fncName, msg);
 	}
 
 	private void logError(String fncName, String msg) {
 		System.err.format("<ses=%s|str=%d|ssrc=%08X> %s: %s%n",
-				params.getDebugSessionId().orElseThrow(), params.getDebugStreamId(), params.getRtspSsrcId(),
+				params.getDebugSessionId().orElseThrow(), params.getStreamSourceId(), params.getRtspSsrcId(),
 				fncName, msg);
 	}
 

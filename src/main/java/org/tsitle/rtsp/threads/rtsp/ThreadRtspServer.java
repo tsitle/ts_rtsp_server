@@ -219,7 +219,7 @@ public class ThreadRtspServer extends ThreadBase {
 		//
 		ctfos.rtcpThreadSendRecv = BuilderThreadRtcp.builder()
 				.debugSessionId(rtspSessionInfo.rtspSessionId)
-				.debugStreamId(tmpStreamInfo.rtspStreamSource.getId())
+				.streamSourceId(tmpStreamInfo.rtspStreamSource.getId())
 				.clientIpAddr(clientIpAddr)
 				.clientDestPortRtcp(tmpStreamInfo.tpClientDestPortRtcp)
 				.rtcpSocketUdp(tmpStreamInfo.tpServerSocketRtcp)

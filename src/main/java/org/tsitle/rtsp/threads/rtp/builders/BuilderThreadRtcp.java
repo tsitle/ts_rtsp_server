@@ -16,7 +16,8 @@ public class BuilderThreadRtcp {
 
 		// Fluent setters
 		public Builder debugSessionId(String v) { this.threadParams.setDebugSessionId(v); return this; }
-		public Builder debugStreamId(int v) { this.threadParams.setDebugStreamId(v); return this; }
+
+		public Builder streamSourceId(int v) { this.threadParams.setStreamSourceId(v); return this; }
 
 		public Builder clientIpAddr(InetAddress v) { this.threadParams.setClientIpAddr(v); return this; }
 		public Builder clientDestPortRtcp(int v) { this.threadParams.setClientDestPortRtcp(v); return this; }

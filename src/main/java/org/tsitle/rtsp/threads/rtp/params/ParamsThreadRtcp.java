@@ -10,9 +10,10 @@ public class ParamsThreadRtcp implements Cloneable {
 	/** Session ID */
 	private String debugSessionId;
 	private boolean isSetDebugSessionId;
+
 	/** Stream ID - not the SSRC */
-	private int debugStreamId;
-	private boolean isSetDebugStreamId;
+	private int streamSourceId;
+	private boolean isSetStreamSourceId;
 
 	/** Client IP address */
 	private InetAddress clientIpAddr;
@@ -38,10 +39,10 @@ public class ParamsThreadRtcp implements Cloneable {
 		this.isSetDebugSessionId = true;
 	}
 
-	public int getDebugStreamId() { return debugStreamId; }
-	public void setDebugStreamId(int debugStreamId) {
-		this.debugStreamId = debugStreamId;
-		this.isSetDebugStreamId = true;
+	public int getStreamSourceId() { return streamSourceId; }
+	public void setStreamSourceId(int streamSourceId) {
+		this.streamSourceId = streamSourceId;
+		this.isSetStreamSourceId = true;
 	}
 
 	public Optional<InetAddress> getClientIpAddr() { return Optional.ofNullable(clientIpAddr); }
@@ -99,7 +100,7 @@ public class ParamsThreadRtcp implements Cloneable {
 
 	private void checkAllParamsSet() {
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
-		requireIsSet(isSetDebugStreamId, "debugStreamId");
+		requireIsSet(isSetStreamSourceId, "streamSourceId");
 		requireIsSet(isSetClientIpAddr, "clientIpAddr");
 		requireIsSet(isSetClientDestPortRtcp, "clientDestPortRtcp");
 		requireIsSet(isSetRtcpSocketUdp, "rtcpSocketUdp");
