@@ -98,4 +98,28 @@ public final class NtpTimestampHelper {
 		return (newSeconds << 32) | newFraction;
 	}
 
+	/**
+	 * Returns {@code (ntpTimestampB - ntpTimestampA)} as a signed duration in nanoseconds.<br />
+	 * Assumes both timestamps are within the same NTP era (i.e., no wraparound of the 32-bit seconds field).
+	 * @param ntpTimestampA 64-bit NTP timestamp (upper 32 bits = seconds, lower 32 bits = fraction)
+	 * @param ntpTimestampB 64-bit NTP timestamp (upper 32 bits = seconds, lower 32 bits = fraction)
+	 * @return Difference in nanoseconds (can be negative)
+	 */
+	public static long diffNanos(long ntpTimestampA, long ntpTimestampB) {
+		long aSec = (ntpTimestampA >>> 32) & 0xFFFF_FFFFL;
+		long aFrac = ntpTimestampA & 0xFFFF_FFFFL;
+
+		long bSec = (ntpTimestampB >>> 32) & 0xFFFF_FFFFL;
+		long bFrac = ntpTimestampB & 0xFFFF_FFFFL;
+
+		long secDiff = bSec - aSec;  // seconds
+		long fracDiff = bFrac - aFrac;  // 32-bit fraction units (signed in long range)
+
+		// Convert fraction-diff to nanos: (fracDiff * 1e9) / 2^32
+		// Using >> 32 is equivalent to dividing by 2^32 (with sign), and stays within long range here.
+		long fracNanos = (fracDiff * 1_000_000_000L) >> 32;
+
+		return secDiff * 1_000_000_000L + fracNanos;
+	}
+
 }
