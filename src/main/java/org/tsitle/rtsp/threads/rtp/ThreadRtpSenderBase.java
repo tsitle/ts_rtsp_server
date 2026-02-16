@@ -49,6 +49,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final int rtpClockrate;
 	/** RTP ticks per frame */
 	private final long rtpTicksPerFrame;
+	/** RTP packet type */
+	private final RtpPacketType rtpPacketType;
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(1);
@@ -57,11 +59,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final AtomicLong ntpTsFrameNr = new AtomicLong(1);
 	protected int debugStreamOffset = 0;
 	private final BufferExt cacheRtpFullData = new BufferExt();
+	private boolean isFirstPktOfFrame = true;
 
 	private final AdaptiveSendIntervalStats asdStats = new AdaptiveSendIntervalStats();
 	private final SenderInfoStats siStats = new SenderInfoStats();
 	/** State A: send frame; State B: optionally send RTCP SR */
-	private boolean isMainLoopStateA = false;
+	private boolean isMainLoopStateA = true;
 
 	/**
 	 * Constructor.
@@ -102,6 +105,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = rtpTicksPerFrame;
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
+		this.rtpPacketType = rtpPacketType;
 
 		//
 		this.siStats.rtpTimestamp = this.paramsCommon.getRtpTimestampT0();
@@ -137,6 +141,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			siStats.timeSessionStartMono = System.nanoTime();
 
 			//
+			asdStats.sleepCounter = 1;
 			asdStats.nextSendTimeNs = siStats.timeSessionStartMono + (sendIntervalNs / 2L);
 
 			//
@@ -253,40 +258,43 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		//
 		if (isMainLoopStateA) {
 			boolean haveMoreFrames = sendFrame();
+			//noinspection RedundantIfStatement
 			if (! haveMoreFrames) {
 				return false;
 			}
 		} else {
+			if (siStats.lastSenderInfoSent == null ||
+					Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS) {
+				if (! sendSenderReport()) {
+					return false;
+				}
+			}
+			//
 			sleepToAdjustFramerate();
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp();
 			siStats.rtpTimestamp += (int)(rtpTicksPerFrame / 2L);
+			//
+			isMainLoopStateA = true;
 		}
 
 		//
-		boolean resB = true;
-		if (! isMainLoopStateA &&
-				(siStats.lastSenderInfoSent == null ||
-						Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS)) {
-			resB = sendSenderReport();
-		}
-
-		//
-		isMainLoopStateA = (! isMainLoopStateA);
-		return resB;
+		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void sleepToAdjustFramerate() throws InterruptedException {
-		long adjNst = asdStats.nextSendTimeNs - 20_000L;
 		while (true) {
-			long remaining = (adjNst - System.nanoTime());
-			if (remaining <= 0) {
+			long remaining = (asdStats.nextSendTimeNs - System.nanoTime());
+			if (remaining <= 50_000L) {
+				if (remaining < -10_000L) {
+					logDebug("sleepToAdjustFramerate()", "remaining: " + (remaining / 1_000L) + " us");  // @TODO
+				}
 				break;
 			}
-			if (remaining > 200_000L) {
-				Thread.sleep(Duration.ofNanos(50_000L));
+			if (remaining > 1_000_000L) {
+				Thread.sleep(Duration.ofNanos(100_000L));
 			} else {
 				// final precision wait (spin)
 				Thread.onSpinWait();
@@ -295,7 +303,9 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		// "now" should ideally be equal to nextSendTime
 
 		//
-		asdStats.nextSendTimeNs += (sendIntervalNs / 2L);
+		++asdStats.sleepCounter;
+		asdStats.nextSendTimeNs = siStats.timeSessionStartMono +
+				((asdStats.sleepCounter / 2L) * sendIntervalNs) + ((asdStats.sleepCounter % 2L) * (sendIntervalNs / 2L));
 	}
 
 	private boolean sendFrame() throws InterruptedException {
@@ -312,8 +322,17 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				throw new RtpFrameDataAcquException(frameData.errorMsg);
 			}
 
-			//
-			sleepToAdjustFramerate();
+			// only sleep if this is the first packet of the frame/AU
+			if (isFirstPktOfFrame) {
+				/*
+				 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
+				 */
+				if (rtpTsFrameNr.get() != 2) {
+					sleepToAdjustFramerate();
+				}
+				//
+				isFirstPktOfFrame = false;
+			}
 
 			//
 			debugStreamOffset += frameData.totalFrameSize;
@@ -346,9 +365,22 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				incrRtpSequNr();
 			}
 
-			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock = getNtpTimestamp();
-			siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
+			// only update SenderInfo etc. if this is the last packet of the frame/AU
+			if (isLastPktOfFrame || rtpPacketType.isAudio()) {
+				isFirstPktOfFrame = true;
+				isMainLoopStateA = false;
+				// update SenderInfo NTP and RTP timestamp
+				siStats.timestampNtpWallclock = getNtpTimestamp();
+				siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
+				if (rtpTsFrameNr.get() % 30 == 0 && rtpPacketType.isVideo()) {
+					logNtpRtp(
+							siStats.timestampNtpWallclock,
+							NtpTimestampHelper.addNanosToNtpTimestamp(siStats.timeSessionStartNtpWc, sendIntervalNs * (rtpTsFrameNr.get() - 2)),
+							siStats.rtpTimestamp,
+							paramsCommon.getRtpTimestampT0() + (int)(rtpTicksPerFrame * (rtpTsFrameNr.get() - 2))
+						);
+				}
+			}
 		} catch (InputStreamEofException ex) {
 			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
 			return false;
@@ -473,6 +505,20 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		siStats.lastSenderInfoSent = Instant.now();
 		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logNtpRtp(
+				long ntpTimestampActual,
+				long ntpTimestampExpected,
+				int rtpTimestampActual,
+				int rtpTimestampExpected
+			) {
+		logDebug("logNtpRtp()",
+				"** NTPd: " + (NtpTimestampHelper.diffNanos(ntpTimestampActual, ntpTimestampExpected) / 1_000L) +
+				" us, RTPd: " + (rtpTimestampActual - rtpTimestampExpected) +
+				", AVsi=" + Long.toUnsignedString(sendIntervalNs / 1_000L));  // @TODO
 	}
 
 }
