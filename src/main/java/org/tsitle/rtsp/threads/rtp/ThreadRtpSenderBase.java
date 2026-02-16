@@ -320,52 +320,22 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 			//
 			int sentTotalPktSize = 0;
+			boolean isLastPktOfFrame = false;
 			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadData.getUsed()) {
 				final int curPktSize = Math.min(UDP_PACKET_LEN, frameData.rtpPayloadData.getUsed() - sentTotalPktSize);
-				final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadData.getUsed());
-				final boolean isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(
+				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(
 						sentTotalPktSize + curPktSize,
 						frameData.rtpPayloadData.getUsed()
 					);
 
-				FrameFragmentData curFragmentData = new FrameFragmentData(
-						frameData,
+				boolean tmpResB = sendSinglePacket(
 						sentTotalPktSize,
 						curPktSize,
-						isLastPktOfPayload
+						frameData,
+						isLastPktOfFrame
 					);
-				RtpPacketPayloadInterface curInnerPayload = cbRtpPacketPayloadSupplier(curFragmentData);
-				RtpPacketContainer curPacketContainer = new RtpPacketContainer(
-						paramsCommon.getRtspSsrcId(),
-						getRtpSequNr(),
-						isLastPktOfFrame,
-						frameData.rtpFrameTimestamp,
-						curInnerPayload
-					);
-
-				// retrieve the packet bitstream and store it in an array of bytes
-				curPacketContainer.copyRawPacketDataInto(cacheRtpFullData);
-
-				if (parComRtpSocketUdp.isClosed()) {
-					if (! doStop.get()) {
-						logError(FNC_NAME, "socket is closed");
-					}
+				if (! tmpResB) {
 					return false;
-				}
-				// send the packet as a DatagramPacket over the UDP socket
-				DatagramPacket sendDp = new DatagramPacket(
-						cacheRtpFullData.getBuf(),
-						cacheRtpFullData.getUsed(),
-						paramsCommon.getClientIpAddr().orElseThrow(),
-						paramsCommon.getClientDestPortRtp()
-					);
-				try {
-					parComRtpSocketUdp.send(sendDp);
-				} catch (IOException ex) {
-					if (doStop.get()) {
-						return false;
-					}
-					throw new UdpSocketIoException("send failed: " + ex.getMessage());
 				}
 
 				sentTotalPktSize += curPktSize;
@@ -388,6 +358,58 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		} catch (RtpFrameDataAcquException ex) {
 			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
 			return false;
+		}
+		return true;
+	}
+
+	private boolean sendSinglePacket(
+				int sentTotalPktSize,
+				int curPktSize,
+				FrameData frameData,
+				boolean isLastPktOfFrame
+			) throws UdpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendSinglePacket()";
+
+		final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadData.getUsed());
+
+		FrameFragmentData curFragmentData = new FrameFragmentData(
+				frameData,
+				sentTotalPktSize,
+				curPktSize,
+				isLastPktOfPayload
+			);
+		RtpPacketPayloadInterface curInnerPayload = cbRtpPacketPayloadSupplier(curFragmentData);
+		RtpPacketContainer curPacketContainer = new RtpPacketContainer(
+				paramsCommon.getRtspSsrcId(),
+				getRtpSequNr(),
+				isLastPktOfFrame,
+				frameData.rtpFrameTimestamp,
+				curInnerPayload
+			);
+
+		// retrieve the packet bitstream and store it in an array of bytes
+		curPacketContainer.copyRawPacketDataInto(cacheRtpFullData);
+
+		if (parComRtpSocketUdp.isClosed()) {
+			if (! doStop.get()) {
+				logError(FNC_NAME, "socket is closed");
+			}
+			return false;
+		}
+		// send the packet as a DatagramPacket over the UDP socket
+		DatagramPacket sendDp = new DatagramPacket(
+				cacheRtpFullData.getBuf(),
+				cacheRtpFullData.getUsed(),
+				paramsCommon.getClientIpAddr().orElseThrow(),
+				paramsCommon.getClientDestPortRtp()
+			);
+		try {
+			parComRtpSocketUdp.send(sendDp);
+		} catch (IOException ex) {
+			if (doStop.get()) {
+				return false;
+			}
+			throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + ex.getMessage());
 		}
 		return true;
 	}
