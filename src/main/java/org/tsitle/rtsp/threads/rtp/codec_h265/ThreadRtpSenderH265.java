@@ -232,6 +232,8 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		// update frame number after having received a new Access Unit
 		if (globalCurAu.arrNalUnitCount > 0) {
 			incrRtpAndNtpTsFrameNr();
+		} else if (! haveEof) {
+			logError(FNC_NAME, "globalCurAu.arrNalUnitCount == 0");
 		}
 	}
 
