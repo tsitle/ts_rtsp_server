@@ -15,8 +15,6 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadMjpeg;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 
 public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
@@ -125,13 +123,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 		} else {
 			// get the next frame to send over the wire from the input stream
 			try {
-				Instant tmpNow = Instant.now();
 				threadDataProv.getNextFrame(cacheOrgVideoFrameBuf, curFrameJpegInfo);
-				Instant tmpAfter = Instant.now();
-				long tmpDiff = Duration.between(tmpNow, tmpAfter).toNanos();
-				if (tmpDiff > 100_000L) {  // @TODO
-					logDebug(FNC_NAME, "getNextFrame() took " + (Duration.between(tmpNow, tmpAfter).toNanos() / 1000L) + " us");
-				}
 
 				//
 				cacheFrameData.totalFrameSize = cacheOrgVideoFrameBuf.getUsed();
