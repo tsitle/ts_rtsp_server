@@ -8,36 +8,19 @@ import org.tsitle.rtsp.avinputstreams.VideoStreamMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
-import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadMjpeg;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.ThreadBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ThreadDataProvMjpeg extends ThreadBase {
+public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 
 	private final BufferExt cacheTempBuffer = new BufferExt();
-	private final Queue<@NonNull BufferExt> bufferQueue = new ConcurrentLinkedQueue<>();
-	private final Queue<@NonNull JpegInfo> jpegInfoQueue = new ConcurrentLinkedQueue<>();
 
-	private long frameCountInp = 0;
-	private long frameNrOutp = 1;
-	private long eofAfterFrameNr = -1;
-	private long debugStreamOffset = 0;
-
-	/** VideoStream object used to access video frames */
-	private final VideoStreamMjpeg videoStream;
 	private final ImageReencoder imageReencoder;
 	private final JpegParser jpegParser;
-
-	private final int queueSize;
-	private final boolean doDebugRewindMediaFiles;
 
 	/**
 	 * Constructor.
@@ -52,19 +35,15 @@ public class ThreadDataProvMjpeg extends ThreadBase {
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
-		super(logMsgInterface);
-
-		if (queueSize <= 0) {
-			throw new IllegalArgumentException("queueSize must be positive");
-		}
-
-		//
-		this.queueSize = queueSize;
-		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
+		super(
+				logMsgInterface,
+				queueSize,
+				debugRewindMediaFiles
+			);
 
 		//
 		try {
-			this.videoStream = new VideoStreamMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaInputStream = new VideoStreamMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -78,51 +57,11 @@ public class ThreadDataProvMjpeg extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public void run() {
-		final String FNC_NAME = getClass().getSimpleName() + ".run()";
-
-		isRunning.set(true);
-
-		//
-		try {
-			while (! doStop.get()) {
-				mainLoop();
-			}
-		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException");
-		} catch (Exception e) {
-			logError(FNC_NAME, "Exception: " + e.getMessage());
-		} finally {
-			isRunning.set(false);
-			logDebug(FNC_NAME, "Thread ended");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public synchronized boolean haveEof() {
-		return ((eofAfterFrameNr >= 0L && frameNrOutp > eofAfterFrameNr) || bufferQueue.isEmpty());
-	}
-
-	public synchronized boolean haveFullInputQueue() {
-		return (haveEof() || (bufferQueue.size() >= queueSize));
-	}
-
-	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull JpegInfo jpegInfo) throws InputStreamEofException {
-		if (haveEof() || bufferQueue.isEmpty() || jpegInfoQueue.isEmpty()) {
-			throw new InputStreamEofException();
-		}
-		buf.copyOf(bufferQueue.poll());
-		//noinspection DataFlowIssue
-		jpegInfo.copyOf(jpegInfoQueue.poll());
-		++frameNrOutp;
-	}
-
 	/**
 	 * Receives a notification about the current congestion level.
 	 * @param congestionLevel Congestion level (range 0..4)
 	 */
+	@Override
 	public synchronized void notifyCongestionLevelChange(int congestionLevel) {
 		if (congestionLevel < 0 || congestionLevel > 4) {
 			throw new IllegalArgumentException("congestionLevel must be in range 0..4");
@@ -141,68 +80,7 @@ public class ThreadDataProvMjpeg extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void stopThreadHook() {
-		// nothing to do
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void mainLoop() throws InterruptedException {
-		if (bufferQueue.size() < queueSize) {
-			acquireData();
-		} else {
-			Thread.sleep(1);
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void acquireData() {
-		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
-
-		if (! videoStream.hasMoreFrames() && doDebugRewindMediaFiles) {
-			logDebug(FNC_NAME, "haveEof, rewinding");
-			videoStream.rewind();
-		}
-		// get the next frame to send from the video, as well as its size
-		BufferExt tmpFrameBuf = new BufferExt();
-		try {
-			videoStream.getNextFrame(tmpFrameBuf);
-			bufferQueue.add(tmpFrameBuf);
-		} catch (InputStreamIoException | InputStreamEofException e) {
-			if (e instanceof InputStreamIoException) {
-				logError(FNC_NAME, "InputStreamIoException caught: " + e.getMessage());
-			}
-			// we have reached the end of the video file
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-		if (tmpFrameBuf.getUsed() == 0) {  // sanity check
-			// we have reached the end of the video file
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-
-		//
-		try {
-			parseAndConvertJpegData(tmpFrameBuf);
-		} catch (ImageReencoderIoException e) {
-			logError(FNC_NAME, "ImageReencoderIoException caught: " + e.getMessage());
-			eofAfterFrameNr = frameCountInp;
-			return;
-		} catch (AvInvalidJpegDataException e) {
-			logError(FNC_NAME, "AvInvalidJpegDataException caught: " + e.getMessage());
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-		debugStreamOffset += tmpFrameBuf.getUsed();
-
-		//
-		++frameCountInp;
-	}
-
-	private void parseAndConvertJpegData(BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
+	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
 		JpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary
@@ -233,7 +111,7 @@ public class ThreadDataProvMjpeg extends ThreadBase {
 			curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 		}
 
-		jpegInfoQueue.add(curFrameJpegInfo);
+		infoQueue.add(curFrameJpegInfo);
 	}
 
 	/**

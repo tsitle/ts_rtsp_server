@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 
-public final class H264Info implements Cloneable {
+public final class H264Info extends AvInfoBase<H264Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -116,6 +116,7 @@ public final class H264Info implements Cloneable {
 		reset();
 	}
 
+	@Override
 	public void reset() {
 		nalUnitOffset = 0;
 		nalUnitLength = 0;
@@ -127,6 +128,7 @@ public final class H264Info implements Cloneable {
 		pictBoundInfo.reset();
 	}
 
+	@Override
 	public void copyOf(@NonNull H264Info src) {
 		reset();
 

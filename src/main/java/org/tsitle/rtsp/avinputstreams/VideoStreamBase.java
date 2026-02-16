@@ -41,6 +41,7 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 	 * Gets the length of the magic bytes array for frame start detection.
 	 * @return Length of the magic bytes array
 	 */
+	@Override
 	public int getMagicBytesLength() {
 		return frameStartMagicbytes.length;
 	}
@@ -49,6 +50,7 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 	 * Checks if there could be more frames in the stream
 	 * @return True if there could be more frames, false otherwise
 	 */
+	@Override
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean hasMoreFrames() {
 		try {
@@ -62,11 +64,13 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 */
+	@Override
 	public abstract void getNextFrame(BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException;
 
 	/**
 	 * Rewinds the stream to the beginning
 	 */
+	@Override
 	public void rewind() {
 		try {
 			bis.close();

@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 
-public final class PcmInfo {
+public final class PcmInfo extends AvInfoBase<PcmInfo> {
 
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
@@ -19,6 +19,7 @@ public final class PcmInfo {
 		reset();
 	}
 
+	@Override
 	public void reset() {
 		samplesOffset = 0;
 		samplesLength = 0;
@@ -27,6 +28,7 @@ public final class PcmInfo {
 		samplesPerChannelInAudioData = 0;
 	}
 
+	@Override
 	public void copyOf(@NonNull PcmInfo other) {
 		reset();
 

@@ -7,9 +7,16 @@ import org.tsitle.rtsp.exceptions.InputStreamIoException;
 public interface AvInputStreamInterface {
 
 	/**
+	 * Gets the length of the magic bytes array for frame start detection.
+	 * @return Length of the magic bytes array
+	 */
+	int getMagicBytesLength();
+
+	/**
 	 * Checks if there could be more frames/samples in the stream
 	 * @return True if there could be more frames/samples, false otherwise
 	 */
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	boolean hasMoreFrames();
 
 	/**

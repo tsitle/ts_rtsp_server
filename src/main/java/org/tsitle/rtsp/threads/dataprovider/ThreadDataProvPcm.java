@@ -6,32 +6,15 @@ import org.tsitle.rtsp.avdata.PcmParser;
 import org.tsitle.rtsp.avinputstreams.AudioStreamPcm;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
-import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.ThreadBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 import java.io.FileNotFoundException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ThreadDataProvPcm extends ThreadBase {
+public class ThreadDataProvPcm extends ThreadDataProvBase<PcmInfo> {
 
-	private final Queue<@NonNull BufferExt> bufferQueue = new ConcurrentLinkedQueue<>();
-	private final Queue<@NonNull PcmInfo> pcmInfoQueue = new ConcurrentLinkedQueue<>();
-
-	private long frameCountInp = 0;
-	private long frameNrOutp = 1;
-	private long eofAfterFrameNr = -1;
-
-	/** AudioStream object used to access audio samples */
-	private final AudioStreamPcm audioStream;
 	private final PcmParser pcmParser;
-
-	private final int queueSize;
-	private final boolean doDebugRewindMediaFiles;
 
 	/**
 	 * Constructor.
@@ -48,19 +31,15 @@ public class ThreadDataProvPcm extends ThreadBase {
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
-		super(logMsgInterface);
-
-		if (queueSize <= 0) {
-			throw new IllegalArgumentException("queueSize must be positive");
-		}
-
-		//
-		this.queueSize = queueSize;
-		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
+		super(
+				logMsgInterface,
+				queueSize,
+				debugRewindMediaFiles
+			);
 
 		//
 		try {
-			this.audioStream = new AudioStreamPcm(
+			this.mediaInputStream = new AudioStreamPcm(
 					paramsAudioCommon.getAudioFilePath().orElseThrow(),
 					paramsPcm.getAudioChannelCount(),
 					paramsPcm.getAudioBitsPerSample(),
@@ -79,51 +58,11 @@ public class ThreadDataProvPcm extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public void run() {
-		final String FNC_NAME = getClass().getSimpleName() + ".run()";
-
-		isRunning.set(true);
-
-		//
-		try {
-			while (! doStop.get()) {
-				mainLoop();
-			}
-		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException");
-		} catch (Exception e) {
-			logError(FNC_NAME, "Exception: " + e.getMessage());
-		} finally {
-			isRunning.set(false);
-			logDebug(FNC_NAME, "Thread ended");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public synchronized boolean haveEof() {
-		return ((eofAfterFrameNr >= 0L && frameNrOutp > eofAfterFrameNr) || bufferQueue.isEmpty());
-	}
-
-	public synchronized boolean haveFullInputQueue() {
-		return (haveEof() || (bufferQueue.size() >= queueSize));
-	}
-
-	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull PcmInfo pcmInfo) throws InputStreamEofException {
-		if (haveEof() || bufferQueue.isEmpty() || pcmInfoQueue.isEmpty()) {
-			throw new InputStreamEofException();
-		}
-		buf.copyOf(bufferQueue.poll());
-		//noinspection DataFlowIssue
-		pcmInfo.copyOf(pcmInfoQueue.poll());
-		++frameNrOutp;
-	}
-
 	/**
 	 * Receives a notification about the current congestion level.
 	 * @param congestionLevel Congestion level (range 0..4)
 	 */
+	@Override
 	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
 		// nothing to do
 	}
@@ -132,66 +71,10 @@ public class ThreadDataProvPcm extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void stopThreadHook() {
-		// nothing to do
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void mainLoop() throws InterruptedException {
-		if (bufferQueue.size() < queueSize) {
-			acquireData();
-		} else {
-			Thread.sleep(1);
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void acquireData() {
-		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
-
-		if (! audioStream.hasMoreFrames() && doDebugRewindMediaFiles) {
-			logDebug(FNC_NAME, "haveEof, rewinding");
-			audioStream.rewind();
-		}
-		// get the next frame to send from the video, as well as its size
-		BufferExt tmpFrameBuf = new BufferExt();
-		try {
-			audioStream.getNextFrame(tmpFrameBuf);
-			bufferQueue.add(tmpFrameBuf);
-		} catch (InputStreamIoException | InputStreamEofException e) {
-			if (e instanceof InputStreamIoException) {
-				logError(FNC_NAME, "InputStreamIoException caught: " + e.getMessage());
-			}
-			// we have reached the end of the video file
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-		if (tmpFrameBuf.getUsed() == 0) {  // sanity check
-			// we have reached the end of the video file
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-
-		//
-		try {
-			parseAndConvertPcmData(tmpFrameBuf);
-		} catch (AvInvalidPcmDataException e) {
-			logError(FNC_NAME, "AvInvalidPcmDataException caught: " + e.getMessage());
-			eofAfterFrameNr = frameCountInp;
-			return;
-		}
-
-		//
-		++frameCountInp;
-	}
-
-	private void parseAndConvertPcmData(BufferExt inputBuf) throws AvInvalidPcmDataException {
+	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidPcmDataException {
 		PcmInfo curFramePcmInfo = pcmParser.parsePcmData(inputBuf);
 
-		pcmInfoQueue.add(curFramePcmInfo);
+		infoQueue.add(curFramePcmInfo);
 	}
 
 }

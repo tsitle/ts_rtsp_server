@@ -58,9 +58,19 @@ public class AudioStreamPcm implements AvInputStreamInterface {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
+	 * Gets the length of the magic bytes array for frame start detection.
+	 * @return Length of the magic bytes array
+	 */
+	@Override
+	public int getMagicBytesLength() {
+		return 0;
+	}
+
+	/**
 	 * Checks if there could be more samples in the stream
 	 * @return True if there could be more samples, false otherwise
 	 */
+	@Override
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean hasMoreFrames() {
 		try {
@@ -74,6 +84,7 @@ public class AudioStreamPcm implements AvInputStreamInterface {
 	 * Reads the next audio samples from the stream.
 	 * @param frameBuf Output buffer to store the samples in
 	 */
+	@Override
 	public void getNextFrame(BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
 		try {
 			frameBuf.clear();
@@ -106,6 +117,7 @@ public class AudioStreamPcm implements AvInputStreamInterface {
 	/**
 	 * Rewinds the stream to the beginning
 	 */
+	@Override
 	public void rewind() {
 		try {
 			bis.close();

@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 
-public final class H265Info implements Cloneable {
+public final class H265Info extends AvInfoBase<H265Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -119,6 +119,7 @@ public final class H265Info implements Cloneable {
 	/** For VCL NAL Units: is this the first slice segment in a picture? */
 	public boolean isVclFirstSliceSegmentInPic;
 
+	@Override
 	public void reset() {
 		nalUnitOffset = 0;
 		nalUnitLength = 0;
@@ -130,6 +131,7 @@ public final class H265Info implements Cloneable {
 		isVclFirstSliceSegmentInPic = false;
 	}
 
+	@Override
 	public void copyOf(@NonNull H265Info src) {
 		reset();
 

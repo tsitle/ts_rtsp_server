@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 
-public final class JpegInfo {
+public final class JpegInfo extends AvInfoBase<JpegInfo> {
 
 	public enum ChannelEncoding {
 		UNKNOWN,
@@ -78,6 +78,7 @@ public final class JpegInfo {
 		reset();
 	}
 
+	@Override
 	public void reset() {
 		sof0_channelEncoding = ChannelEncoding.UNKNOWN;
 		sof0_imgWidth = 0;
@@ -102,6 +103,7 @@ public final class JpegInfo {
 		foundCom = false;
 	}
 
+	@Override
 	public void copyOf(@NonNull JpegInfo other) {
 		reset();
 
