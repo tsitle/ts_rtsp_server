@@ -42,9 +42,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final DatagramSocket parComRtpSocketUdp;
 	/** Interval for sending frames over the wire (>= FRAME_PERIOD_MS * 1000000) */
 	private final long sendIntervalNs;
-	/** Video or audio frame interval in milliseconds */
-	@SuppressWarnings({"unused", "FieldCanBeLocal"})
-	private final int avFrameIntervalMs;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -91,13 +88,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
 		this.sendIntervalNs = (rtpPacketType.isVideo() ?
-				((long)(1000.0 / (double)paramsCommon.getAvFramesPerSecond()) * 1_000_000L) :
+				(long)(1_000_000_000.0 / (double)paramsCommon.getAvFramesPerSecond()) :
 				(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
 			);
 		if (this.sendIntervalNs == 0L) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is 0");
 		}
-		this.avFrameIntervalMs = (int)(1000.0 / (double)paramsCommon.getAvFramesPerSecond());
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
