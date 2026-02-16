@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.avdata;
 
-public class PcmInfo {
+import org.jspecify.annotations.NonNull;
+
+public final class PcmInfo {
 
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
@@ -12,6 +14,28 @@ public class PcmInfo {
 	public int bitsPerSample;
 	/** Number of samples per channel that the audio data contains */
 	public int samplesPerChannelInAudioData;
+
+	public PcmInfo() {
+		reset();
+	}
+
+	public void reset() {
+		samplesOffset = 0;
+		samplesLength = 0;
+		channels = 0;
+		bitsPerSample = 0;
+		samplesPerChannelInAudioData = 0;
+	}
+
+	public void copyOf(@NonNull PcmInfo other) {
+		reset();
+
+		samplesOffset = other.samplesOffset;
+		samplesLength = other.samplesLength;
+		channels = other.channels;
+		bitsPerSample = other.bitsPerSample;
+		samplesPerChannelInAudioData = other.samplesPerChannelInAudioData;
+	}
 
 	@Override
 	public String toString() {

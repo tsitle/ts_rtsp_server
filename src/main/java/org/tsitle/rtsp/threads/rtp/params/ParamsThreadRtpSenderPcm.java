@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtp.params;
 
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
-public class ParamsThreadRtpSenderPcm {
+public final class ParamsThreadRtpSenderPcm implements Cloneable {
 
 	/** Audio samples per frame as required for RTP */
 	private int rtpAudioSpf;

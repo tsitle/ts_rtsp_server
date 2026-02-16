@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
-public class ParamsThreadRtpSenderH265 {
+public final class ParamsThreadRtpSenderH265 implements Cloneable {
 
 	// ... fields only for H265 ...
 

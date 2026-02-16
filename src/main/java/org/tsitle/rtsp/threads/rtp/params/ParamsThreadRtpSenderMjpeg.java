@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
-public class ParamsThreadRtpSenderMjpeg {
+public final class ParamsThreadRtpSenderMjpeg implements Cloneable {
 
 	// ... fields only for MJPEG ...
 

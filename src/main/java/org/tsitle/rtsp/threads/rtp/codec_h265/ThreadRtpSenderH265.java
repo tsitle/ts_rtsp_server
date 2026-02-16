@@ -1,33 +1,33 @@
 package org.tsitle.rtsp.threads.rtp.codec_h265;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.avdata.H265Info;
-import org.tsitle.rtsp.avdata.H265Parser;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.exceptions.AvInvalidH265DataException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
-import org.tsitle.rtsp.avinputstreams.VideoStreamH265;
 
-import java.io.FileNotFoundException;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 
-	/** VideoStream object used to access video frames */
-	private final VideoStreamH265 videoStream;
+	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
+	private @Nullable ThreadDataProvH265 threadDataProv;
 
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
+	private final H265Info cacheH265Info = new H265Info();
 
 	private int readNalUnitsCounter = 0;
 	private final HevcAccessUnit globalTempAu = new HevcAccessUnit("TEMP");
@@ -40,36 +40,74 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param paramsH265 Thread-specific parameters
-	 * @throws FileNotFoundException If the video file cannot be opened
 	 */
 	public ThreadRtpSenderH265(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull ParamsThreadRtpSenderH265 paramsH265
-			) throws FileNotFoundException {
+			) {
 		super(
 				paramsCommon,
 				RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_H265),
-				(long)((float)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_H265) /
-						Objects.requireNonNull(paramsCommon).getAvFramesPerSecond()),
 				RtpPacketType.V_H265
 			);
 
 		//
-		paramsVideoCommon.validate();
-		paramsH265.validate();
+		this.rtpTicksPerFrame = (long)((float)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_H265) /
+				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
+
 		//
-		this.videoStream = new VideoStreamH265(paramsVideoCommon.getVideoFilePath().orElseThrow());
+		paramsVideoCommon.validate();
+		this.paramsVideoCommon = paramsVideoCommon.clone();
+		paramsH265.validate();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
 	public synchronized void notifyCongestionLevelChange(int congestionLevel) {
-		// nothing to do
+		if (threadDataProv != null) {
+			threadDataProv.notifyCongestionLevelChange(congestionLevel);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void beforeRunHook() {
+		threadDataProv = new ThreadDataProvH265(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				paramsVideoCommon,
+				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+				paramsCommon.getDebugRewindMediaFiles()
+			);
+		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
+		threadDataProv.setDaemon(false);
+		threadDataProv.start();
+
+		//
+		while (! threadDataProv.haveFullInputQueue()) {
+			try {
+				//noinspection BusyWait
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	protected void stopThreadHook() {
+		if (threadDataProv != null) {
+			threadDataProv.stopThread();
+			threadDataProv = null;
+		}
+
+		super.stopThreadHook();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
@@ -138,15 +176,13 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void frameDataSupplierGrabNalUnit()
-			throws InputStreamEofException, InputStreamIoException, AvInvalidH265DataException {
-		// get the next frame to send from the video, as well as its size
-		videoStream.getNextFrame(cacheOrgVideoFrameBuf);
-		if (cacheOrgVideoFrameBuf.getUsed() < videoStream.getMagicBytesLength() +
-				H265Parser.NAL_UNIT_HEADER_SIZE) {
-			// we have reached the end of the video file
+	private void frameDataSupplierGrabNalUnit() throws InputStreamEofException {
+		if (threadDataProv == null) {
 			throw new InputStreamEofException();
 		}
+
+		// get the next frame to send over the wire from the input stream
+		threadDataProv.getNextFrame(cacheOrgVideoFrameBuf, cacheH265Info);
 
 		//
 		if (globalTempAu.arrNalUnitCount == globalTempAu.arrNalUnitData.size()) {
@@ -159,11 +195,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		tmpLocalNudPtr.fullDataSize = cacheOrgVideoFrameBuf.getUsed();
 
 		//
-		tmpLocalNudPtr.h265Info = H265Parser.parseH265Data(
-				debugStreamOffset,
-				videoStream.getMagicBytesLength(),
-				cacheOrgVideoFrameBuf
-			);
+		tmpLocalNudPtr.h265Info = cacheH265Info.clone();
 
 		// extract the actual RTP/H265 payload
 		tmpLocalNudPtr.rtpPayloadData.copyOf(
@@ -190,7 +222,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 				.filter(nud -> nud.h265Info != null)
 				.anyMatch(nud -> nud.h265Info.isVclFirstSliceSegmentInPic);
 
-		while (videoStream.hasMoreFrames() && ! haveEof) {
+		while (threadDataProv != null && ! threadDataProv.haveEof() && ! haveEof) {
 			/*
 			 * Try to grab the next NAL Unit from the video stream.
 			 * Stores the result in globalTempAu.
@@ -218,11 +250,6 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 				}
 				haveAuStartVcl = true;
 			}
-		}
-
-		if (! (haveEof || videoStream.hasMoreFrames()) && paramsCommon.getDebugRewindMediaFiles()) {
-			logDebug(FNC_NAME, "haveEof, rewinding");
-			videoStream.rewind();
 		}
 
 		//

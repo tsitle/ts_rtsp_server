@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
-public class ParamsThreadRtpSenderAudioCommon {
+public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 
 	/** Path to the audio file */
 	private String audioFilePath;

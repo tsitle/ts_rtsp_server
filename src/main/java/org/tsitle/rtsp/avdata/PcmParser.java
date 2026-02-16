@@ -3,17 +3,30 @@ package org.tsitle.rtsp.avdata;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
 
-public class PcmParser {
+public final class PcmParser {
+
+	private final int channels;
+	private final int bitsPerSample;
+
+	/**
+	 * Constructor.
+	 * @param channels Number of channels (1 = mono, 2 = stereo)
+	 * @param bitsPerSample Bits per sample (8 or 16)
+	 */
+	public PcmParser(int channels, int bitsPerSample) {
+		this.channels = channels;
+		this.bitsPerSample = bitsPerSample;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Parses the PCMU/LinearPCM data and returns a PcmInfo object with the parsed information.
 	 * @param pcmBuf PCM data
-	 * @param channels Number of channels (1 = mono, 2 = stereo)
-	 * @param bitsPerSample Bits per sample (8 or 16)
 	 * @return Parsed PCM information
 	 */
-	public static PcmInfo parsePcmData(BufferExt pcmBuf, int channels, int bitsPerSample)
-			throws AvInvalidPcmDataException {
+	public PcmInfo parsePcmData(BufferExt pcmBuf) throws AvInvalidPcmDataException {
 		final String FNC_NAME = PcmParser.class.getSimpleName() + ".parsePcmData()";
 
 		if (pcmBuf.getUsed() < 1) {

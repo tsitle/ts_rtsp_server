@@ -13,7 +13,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ParamsThreadRtpSenderCommon implements Cloneable {
+public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 	/** Logging interface */
 	private LogMsgInterface logMsgInterface;

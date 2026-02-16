@@ -49,7 +49,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
 	/** RTP ticks per frame */
-	private final long rtpTicksPerFrame;
+	protected long rtpTicksPerFrame;
 	/** RTP packet type */
 	private final RtpPacketType rtpPacketType;
 
@@ -71,13 +71,11 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	 * Constructor.
 	 * @param paramsCommon Thread parameters
 	 * @param rtpClockrate RTP Clock Rate
-	 * @param rtpTicksPerFrame RTP ticks per frame
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderBase(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int rtpClockrate,
-				long rtpTicksPerFrame,
 				@NonNull RtpPacketType rtpPacketType
 			) {
 		super(paramsCommon.getLogMsgInterface().orElseThrow());
@@ -85,9 +83,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		paramsCommon.validate();
 		if (rtpClockrate < 1 || rtpClockrate > 90000 * 2) {
 			throw new IllegalArgumentException("Invalid RTP clock rate: " + rtpClockrate);
-		}
-		if (rtpTicksPerFrame <= 0) {
-			throw new IllegalArgumentException("Invalid RTP ticks per frame: " + rtpTicksPerFrame);
 		}
 
 		//
@@ -104,7 +99,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		}
 		this.avFrameIntervalMs = (int)(1000.0 / (double)paramsCommon.getAvFramesPerSecond());
 		this.rtpClockrate = rtpClockrate;
-		this.rtpTicksPerFrame = rtpTicksPerFrame;
+		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
 		this.rtpPacketType = rtpPacketType;
 
@@ -130,6 +125,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
+		//
+		beforeRunHook();
+
+		//
 		try {
 			receiveInitialClientPackets();
 
@@ -162,6 +161,9 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	protected abstract void beforeRunHook();
+
+	@Override
 	protected void stopThreadHook() {
 		parComRtpSocketUdp.close();
 	}
@@ -194,12 +196,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	protected void incrRtpAndNtpTsFrameNr() {
 		rtpTsFrameNr.incrementAndGet();
-		//
-		ntpTsFrameNr.incrementAndGet();
-	}
-
-	protected void incrRtpAndNtpTsFrameNr(int delta) {
-		rtpTsFrameNr.addAndGet(delta);
 		//
 		ntpTsFrameNr.incrementAndGet();
 	}

@@ -8,7 +8,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
-public class ParamsThreadRtcp implements Cloneable {
+public final class ParamsThreadRtcp implements Cloneable {
 
 	/** Logging interface */
 	private LogMsgInterface logMsgInterface;

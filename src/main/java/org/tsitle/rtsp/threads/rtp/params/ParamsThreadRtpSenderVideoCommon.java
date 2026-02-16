@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
-public class ParamsThreadRtpSenderVideoCommon {
+public final class ParamsThreadRtpSenderVideoCommon implements Cloneable {
 
 	/** Path to the video file */
 	private String videoFilePath;

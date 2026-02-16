@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.avdata;
 
-public class H265Info {
+import org.jspecify.annotations.NonNull;
+
+public final class H265Info implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -116,6 +118,39 @@ public class H265Info {
 	public boolean isVclNalUnit;
 	/** For VCL NAL Units: is this the first slice segment in a picture? */
 	public boolean isVclFirstSliceSegmentInPic;
+
+	public void reset() {
+		nalUnitOffset = 0;
+		nalUnitLength = 0;
+		nalUnitTypeBy = 0;
+		nalUnitTypeEn = NalUnitType.UNKNOWN;
+		nuhLayerId = 0;
+		nuhTemporalIdPlus1 = 0;
+		isVclNalUnit = false;
+		isVclFirstSliceSegmentInPic = false;
+	}
+
+	public void copyOf(@NonNull H265Info src) {
+		reset();
+
+		nalUnitOffset = src.nalUnitOffset;
+		nalUnitLength = src.nalUnitLength;
+		nalUnitTypeBy = src.nalUnitTypeBy;
+		nalUnitTypeEn = src.nalUnitTypeEn;
+		nuhLayerId = src.nuhLayerId;
+		nuhTemporalIdPlus1 = src.nuhTemporalIdPlus1;
+		isVclNalUnit = src.isVclNalUnit;
+		isVclFirstSliceSegmentInPic = src.isVclFirstSliceSegmentInPic;
+	}
+
+	@Override
+	public H265Info clone() {
+		try {
+			return (H265Info)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
+	}
 
 	@Override
 	public String toString() {

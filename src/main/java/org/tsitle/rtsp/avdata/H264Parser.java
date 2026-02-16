@@ -9,28 +9,40 @@ import org.tsitle.rtsp.helpers.BitReaderHelper;
 
 import java.util.Map;
 
-public class H264Parser {
+public final class H264Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 1;
+
+	private final Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext;
+	private final Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext;
+	/** Buffer used to store temporary data for parsing NAL Units */
+	private final BufferExt cacheH264RbspBuf = new BufferExt();
+
+	/**
+	 * Constructor.
+	 * @param mapSpsContext Input: Already read SPS contexts
+	 * @param mapPpsContext Input: Already read PPS contexts
+	 */
+	public H264Parser(
+				@NonNull Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext,
+				@NonNull Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext
+			) {
+		this.mapSpsContext = mapSpsContext;
+		this.mapPpsContext = mapPpsContext;
+	}
 
 	/**
 	 * Parses the H264 data and returns an H264Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H264 data in the H264 stream (used for error messages)
 	 * @param startCodeLen Length of the start code (3 or 4 bytes for H.264)
 	 * @param h264Buf H264 data
-	 * @param cacheH264RbspBuf Buffer for the RBSP data (used for parsing the NAL units)
-	 * @param mapSpsContext Input: Already read SPS contexts
-	 * @param mapPpsContext Input: Already read PPS contexts
 	 * @param inpPictBoundInfoPrev Input: previous picture boundary information (can be null)
 	 * @return Parsed H264 information
 	 */
-	public static @NonNull H264Info parseH264Data(
-				@SuppressWarnings("unused") int debugStreamOffset,
+	public @NonNull H264Info parseH264Data(
+				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
 				@NonNull BufferExt h264Buf,
-				@NonNull BufferExt cacheH264RbspBuf,
-				@NonNull Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext,
-				@NonNull Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext,
 				@Nullable H264PictureBoundaryInfo inpPictBoundInfoPrev
 			) throws AvInvalidH264DataException {
 		final String FNC_NAME = H264Parser.class.getSimpleName() + ".parseH264Data()";
@@ -84,8 +96,6 @@ public class H264Parser {
 			if (H264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
 				parseSliceForBoundary(
 						cacheH264RbspBuf,
-						mapSpsContext,
-						mapPpsContext,
 						resObj.pictBoundInfo
 					);
 				resObj.isVclFirstSliceSegmentInPic = isFirstVclOfNewPicture(inpPictBoundInfoPrev, resObj.pictBoundInfo);
@@ -284,10 +294,8 @@ public class H264Parser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void parseSliceForBoundary(
+	private void parseSliceForBoundary(
 				@NonNull BufferExt nalDataRbsp,
-				@NonNull Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext,
-				@NonNull Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext,
 				H264PictureBoundaryInfo outPictBoundInfo
 			) throws BitReaderEosException {
 		final String FNC_NAME = H264Parser.class.getSimpleName() + ".parseSliceForBoundary()";

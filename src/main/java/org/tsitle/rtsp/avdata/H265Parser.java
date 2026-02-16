@@ -7,6 +7,8 @@ public class H265Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 2;
 
+	public H265Parser() { }
+
 	/**
 	 * Parses the H265 data and returns an H265Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H265 data in the H265 stream (used for error messages)
@@ -14,8 +16,8 @@ public class H265Parser {
 	 * @param h265Buf H265 data
 	 * @return Parsed H265 information
 	 */
-	public static H265Info parseH265Data(
-				@SuppressWarnings("unused") int debugStreamOffset,
+	public H265Info parseH265Data(
+				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
 				BufferExt h265Buf
 			) throws AvInvalidH265DataException {

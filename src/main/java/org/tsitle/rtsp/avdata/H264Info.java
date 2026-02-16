@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.avdata;
 
-public class H264Info {
+import org.jspecify.annotations.NonNull;
+
+public final class H264Info implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -100,7 +102,7 @@ public class H264Info {
 	/** NAL Unit Type as byte (5 bits) */
 	public byte nalUnitTypeBy;
 	/** NAL Unit Type as enum */
-	public NalUnitType nalUnitTypeEn = NalUnitType.UNKNOWN;
+	public NalUnitType nalUnitTypeEn;
 	/** Ref IDC - indicates importance: 0=not used for reference, >0=used for reference (2 bits) */
 	public byte nuhRefIdc;
 	/** Is this a VCL NAL Unit? */
@@ -108,7 +110,46 @@ public class H264Info {
 	/** For VCL NAL Units: is this the first slice segment in a picture? */
 	public boolean isVclFirstSliceSegmentInPic;
 	/** Picture boundary information */
-	public final H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
+	public H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
+
+	public H264Info() {
+		reset();
+	}
+
+	public void reset() {
+		nalUnitOffset = 0;
+		nalUnitLength = 0;
+		nalUnitTypeBy = 0;
+		nalUnitTypeEn = NalUnitType.UNKNOWN;
+		nuhRefIdc = 0;
+		isVclNalUnit = false;
+		isVclFirstSliceSegmentInPic = false;
+		pictBoundInfo.reset();
+	}
+
+	public void copyOf(@NonNull H264Info src) {
+		reset();
+
+		nalUnitOffset = src.nalUnitOffset;
+		nalUnitLength = src.nalUnitLength;
+		nalUnitTypeBy = src.nalUnitTypeBy;
+		nalUnitTypeEn = src.nalUnitTypeEn;
+		nuhRefIdc = src.nuhRefIdc;
+		isVclNalUnit = src.isVclNalUnit;
+		isVclFirstSliceSegmentInPic = src.isVclFirstSliceSegmentInPic;
+		pictBoundInfo.copyOf(src.pictBoundInfo);
+	}
+
+	@Override
+	public H264Info clone() {
+		try {
+			H264Info clone = (H264Info)super.clone();
+			clone.pictBoundInfo = pictBoundInfo.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
+	}
 
 	@Override
 	public String toString() {

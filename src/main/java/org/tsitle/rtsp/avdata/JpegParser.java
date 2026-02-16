@@ -6,11 +6,11 @@ import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public class JpegParser {
+public final class JpegParser {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String logThreadId;
-	private int debugStreamOffset = 0;
+	private long debugStreamOffset = 0;
 
 	/**
 	 * Constructor.
@@ -34,7 +34,7 @@ public class JpegParser {
 	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @return Parsed JPEG information
 	 */
-	public JpegInfo parseJpegData(int debugStreamOffset, @NonNull BufferExt jpegBuf)
+	public JpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
 			throws AvInvalidJpegDataException {
 		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseJpegData()";
 

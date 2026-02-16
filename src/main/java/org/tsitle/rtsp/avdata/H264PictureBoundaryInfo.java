@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.avdata;
 
-public class H264PictureBoundaryInfo implements Cloneable {
+import org.jspecify.annotations.NonNull;
+
+public final class H264PictureBoundaryInfo implements Cloneable {
 
 	public int nalRefIdc;
 	public int nalUnitType;
@@ -34,6 +36,35 @@ public class H264PictureBoundaryInfo implements Cloneable {
 		idrPicFlag = false;
 		idrPicId = 0;
 		picOrderCntLsb = 0;
+		deltaPicOrderCntBottom = 0;
+		deltaPicOrderCnt0 = 0;
+		deltaPicOrderCnt1 = 0;
+	}
+
+	public void copyOf(@NonNull H264PictureBoundaryInfo other) {
+		reset();
+
+		nalRefIdc = other.nalRefIdc;
+		nalUnitType = other.nalUnitType;
+		frameNum = other.frameNum;
+		picParameterSetId = other.picParameterSetId;
+		fieldPicFlag = other.fieldPicFlag;
+		bottomFieldFlag = other.bottomFieldFlag;
+		idrPicFlag = other.idrPicFlag;
+		idrPicId = other.idrPicId;
+		picOrderCntLsb = other.picOrderCntLsb;
+		deltaPicOrderCntBottom = other.deltaPicOrderCntBottom;
+		deltaPicOrderCnt0 = other.deltaPicOrderCnt0;
+		deltaPicOrderCnt1 = other.deltaPicOrderCnt1;
+	}
+
+	@Override
+	public H264PictureBoundaryInfo clone() {
+		try {
+			return (H264PictureBoundaryInfo)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 	@Override
@@ -52,14 +83,5 @@ public class H264PictureBoundaryInfo implements Cloneable {
 				", deltaPicOrderCnt0=" + deltaPicOrderCnt0 +
 				", deltaPicOrderCnt1=" + deltaPicOrderCnt1 +
 				"]";
-	}
-
-	@Override
-	public H264PictureBoundaryInfo clone() {
-		try {
-			return (H264PictureBoundaryInfo)super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
-		}
 	}
 }
