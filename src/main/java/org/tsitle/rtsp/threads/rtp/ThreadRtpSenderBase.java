@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
@@ -141,7 +142,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			siStats.timeSessionStartMono = System.nanoTime();
 
 			//
-			asdStats.sleepCounter = 1;
+			asdStats.sleepCounter = 0;
 			asdStats.nextSendTimeNs = siStats.timeSessionStartMono + (sendIntervalNs / 2L);
 
 			//
@@ -284,22 +285,62 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sleepToAdjustFramerate() throws InterruptedException {
-		while (true) {
-			long remaining = (asdStats.nextSendTimeNs - System.nanoTime());
-			if (remaining <= 50_000L) {
-				if (remaining < -10_000L) {
-					logDebug("sleepToAdjustFramerate()", "remaining: " + (remaining / 1_000L) + " us");  // @TODO
+	/**
+	 * Sleeps until the specified target time (in nanoseconds since epoch) is reached.
+	 * Uses a hybrid approach: Thread.sleep() for coarse waiting, then busy-waiting
+	 * for high precision without overshooting.
+	 * @param targetTimeNanos The target time in nanoseconds (System.nanoTime() format)
+	 * @throws IllegalArgumentException if targetTimeNanos is in the past
+	 */
+	private void sleepUntilNanos(long targetTimeNanos) {
+		long currentTime = System.nanoTime();
+
+		if (targetTimeNanos <= currentTime) {
+			logDebug("sleepUntilNanos()",
+					"Target time is in the past or current time (" +
+						((float)(currentTime - targetTimeNanos) / 1_000.0f) +
+						"us, r=" + ntpTsFrameNr.get() +
+						", s=" + asdStats.sleepCounter + ")");  // @TODO
+			return;
+		}
+
+		long remainingNanos = targetTimeNanos - currentTime;
+
+		// Phase 1: Coarse waiting using Thread.sleep() for milliseconds
+		// Leave a buffer to avoid overshooting
+		long sleepBufferNanos = 2_000_000; // 2ms buffer
+
+		if (remainingNanos > sleepBufferNanos) {
+			long sleepMillis = (remainingNanos - sleepBufferNanos) / 1_000_000;
+			if (sleepMillis > 0) {
+				try {
+					Thread.sleep(sleepMillis);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
 				}
-				break;
-			}
-			if (remaining > 1_000_000L) {
-				Thread.sleep(Duration.ofNanos(100_000L));
-			} else {
-				// final precision wait (spin)
-				Thread.onSpinWait();
 			}
 		}
+
+		// Phase 2: Medium precision using LockSupport.parkNanos()
+		// For microsecond-level precision
+		currentTime = System.nanoTime();
+		remainingNanos = targetTimeNanos - currentTime;
+		long parkBufferNanos = 100_000; // 100µs buffer
+
+		if (remainingNanos > parkBufferNanos) {
+			LockSupport.parkNanos(remainingNanos - parkBufferNanos);
+		}
+
+		// Phase 3: High precision busy-waiting for the final nanoseconds
+		while (System.nanoTime() < targetTimeNanos) {
+			// Busy wait - yields CPU but maintains high precision
+			Thread.onSpinWait(); // JDK 9+ hint for busy waiting
+		}
+	}
+
+	private void sleepToAdjustFramerate() {
+		sleepUntilNanos(asdStats.nextSendTimeNs - 10_000L);
 		// "now" should ideally be equal to nextSendTime
 
 		//
@@ -308,7 +349,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				((asdStats.sleepCounter / 2L) * sendIntervalNs) + ((asdStats.sleepCounter % 2L) * (sendIntervalNs / 2L));
 	}
 
-	private boolean sendFrame() throws InterruptedException {
+	private boolean sendFrame() {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
 
 		try {
@@ -327,9 +368,11 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				/*
 				 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
 				 */
-				if (rtpTsFrameNr.get() != 2) {
-					sleepToAdjustFramerate();
-				}
+				//
+				sleepToAdjustFramerate();
+				// update SenderInfo NTP and RTP timestamp
+				siStats.timestampNtpWallclock = getNtpTimestamp();
+				siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
 				//
 				isFirstPktOfFrame = false;
 			}
@@ -365,21 +408,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				incrRtpSequNr();
 			}
 
-			// only update SenderInfo etc. if this is the last packet of the frame/AU
+			//
 			if (isLastPktOfFrame || rtpPacketType.isAudio()) {
 				isFirstPktOfFrame = true;
 				isMainLoopStateA = false;
-				// update SenderInfo NTP and RTP timestamp
-				siStats.timestampNtpWallclock = getNtpTimestamp();
-				siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
-				if (rtpTsFrameNr.get() % 30 == 0 && rtpPacketType.isVideo()) {
-					logNtpRtp(
-							siStats.timestampNtpWallclock,
-							NtpTimestampHelper.addNanosToNtpTimestamp(siStats.timeSessionStartNtpWc, sendIntervalNs * (rtpTsFrameNr.get() - 2)),
-							siStats.rtpTimestamp,
-							paramsCommon.getRtpTimestampT0() + (int)(rtpTicksPerFrame * (rtpTsFrameNr.get() - 2))
-						);
-				}
 			}
 		} catch (InputStreamEofException ex) {
 			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
@@ -505,20 +537,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		siStats.lastSenderInfoSent = Instant.now();
 		return true;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void logNtpRtp(
-				long ntpTimestampActual,
-				long ntpTimestampExpected,
-				int rtpTimestampActual,
-				int rtpTimestampExpected
-			) {
-		logDebug("logNtpRtp()",
-				"** NTPd: " + (NtpTimestampHelper.diffNanos(ntpTimestampActual, ntpTimestampExpected) / 1_000L) +
-				" us, RTPd: " + (rtpTimestampActual - rtpTimestampExpected) +
-				", AVsi=" + Long.toUnsignedString(sendIntervalNs / 1_000L));  // @TODO
 	}
 
 }
