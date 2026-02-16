@@ -7,7 +7,7 @@ import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
-import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.StringWriter;

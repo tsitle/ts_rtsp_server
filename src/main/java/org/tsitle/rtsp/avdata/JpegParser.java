@@ -3,7 +3,7 @@ package org.tsitle.rtsp.avdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
-import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 public class JpegParser {

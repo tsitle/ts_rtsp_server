@@ -4,8 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.logging.RtxpLogLevel;
-import org.tsitle.rtsp.logging.RtxpLogger;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
 import java.io.*;

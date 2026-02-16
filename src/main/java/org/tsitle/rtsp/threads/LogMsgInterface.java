@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 public interface LogMsgInterface {
 

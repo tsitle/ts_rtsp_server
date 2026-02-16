@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.logging;
+package org.tsitle.rtsp.threads.logging;
 
 public enum RtxpLogLevel {
 
