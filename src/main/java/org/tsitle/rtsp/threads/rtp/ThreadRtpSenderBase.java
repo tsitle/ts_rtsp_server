@@ -423,21 +423,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendSenderReport_buildCompoundRtcp(BufferExt packetCompoundBuf) {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendSenderReport_buildCompoundRtcp()";
+	private void sendSenderReport_buildRtcpSr(BufferExt packetSrBuf) {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendSenderReport_buildRtcpSr()";
 
 		if (siStats.timestampNtpWallclock == null) {
 			throw new IllegalStateException(FNC_NAME + ": timestampNtpWallclock is null");
 		}
 
-		/*
-		 * We need to send a compound RTCP packet that contains two RTCP packets:
-		 *   1. Sender Report (SR) packet
-		 *   2. Source Description (SDES) packet
-		 * See https://datatracker.ietf.org/doc/html/rfc3550#section-6.1
-		 */
-
-		// SR packet
 		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(
 				siStats.timestampNtpWallclock,
 				siStats.rtpTimestamp,
@@ -449,22 +441,32 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				siBlock,
 				List.of()
 			);
-		BufferExt packetSrBuf = new BufferExt();
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
+	}
+
+	private void sendSenderReport_buildRtcpCompound(BufferExt packetCompoundBuf) {
+		/*
+		 * We need to send a compound RTCP packet that contains two RTCP packets:
+		 *   1. Sender Report (SR) packet
+		 *   2. Source Description (SDES) packet
+		 * See https://datatracker.ietf.org/doc/html/rfc3550#section-6.1
+		 */
+
+		packetCompoundBuf.clear();
+		// SR packet
+		sendSenderReport_buildRtcpSr(packetCompoundBuf);
 		// SDES packet
 		RtcpPacketSDES packetSdesObj = new RtcpPacketSDES(List.of(paramsCommon.getXsrcBlockEntry().orElseThrow()));
 		BufferExt packetSdesBuf = new BufferExt();
 		packetSdesObj.copyRawPacketDataInto(packetSdesBuf);
 		// Compound packet
-		packetCompoundBuf.clear();
-		packetCompoundBuf.append(packetSrBuf);
 		packetCompoundBuf.append(packetSdesBuf);
 	}
 
 	private boolean sendSenderReport() {
 		// Compound packet
 		BufferExt packetCompoundBuf = new BufferExt();
-		sendSenderReport_buildCompoundRtcp(packetCompoundBuf);
+		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
 
 		//
 		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow().accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
