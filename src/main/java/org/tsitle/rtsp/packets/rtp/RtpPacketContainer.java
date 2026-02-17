@@ -9,7 +9,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 public class RtpPacketContainer {
 
 	/** Size of the RTP header */
-	private static final int HEADER_SIZE = 12;
+	public static final int HEADER_SIZE = 12;
 
 	/** Version number (2 bits) */
 	private final byte hdVersion;

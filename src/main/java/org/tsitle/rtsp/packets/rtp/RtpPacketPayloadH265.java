@@ -63,7 +63,12 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 	 * @param h265Info H265 info
 	 * @param payloadData Payload data
 	 */
-	public RtpPacketPayloadH265(int fragmentOffset, boolean isLastFragment, H265Info h265Info, BufferExt payloadData) {
+	public RtpPacketPayloadH265(
+				int fragmentOffset,
+				boolean isLastFragment,
+				H265Info h265Info,
+				BufferExt payloadData
+			) {
 		super();
 
 		//
@@ -81,8 +86,10 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 		 *   - MRMT: Multiple RTP streams on Multiple media Transports
 		 */
 
+		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
+
 		// set inner main header fields
-		this.hdPayTypeBy = (fragmentOffset == 0 && isLastFragment ? h265Info.nalUnitTypeBy : H265PayloadType.FU.getValue());
+		this.hdPayTypeBy = (isFragmented ? H265PayloadType.FU.getValue() : h265Info.nalUnitTypeBy);
 		this.hdPayTypeEn = H265PayloadType.of(this.hdPayTypeBy);
 		this.hdPayNuhLayerId = h265Info.nuhLayerId;
 		this.hdPayNuhTemporalIdPlus1 = h265Info.nuhTemporalIdPlus1;
@@ -102,7 +109,7 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
 		 * we need to skip the NAL Unit header.
 		 */
-		int skip = (fragmentOffset == 0 ? H265Parser.NAL_UNIT_HEADER_SIZE : 0);
+		int skip = (! isFragmented || fragmentOffset == 0 ? H265Parser.NAL_UNIT_HEADER_SIZE : 0);
 		this.rawInnerPayloadData.copyOf(
 				payloadData,
 				skip,
