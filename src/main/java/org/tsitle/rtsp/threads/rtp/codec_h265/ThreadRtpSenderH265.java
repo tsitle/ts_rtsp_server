@@ -180,7 +180,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void frameDataSupplierGrabNalUnit() throws InputStreamEofException {
-		if (threadDataProv == null) {
+		if (threadDataProv == null || ! threadDataProv.isRunning()) {
 			throw new InputStreamEofException();
 		}
 

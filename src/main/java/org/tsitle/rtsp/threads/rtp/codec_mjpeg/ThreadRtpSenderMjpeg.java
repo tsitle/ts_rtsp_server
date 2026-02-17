@@ -114,7 +114,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 		//
 		cacheFrameData.rtpFrameTimestamp = getRtpTimestampAsInt();
 
-		if (threadDataProv == null) {
+		if (threadDataProv == null || ! threadDataProv.isRunning()) {
 			cacheFrameData.haveErrorOther = true;
 			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
 		} else if (threadDataProv.haveEof()) {

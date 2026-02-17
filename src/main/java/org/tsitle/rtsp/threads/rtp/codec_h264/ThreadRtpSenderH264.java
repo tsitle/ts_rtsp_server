@@ -184,7 +184,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void frameDataSupplierGrabNalUnit() throws InputStreamEofException {
-		if (threadDataProv == null) {
+		if (threadDataProv == null || ! threadDataProv.isRunning()) {
 			throw new InputStreamEofException();
 		}
 
