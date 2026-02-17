@@ -29,7 +29,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private static final int SEND_SR_INTERVAL_MS = 2000;
 
 	/** Length of UDP packets */
-	protected static final int UDP_PACKET_LEN = 1490;
+	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainer.HEADER_SIZE + 4 + (128 * 2);
 
 	/** Buffer used to store the RTP/XXX payload */
 	protected final BufferExt cacheRtpInnerPayloadBuf = new BufferExt();
@@ -312,7 +312,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			int sentTotalPktSize = 0;
 			boolean isLastPktOfFrame = false;
 			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadData.getUsed()) {
-				final int curPktSize = Math.min(UDP_PACKET_LEN, frameData.rtpPayloadData.getUsed() - sentTotalPktSize);
+				final int curPktSize = Math.min(
+						UDP_PACKET_LEN - RtpPacketContainer.HEADER_SIZE - 4 - (128 * 2),  // RTP/JPEG header can be rather big
+						frameData.rtpPayloadData.getUsed() - sentTotalPktSize
+					);
 				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(
 						sentTotalPktSize + curPktSize,
 						frameData.rtpPayloadData.getUsed()
@@ -381,6 +384,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		// retrieve the packet bitstream and store it in an array of bytes
 		curPacketContainer.copyRawPacketDataInto(cacheRtpFullData);
+		if (cacheRtpFullData.getUsed() > UDP_PACKET_LEN) {
+			throw new IllegalStateException(FNC_NAME + ": buffer > UDP_PACKET_LEN (d=" +
+					(cacheRtpFullData.getUsed() - UDP_PACKET_LEN) + "):");
+		}
 
 		if (parComRtpSocketUdp.isClosed()) {
 			if (! doStop.get()) {
