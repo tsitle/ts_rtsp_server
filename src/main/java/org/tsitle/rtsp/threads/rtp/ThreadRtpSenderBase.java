@@ -257,14 +257,16 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				return false;
 			}
 		} else {
-			if (siStats.lastSenderInfoSent == null ||
-					Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS) {
+			long tmpCurTimeNs = System.nanoTime();
+			if (siStats.timestampNtpWallclock != null &&
+					(siStats.lastSenderInfoSent == null ||
+							Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS)) {
 				if (! sendSenderReport()) {
 					return false;
 				}
 			}
 			//
-			adaptiveScheduler.sleepUntilNanos(System.nanoTime() + sendIntervalHalfNs);
+			adaptiveScheduler.sleepUntilNanos(tmpCurTimeNs + sendIntervalHalfNs);
 			//
 			isMainLoopStateA = true;
 		}
