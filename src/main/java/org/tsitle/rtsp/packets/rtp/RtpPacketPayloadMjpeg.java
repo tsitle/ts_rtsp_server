@@ -13,9 +13,9 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 	public static final int IMAGE_MAX_WIDTH_HEIGHT = 2040;
 
 	/** Size of the main payload-specific RTP header */
-	private static final int HEADER_MAIN_SIZE = 8;
+	public static final int HEADER_MAIN_SIZE = 8;
 	/** Size of the QT RTP header without the tables */
-	private static final int HEADER_QT_PRE_SIZE = 4;
+	public static final int HEADER_QT_PRE_SIZE = 4;
 
 	/** Type-specific first byte (8 bits)<br />
 	 *   0=Image is progressively scanned<br />

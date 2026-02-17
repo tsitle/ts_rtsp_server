@@ -4,13 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.RtpFrameDataAcquException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketContainer;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
@@ -60,6 +58,9 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	/** State A: send frame; State B: optionally send RTCP SR */
 	private boolean isMainLoopStateA = true;
 
+	private int udpMaxPacketLenDelta;
+	private long largestFrame = 0L;
+
 	/**
 	 * Constructor.
 	 * @param paramsCommon Thread parameters
@@ -102,6 +103,15 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			);
 		//
 		this.siStats.rtpTimestamp = this.paramsCommon.getRtpTimestampT0();
+
+		//
+		if (rtpPacketType == RtpPacketType.V_JPEG) {
+			// RTP/JPEG header can be rather big
+			udpMaxPacketLenDelta = RtpPacketPayloadMjpeg.HEADER_MAIN_SIZE +
+					RtpPacketPayloadMjpeg.HEADER_QT_PRE_SIZE + 128 * 2;
+		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
+			udpMaxPacketLenDelta = RtpPacketPayloadH264.HEADER_SIZE_MAX;
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -299,11 +309,20 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			debugStreamOffset += frameData.totalFrameSize;
 
 			//
+			if (frameData.totalFrameSize > largestFrame) {
+				largestFrame = frameData.totalFrameSize;
+				if (largestFrame > 250_000) {
+					logWarn(FNC_NAME, (rtpPacketType.isVideo() ? "image" : "audio") +
+							" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
+				}
+			}
+
+			//
 			int sentTotalPktSize = 0;
 			boolean isLastPktOfFrame = false;
 			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadData.getUsed()) {
 				final int curPktSize = Math.min(
-						UDP_PACKET_LEN - RtpPacketContainer.HEADER_SIZE - 4 - (128 * 2),  // RTP/JPEG header can be rather big
+						UDP_PACKET_LEN - RtpPacketContainer.HEADER_SIZE - 4 - udpMaxPacketLenDelta,
 						frameData.rtpPayloadData.getUsed() - sentTotalPktSize
 					);
 				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(

@@ -47,6 +47,9 @@ public class RtpPacketPayloadH264 extends RtpPacketPayloadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** Maximum size of the main payload-specific RTP header */
+	public static final int HEADER_SIZE_MAX = H264Parser.NAL_UNIT_HEADER_SIZE + 1;
+
 	/** Payload Header: RTP/H264 Payload Type as byte (6 bits) */
 	private final byte hdPayTypeBy;
 	/** Payload Header: RTP/H264 Payload Type as enum */
