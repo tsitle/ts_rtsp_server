@@ -103,6 +103,7 @@ public class RtxpLogger extends ThreadBase {
 		String prefix = switch (entry.level) {
 				case DEBUG -> "DEBUG";
 				case INFO  -> "INFO_";
+				case WARN  -> "WARN_";
 				case ERROR -> "ERROR";
 			};
 		ps.format(

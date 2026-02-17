@@ -2,6 +2,6 @@ package org.tsitle.rtsp.threads.logging;
 
 public enum RtxpLogLevel {
 
-	DEBUG, INFO, ERROR
+	DEBUG, INFO, WARN, ERROR
 
 }

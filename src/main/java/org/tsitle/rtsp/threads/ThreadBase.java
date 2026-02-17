@@ -70,6 +70,9 @@ public abstract class ThreadBase extends Thread {
 	protected void logInfo(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.INFO, fncName, msg);
 	}
+	protected void logWarn(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.WARN, fncName, msg);
+	}
 	protected void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
