@@ -82,9 +82,6 @@ public class H265Parser {
 			if (h265Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE + 1) {
 				throw new AvInvalidH265DataException(FNC_NAME + ": Invalid H265 data size");
 			}
-			if (h265Buf.get(offs) == (byte)0x03) {
-				throw new AvInvalidH265DataException(FNC_NAME + ": Maybe need EBSP to RBSP conversion");
-			}
 			resObj.isVclFirstSliceSegmentInPic = ((byte)(h265Buf.get(offs) & 0x80) == (byte)0x80);
 			/*debugLog(FNC_NAME, debugStreamOffset, offs,
 					String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
