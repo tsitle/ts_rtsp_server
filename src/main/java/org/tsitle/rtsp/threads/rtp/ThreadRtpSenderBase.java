@@ -39,8 +39,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	/** Thread parameters */
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
 	private final DatagramSocket parComRtpSocketUdp;
-	/** Half of the interval for sending frames over the wire */
-	private final long sendIntervalHalfNs;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -92,7 +90,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is < 1ms");
 		}
-		this.sendIntervalHalfNs = (long)(sendIntervalNs / 2.0);
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
@@ -253,7 +250,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				return false;
 			}
 		} else {
-			long tmpCurTimeNs = System.nanoTime();
 			if (siStats.timestampNtpWallclock != null &&
 					(siStats.lastSenderInfoSent == null ||
 							Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS)) {
@@ -261,8 +257,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 					return false;
 				}
 			}
-			//
-			adaptiveScheduler.sleepUntilNanos(tmpCurTimeNs + sendIntervalHalfNs);
 			//
 			isMainLoopStateA = true;
 		}
