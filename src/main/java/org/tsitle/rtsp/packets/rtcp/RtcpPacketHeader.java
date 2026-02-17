@@ -135,8 +135,7 @@ public class RtcpPacketHeader implements Cloneable {
 	public RtcpPacketHeader clone() {
 		try {
 			RtcpPacketHeader clone = (RtcpPacketHeader)super.clone();
-			clone.rawHeader = new BufferExt();
-			clone.rawHeader.copyOf(this.rawHeader);
+			clone.rawHeader = rawHeader.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
