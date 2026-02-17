@@ -298,6 +298,13 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		}
 	}
 
+	private enum AuState {
+		SEEKING_AU_START,  // Looking for the start of a new AU
+		IN_AU_PREFIX,      // Processing leading non-VCL NALs
+		IN_AU_VCL,         // Processing VCL NALs of current picture
+		IN_AU_SUFFIX       // Processing trailing non-VCL NALs
+	}
+
 	private void moveTempAuToCurAu() {
 		final String FNC_NAME = getClass().getSimpleName() + ".moveTempAuToCurAu()";
 
@@ -307,7 +314,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 		 *   - current Access Unit to globalCurAu
 		 *   - next Access Unit to globalNextAu
 		 */
-		int state = 0;
+		AuState state = AuState.SEEKING_AU_START;
 		for (int ix = 0; ix < globalTempAu.arrNalUnitCount; ix++) {
 			HevcNalUnitData tmpNud = globalTempAu.arrNalUnitData.get(ix);
 			if (tmpNud == null) {
@@ -319,26 +326,49 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 
 			boolean stopLoop = false;
 			switch (state) {
-				case 0:
-					if (tmpNud.h265Info.isVclFirstSliceSegmentInPic) {
-						state = 1;
+				case AuState.SEEKING_AU_START:
+					if (tmpNud.h265Info.isVclNalUnit && tmpNud.h265Info.isVclFirstSliceSegmentInPic) {
+						state = AuState.IN_AU_VCL;
+					} else if (isLeadingNonVcl(tmpNud.h265Info)) {
+						state = AuState.IN_AU_PREFIX;
+					}
+					// add to globalCurAu
+					break;
+				case AuState.IN_AU_PREFIX:
+					if (tmpNud.h265Info.isVclNalUnit && tmpNud.h265Info.isVclFirstSliceSegmentInPic) {
+						// add to globalCurAu
+						state = AuState.IN_AU_VCL;
+					} else if (! isLeadingNonVcl(tmpNud.h265Info)) {
+						// This NAL doesn't belong to the current AU
+						stopLoop = true;
+					} /*else {
+						// add to globalCurAu
+					}*/
+					break;
+				case AuState.IN_AU_VCL:
+					if (tmpNud.h265Info.isVclNalUnit) {
+						if (tmpNud.h265Info.isVclFirstSliceSegmentInPic) {
+							// Start of new picture/AU
+							stopLoop = true;
+						} /*else {
+							// More slices of the current picture
+							// add to globalCurAu
+						}*/
+					} else if (isTrailingNonVcl(tmpNud.h265Info)) {
+						// add to globalCurAu
+						state = AuState.IN_AU_SUFFIX;
+					} else {
+						// Leading NAL of next AU
+						stopLoop = true;
 					}
 					break;
-				case 1:  // haveAuStartVcl
-					if (tmpNud.h265Info.isVclFirstSliceSegmentInPic) {
+				case AuState.IN_AU_SUFFIX:
+					if (! isTrailingNonVcl(tmpNud.h265Info)) {
+						// This starts a new AU
 						stopLoop = true;
-					} else if (! tmpNud.h265Info.isVclNalUnit) {
-						switch (tmpNud.h265Info.nalUnitTypeEn) {
-							case H265Info.NalUnitType.NVCL_EOS,
-									H265Info.NalUnitType.NVCL_EOB,
-									H265Info.NalUnitType.NVCL_FD,
-									H265Info.NalUnitType.NVCL_SEI_SUFFIX:
-								// add to globalCurAu
-								break;
-							default:
-								stopLoop = true;
-						}
-					}
+					} /*else {
+						// add to globalCurAu
+					}*/
 					break;
 				default:
 					throw new IllegalStateException(FNC_NAME + ": unexpected state=" + state);
@@ -351,6 +381,30 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 			globalCurAu.arrNalUnitData.get(globalCurAu.arrNalUnitCount++).moveDataFrom(tmpNud);
 			++globalTempAu.arrNalUnitIx;
 		}
+
+		//debugPrintAu(globalCurAu);
+	}
+
+	private static boolean isLeadingNonVcl(H265Info nalInfo) {
+		if (nalInfo.isVclNalUnit) {
+			return false;
+		}
+
+		return switch (nalInfo.nalUnitTypeEn) {
+				case NVCL_VPS, NVCL_SPS, NVCL_PPS, NVCL_AUD, NVCL_SEI_PREFIX -> true;
+				default -> false;
+			};
+	}
+
+	private static boolean isTrailingNonVcl(H265Info nalInfo) {
+		if (nalInfo.isVclNalUnit) {
+			return false;
+		}
+
+		return switch (nalInfo.nalUnitTypeEn) {
+				case NVCL_SEI_SUFFIX, NVCL_FD, NVCL_EOS, NVCL_EOB -> true;
+				default -> false;
+			};
 	}
 
 	/**
