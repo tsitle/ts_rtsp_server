@@ -24,7 +24,7 @@ public class RtspStreamSource {
 	private final @NonNull ConfigSsCodec codec;
 	/** Video frames per second */
 	@Expose
-	private final @NonNull Float videoFps;
+	private final @NonNull Double videoFps;
 	/** Audio sample rate in Hz */
 	@Expose
 	private final @NonNull Integer audioSampleRateHz;
@@ -46,7 +46,7 @@ public class RtspStreamSource {
 		this.filePath = "";
 		//noinspection DataFlowIssue
 		this.codec = null;
-		this.videoFps = -1.0f;
+		this.videoFps = -1.0;
 		this.audioSampleRateHz = -1;
 		this.audioChannelCount = -1;
 		this.isAudioBigEndian = false;
@@ -76,10 +76,10 @@ public class RtspStreamSource {
 		return (internalCodec == null ? RtpPacketType.UNKNOWN : internalCodec);
 	}
 
-	public float getVideoFps() {
+	public double getVideoFps() {
 		checkPostProcessed();
 		//noinspection ConstantValue
-		return (videoFps == null ? -1.0f : videoFps);
+		return (videoFps == null ? -1.0 : videoFps);
 	}
 
 	public int getAudioSampleRateHz() {
@@ -95,7 +95,7 @@ public class RtspStreamSource {
 	}
 
 	/** Get audio samples per frame as required for RTP. */
-	public int getRtpAudioSamplesPerFrame(int videoFps) {
+	public int getRtpAudioSamplesPerFrame(double videoFps) {
 		checkPostProcessed();
 		//
 		if (videoFps <= 0) {
@@ -210,7 +210,7 @@ public class RtspStreamSource {
 		if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid codec for Stream Source ID '" + tmpExtSsId + "'");
 		}
-		if (internalCodec.isVideo() && getVideoFps() < 1) {
+		if (internalCodec.isVideo() && getVideoFps() < 1.0) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Stream Source ID '" + tmpExtSsId + "'");
 		}
 		if (internalCodec.isAudio() && getAudioSampleRateHz() < 1) {

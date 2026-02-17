@@ -44,7 +44,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 			);
 
 		//
-		this.rtpTicksPerFrame = (long)((float)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_JPEG) /
+		this.rtpTicksPerFrame = (long)((double)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_JPEG) /
 				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
 
 		//

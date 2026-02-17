@@ -89,7 +89,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
 		this.sendIntervalNs = (rtpPacketType.isVideo() ?
-				(1_000_000_000.0 / (double)paramsCommon.getAvFramesPerSecond()) :
+				(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond()) :
 				(double)(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
 			);
 		if (this.sendIntervalNs < 1_000_000.0) {  // sanity check

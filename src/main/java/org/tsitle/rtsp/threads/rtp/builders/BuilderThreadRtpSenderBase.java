@@ -33,7 +33,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comRtpSocketUdp(@NonNull DatagramSocket v) { this.threadParamsCommon.setRtpSocketUdp(v); return self(); }
 
-	public B comAvFps(float v) { this.threadParamsCommon.setAvFramesPerSecond(v); return self(); }
+	public B comAvFps(double v) { this.threadParamsCommon.setAvFramesPerSecond(v); return self(); }
 
 	public B comRtpSeqNrT0(short v) { this.threadParamsCommon.setRtpSeqNrT0(v); return self(); }
 	public B comRtpTimestampT0(int v) { this.threadParamsCommon.setRtpTimestampT0(v); return self(); }

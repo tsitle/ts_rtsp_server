@@ -42,7 +42,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	private boolean isSetRtpSocketUdp;
 
 	/** Video or audio frames per second */
-	private float avFramesPerSecond;
+	private double avFramesPerSecond;
 	private boolean isSetAvFramesPerSecond;
 
 	/** Sequence number for RTP packets (16 bits unsigned) */
@@ -115,8 +115,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetRtpSocketUdp = true;
 	}
 
-	public float getAvFramesPerSecond() { return avFramesPerSecond; }
-	public void setAvFramesPerSecond(float avFramesPerSecond) {
+	public double getAvFramesPerSecond() { return avFramesPerSecond; }
+	public void setAvFramesPerSecond(double avFramesPerSecond) {
 		this.avFramesPerSecond = avFramesPerSecond;
 		this.isSetAvFramesPerSecond = true;
 	}

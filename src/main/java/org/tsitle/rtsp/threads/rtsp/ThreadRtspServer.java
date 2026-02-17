@@ -254,7 +254,7 @@ public class ThreadRtspServer extends ThreadBase {
 			B buildThreadRtpSender(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
-					float avFps,
+					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
 		assert logMsgInterface != null;
@@ -280,7 +280,7 @@ public class ThreadRtspServer extends ThreadBase {
 			B buildThreadVideo(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
-					float avFps,
+					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
 		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
@@ -291,7 +291,7 @@ public class ThreadRtspServer extends ThreadBase {
 					B buildThreadAudio(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
-					@SuppressWarnings("SameParameterValue") float avFps,
+					@SuppressWarnings("SameParameterValue") double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
 		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
@@ -346,7 +346,7 @@ public class ThreadRtspServer extends ThreadBase {
 				break;
 			default:
 				if (tmpStreamInfo.rtspStreamSource.getCodec().isPcmAudio()) {
-					final int tmpVirtualFps = (int)(1000.0f / (float)RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS);
+					final double tmpVirtualFps = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS);
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpStreamInfo,

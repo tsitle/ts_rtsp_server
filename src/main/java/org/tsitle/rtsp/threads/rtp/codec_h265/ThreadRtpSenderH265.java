@@ -53,7 +53,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 			);
 
 		//
-		this.rtpTicksPerFrame = (long)((float)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_H265) /
+		this.rtpTicksPerFrame = (long)((double)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_H265) /
 				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
 
 		//
