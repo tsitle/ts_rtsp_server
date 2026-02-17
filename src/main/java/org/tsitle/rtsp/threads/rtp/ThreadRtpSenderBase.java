@@ -52,8 +52,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(1);
 	private short rtpSequNr;
-	/** Current RTP 'frame' number for NTP timestamps, either video frames or audio frames (64 bits unsigned) */
-	private final AtomicLong ntpTsFrameNr = new AtomicLong(1);
 	protected int debugStreamOffset = 0;
 	private final BufferExt cacheRtpFullData = new BufferExt();
 	private boolean isFirstPktOfFrame = true;
@@ -191,10 +189,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected void incrRtpAndNtpTsFrameNr() {
+	protected void incrRtpTsFrameNr() {
 		rtpTsFrameNr.incrementAndGet();
-		//
-		ntpTsFrameNr.incrementAndGet();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

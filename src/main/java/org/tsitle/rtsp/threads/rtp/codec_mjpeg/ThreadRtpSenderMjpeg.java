@@ -136,7 +136,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 					);
 
 				// update frame number
-				incrRtpAndNtpTsFrameNr();
+				incrRtpTsFrameNr();
 			} catch (InputStreamEofException e) {
 				cacheFrameData.haveErrorEof = true;
 				cacheFrameData.errorMsg = FNC_NAME + ": EOF";

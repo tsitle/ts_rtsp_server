@@ -265,7 +265,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 
 		// update frame number after having received a new Access Unit
 		if (globalCurAu.arrNalUnitCount > 0) {
-			incrRtpAndNtpTsFrameNr();
+			incrRtpTsFrameNr();
 		}
 	}
 

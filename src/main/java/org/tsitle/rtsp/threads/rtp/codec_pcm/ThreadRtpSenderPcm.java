@@ -146,7 +146,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 					);
 
 				// update frame number
-				incrRtpAndNtpTsFrameNr();
+				incrRtpTsFrameNr();
 			} catch (InputStreamEofException e) {
 				cacheFrameData.haveErrorEof = true;
 				cacheFrameData.errorMsg = FNC_NAME + ": EOF";
