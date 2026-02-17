@@ -3,11 +3,11 @@ package org.tsitle.rtsp.threads.rtp.codec_h265;
 import org.tsitle.rtsp.avdata.H265Info;
 import org.tsitle.rtsp.buffers.BufferExt;
 
-public final class HevcNalUnitData {
+public final class HevcNalUnitData implements Cloneable {
 
 	public int internalId = 0;
 	public H265Info h265Info = null;
-	public final BufferExt rtpPayloadData = new BufferExt();
+	public BufferExt rtpPayloadData = new BufferExt();
 	public int fullDataSize = 0;
 
 	public void reset() {
@@ -27,6 +27,20 @@ public final class HevcNalUnitData {
 		fullDataSize = src.fullDataSize;
 		//
 		src.reset();
+	}
+
+	@Override
+	public HevcNalUnitData clone() {
+		try {
+			HevcNalUnitData clone = (HevcNalUnitData)super.clone();
+			if (h265Info != null) {
+				clone.h265Info = h265Info.clone();
+			}
+			clone.rtpPayloadData = rtpPayloadData.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 	@Override
