@@ -21,6 +21,7 @@ public class RtspServerApp {
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
+	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 	private static RtxpLogger rtxpLoggerThread = new RtxpLogger();
 	private static final Map<@Nullable Integer, @Nullable ThreadRtspServer> rtspServerThreads = new ConcurrentHashMap<>();
 
@@ -40,22 +41,25 @@ public class RtspServerApp {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				if (doNeedShutdownHandler.get()) {
 					System.out.println();
-					System.out.println(FNC_NAME + ": Shutting down ...");
+					System.out.println(FNC_NAME + ": SDH: Shutting down ...");
 					doStop.set(true);
 					//
-					try {
-						Thread.sleep(10000);
-					} catch (InterruptedException e) {
-						System.err.println(FNC_NAME + ": InterruptedException");
-						Thread.currentThread().interrupt();
+					int loopCnt = 0;
+					while (! isShutdownComplete.get() && loopCnt++ < 10) {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							System.err.println(FNC_NAME + ": SDH: InterruptedException");
+							Thread.currentThread().interrupt();
+						}
 					}
+					System.out.println(FNC_NAME + ": SDH: Shutdown complete");
 				}
 			}));
 		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
 		/*sun.misc.Signal.handle(new sun.misc.Signal("INT"),  // SIGINT
 				signal -> {
-					System.out.println();
-					System.out.println(FNC_NAME + ": Interrupted by Ctrl+C");
+					System.out.println("Interrupted by Ctrl+C");
 					System.exit(1);
 				});*/
 
@@ -89,6 +93,7 @@ public class RtspServerApp {
 
 		//
 		System.out.println(FNC_NAME + ": Server terminated");
+		isShutdownComplete.set(true);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
