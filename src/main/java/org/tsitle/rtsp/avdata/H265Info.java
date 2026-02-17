@@ -48,7 +48,7 @@ public final class H265Info extends AvInfoBase<H265Info> implements Cloneable {
 		VCL_IDR_N_LP(20),
 
 		/** VCL: Clean Random Access pictures */
-		VCL_CRA_NUT(21),
+		VCL_CRA(21),
 
 		/** Non-VCL: Video Parameter Set (defines overall stream constraints) */
 		NVCL_VPS(32),
