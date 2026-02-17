@@ -3,7 +3,7 @@ package org.tsitle.rtsp.buffers;
 /**
  * BufferExt provides a resizable byte buffer with methods for copying data and accessing buffer contents.
  */
-public class BufferExt {
+public class BufferExt implements Cloneable {
 
 	private byte[] buf = new byte[1024 * 64];
 	private int used;
@@ -208,6 +208,17 @@ public class BufferExt {
 		}
 		if (srcOffset + len > srcDataLen) {
 			throw new IllegalArgumentException("Invalid source offset / len");
+		}
+	}
+
+	@Override
+	public BufferExt clone() {
+		try {
+			BufferExt clone = (BufferExt)super.clone();
+			clone.buf = buf.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
 		}
 	}
 
