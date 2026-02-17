@@ -63,7 +63,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 
 		//
 		try {
-			while (! doStop.get()) {
+			while (! doStop.get() && eofAfterFrameNr < 0L) {
 				mainLoop();
 			}
 		} catch (InterruptedException e) {
@@ -127,9 +127,14 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 	private void acquireData() {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
-		if (! mediaInputStream.hasMoreFrames() && doDebugRewindMediaFiles) {
-			logDebug(FNC_NAME, "haveEof, rewinding");
-			mediaInputStream.rewind();
+		if (! mediaInputStream.hasMoreFrames()) {
+			if (doDebugRewindMediaFiles) {
+				logDebug(FNC_NAME, "haveEof, rewinding");
+				mediaInputStream.rewind();
+			} else {
+				eofAfterFrameNr = frameCountInp;
+				return;
+			}
 		}
 		// get the next frame to send from the video, as well as its size
 		BufferExt tmpFrameBuf = new BufferExt();
