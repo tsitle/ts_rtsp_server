@@ -138,7 +138,10 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 		Optional<H264NalUnitData> optCurNudPtr = popCurNalUnitData();
 		if (optCurNudPtr.isEmpty()) {
 			globalCurNudPtr = null;
-			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr == null");
+			//
+			cacheFrameData.haveErrorEof = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": EOF";
+			return cacheFrameData;
 		}
 		globalCurNudPtr = optCurNudPtr.get();
 
@@ -263,8 +266,6 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 		// update frame number after having received a new Access Unit
 		if (globalCurAu.arrNalUnitCount > 0) {
 			incrRtpAndNtpTsFrameNr();
-		} else if (! haveEof) {
-			logError(FNC_NAME, "globalCurAu.arrNalUnitCount == 0");
 		}
 	}
 
