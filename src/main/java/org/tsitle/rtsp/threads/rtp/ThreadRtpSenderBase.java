@@ -41,7 +41,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
 	private final DatagramSocket parComRtpSocketUdp;
 	/** Interval for sending frames over the wire (>= FRAME_PERIOD_MS * 1000000) */
-	private final long sendIntervalNs;
+	private final double sendIntervalNs;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -59,6 +59,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final BufferExt cacheRtpFullData = new BufferExt();
 	private boolean isFirstPktOfFrame = true;
 
+	private final TimeNtpTsInfo timeNtpTsInfo = new TimeNtpTsInfo();
 	private final AdaptiveSendIntervalStats asdStats = new AdaptiveSendIntervalStats();
 	private final SenderInfoStats siStats = new SenderInfoStats();
 	/** State A: send frame; State B: optionally send RTCP SR */
@@ -83,16 +84,16 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		}
 
 		//
- 		///
+		///
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
 		this.sendIntervalNs = (rtpPacketType.isVideo() ?
-				(long)(1_000_000_000.0 / (double)paramsCommon.getAvFramesPerSecond()) :
-				(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
+				(1_000_000_000.0 / (double)paramsCommon.getAvFramesPerSecond()) :
+				(double)(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
 			);
-		if (this.sendIntervalNs == 0L) {  // sanity check
-			throw new IllegalStateException("sendIntervalNs is 0");
+		if (this.sendIntervalNs < 1_000_000.0) {  // sanity check
+			throw new IllegalStateException("sendIntervalNs is < 1ms");
 		}
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
@@ -132,13 +133,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			waitForParallelThreadToStart();
 
 			//
-			siStats.timeSessionStartWc = Instant.now();
-			siStats.timeSessionStartNtpWc = NtpTimestampHelper.instantToNtpTimestamp(siStats.timeSessionStartWc);
-			siStats.timeSessionStartMono = System.nanoTime();
-
+			timeNtpTsInfo.timeSessionStartNtpWc = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
+			timeNtpTsInfo.timeSessionStartMonoNs = System.nanoTime();
 			//
 			asdStats.sleepCounter = 0;
-			asdStats.nextSendTimeNs = siStats.timeSessionStartMono + (sendIntervalNs / 2L);
+			asdStats.nextSendTimeNs = (double)timeNtpTsInfo.timeSessionStartMonoNs + (sendIntervalNs / 2.0);
+			asdStats.needAlternatingDelta = (Math.abs((double)((long)(sendIntervalNs / 2.0) * 2L) - sendIntervalNs) > 0.1);
 
 			//
 			while (! (doStop.get() || parComRtpSocketUdp.isClosed())) {
@@ -290,7 +290,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		if (targetTimeNanos <= currentTime) {
 			logDebug("sleepUntilNanos()",
 					"Target time is in the past or current time (" +
-						((float)(currentTime - targetTimeNanos) / 1_000.0f) +
+						(((double)currentTime - targetTimeNanos) / 1_000.0) +
 						"us, r=" + ntpTsFrameNr.get() +
 						", s=" + asdStats.sleepCounter + ")");  // @TODO
 			return;
@@ -318,7 +318,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		// For microsecond-level precision
 		currentTime = System.nanoTime();
 		remainingNanos = targetTimeNanos - currentTime;
-		long parkBufferNanos = 100_000; // 100µs buffer
+		final long parkBufferNanos = 100_000; // 100µs buffer
 
 		if (remainingNanos > parkBufferNanos) {
 			LockSupport.parkNanos(remainingNanos - parkBufferNanos);
@@ -332,13 +332,16 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	}
 
 	private void sleepToAdjustFramerate() {
-		sleepUntilNanos(asdStats.nextSendTimeNs - 10_000L);
+		sleepUntilNanos((long)asdStats.nextSendTimeNs);
 		// "now" should ideally be equal to nextSendTime
 
 		//
 		++asdStats.sleepCounter;
-		asdStats.nextSendTimeNs = siStats.timeSessionStartMono +
-				((asdStats.sleepCounter / 2L) * sendIntervalNs) + ((asdStats.sleepCounter % 2L) * (sendIntervalNs / 2L));
+		asdStats.nextSendTimeNs = (double)timeNtpTsInfo.timeSessionStartMonoNs +
+				(sendIntervalNs * ((double)asdStats.sleepCounter / 2.0));
+		double tmpDelta = (asdStats.needAlternatingDelta &&
+				(asdStats.sleepCounter % 5L == 0L || asdStats.sleepCounter % 6L == 0L) ? 500_000.0 : 0.0);
+		asdStats.nextSendTimeNs += tmpDelta;
 	}
 
 	private boolean sendFrame() {
@@ -473,8 +476,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private long getNtpTimestamp() {
-		long deltaMono = (System.nanoTime() - siStats.timeSessionStartMono);
-		return NtpTimestampHelper.addNanosToNtpTimestamp(siStats.timeSessionStartNtpWc, deltaMono);
+		long deltaMono = (System.nanoTime() - timeNtpTsInfo.timeSessionStartMonoNs);
+		return NtpTimestampHelper.addNanosToNtpTimestamp(timeNtpTsInfo.timeSessionStartNtpWc, deltaMono);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
