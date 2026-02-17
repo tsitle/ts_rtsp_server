@@ -82,6 +82,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 		return ((eofAfterFrameNr >= 0L && frameNrOutp > eofAfterFrameNr) || bufferQueue.isEmpty());
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public synchronized boolean haveFullInputQueue() {
 		return (haveEof() || (bufferQueue.size() >= queueSize));
 	}

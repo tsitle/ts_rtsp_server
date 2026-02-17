@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
@@ -40,8 +39,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	/** Thread parameters */
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
 	private final DatagramSocket parComRtpSocketUdp;
-	/** Interval for sending frames over the wire (>= FRAME_PERIOD_MS * 1000000) */
-	private final double sendIntervalNs;
+	/** Half of the interval for sending frames over the wire */
+	private final long sendIntervalHalfNs;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -59,8 +58,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final BufferExt cacheRtpFullData = new BufferExt();
 	private boolean isFirstPktOfFrame = true;
 
+	private final AdaptiveScheduler adaptiveScheduler;
 	private final TimeNtpTsInfo timeNtpTsInfo = new TimeNtpTsInfo();
-	private final AdaptiveSendIntervalStats asdStats = new AdaptiveSendIntervalStats();
 	private final SenderInfoStats siStats = new SenderInfoStats();
 	/** State A: send frame; State B: optionally send RTCP SR */
 	private boolean isMainLoopStateA = true;
@@ -88,18 +87,24 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
-		this.sendIntervalNs = (rtpPacketType.isVideo() ?
+		final double sendIntervalNs = (rtpPacketType.isVideo() ?
 				(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond()) :
 				(double)(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
 			);
-		if (this.sendIntervalNs < 1_000_000.0) {  // sanity check
+		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is < 1ms");
 		}
+		this.sendIntervalHalfNs = (long)(sendIntervalNs / 2.0);
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
 		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
 		this.rtpPacketType = rtpPacketType;
 
+		//
+		this.adaptiveScheduler = new AdaptiveScheduler(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				paramsCommon.getAvFramesPerSecond()
+			);
 		//
 		this.siStats.rtpTimestamp = this.paramsCommon.getRtpTimestampT0();
 	}
@@ -135,10 +140,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			//
 			timeNtpTsInfo.timeSessionStartNtpWc = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
 			timeNtpTsInfo.timeSessionStartMonoNs = System.nanoTime();
-			//
-			asdStats.sleepCounter = 0;
-			asdStats.nextSendTimeNs = (double)timeNtpTsInfo.timeSessionStartMonoNs + (sendIntervalNs / 2.0);
-			asdStats.needAlternatingDelta = (Math.abs((double)((long)(sendIntervalNs / 2.0) * 2L) - sendIntervalNs) > 0.1);
 
 			//
 			while (! (doStop.get() || parComRtpSocketUdp.isClosed())) {
@@ -263,10 +264,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				}
 			}
 			//
-			sleepToAdjustFramerate();
-			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock = getNtpTimestamp();
-			siStats.rtpTimestamp += (int)(rtpTicksPerFrame / 2L);
+			adaptiveScheduler.sleepUntilNanos(System.nanoTime() + sendIntervalHalfNs);
 			//
 			isMainLoopStateA = true;
 		}
@@ -276,73 +274,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Sleeps until the specified target time (in nanoseconds since epoch) is reached.
-	 * Uses a hybrid approach: Thread.sleep() for coarse waiting, then busy-waiting
-	 * for high precision without overshooting.
-	 * @param targetTimeNanos The target time in nanoseconds (System.nanoTime() format)
-	 * @throws IllegalArgumentException if targetTimeNanos is in the past
-	 */
-	private void sleepUntilNanos(long targetTimeNanos) {
-		long currentTime = System.nanoTime();
-
-		if (targetTimeNanos <= currentTime) {
-			logDebug("sleepUntilNanos()",
-					"Target time is in the past or current time (" +
-						(((double)currentTime - targetTimeNanos) / 1_000.0) +
-						"us, r=" + ntpTsFrameNr.get() +
-						", s=" + asdStats.sleepCounter + ")");  // @TODO
-			return;
-		}
-
-		long remainingNanos = targetTimeNanos - currentTime;
-
-		// Phase 1: Coarse waiting using Thread.sleep() for milliseconds
-		// Leave a buffer to avoid overshooting
-		long sleepBufferNanos = 2_000_000; // 2ms buffer
-
-		if (remainingNanos > sleepBufferNanos) {
-			long sleepMillis = (remainingNanos - sleepBufferNanos) / 1_000_000;
-			if (sleepMillis > 0) {
-				try {
-					Thread.sleep(sleepMillis);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					return;
-				}
-			}
-		}
-
-		// Phase 2: Medium precision using LockSupport.parkNanos()
-		// For microsecond-level precision
-		currentTime = System.nanoTime();
-		remainingNanos = targetTimeNanos - currentTime;
-		final long parkBufferNanos = 100_000; // 100µs buffer
-
-		if (remainingNanos > parkBufferNanos) {
-			LockSupport.parkNanos(remainingNanos - parkBufferNanos);
-		}
-
-		// Phase 3: High precision busy-waiting for the final nanoseconds
-		while (System.nanoTime() < targetTimeNanos) {
-			// Busy wait - yields CPU but maintains high precision
-			Thread.onSpinWait(); // JDK 9+ hint for busy waiting
-		}
-	}
-
-	private void sleepToAdjustFramerate() {
-		sleepUntilNanos((long)asdStats.nextSendTimeNs);
-		// "now" should ideally be equal to nextSendTime
-
-		//
-		++asdStats.sleepCounter;
-		asdStats.nextSendTimeNs = (double)timeNtpTsInfo.timeSessionStartMonoNs +
-				(sendIntervalNs * ((double)asdStats.sleepCounter / 2.0));
-		double tmpDelta = (asdStats.needAlternatingDelta &&
-				(asdStats.sleepCounter % 5L == 0L || asdStats.sleepCounter % 6L == 0L) ? 500_000.0 : 0.0);
-		asdStats.nextSendTimeNs += tmpDelta;
-	}
 
 	private boolean sendFrame() {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
@@ -364,7 +295,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
 				 */
 				//
-				sleepToAdjustFramerate();
+				adaptiveScheduler.waitForNextFrame();
 				// update SenderInfo NTP and RTP timestamp
 				siStats.timestampNtpWallclock = getNtpTimestamp();
 				siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
