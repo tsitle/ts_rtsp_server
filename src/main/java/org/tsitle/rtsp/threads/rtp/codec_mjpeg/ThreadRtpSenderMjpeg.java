@@ -3,6 +3,8 @@ package org.tsitle.rtsp.threads.rtp.codec_mjpeg;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvMjpeg;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -12,8 +14,6 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.avdata.JpegInfo;
 import org.tsitle.rtsp.exceptions.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadMjpeg;
 
 import java.util.Objects;
 
@@ -106,7 +106,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected FrameData cbFrameDataSupplier() {
+	protected @NonNull FrameData cbFrameDataSupplier() {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
 
 		cacheFrameData.reset();
@@ -147,19 +147,15 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	}
 
 	@Override
-	protected Boolean cbRtpPacketMarkerBitSupplier(int currentOffsetInFramePlusFragmentSize, int framePayloadSize) {
-		return (currentOffsetInFramePlusFragmentSize == framePayloadSize);
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+		return isLastFragment;
 	}
 
 	@Override
-	protected RtpPacketPayloadInterface cbRtpPacketPayloadSupplier(FrameFragmentData curFragmentData) {
-		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadData,
-				curFragmentData.fragmentOffset(),
-				curFragmentData.fragmentSize()
-			);
-
-		return new RtpPacketPayloadMjpeg(
+	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
+		prepareRtpPacketDataForFragment(curFragmentData);
+		return new RtpPacketMjpeg(
+				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFrameJpegInfo,
 				cacheRtpInnerPayloadBuf

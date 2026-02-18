@@ -27,12 +27,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private static final int SEND_SR_INTERVAL_MS = 2000;
 
 	/** Length of UDP packets */
-	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainer.HEADER_SIZE + 4 + (128 * 2);
+	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
 
 	/** Buffer used to store the RTP/XXX payload */
 	protected final BufferExt cacheRtpInnerPayloadBuf = new BufferExt();
 	/** Stores the current frame data */
 	protected final FrameData cacheFrameData = new FrameData();
+	protected final ParamsContainerBase cacheParamsBase = new ParamsContainerBase();
 
 	/** Thread parameters */
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
@@ -49,7 +50,6 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(1);
 	private short rtpSequNr;
 	protected int debugStreamOffset = 0;
-	private final BufferExt cacheRtpFullData = new BufferExt();
 	private boolean isFirstPktOfFrame = true;
 
 	private final AdaptiveScheduler adaptiveScheduler;
@@ -107,10 +107,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		//
 		if (rtpPacketType == RtpPacketType.V_JPEG) {
 			// RTP/JPEG header can be rather big
-			udpMaxPacketLenDelta = RtpPacketPayloadMjpeg.HEADER_MAIN_SIZE +
-					RtpPacketPayloadMjpeg.HEADER_QT_PRE_SIZE + 128 * 2;
+			udpMaxPacketLenDelta = RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE +
+					RtpPacketMjpeg.INNER_HEADER_QT_PRE_SIZE + 128 * 2;
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
-			udpMaxPacketLenDelta = RtpPacketPayloadH264.HEADER_SIZE_MAX;
+			udpMaxPacketLenDelta = RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
 	}
 
@@ -172,11 +172,26 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected abstract FrameData cbFrameDataSupplier();
+	protected abstract @NonNull FrameData cbFrameDataSupplier();
 
-	protected abstract Boolean cbRtpPacketMarkerBitSupplier(int currentOffsetInFramePlusFragmentSize, int framePayloadSize);
+	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment);
 
-	protected abstract RtpPacketPayloadInterface cbRtpPacketPayloadSupplier(FrameFragmentData curFragmentData);
+	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {
+		cacheRtpInnerPayloadBuf.copyOf(
+				curFragmentData.frameData().rtpPayloadData,
+				curFragmentData.fragmentOffset(),
+				curFragmentData.fragmentSize()
+			);
+
+		//
+		cacheParamsBase.reset();
+		cacheParamsBase.rtspSsrcId = paramsCommon.getRtspSsrcId();
+		cacheParamsBase.sequenceNumber = getRtpSequNr();
+		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(curFragmentData.isLastFragment());
+		cacheParamsBase.rtpTimestamp = curFragmentData.frameData().rtpFrameTimestamp;
+	}
+
+	protected abstract @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData);
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -322,20 +337,17 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			boolean isLastPktOfFrame = false;
 			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadData.getUsed()) {
 				final int curPktSize = Math.min(
-						UDP_PACKET_LEN - RtpPacketContainer.HEADER_SIZE - 4 - udpMaxPacketLenDelta,
+						UDP_PACKET_LEN - RtpPacketContainerBase.RTP_CONT_HEADER_SIZE - 4 - udpMaxPacketLenDelta,
 						frameData.rtpPayloadData.getUsed() - sentTotalPktSize
 					);
-				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(
-						sentTotalPktSize + curPktSize,
-						frameData.rtpPayloadData.getUsed()
-					);
+				final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadData.getUsed());
+				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(isLastPktOfPayload);
 
-				boolean tmpResB = sendSinglePacket(
-						sentTotalPktSize,
-						curPktSize,
-						frameData,
-						isLastPktOfFrame
-					);
+				//
+				++udpPacketsForOneFrameCount;
+
+				//
+				boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, frameData, isLastPktOfPayload);
 				if (! tmpResB) {
 					return false;
 				}
@@ -369,12 +381,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	private boolean sendSinglePacket(
 				int sentTotalPktSize,
 				int curPktSize,
-				FrameData frameData,
-				boolean isLastPktOfFrame
+				@NonNull FrameData frameData,
+				boolean isLastPktOfPayload
 			) throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendSinglePacket()";
-
-		final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadData.getUsed());
 
 		FrameFragmentData curFragmentData = new FrameFragmentData(
 				frameData,
@@ -382,20 +392,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 				curPktSize,
 				isLastPktOfPayload
 			);
-		RtpPacketPayloadInterface curInnerPayload = cbRtpPacketPayloadSupplier(curFragmentData);
-		RtpPacketContainer curPacketContainer = new RtpPacketContainer(
-				paramsCommon.getRtspSsrcId(),
-				getRtpSequNr(),
-				isLastPktOfFrame,
-				frameData.rtpFrameTimestamp,
-				curInnerPayload
-			);
+		RtpPacketContainerBase curPacketContainer = cbRtpPacketPayloadSupplier(curFragmentData);
 
 		// retrieve the packet bitstream and store it in an array of bytes
-		curPacketContainer.copyRawPacketDataInto(cacheRtpFullData);
-		if (cacheRtpFullData.getUsed() > UDP_PACKET_LEN) {
+		if (curPacketContainer.getPacketSize() > UDP_PACKET_LEN) {
 			throw new IllegalStateException(FNC_NAME + ": buffer > UDP_PACKET_LEN (d=" +
-					(cacheRtpFullData.getUsed() - UDP_PACKET_LEN) + "):");
+					(curPacketContainer.getPacketSize() - UDP_PACKET_LEN) + "):");
 		}
 
 		if (parComRtpSocketUdp.isClosed()) {
@@ -406,8 +408,8 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		}
 		// send the packet as a DatagramPacket over the UDP socket
 		DatagramPacket sendDp = new DatagramPacket(
-				cacheRtpFullData.getBuf(),
-				cacheRtpFullData.getUsed(),
+				curPacketContainer.getPacketBufferPtr(),
+				curPacketContainer.getPacketSize(),
 				paramsCommon.getClientIpAddr().orElseThrow(),
 				paramsCommon.getClientDestPortRtp()
 			);

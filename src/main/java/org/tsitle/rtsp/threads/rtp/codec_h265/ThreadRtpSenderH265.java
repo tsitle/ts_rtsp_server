@@ -3,6 +3,8 @@ package org.tsitle.rtsp.threads.rtp.codec_h265;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -14,8 +16,6 @@ import org.tsitle.rtsp.avdata.H265Info;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.exceptions.AvInvalidH265DataException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadH265;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -111,7 +111,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected FrameData cbFrameDataSupplier() {
+	protected @NonNull FrameData cbFrameDataSupplier() {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
 
 		cacheFrameData.reset();
@@ -150,25 +150,20 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderBase {
 	}
 
 	@Override
-	protected Boolean cbRtpPacketMarkerBitSupplier(int currentOffsetInFramePlusFragmentSize, int framePayloadSize) {
-		return (globalCurAu.arrNalUnitIx == globalCurAu.arrNalUnitCount &&
-				currentOffsetInFramePlusFragmentSize == framePayloadSize);
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+		return (globalCurAu.arrNalUnitIx == globalCurAu.arrNalUnitCount && isLastFragment);
 	}
 
 	@Override
-	protected RtpPacketPayloadInterface cbRtpPacketPayloadSupplier(FrameFragmentData curFragmentData) {
+	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbRtpPacketPayloadSupplier()";
 
 		if (globalCurNudPtr == null) {
 			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr == null");
 		}
-		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadData,
-				curFragmentData.fragmentOffset(),
-				curFragmentData.fragmentSize()
-			);
-
-		return new RtpPacketPayloadH265(
+		prepareRtpPacketDataForFragment(curFragmentData);
+		return new RtpPacketH265(
+				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment(),
 				globalCurNudPtr.h265Info,

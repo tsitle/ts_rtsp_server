@@ -8,7 +8,7 @@ import org.tsitle.rtsp.avinputstreams.VideoStreamMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadMjpeg;
+import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
@@ -87,17 +87,17 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 		if ((curFrameJpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR420 &&
 					curFrameJpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR422) ||
 				curFrameJpegInfo.sof0_quantTableSelY == curFrameJpegInfo.sof0_quantTableSelCb ||
-				curFrameJpegInfo.sof0_imgWidth > RtpPacketPayloadMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-				curFrameJpegInfo.sof0_imgHeight > RtpPacketPayloadMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+				curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+				curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
 			cacheTempBuffer.copyOf(inputBuf);
 			/*
 			 * To provide a compatible JPEG image, we need to re-encode the image.
 			 */
-			if (curFrameJpegInfo.sof0_imgWidth > RtpPacketPayloadMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-					curFrameJpegInfo.sof0_imgHeight > RtpPacketPayloadMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+			if (curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+					curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
 				imageReencoder.scaleImage(
 						cacheTempBuffer,
-						RtpPacketPayloadMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
+						RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
 						inputBuf
 					);
 			} else {

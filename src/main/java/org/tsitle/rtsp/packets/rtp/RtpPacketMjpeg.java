@@ -1,21 +1,22 @@
 package org.tsitle.rtsp.packets.rtp;
 
-import org.tsitle.rtsp.buffers.BufferExt;
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.JpegInfo;
+import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
  * RTP Packet Payload for MJPEG.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc2435">RFC-2435</a>
  */
-public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
+public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 	/** Maximum width and height of an image */
 	public static final int IMAGE_MAX_WIDTH_HEIGHT = 2040;
 
 	/** Size of the main payload-specific RTP header */
-	public static final int HEADER_MAIN_SIZE = 8;
+	public static final int INNER_HEADER_MAIN_SIZE = 8;
 	/** Size of the QT RTP header without the tables */
-	public static final int HEADER_QT_PRE_SIZE = 4;
+	public static final int INNER_HEADER_QT_PRE_SIZE = 4;
 
 	/** Type-specific first byte (8 bits)<br />
 	 *   0=Image is progressively scanned<br />
@@ -23,37 +24,42 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 	 *   2=Image is an even field of an interlaced video signal<br />
 	 *   3=Image is a single field from an interlaced video signal
 	 */
-	private final byte hdFirstByte;
+	private final byte hdInnFirstByte;
 	/** Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits) */
-	private final int hdFragmentOffset;
+	private final int hdInnFragmentOffset;
 	/**
 	 * JPEG Type (8 bits)<br />
 	 *   0=YCbCr 4:2:2<br />
 	 *   1=YCbCr 4:2:0
 	 */
-	private final byte hdType;
+	private final byte hdInnType;
 	/** Q value (8 bits) */
-	private final byte hdQ;
+	private final byte hdInnQ;
 	/** Image width divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private final byte hdImageWidthDiv8;
+	private final byte hdInnImageWidthDiv8;
 	/** Image height divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private final byte hdImageHeightDiv8;
+	private final byte hdInnImageHeightDiv8;
 
 	/**
 	 * Constructor.
+	 * @param paramsBase Base Container parameters
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits)
 	 * @param jpegInfo JPEG info
 	 * @param payloadData Payload data
 	 */
-	public RtpPacketPayloadMjpeg(int fragmentOffset, JpegInfo jpegInfo, BufferExt payloadData) {
-		super();
+	public RtpPacketMjpeg(
+				@NonNull ParamsContainerBase paramsBase,
+				int fragmentOffset,
+				@NonNull JpegInfo jpegInfo,
+				@NonNull BufferExt payloadData
+			) {
+		super(RtpPacketType.V_JPEG, paramsBase);
 
 		//
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
 		}
-		if (jpegInfo == null ||
-				jpegInfo.sof0_imgWidth <= 0 || jpegInfo.sof0_imgWidth > IMAGE_MAX_WIDTH_HEIGHT ||
+		if (jpegInfo.sof0_imgWidth <= 0 || jpegInfo.sof0_imgWidth > IMAGE_MAX_WIDTH_HEIGHT ||
 				jpegInfo.sof0_imgHeight <= 0 || jpegInfo.sof0_imgHeight > IMAGE_MAX_WIDTH_HEIGHT ||
 				(jpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR420 &&
 						jpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR422) ||
@@ -66,95 +72,79 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 		}
 
 		// set inner main header fields
-		this.hdFirstByte = (byte)0;
-		this.hdFragmentOffset = fragmentOffset;
-		this.hdType = (byte)(jpegInfo.sof0_channelEncoding == JpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
-		this.hdQ = (byte)255;
-		this.hdImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
-		this.hdImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
+		this.hdInnFirstByte = (byte)0;
+		this.hdInnFragmentOffset = fragmentOffset;
+		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == JpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
+		this.hdInnQ = (byte)255;
+		this.hdInnImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
+		this.hdInnImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
 
 		// build the inner header bitstream (main header + optional QT header)
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields(fragmentOffset == 0, jpegInfo);
-		this.rawInnerHeaderData.copyOf(tmpRtpXxxHeader);
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
 
 		// copy the inner payload bitstream
-		this.rawInnerPayloadData.copyOf(payloadData);
+		this.packetBuf.append(payloadData);
 	}
 
 	/**
 	 * Constructor.
-	 * @param rawInnerHeaderAndPayloadData Payload-specific header and payload of the RTP packet
+	 * @param packetData RTP packet bitstream including header and payload
 	 */
-	public RtpPacketPayloadMjpeg(BufferExt rawInnerHeaderAndPayloadData) {
-		super();
+	public RtpPacketMjpeg(@NonNull BufferExt packetData) {
+		super(RtpPacketType.V_JPEG, packetData);
 
-		if (rawInnerHeaderAndPayloadData.getUsed() < HEADER_MAIN_SIZE) {
+		if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE) {
 			throw new IllegalArgumentException("Invalid RTP packet size");
 		}
 
+		int offs = RTP_CONT_HEADER_SIZE;
 		// parse inner main header fields
-		this.hdFirstByte = rawInnerHeaderAndPayloadData.get(0);
-		this.hdFragmentOffset = (((rawInnerHeaderAndPayloadData.get(1) << 16) |
-				(rawInnerHeaderAndPayloadData.get(2) << 8) |
-				rawInnerHeaderAndPayloadData.get(3)) & 0xFFFFFF);
-		this.hdType = rawInnerHeaderAndPayloadData.get(4);
-		this.hdQ = rawInnerHeaderAndPayloadData.get(5);
-		this.hdImageWidthDiv8 = rawInnerHeaderAndPayloadData.get(6);
-		this.hdImageHeightDiv8 = rawInnerHeaderAndPayloadData.get(7);
+		this.hdInnFirstByte = packetData.get(offs++);
+		this.hdInnFragmentOffset = (((packetData.get(offs++) << 16) |
+				(packetData.get(offs++) << 8) |
+				packetData.get(offs++)) & 0xFFFFFF);
+		this.hdInnType = packetData.get(offs++);
+		this.hdInnQ = packetData.get(offs++);
+		this.hdInnImageWidthDiv8 = packetData.get(offs++);
+		this.hdInnImageHeightDiv8 = packetData.get(offs++);
 
-		// copy the inner header bitstream (main header + optional QT header)
-		final int tmpQtHdLength = (this.hdFragmentOffset == 0 &&
-					rawInnerHeaderAndPayloadData.getUsed() > HEADER_MAIN_SIZE + HEADER_QT_PRE_SIZE ?
-				HEADER_QT_PRE_SIZE + parseInnerHeaderQuantTableLength(rawInnerHeaderAndPayloadData) : 0);
-		this.rawInnerHeaderData.copyOf(
-				rawInnerHeaderAndPayloadData,
-				0,
-				HEADER_MAIN_SIZE + tmpQtHdLength
-			);
-
-		// copy the inner payload bitstream
-		this.rawInnerPayloadData.copyOf(
-				rawInnerHeaderAndPayloadData,
-				this.rawInnerHeaderData.getUsed(),
-				rawInnerHeaderAndPayloadData.getUsed() - this.rawInnerHeaderData.getUsed()
-			);
+		// determine the length of the inner header bitstream (main header + optional QT header)
+		final int tmpTotalMinLen = (RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE + INNER_HEADER_QT_PRE_SIZE);
+		final int tmpQtHdLength = (this.hdInnFragmentOffset == 0 && packetData.getUsed() > tmpTotalMinLen ?
+				INNER_HEADER_QT_PRE_SIZE + parseInnerHeaderQuantTableLength(packetData, offs)
+				: 0);
+		this.payloadSpecHeaderSize = INNER_HEADER_MAIN_SIZE + tmpQtHdLength;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public RtpPacketType getPayloadType() {
-		return RtpPacketType.V_JPEG;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				"FirstByte: " + Integer.toUnsignedString(hdFirstByte) +
-				", FragmentOffset: " + Integer.toUnsignedString(hdFragmentOffset) +
-				", Type: " + Integer.toUnsignedString(hdType) +
-				", Q: " + Integer.toUnsignedString(hdQ) +
-				", ImageWidth: " + Integer.toUnsignedString(hdImageWidthDiv8 * 8) +
-				", ImageHeight: " + Integer.toUnsignedString(hdImageHeightDiv8 * 8) +
-				", innerHeaderSz: " + Integer.toUnsignedString(rawInnerHeaderData.getUsed()) +
-				", innerPayloadSz: " + Integer.toUnsignedString(rawInnerPayloadData.getUsed()) +
+				super.toString() +
+				", FirstByte: " + Integer.toUnsignedString(hdInnFirstByte) +
+				", FragmentOffset: " + Integer.toUnsignedString(hdInnFragmentOffset) +
+				", Type: " + Integer.toUnsignedString(hdInnType) +
+				", Q: " + Integer.toUnsignedString(hdInnQ) +
+				", ImageWidth: " + Integer.toUnsignedString(hdInnImageWidthDiv8 * 8) +
+				", ImageHeight: " + Integer.toUnsignedString(hdInnImageHeightDiv8 * 8) +
 				"]";
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static int parseInnerHeaderQuantTableLength(BufferExt data) {
-		return ((((data.get(HEADER_MAIN_SIZE + 2) & 0xFF) << 8) & 0xFF00) |
-				(data.get(HEADER_MAIN_SIZE + 3) & 0xFF));
+	private static int parseInnerHeaderQuantTableLength(@NonNull BufferExt data, int offs) {
+		return ((((data.get(offs + INNER_HEADER_MAIN_SIZE + 2) & 0xFF) << 8) & 0xFF00) |
+				(data.get(offs + INNER_HEADER_MAIN_SIZE + 3) & 0xFF));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, JpegInfo jpegInfo) {
+	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull JpegInfo jpegInfo) {
 		int qtHdLength = 0;
 		if (withQtHeader) {
 			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
@@ -164,25 +154,25 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCr] == null) {
 				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
 			}
-			qtHdLength += HEADER_QT_PRE_SIZE + (
+			qtHdLength += INNER_HEADER_QT_PRE_SIZE + (
 					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == JpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2) +
 					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == JpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2)
 				);
 		}
-		final int completeHdLength = HEADER_MAIN_SIZE + qtHdLength;
+		final int completeHdLength = INNER_HEADER_MAIN_SIZE + qtHdLength;
 		final byte[] resA = new byte[completeHdLength];
 
 		// main RTP/JPEG header
-		resA[0] = hdFirstByte;
-		resA[1] = (byte)((hdFragmentOffset >> 16) & 0xFF);
-		resA[2] = (byte)((hdFragmentOffset >> 8) & 0xFF);
-		resA[3] = (byte)(hdFragmentOffset & 0xFF);
-		resA[4] = hdType;
-		resA[5] = hdQ;
-		resA[6] = hdImageWidthDiv8;
-		resA[7] = hdImageHeightDiv8;
+		resA[0] = hdInnFirstByte;
+		resA[1] = (byte)((hdInnFragmentOffset >> 16) & 0xFF);
+		resA[2] = (byte)((hdInnFragmentOffset >> 8) & 0xFF);
+		resA[3] = (byte)(hdInnFragmentOffset & 0xFF);
+		resA[4] = hdInnType;
+		resA[5] = hdInnQ;
+		resA[6] = hdInnImageWidthDiv8;
+		resA[7] = hdInnImageHeightDiv8;
 
 		// The JPEG Quantization Table RTP header is only present in the first packet of a frame
 		if (! withQtHeader) {
@@ -192,7 +182,7 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 		//   the luminance component and one shared by the chrominance components.
 		//   Each table is an array of 64 values.
 		///
-		int offs = HEADER_MAIN_SIZE;
+		int offs = INNER_HEADER_MAIN_SIZE;
 		/// MBZ - purpose unknown (8 bits)
 		resA[offs++] = 0;
 		/// Precision (8 bits): the Precision field specifies the size of the coefficients in the table.
@@ -242,7 +232,7 @@ public class RtpPacketPayloadMjpeg extends RtpPacketPayloadBase {
 		return resA;
 	}
 
-	private static byte[] getQuantizationTableData(JpegInfo jpegInfo, byte tableSel) {
+	private static byte[] getQuantizationTableData(@NonNull JpegInfo jpegInfo, byte tableSel) {
 		return (
 				jpegInfo.dqt_tablePrecisions[tableSel] == JpegInfo.QuantizationTablePrecision.INT8 ?
 						jpegInfo.dqt_tables8Bit[tableSel].tableData :

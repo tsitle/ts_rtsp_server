@@ -7,8 +7,8 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH264DataException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadH264;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
+import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketH264;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH264;
 import org.tsitle.rtsp.threads.rtp.FrameData;
@@ -115,7 +115,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected FrameData cbFrameDataSupplier() {
+	protected @NonNull FrameData cbFrameDataSupplier() {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
 
 		cacheFrameData.reset();
@@ -154,25 +154,20 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 	}
 
 	@Override
-	protected Boolean cbRtpPacketMarkerBitSupplier(int currentOffsetInFramePlusFragmentSize, int framePayloadSize) {
-		return (globalCurAu.arrNalUnitIx == globalCurAu.arrNalUnitCount &&
-				currentOffsetInFramePlusFragmentSize == framePayloadSize);
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+		return (globalCurAu.arrNalUnitIx == globalCurAu.arrNalUnitCount && isLastFragment);
 	}
 
 	@Override
-	protected RtpPacketPayloadInterface cbRtpPacketPayloadSupplier(FrameFragmentData curFragmentData) {
+	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbRtpPacketPayloadSupplier()";
 
 		if (globalCurNudPtr == null) {
 			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr == null");
 		}
-		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadData,
-				curFragmentData.fragmentOffset(),
-				curFragmentData.fragmentSize()
-			);
-
-		return new RtpPacketPayloadH264(
+		prepareRtpPacketDataForFragment(curFragmentData);
+		return new RtpPacketH264(
+				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment(),
 				globalCurNudPtr.h264Info,

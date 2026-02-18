@@ -1,14 +1,15 @@
 package org.tsitle.rtsp.packets.rtp;
 
-import org.tsitle.rtsp.buffers.BufferExt;
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.H265Info;
 import org.tsitle.rtsp.avdata.H265Parser;
+import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
  * RTP Packet Payload for H265.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc7798">RFC-7798</a>
  */
-public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
+public final class RtpPacketH265 extends RtpPacketCodecBase {
 
 	private enum H265PayloadType {
 		/** RTP/H265 Payload Type: Aggregation Packet */
@@ -41,41 +42,49 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** Minimum size of the main payload-specific RTP header */
+	public static final int INNER_HEADER_SIZE_MIN = H265Parser.NAL_UNIT_HEADER_SIZE;
+	/** Maximum size of the main payload-specific RTP header */
+	@SuppressWarnings("unused")
+	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 1;
+
 	/** Payload Header: RTP/H265 Payload Type as byte (6 bits) */
-	private final byte hdPayTypeBy;
+	private final byte hdInnPayTypeBy;
 	/** Payload Header: RTP/H265 Payload Type as enum */
-	private final H265PayloadType hdPayTypeEn;
+	private final @NonNull H265PayloadType hdInnPayTypeEn;
 	/** Payload Header: Layer ID, required to be equal to zero (6 bits) */
-	private final byte hdPayNuhLayerId;
+	private final byte hdInnPayNuhLayerId;
 	/** Payload Header: Temporal identifier of the NAL unit plus 1, required to be unequal to zero (3 bits) */
-	private final byte hdPayNuhTemporalIdPlus1;
+	private final byte hdInnPayNuhTemporalIdPlus1;
 	/** FU Header: S bit, needs to be zero for the first packet and one for later packets (1 bit) */
-	private final boolean hdFuS;
+	private final boolean hdInnFuS;
 	/** FU Header: E bit, needs to be one for the last packet and zero for all other packets (1 bit) */
-	private final boolean hdFuE;
+	private final boolean hdInnFuE;
 	/** FU Header: NAL Unit Type, must be equal to the field Type of the NAL Unit (6 bits) */
-	private final byte hdFuTypeBy;
+	private final byte hdInnFuTypeBy;
 
 	/**
 	 * Constructor.
+	 * @param paramsBase Base Container parameters
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the H265 frame data) (24 bits)
-	 * @param isLastFragment Is this the last fragment?
+	 * @param isLastFragment Is this the last fragment of the frame?
 	 * @param h265Info H265 info
 	 * @param payloadData Payload data
 	 */
-	public RtpPacketPayloadH265(
+	public RtpPacketH265(
+				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				boolean isLastFragment,
-				H265Info h265Info,
-				BufferExt payloadData
+				@NonNull H265Info h265Info,
+				@NonNull BufferExt payloadData
 			) {
-		super();
+		super(RtpPacketType.V_H265, paramsBase);
 
 		//
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
 		}
-		if (h265Info == null || h265Info.nuhLayerId != 0 || h265Info.nuhTemporalIdPlus1 == 0) {
+		if (h265Info.nuhLayerId != 0 || h265Info.nuhTemporalIdPlus1 == 0) {
 			throw new IllegalArgumentException("Cannot process this kind of H265");
 		}
 
@@ -89,17 +98,18 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
 
 		// set inner main header fields
-		this.hdPayTypeBy = (isFragmented ? H265PayloadType.FU.getValue() : h265Info.nalUnitTypeBy);
-		this.hdPayTypeEn = H265PayloadType.of(this.hdPayTypeBy);
-		this.hdPayNuhLayerId = h265Info.nuhLayerId;
-		this.hdPayNuhTemporalIdPlus1 = h265Info.nuhTemporalIdPlus1;
-		this.hdFuS = (this.hdPayTypeEn == H265PayloadType.FU && fragmentOffset == 0);
-		this.hdFuE = (this.hdPayTypeEn == H265PayloadType.FU && isLastFragment);
-		this.hdFuTypeBy = (this.hdPayTypeEn == H265PayloadType.FU ? h265Info.nalUnitTypeBy : 0x00);
+		this.hdInnPayTypeBy = (isFragmented ? H265PayloadType.FU.getValue() : h265Info.nalUnitTypeBy);
+		this.hdInnPayTypeEn = H265PayloadType.of(this.hdInnPayTypeBy);
+		this.hdInnPayNuhLayerId = h265Info.nuhLayerId;
+		this.hdInnPayNuhTemporalIdPlus1 = h265Info.nuhTemporalIdPlus1;
+		this.hdInnFuS = (this.hdInnPayTypeEn == H265PayloadType.FU && fragmentOffset == 0);
+		this.hdInnFuE = (this.hdInnPayTypeEn == H265PayloadType.FU && isLastFragment);
+		this.hdInnFuTypeBy = (this.hdInnPayTypeEn == H265PayloadType.FU ? h265Info.nalUnitTypeBy : 0x00);
 
 		// build the inner header bitstream (main header + optional FU header)
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
-		this.rawInnerHeaderData.copyOf(tmpRtpXxxHeader);
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
 
 		/*
 		 * Copy the inner payload bitstream:
@@ -110,90 +120,72 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 		 * we need to skip the NAL Unit header.
 		 */
 		int skip = (! isFragmented || fragmentOffset == 0 ? H265Parser.NAL_UNIT_HEADER_SIZE : 0);
-		this.rawInnerPayloadData.copyOf(
+		this.packetBuf.copyFrom(
 				payloadData,
 				skip,
+				this.packetBuf.getUsed(),
 				payloadData.getUsed() - skip
 			);
 	}
 
 	/**
 	 * Constructor.
-	 * @param rawInnerHeaderAndPayloadData Payload-specific header and payload of the RTP packet
+	 * @param packetData RTP packet bitstream including header and payload
 	 */
-	public RtpPacketPayloadH265(BufferExt rawInnerHeaderAndPayloadData) {
-		super();
+	@SuppressWarnings("unused")
+	public RtpPacketH265(@NonNull BufferExt packetData) {
+		super(RtpPacketType.V_H265, packetData);
 
-		if (rawInnerHeaderAndPayloadData.getUsed() < H265Parser.NAL_UNIT_HEADER_SIZE) {
+		if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + INNER_HEADER_SIZE_MIN) {
 			throw new IllegalArgumentException("Invalid RTP packet size");
 		}
 
 		// parse inner main header fields
-		int offs = 0;
-		this.hdPayTypeBy = (byte)( ((rawInnerHeaderAndPayloadData.get(offs) & 0x7E) >>> 1) & 0x3F);
-		this.hdPayTypeEn = H265PayloadType.of(this.hdPayTypeBy);
-		this.hdPayNuhLayerId = (byte)( ( ((rawInnerHeaderAndPayloadData.get(offs++) & 0x01) << 5) |
-				((rawInnerHeaderAndPayloadData.get(offs) & 0xF8) >> 3) ) & 0x3F);
-		this.hdPayNuhTemporalIdPlus1 = (byte)(rawInnerHeaderAndPayloadData.get(offs++) & 0x07);
+		int offs = RTP_CONT_HEADER_SIZE;
+		this.hdInnPayTypeBy = (byte)( ((packetData.get(offs) & 0x7E) >>> 1) & 0x3F);
+		this.hdInnPayTypeEn = H265PayloadType.of(this.hdInnPayTypeBy);
+		this.hdInnPayNuhLayerId = (byte)( ( ((packetData.get(offs++) & 0x01) << 5) |
+				((packetData.get(offs) & 0xF8) >> 3) ) & 0x3F);
+		this.hdInnPayNuhTemporalIdPlus1 = (byte)(packetData.get(offs++) & 0x07);
 
-		final int additionalHeaderSize = (hdPayTypeEn == H265PayloadType.FU ? 1 : 0);
+		// determine the length of the inner header bitstream (main header + optional QT header)
+		final int additionalHeaderSize = (hdInnPayTypeEn == H265PayloadType.FU ? 1 : 0);
+		this.payloadSpecHeaderSize = INNER_HEADER_SIZE_MIN + additionalHeaderSize;
 
 		if (additionalHeaderSize == 0) {
-			this.hdFuS = false;
-			this.hdFuE = false;
-			this.hdFuTypeBy = 0x00;
+			this.hdInnFuS = false;
+			this.hdInnFuE = false;
+			this.hdInnFuTypeBy = 0x00;
 		} else {
-			if (rawInnerHeaderAndPayloadData.getUsed() < H265Parser.NAL_UNIT_HEADER_SIZE + additionalHeaderSize) {
+			if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize) {
 				throw new IllegalArgumentException("Invalid RTP packet size");
 			}
-			byte tmpByte = rawInnerHeaderAndPayloadData.get(offs);
-			this.hdFuS = ((tmpByte & (byte)0x80) != 0);
-			this.hdFuE = ((tmpByte & (byte)0x40) != 0);
-			this.hdFuTypeBy = (byte)(tmpByte & (byte)0x3F);
+			byte tmpByte = packetData.get(offs);
+			this.hdInnFuS = ((tmpByte & (byte)0x80) != 0);
+			this.hdInnFuE = ((tmpByte & (byte)0x40) != 0);
+			this.hdInnFuTypeBy = (byte)(tmpByte & (byte)0x3F);
 		}
-
-		// copy the inner header bitstream (main header + optional FU header)
-		this.rawInnerHeaderData.copyOf(
-				rawInnerHeaderAndPayloadData,
-				0,
-				H265Parser.NAL_UNIT_HEADER_SIZE + additionalHeaderSize
-			);
-
-		// copy the inner payload bitstream
-		this.rawInnerPayloadData.copyOf(
-				rawInnerHeaderAndPayloadData,
-				this.rawInnerHeaderData.getUsed(),
-				rawInnerHeaderAndPayloadData.getUsed() - this.rawInnerHeaderData.getUsed()
-			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public RtpPacketType getPayloadType() {
-		return RtpPacketType.V_H265;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getClass().getSimpleName()).append(" [");
-		sb.append("PayType: ").append(hdPayTypeEn);
-		if (hdPayTypeEn == H265PayloadType.UNKNOWN) {
-			sb.append(" (o=").append(Integer.toUnsignedString(hdPayTypeBy)).append(")");
+		sb.append(super.toString());
+		sb.append(", H265PayType: ").append(hdInnPayTypeEn);
+		if (hdInnPayTypeEn == H265PayloadType.UNKNOWN) {
+			sb.append(" (o=").append(Integer.toUnsignedString(hdInnPayTypeBy)).append(")");
 		}
-		sb.append(", PayNuhLayerId: ").append(Integer.toUnsignedString(hdPayNuhLayerId));
-		sb.append(", PayNuhTemporalIdPlus1: ").append(Integer.toUnsignedString(hdPayNuhTemporalIdPlus1));
-		if (hdPayTypeEn == H265PayloadType.FU) {
-			sb.append(", FuS: ").append(hdFuS);
-			sb.append(", FuE: ").append(hdFuE);
-			sb.append(", FuType: ").append(Integer.toUnsignedString(hdFuTypeBy));
+		sb.append(", PayNuhLayerId: ").append(Integer.toUnsignedString(hdInnPayNuhLayerId));
+		sb.append(", PayNuhTemporalIdPlus1: ").append(Integer.toUnsignedString(hdInnPayNuhTemporalIdPlus1));
+		if (hdInnPayTypeEn == H265PayloadType.FU) {
+			sb.append(", FuS: ").append(hdInnFuS);
+			sb.append(", FuE: ").append(hdInnFuE);
+			sb.append(", FuType: ").append(Integer.toUnsignedString(hdInnFuTypeBy));
 		}
-		sb.append(", innerHeaderSz: ").append(Integer.toUnsignedString(rawInnerHeaderData.getUsed()));
-		sb.append(", innerPayloadSz: ").append(Integer.toUnsignedString(rawInnerPayloadData.getUsed()));
 		sb.append("]");
 		return sb.toString();
 	}
@@ -202,13 +194,13 @@ public class RtpPacketPayloadH265 extends RtpPacketPayloadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private byte[] buildRawInnerHeaderFromFields() {
-		final int additionalHeaderSize = (hdPayTypeEn == H265PayloadType.FU ? 1 : 0);
+		final int additionalHeaderSize = (hdInnPayTypeEn == H265PayloadType.FU ? 1 : 0);
 		final byte[] resA = new byte[H265Parser.NAL_UNIT_HEADER_SIZE + additionalHeaderSize];
 
-		resA[0] = (byte)( ( ((hdPayTypeBy & 0x3F) << 1) & 0x7E) | (((hdPayNuhLayerId & 0x3F) >> 5) & 0x01) );
-		resA[1] = (byte)( ( ((hdPayNuhLayerId & 0x1F) << 5) & 0xF8) | (hdPayNuhTemporalIdPlus1 & 0x07) );
+		resA[0] = (byte)( ( ((hdInnPayTypeBy & 0x3F) << 1) & 0x7E) | (((hdInnPayNuhLayerId & 0x3F) >> 5) & 0x01) );
+		resA[1] = (byte)( ( ((hdInnPayNuhLayerId & 0x1F) << 5) & 0xF8) | (hdInnPayNuhTemporalIdPlus1 & 0x07) );
 		if (additionalHeaderSize > 0) {
-			resA[2] = (byte)((hdFuS ? 0x80 : 0x00) | (hdFuE ? 0x40 : 0x00) | (hdFuTypeBy & 0x3F));
+			resA[2] = (byte)((hdInnFuS ? 0x80 : 0x00) | (hdInnFuE ? 0x40 : 0x00) | (hdInnFuTypeBy & 0x3F));
 		}
 
 		return resA;

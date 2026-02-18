@@ -5,8 +5,8 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.PcmInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadInterface;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPayloadPcm;
+import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcm;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -116,7 +116,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected FrameData cbFrameDataSupplier() {
+	protected @NonNull FrameData cbFrameDataSupplier() {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
 
 		cacheFrameData.reset();
@@ -157,7 +157,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 	}
 
 	@Override
-	protected Boolean cbRtpPacketMarkerBitSupplier(int currentOffsetInFramePlusFragmentSize, int framePayloadSize) {
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
 		/*
 		 * For audio (without noise suppression) the marker bit is always set to 0.
 		 * See https://datatracker.ietf.org/doc/html/rfc3551#section-4.1
@@ -166,14 +166,10 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 	}
 
 	@Override
-	protected RtpPacketPayloadInterface cbRtpPacketPayloadSupplier(FrameFragmentData curFragmentData) {
-		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadData,
-				curFragmentData.fragmentOffset(),
-				curFragmentData.fragmentSize()
-			);
-
-		return new RtpPacketPayloadPcm(
+	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
+		prepareRtpPacketDataForFragment(curFragmentData);
+		return new RtpPacketPcm(
+				cacheParamsBase,
 				rtpPayloadType,
 				curFragmentData.fragmentOffset(),
 				curFramePcmInfo,
