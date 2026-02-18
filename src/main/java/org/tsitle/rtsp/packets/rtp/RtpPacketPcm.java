@@ -60,6 +60,7 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 	 * @param packetType RTP packet type (since there are several PCM types)
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
+	@SuppressWarnings("unused")
 	public RtpPacketPcm(@NonNull RtpPacketType packetType, @NonNull BufferExt packetData) {
 		super(packetType, packetData);
 
