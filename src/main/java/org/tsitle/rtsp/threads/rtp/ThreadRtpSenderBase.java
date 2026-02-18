@@ -423,7 +423,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 		}
 
 		//
-		adaptiveScheduler.sleepUntilNanos(System.nanoTime() + 10_000L);
+		adaptiveScheduler.sleepUntilNanos(
+				System.nanoTime() + 10_000L * (udpPacketsForOneFrameCount > 50 ? 1L : 3L),
+				false
+			);
 		//
 		return true;
 	}
