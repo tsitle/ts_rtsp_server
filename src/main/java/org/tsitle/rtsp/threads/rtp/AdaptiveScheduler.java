@@ -74,14 +74,26 @@ public final class AdaptiveScheduler {
 	 * @throws IllegalArgumentException if targetTimeNanos is in the past
 	 */
 	public void sleepUntilNanos(long targetTimeNanos) {
+		sleepUntilNanos(targetTimeNanos, true);
+	}
+
+	/**
+	 * Sleeps until the specified target time (in nanoseconds since epoch) is reached.
+	 * Uses a hybrid approach: Thread.sleep() for coarse waiting, then busy-waiting
+	 * for high precision without overshooting.
+	 * @param targetTimeNanos The target time in nanoseconds (System.nanoTime() format)
+	 * @param warnIfInPast If true, logs a warning if the target time is in the past
+	 * @throws IllegalArgumentException if targetTimeNanos is in the past
+	 */
+	public void sleepUntilNanos(long targetTimeNanos, boolean warnIfInPast) {
 		final String FNC_NAME = getClass().getSimpleName() + ".sleepUntilNanos()";
 
 		long currentTime = System.nanoTime();
 
 		if (targetTimeNanos <= currentTime) {
-			if (curFrameNr > 1) {
+			if (warnIfInPast) {
 				logWarn(FNC_NAME,
-						String.format("Target time is in the past or current time (%.3f us, r=%d)",
+						String.format("Target time is in the past (%.3f us, r=%d)",
 								((double) targetTimeNanos - currentTime) / 1_000.0, curFrameNr
 					));
 			}
