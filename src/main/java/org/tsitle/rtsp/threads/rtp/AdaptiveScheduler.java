@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.util.concurrent.locks.LockSupport;
 
-public final class AdaptiveScheduler {
+final class AdaptiveScheduler {
 
 	@SuppressWarnings("FieldCanBeLocal")
 	private final LogMsgInterface logMsgInterface;
