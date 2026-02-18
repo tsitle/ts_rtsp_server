@@ -19,8 +19,6 @@ public final class AdaptiveScheduler {
 	private double cumulativeErrorNs = 0.0;
 
 	private long curFrameNr = 0;
-	@SuppressWarnings("unused")
-	private long sleepCounter = 0;
 
 	public AdaptiveScheduler(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -32,6 +30,12 @@ public final class AdaptiveScheduler {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public long getSendIntervalNs() {
+		return (long)targetIntervalNs;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void waitForNextFrame() {
@@ -70,13 +74,17 @@ public final class AdaptiveScheduler {
 	 * @throws IllegalArgumentException if targetTimeNanos is in the past
 	 */
 	public void sleepUntilNanos(long targetTimeNanos) {
+		final String FNC_NAME = getClass().getSimpleName() + ".sleepUntilNanos()";
+
 		long currentTime = System.nanoTime();
 
 		if (targetTimeNanos <= currentTime) {
-			/*logDebug("sleepUntilNanos()", "Target time is in the past or current time (" +
-						(((double)currentTime - targetTimeNanos) / 1_000.0) +
-						"us, r=" + curFrameNr +
-						", s=" + sleepCounter + ")");*/  // @TODO
+			if (curFrameNr > 1) {
+				logWarn(FNC_NAME,
+						String.format("Target time is in the past or current time (%.3f us, r=%d)",
+								((double) targetTimeNanos - currentTime) / 1_000.0, curFrameNr
+					));
+			}
 			return;
 		}
 
@@ -113,19 +121,17 @@ public final class AdaptiveScheduler {
 			// Busy wait - yields CPU but maintains high precision
 			Thread.onSpinWait(); // JDK 9+ hint for busy waiting
 		}
-
-		++sleepCounter;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/*private void logDebug(@NonNull String fncName, @NonNull String msg) {
+	private void logWarn(@NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(
-				RtxpLogLevel.DEBUG,
+				RtxpLogLevel.WARN,
 				Thread.currentThread().getName(),
 				fncName + ": " + msg
 			);
-	}*/
+	}
 
 }
