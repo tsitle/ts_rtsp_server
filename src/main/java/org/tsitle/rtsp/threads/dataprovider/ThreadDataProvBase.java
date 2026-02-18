@@ -33,7 +33,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOF is reached
 	 */
-	public ThreadDataProvBase(
+	protected ThreadDataProvBase(
 				@NonNull LogMsgInterface logMsgInterface,
 				int queueSize,
 				boolean debugRewindMediaFiles
