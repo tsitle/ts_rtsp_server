@@ -134,7 +134,7 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 					frameBuf.copyFrom(cachedDataBuf, 0, 0, nextStart);
 					System.arraycopy(cachedDataBuf, nextStart, cachedDataBuf, 0, cachedDataLength - nextStart);
 					cachedDataLength -= nextStart;
-					return;
+					break;
 				}
 			}
 
@@ -143,8 +143,9 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 					frameBuf.clear();
 					frameBuf.copyFrom(cachedDataBuf, 0, 0, cachedDataLength);
 					cachedDataLength = 0;
-					return;
+					break;
 				}
+				//
 				try {
 					bis.close();
 					fis.close();
