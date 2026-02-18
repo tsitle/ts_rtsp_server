@@ -184,6 +184,14 @@ public class BufferExt implements Cloneable {
 	}
 
 	/**
+	 * Append data from another buffer to this buffer.
+	 * @param srcBuf Source buffer
+	 */
+	public void append(byte[] srcBuf) {
+		copyFrom(srcBuf, 0, used, srcBuf.length);
+	}
+
+	/**
 	 * Append one byte to this buffer.
 	 * @param value The byte to append
 	 */
