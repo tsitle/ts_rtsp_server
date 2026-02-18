@@ -419,6 +419,10 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			}
 			throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + ex.getMessage());
 		}
+
+		//
+		adaptiveScheduler.sleepUntilNanos(System.nanoTime() + 10_000L);
+		//
 		return true;
 	}
 
