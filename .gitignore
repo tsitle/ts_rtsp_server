@@ -17,6 +17,7 @@ data/**/*.mp4
 data/**/*.m4a
 data/**/*.wav
 data/**/*.mjpeg
+data/**/*.mkv
 
 config-*.json
 !config-SAMPLE.json
