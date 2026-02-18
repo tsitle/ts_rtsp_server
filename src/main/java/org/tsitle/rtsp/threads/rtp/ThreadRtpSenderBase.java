@@ -60,6 +60,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
+	private int udpPacketsForOneFrameCount = 0;
 
 	/**
 	 * Constructor.
@@ -297,6 +298,7 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 
 		try {
 			// acquire the next frame from the video stream
+			long tmpTsNs = System.nanoTime();
 			final FrameData frameData = cbFrameDataSupplier();
 			if (frameData.haveErrorEof) {
 				logError(FNC_NAME, "haveErrorEof: " + frameData.errorMsg);
@@ -304,6 +306,11 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			}
 			if (frameData.haveErrorOther) {
 				throw new RtpFrameDataAcquException(frameData.errorMsg);
+			}
+			//
+			long tmpDeltaSendFrameNs = (System.nanoTime() - tmpTsNs);
+			if (tmpDeltaSendFrameNs > 1_000_000L) {
+				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
 
 			// only sleep if this is the first packet of the frame/AU
@@ -364,6 +371,13 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			if (isLastPktOfFrame || rtpPacketType.isAudio()) {
 				isFirstPktOfFrame = true;
 				isMainLoopStateA = false;
+				//
+				udpPacketsForOneFrameCount = 0;
+				//
+				tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
+				if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() / 2L) {
+					logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+				}
 			}
 		} catch (InputStreamEofException ex) {
 			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
