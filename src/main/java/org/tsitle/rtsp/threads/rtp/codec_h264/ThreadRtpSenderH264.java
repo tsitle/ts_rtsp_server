@@ -81,6 +81,8 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 
 	@Override
 	protected void beforeRunHook() {
+		final String FNC_NAME = getClass().getSimpleName() + ".beforeRunHook()";
+
 		threadDataProv = new ThreadDataProvH264(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsVideoCommon,
@@ -99,6 +101,17 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderBase {
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		//
+		try {
+			frameDataSupplierGrabAccessUnit();  // puts frames in CUR and NEXT
+			//
+			appendSrcAuToDestAu(globalNextAu, globalTempAu, globalNextAu.arrNalUnitIx);
+			appendSrcAuToDestAu(globalCurAu, globalNextAu, globalCurAu.arrNalUnitIx);
+			appendSrcAuToDestAu(globalTempAu, globalNextAu, globalTempAu.arrNalUnitIx);
+		} catch (InputStreamIoException | AvInvalidH264DataException ex) {
+			logError(FNC_NAME, ex.toString());
 		}
 	}
 
