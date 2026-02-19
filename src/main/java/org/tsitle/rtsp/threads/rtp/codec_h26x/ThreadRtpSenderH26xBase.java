@@ -30,6 +30,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 	private final H26xAccessUnit<I> globalCurAu = new H26xAccessUnit<>("CUR");
 	private final H26xAccessUnit<I> globalNextAu = new H26xAccessUnit<>("NEXT");
 	protected H26xNalUnitData<I> globalCurNudPtr = null;
+	private final RtpH26xPayloadBuffer rtpPayloadBufObj = new RtpH26xPayloadBuffer();
 
 	/**
 	 * Constructor.
@@ -133,7 +134,9 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 		//
 		cacheFrameData.rtpFrameTimestamp = globalCurAu.auTimestamp;
 		cacheFrameData.totalFrameSize = globalCurNudPtr.fullDataSize;
-		cacheFrameData.rtpPayloadData.copyOf(globalCurNudPtr.rtpPayloadData);
+		cacheFrameData.rtpPayloadDataPtr = globalCurNudPtr.rtpPayloadDataPtr;
+		//noinspection DataFlowIssue
+		rtpPayloadBufObj.markForDiscard(globalCurNudPtr.rtpPayloadDataPtr);
 
 		return cacheFrameData;
 	}
@@ -172,11 +175,13 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 		tmpLocalNudPtr.h26xInfo = (I)cacheH26xInfo.clone();
 
 		// extract the actual RTP/H26x payload
-		tmpLocalNudPtr.rtpPayloadData.copyOf(
+		BufferExt tmpBufPtr = rtpPayloadBufObj.getBufferObjPtr();
+		tmpBufPtr.copyOf(
 				cacheOrgVideoFrameBuf,
-				tmpLocalNudPtr.h26xInfo.nalUnitOffset,
-				tmpLocalNudPtr.h26xInfo.nalUnitLength
+				Objects.requireNonNull(tmpLocalNudPtr.h26xInfo).nalUnitOffset,
+				Objects.requireNonNull(tmpLocalNudPtr.h26xInfo).nalUnitLength
 			);
+		tmpLocalNudPtr.rtpPayloadDataPtr = tmpBufPtr;
 	}
 
 	private void frameDataSupplierGrabAccessUnit() throws InputStreamIoException, AvInvalidH26xDataException {

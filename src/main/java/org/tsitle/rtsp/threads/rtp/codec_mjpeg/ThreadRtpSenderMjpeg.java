@@ -23,6 +23,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<JpegInfo, Th
 	private final JpegInfo curFrameJpegInfo = new JpegInfo();
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
+	private final BufferExt cacheBufForFD = new BufferExt();
 
 	/**
 	 * Constructor.
@@ -116,11 +117,12 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<JpegInfo, Th
 				cacheFrameData.totalFrameSize = cacheOrgVideoFrameBuf.getUsed();
 
 				// extract the actual RTP/JPEG payload
-				cacheFrameData.rtpPayloadData.copyOf(
+				cacheBufForFD.copyOf(
 						cacheOrgVideoFrameBuf,
 						curFrameJpegInfo.sos_scanDataOffs,
 						curFrameJpegInfo.sos_scanDataLength
 					);
+				cacheFrameData.rtpPayloadDataPtr = cacheBufForFD;
 
 				// update frame number
 				incrRtpTsFrameNr();

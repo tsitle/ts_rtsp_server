@@ -31,6 +31,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, Threa
 	private final PcmInfo curFramePcmInfo = new PcmInfo();
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgAudioFrameBuf = new BufferExt();
+	private final BufferExt cacheBufForFD = new BufferExt();
 
 	/**
 	 * Constructor.
@@ -124,11 +125,12 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, Threa
 				cacheFrameData.totalFrameSize = cacheOrgAudioFrameBuf.getUsed();
 
 				// extract the actual RTP/(PCMU|LinearPCM) payload
-				cacheFrameData.rtpPayloadData.copyOf(
+				cacheBufForFD.copyOf(
 						cacheOrgAudioFrameBuf,
 						curFramePcmInfo.samplesOffset,
 						curFramePcmInfo.samplesLength
 					);
+				cacheFrameData.rtpPayloadDataPtr = cacheBufForFD;
 
 				// update frame number
 				incrRtpTsFrameNr();

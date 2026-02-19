@@ -13,7 +13,7 @@ import java.util.List;
  * The RTP packet timestamp needs to be the same for all packets of an AU.<br />
  * The 'Last RTP packet of a Frame Bit' needs to be set on the last packet of an AU.
  */
-public final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
+final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
 
 	public final String AU_NAME;
 	public int auTimestamp;

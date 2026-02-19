@@ -47,16 +47,6 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I, NUT>, NUT
 	}
 
 	@Override
-	public CodecInfoH26xBase<I, NUT> clone() {
-		try {
-			//noinspection unchecked
-			return (CodecInfoH26xBase<I, NUT>)super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
-		}
-	}
-
-	@Override
 	public String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -68,6 +58,16 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I, NUT>, NUT
 		baos.write(isVclFirstSliceSegmentInPic ? 1 : 0);
 
 		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+	}
+
+	@Override
+	public CodecInfoH26xBase<I, NUT> clone() {
+		try {
+			//noinspection unchecked
+			return (CodecInfoH26xBase<I, NUT>)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

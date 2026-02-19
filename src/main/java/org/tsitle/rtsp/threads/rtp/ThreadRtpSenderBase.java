@@ -213,7 +213,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {
 		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadData,
+				curFragmentData.frameData().rtpPayloadDataPtr,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.fragmentSize()
 			);
@@ -376,12 +376,12 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			//
 			int sentTotalPktSize = 0;
 			boolean isLastPktOfFrame = false;
-			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadData.getUsed()) {
+			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
 				final int curPktSize = Math.min(
 						UDP_PACKET_LEN - RtpPacketContainerBase.RTP_CONT_HEADER_SIZE - 4 - udpMaxPacketLenDelta,
-						frameData.rtpPayloadData.getUsed() - sentTotalPktSize
+						frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
 					);
-				final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadData.getUsed());
+				final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
 				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(isLastPktOfPayload);
 
 				//

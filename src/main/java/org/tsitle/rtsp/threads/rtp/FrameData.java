@@ -10,7 +10,7 @@ public final class FrameData {
 	/** The total frame size includes data that might not be part of the RTP payload */
 	public int totalFrameSize = 0;
 	/** Includes only the RTP payload data */
-	public final BufferExt rtpPayloadData = new BufferExt();
+	public BufferExt rtpPayloadDataPtr;
 	/** Timestamp of the RTP frame */
 	public int rtpFrameTimestamp = 0;
 	public boolean haveErrorEof = false;
@@ -19,7 +19,7 @@ public final class FrameData {
 
 	public void reset() {
 		totalFrameSize = 0;
-		rtpPayloadData.clear();
+		rtpPayloadDataPtr = null;
 		rtpFrameTimestamp = 0;
 		haveErrorEof = false;
 		haveErrorOther = false;
