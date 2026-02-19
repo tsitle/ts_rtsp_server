@@ -1,10 +1,13 @@
-package org.tsitle.rtsp.avinputstreams;
+package org.tsitle.rtsp.avstreams;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 
-public interface AvInputStreamInterface {
+/**
+ * Interface for outgoing streams that provide video frames or audio samples.
+ */
+public interface AvOutgoingStreamInterface {
 
 	/**
 	 * Gets the length of the magic bytes array for frame start detection.

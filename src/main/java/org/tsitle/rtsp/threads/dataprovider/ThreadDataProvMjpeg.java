@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.ImageReencoder;
 import org.tsitle.rtsp.avdata.JpegInfo;
 import org.tsitle.rtsp.avdata.JpegParser;
-import org.tsitle.rtsp.avinputstreams.VideoStreamMjpeg;
+import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
@@ -43,7 +43,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 
 		//
 		try {
-			this.mediaInputStream = new VideoStreamMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}

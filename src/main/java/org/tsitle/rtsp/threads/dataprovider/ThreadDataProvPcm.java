@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.PcmInfo;
 import org.tsitle.rtsp.avdata.PcmParser;
-import org.tsitle.rtsp.avinputstreams.AudioStreamPcm;
+import org.tsitle.rtsp.avstreams.AudioStreamOutgoingPcm;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -39,7 +39,7 @@ public class ThreadDataProvPcm extends ThreadDataProvBase<PcmInfo> {
 
 		//
 		try {
-			this.mediaInputStream = new AudioStreamPcm(
+			this.mediaOutgoingStream = new AudioStreamOutgoingPcm(
 					paramsAudioCommon.getAudioFilePath().orElseThrow(),
 					paramsPcm.getAudioChannelCount(),
 					paramsPcm.getAudioBitsPerSample(),

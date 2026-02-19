@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.avinputstreams;
+package org.tsitle.rtsp.avstreams;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
@@ -9,7 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class AudioStreamPcm implements AvInputStreamInterface {
+public class AudioStreamOutgoingPcm implements AvOutgoingStreamInterface {
 
 	private final String filename;
 	private final boolean isBigEndian;
@@ -30,7 +30,7 @@ public class AudioStreamPcm implements AvInputStreamInterface {
 	 * @param isBigEndian Is the input data big-endian?
 	 * @throws FileNotFoundException If the audio file cannot be found
 	 */
-	public AudioStreamPcm(String filename, int channels, int bitsPerSample, int rtpSamplesPerFrame, boolean isBigEndian)
+	public AudioStreamOutgoingPcm(String filename, int channels, int bitsPerSample, int rtpSamplesPerFrame, boolean isBigEndian)
 			throws FileNotFoundException {
 		if (channels < 1 || channels > 2) {
 			throw new IllegalArgumentException("Invalid audio channel count: " + channels);

@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.*;
-import org.tsitle.rtsp.avinputstreams.AvInputStreamInterface;
+import org.tsitle.rtsp.avstreams.AvOutgoingStreamInterface;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
@@ -22,7 +22,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 	private long eofAfterFrameNr = -1;
 	protected long debugStreamOffset = 0;
 
-	protected AvInputStreamInterface mediaInputStream;
+	protected AvOutgoingStreamInterface mediaOutgoingStream;
 
 	private final int queueSize;
 	private final boolean doDebugRewindMediaFiles;
@@ -49,7 +49,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
 
 		//
-		this.mediaInputStream = null;  // needs to be set by the child class
+		this.mediaOutgoingStream = null;  // needs to be set by the child class
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -127,10 +127,10 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 	private void acquireData() {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
-		if (! mediaInputStream.hasMoreFrames()) {
+		if (! mediaOutgoingStream.hasMoreFrames()) {
 			if (doDebugRewindMediaFiles) {
 				logDebug(FNC_NAME, "haveEof, rewinding");
-				mediaInputStream.rewind();
+				mediaOutgoingStream.rewind();
 			} else {
 				eofAfterFrameNr = frameCountInp;
 				return;
@@ -139,8 +139,8 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 		// get the next frame to send from the video, as well as its size
 		BufferExt tmpFrameBuf = new BufferExt();
 		try {
-			mediaInputStream.getNextFrame(tmpFrameBuf);
-			if (tmpFrameBuf.getUsed() < mediaInputStream.getMagicBytesLength() + H264Parser.NAL_UNIT_HEADER_SIZE) {
+			mediaOutgoingStream.getNextFrame(tmpFrameBuf);
+			if (tmpFrameBuf.getUsed() < mediaOutgoingStream.getMagicBytesLength() + H264Parser.NAL_UNIT_HEADER_SIZE) {
 				// we have reached the end of the video file
 				throw new InputStreamEofException();
 			}

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.avinputstreams;
+package org.tsitle.rtsp.avstreams;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
@@ -10,7 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
-public abstract class VideoStreamBase implements AvInputStreamInterface {
+public abstract class VideoStreamOutgoingBase implements AvOutgoingStreamInterface {
 
 	protected byte[] frameStartMagicbytes;
 	private final String filename;
@@ -26,7 +26,7 @@ public abstract class VideoStreamBase implements AvInputStreamInterface {
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	protected VideoStreamBase(byte[] frameStartMagicbytes, String filename) throws FileNotFoundException {
+	protected VideoStreamOutgoingBase(byte[] frameStartMagicbytes, String filename) throws FileNotFoundException {
 		this.frameStartMagicbytes = frameStartMagicbytes;
 		this.filename = filename;
 

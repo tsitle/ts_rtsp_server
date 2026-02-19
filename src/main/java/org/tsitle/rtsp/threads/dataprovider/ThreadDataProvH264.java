@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.*;
-import org.tsitle.rtsp.avinputstreams.VideoStreamH264;
+import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH264;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH264DataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -40,7 +40,7 @@ public class ThreadDataProvH264 extends ThreadDataProvBase<H264Info> {
 
 		//
 		try {
-			this.mediaInputStream = new VideoStreamH264(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaOutgoingStream = new VideoStreamOutgoingH264(paramsVideoCommon.getVideoFilePath().orElseThrow());
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -71,7 +71,7 @@ public class ThreadDataProvH264 extends ThreadDataProvBase<H264Info> {
 	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidH264DataException {
 		H264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
-				mediaInputStream.getMagicBytesLength(),
+				mediaOutgoingStream.getMagicBytesLength(),
 				inputBuf,
 				cachePictBoundInfoPrev
 			);

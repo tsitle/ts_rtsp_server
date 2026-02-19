@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.*;
-import org.tsitle.rtsp.avinputstreams.VideoStreamH265;
+import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH265;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH265DataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -35,7 +35,7 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
 
 		//
 		try {
-			this.mediaInputStream = new VideoStreamH265(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaOutgoingStream = new VideoStreamOutgoingH265(paramsVideoCommon.getVideoFilePath().orElseThrow());
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -61,7 +61,7 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
 	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidH265DataException {
 		H265Info curFrameH265Info = h265Parser.parseH265Data(
 				debugStreamOffset,
-				mediaInputStream.getMagicBytesLength(),
+				mediaOutgoingStream.getMagicBytesLength(),
 				inputBuf
 			);
 

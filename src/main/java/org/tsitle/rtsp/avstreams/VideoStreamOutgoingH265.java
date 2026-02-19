@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.avinputstreams;
+package org.tsitle.rtsp.avstreams;
 
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
@@ -6,7 +6,7 @@ import org.tsitle.rtsp.exceptions.InputStreamIoException;
 
 import java.io.FileNotFoundException;
 
-public class VideoStreamH265 extends VideoStreamBase {
+public class VideoStreamOutgoingH265 extends VideoStreamOutgoingBase {
 
 	/** Magic bytes ('Start Code') for HEVC (aka H265) NAL Units - 3-byte version */
 	private static final byte[] H265_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
@@ -20,7 +20,7 @@ public class VideoStreamH265 extends VideoStreamBase {
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	public VideoStreamH265(String filename) throws FileNotFoundException {
+	public VideoStreamOutgoingH265(String filename) throws FileNotFoundException {
 		super(new byte[0], filename);
 	}
 
