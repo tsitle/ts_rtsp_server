@@ -79,7 +79,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public synchronized boolean haveEof() {
-		return ((eofAfterFrameNr >= 0L && frameNrOutp > eofAfterFrameNr) || bufferQueue.isEmpty());
+		return (eofAfterFrameNr >= 0L && frameNrOutp > eofAfterFrameNr);
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
