@@ -18,6 +18,8 @@ data/**/*.m4a
 data/**/*.wav
 data/**/*.mjpeg
 data/**/*.mkv
+data/**/*.eac3
+data/**/*.ac3
 
 config-*.json
 !config-SAMPLE.json
