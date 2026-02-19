@@ -1,29 +1,29 @@
-package org.tsitle.rtsp.threads.rtp.codec_h264;
+package org.tsitle.rtsp.threads.rtp.codec_h26x;
 
-import org.tsitle.rtsp.avdata.H264Info;
+import org.tsitle.rtsp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.buffers.BufferExt;
 
-public final class H264NalUnitData {
+public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 
 	public int internalId = 0;
-	public H264Info h264Info = null;
+	public I h26xInfo = null;
 	public final BufferExt rtpPayloadData = new BufferExt();
 	public int fullDataSize = 0;
 
 	public void reset() {
 		internalId = 0;
-		h264Info = null;
+		h26xInfo = null;
 		rtpPayloadData.clear();
 		fullDataSize = 0;
 	}
 
-	public void moveDataFrom(H264NalUnitData src) {
+	public void moveDataFrom(H26xNalUnitData<I> src) {
 		if (src == null) {
 			throw new IllegalArgumentException("src == null");
 		}
 		internalId = src.internalId;
-		h264Info = src.h264Info;
-		rtpPayloadData.copyOf(src.rtpPayloadData);
+		h26xInfo = src.h26xInfo;
+		rtpPayloadData.copyOf(src.rtpPayloadData);  // @TODO
 		fullDataSize = src.fullDataSize;
 		//
 		src.reset();
@@ -33,7 +33,7 @@ public final class H264NalUnitData {
 	public String toString() {
 		return getClass().getSimpleName() + "[" +
 				"internalId=" + internalId +
-				", h264Info=" + (h264Info == null ? "NULL" : h264Info.toString(true)) +
+				", h26xInfo=" + (h26xInfo == null ? "NULL" : h26xInfo.toString(true)) +
 				", rtpPayloadData.sz=" + rtpPayloadData.getUsed() +
 				", fullDataSize=" + fullDataSize +
 				"]";

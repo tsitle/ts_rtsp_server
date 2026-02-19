@@ -1,8 +1,11 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.helpers.HashMd5Helper;
 
-public final class PcmInfo extends AvInfoBase<PcmInfo> {
+import java.io.ByteArrayOutputStream;
+
+public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
 
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
@@ -29,14 +32,24 @@ public final class PcmInfo extends AvInfoBase<PcmInfo> {
 	}
 
 	@Override
-	public void copyOf(@NonNull PcmInfo other) {
+	public void copyOf(@NonNull CodecInfoInterface<PcmInfo> src) {
 		reset();
 
-		samplesOffset = other.samplesOffset;
-		samplesLength = other.samplesLength;
-		channels = other.channels;
-		bitsPerSample = other.bitsPerSample;
-		samplesPerChannelInAudioData = other.samplesPerChannelInAudioData;
+		PcmInfo tmpSrc = (PcmInfo)src;
+		samplesOffset = tmpSrc.samplesOffset;
+		samplesLength = tmpSrc.samplesLength;
+		channels = tmpSrc.channels;
+		bitsPerSample = tmpSrc.bitsPerSample;
+		samplesPerChannelInAudioData = tmpSrc.samplesPerChannelInAudioData;
+	}
+
+	@Override
+	public PcmInfo clone() {
+		try {
+			return (PcmInfo)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 	@Override
@@ -49,6 +62,24 @@ public final class PcmInfo extends AvInfoBase<PcmInfo> {
 				", bitsPerSample=" + Integer.toUnsignedString(bitsPerSample) +
 				", samplesPerChannelInAudioData=" + Integer.toUnsignedString(samplesPerChannelInAudioData) +
 				"]";
+	}
+
+	@Override
+	public String toString(boolean shortOutput) {
+		return toString();
+	}
+
+	@Override
+	public String hashSum() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		baos.write(samplesOffset);
+		baos.write(samplesLength);
+		baos.write(channels);
+		baos.write(bitsPerSample);
+		baos.write(samplesPerChannelInAudioData);
+
+		return HashMd5Helper.hashOfBytes(baos.toByteArray());
 	}
 
 }

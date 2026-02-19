@@ -1,8 +1,13 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.helpers.HashMd5Helper;
 
-public final class H264Info extends AvInfoBase<H264Info> implements Cloneable {
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnitType> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -95,87 +100,77 @@ public final class H264Info extends AvInfoBase<H264Info> implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/** Offset of the NAL Unit data */
-	public int nalUnitOffset;
-	/** Length of the NAL Unit data */
-	public int nalUnitLength;
-	/** NAL Unit Type as byte (5 bits) */
-	public byte nalUnitTypeBy;
-	/** NAL Unit Type as enum */
-	public NalUnitType nalUnitTypeEn;
 	/** Ref IDC - indicates importance: 0=not used for reference, >0=used for reference (2 bits) */
 	public byte nuhRefIdc;
-	/** Is this a VCL NAL Unit? */
-	public boolean isVclNalUnit;
-	/** For VCL NAL Units: is this the first slice segment in a picture? */
-	public boolean isVclFirstSliceSegmentInPic;
 	/** Picture boundary information */
 	public H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
 
 	public H264Info() {
+		super(NalUnitType.UNKNOWN);
 		reset();
 	}
 
 	@Override
 	public void reset() {
-		nalUnitOffset = 0;
-		nalUnitLength = 0;
-		nalUnitTypeBy = 0;
-		nalUnitTypeEn = NalUnitType.UNKNOWN;
+		super.reset();
+
 		nuhRefIdc = 0;
-		isVclNalUnit = false;
-		isVclFirstSliceSegmentInPic = false;
 		pictBoundInfo.reset();
 	}
 
 	@Override
-	public void copyOf(@NonNull H264Info src) {
-		reset();
+	public void copyOf(@NonNull CodecInfoInterface<H264Info> src) {
+		super.copyOf(src);
 
-		nalUnitOffset = src.nalUnitOffset;
-		nalUnitLength = src.nalUnitLength;
-		nalUnitTypeBy = src.nalUnitTypeBy;
-		nalUnitTypeEn = src.nalUnitTypeEn;
-		nuhRefIdc = src.nuhRefIdc;
-		isVclNalUnit = src.isVclNalUnit;
-		isVclFirstSliceSegmentInPic = src.isVclFirstSliceSegmentInPic;
-		pictBoundInfo.copyOf(src.pictBoundInfo);
+		H264Info tmpSrc = (H264Info)src;
+		nuhRefIdc = tmpSrc.nuhRefIdc;
+		pictBoundInfo.copyOf(tmpSrc.pictBoundInfo);
 	}
 
 	@Override
 	public H264Info clone() {
-		try {
-			H264Info clone = (H264Info)super.clone();
-			clone.pictBoundInfo = pictBoundInfo.clone();
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
-		}
+		H264Info clone = (H264Info)super.clone();
+		clone.pictBoundInfo = pictBoundInfo.clone();
+		return clone;
 	}
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() +
 				"[" +
-				"offset=" + Integer.toUnsignedString(nalUnitOffset) +
-				", length=" + Integer.toUnsignedString(nalUnitLength) +
-				String.format(", TypeBy=0x%02X", nalUnitTypeBy) +
-				", TypeEn=" + nalUnitTypeEn +
+				super.getToStringFields() +
 				String.format(", RefIdc=0x%02X", nuhRefIdc) +
-				", isVclNalUnit=" + (isVclNalUnit ? "T" : "F") +
-				", isVcl1stSSIP=" + (isVclFirstSliceSegmentInPic ? "T" : "F") +
 				"]";
 	}
 
+	@Override
 	public String toString(boolean shortOutput) {
 		if (! shortOutput) {
 			return toString();
 		}
 		return getClass().getSimpleName() +
 				"[" +
-				String.format("T=0x%02X / %s", nalUnitTypeBy, nalUnitTypeEn) +
-				", isVcl1stSSIP=" + (isVclFirstSliceSegmentInPic ? "T" : "F") +
+				super.getToStringShortFields() +
 				"]";
+	}
+
+	@Override
+	public String hashSum() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		try {
+			baos.write(super.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		baos.write(nuhRefIdc);
+		try {
+			baos.write(pictBoundInfo.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return HashMd5Helper.hashOfBytes(baos.toByteArray());
 	}
 
 }

@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
@@ -9,6 +11,7 @@ import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.RtpFrameDataAcquException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
@@ -21,13 +24,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
+public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP extends ThreadDataProvBase<I>> extends ThreadPausableBase {
 
 	/** Interval for sending Sender Reports (in milliseconds) */
 	private static final int SEND_SR_INTERVAL_MS = 2000;
 
 	/** Length of UDP packets */
 	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
+
+	protected @Nullable TDP threadDataProv;
 
 	/** Buffer used to store the RTP/XXX payload */
 	protected final BufferExt cacheRtpInnerPayloadBuf = new BufferExt();
@@ -75,6 +80,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 			) {
 		super(paramsCommon.getLogMsgInterface().orElseThrow());
 
+		// sanity check
+		if (UDP_PACKET_LEN > 1400) {
+			throw new AssertionError("UDP_PACKET_LEN is too large: " + UDP_PACKET_LEN);
+		}
+
+		//
 		paramsCommon.validate();
 		if (rtpClockrate < 1 || rtpClockrate > 90000 * 2) {
 			throw new IllegalArgumentException("Invalid RTP clock rate: " + rtpClockrate);
@@ -129,6 +140,12 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
+		// sanity check
+		if (rtpTicksPerFrame < 1L) {
+			throw new AssertionError("rtpTicksPerFrame is < 1");
+		}
+
+		//
 		isRunning.set(true);
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
@@ -164,7 +181,24 @@ public abstract class ThreadRtpSenderBase extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected abstract void beforeRunHook();
+	protected abstract @NonNull TDP newThreadDataProv();
+
+	protected void beforeRunHook() {
+		threadDataProv = newThreadDataProv();
+		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
+		threadDataProv.setDaemon(false);
+		threadDataProv.start();
+
+		//
+		while (! threadDataProv.haveFullInputQueue()) {
+			try {
+				//noinspection BusyWait
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 
 	@Override
 	protected void stopThreadHook() {

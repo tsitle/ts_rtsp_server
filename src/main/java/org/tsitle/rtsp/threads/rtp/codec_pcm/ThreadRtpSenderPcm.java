@@ -1,7 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_pcm;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.PcmInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
@@ -16,11 +15,10 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
+public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, ThreadDataProvPcm> {
 
 	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final ParamsThreadRtpSenderPcm paramsPcm;
-	private @Nullable ThreadDataProvPcm threadDataProv;
 
 	/** Number of audio channels */
 	public int audioChannelCount;
@@ -80,27 +78,14 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void beforeRunHook() {
-		threadDataProv = new ThreadDataProvPcm(
+	protected @NonNull ThreadDataProvPcm newThreadDataProv() {
+		return new ThreadDataProvPcm(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsAudioCommon,
 				paramsPcm,
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
 				paramsCommon.getDebugRewindMediaFiles()
 			);
-		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
-		threadDataProv.setDaemon(false);
-		threadDataProv.start();
-
-		//
-		while (! threadDataProv.haveFullInputQueue()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
 	}
 
 	@Override

@@ -1,8 +1,13 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.helpers.HashMd5Helper;
 
-public final class H265Info extends AvInfoBase<H265Info> implements Cloneable {
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnitType> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -102,82 +107,72 @@ public final class H265Info extends AvInfoBase<H265Info> implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/** Offset of the NAL Unit data */
-	public int nalUnitOffset;
-	/** Length of the NAL Unit data */
-	public int nalUnitLength;
-	/** NAL Unit Type as byte (6 bits) */
-	public byte nalUnitTypeBy;
-	/** NAL Unit Type as enum */
-	public NalUnitType nalUnitTypeEn;
 	/** Layer ID, required to be equal to zero (6 bits) */
 	public byte nuhLayerId;
 	/** Temporal identifier of the NAL unit plus 1, required to be unequal to zero (3 bits) */
 	public byte nuhTemporalIdPlus1;
-	/** Is this a VCL NAL Unit? */
-	public boolean isVclNalUnit;
-	/** For VCL NAL Units: is this the first slice segment in a picture? */
-	public boolean isVclFirstSliceSegmentInPic;
 
-	@Override
-	public void reset() {
-		nalUnitOffset = 0;
-		nalUnitLength = 0;
-		nalUnitTypeBy = 0;
-		nalUnitTypeEn = NalUnitType.UNKNOWN;
-		nuhLayerId = 0;
-		nuhTemporalIdPlus1 = 0;
-		isVclNalUnit = false;
-		isVclFirstSliceSegmentInPic = false;
+	public H265Info() {
+		super(H265Info.NalUnitType.UNKNOWN);
+		reset();
 	}
 
 	@Override
-	public void copyOf(@NonNull H265Info src) {
-		reset();
+	public void reset() {
+		super.reset();
 
-		nalUnitOffset = src.nalUnitOffset;
-		nalUnitLength = src.nalUnitLength;
-		nalUnitTypeBy = src.nalUnitTypeBy;
-		nalUnitTypeEn = src.nalUnitTypeEn;
-		nuhLayerId = src.nuhLayerId;
-		nuhTemporalIdPlus1 = src.nuhTemporalIdPlus1;
-		isVclNalUnit = src.isVclNalUnit;
-		isVclFirstSliceSegmentInPic = src.isVclFirstSliceSegmentInPic;
+		nuhLayerId = 0;
+		nuhTemporalIdPlus1 = 0;
+	}
+
+	@Override
+	public void copyOf(@NonNull CodecInfoInterface<H265Info> src) {
+		super.copyOf(src);
+
+		H265Info tmpSrc = (H265Info)src;
+		nuhLayerId = tmpSrc.nuhLayerId;
+		nuhTemporalIdPlus1 = tmpSrc.nuhTemporalIdPlus1;
 	}
 
 	@Override
 	public H265Info clone() {
-		try {
-			return (H265Info)super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
-		}
+		return (H265Info)super.clone();
 	}
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() +
 				"[" +
-				"offset=" + Integer.toUnsignedString(nalUnitOffset) +
-				", length=" + Integer.toUnsignedString(nalUnitLength) +
-				String.format(", TypeBy=0x%02X", nalUnitTypeBy) +
-				", TypeEn=" + nalUnitTypeEn +
+				super.getToStringFields() +
 				String.format(", LayerId=0x%02X", nuhLayerId) +
 				String.format(", TID=0x%02X", nuhTemporalIdPlus1) +
-				", isVclNalUnit=" + (isVclNalUnit ? "T" : "F") +
-				", isVcl1stSSIP=" + (isVclFirstSliceSegmentInPic ? "T" : "F") +
 				"]";
 	}
 
+	@Override
 	public String toString(boolean shortOutput) {
 		if (! shortOutput) {
 			return toString();
 		}
 		return getClass().getSimpleName() +
 				"[" +
-				String.format("T=0x%02X / %s", nalUnitTypeBy, nalUnitTypeEn) +
-				", isVcl1stSSIP=" + (isVclFirstSliceSegmentInPic ? "T" : "F") +
+				super.getToStringShortFields() +
 				"]";
+	}
+
+	@Override
+	public String hashSum() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		try {
+			baos.write(super.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		baos.write(nuhLayerId);
+		baos.write(nuhTemporalIdPlus1);
+
+		return HashMd5Helper.hashOfBytes(baos.toByteArray());
 	}
 
 }

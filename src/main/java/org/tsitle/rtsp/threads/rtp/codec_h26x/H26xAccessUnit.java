@@ -1,4 +1,6 @@
-package org.tsitle.rtsp.threads.rtp.codec_h264;
+package org.tsitle.rtsp.threads.rtp.codec_h26x;
+
+import org.tsitle.rtsp.avdata.CodecInfoInterface;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,20 +13,20 @@ import java.util.List;
  * The RTP packet timestamp needs to be the same for all packets of an AU.<br />
  * The 'Last RTP packet of a Frame Bit' needs to be set on the last packet of an AU.
  */
-public final class H264AccessUnit {
+public final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
 
 	public final String AU_NAME;
 	public int auTimestamp;
 	public boolean isAuTimestampSet = false;
 	public int arrNalUnitCount;
 	public int arrNalUnitIx;
-	public final List<H264NalUnitData> arrNalUnitData = new ArrayList<>() {{
+	public final List<H26xNalUnitData<I>> arrNalUnitData = new ArrayList<>() {{
 			for (int i = 0; i < 5; i++) {
-				add(new H264NalUnitData());
+				add(new H26xNalUnitData<>());
 			}
 		}};
 
-	public H264AccessUnit(String name) {
+	public H26xAccessUnit(String name) {
 		this.AU_NAME = name;
 	}
 
@@ -33,7 +35,7 @@ public final class H264AccessUnit {
 		isAuTimestampSet = false;
 		arrNalUnitCount = 0;
 		arrNalUnitIx = 0;
-		for (H264NalUnitData nalUnitData : arrNalUnitData) {
+		for (H26xNalUnitData<I> nalUnitData : arrNalUnitData) {
 			nalUnitData.reset();
 		}
 	}

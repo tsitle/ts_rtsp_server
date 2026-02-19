@@ -6,12 +6,12 @@ import org.tsitle.rtsp.exceptions.InputStreamIoException;
 
 import java.io.FileNotFoundException;
 
-public class VideoStreamOutgoingH265 extends VideoStreamOutgoingBase {
+public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 
-	/** Magic bytes ('Start Code') for HEVC (aka H265) NAL Units - 3-byte version */
-	private static final byte[] H265_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
-	/** Magic bytes ('Start Code') for HEVC (aka H265) NAL Units - 4-byte version */
-	private static final byte[] H265_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
+	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
+	private static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
+	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 4-byte version */
+	private static final byte[] H26X_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
 
 	private boolean isFirstFrame = true;
 
@@ -20,7 +20,7 @@ public class VideoStreamOutgoingH265 extends VideoStreamOutgoingBase {
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	public VideoStreamOutgoingH265(String filename) throws FileNotFoundException {
+	public VideoStreamOutgoingH26x(String filename) throws FileNotFoundException {
 		super(new byte[0], filename);
 	}
 
@@ -34,10 +34,10 @@ public class VideoStreamOutgoingH265 extends VideoStreamOutgoingBase {
 	@Override
 	public void getNextFrame(BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
 		/*
-		 * A HEVC (aka H265) NAL Unit can either start with 0x00000001 or 0x000001.<br />
+		 * A H264/H265 NAL Unit can either start with 0x00000001 or 0x000001.<br />
 		 * Therefore, we first need to check whether to use the 3-byte or the 4-byte version.
 		 */
-		internalGetNextFrame(frameBuf, isFirstFrame, H265_FRAME_START_MAGICBYTES_4, H265_FRAME_START_MAGICBYTES_3);
+		internalGetNextFrame(frameBuf, isFirstFrame, H26X_FRAME_START_MAGICBYTES_4, H26X_FRAME_START_MAGICBYTES_3);
 		isFirstFrame = false;
 	}
 

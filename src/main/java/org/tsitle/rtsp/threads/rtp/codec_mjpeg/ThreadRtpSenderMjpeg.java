@@ -1,7 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_mjpeg;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
@@ -17,10 +16,9 @@ import org.tsitle.rtsp.exceptions.*;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
+public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<JpegInfo, ThreadDataProvMjpeg> {
 
 	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
-	private @Nullable ThreadDataProvMjpeg threadDataProv;
 
 	private final JpegInfo curFrameJpegInfo = new JpegInfo();
 	/** Buffer used to store the current frame from the input stream */
@@ -70,27 +68,16 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
-	protected void beforeRunHook() {
-		threadDataProv = new ThreadDataProvMjpeg(
+	protected @NonNull ThreadDataProvMjpeg newThreadDataProv() {
+		return new ThreadDataProvMjpeg(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsVideoCommon,
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
 				paramsCommon.getDebugRewindMediaFiles()
 			);
-		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
-		threadDataProv.setDaemon(false);
-		threadDataProv.start();
-
-		//
-		while (! threadDataProv.haveFullInputQueue()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
 	}
 
 	@Override

@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.ThreadBase;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends ThreadBase {
+public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extends ThreadBase {
 
 	private final Queue<@NonNull BufferExt> bufferQueue = new ConcurrentLinkedQueue<>();
 	protected final Queue<@NonNull I> infoQueue = new ConcurrentLinkedQueue<>();

@@ -1,6 +1,9 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.helpers.HashMd5Helper;
+
+import java.io.ByteArrayOutputStream;
 
 public final class H264PictureBoundaryInfo implements Cloneable {
 
@@ -84,4 +87,29 @@ public final class H264PictureBoundaryInfo implements Cloneable {
 				", deltaPicOrderCnt1=" + deltaPicOrderCnt1 +
 				"]";
 	}
+
+	public String hashSum() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		baos.write(nalRefIdc);
+		baos.write(nalUnitType);
+
+		baos.write(frameNum);
+
+		baos.write(picParameterSetId);
+
+		baos.write(fieldPicFlag ? 1 : 0);
+		baos.write(bottomFieldFlag ? 1 : 0);
+
+		baos.write(idrPicFlag ? 1 : 0);
+		baos.write(idrPicId);
+
+		baos.write(picOrderCntLsb);
+		baos.write(deltaPicOrderCntBottom);
+		baos.write(deltaPicOrderCnt0);
+		baos.write(deltaPicOrderCnt1);
+
+		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+	}
+
 }
