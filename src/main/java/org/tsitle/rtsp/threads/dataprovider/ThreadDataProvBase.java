@@ -84,7 +84,7 @@ public abstract class ThreadDataProvBase<I extends AvInfoBase<I>> extends Thread
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public synchronized boolean haveFullInputQueue() {
-		return (haveEof() || (bufferQueue.size() >= queueSize));
+		return ((! bufferQueue.isEmpty() && haveEof()) || (bufferQueue.size() >= queueSize));
 	}
 
 	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEofException {
