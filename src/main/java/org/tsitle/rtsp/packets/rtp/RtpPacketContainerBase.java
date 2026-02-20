@@ -122,11 +122,12 @@ public class RtpPacketContainerBase {
 	}
 
 	/**
-	 * Returns a pointer to the raw RTP packet buffer.
+	 * Returns a pointer to the raw RTP packet buffer.<br />
+	 * <b>Note:</b> Use in combination with {@code getPacketSize()} - not {@code bufPtr.length}!
 	 * @return Pointer to the raw RTP packet buffer
 	 */
 	public byte[] getPacketBufferPtr() {
-		return packetBuf.getBuf();
+		return packetBuf.getBufPtr();
 	}
 
 	/**

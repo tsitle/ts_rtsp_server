@@ -150,7 +150,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		// send the compound packet as a DatagramPacket over the UDP socket
 		DatagramPacket sendDp = new DatagramPacket(
-				tmpBuf.getBuf(),
+				tmpBuf.getBufPtr(),
 				tmpBuf.getUsed(),
 				params.getClientIpAddr().orElseThrow(),
 				params.getClientDestPortRtcp()

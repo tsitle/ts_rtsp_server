@@ -36,10 +36,11 @@ public class BufferExt implements Cloneable {
 	}
 
 	/**
-	 * Get a pointer to the internal buffer.
+	 * Get a pointer to the internal buffer.<br />
+	 * <b>Note:</b> Use in combination with {@code getUsed()} - not {@code bufPtr.length}!
 	 * @return Pointer to the internal buffer
 	 */
-	public byte[] getBuf() {
+	public byte[] getBufPtr() {
 		return buf;
 	}
 
@@ -84,7 +85,7 @@ public class BufferExt implements Cloneable {
 	 */
 	@SuppressWarnings("unused")
 	public void copyFrom(BufferExt srcBuf, int srcOffset, int dstOffset, int len) {
-		copyFrom(srcBuf.getBuf(), srcOffset, dstOffset, len);
+		copyFrom(srcBuf.getBufPtr(), srcOffset, dstOffset, len);
 	}
 
 	/**
@@ -125,7 +126,7 @@ public class BufferExt implements Cloneable {
 	 */
 	public void copyOf(BufferExt srcBuf) {
 		clear();
-		copyFrom(srcBuf.getBuf(), 0, 0, srcBuf.getUsed());
+		copyFrom(srcBuf.getBufPtr(), 0, 0, srcBuf.getUsed());
 	}
 
 	/**
@@ -136,7 +137,7 @@ public class BufferExt implements Cloneable {
 	 */
 	public void copyOf(BufferExt srcBuf, int srcOffset, int len) {
 		clear();
-		copyFrom(srcBuf.getBuf(), srcOffset, 0, len);
+		copyFrom(srcBuf.getBufPtr(), srcOffset, 0, len);
 	}
 
 	/**
@@ -180,7 +181,7 @@ public class BufferExt implements Cloneable {
 	 * @param srcBuf Source buffer
 	 */
 	public void append(BufferExt srcBuf) {
-		copyFrom(srcBuf.getBuf(), 0, used, srcBuf.getUsed());
+		copyFrom(srcBuf.getBufPtr(), 0, used, srcBuf.getUsed());
 	}
 
 	/**
