@@ -52,7 +52,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	protected final RtpPacketType rtpPacketType;
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
-	private final AtomicLong rtpTsFrameNr = new AtomicLong(1);
+	private final AtomicLong rtpTsFrameNr = new AtomicLong(-1);
 	private short rtpSequNr;
 	protected int debugStreamOffset = 0;
 	private boolean isFirstPktOfFrame = true;
@@ -137,11 +137,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
-	public synchronized long getFramesSent() {
-		return rtpTsFrameNr.get();
-	}
-
 	public abstract void notifyCongestionLevelChange(int congestionLevel);
 
 	@Override
@@ -158,6 +153,8 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
+		//
+		resetRtpTsFrameNr();
 		//
 		beforeRunHook();
 
@@ -262,6 +259,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	protected void incrRtpTsFrameNr() {
 		rtpTsFrameNr.incrementAndGet();
+	}
+
+	protected void resetRtpTsFrameNr() {
+		rtpTsFrameNr.set(1);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

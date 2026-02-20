@@ -88,6 +88,8 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			appendSrcAuToDestAu(globalNextAu, globalTempAu, globalNextAu.arrNalUnitIx);
 			appendSrcAuToDestAu(globalCurAu, globalNextAu, globalCurAu.arrNalUnitIx);
 			appendSrcAuToDestAu(globalTempAu, globalNextAu, globalTempAu.arrNalUnitIx);
+			//
+			resetRtpTsFrameNr();
 		} catch (InputStreamIoException | AvInvalidH26xDataException ex) {
 			logError(FNC_NAME, ex.toString());
 		}
