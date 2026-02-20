@@ -71,7 +71,7 @@ public class ThreadDataProvPcm extends ThreadDataProvBase<PcmInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidPcmDataException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidPcmDataException {
 		PcmInfo curFramePcmInfo = pcmParser.parsePcmData(inputBuf);
 
 		infoQueue.add(curFramePcmInfo);

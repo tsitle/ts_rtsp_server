@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.*;
-import org.tsitle.rtsp.avstreams.AvOutgoingStreamInterface;
+import org.tsitle.rtsp.avdata.CodecInfoInterface;
+import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
@@ -22,7 +22,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 	private long eofAfterFrameNr = -1;
 	protected long debugStreamOffset = 0;
 
-	protected AvOutgoingStreamInterface mediaOutgoingStream;
+	protected AvStreamOutgoingBase mediaOutgoingStream;
 
 	private final int queueSize;
 	private final boolean doDebugRewindMediaFiles;
@@ -112,6 +112,10 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	protected abstract void parseAndConvertData(@NonNull BufferExt inputBuf) throws Exception;
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException {
@@ -140,7 +144,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 		BufferExt tmpFrameBuf = new BufferExt();
 		try {
 			mediaOutgoingStream.getNextFrame(tmpFrameBuf);
-			if (tmpFrameBuf.getUsed() < mediaOutgoingStream.getMagicBytesLength() + H264Parser.NAL_UNIT_HEADER_SIZE) {
+			if (tmpFrameBuf.getUsed() < mediaOutgoingStream.getMagicBytesLengthBits() / 8) {
 				// we have reached the end of the video file
 				throw new InputStreamEofException();
 			}
@@ -172,7 +176,5 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 		//
 		++frameCountInp;
 	}
-
-	protected abstract void parseAndConvertData(BufferExt inputBuf) throws Exception;
 
 }

@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.avstreams;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
@@ -15,8 +16,8 @@ public class VideoStreamOutgoingMjpeg extends VideoStreamOutgoingBase {
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	public VideoStreamOutgoingMjpeg(String filename) throws FileNotFoundException {
-		super(MJPEG_FRAME_START_MAGICBYTES, filename);
+	public VideoStreamOutgoingMjpeg(@NonNull String filename) throws FileNotFoundException {
+		super(MJPEG_FRAME_START_MAGICBYTES, MJPEG_FRAME_START_MAGICBYTES.length * 8, filename);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -26,8 +27,14 @@ public class VideoStreamOutgoingMjpeg extends VideoStreamOutgoingBase {
 	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 */
-	public void getNextFrame(BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
-		internalGetNextFrame(frameBuf, false, null, null);
+	@Override
+	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
+		internalGetNextFrameWithStartCode(
+				frameBuf,
+				false,
+				null,
+				null
+			);
 	}
 
 }

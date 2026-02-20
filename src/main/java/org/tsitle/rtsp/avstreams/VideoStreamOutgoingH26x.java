@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.avstreams;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
@@ -20,8 +21,8 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	public VideoStreamOutgoingH26x(String filename) throws FileNotFoundException {
-		super(new byte[0], filename);
+	public VideoStreamOutgoingH26x(@NonNull String filename) throws FileNotFoundException {
+		super(new byte[0], 0, filename);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -32,12 +33,17 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 	 * @param frameBuf Output buffer to store the frame in
 	 */
 	@Override
-	public void getNextFrame(BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
+	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
 		/*
 		 * A H264/H265 NAL Unit can either start with 0x00000001 or 0x000001.<br />
 		 * Therefore, we first need to check whether to use the 3-byte or the 4-byte version.
 		 */
-		internalGetNextFrame(frameBuf, isFirstFrame, H26X_FRAME_START_MAGICBYTES_4, H26X_FRAME_START_MAGICBYTES_3);
+		internalGetNextFrameWithStartCode(
+				frameBuf,
+				isFirstFrame,
+				H26X_FRAME_START_MAGICBYTES_4,
+				H26X_FRAME_START_MAGICBYTES_3
+			);
 		isFirstFrame = false;
 	}
 

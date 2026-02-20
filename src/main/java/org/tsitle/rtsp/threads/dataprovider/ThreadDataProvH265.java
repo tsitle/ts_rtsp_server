@@ -58,10 +58,10 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidH26xDataException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidH26xDataException {
 		H265Info curFrameH265Info = h265Parser.parseH265Data(
 				debugStreamOffset,
-				mediaOutgoingStream.getMagicBytesLength(),
+				mediaOutgoingStream.getMagicBytesLengthBits() / 8,
 				inputBuf
 			);
 

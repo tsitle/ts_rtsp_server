@@ -20,6 +20,20 @@ public class BufferExt implements Cloneable {
 	}
 
 	/**
+	 * Set the number of bytes currently used in the buffer.
+	 * @param used Number of bytes used
+	 */
+	public void setUsed(int used) {
+		if (used > buf.length) {
+			throw new IllegalArgumentException("Used size cannot exceed buffer length");
+		}
+		if (used < 0) {
+			throw new IllegalArgumentException("Used size cannot be negative");
+		}
+		this.used = used;
+	}
+
+	/**
 	 * Checks if the buffer is empty.
 	 * @return True if the buffer is empty, false otherwise
 	 */

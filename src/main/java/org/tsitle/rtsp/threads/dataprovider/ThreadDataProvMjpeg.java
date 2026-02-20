@@ -80,7 +80,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
 		JpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary
@@ -118,7 +118,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 	 * For debugging purposes only.
 	 */
 	@SuppressWarnings({"unused", "SameParameterValue"})
-	private void writeJpegToFile(BufferExt data, String baseFilename, int frameNr) {
+	private void writeJpegToFile(@NonNull BufferExt data, @NonNull String baseFilename, int frameNr) {
 		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(String.format("%s_%06d.jpg", baseFilename, frameNr))) {
 			fos.write(data.getBufPtr(), 0, data.getUsed());
 		} catch (IOException ex) {
