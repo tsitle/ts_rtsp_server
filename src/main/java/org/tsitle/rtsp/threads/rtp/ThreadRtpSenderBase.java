@@ -67,6 +67,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	private long largestFrame = 0L;
 	private int udpPacketsForOneFrameCount = 0;
 
+	private long verPvS_ptsNs = 0L;
+	private long verPvS_timePerFrameNs;
+	private boolean verPvS_hadOf = false;
+
 	/**
 	 * Constructor.
 	 * @param paramsCommon Thread parameters
@@ -155,6 +159,8 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		//
 		resetRtpTsFrameNr();
+		//
+		verPvS_timePerFrameNs = (long)(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
 		//
 		beforeRunHook();
 
@@ -254,8 +260,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	protected int getRtpTimestampAsInt() {
 		return paramsCommon.getRtpTimestampT0() + (int)((rtpTsFrameNr.get() - 1) * rtpTicksPerFrame);
 	}
-
-	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void incrRtpTsFrameNr() {
 		rtpTsFrameNr.incrementAndGet();
@@ -427,6 +431,8 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() / 2L) {
 				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
+			//
+			verifyPresentationVsSamplingTime(frameData);
 		}
 
 		return true;
@@ -483,6 +489,25 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			);
 		//
 		return true;
+	}
+
+	private void verifyPresentationVsSamplingTime(FrameData frameData) {
+		final String FNC_NAME = getClass().getSimpleName() + ".verifyPresentationVsSamplingTime()";
+
+		if (! verPvS_hadOf && frameData.rtpFrameTimestamp >= paramsCommon.getRtpTimestampT0()) {
+			long rtpTsDelta = frameData.rtpFrameTimestamp - paramsCommon.getRtpTimestampT0();
+			double rtpFramesDelta = (double) rtpTsDelta / (double) rtpTicksPerFrame;
+			long samplingDeltaNs = (long) (rtpFramesDelta * verPvS_timePerFrameNs);
+			if (verPvS_ptsNs != samplingDeltaNs) {
+				logWarn(FNC_NAME,
+						String.format("PTS %.3f ms || S %.3f ms",
+								((double) verPvS_ptsNs / 1_000_000.0), ((double) samplingDeltaNs / 1_000_000.0)
+					));
+			}
+			verPvS_ptsNs += verPvS_timePerFrameNs;
+		} else {
+			verPvS_hadOf = true;
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
