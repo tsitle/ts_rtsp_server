@@ -11,7 +11,7 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.avdata.H265Info;
 
-public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<H265Info, H265Info.NalUnitType, ThreadDataProvH265> {
+public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<H265Info, ThreadDataProvH265> {
 
 	/**
 	 * Constructor.
@@ -96,6 +96,13 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<H265Info,
 				case NVCL_SEI_SUFFIX, NVCL_FD, NVCL_EOS, NVCL_EOB -> true;
 				default -> false;
 			};
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected H265Info getCloneOfH26xInfo(@NonNull H265Info src) {
+		return src.clone();
 	}
 
 }

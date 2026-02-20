@@ -49,7 +49,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	/** RTP ticks per frame */
 	protected long rtpTicksPerFrame;
 	/** RTP packet type */
-	private final RtpPacketType rtpPacketType;
+	protected final RtpPacketType rtpPacketType;
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(1);

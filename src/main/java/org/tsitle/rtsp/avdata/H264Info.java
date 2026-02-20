@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnitType> implements Cloneable {
+public final class H264Info extends CodecInfoH26xBase<H264Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -100,13 +100,15 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** NAL Unit Type as enum */
+	public NalUnitType nalUnitTypeEn;
 	/** Ref IDC - indicates importance: 0=not used for reference, >0=used for reference (2 bits) */
 	public byte nuhRefIdc;
 	/** Picture boundary information */
 	public H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
 
 	public H264Info() {
-		super(NalUnitType.UNKNOWN);
+		super();
 		reset();
 	}
 
@@ -114,6 +116,7 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 	public void reset() {
 		super.reset();
 
+		nalUnitTypeEn = NalUnitType.UNKNOWN;
 		nuhRefIdc = 0;
 		pictBoundInfo.reset();
 	}
@@ -123,15 +126,20 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 		super.copyOf(src);
 
 		H264Info tmpSrc = (H264Info)src;
+		nalUnitTypeEn = tmpSrc.nalUnitTypeEn;
 		nuhRefIdc = tmpSrc.nuhRefIdc;
 		pictBoundInfo.copyOf(tmpSrc.pictBoundInfo);
 	}
 
 	@Override
 	public H264Info clone() {
-		H264Info clone = (H264Info)super.clone();
-		clone.pictBoundInfo = pictBoundInfo.clone();
-		return clone;
+		try {
+			H264Info clone = (H264Info)super.clone();
+			clone.pictBoundInfo = pictBoundInfo.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -139,6 +147,7 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringFields() +
+				", TypeEn=" + nalUnitTypeEn +
 				String.format(", RefIdc=0x%02X", nuhRefIdc) +
 				"]";
 	}
@@ -151,6 +160,7 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringShortFields() +
+				String.format(" (en=%s)", nalUnitTypeBy) +
 				"]";
 	}
 
@@ -163,6 +173,7 @@ public final class H264Info extends CodecInfoH26xBase<H264Info, H264Info.NalUnit
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+		baos.write(nalUnitTypeEn.hashCode());
 		baos.write(nuhRefIdc);
 		try {
 			baos.write(pictBoundInfo.hashSum().getBytes(StandardCharsets.UTF_8));

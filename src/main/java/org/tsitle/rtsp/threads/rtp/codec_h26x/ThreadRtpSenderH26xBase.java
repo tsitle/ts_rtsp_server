@@ -17,7 +17,7 @@ import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import java.util.Objects;
 import java.util.Optional;
 
-public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT>, NUT, TDP extends ThreadDataProvBase<I>> extends ThreadRtpSenderBase<I, TDP> {
+public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TDP extends ThreadDataProvBase<I>> extends ThreadRtpSenderBase<I, TDP> {
 
 	protected final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
@@ -48,6 +48,11 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 				RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(rtpPacketType),
 				rtpPacketType
 			);
+
+		//
+		if (rtpPacketType != RtpPacketType.V_H264 && rtpPacketType != RtpPacketType.V_H265) {
+			throw new IllegalArgumentException("invalid rtpPacketType");
+		}
 
 		//
 		this.rtpTicksPerFrame = (long)((double)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(rtpPacketType) /
@@ -147,6 +152,16 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	protected abstract boolean isLeadingNonVcl(I nalInfo);
+
+	protected abstract boolean isTrailingNonVcl(I nalInfo);
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected abstract I getCloneOfH26xInfo(@NonNull I src);
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void frameDataSupplierGrabNalUnit() throws InputStreamEofException {
@@ -171,8 +186,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 		tmpLocalNudPtr.fullDataSize = cacheOrgVideoFrameBuf.getUsed();
 
 		//
-		//noinspection unchecked
-		tmpLocalNudPtr.h26xInfo = (I)cacheH26xInfo.clone();
+		tmpLocalNudPtr.h26xInfo = getCloneOfH26xInfo(cacheH26xInfo);
 
 		// extract the actual RTP/H26x payload
 		BufferExt tmpBufPtr = rtpPayloadBufObj.getBufferObjPtr();
@@ -247,7 +261,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 		appendSrcAuToDestAu(globalNextAu, globalTempAu, 0);
 	}
 
-	private static <I extends CodecInfoH26xBase<I, NUT>, NUT> void appendSrcAuToDestAu(
+	private static <I extends CodecInfoH26xBase<I>> void appendSrcAuToDestAu(
 				H26xAccessUnit<I> srcAu,
 				H26xAccessUnit<I> destAu,
 				int srcStartIx
@@ -270,7 +284,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 		srcAu.reset();
 	}
 
-	private static <I extends CodecInfoH26xBase<I, NUT>, NUT> void resizeArrayNalUnitData(
+	private static <I extends CodecInfoH26xBase<I>> void resizeArrayNalUnitData(
 				H26xAccessUnit<I> au,
 				int newSize
 			) {
@@ -367,10 +381,6 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I, NUT
 
 		//debugPrintAu(globalCurAu);
 	}
-
-	protected abstract boolean isLeadingNonVcl(I nalInfo);
-
-	protected abstract boolean isTrailingNonVcl(I nalInfo);
 
 	/**
 	 * For debugging purposes only.

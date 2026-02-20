@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnitType> implements Cloneable {
+public final class H265Info extends CodecInfoH26xBase<H265Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -107,13 +107,15 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** NAL Unit Type as enum */
+	public NalUnitType nalUnitTypeEn;
 	/** Layer ID, required to be equal to zero (6 bits) */
 	public byte nuhLayerId;
 	/** Temporal identifier of the NAL unit plus 1, required to be unequal to zero (3 bits) */
 	public byte nuhTemporalIdPlus1;
 
 	public H265Info() {
-		super(H265Info.NalUnitType.UNKNOWN);
+		super();
 		reset();
 	}
 
@@ -121,6 +123,7 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 	public void reset() {
 		super.reset();
 
+		nalUnitTypeEn = NalUnitType.UNKNOWN;
 		nuhLayerId = 0;
 		nuhTemporalIdPlus1 = 0;
 	}
@@ -130,13 +133,18 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 		super.copyOf(src);
 
 		H265Info tmpSrc = (H265Info)src;
+		nalUnitTypeEn = tmpSrc.nalUnitTypeEn;
 		nuhLayerId = tmpSrc.nuhLayerId;
 		nuhTemporalIdPlus1 = tmpSrc.nuhTemporalIdPlus1;
 	}
 
 	@Override
 	public H265Info clone() {
-		return (H265Info)super.clone();
+		try {
+			return (H265Info)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -144,6 +152,7 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringFields() +
+				", TypeEn=" + nalUnitTypeEn +
 				String.format(", LayerId=0x%02X", nuhLayerId) +
 				String.format(", TID=0x%02X", nuhTemporalIdPlus1) +
 				"]";
@@ -157,6 +166,7 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringShortFields() +
+				String.format(" (en=%s)", nalUnitTypeBy) +
 				"]";
 	}
 
@@ -169,6 +179,7 @@ public final class H265Info extends CodecInfoH26xBase<H265Info, H265Info.NalUnit
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+		baos.write(nalUnitTypeEn.hashCode());
 		baos.write(nuhLayerId);
 		baos.write(nuhTemporalIdPlus1);
 
