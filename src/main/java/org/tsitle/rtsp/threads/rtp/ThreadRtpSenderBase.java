@@ -170,6 +170,12 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 					break;
 				}
 			}
+		} catch (InputStreamEofException ex) {
+			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
+		} catch (UdpSocketIoException ex) {
+			logError(FNC_NAME, ex.toString());
+		} catch (RtpFrameDataAcquException ex) {
+			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "Interrupted while sleeping");
 		} finally {
@@ -296,7 +302,8 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean mainLoop() throws InterruptedException {
+	private boolean mainLoop()
+			throws InterruptedException, InputStreamEofException, RtpFrameDataAcquException, UdpSocketIoException {
 		if (isPaused.get()) {
 			Thread.sleep(100);
 			return true;
@@ -327,102 +334,92 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean sendFrame() {
+	private boolean sendFrame() throws InputStreamEofException, RtpFrameDataAcquException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
 
-		try {
-			// acquire the next frame from the video stream
-			long tmpTsNs = System.nanoTime();
-			final FrameData frameData = cbFrameDataSupplier();
-			if (frameData.haveErrorEof) {
-				logError(FNC_NAME, "haveErrorEof: " + frameData.errorMsg);
-				throw new InputStreamEofException();
-			}
-			if (frameData.haveErrorOther) {
-				throw new RtpFrameDataAcquException(frameData.errorMsg);
-			}
-			//
-			long tmpDeltaSendFrameNs = (System.nanoTime() - tmpTsNs);
-			if (tmpDeltaSendFrameNs > 1_000_000L) {
-				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaSendFrameNs / 1000.0));
-			}
-
-			// only sleep if this is the first packet of the frame/AU
-			if (isFirstPktOfFrame) {
-				/*
-				 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
-				 */
-				//
-				adaptiveScheduler.waitForNextFrame();
-				// update SenderInfo NTP and RTP timestamp
-				siStats.timestampNtpWallclock = getNtpTimestamp();
-				siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
-				//
-				isFirstPktOfFrame = false;
-			}
-
-			//
-			debugStreamOffset += frameData.totalFrameSize;
-
-			//
-			if (frameData.totalFrameSize > largestFrame) {
-				largestFrame = frameData.totalFrameSize;
-				if (largestFrame > 250_000) {
-					logWarn(FNC_NAME, (rtpPacketType.isVideo() ? "image" : "audio") +
-							" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
-				}
-			}
-
-			//
-			int sentTotalPktSize = 0;
-			boolean isLastPktOfFrame = false;
-			while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
-				final int curPktSize = Math.min(
-						UDP_PACKET_LEN - RtpPacketContainerBase.RTP_CONT_HEADER_SIZE - 4 - udpMaxPacketLenDelta,
-						frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
-					);
-				final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
-				isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(isLastPktOfPayload);
-
-				//
-				++udpPacketsForOneFrameCount;
-
-				//
-				boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, frameData, isLastPktOfPayload);
-				if (! tmpResB) {
-					return false;
-				}
-
-				sentTotalPktSize += curPktSize;
-				++siStats.rtpPacketsSent;
-				siStats.rtpPayloadBytesSent += curPktSize;
-
-				// update sequence number
-				incrRtpSequNr();
-			}
-
-			//
-			if (isLastPktOfFrame || rtpPacketType.isAudio()) {
-				isFirstPktOfFrame = true;
-				isMainLoopStateA = false;
-				//
-				udpPacketsForOneFrameCount = 0;
-				//
-				tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
-				if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() / 2L) {
-					logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
-				}
-			}
-		} catch (InputStreamEofException ex) {
-			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
-			return false;
-		} catch (UdpSocketIoException ex) {
-			logError(FNC_NAME, ex.toString());
-			return false;
-		} catch (RtpFrameDataAcquException ex) {
-			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
-			return false;
+		// acquire the next frame from the video stream
+		long tmpTsNs = System.nanoTime();
+		final FrameData frameData = cbFrameDataSupplier();
+		if (frameData.haveErrorEof) {
+			logError(FNC_NAME, "haveErrorEof: " + frameData.errorMsg);
+			throw new InputStreamEofException();
 		}
+		if (frameData.haveErrorOther) {
+			throw new RtpFrameDataAcquException(frameData.errorMsg);
+		}
+		//
+		long tmpDeltaSendFrameNs = (System.nanoTime() - tmpTsNs);
+		if (tmpDeltaSendFrameNs > 1_000_000L) {
+			logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+		}
+
+		// only sleep if this is the first packet of the frame/AU
+		if (isFirstPktOfFrame) {
+			/*
+			 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
+			 */
+			//
+			adaptiveScheduler.waitForNextFrame();
+			// update SenderInfo NTP and RTP timestamp
+			siStats.timestampNtpWallclock = getNtpTimestamp();
+			siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
+			//
+			isFirstPktOfFrame = false;
+		}
+
+		//
+		debugStreamOffset += frameData.totalFrameSize;
+
+		//
+		if (frameData.totalFrameSize > largestFrame) {
+			largestFrame = frameData.totalFrameSize;
+			if (largestFrame > 250_000) {
+				logWarn(FNC_NAME, (rtpPacketType.isVideo() ? "image" : "audio") +
+						" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
+			}
+		}
+
+		//
+		int sentTotalPktSize = 0;
+		boolean isLastPktOfFrame = false;
+		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
+			final int curPktSize = Math.min(
+					UDP_PACKET_LEN - RtpPacketContainerBase.RTP_CONT_HEADER_SIZE - 4 - udpMaxPacketLenDelta,
+					frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
+				);
+			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
+			isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(isLastPktOfPayload);
+
+			//
+			++udpPacketsForOneFrameCount;
+
+			//
+			boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, frameData, isLastPktOfPayload);
+			if (! tmpResB) {
+				return false;
+			}
+
+			sentTotalPktSize += curPktSize;
+			++siStats.rtpPacketsSent;
+			siStats.rtpPayloadBytesSent += curPktSize;
+
+			// update sequence number
+			incrRtpSequNr();
+		}
+
+		//
+		if (isLastPktOfFrame || rtpPacketType.isAudio()) {
+			isFirstPktOfFrame = true;
+			isMainLoopStateA = false;
+			//
+			udpPacketsForOneFrameCount = 0;
+			//
+			tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
+			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() / 2L) {
+				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+			}
+		}
+
 		return true;
 	}
 
