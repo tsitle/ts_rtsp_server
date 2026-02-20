@@ -117,12 +117,20 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		this.siStats.rtpTimestamp = this.paramsCommon.getRtpTimestampT0();
 
 		//
+		udpMaxPacketLenDelta = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4;
 		if (rtpPacketType == RtpPacketType.V_JPEG) {
 			// RTP/JPEG header can be rather big
-			udpMaxPacketLenDelta = RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE +
+			udpMaxPacketLenDelta += RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE +
 					RtpPacketMjpeg.INNER_HEADER_QT_PRE_SIZE + 128 * 2;
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
-			udpMaxPacketLenDelta = RtpPacketH264.INNER_HEADER_SIZE_MAX;
+			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
+		}
+		//noinspection ConstantValue
+		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
+			throw new AssertionError("UDP packet length too small");
+		}
+		while ((UDP_PACKET_LEN - udpMaxPacketLenDelta) % 4 != 0) {
+			++udpMaxPacketLenDelta;
 		}
 	}
 
@@ -384,7 +392,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		boolean isLastPktOfFrame = false;
 		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
 			final int curPktSize = Math.min(
-					UDP_PACKET_LEN - RtpPacketContainerBase.RTP_CONT_HEADER_SIZE - 4 - udpMaxPacketLenDelta,
+					UDP_PACKET_LEN - udpMaxPacketLenDelta,
 					frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
 				);
 			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
