@@ -20,6 +20,7 @@ data/**/*.mjpeg
 data/**/*.mkv
 data/**/*.eac3
 data/**/*.ac3
+data/**/*.aac
 
 config-*.json
 !config-SAMPLE.json
