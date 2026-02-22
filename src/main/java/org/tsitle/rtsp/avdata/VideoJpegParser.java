@@ -6,7 +6,7 @@ import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public final class JpegParser {
+public final class VideoJpegParser {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String logThreadId;
@@ -17,7 +17,7 @@ public final class JpegParser {
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param logThreadId Thread ID for logging messages
 	 */
-	public JpegParser(
+	public VideoJpegParser(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull String logThreadId
 			) {
@@ -34,14 +34,14 @@ public final class JpegParser {
 	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @return Parsed JPEG information
 	 */
-	public JpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
+	public @NonNull VideoJpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
 			throws AvInvalidJpegDataException {
-		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseJpegData()";
+		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseJpegData()";
 
 		this.debugStreamOffset = debugStreamOffset;
 
 		//
-		JpegInfo resObj = new JpegInfo();
+		VideoJpegInfo resObj = new VideoJpegInfo();
 
 		int offs = 0;
 		if (jpegBuf.getUsed() < 4) {
@@ -142,9 +142,9 @@ public final class JpegParser {
 	 * @param blockOffset Start offset of the block marker
 	 * @return Block length
 	 */
-	private int parseBlockLength(BufferExt jpegBuf, final int blockOffset)
+	private int parseBlockLength(@NonNull BufferExt jpegBuf, final int blockOffset)
 			throws AvInvalidJpegDataException {
-		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockLength()";
+		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockLength()";
 
 		if (blockOffset + 4 >= jpegBuf.getUsed()) {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data size");
@@ -172,9 +172,9 @@ public final class JpegParser {
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockSOS(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOS(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
-		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockSOS()";
+		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOS()";
 
 		/*
 		 * After the SOS marker, one cannot use a length field to skip the entire scan data.
@@ -213,9 +213,9 @@ public final class JpegParser {
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockSOF0(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOF0(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
-		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockSOF0()";
+		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOF0()";
 
 		//logDebug(FNC_NAME, blockOffset, "SOF0");
 		int blockLen = parseBlockLength(jpegBuf, blockOffset);
@@ -276,17 +276,17 @@ public final class JpegParser {
 			}
 		}
 		if (tmpMaxH == 4 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.YCBCR411;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR411;
 		} else if (tmpMaxH == 2 && tmpMaxV == 2) {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.YCBCR420;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR420;
 		} else if (tmpMaxH == 2 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.YCBCR422;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR422;
 		} else if (tmpMaxH == 1 && tmpMaxV == 2) {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.YCBCR440;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR440;
 		} else if (tmpMaxH == 1 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.YCBCR444;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR444;
 		} else {
-			jpegInfo.sof0_channelEncoding = JpegInfo.ChannelEncoding.UNKNOWN;
+			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.UNKNOWN;
 		}
 		/*logDebug(FNC_NAME, innerOffs,
 				String.format(
@@ -309,9 +309,9 @@ public final class JpegParser {
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockDQT(BufferExt jpegBuf, JpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockDQT(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidJpegDataException {
-		final String FNC_NAME = JpegParser.class.getSimpleName() + ".parseBlockDQT()";
+		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockDQT()";
 
 		//logDebug(FNC_NAME, blockOffset, "DQT");
 		int blockLen = parseBlockLength(jpegBuf, blockOffset);
@@ -337,17 +337,17 @@ public final class JpegParser {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Duplicate DQT table");
 		}
 		if (tmpPq == 0) {
-			jpegInfo.dqt_tablePrecisions[tmpTq] = JpegInfo.QuantizationTablePrecision.INT8;
+			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT8;
 			if (jpegInfo.dqt_table8bitCount >= jpegInfo.dqt_tables8Bit.length) {
 				throw new AvInvalidJpegDataException(FNC_NAME + ": Too many DQT tables");
 			}
-			jpegInfo.dqt_tables8Bit[tmpTq] = new JpegInfo.DqtTable8Bit(tmpTq);
+			jpegInfo.dqt_tables8Bit[tmpTq] = new VideoJpegInfo.DqtTable8Bit(tmpTq);
 		} else {
-			jpegInfo.dqt_tablePrecisions[tmpTq] = JpegInfo.QuantizationTablePrecision.INT16;
+			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT16;
 			if (jpegInfo.dqt_table16bitCount >= jpegInfo.dqt_tables16Bit.length) {
 				throw new AvInvalidJpegDataException(FNC_NAME + ": Too many DQT tables");
 			}
-			jpegInfo.dqt_tables16Bit[tmpTq] = new JpegInfo.DqtTable16Bit(tmpTq);
+			jpegInfo.dqt_tables16Bit[tmpTq] = new VideoJpegInfo.DqtTable16Bit(tmpTq);
 		}
 		if ((tmpPq == 0 && blockLen != jpegInfo.dqt_tables8Bit[tmpTq].tableData.length + 1) ||
 				(tmpPq == 1 && blockLen != jpegInfo.dqt_tables16Bit[tmpTq].tableData.length + 1)) {
@@ -380,7 +380,7 @@ public final class JpegParser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void logDebug(String fncName, int offset, String msg) {
+	private void logDebug(@NonNull String fncName, int offset, @NonNull String msg) {
 		if (debugStreamOffset != 0) { return; }
 		logMsgInterface.addMsgForLogThread(
 				RtxpLogLevel.DEBUG,
@@ -389,7 +389,7 @@ public final class JpegParser {
 			);
 	}
 
-	private void logError(String fncName, String msg) {
+	private void logError(@NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(
 				RtxpLogLevel.ERROR,
 				logThreadId,

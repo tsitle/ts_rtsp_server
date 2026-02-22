@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
-import org.tsitle.rtsp.threads.rtp.codec_mjpeg.ThreadRtpSenderMjpeg;
+import org.tsitle.rtsp.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
 import java.io.FileNotFoundException;
 

@@ -34,6 +34,9 @@ public abstract class AvStreamOutgoingBase {
 				int magicBytesLengthInBits,
 				@NonNull String filename
 			) throws FileNotFoundException {
+		if (magicBytesLengthInBits % 4 != 0) {
+			throw new IllegalArgumentException("magicBytesLengthInBits must be a multiple of 4");
+		}
 		this.frameStartMagicbytes = frameStartMagicbytes;
 		this.magicBytesLengthInBits = magicBytesLengthInBits;
 		this.filename = filename;
@@ -103,8 +106,8 @@ public abstract class AvStreamOutgoingBase {
 	 * @param length Number of bytes to read
 	 * @return Number of bytes read
 	 */
-	protected int bisReadBytes(byte[] buf, int length) throws InputStreamIoException {
-		return bisReadBytes(buf, 0, length);
+	protected int bisReadBytesNoCache(byte[] buf, int length) throws InputStreamIoException {
+		return bisReadBytesNoCache(buf, 0, length);
 	}
 
 	/**
@@ -114,7 +117,7 @@ public abstract class AvStreamOutgoingBase {
 	 * @param length Number of bytes to read
 	 * @return Number of bytes read
 	 */
-	protected int bisReadBytes(byte[] buf, int destOffset, int length) throws InputStreamIoException {
+	protected int bisReadBytesNoCache(byte[] buf, int destOffset, int length) throws InputStreamIoException {
 		try {
 			return bis.read(buf, destOffset, length);
 		} catch (IOException e) {
@@ -122,19 +125,22 @@ public abstract class AvStreamOutgoingBase {
 		}
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
-	 * Reads the next video frame from the stream
-	 *
+	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param isFirstFrame Is this the first frame in the stream?
 	 * @param magicBytesVersionA Version A of the magic bytes - needs to be the longer one
 	 * @param magicBytesVersionB Version B of the magic bytes - needs to be the shorter one
+	 * @param readMaxBytes Maximum number of bytes to read from the stream (-1 for unlimited)
 	 */
 	protected void internalGetNextFrameWithStartCode(
 				@NonNull BufferExt frameBuf,
 				boolean isFirstFrame,
 				byte[] magicBytesVersionA,
-				byte[] magicBytesVersionB
+				byte[] magicBytesVersionB,
+				int readMaxBytes
 			) throws InputStreamIoException, InputStreamEofException {
 		if ((! isFirstFrame || (magicBytesVersionA == null && magicBytesVersionB == null)) && frameStartMagicbytes.length == 0) {
 			throw new IllegalStateException("frameStartMagicbytes is not set");
@@ -167,12 +173,25 @@ public abstract class AvStreamOutgoingBase {
 			}
 
 			if (firstStart == 0) {
-				int nextStart = findStartCode(cachedDataBuf, cachedDataLength, frameStartMagicbytes.length);
-				if (nextStart > 0) {
+				if (readMaxBytes == -1) {
+					int nextStart = findStartCode(cachedDataBuf, cachedDataLength, frameStartMagicbytes.length);
+					if (nextStart > 0) {
+						frameBuf.clear();
+						frameBuf.copyFrom(cachedDataBuf, 0, 0, nextStart);
+						System.arraycopy(cachedDataBuf, nextStart, cachedDataBuf, 0, cachedDataLength - nextStart);
+						cachedDataLength -= nextStart;
+						break;
+					}
+				} else {
+					while (cachedDataLength < readMaxBytes) {
+						if (! readMoreIntoCache()) {
+							break;
+						}
+					}
 					frameBuf.clear();
-					frameBuf.copyFrom(cachedDataBuf, 0, 0, nextStart);
-					System.arraycopy(cachedDataBuf, nextStart, cachedDataBuf, 0, cachedDataLength - nextStart);
-					cachedDataLength -= nextStart;
+					frameBuf.copyFrom(cachedDataBuf, 0, 0, readMaxBytes);
+					System.arraycopy(cachedDataBuf, readMaxBytes, cachedDataBuf, 0, cachedDataLength - readMaxBytes);
+					cachedDataLength -= readMaxBytes;
 					break;
 				}
 			}
@@ -198,6 +217,39 @@ public abstract class AvStreamOutgoingBase {
 		}
 	}
 
+	/**
+	 * Reads only a fixed number of bytes from the stream.
+	 * @param frameBuf Output buffer to store the frame in
+	 * @param bytesToRead Number of bytes to read
+	 * @throws InputStreamIoException If the stream cannot be read
+	 * @throws InputStreamEofException If the end of the stream is reached before the requested number of bytes is read
+	 */
+	protected void internalReadRemainingFrameForFrameWithStartCode(
+				@NonNull BufferExt frameBuf,
+				int bytesToRead
+			) throws InputStreamIoException, InputStreamEofException {
+		int dstOffset = frameBuf.getUsed();
+		while (bytesToRead > 0) {
+			if (cachedDataLength > 0) {
+				int toReadFromCache = Math.min(bytesToRead, cachedDataLength);
+				frameBuf.copyFrom(cachedDataBuf, 0, dstOffset, toReadFromCache);
+				if (toReadFromCache < cachedDataLength) {
+					System.arraycopy(
+							cachedDataBuf,
+							toReadFromCache,
+							cachedDataBuf,
+							0,
+							cachedDataLength - toReadFromCache
+						);
+				}
+				cachedDataLength -= toReadFromCache;
+				bytesToRead -= toReadFromCache;
+			} else if (! readMoreIntoCache()) {
+				throw new InputStreamEofException();
+			}
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -209,7 +261,7 @@ public abstract class AvStreamOutgoingBase {
 		if (cachedDataLength == cachedDataBuf.length) {
 			cachedDataBuf = Arrays.copyOf(cachedDataBuf, cachedDataBuf.length * 2);
 		}
-		int read = bisReadBytes(cachedDataBuf, cachedDataLength, cachedDataBuf.length - cachedDataLength);
+		int read = bisReadBytesNoCache(cachedDataBuf, cachedDataLength, cachedDataBuf.length - cachedDataLength);
 		if (read <= 0) {
 			return false;
 		}

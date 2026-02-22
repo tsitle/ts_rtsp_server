@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
-import org.tsitle.rtsp.threads.rtp.codec_h26x.ThreadRtpSenderH264;
+import org.tsitle.rtsp.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH264;
 
 import java.io.FileNotFoundException;

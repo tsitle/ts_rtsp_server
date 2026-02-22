@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.H265Info;
-import org.tsitle.rtsp.avdata.H265Parser;
+import org.tsitle.rtsp.avdata.VideoH265Info;
+import org.tsitle.rtsp.avdata.VideoH265Parser;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
@@ -43,7 +43,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** Minimum size of the main payload-specific RTP header */
-	public static final int INNER_HEADER_SIZE_MIN = H265Parser.NAL_UNIT_HEADER_SIZE;
+	public static final int INNER_HEADER_SIZE_MIN = VideoH265Parser.NAL_UNIT_HEADER_SIZE;
 	/** Maximum size of the main payload-specific RTP header */
 	@SuppressWarnings("unused")
 	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 1;
@@ -75,7 +75,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				boolean isLastFragment,
-				@NonNull H265Info h265Info,
+				@NonNull VideoH265Info h265Info,
 				@NonNull BufferExt payloadData
 			) {
 		super(RtpPacketType.V_H265, paramsBase);
@@ -119,7 +119,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
 		 * we need to skip the NAL Unit header.
 		 */
-		int skip = (! isFragmented || fragmentOffset == 0 ? H265Parser.NAL_UNIT_HEADER_SIZE : 0);
+		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH265Parser.NAL_UNIT_HEADER_SIZE : 0);
 		this.packetBuf.copyFrom(
 				payloadData,
 				skip,
@@ -195,7 +195,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 
 	private byte[] buildRawInnerHeaderFromFields() {
 		final int additionalHeaderSize = (hdInnPayTypeEn == H265PayloadType.FU ? 1 : 0);
-		final byte[] resA = new byte[H265Parser.NAL_UNIT_HEADER_SIZE + additionalHeaderSize];
+		final byte[] resA = new byte[VideoH265Parser.NAL_UNIT_HEADER_SIZE + additionalHeaderSize];
 
 		resA[0] = (byte)( ( ((hdInnPayTypeBy & 0x3F) << 1) & 0x7E) | (((hdInnPayNuhLayerId & 0x3F) >> 5) & 0x01) );
 		resA[1] = (byte)( ( ((hdInnPayNuhLayerId & 0x1F) << 5) & 0xF8) | (hdInnPayNuhTemporalIdPlus1 & 0x07) );

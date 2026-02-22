@@ -1,9 +1,10 @@
 package org.tsitle.rtsp.avdata;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
 
-public final class PcmParser {
+public final class AudioPcmParser {
 
 	private final int channels;
 	private final int bitsPerSample;
@@ -13,7 +14,7 @@ public final class PcmParser {
 	 * @param channels Number of channels (1 = mono, 2 = stereo)
 	 * @param bitsPerSample Bits per sample (8 or 16)
 	 */
-	public PcmParser(int channels, int bitsPerSample) {
+	public AudioPcmParser(int channels, int bitsPerSample) {
 		this.channels = channels;
 		this.bitsPerSample = bitsPerSample;
 	}
@@ -26,8 +27,8 @@ public final class PcmParser {
 	 * @param pcmBuf PCM data
 	 * @return Parsed PCM information
 	 */
-	public PcmInfo parsePcmData(BufferExt pcmBuf) throws AvInvalidPcmDataException {
-		final String FNC_NAME = PcmParser.class.getSimpleName() + ".parsePcmData()";
+	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferExt pcmBuf) throws AvInvalidPcmDataException {
+		final String FNC_NAME = AudioPcmParser.class.getSimpleName() + ".parsePcmData()";
 
 		if (pcmBuf.getUsed() < 1) {
 			throw new AvInvalidPcmDataException(FNC_NAME + ": Invalid PCM data size");
@@ -40,7 +41,7 @@ public final class PcmParser {
 		}
 
 		//
-		PcmInfo resObj = new PcmInfo();
+		AudioPcmInfo resObj = new AudioPcmInfo();
 
 		resObj.samplesOffset = 0;
 		resObj.samplesLength = pcmBuf.getUsed();

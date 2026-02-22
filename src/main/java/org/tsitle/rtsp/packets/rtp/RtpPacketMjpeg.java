@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.JpegInfo;
+import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
@@ -50,7 +50,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	public RtpPacketMjpeg(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
-				@NonNull JpegInfo jpegInfo,
+				@NonNull VideoJpegInfo jpegInfo,
 				@NonNull BufferExt payloadData
 			) {
 		super(RtpPacketType.V_JPEG, paramsBase);
@@ -61,8 +61,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		}
 		if (jpegInfo.sof0_imgWidth <= 0 || jpegInfo.sof0_imgWidth > IMAGE_MAX_WIDTH_HEIGHT ||
 				jpegInfo.sof0_imgHeight <= 0 || jpegInfo.sof0_imgHeight > IMAGE_MAX_WIDTH_HEIGHT ||
-				(jpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR420 &&
-						jpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR422) ||
+				(jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
+						jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
 				jpegInfo.sof0_precision != 8 ||
 				jpegInfo.sos_scanDataOffs < 0 || jpegInfo.sos_scanDataLength < 1 ||
 				jpegInfo.sof2_isProgressive ||
@@ -74,7 +74,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		// set inner main header fields
 		this.hdInnFirstByte = (byte)0;
 		this.hdInnFragmentOffset = fragmentOffset;
-		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == JpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
+		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
 		this.hdInnQ = (byte)255;
 		this.hdInnImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
 		this.hdInnImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
@@ -145,7 +145,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull JpegInfo jpegInfo) {
+	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull VideoJpegInfo jpegInfo) {
 		int qtHdLength = 0;
 		if (withQtHeader) {
 			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
@@ -156,9 +156,9 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
 			}
 			qtHdLength += INNER_HEADER_QT_PRE_SIZE + (
-					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == JpegInfo.QuantizationTablePrecision.INT8 ?
+					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2) +
-					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == JpegInfo.QuantizationTablePrecision.INT8 ?
+					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2)
 				);
 		}
@@ -191,16 +191,16 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		///   If a bit is zero, the coefficients are 8 bits yielding a table length of 64 bytes.
 		///   If a bit is one, the coefficients are 16 bits for a table length of 128 bytes.
 		resA[offs++] = (byte)(
-				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == JpegInfo.QuantizationTablePrecision.INT8 ?
+				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 						0 : 1) |
-				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == JpegInfo.QuantizationTablePrecision.INT8 ?
+				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 						0 : 2)
 			);
 		/// QT Table Length (16 bits)
 		final int tmpHdLength = (
-				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == JpegInfo.QuantizationTablePrecision.INT8 ?
+				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 						1 : 2) +
-				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == JpegInfo.QuantizationTablePrecision.INT8 ?
+				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 						1 : 2)
 			);
 		resA[offs++] = (byte)((tmpHdLength >> 8) & 0xFF);
@@ -233,9 +233,18 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		return resA;
 	}
 
-	private static byte[] getQuantizationTableData(@NonNull JpegInfo jpegInfo, byte tableSel) {
+	private static byte[] getQuantizationTableData(@NonNull VideoJpegInfo jpegInfo, byte tableSel) {
+		if (jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT8 &&
+				jpegInfo.dqt_tables8Bit[tableSel] == null) {
+			throw new IllegalStateException("Invalid JPEG info: DQT 8-bit table is null");
+		}
+		if (jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT16 &&
+				jpegInfo.dqt_tables16Bit[tableSel] == null) {
+			throw new IllegalStateException("Invalid JPEG info: DQT 16-bit table is null");
+		}
+		//noinspection DataFlowIssue
 		return (
-				jpegInfo.dqt_tablePrecisions[tableSel] == JpegInfo.QuantizationTablePrecision.INT8 ?
+				jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 						jpegInfo.dqt_tables8Bit[tableSel].tableData :
 						jpegInfo.dqt_tables16Bit[tableSel].tableData
 			);

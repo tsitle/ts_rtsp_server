@@ -102,7 +102,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		///
 		final double sendIntervalNs = (rtpPacketType.isVideo() ?
 				(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond()) :
-				(double)(RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS * 1_000_000L)
+				(double)(RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS * 1_000_000L)
 			);
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is < 1ms");
@@ -207,7 +207,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		threadDataProv.start();
 
 		//
-		while (! threadDataProv.haveFullInputQueue()) {
+		while (threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
 			try {
 				//noinspection BusyWait
 				Thread.sleep(50);
@@ -219,6 +219,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	@Override
 	protected void stopThreadHook() {
+		if (threadDataProv != null) {
+			threadDataProv.stopThread();
+			threadDataProv = null;
+		}
 		parComRtpSocketUdp.close();
 	}
 
@@ -226,7 +230,52 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	protected abstract @NonNull FrameData cbFrameDataSupplier();
 
-	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment);
+	protected @NonNull FrameData defaultFrameDataSupplier(
+				@NonNull BufferExt cacheOrgFrameBuf,
+				@NonNull BufferExt cacheBufForFrameData,
+				@NonNull I codecInfoObj
+			) {
+		final String FNC_NAME = getClass().getSimpleName() + ".defaultFrameDataSupplier()";
+
+		cacheFrameData.reset();
+
+		//
+		cacheFrameData.rtpFrameTimestamp = getRtpTimestampAsInt();
+
+		if (threadDataProv == null || ! threadDataProv.isRunning()) {
+			cacheFrameData.haveErrorOther = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
+		} else if (threadDataProv.haveEof()) {
+			cacheFrameData.haveErrorEof = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": InputStreamEofException caught";
+		} else {
+			// get the next frame to send over the wire from the input stream
+			try {
+				threadDataProv.getNextFrame(cacheOrgFrameBuf, codecInfoObj);
+
+				//
+				cacheFrameData.totalFrameSize = cacheOrgFrameBuf.getUsed();
+
+				// extract the actual RTP/XXX payload
+				cacheBufForFrameData.copyOf(
+						cacheOrgFrameBuf,
+						codecInfoObj.getPayloadOffset(),
+						codecInfoObj.getPayloadLength()
+					);
+				cacheFrameData.rtpPayloadDataPtr = cacheBufForFrameData;
+
+				// update frame number
+				incrRtpTsFrameNr();
+			} catch (InputStreamEofException e) {
+				cacheFrameData.haveErrorEof = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": EOF";
+			}
+		}
+
+		return cacheFrameData;
+	}
+
+	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment);
 
 	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {
 		cacheRtpInnerPayloadBuf.copyOf(
@@ -239,7 +288,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		cacheParamsBase.reset();
 		cacheParamsBase.rtspSsrcId = paramsCommon.getRtspSsrcId();
 		cacheParamsBase.sequenceNumber = getRtpSequNr();
-		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(curFragmentData.isLastFragment());
+		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(
+				curFragmentData.fragmentOffset(),
+				curFragmentData.isLastFragment()
+			);
 		cacheParamsBase.rtpTimestamp = curFragmentData.frameData().rtpFrameTimestamp;
 	}
 
@@ -261,6 +313,11 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		return paramsCommon.getRtpTimestampT0() + (int)((rtpTsFrameNr.get() - 1) * rtpTicksPerFrame);
 	}
 
+	@SuppressWarnings("unused")
+	protected long getRtpTsFrameNr() {
+		return rtpTsFrameNr.get();
+	}
+
 	protected void incrRtpTsFrameNr() {
 		rtpTsFrameNr.incrementAndGet();
 	}
@@ -280,6 +337,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		DatagramPacket recvDp = new DatagramPacket(new byte[UDP_PACKET_LEN], UDP_PACKET_LEN);
 		for (int i = 0; i < 10; ++i) {
 			try {
+				//noinspection resource
+				if (paramsCommon.getRtpSocketUdp().orElseThrow().isClosed()) {
+					break;
+				}
 				//noinspection resource
 				paramsCommon.getRtpSocketUdp().orElseThrow().receive(recvDp);
 			} catch (SocketTimeoutException e) {
@@ -394,6 +455,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		//
 		int sentTotalPktSize = 0;
+		int curPktIndex = 0;
 		boolean isLastPktOfFrame = false;
 		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
 			final int curPktSize = Math.min(
@@ -401,13 +463,13 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 					frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
 				);
 			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
-			isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(isLastPktOfPayload);
+			isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(sentTotalPktSize, isLastPktOfPayload);
 
 			//
 			++udpPacketsForOneFrameCount;
 
 			//
-			boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, frameData, isLastPktOfPayload);
+			boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, curPktIndex++, frameData, isLastPktOfPayload);
 			if (! tmpResB) {
 				return false;
 			}
@@ -441,6 +503,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	private boolean sendSinglePacket(
 				int sentTotalPktSize,
 				int curPktSize,
+				int curPktIndex,
 				@NonNull FrameData frameData,
 				boolean isLastPktOfPayload
 			) throws UdpSocketIoException {
@@ -450,6 +513,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 				frameData,
 				sentTotalPktSize,
 				curPktSize,
+				curPktIndex,
 				isLastPktOfPayload
 			);
 		RtpPacketContainerBase curPacketContainer = cbRtpPacketPayloadSupplier(curFragmentData);

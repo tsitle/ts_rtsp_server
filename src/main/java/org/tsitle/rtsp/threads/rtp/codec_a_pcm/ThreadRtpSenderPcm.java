@@ -1,9 +1,8 @@
-package org.tsitle.rtsp.threads.rtp.codec_pcm;
+package org.tsitle.rtsp.threads.rtp.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.PcmInfo;
+import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -15,7 +14,7 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, ThreadDataProvPcm> {
+public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<AudioPcmInfo, ThreadDataProvPcm> {
 
 	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final ParamsThreadRtpSenderPcm paramsPcm;
@@ -28,7 +27,7 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, Threa
 	/** RTP Payload type */
 	private final RtpPacketType rtpPayloadType;
 
-	private final PcmInfo curFramePcmInfo = new PcmInfo();
+	private final AudioPcmInfo curFramePcmInfo = new AudioPcmInfo();
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgAudioFrameBuf = new BufferExt();
 	private final BufferExt cacheBufForFD = new BufferExt();
@@ -89,62 +88,19 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<PcmInfo, Threa
 			);
 	}
 
-	@Override
-	protected void stopThreadHook() {
-		if (threadDataProv != null) {
-			threadDataProv.stopThread();
-			threadDataProv = null;
-		}
-
-		super.stopThreadHook();
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
-
-		cacheFrameData.reset();
-
-		//
-		cacheFrameData.rtpFrameTimestamp = getRtpTimestampAsInt();
-
-		if (threadDataProv == null || ! threadDataProv.isRunning()) {
-			cacheFrameData.haveErrorOther = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
-		} else if (threadDataProv.haveEof()) {
-			cacheFrameData.haveErrorEof = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": InputStreamEofException caught";
-		} else {
-			// get the next frame to send over the wire from the input stream
-			try {
-				threadDataProv.getNextFrame(cacheOrgAudioFrameBuf, curFramePcmInfo);
-
-				//
-				cacheFrameData.totalFrameSize = cacheOrgAudioFrameBuf.getUsed();
-
-				// extract the actual RTP/(PCMU|LinearPCM) payload
-				cacheBufForFD.copyOf(
-						cacheOrgAudioFrameBuf,
-						curFramePcmInfo.samplesOffset,
-						curFramePcmInfo.samplesLength
-					);
-				cacheFrameData.rtpPayloadDataPtr = cacheBufForFD;
-
-				// update frame number
-				incrRtpTsFrameNr();
-			} catch (InputStreamEofException e) {
-				cacheFrameData.haveErrorEof = true;
-				cacheFrameData.errorMsg = FNC_NAME + ": EOF";
-			}
-		}
-
-		return cacheFrameData;
+		return defaultFrameDataSupplier(
+				cacheOrgAudioFrameBuf,
+				cacheBufForFD,
+				curFramePcmInfo
+			);
 	}
 
 	@Override
-	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		/*
 		 * For audio (without noise suppression) the marker bit is always set to 0.
 		 * See https://datatracker.ietf.org/doc/html/rfc3551#section-4.1

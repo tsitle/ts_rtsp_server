@@ -2,6 +2,9 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
+import org.tsitle.rtsp.avdata.subinfo.H264PpsContext;
+import org.tsitle.rtsp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
 import org.tsitle.rtsp.exceptions.BitReaderEosException;
@@ -9,7 +12,7 @@ import org.tsitle.rtsp.helpers.BitReaderHelper;
 
 import java.util.Map;
 
-public final class H264Parser {
+public final class VideoH264Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 1;
 
@@ -23,7 +26,7 @@ public final class H264Parser {
 	 * @param mapSpsContext Input: Already read SPS contexts
 	 * @param mapPpsContext Input: Already read PPS contexts
 	 */
-	public H264Parser(
+	public VideoH264Parser(
 				@NonNull Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext,
 				@NonNull Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext
 			) {
@@ -39,15 +42,15 @@ public final class H264Parser {
 	 * @param inpPictBoundInfoPrev Input: previous picture boundary information (can be null)
 	 * @return Parsed H264 information
 	 */
-	public @NonNull H264Info parseH264Data(
+	public @NonNull VideoH264Info parseH264Data(
 				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
 				@NonNull BufferExt h264Buf,
 				@Nullable H264PictureBoundaryInfo inpPictBoundInfoPrev
 			) throws AvInvalidH26xDataException {
-		final String FNC_NAME = H264Parser.class.getSimpleName() + ".parseH264Data()";
+		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseH264Data()";
 
-		H264Info resObj = new H264Info();
+		VideoH264Info resObj = new VideoH264Info();
 
 		resObj.nalUnitOffset = startCodeLen;
 		if (h264Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
@@ -77,13 +80,13 @@ public final class H264Parser {
 		}
 		resObj.nuhRefIdc = (byte)( ((h264Buf.get(offs) & 0x60) >>> 5) & 0x03);
 		resObj.nalUnitTypeBy = (byte)(h264Buf.get(offs) & 0x1F);
-		resObj.nalUnitTypeEn = H264Info.NalUnitType.of(resObj.nalUnitTypeBy);
+		resObj.nalUnitTypeEn = VideoH264Info.NalUnitType.of(resObj.nalUnitTypeBy);
 
 		// prepare RBSP decoded data
 		cacheH264RbspBuf.clear();
-		if (H264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy) ||
-				resObj.nalUnitTypeEn == H264Info.NalUnitType.NVCL_SPS ||
-				resObj.nalUnitTypeEn == H264Info.NalUnitType.NVCL_PPS) {
+		if (VideoH264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy) ||
+				resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS ||
+				resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_PPS) {
 			removeEmulationPreventionBytes(
 					h264Buf,
 					resObj.nalUnitOffset,
@@ -93,7 +96,7 @@ public final class H264Parser {
 		}
 		//
 		try {
-			if (H264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
+			if (VideoH264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
 				parseSliceForBoundary(
 						cacheH264RbspBuf,
 						resObj.pictBoundInfo
@@ -103,11 +106,11 @@ public final class H264Parser {
 							String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
 				resObj.isVclNalUnit = true;
 			} else {
-				if (resObj.nalUnitTypeEn == H264Info.NalUnitType.NVCL_SPS) {
+				if (resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS) {
 					H264SpsContext tmpSpsContext = new H264SpsContext();
 					parseSps(cacheH264RbspBuf, tmpSpsContext);
 					mapSpsContext.put(tmpSpsContext.id, tmpSpsContext);
-				} else if (resObj.nalUnitTypeEn == H264Info.NalUnitType.NVCL_PPS) {
+				} else if (resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_PPS) {
 					H264PpsContext tmpPpsContext = new H264PpsContext();
 					parsePps(cacheH264RbspBuf, tmpPpsContext);
 					mapPpsContext.put(tmpPpsContext.id, tmpPpsContext);
@@ -298,7 +301,7 @@ public final class H264Parser {
 				@NonNull BufferExt nalDataRbsp,
 				H264PictureBoundaryInfo outPictBoundInfo
 			) throws BitReaderEosException {
-		final String FNC_NAME = H264Parser.class.getSimpleName() + ".parseSliceForBoundary()";
+		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseSliceForBoundary()";
 
 		outPictBoundInfo.reset();
 

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp.codec_h26x;
+package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.tsitle.rtsp.avdata.CodecInfoInterface;
 

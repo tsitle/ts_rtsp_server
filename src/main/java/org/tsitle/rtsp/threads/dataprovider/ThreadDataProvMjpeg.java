@@ -2,8 +2,8 @@ package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.ImageReencoder;
-import org.tsitle.rtsp.avdata.JpegInfo;
-import org.tsitle.rtsp.avdata.JpegParser;
+import org.tsitle.rtsp.avdata.VideoJpegInfo;
+import org.tsitle.rtsp.avdata.VideoJpegParser;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
@@ -15,12 +15,12 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
+public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 
 	private final BufferExt cacheTempBuffer = new BufferExt();
 
 	private final ImageReencoder imageReencoder;
-	private final JpegParser jpegParser;
+	private final VideoJpegParser jpegParser;
 
 	/**
 	 * Constructor.
@@ -48,7 +48,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 			throw new RuntimeException(e);
 		}
 		this.imageReencoder = new ImageReencoder();
-		this.jpegParser = new JpegParser(
+		this.jpegParser = new VideoJpegParser(
 				logMsgInterface,
 				Thread.currentThread().getName()
 			);
@@ -81,11 +81,11 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<JpegInfo> {
 
 	@Override
 	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
-		JpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
+		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary
-		if ((curFrameJpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR420 &&
-					curFrameJpegInfo.sof0_channelEncoding != JpegInfo.ChannelEncoding.YCBCR422) ||
+		if ((curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
+					curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
 				curFrameJpegInfo.sof0_quantTableSelY == curFrameJpegInfo.sof0_quantTableSelCb ||
 				curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
 				curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {

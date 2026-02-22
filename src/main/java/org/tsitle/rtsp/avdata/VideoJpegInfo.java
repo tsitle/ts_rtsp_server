@@ -1,13 +1,14 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
+public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, Cloneable {
 
 	public enum ChannelEncoding {
 		UNKNOWN,
@@ -44,7 +45,7 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 			}
 		}
 
-		public String hashSum() {
+		public @NonNull String hashSum() {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 			baos.write(tableId);
@@ -70,7 +71,7 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 		}
 	}
 
-	public ChannelEncoding sof0_channelEncoding;
+	public @NonNull ChannelEncoding sof0_channelEncoding;
 	public int sof0_imgWidth;
 	public int sof0_imgHeight;
 	public boolean sof0_hasBaselineDCT;
@@ -83,17 +84,27 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 	public int sos_scanDataLength;
 	public int dqt_table8bitCount;
 	public int dqt_table16bitCount;
-	public DqtTable8Bit[] dqt_tables8Bit;
-	public DqtTable16Bit[] dqt_tables16Bit;
-	public QuantizationTablePrecision[] dqt_tablePrecisions;
+	public @Nullable DqtTable8Bit[] dqt_tables8Bit;
+	public @Nullable DqtTable16Bit[] dqt_tables16Bit;
+	public @Nullable QuantizationTablePrecision[] dqt_tablePrecisions;
 	public int dht_tableCount;
 	public int app_blockCount;
 	public boolean usesDri;
 	public boolean foundEoi;
 	public boolean foundCom;
 
-	public JpegInfo() {
+	public VideoJpegInfo() {
 		reset();
+	}
+
+	@Override
+	public int getPayloadOffset() {
+		return sos_scanDataOffs;
+	}
+
+	@Override
+	public int getPayloadLength() {
+		return sos_scanDataLength;
 	}
 
 	@Override
@@ -122,10 +133,10 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 	}
 
 	@Override
-	public void copyOf(@NonNull CodecInfoInterface<JpegInfo> src) {
+	public void copyOf(@NonNull CodecInfoInterface<VideoJpegInfo> src) {
 		reset();
 
-		JpegInfo tmpSrc = (JpegInfo)src;
+		VideoJpegInfo tmpSrc = (VideoJpegInfo)src;
 		sof0_channelEncoding = tmpSrc.sof0_channelEncoding;
 		sof0_imgWidth = tmpSrc.sof0_imgWidth;
 		sof0_imgHeight = tmpSrc.sof0_imgHeight;
@@ -140,9 +151,19 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 		dqt_table8bitCount = tmpSrc.dqt_table8bitCount;
 		dqt_table16bitCount = tmpSrc.dqt_table16bitCount;
 		for (int i = 0; i < tmpSrc.dqt_table8bitCount; ++i) {
+			if (tmpSrc.dqt_tables8Bit[i] == null) {
+				dqt_table8bitCount = i;
+				break;
+			}
+			//noinspection DataFlowIssue
 			dqt_tables8Bit[i] = (DqtTable8Bit)tmpSrc.dqt_tables8Bit[i].clone();
 		}
 		for (int i = 0; i < tmpSrc.dqt_table16bitCount; ++i) {
+			if (tmpSrc.dqt_tables16Bit[i] == null) {
+				dqt_table16bitCount = i;
+				break;
+			}
+			//noinspection DataFlowIssue
 			dqt_tables16Bit[i] = (DqtTable16Bit)tmpSrc.dqt_tables16Bit[i].clone();
 		}
 		if (tmpSrc.dht_tableCount > 0) {
@@ -156,13 +177,23 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 	}
 
 	@Override
-	public JpegInfo clone() {
+	public VideoJpegInfo clone() {
 		try {
-			JpegInfo clone = (JpegInfo)super.clone();
+			VideoJpegInfo clone = (VideoJpegInfo)super.clone();
 			for (int i = 0; i < dqt_table8bitCount; ++i) {
+				if (dqt_tables8Bit[i] == null) {
+					clone.dqt_table8bitCount = i;
+					break;
+				}
+				//noinspection DataFlowIssue
 				clone.dqt_tables8Bit[i] = (DqtTable8Bit)dqt_tables8Bit[i].clone();
 			}
 			for (int i = 0; i < dqt_table16bitCount; ++i) {
+				if (dqt_tables16Bit[i] == null) {
+					clone.dqt_table16bitCount = i;
+					break;
+				}
+				//noinspection DataFlowIssue
 				clone.dqt_tables16Bit[i] = (DqtTable16Bit)dqt_tables16Bit[i].clone();
 			}
 			if (dht_tableCount > 0) {
@@ -190,7 +221,7 @@ public final class JpegInfo implements CodecInfoInterface<JpegInfo>, Cloneable {
 	}
 
 	@Override
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		baos.write(sof0_channelEncoding.ordinal());

@@ -1,13 +1,14 @@
 package org.tsitle.rtsp.avdata;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
 
-public class H265Parser {
+public class VideoH265Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 2;
 
-	public H265Parser() { }
+	public VideoH265Parser() { }
 
 	/**
 	 * Parses the H265 data and returns an H265Info object with the parsed information.
@@ -16,14 +17,14 @@ public class H265Parser {
 	 * @param h265Buf H265 data
 	 * @return Parsed H265 information
 	 */
-	public H265Info parseH265Data(
+	public @NonNull VideoH265Info parseH265Data(
 				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
-				BufferExt h265Buf
+				@NonNull BufferExt h265Buf
 			) throws AvInvalidH26xDataException {
-		final String FNC_NAME = H265Parser.class.getSimpleName() + ".parseH265Data()";
+		final String FNC_NAME = VideoH265Parser.class.getSimpleName() + ".parseH265Data()";
 
-		H265Info resObj = new H265Info();
+		VideoH265Info resObj = new VideoH265Info();
 
 		resObj.nalUnitOffset = startCodeLen;
 		if (h265Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
@@ -54,7 +55,7 @@ public class H265Parser {
 				);
 		}
 		resObj.nalUnitTypeBy = (byte)( ((h265Buf.get(offs) & 0x7E) >>> 1) & 0x3F);
-		resObj.nalUnitTypeEn = H265Info.NalUnitType.of(resObj.nalUnitTypeBy);
+		resObj.nalUnitTypeEn = VideoH265Info.NalUnitType.of(resObj.nalUnitTypeBy);
 		resObj.nuhLayerId = (byte)( ( ((h265Buf.get(offs++) & 0x01) << 5) |
 				((h265Buf.get(offs) & 0xF8) >> 3) ) & 0x3F);
 		resObj.nuhTemporalIdPlus1 = (byte)(h265Buf.get(offs++) & 0x07);
@@ -70,7 +71,7 @@ public class H265Parser {
 				);
 		}
 
-		if (H265Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
+		if (VideoH265Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
 			/*
 			 * We don't do 'EBSP' to 'RBSP' (Emulation prevention three bytes) conversion here
 			 * since the TemporalIdPlus1 must be non-zero and therefore the first two bytes

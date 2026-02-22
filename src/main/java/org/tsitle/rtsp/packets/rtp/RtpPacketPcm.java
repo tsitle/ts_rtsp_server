@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.PcmInfo;
+import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
@@ -26,7 +26,7 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 				@NonNull ParamsContainerBase paramsBase,
 				@NonNull RtpPacketType packetType,
 				int fragmentOffset,
-				@NonNull PcmInfo pcmInfo,
+				@NonNull AudioPcmInfo pcmInfo,
 				@NonNull BufferExt payloadData
 			) {
 		super(packetType, paramsBase);

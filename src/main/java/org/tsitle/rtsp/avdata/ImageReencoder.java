@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.avdata;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
 
@@ -72,7 +73,7 @@ public class ImageReencoder {
 	 * @param outputBuf Re-encoded image bytes
 	 * @throws ImageReencoderIoException If an I/O error occurs
 	 */
-	public void reencodeImage(BufferExt inputBuf, BufferExt outputBuf) throws ImageReencoderIoException {
+	public void reencodeImage(@NonNull BufferExt inputBuf, @NonNull BufferExt outputBuf) throws ImageReencoderIoException {
 		final BufferedImage inputImageOrg = convertBytesIntoImage(inputBuf);
 
 		writeImageToBufferExt(inputImageOrg, outputBuf);
@@ -85,7 +86,8 @@ public class ImageReencoder {
 	 * @param outputBuf Scaled image bytes
 	 * @throws ImageReencoderIoException If an I/O error occurs
 	 */
-	public void scaleImage(BufferExt inputBuf, int maxImageWidthHeight, BufferExt outputBuf) throws ImageReencoderIoException {
+	public void scaleImage(@NonNull BufferExt inputBuf, int maxImageWidthHeight, @NonNull BufferExt outputBuf)
+			throws ImageReencoderIoException {
 		final BufferedImage inputImageOrg = convertBytesIntoImage(inputBuf);
 
 		final BufferedImage bufferedImageRe = internalScaleImage(inputImageOrg, maxImageWidthHeight);
@@ -130,7 +132,7 @@ public class ImageReencoder {
 	/**
 	 * Scale the image and return the BufferedImage object.
 	 */
-	private BufferedImage internalScaleImage(final BufferedImage inputImage, int maxImageWidthHeight)
+	private @NonNull BufferedImage internalScaleImage(final @NonNull BufferedImage inputImage, int maxImageWidthHeight)
 			throws ImageReencoderIoException {
 		int curWidth = inputImage.getWidth(null);
 		int curHeight = inputImage.getHeight(null);
@@ -169,7 +171,7 @@ public class ImageReencoder {
 	/**
 	 * Re-write the image and return the BufferedImage object.
 	 */
-	private BufferedImage rewriteImageWithScaling(final BufferedImage inputImage, int targetWidth, int targetHeight)
+	private @NonNull BufferedImage rewriteImageWithScaling(final @NonNull BufferedImage inputImage, int targetWidth, int targetHeight)
 			throws ImageReencoderIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".rewriteImageWithScaling()";
 
@@ -194,7 +196,7 @@ public class ImageReencoder {
 	 * @return Image object
 	 * @throws ImageReencoderIoException If an I/O error occurs
 	 */
-	private BufferedImage convertBytesIntoImage(BufferExt imageBuf) throws ImageReencoderIoException {
+	private @NonNull BufferedImage convertBytesIntoImage(@NonNull BufferExt imageBuf) throws ImageReencoderIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".convertBytesIntoImage()";
 
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBuf.getBufPtr(), 0, imageBuf.getUsed())) {
@@ -207,7 +209,7 @@ public class ImageReencoder {
 	/**
 	 * Write an image to a buffer.
 	 */
-	private void writeImageToBufferExt(BufferedImage outputImage, BufferExt outputBuf) throws ImageReencoderIoException {
+	private void writeImageToBufferExt(@NonNull BufferedImage outputImage, @NonNull BufferExt outputBuf) throws ImageReencoderIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeImageToBufferExt()";
 
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

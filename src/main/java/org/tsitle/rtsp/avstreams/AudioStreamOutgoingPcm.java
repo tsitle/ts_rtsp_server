@@ -78,7 +78,7 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 		frameBuf.clear();
 		frameBuf.increaseSize(rtpFrameSizeBytes);
 		//
-		int tmpRead = bisReadBytes(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
+		int tmpRead = bisReadBytesNoCache(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
 		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
 			// discard any partial samples
 			tmpRead -= (tmpRead % bytesPerChannelAndSample);

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp.codec_mjpeg;
+package org.tsitle.rtsp.threads.rtp.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
@@ -11,16 +11,16 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
-import org.tsitle.rtsp.avdata.JpegInfo;
+import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.exceptions.*;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<JpegInfo, ThreadDataProvMjpeg> {
+public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<VideoJpegInfo, ThreadDataProvMjpeg> {
 
 	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
-	private final JpegInfo curFrameJpegInfo = new JpegInfo();
+	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
 	private final BufferExt cacheBufForFD = new BufferExt();
@@ -81,62 +81,19 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<JpegInfo, Th
 			);
 	}
 
-	@Override
-	protected void stopThreadHook() {
-		if (threadDataProv != null) {
-			threadDataProv.stopThread();
-			threadDataProv = null;
-		}
-
-		super.stopThreadHook();
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbFrameDataSupplier()";
-
-		cacheFrameData.reset();
-
-		//
-		cacheFrameData.rtpFrameTimestamp = getRtpTimestampAsInt();
-
-		if (threadDataProv == null || ! threadDataProv.isRunning()) {
-			cacheFrameData.haveErrorOther = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
-		} else if (threadDataProv.haveEof()) {
-			cacheFrameData.haveErrorEof = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": InputStreamEofException caught";
-		} else {
-			// get the next frame to send over the wire from the input stream
-			try {
-				threadDataProv.getNextFrame(cacheOrgVideoFrameBuf, curFrameJpegInfo);
-
-				//
-				cacheFrameData.totalFrameSize = cacheOrgVideoFrameBuf.getUsed();
-
-				// extract the actual RTP/JPEG payload
-				cacheBufForFD.copyOf(
-						cacheOrgVideoFrameBuf,
-						curFrameJpegInfo.sos_scanDataOffs,
-						curFrameJpegInfo.sos_scanDataLength
-					);
-				cacheFrameData.rtpPayloadDataPtr = cacheBufForFD;
-
-				// update frame number
-				incrRtpTsFrameNr();
-			} catch (InputStreamEofException e) {
-				cacheFrameData.haveErrorEof = true;
-				cacheFrameData.errorMsg = FNC_NAME + ": EOF";
-			}
-		}
-
-		return cacheFrameData;
+		return defaultFrameDataSupplier(
+				cacheOrgVideoFrameBuf,
+				cacheBufForFD,
+				curFrameJpegInfo
+			);
 	}
 
 	@Override
-	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		return isLastFragment;
 	}
 

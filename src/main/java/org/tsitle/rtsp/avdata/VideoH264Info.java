@@ -1,13 +1,14 @@
 package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class H264Info extends CodecInfoH26xBase<H264Info> implements Cloneable {
+public final class VideoH264Info extends CodecInfoH26xBase<VideoH264Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -101,13 +102,13 @@ public final class H264Info extends CodecInfoH26xBase<H264Info> implements Clone
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** NAL Unit Type as enum */
-	public NalUnitType nalUnitTypeEn;
+	public @NonNull NalUnitType nalUnitTypeEn;
 	/** Ref IDC - indicates importance: 0=not used for reference, >0=used for reference (2 bits) */
 	public byte nuhRefIdc;
 	/** Picture boundary information */
-	public H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
+	public @NonNull H264PictureBoundaryInfo pictBoundInfo = new H264PictureBoundaryInfo();
 
-	public H264Info() {
+	public VideoH264Info() {
 		super();
 		reset();
 	}
@@ -122,19 +123,19 @@ public final class H264Info extends CodecInfoH26xBase<H264Info> implements Clone
 	}
 
 	@Override
-	public void copyOf(@NonNull CodecInfoInterface<H264Info> src) {
+	public void copyOf(@NonNull CodecInfoInterface<VideoH264Info> src) {
 		super.copyOf(src);
 
-		H264Info tmpSrc = (H264Info)src;
+		VideoH264Info tmpSrc = (VideoH264Info)src;
 		nalUnitTypeEn = tmpSrc.nalUnitTypeEn;
 		nuhRefIdc = tmpSrc.nuhRefIdc;
 		pictBoundInfo.copyOf(tmpSrc.pictBoundInfo);
 	}
 
 	@Override
-	public H264Info clone() {
+	public VideoH264Info clone() {
 		try {
-			H264Info clone = (H264Info)super.clone();
+			VideoH264Info clone = (VideoH264Info)super.clone();
 			clone.pictBoundInfo = pictBoundInfo.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -165,7 +166,7 @@ public final class H264Info extends CodecInfoH26xBase<H264Info> implements Clone
 	}
 
 	@Override
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		try {

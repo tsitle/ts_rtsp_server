@@ -24,7 +24,9 @@ public class RtspConstants {
 	/** RTSP Session Timeout */
 	public static final int RTSP_SESSION_TIMEOUT = 20;
 
-	/** Interval for sending audio samples (in milliseconds) */
-	public static final int RTP_SEND_INTERVAL_AUDIO_MS = 20;
+	/** Interval for sending PCM audio samples (in milliseconds) */
+	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_MS = 20;
+	/** Samples per frame for AAC-LC audio */
+	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO = 1024;
 
 }

@@ -10,9 +10,9 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 import java.io.FileNotFoundException;
 
-public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
+public class ThreadDataProvH265 extends ThreadDataProvBase<VideoH265Info> {
 
-	private final H265Parser h265Parser;
+	private final VideoH265Parser h265Parser;
 
 	/**
 	 * Constructor.
@@ -39,7 +39,7 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
-		this.h265Parser = new H265Parser();
+		this.h265Parser = new VideoH265Parser();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<H265Info> {
 
 	@Override
 	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidH26xDataException {
-		H265Info curFrameH265Info = h265Parser.parseH265Data(
+		VideoH265Info curFrameH265Info = h265Parser.parseH265Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,
 				inputBuf

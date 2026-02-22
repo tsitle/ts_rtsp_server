@@ -1,48 +1,48 @@
-package org.tsitle.rtsp.threads.rtp.codec_h26x;
+package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.rtsp.packets.rtp.RtpPacketH264;
+import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH264;
-import org.tsitle.rtsp.threads.rtp.FrameFragmentData;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265;
+import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH264;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.rtsp.avdata.VideoH265Info;
 
-public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<H264Info, ThreadDataProvH264> {
+public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265Info, ThreadDataProvH265> {
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
-	 * @param paramsH264 Thread-specific parameters
+	 * @param paramsH265 Thread-specific parameters
 	 */
-	public ThreadRtpSenderH264(
+	public ThreadRtpSenderH265(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				@NonNull ParamsThreadRtpSenderH264 paramsH264
+				@NonNull ParamsThreadRtpSenderH265 paramsH265
 			) {
 		super(
 				paramsCommon,
 				paramsVideoCommon,
-				RtpPacketType.V_H264
+				RtpPacketType.V_H265
 			);
 
 		//
-		paramsH264.validate();
+		paramsH265.validate();
 
 		//
-		this.cacheH26xInfo = new H264Info();
+		this.cacheH26xInfo = new VideoH265Info();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvH264 newThreadDataProv() {
-		return new ThreadDataProvH264(
+	protected @NonNull ThreadDataProvH265 newThreadDataProv() {
+		return new ThreadDataProvH265(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsVideoCommon,
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
@@ -63,7 +63,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<H264Info,
 			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr.h26xInfo == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
-		return new RtpPacketH264(
+		return new RtpPacketH265(
 				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment(),
@@ -75,26 +75,25 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<H264Info,
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected boolean isLeadingNonVcl(H264Info nalInfo) {
+	protected boolean isLeadingNonVcl(VideoH265Info nalInfo) {
 		if (nalInfo.isVclNalUnit) {
 			return false;
 		}
 
 		return switch (nalInfo.nalUnitTypeEn) {
-				case H264Info.NalUnitType.NVCL_SPS, H264Info.NalUnitType.NVCL_PPS,
-						H264Info.NalUnitType.NVCL_AUD, H264Info.NalUnitType.NVCL_SEI -> true;
+				case NVCL_VPS, NVCL_SPS, NVCL_PPS, NVCL_AUD, NVCL_SEI_PREFIX -> true;
 				default -> false;
 			};
 	}
 
 	@Override
-	protected boolean isTrailingNonVcl(H264Info nalInfo) {
+	protected boolean isTrailingNonVcl(VideoH265Info nalInfo) {
 		if (nalInfo.isVclNalUnit) {
 			return false;
 		}
 
 		return switch (nalInfo.nalUnitTypeEn) {
-				case H264Info.NalUnitType.NVCL_EOS, H264Info.NalUnitType.NVCL_EOB, H264Info.NalUnitType.NVCL_FD -> true;
+				case NVCL_SEI_SUFFIX, NVCL_FD, NVCL_EOS, NVCL_EOB -> true;
 				default -> false;
 			};
 	}
@@ -102,7 +101,7 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<H264Info,
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected H264Info getCloneOfH26xInfo(@NonNull H264Info src) {
+	protected VideoH265Info getCloneOfH26xInfo(@NonNull VideoH265Info src) {
 		return src.clone();
 	}
 

@@ -3,6 +3,9 @@ package org.tsitle.rtsp.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.*;
+import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
+import org.tsitle.rtsp.avdata.subinfo.H264PpsContext;
+import org.tsitle.rtsp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26x;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
@@ -13,9 +16,9 @@ import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ThreadDataProvH264 extends ThreadDataProvBase<H264Info> {
+public class ThreadDataProvH264 extends ThreadDataProvBase<VideoH264Info> {
 
-	private final H264Parser h264Parser;
+	private final VideoH264Parser h264Parser;
 
 	private @Nullable H264PictureBoundaryInfo cachePictBoundInfoPrev = null;
 
@@ -46,7 +49,7 @@ public class ThreadDataProvH264 extends ThreadDataProvBase<H264Info> {
 		}
 		Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext = new HashMap<>();
 		Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext = new HashMap<>();
-		this.h264Parser = new H264Parser(
+		this.h264Parser = new VideoH264Parser(
 				mapSpsContext,
 				mapPpsContext
 			);
@@ -69,7 +72,7 @@ public class ThreadDataProvH264 extends ThreadDataProvBase<H264Info> {
 
 	@Override
 	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidH26xDataException {
-		H264Info curFrameH264Info = h264Parser.parseH264Data(
+		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,
 				inputBuf,

@@ -33,7 +33,8 @@ public class VideoStreamOutgoingMjpeg extends VideoStreamOutgoingBase {
 				frameBuf,
 				false,
 				null,
-				null
+				null,
+				-1
 			);
 	}
 

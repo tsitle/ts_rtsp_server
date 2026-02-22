@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class H265Info extends CodecInfoH26xBase<H265Info> implements Cloneable {
+public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implements Cloneable {
 
 	/**
 	 * NAL Unit Types<br />
@@ -108,13 +108,13 @@ public final class H265Info extends CodecInfoH26xBase<H265Info> implements Clone
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** NAL Unit Type as enum */
-	public NalUnitType nalUnitTypeEn;
+	public @NonNull NalUnitType nalUnitTypeEn;
 	/** Layer ID, required to be equal to zero (6 bits) */
 	public byte nuhLayerId;
 	/** Temporal identifier of the NAL unit plus 1, required to be unequal to zero (3 bits) */
 	public byte nuhTemporalIdPlus1;
 
-	public H265Info() {
+	public VideoH265Info() {
 		super();
 		reset();
 	}
@@ -129,19 +129,19 @@ public final class H265Info extends CodecInfoH26xBase<H265Info> implements Clone
 	}
 
 	@Override
-	public void copyOf(@NonNull CodecInfoInterface<H265Info> src) {
+	public void copyOf(@NonNull CodecInfoInterface<VideoH265Info> src) {
 		super.copyOf(src);
 
-		H265Info tmpSrc = (H265Info)src;
+		VideoH265Info tmpSrc = (VideoH265Info)src;
 		nalUnitTypeEn = tmpSrc.nalUnitTypeEn;
 		nuhLayerId = tmpSrc.nuhLayerId;
 		nuhTemporalIdPlus1 = tmpSrc.nuhTemporalIdPlus1;
 	}
 
 	@Override
-	public H265Info clone() {
+	public VideoH265Info clone() {
 		try {
-			return (H265Info)super.clone();
+			return (VideoH265Info)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);
 		}
@@ -171,7 +171,7 @@ public final class H265Info extends CodecInfoH26xBase<H265Info> implements Clone
 	}
 
 	@Override
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		try {

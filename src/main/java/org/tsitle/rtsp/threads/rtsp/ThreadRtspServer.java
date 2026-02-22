@@ -31,7 +31,7 @@ public class ThreadRtspServer extends ThreadBase {
 		final int streamSourceId;
 		final String inputSourceId;
 
-		ThreadRtpSenderBase rtpThreadSender;
+		ThreadRtpSenderBase<?, ?> rtpThreadSender;
 
 		ThreadRtcpSendRecv rtcpThreadSendRecv;
 		int rtcpLastTargetCongestionLevel = -1;
@@ -250,7 +250,7 @@ public class ThreadRtspServer extends ThreadBase {
 		tmpStreamInfo.tpServerSocketRtcp = null;
 	}
 
-	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase>
+	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
 			B buildThreadRtpSender(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -276,7 +276,7 @@ public class ThreadRtspServer extends ThreadBase {
 				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback);
 	}
 
-	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase>
+	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
 			B buildThreadVideo(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -287,7 +287,7 @@ public class ThreadRtspServer extends ThreadBase {
 				.vidVideoFilePath(streamInfo.rtspStreamSource.getFilePath());
 	}
 
-	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase>
+	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
 					B buildThreadAudio(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -317,6 +317,20 @@ public class ThreadRtspServer extends ThreadBase {
 			);
 		//
 		switch (tmpStreamInfo.rtspStreamSource.getCodec()) {
+			case A_AAC:
+				final double tmpFrameDurAacSecs = ((double)RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO /
+						(double)tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz());
+				final double tmpVirtualFpsAac = (1.0 / tmpFrameDurAacSecs);
+				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
+						BuilderThreadRtpSenderAac.builder(),
+						tmpStreamInfo,
+						tmpVirtualFpsAac,
+						xsrcBlock
+					);
+				ctfos.rtpThreadSender = builderAac
+						.audAacSampleRateHz(tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz())
+						.build();
+				break;
 			case V_JPEG:
 				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
 						BuilderThreadRtpSenderMjpeg.builder(),
@@ -346,18 +360,18 @@ public class ThreadRtspServer extends ThreadBase {
 				break;
 			default:
 				if (tmpStreamInfo.rtspStreamSource.getCodec().isPcmAudio()) {
-					final double tmpVirtualFps = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS);
+					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS);
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpStreamInfo,
-							tmpVirtualFps,
+							tmpVirtualFpsPcm,
 							xsrcBlock
 						);
 					ctfos.rtpThreadSender = builderPcm
-							.audPcmRtpAudioSpf(tmpStreamInfo.rtspStreamSource.getRtpAudioSamplesPerFrame(tmpVirtualFps))
+							.audPcmRtpAudioSpf(tmpStreamInfo.rtspStreamSource.getRtpAudioSamplesPerFrame(tmpVirtualFpsPcm))
 							.audPcmSampleRateHz(tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz())
 							.audPcmChannelCount(tmpStreamInfo.rtspStreamSource.getAudioChannelCount())
-							.audPcmBitsPerSample(tmpStreamInfo.rtspStreamSource.getCodec().getAudioBitsPerSample().orElseThrow())
+							.audPcmBitsPerSample(tmpStreamInfo.rtspStreamSource.getCodec().getPcmAudioBitsPerSample().orElseThrow())
 							.audPcmInputBigEndian(tmpStreamInfo.rtspStreamSource.getIsAudioBigEndian())
 							.audPcmCodec(tmpStreamInfo.rtspStreamSource.getCodec())
 							.build();

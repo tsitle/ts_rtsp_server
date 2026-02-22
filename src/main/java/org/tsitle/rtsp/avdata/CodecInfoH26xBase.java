@@ -23,6 +23,16 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	}
 
 	@Override
+	public int getPayloadOffset() {
+		return nalUnitOffset;
+	}
+
+	@Override
+	public int getPayloadLength() {
+		return nalUnitLength;
+	}
+
+	@Override
 	public void reset() {
 		internalReset();
 	}
@@ -40,7 +50,7 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	}
 
 	@Override
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		baos.write(nalUnitOffset);
@@ -55,7 +65,7 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected String getToStringFields() {
+	protected @NonNull String getToStringFields() {
 		return "offset=" + Integer.toUnsignedString(nalUnitOffset) +
 				", length=" + Integer.toUnsignedString(nalUnitLength) +
 				String.format(", TypeBy=0x%02X", nalUnitTypeBy) +
@@ -63,7 +73,7 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 				", isVcl1stSSIP=" + (isVclFirstSliceSegmentInPic ? "T" : "F");
 	}
 
-	protected String getToStringShortFields() {
+	protected @NonNull String getToStringShortFields() {
 		return String.format("T=0x%02X", nalUnitTypeBy);
 	}
 

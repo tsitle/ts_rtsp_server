@@ -63,8 +63,10 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 
 		//
 		try {
-			while (! doStop.get() && eofAfterFrameNr < 0L) {
+			boolean isFirstRun = true;
+			while (! doStop.get() && (isFirstRun || ! bufferQueue.isEmpty())) {
 				mainLoop();
+				isFirstRun = false;
 			}
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException");
@@ -119,7 +121,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException {
-		if (bufferQueue.size() < queueSize) {
+		if (eofAfterFrameNr < 0L && bufferQueue.size() < queueSize) {
 			acquireData();
 		} else {
 			Thread.sleep(1);
@@ -136,16 +138,19 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 				logDebug(FNC_NAME, "haveEof, rewinding");
 				mediaOutgoingStream.rewind();
 			} else {
+				if (eofAfterFrameNr < 0L) {
+					logDebug(FNC_NAME, "haveEof");
+				}
 				eofAfterFrameNr = frameCountInp;
 				return;
 			}
 		}
-		// get the next frame to send from the video, as well as its size
+		// get the next frame from the input, as well as its size
 		BufferExt tmpFrameBuf = new BufferExt();
 		try {
 			mediaOutgoingStream.getNextFrame(tmpFrameBuf);
 			if (tmpFrameBuf.getUsed() < mediaOutgoingStream.getMagicBytesLengthBits() / 8) {
-				// we have reached the end of the video file
+				// we have reached the end of the input
 				throw new InputStreamEofException();
 			}
 			bufferQueue.add(tmpFrameBuf);
@@ -153,12 +158,12 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 			if (e instanceof InputStreamIoException) {
 				logError(FNC_NAME, "InputStreamIoException caught: " + e.getMessage());
 			}
-			// we have reached the end of the video file
+			// we have reached the end of the input
 			eofAfterFrameNr = frameCountInp;
 			return;
 		}
 		if (tmpFrameBuf.getUsed() == 0) {  // sanity check
-			// we have reached the end of the video file
+			// we have reached the end of the input
 			eofAfterFrameNr = frameCountInp;
 			return;
 		}

@@ -2,9 +2,17 @@ package org.tsitle.rtsp.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.avdata.AudioAacInfo;
+import org.tsitle.rtsp.avdata.AudioAacParser;
+import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
+import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.AvInvalidAacDataException;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
+import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -35,6 +43,10 @@ public class RtspStreamSource {
 	@Expose
 	private final @NonNull Boolean isAudioBigEndian;
 
+	/** Only for AAC: AudioSpecificConfig as hex string */
+	@GsonAnnoExclude
+	private @NonNull String aacAudioSpecificConfigHex;
+
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
 	/** Internal use: Codec used for the stream */
@@ -50,6 +62,8 @@ public class RtspStreamSource {
 		this.audioSampleRateHz = -1;
 		this.audioChannelCount = -1;
 		this.isAudioBigEndian = false;
+
+		this.aacAudioSpecificConfigHex = "";
 
 		this.internalCodec = RtpPacketType.UNKNOWN;
 	}
@@ -126,6 +140,15 @@ public class RtspStreamSource {
 		return (isAudioBigEndian != null && isAudioBigEndian);
 	}
 
+	/**
+	 * Only for AAC: Get AudioSpecificConfig as a hex string for SDP.
+	 * @return AudioSpecificConfig as hex string
+	 */
+	public @NonNull String getAacAudioSpecificConfigHexStr() {
+		checkPostProcessed();
+		return aacAudioSpecificConfigHex;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -143,6 +166,9 @@ public class RtspStreamSource {
 			return;
 		}
 		switch (codec) {
+			case AACLC:
+				internalCodec = RtpPacketType.A_AAC;
+				break;
 			case PCMU:
 				if (getAudioChannelCount() == 1 && getAudioSampleRateHz() == 8000) {
 					internalCodec = RtpPacketType.A_PCMU_8KHZ_MONO;
@@ -225,6 +251,11 @@ public class RtspStreamSource {
 		if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
 		}
+
+		//
+		if (internalCodec == RtpPacketType.A_AAC) {
+			readAacHeader(tmpExtSsId);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -233,6 +264,44 @@ public class RtspStreamSource {
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
 			throw new IllegalStateException("Stream Source has not been post-processed yet");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void readAacHeader(@NonNull String extSsId) throws ConfigInvalidException {
+		try {
+			AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(
+					Path.of(getFilePath()).toFile().getAbsolutePath()
+				);
+			BufferExt tmpBuf = new BufferExt();
+			asoAac.getNextFrame(tmpBuf);
+
+			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);
+
+			if (aacInfo.audioObjectType != AudioAacInfo.AudioObjectType.AAC_LC) {
+				throw new ConfigInvalidException("Unsupported AAC AudioObjectType " + aacInfo.audioObjectType +
+						" for Stream Source ID '" + extSsId + "'");
+			}
+			if (aacInfo.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
+				throw new ConfigInvalidException("Could not parse AAC SampleRate for Stream Source ID '" + extSsId + "'");
+			}
+			if (aacInfo.samplerate.getHz() != getAudioSampleRateHz()) {
+				throw new ConfigInvalidException("AAC SampleRate mismatch for Stream Source ID '" + extSsId + "' (" +
+						"config=" + getAudioSampleRateHz() + ", fileHeader=" + aacInfo.samplerate.getHz() + ")");
+			}
+			if (aacInfo.channelConfiguration != getAudioChannelCount()) {
+				throw new ConfigInvalidException("AAC ChannelCount mismatch for Stream Source ID '" + extSsId + "' (" +
+						"config=" + getAudioChannelCount() + ", fileHeader=" + aacInfo.channelConfiguration + ")");
+			}
+
+			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
+		} catch (FileNotFoundException | InputStreamIoException | InputStreamEofException e) {
+			throw new ConfigInvalidException("Could not read from AAC file for Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		} catch (AvInvalidAacDataException e) {
+			throw new ConfigInvalidException("Could not parse AAC header for Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
 		}
 	}
 

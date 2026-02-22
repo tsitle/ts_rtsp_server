@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtp.codec_h26x;
+package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.CodecInfoH26xBase;
@@ -95,16 +95,6 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		}
 	}
 
-	@Override
-	protected void stopThreadHook() {
-		if (threadDataProv != null) {
-			threadDataProv.stopThread();
-			threadDataProv = null;
-		}
-
-		super.stopThreadHook();
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
@@ -149,7 +139,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	}
 
 	@Override
-	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(boolean isLastFragment) {
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		return (globalCurAu.arrNalUnitIx == globalCurAu.arrNalUnitCount && isLastFragment);
 	}
 

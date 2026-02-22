@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.avdata;
+package org.tsitle.rtsp.avdata.subinfo;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
@@ -88,7 +88,7 @@ public final class H264PictureBoundaryInfo implements Cloneable {
 				"]";
 	}
 
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		baos.write(nalRefIdc);

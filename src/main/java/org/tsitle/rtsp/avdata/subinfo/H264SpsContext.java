@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.avdata;
+package org.tsitle.rtsp.avdata.subinfo;
 
 public class H264SpsContext implements Cloneable {
 

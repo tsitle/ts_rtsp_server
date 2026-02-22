@@ -42,7 +42,8 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 				frameBuf,
 				isFirstFrame,
 				H26X_FRAME_START_MAGICBYTES_4,
-				H26X_FRAME_START_MAGICBYTES_3
+				H26X_FRAME_START_MAGICBYTES_3,
+				-1
 			);
 		isFirstFrame = false;
 	}

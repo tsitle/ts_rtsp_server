@@ -7,6 +7,8 @@ import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
+import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -332,12 +334,12 @@ public class RtspResponseBuilder {
 		// c: Connection Information (can be an IP address or a hostname)
 		sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
 		//
-		if (! useVideo) {
-			if (tmpSsObj.getCodec().getAudioBitsPerSample().isPresent()) {
+		if (tmpSsObj.getCodec().isPcmAudio()) {
+			if (tmpSsObj.getCodec().getPcmAudioBitsPerSample().isPresent()) {
 				// b: Bandwidth Information
 				sw.write(String.format("b=AS:%d%s",
 						tmpSsObj.getAudioChannelCount() * tmpSsObj.getAudioSampleRateHz() *
-								tmpSsObj.getCodec().getAudioBitsPerSample().get(),
+								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get(),
 						CRLF));
 			}
 			/*
@@ -347,7 +349,7 @@ public class RtspResponseBuilder {
 			 *    to know ptime to decode RTP or vat audio, and it is intended
 			 *    as a recommendation for the encoding/packetisation of audio.
 			 */
-			sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_AUDIO_MS, CRLF));
+			sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS, CRLF));
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
 		final String tmpA_Map = RTSP_SDP_TAG_A_CODEC_MAPPING.get(tmpSsObj.getCodec()) +
@@ -357,6 +359,30 @@ public class RtspResponseBuilder {
 						tmpSsObj.getAudioSampleRateHz()) +
 				(useVideo ? "" : "/" + tmpSsObj.getAudioChannelCount());
 		sw.write(String.format("a=rtpmap:%d %s%s", tmpSsObj.getCodec().getValue(), tmpA_Map, CRLF));
+		//
+		if (tmpSsObj.getCodec() == RtpPacketType.A_AAC) {
+			sw.write(
+					String.format(
+							"a=fmtp:%d " +
+							"streamtype=%d; " +  // required: ISO/IEC 14496-1 'streamType'
+							"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
+							"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
+							"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
+							"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
+							"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
+							"IndexDeltaLength=%d; " +  // optional: used when multiple AUs are packed in a packet, defaults to 0
+							"constantDuration=1024" +  // optional: 1024 samples per frame
+							"%s",
+							tmpSsObj.getCodec().getValue(),
+							IsoIec14496_1_StreamType.AUDIOSTREAM.value,
+							IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
+							tmpSsObj.getAacAudioSpecificConfigHexStr(),
+							RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
+							RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
+							RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
+							CRLF
+				));
+		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
 	}

@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.H264Info;
-import org.tsitle.rtsp.avdata.H264Parser;
+import org.tsitle.rtsp.avdata.VideoH264Info;
+import org.tsitle.rtsp.avdata.VideoH264Parser;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
@@ -49,7 +49,7 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** Minimum size of the main payload-specific RTP header */
-	public static final int INNER_HEADER_SIZE_MIN = H264Parser.NAL_UNIT_HEADER_SIZE;
+	public static final int INNER_HEADER_SIZE_MIN = VideoH264Parser.NAL_UNIT_HEADER_SIZE;
 	/** Maximum size of the main payload-specific RTP header */
 	@SuppressWarnings("unused")
 	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 1;
@@ -79,7 +79,7 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				boolean isLastFragment,
-				@NonNull H264Info h264Info,
+				@NonNull VideoH264Info h264Info,
 				@NonNull BufferExt payloadData
 			) {
 		super(RtpPacketType.V_H264, paramsBase);
@@ -119,7 +119,7 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
 		 * we need to skip the NAL Unit header.
 		 */
-		int skip = (! isFragmented || fragmentOffset == 0 ? H264Parser.NAL_UNIT_HEADER_SIZE : 0);
+		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH264Parser.NAL_UNIT_HEADER_SIZE : 0);
 		this.packetBuf.copyFrom(
 				payloadData,
 				skip,

@@ -11,5 +11,6 @@ public record FrameFragmentData(
 		FrameData frameData,
 		int fragmentOffset,
 		int fragmentSize,
+		int fragmentIndex,
 		boolean isLastFragment
 	) { }

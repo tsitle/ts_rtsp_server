@@ -5,7 +5,7 @@ import org.tsitle.rtsp.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
 
-public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
+public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Cloneable {
 
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
@@ -18,8 +18,18 @@ public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
 	/** Number of samples per channel that the audio data contains */
 	public int samplesPerChannelInAudioData;
 
-	public PcmInfo() {
+	public AudioPcmInfo() {
 		reset();
+	}
+
+	@Override
+	public int getPayloadOffset() {
+		return samplesOffset;
+	}
+
+	@Override
+	public int getPayloadLength() {
+		return samplesLength;
 	}
 
 	@Override
@@ -32,10 +42,10 @@ public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
 	}
 
 	@Override
-	public void copyOf(@NonNull CodecInfoInterface<PcmInfo> src) {
+	public void copyOf(@NonNull CodecInfoInterface<AudioPcmInfo> src) {
 		reset();
 
-		PcmInfo tmpSrc = (PcmInfo)src;
+		AudioPcmInfo tmpSrc = (AudioPcmInfo)src;
 		samplesOffset = tmpSrc.samplesOffset;
 		samplesLength = tmpSrc.samplesLength;
 		channels = tmpSrc.channels;
@@ -44,9 +54,9 @@ public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
 	}
 
 	@Override
-	public PcmInfo clone() {
+	public AudioPcmInfo clone() {
 		try {
-			return (PcmInfo)super.clone();
+			return (AudioPcmInfo)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -70,7 +80,7 @@ public final class PcmInfo implements CodecInfoInterface<PcmInfo>, Cloneable {
 	}
 
 	@Override
-	public String hashSum() {
+	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		baos.write(samplesOffset);
