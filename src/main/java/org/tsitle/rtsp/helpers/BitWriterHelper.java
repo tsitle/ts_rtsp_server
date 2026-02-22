@@ -64,6 +64,7 @@ public class BitWriterHelper {
 	 * Returns the total number of bits written.
 	 * @return Total number of bits written
 	 */
+	@SuppressWarnings("unused")
 	public int getTotalBitsWritten() {
 		return totalBitsWritten;
 	}
@@ -72,6 +73,7 @@ public class BitWriterHelper {
 	 * Returns the total number of padding bits written.
 	 * @return Total number of padding bits written
 	 */
+	@SuppressWarnings("unused")
 	public int getTotalPaddingBitsWritten() {
 		return totalPaddingBitsWritten;
 	}

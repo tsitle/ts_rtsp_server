@@ -6,6 +6,8 @@ import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
+import java.util.Objects;
+
 public final class VideoJpegParser {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -349,16 +351,20 @@ public final class VideoJpegParser {
 			}
 			jpegInfo.dqt_tables16Bit[tmpTq] = new VideoJpegInfo.DqtTable16Bit(tmpTq);
 		}
-		if ((tmpPq == 0 && blockLen != jpegInfo.dqt_tables8Bit[tmpTq].tableData.length + 1) ||
-				(tmpPq == 1 && blockLen != jpegInfo.dqt_tables16Bit[tmpTq].tableData.length + 1)) {
+		if ((tmpPq == 0 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length + 1) ||
+				(tmpPq == 1 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length + 1)) {
 			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
-		int copyLen = (tmpPq == 0 ? jpegInfo.dqt_tables8Bit[tmpTq].tableData.length : jpegInfo.dqt_tables16Bit[tmpTq].tableData.length);
+		int copyLen = (tmpPq == 0 ?
+				Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length
+				: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length);
 		jpegBuf.copyInto(
 				innerOffs,
-				tmpPq == 0 ? jpegInfo.dqt_tables8Bit[tmpTq].tableData : jpegInfo.dqt_tables16Bit[tmpTq].tableData,
+				tmpPq == 0 ?
+						Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData
+						: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData,
 				0,
 				copyLen
 			);
