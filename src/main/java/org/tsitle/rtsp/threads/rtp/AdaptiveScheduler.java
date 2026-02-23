@@ -47,7 +47,7 @@ final class AdaptiveScheduler {
 		} else {
 			long currentTimeNs = System.nanoTime();
 			//double timeSinceLastWfnfNs = (currentTimeNs - lastFrameTimeNs);
-			long tmpCumErrNs = (cumulativeErrorNs > 100_000.0 ? 100_000 : (cumulativeErrorNs < 100_000.0 ? -100_000 : 0));
+			long tmpCumErrNs = (cumulativeErrorNs > 100_000.0 ? 100_000 : (cumulativeErrorNs < -100_000.0 ? -100_000 : 0));
 			long remainingTimeToSleepNs = nextFrameTimeNs - currentTimeNs - tmpCumErrNs;
 			cumulativeErrorNs -= (double)tmpCumErrNs;
 
