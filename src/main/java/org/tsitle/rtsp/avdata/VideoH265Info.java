@@ -166,7 +166,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringShortFields() +
-				String.format(" (en=%s)", nalUnitTypeBy) +
+				String.format(" (en=%s)", nalUnitTypeEn) +
 				"]";
 	}
 
