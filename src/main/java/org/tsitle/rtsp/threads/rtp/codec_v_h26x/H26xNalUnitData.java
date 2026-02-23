@@ -11,12 +11,14 @@ public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 	public @Nullable I h26xInfo = null;
 	public @Nullable BufferExt rtpPayloadDataPtr;
 	public int fullDataSize = 0;
+	public long rtpFrameNr = -1L;
 
 	public void reset() {
 		internalId = 0;
 		h26xInfo = null;
 		rtpPayloadDataPtr = null;
 		fullDataSize = 0;
+		rtpFrameNr = -1L;
 	}
 
 	public void moveDataFrom(@NonNull H26xNalUnitData<I> src) {
@@ -24,6 +26,7 @@ public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 		h26xInfo = src.h26xInfo;
 		rtpPayloadDataPtr = src.rtpPayloadDataPtr;
 		fullDataSize = src.fullDataSize;
+		rtpFrameNr = src.rtpFrameNr;
 		//
 		src.reset();
 	}
@@ -35,6 +38,7 @@ public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 				", h26xInfo=" + (h26xInfo == null ? "NULL" : h26xInfo.toString(true)) +
 				", rtpPayloadData.sz=" + (rtpPayloadDataPtr == null ? "NULL" : "" + rtpPayloadDataPtr.getUsed()) +
 				", fullDataSize=" + fullDataSize +
+				", rtpFrameNr=" + rtpFrameNr +
 				"]";
 	}
 

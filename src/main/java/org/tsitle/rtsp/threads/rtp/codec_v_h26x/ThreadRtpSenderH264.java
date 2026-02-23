@@ -63,6 +63,9 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<VideoH264
 			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr.h26xInfo == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
+		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
+				", isLastFragment=" + curFragmentData.isLastFragment() +
+				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/
 		return new RtpPacketH264(
 				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
@@ -73,6 +76,11 @@ public final class ThreadRtpSenderH264 extends ThreadRtpSenderH26xBase<VideoH264
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected boolean isNonVclSei(VideoH264Info nalInfo) {
+		return (nalInfo.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SEI);
+	}
 
 	@Override
 	protected boolean isLeadingNonVcl(VideoH264Info nalInfo) {

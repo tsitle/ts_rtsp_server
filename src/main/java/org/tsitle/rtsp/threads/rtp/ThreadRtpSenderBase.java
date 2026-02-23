@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP extends ThreadDataProvBase<I>> extends ThreadPausableBase {
 
 	/** Interval for sending Sender Reports (in milliseconds) */
-	private static final int SEND_SR_INTERVAL_MS = 2000;
+	private static final int SEND_SR_INTERVAL_MS = 500;
 
 	/** Length of UDP packets */
 	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
@@ -50,6 +50,13 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	protected long rtpTicksPerFrame;
 	/** RTP packet type */
 	protected final RtpPacketType rtpPacketType;
+	/** Adjusted RTP timestamp T0 */
+	private int rtpTsT0Adj = 0;
+	/** System.nanoTime when the RTP timestamp T0 was adjusted (in nanoseconds) */
+	@SuppressWarnings("FieldCanBeLocal")
+	private long rtpTsT0GenAdj = 0;
+	/** Current RTP timestamp */
+	private int rtpTsCurrent = 0;
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(-1);
@@ -65,11 +72,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
-	private int udpPacketsForOneFrameCount = 0;
-
-	private long verPvS_ptsNs = 0L;
-	private long verPvS_timePerFrameNs;
-	private boolean verPvS_hadOf = false;
 
 	/**
 	 * Constructor.
@@ -117,8 +119,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsCommon.getAvFramesPerSecond()
 			);
-		//
-		this.siStats.rtpTimestamp = this.paramsCommon.getRtpTimestampT0();
 
 		//
 		udpMaxPacketLenDelta = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4;
@@ -160,8 +160,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		//
 		resetRtpTsFrameNr();
 		//
-		verPvS_timePerFrameNs = (long)(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
-		//
 		beforeRunHook();
 
 		//
@@ -174,6 +172,15 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			//
 			timeNtpTsInfo.timeSessionStartNtpWc = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
 			timeNtpTsInfo.timeSessionStartMonoNs = System.nanoTime();
+
+			// adjust RTP timestamp T0
+			rtpTsT0GenAdj = System.nanoTime();
+			rtpTsT0Adj = getRtpTimestampAsInt_t0org_forNow(rtpTsT0GenAdj);
+
+			// update SenderInfo NTP and RTP timestamp
+			siStats.timestampNtpWallclock = getNtpTimestamp(rtpTsT0GenAdj);
+			siStats.rtpTimestamp = rtpTsT0Adj;
+			sendSenderReport();
 
 			//
 			while (! (doStop.get() || parComRtpSocketUdp.isClosed())) {
@@ -240,8 +247,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		cacheFrameData.reset();
 
 		//
-		cacheFrameData.rtpFrameTimestamp = getRtpTimestampAsInt();
-
 		if (threadDataProv == null || ! threadDataProv.isRunning()) {
 			cacheFrameData.haveErrorOther = true;
 			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
@@ -255,6 +260,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 				//
 				cacheFrameData.totalFrameSize = cacheOrgFrameBuf.getUsed();
+				cacheFrameData.rtpFrameNr = getRtpTsFrameNr();
 
 				// extract the actual RTP/XXX payload
 				cacheBufForFrameData.copyOf(
@@ -263,6 +269,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 						codecInfoObj.getPayloadLength()
 					);
 				cacheFrameData.rtpPayloadDataPtr = cacheBufForFrameData;
+				//
+				cacheFrameData.totalAuRtpPayloadSz = cacheFrameData.rtpPayloadDataPtr.getUsed();
+				cacheFrameData.frameDesc = "Generic Single Frame AU";
 
 				// update frame number
 				incrRtpTsFrameNr();
@@ -278,6 +287,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment);
 
 	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {
+		if (curFragmentData.frameData().rtpPayloadDataPtr == null) {
+			throw new IllegalStateException("curFragmentData.frameData().rtpPayloadDataPtr == null");
+		}
 		cacheRtpInnerPayloadBuf.copyOf(
 				curFragmentData.frameData().rtpPayloadDataPtr,
 				curFragmentData.fragmentOffset(),
@@ -292,7 +304,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment()
 			);
-		cacheParamsBase.rtpTimestamp = curFragmentData.frameData().rtpFrameTimestamp;
+		cacheParamsBase.rtpTimestamp = curFragmentData.frameRtpTimestamp();
 	}
 
 	protected abstract @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData);
@@ -308,10 +320,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	protected int getRtpTimestampAsInt() {
-		return paramsCommon.getRtpTimestampT0() + (int)((rtpTsFrameNr.get() - 1) * rtpTicksPerFrame);
-	}
 
 	@SuppressWarnings("unused")
 	protected long getRtpTsFrameNr() {
@@ -394,9 +402,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			if (siStats.timestampNtpWallclock != null &&
 					(siStats.lastSenderInfoSent == null ||
 							Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS)) {
-				if (! sendSenderReport()) {
-					return false;
-				}
+				sendSenderReport();
 			}
 			//
 			isMainLoopStateA = true;
@@ -407,6 +413,22 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private int getRtpTimestampAsInt_t0adj_forFrameNr(long rtpFrameNr) {
+		return rtpTsT0Adj + (int)((rtpFrameNr - 1) * rtpTicksPerFrame);
+	}
+
+	/*private int getRtpTimestampAsInt_t0adj_forNow() {
+		long elapsedNs = System.nanoTime() - rtpTsT0GenAdj;
+		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
+		return rtpTsT0Adj + (int)elapsedTicks;
+	}*/
+
+	private int getRtpTimestampAsInt_t0org_forNow(long currentSysNanos) {
+		long elapsedNs = currentSysNanos - paramsCommon.getRtpTimestampT0().orElseThrow().rtpGenTsT0Ns();
+		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
+		return paramsCommon.getRtpTimestampT0().orElseThrow().rtpTsT0() + (int)elapsedTicks;
+	}
 
 	private boolean sendFrame() throws InputStreamEofException, RtpFrameDataAcquException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
@@ -421,6 +443,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		if (frameData.haveErrorOther) {
 			throw new RtpFrameDataAcquException(frameData.errorMsg);
 		}
+		if (frameData.rtpPayloadDataPtr == null) {
+			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataPtr == null");
+		}
 		//
 		long tmpDeltaSendFrameNs = (System.nanoTime() - tmpTsNs);
 		if (tmpDeltaSendFrameNs > 1_000_000L) {
@@ -428,15 +453,15 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		}
 
 		// only sleep if this is the first packet of the frame/AU
+		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
-			/*
-			 * Note: the frame counter has already been incremented in cbFrameDataSupplier()
-			 */
-			//
 			adaptiveScheduler.waitForNextFrame();
+			//
+			long tmpCurSysNanos = System.nanoTime();
+			rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);
 			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock = getNtpTimestamp();
-			siStats.rtpTimestamp = frameData.rtpFrameTimestamp;
+			siStats.timestampNtpWallclock = getNtpTimestamp(tmpCurSysNanos);
+			siStats.rtpTimestamp = rtpTsCurrent;
 			//
 			isFirstPktOfFrame = false;
 		}
@@ -456,6 +481,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		//
 		int sentTotalPktSize = 0;
 		int curPktIndex = 0;
+		int estTotalPktCnt = Math.max(1, 1 + (int)(frameData.totalAuRtpPayloadSz / (UDP_PACKET_LEN - udpMaxPacketLenDelta)));
 		boolean isLastPktOfFrame = false;
 		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
 			final int curPktSize = Math.min(
@@ -466,10 +492,16 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(sentTotalPktSize, isLastPktOfPayload);
 
 			//
-			++udpPacketsForOneFrameCount;
-
-			//
-			boolean tmpResB = sendSinglePacket(sentTotalPktSize, curPktSize, curPktIndex++, frameData, isLastPktOfPayload);
+			boolean tmpResB = sendSinglePacket(
+					sentTotalPktSize,
+					curPktSize,
+					curPktIndex++,
+					estTotalPktCnt,
+					frameData,
+					isLastPktOfPayload,
+					tmpStoreIs1stPktOfFrame,
+					isLastPktOfFrame
+				);
 			if (! tmpResB) {
 				return false;
 			}
@@ -487,14 +519,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			isFirstPktOfFrame = true;
 			isMainLoopStateA = false;
 			//
-			udpPacketsForOneFrameCount = 0;
-			//
 			tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
-			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() / 2L) {
+			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
 				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
-			//
-			verifyPresentationVsSamplingTime(frameData);
 		}
 
 		return true;
@@ -504,13 +532,17 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 				int sentTotalPktSize,
 				int curPktSize,
 				int curPktIndex,
+				int estTotalPktCnt,
 				@NonNull FrameData frameData,
-				boolean isLastPktOfPayload
+				boolean isLastPktOfPayload,
+				@SuppressWarnings("unused") boolean isFirstPktOfFrameOrAu,
+				boolean isLastPktOfFrameOrAu
 			) throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendSinglePacket()";
 
 		FrameFragmentData curFragmentData = new FrameFragmentData(
 				frameData,
+				rtpTsCurrent,
 				sentTotalPktSize,
 				curPktSize,
 				curPktIndex,
@@ -547,37 +579,33 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		}
 
 		//
-		adaptiveScheduler.sleepUntilNanos(
-				System.nanoTime() + 10_000L * (udpPacketsForOneFrameCount > 50 ? 1L : 3L),
-				false
-			);
+		/*if (isFirstPktOfFrameOrAu && rtpPacketType.isVideo()) {
+			long tmpNtp = getNtpTimestamp();
+			logDebug(FNC_NAME, "frameNr=" + frameData.rtpFrameNr + ", RTP Timestamp=" + rtpTsCurrent + ", NTP=" + NtpTimestampHelper.ntpTimestampToInstant(tmpNtp));
+		}*/
+
+		//
+		if (! isLastPktOfFrameOrAu && estTotalPktCnt > 1) {
+			long tmpSleepIntvNs = (long)((double)(adaptiveScheduler.getSendIntervalNs() - 5_000_000L) / (double)(estTotalPktCnt + 3));
+			if (tmpSleepIntvNs > 1000L) {
+				adaptiveScheduler.sleepUntilNanos(
+						System.nanoTime() + tmpSleepIntvNs,
+						false
+					);
+			}
+		}
 		//
 		return true;
-	}
-
-	private void verifyPresentationVsSamplingTime(FrameData frameData) {
-		final String FNC_NAME = getClass().getSimpleName() + ".verifyPresentationVsSamplingTime()";
-
-		if (! verPvS_hadOf && frameData.rtpFrameTimestamp >= paramsCommon.getRtpTimestampT0()) {
-			long rtpTsDelta = frameData.rtpFrameTimestamp - paramsCommon.getRtpTimestampT0();
-			double rtpFramesDelta = (double) rtpTsDelta / (double) rtpTicksPerFrame;
-			long samplingDeltaNs = (long) (rtpFramesDelta * verPvS_timePerFrameNs);
-			if (verPvS_ptsNs != samplingDeltaNs) {
-				logWarn(FNC_NAME,
-						String.format("PTS %.3f ms || S %.3f ms",
-								((double) verPvS_ptsNs / 1_000_000.0), ((double) samplingDeltaNs / 1_000_000.0)
-					));
-			}
-			verPvS_ptsNs += verPvS_timePerFrameNs;
-		} else {
-			verPvS_hadOf = true;
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private long getNtpTimestamp() {
-		long deltaMono = (System.nanoTime() - timeNtpTsInfo.timeSessionStartMonoNs);
+		return getNtpTimestamp(System.nanoTime());
+	}
+
+	private long getNtpTimestamp(long currentSysNanos) {
+		long deltaMono = (currentSysNanos - timeNtpTsInfo.timeSessionStartMonoNs);
 		return NtpTimestampHelper.addNanosToNtpTimestamp(timeNtpTsInfo.timeSessionStartNtpWc, deltaMono);
 	}
 
@@ -596,6 +624,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 				siStats.rtpPacketsSent,
 				siStats.rtpPayloadBytesSent
 			);
+		/*if (rtpPacketType.isVideo()) {
+			logDebug(FNC_NAME, "siBlock=" + siBlock);
+		}*/
 		RtcpPacketSR packetSrObj = new RtcpPacketSR(
 				paramsCommon.getRtspSsrcId(),
 				siBlock,
@@ -623,7 +654,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		packetCompoundBuf.append(packetSdesBuf);
 	}
 
-	private boolean sendSenderReport() {
+	private void sendSenderReport() {
 		// Compound packet
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
@@ -632,7 +663,6 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow().accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();
-		return true;
 	}
 
 }

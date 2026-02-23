@@ -129,11 +129,17 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		globalCurNudPtr = optCurNudPtr.get();
 
 		//
-		cacheFrameData.rtpFrameTimestamp = globalCurAu.auTimestamp;
+		///
+		cacheFrameData.rtpFrameNr = globalCurNudPtr.rtpFrameNr;
 		cacheFrameData.totalFrameSize = globalCurNudPtr.fullDataSize;
 		cacheFrameData.rtpPayloadDataPtr = globalCurNudPtr.rtpPayloadDataPtr;
 		//noinspection DataFlowIssue
 		rtpPayloadBufObj.markForDiscard(globalCurNudPtr.rtpPayloadDataPtr);
+		///
+		cacheFrameData.totalAuRtpPayloadSz = globalCurAu.totalRtpPayloadSize;
+		if (globalCurNudPtr.h26xInfo != null) {
+			cacheFrameData.frameDesc = String.format("NAL Unit Type 0x%02X", globalCurNudPtr.h26xInfo.nalUnitTypeBy);
+		}
 
 		return cacheFrameData;
 	}
@@ -144,6 +150,8 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	protected abstract boolean isNonVclSei(I nalInfo);
 
 	protected abstract boolean isLeadingNonVcl(I nalInfo);
 
@@ -199,9 +207,6 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		moveNextAuToTempAu();
 
 		//
-		globalCurAu.auTimestamp = getRtpTimestampAsInt();  // only changes after increasing the 'Real Frame Number'
-		globalCurAu.isAuTimestampSet = true;
-
 		boolean haveEof = false;
 		boolean haveAuStartVcl = globalTempAu.arrNalUnitData.stream()
 				.filter(nud -> nud.h26xInfo != null)
@@ -297,6 +302,8 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	private void moveTempAuToCurAu() {
 		final String FNC_NAME = getClass().getSimpleName() + ".moveTempAuToCurAu()";
 
+		final long rtpFrameNr = getRtpTsFrameNr();
+
 		/*
 		 * We should now have at least one VCL NAL Unit and optional non-VCL NAL Units in globalTempAu.
 		 * Next, we need to move all NAL Units that belong to the
@@ -305,29 +312,36 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		 */
 		AuState state = AuState.SEEKING_AU_START;
 		for (int ix = 0; ix < globalTempAu.arrNalUnitCount; ix++) {
-			H26xNalUnitData<I> tmpNud = globalTempAu.arrNalUnitData.get(ix);
-			if (tmpNud == null) {
-				throw new IllegalStateException(FNC_NAME + ": tmpNud == null at index " + ix);
+			H26xNalUnitData<I> tmpInpNud = globalTempAu.arrNalUnitData.get(ix);
+			if (tmpInpNud == null) {
+				throw new IllegalStateException(FNC_NAME + ": tmpInpNud == null at index " + ix);
 			}
-			if (tmpNud.h26xInfo == null) {
-				throw new IllegalStateException(FNC_NAME + ": tmpNud.h26xInfo == null at index " + ix);
+			if (tmpInpNud.h26xInfo == null) {
+				continue;
 			}
 
+			// filter out SEI NAL Units
+			if (isNonVclSei(tmpInpNud.h26xInfo)) {
+				tmpInpNud.reset();
+				continue;
+			}
+
+			//
 			boolean stopLoop = false;
 			switch (state) {
 				case AuState.SEEKING_AU_START:
-					if (tmpNud.h26xInfo.isVclNalUnit && tmpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
+					if (tmpInpNud.h26xInfo.isVclNalUnit && tmpInpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
 						state = AuState.IN_AU_VCL;
-					} else if (isLeadingNonVcl(tmpNud.h26xInfo)) {
+					} else if (isLeadingNonVcl(tmpInpNud.h26xInfo)) {
 						state = AuState.IN_AU_PREFIX;
 					}
 					// add to globalCurAu
 					break;
 				case AuState.IN_AU_PREFIX:
-					if (tmpNud.h26xInfo.isVclNalUnit && tmpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
+					if (tmpInpNud.h26xInfo.isVclNalUnit && tmpInpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
 						// add to globalCurAu
 						state = AuState.IN_AU_VCL;
-					} else if (! isLeadingNonVcl(tmpNud.h26xInfo)) {
+					} else if (! isLeadingNonVcl(tmpInpNud.h26xInfo)) {
 						// This NAL doesn't belong to the current AU
 						stopLoop = true;
 					} /*else {
@@ -335,15 +349,15 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 					}*/
 					break;
 				case AuState.IN_AU_VCL:
-					if (tmpNud.h26xInfo.isVclNalUnit) {
-						if (tmpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
+					if (tmpInpNud.h26xInfo.isVclNalUnit) {
+						if (tmpInpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
 							// Start of new picture/AU
 							stopLoop = true;
 						} /*else {
 							// More slices of the current picture
 							// add to globalCurAu
 						}*/
-					} else if (isTrailingNonVcl(tmpNud.h26xInfo)) {
+					} else if (isTrailingNonVcl(tmpInpNud.h26xInfo)) {
 						// add to globalCurAu
 						state = AuState.IN_AU_SUFFIX;
 					} else {
@@ -352,7 +366,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 					}
 					break;
 				case AuState.IN_AU_SUFFIX:
-					if (! isTrailingNonVcl(tmpNud.h26xInfo)) {
+					if (! isTrailingNonVcl(tmpInpNud.h26xInfo)) {
 						// This starts a new AU
 						stopLoop = true;
 					} /*else {
@@ -367,7 +381,12 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 				break;
 			}
 			resizeArrayNalUnitData(globalCurAu, globalCurAu.arrNalUnitCount + 1);
-			globalCurAu.arrNalUnitData.get(globalCurAu.arrNalUnitCount++).moveDataFrom(tmpNud);
+			H26xNalUnitData<I> tmpOutputNud = globalCurAu.arrNalUnitData.get(globalCurAu.arrNalUnitCount);
+			tmpOutputNud.moveDataFrom(tmpInpNud);
+			tmpOutputNud.rtpFrameNr = rtpFrameNr;
+			globalCurAu.totalRtpPayloadSize += (tmpOutputNud.rtpPayloadDataPtr == null ? 0 :
+					tmpOutputNud.rtpPayloadDataPtr.getUsed());
+			++globalCurAu.arrNalUnitCount;
 			++globalTempAu.arrNalUnitIx;
 		}
 

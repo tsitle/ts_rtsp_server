@@ -16,8 +16,6 @@ import java.util.List;
 final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
 
 	public final String AU_NAME;
-	public int auTimestamp;
-	public boolean isAuTimestampSet = false;
 	public int arrNalUnitCount;
 	public int arrNalUnitIx;
 	public final List<H26xNalUnitData<I>> arrNalUnitData = new ArrayList<>() {{
@@ -25,28 +23,28 @@ final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
 				add(new H26xNalUnitData<>());
 			}
 		}};
+	public long totalRtpPayloadSize = 0L;
 
 	public H26xAccessUnit(String name) {
 		this.AU_NAME = name;
 	}
 
 	public void reset() {
-		auTimestamp = 0;
-		isAuTimestampSet = false;
 		arrNalUnitCount = 0;
 		arrNalUnitIx = 0;
 		for (H26xNalUnitData<I> nalUnitData : arrNalUnitData) {
 			nalUnitData.reset();
 		}
+		totalRtpPayloadSize = 0L;
 	}
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + "[" +
 				"name=" + AU_NAME +
-				", timestamp=" + auTimestamp + " (" + (isAuTimestampSet ? "S" : "-") + ")" +
 				", arrCount=" + arrNalUnitCount + " (sz=" + arrNalUnitData.size() + ")" +
 				", arrIx=" + arrNalUnitIx +
+				", totalRtpPayloadSize=" + totalRtpPayloadSize +
 				"]";
 	}
 

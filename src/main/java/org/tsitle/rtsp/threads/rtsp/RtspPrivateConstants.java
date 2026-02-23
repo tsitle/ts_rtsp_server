@@ -217,4 +217,18 @@ class RtspPrivateConstants {
 		}
 	}
 
+	public enum H26xPacketizationMode {
+		/** One NAL unit per RTP packet. Simple but inefficient for large frames */
+		SINGLE_NALU(0),
+		/** Allows fragmentation (FU-A) and aggregation (STAP-A). Most common for streaming */
+		NON_INTERLEAVED(1),
+		/** Allows re-ordering across packets. Rare; mostly for low-latency broadcast */
+		INTERLEAVED(2);
+
+		public final int value;
+		H26xPacketizationMode(int value) {
+			this.value = value;
+		}
+	}
+
 }

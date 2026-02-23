@@ -353,6 +353,11 @@ public class RtspResponseBuilder {
 			 */
 			sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS, CRLF));
 		}
+		//
+		if (useVideo) {
+			// a: Session Attribute: video framerate
+			sw.write(String.format("a=framerate:%.2f%s", tmpSsObj.getVideoFps(), CRLF).replace(",", "."));
+		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
 		final String tmpA_Map = RTSP_SDP_TAG_A_CODEC_MAPPING.get(tmpSsObj.getCodec()) +
 				"/" +
@@ -362,28 +367,41 @@ public class RtspResponseBuilder {
 				(useVideo ? "" : "/" + tmpSsObj.getAudioChannelCount());
 		sw.write(String.format("a=rtpmap:%d %s%s", tmpSsObj.getCodec().getValue(), tmpA_Map, CRLF));
 		//
-		if (tmpSsObj.getCodec() == RtpPacketType.A_AAC) {
-			sw.write(
-					String.format(
-							"a=fmtp:%d " +
-							"streamtype=%d; " +  // required: ISO/IEC 14496-1 'streamType'
-							"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
-							"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
-							"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
-							"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
-							"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
-							"IndexDeltaLength=%d; " +  // optional: used when multiple AUs are packed in a packet, defaults to 0
-							"constantDuration=1024" +  // optional: 1024 samples per frame
-							"%s",
-							tmpSsObj.getCodec().getValue(),
-							IsoIec14496_1_StreamType.AUDIOSTREAM.value,
-							IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
-							tmpSsObj.getAacAudioSpecificConfigHexStr(),
-							RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
-							RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
-							RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
-							CRLF
-				));
+		switch (tmpSsObj.getCodec()) {
+			case RtpPacketType.A_AAC:
+				sw.write(
+						String.format(
+								"a=fmtp:%d " +
+								"streamtype=%d; " +  // required: ISO/IEC 14496-1 'streamType'
+								"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
+								"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
+								"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
+								"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
+								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
+								"IndexDeltaLength=%d; " +  // optional: used when multiple AUs are packed in a packet, defaults to 0
+								"constantDuration=1024" +  // optional: 1024 samples per frame
+								"%s",
+								tmpSsObj.getCodec().getValue(),
+								IsoIec14496_1_StreamType.AUDIOSTREAM.value,
+								IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
+								tmpSsObj.getAacAudioSpecificConfigHexStr(),
+								RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
+								RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
+								RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
+								CRLF
+					));
+				break;
+			case RtpPacketType.V_H264, RtpPacketType.V_H265:
+				sw.write(
+						String.format(
+								"a=fmtp:%d " +
+								"packetization-mode=%d" +
+								"%s",
+								tmpSsObj.getCodec().getValue(),
+								H26xPacketizationMode.NON_INTERLEAVED.value,
+								CRLF
+					));
+				break;
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
