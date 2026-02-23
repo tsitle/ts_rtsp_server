@@ -298,7 +298,9 @@ public class RtspResponseBuilder {
 			throw new IllegalStateException(FNC_NAME + ": Could not find proper UDP sockets");
 		}
 		tmpStreamInfo.tpServerSrcSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+		tmpStreamInfo.tpServerSrcSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
 		tmpStreamInfo.tpServerSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
+		tmpStreamInfo.tpServerSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
