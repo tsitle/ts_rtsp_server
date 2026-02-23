@@ -51,7 +51,9 @@ final class AdaptiveScheduler {
 			long remainingTimeToSleepNs = nextFrameTimeNs - currentTimeNs - tmpCumErrNs;
 			cumulativeErrorNs -= (double)tmpCumErrNs;
 
-			sleepUntilNanos(currentTimeNs + remainingTimeToSleepNs);
+			if (remainingTimeToSleepNs > 0) {
+				sleepUntilNanos(currentTimeNs + remainingTimeToSleepNs);
+			}
 
 			// if currentErrorNs is positive, we are behind, otherwise we are ahead
 			long currentErrorNs = (System.nanoTime() - nextFrameTimeNs);
