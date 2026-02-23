@@ -15,6 +15,17 @@ import java.util.function.Supplier;
 
 public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
+	public record RtpTsT0(int rtpTsT0, long rtpGenTsT0Ns) implements Cloneable {
+		@Override
+		public RtpTsT0 clone() {
+			try {
+				return (RtpTsT0)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
 	/** Logging interface */
 	private LogMsgInterface logMsgInterface;
 	private boolean isSetLogMsgInterface;
@@ -49,7 +60,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	private short rtpSeqNrT0;
 	private boolean isSetRtpSeqNrT0;
 	/** Initial RTP Timestamp within the session */
-	private int rtpTimestampT0;
+	private RtpTsT0 rtpTimestampT0;
 	private boolean isSetRtpTimestampT0;
 	/** RTSP Synchronization Source Identifier of the stream */
 	private int rtspSsrcId;
@@ -127,9 +138,9 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetRtpSeqNrT0 = true;
 	}
 
-	public int getRtpTimestampT0() { return rtpTimestampT0; }
-	public void setRtpTimestampT0(int rtpTimestampT0) {
-		this.rtpTimestampT0 = rtpTimestampT0;
+	public Optional<RtpTsT0> getRtpTimestampT0() { return Optional.ofNullable(rtpTimestampT0); }
+	public void setRtpTimestampT0(@NonNull RtpTsT0 value) {
+		this.rtpTimestampT0 = value;
 		this.isSetRtpTimestampT0 = true;
 	}
 
@@ -174,6 +185,10 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	public ParamsThreadRtpSenderCommon clone() {
 		try {
 			ParamsThreadRtpSenderCommon clone = (ParamsThreadRtpSenderCommon)super.clone();
+			//
+			if (rtpTimestampT0 != null) {
+				clone.rtpTimestampT0 = rtpTimestampT0.clone();
+			}
 			//
 			if (xsrcBlockEntry != null) {
 				clone.xsrcBlockEntry = xsrcBlockEntry.clone();
@@ -245,6 +260,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		if (avFramesPerSecond <= 0.1f || avFramesPerSecond > 100.0f) {
 			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be > 0.1 and <= 100.0");
 		}
+
+		requireNonNull(rtpTimestampT0, "rtpTimestampT0");
 
 		requireNonNull(xsrcBlockEntry, "xsrcBlockEntry");
 		requireNonNull(cbRtcpAppendToOutgoingQueque, "cbRtcpAppendToOutgoingQueque");

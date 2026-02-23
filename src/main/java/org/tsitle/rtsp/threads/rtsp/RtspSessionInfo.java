@@ -26,6 +26,8 @@ public class RtspSessionInfo {
 		public short rtspRtpSeqNrT0 = 0;
 		/** Initial RTP Timestamp within the session (random number) */
 		public int rtspRtpTimestampT0 = 0;
+		/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
+		public long rtspRtpGenTsT0Ns = 0L;
 
 		/** Client's incoming port for RTP packets (audio and video), provided by the RTSP Client */
 		public int tpClientDestPortRtp = 0;

@@ -280,6 +280,7 @@ public class RtspRequestParser {
 			streamInfo.rtspSsrcId = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
+			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
 			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);

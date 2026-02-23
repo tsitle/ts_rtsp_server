@@ -15,6 +15,7 @@ import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.builders.*;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -268,7 +269,9 @@ public class ThreadRtspServer extends ThreadBase {
 				.comRtpSocketUdp(streamInfo.tpServerSrcSocketRtp)
 				.comAvFps(avFps)
 				.comRtpSeqNrT0(streamInfo.rtspRtpSeqNrT0)
-				.comRtpTimestampT0(streamInfo.rtspRtpTimestampT0)
+				.comRtpTimestampT0(
+						new ParamsThreadRtpSenderCommon.RtpTsT0(streamInfo.rtspRtpTimestampT0, streamInfo.rtspRtpGenTsT0Ns)
+					)
 				.comRtspSsrcId(streamInfo.rtspSsrcId)
 				.comXsrcBlockEntry(xsrcBlock)
 				.comCbRtcpAppendToOutgoingQueque(this::cbSendRtcpPackets)
