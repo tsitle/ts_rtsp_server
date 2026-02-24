@@ -586,6 +586,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		//
 		if (! isLastPktOfFrameOrAu && estTotalPktCnt > 1) {
+			/*
 			long tmpSleepIntvNs = (long)((double)(adaptiveScheduler.getSendIntervalNs() - 5_000_000L) / (double)(estTotalPktCnt + 3));
 			if (tmpSleepIntvNs > 1000L) {
 				adaptiveScheduler.sleepUntilNanos(
@@ -593,6 +594,8 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 						false
 					);
 			}
+			*/  // @TODO
+			adaptiveScheduler.sleepUntilNanos(System.nanoTime() + 50_000L, false);
 		}
 		//
 		return true;
