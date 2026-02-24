@@ -1,6 +1,5 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
-import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 public abstract class BuilderThreadRtpSenderVideoBase<
@@ -13,7 +12,10 @@ public abstract class BuilderThreadRtpSenderVideoBase<
 	protected final ParamsThreadRtpSenderVideoCommon threadParamsVideo = new ParamsThreadRtpSenderVideoCommon();
 
 	// Fluent setters
-	public B vidVideoFilePath(@NonNull String v) { this.threadParamsVideo.setVideoFilePath(v); return self(); }
+	/*
+	 * Future Video-only fields go here, e.g.,
+	 * public Builder videoQuality(int q) { ...; return self(); }
+	 */
 
 	//
 	protected void validateVideoCommon() {

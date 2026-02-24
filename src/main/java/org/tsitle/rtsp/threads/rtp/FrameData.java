@@ -19,7 +19,7 @@ public final class FrameData {
 	public long totalAuRtpPayloadSz;
 	/** Free-form description of the frame */
 	public @NonNull String frameDesc;
-	public boolean haveErrorEof;
+	public boolean haveErrorEos;
 	public boolean haveErrorOther;
 	public @NonNull String errorMsg;
 
@@ -33,7 +33,7 @@ public final class FrameData {
 		rtpFrameNr = -1L;
 		totalAuRtpPayloadSz = -1L;
 		frameDesc = "";
-		haveErrorEof = false;
+		haveErrorEos = false;
 		haveErrorOther = false;
 		errorMsg = "";
 	}

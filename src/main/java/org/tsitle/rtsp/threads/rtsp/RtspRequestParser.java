@@ -63,8 +63,8 @@ public class RtspRequestParser {
 		do {
 			try {
 				requestLine = readOneLine(true);
-			} catch (InputStreamEofException ex) {
-				logError(FNC_NAME, "EOF reached");
+			} catch (InputStreamEosException ex) {
+				logError(FNC_NAME, "EOS reached");
 				return RequestBasicInfo.createUnknown();
 			}
 			//
@@ -110,7 +110,7 @@ public class RtspRequestParser {
 			try {
 				headerLine = readOneLine(false);
 				parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
-			} catch (InputStreamNotReadyException | InputStreamEofException ex) {
+			} catch (InputStreamNotReadyException | InputStreamEosException ex) {
 				break;
 			} catch (RtspInvalidRequestException ex) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + ex.getMessage());
@@ -133,13 +133,13 @@ public class RtspRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private String readOneLine(boolean isFirst) throws InputStreamNotReadyException, InputStreamEofException {
+	private String readOneLine(boolean isFirst) throws InputStreamNotReadyException, InputStreamEosException {
 		if (! cbCanReadData.getAsBoolean()) {
 			throw new InputStreamNotReadyException();
 		}
 		Optional<String> optLine = cbReadDataLine.get();
 		if (optLine.isEmpty()) {
-			throw new InputStreamEofException();
+			throw new InputStreamEosException();
 		}
 		String resS = optLine.get();
 		// remove forbidden characters from the line

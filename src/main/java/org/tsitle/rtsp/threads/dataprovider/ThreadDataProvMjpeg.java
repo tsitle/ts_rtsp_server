@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.ImageReencoder;
 import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.avdata.VideoJpegParser;
+import org.tsitle.rtsp.avstreams.AvStreamIncoming;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
@@ -12,7 +13,6 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
@@ -26,12 +26,14 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param paramsVideoCommon Common Video thread parameters
+	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOF is reached
+	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvMjpeg(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
+				@NonNull AvStreamIncoming avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -42,14 +44,10 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 			);
 
 		//
-		try {
-			this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(
-					logMsgInterface,
-					paramsVideoCommon.getVideoFilePath().orElseThrow()
-				);
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException(e);
-		}
+		paramsVideoCommon.validate();
+
+		//
+		this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(logMsgInterface, avStreamIncoming);
 		this.imageReencoder = new ImageReencoder();
 		this.jpegParser = new VideoJpegParser(
 				logMsgInterface,

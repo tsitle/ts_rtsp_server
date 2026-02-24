@@ -4,13 +4,12 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
+import org.tsitle.rtsp.avstreams.AvStreamIncoming;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
-
-import java.io.FileNotFoundException;
 
 public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 
@@ -21,13 +20,15 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsAac Thread-specific parameters
+	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOF is reached
+	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvAac(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderAac paramsAac,
+				@NonNull AvStreamIncoming avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -38,17 +39,11 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 			);
 
 		//
+		paramsAudioCommon.validate();
 		paramsAac.validate();
 
 		//
-		try {
-			this.mediaOutgoingStream = new AudioStreamOutgoingAac(
-					logMsgInterface,
-					paramsAudioCommon.getAudioFilePath().orElseThrow()
-				);
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException(e);
-		}
+		this.mediaOutgoingStream = new AudioStreamOutgoingAac(logMsgInterface, avStreamIncoming);
 		this.aacParser = new AudioAacParser();
 	}
 

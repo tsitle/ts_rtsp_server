@@ -2,11 +2,9 @@ package org.tsitle.rtsp.avstreams;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-
-import java.io.FileNotFoundException;
 
 public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 
@@ -20,26 +18,25 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param filename Audio file name
+	 * @param avStreamIncoming Incoming A/V stream
 	 * @param channels Number of channels (1 = mono, 2 = stereo)
 	 * @param bitsPerSample Bits per sample (8 or 16)
 	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
-	 * @throws FileNotFoundException If the audio file cannot be found
 	 */
 	public AudioStreamOutgoingPcm(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull String filename,
+				@NonNull AvStreamIncoming avStreamIncoming,
 				int channels,
 				int bitsPerSample,
 				int rtpSamplesPerFrame,
 				boolean isBigEndian
-			) throws FileNotFoundException {
+			) {
 		super(
 				logMsgInterface,
+				avStreamIncoming,
 				new byte[0],
-				0,
-				filename
+				0
 			);
 
 		//
@@ -66,13 +63,12 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Checks if there could be more samples in the stream
-	 * @return True if there could be more samples, false otherwise
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
 	 */
 	@Override
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean hasMoreFrames() {
-		return (bisAvailableBytes() >= bytesPerChannelAndSample);
+	public boolean haveEos() {
+		return avStreamIncoming.haveEos();
 	}
 
 	/**
@@ -80,19 +76,19 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	 * @param frameBuf Output buffer to store the samples in
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
+	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
 		BufferExt readIntoPtr = (isBigEndian || bytesPerSample == 1 ? frameBuf : cachedDataBuf2);
 		//
 		frameBuf.clear();
 		frameBuf.increaseSize(rtpFrameSizeBytes);
 		//
-		int tmpRead = bisReadBytesNoCache(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
+		int tmpRead = avStreamIncoming.readBytes(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
 		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
 			// discard any partial samples
 			tmpRead -= (tmpRead % bytesPerChannelAndSample);
 		}
 		if (tmpRead <= 0) {
-			throw new InputStreamEofException();
+			throw new InputStreamEosException();
 		}
 		readIntoPtr.setUsed(tmpRead);
 		//

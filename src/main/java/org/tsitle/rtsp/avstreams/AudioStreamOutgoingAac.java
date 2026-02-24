@@ -4,11 +4,9 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-
-import java.io.FileNotFoundException;
 
 public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 
@@ -16,33 +14,33 @@ public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 
 	/**
 	 * Constructor.
-	 * @param filename Audio file name
-	 * @throws FileNotFoundException If the audio file cannot be found
+	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public AudioStreamOutgoingAac(@NonNull String filename) throws FileNotFoundException {
+	public AudioStreamOutgoingAac(
+				@NonNull AvStreamIncoming avStreamIncoming
+			) {
 		super(
 				null,
+				avStreamIncoming,
 				AAC_FRAME_START_MAGICBYTES,
-				12,
-				filename
+				12
 			);
 	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param filename Audio file name
-	 * @throws FileNotFoundException If the audio file cannot be found
+	 * @param avStreamIncoming Incoming A/V stream
 	 */
 	public AudioStreamOutgoingAac(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull String filename
-			) throws FileNotFoundException {
+				@NonNull AvStreamIncoming avStreamIncoming
+			) {
 		super(
 				logMsgInterface,
+				avStreamIncoming,
 				AAC_FRAME_START_MAGICBYTES,
-				12,
-				filename
+				12
 			);
 	}
 
@@ -50,13 +48,12 @@ public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Checks if there could be more frames in the stream
-	 * @return True if there could be more frames, false otherwise
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
 	 */
 	@Override
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean hasMoreFrames() {
-		return (getCachedDataLengthForFramesWithStartCode() > 0 || bisAvailableBytes() > 0);
+	public boolean haveEos() {
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
 	}
 
 	/**
@@ -65,7 +62,7 @@ public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf)
-			throws InputStreamIoException, InputStreamEofException, AvInvalidCodecDataException {
+			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		internalGetNextFrameWithStartCode(

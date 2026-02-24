@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.CodecInfoH26xBase;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
@@ -122,8 +122,8 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		if (optCurNudPtr.isEmpty()) {
 			globalCurNudPtr = null;
 			//
-			cacheFrameData.haveErrorEof = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": EOF";
+			cacheFrameData.haveErrorEos = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
 			return cacheFrameData;
 		}
 		globalCurNudPtr = optCurNudPtr.get();
@@ -164,9 +164,9 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void frameDataSupplierGrabNalUnit() throws InputStreamEofException {
+	private void frameDataSupplierGrabNalUnit() throws InputStreamEosException {
 		if (threadDataProv == null || ! threadDataProv.isRunning()) {
-			throw new InputStreamEofException();
+			throw new InputStreamEosException();
 		}
 		if (cacheH26xInfo == null) {
 			throw new IllegalStateException("cacheH26xInfo == null");
@@ -207,20 +207,21 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		moveNextAuToTempAu();
 
 		//
-		boolean haveEof = false;
+		boolean haveEos = false;
 		boolean haveAuStartVcl = globalTempAu.arrNalUnitData.stream()
 				.filter(nud -> nud.h26xInfo != null)
 				.anyMatch(nud -> nud.h26xInfo.isVclFirstSliceSegmentInPic);
 
-		while (threadDataProv != null && ! threadDataProv.haveEof() && ! haveEof) {
+		while (threadDataProv != null && ! threadDataProv.haveEos() && ! haveEos) {
 			/*
 			 * Try to grab the next NAL Unit from the video stream.
 			 * Stores the result in globalTempAu.
 			 */
 			try {
 				frameDataSupplierGrabNalUnit();
-			} catch (InputStreamEofException ex) {
-				haveEof = true;
+			} catch (InputStreamEosException ex) {
+				logDebug(FNC_NAME, "EOS reached");
+				haveEos = true;
 				continue;
 			}
 

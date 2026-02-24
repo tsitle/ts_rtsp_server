@@ -135,8 +135,6 @@ public class ThreadRtspServer extends ThreadBase {
 			logError(FNC_NAME, "UdpSocketIoException: " + e.getMessage());
 		} catch (SocketException e) {
 			logError(FNC_NAME, "SocketException: " + e.getMessage());
-		} catch (FileNotFoundException e) {
-			logError(FNC_NAME, "FileNotFoundException: " + e.getMessage());
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
@@ -276,7 +274,8 @@ public class ThreadRtspServer extends ThreadBase {
 				.comXsrcBlockEntry(xsrcBlock)
 				.comCbRtcpAppendToOutgoingQueque(this::cbSendRtcpPackets)
 				.comCbNotifyThreadReady(this::cbNotifyThreadReady)
-				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback);
+				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback)
+				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri());
 	}
 
 	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
@@ -286,8 +285,7 @@ public class ThreadRtspServer extends ThreadBase {
 					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
-				.vidVideoFilePath(streamInfo.rtspStreamSource.getFilePath());
+		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock);
 	}
 
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
@@ -297,11 +295,10 @@ public class ThreadRtspServer extends ThreadBase {
 					@SuppressWarnings("SameParameterValue") double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
-				.audAudioFilePath(streamInfo.rtspStreamSource.getFilePath());
+		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock);
 	}
 
-	private void startSendRtp_oneStream(ChildThreadsForOneStream ctfos, String cnameHostname) throws FileNotFoundException {
+	private void startSendRtp_oneStream(ChildThreadsForOneStream ctfos, String cnameHostname) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startSendRtp_oneStream()";
 
 		unpauseOrStopThread(ctfos.rtpThreadSender);
@@ -395,7 +392,7 @@ public class ThreadRtspServer extends ThreadBase {
 		tmpStreamInfo.tpServerSrcSocketRtp = null;
 	}
 
-	private void startChildThreads(String inputSourceId) throws FileNotFoundException {
+	private void startChildThreads(String inputSourceId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startChildThreads()";
 
 		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.getOrDefault(ServerMessageType.PLAY, null);
@@ -577,7 +574,7 @@ public class ThreadRtspServer extends ThreadBase {
 	}
 
 	private boolean handleSuccessfulRequest(RequestBasicInfo requestBasicInfo)
-			throws TcpSocketClosedException, SocketException, FileNotFoundException {
+			throws TcpSocketClosedException, SocketException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleSuccessfulRequest()";
 
 		if (rtspSocketTcp.isClosed()) {
@@ -668,7 +665,7 @@ public class ThreadRtspServer extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop(final int loopCounter)
-			throws TcpSocketClosedException, SocketException, FileNotFoundException, UdpSocketIoException {
+			throws TcpSocketClosedException, SocketException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();

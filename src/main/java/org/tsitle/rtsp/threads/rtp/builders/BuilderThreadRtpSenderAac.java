@@ -3,8 +3,6 @@ package org.tsitle.rtsp.threads.rtp.builders;
 import org.tsitle.rtsp.threads.rtp.codec_a_aac.ThreadRtpSenderAac;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
 
-import java.io.FileNotFoundException;
-
 public class BuilderThreadRtpSenderAac {
 
 	public static Builder builder() { return new Builder(); }
@@ -19,7 +17,7 @@ public class BuilderThreadRtpSenderAac {
 
 		//
 		@Override
-		public ThreadRtpSenderAac build() throws FileNotFoundException {
+		public ThreadRtpSenderAac build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsAac.validate();

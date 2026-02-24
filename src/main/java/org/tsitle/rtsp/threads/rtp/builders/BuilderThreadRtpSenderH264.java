@@ -3,8 +3,6 @@ package org.tsitle.rtsp.threads.rtp.builders;
 import org.tsitle.rtsp.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH264;
 
-import java.io.FileNotFoundException;
-
 public class BuilderThreadRtpSenderH264 {
 
 	public static Builder builder() { return new Builder(); }
@@ -22,7 +20,7 @@ public class BuilderThreadRtpSenderH264 {
 
 		//
 		@Override
-		public ThreadRtpSenderH264 build() throws FileNotFoundException {
+		public ThreadRtpSenderH264 build() {
 			validateCommon();
 			validateVideoCommon();
 			threadParamsH264.validate();

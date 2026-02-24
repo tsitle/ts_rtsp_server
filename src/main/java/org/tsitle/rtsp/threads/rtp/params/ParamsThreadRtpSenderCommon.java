@@ -7,6 +7,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -79,6 +80,10 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	/** Callback for checking if the child thread may start playback */
 	private Supplier<Boolean> cbThreadMayStartPlayback;
 	private boolean isSetCbThreadMayStartPlayback;
+
+	/** Incoming A/V stream URI */
+	private URI avStreamIncomingUri;
+	private boolean isSetAvStreamIncomingUri;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -174,6 +179,12 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetCbThreadMayStartPlayback = true;
 	}
 
+	public Optional<URI> getAvStreamIncomingUri() { return Optional.ofNullable(avStreamIncomingUri); }
+	public void setAvStreamIncomingUri(@NonNull URI avStreamIncomingUri) {
+		this.avStreamIncomingUri = URI.create(avStreamIncomingUri.toString());
+		this.isSetAvStreamIncomingUri = true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void validate() {
@@ -235,6 +246,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 		requireIsSet(isSetCbNotifyThreadReady, "cbNotifyThreadReady");
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
+
+		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
 	}
 
 	private void validateParamValues() {
@@ -268,6 +281,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 		requireNonNull(cbNotifyThreadReady, "cbNotifyThreadReady");
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
+
+		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

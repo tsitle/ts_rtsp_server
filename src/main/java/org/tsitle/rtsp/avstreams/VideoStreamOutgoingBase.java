@@ -3,29 +3,26 @@ package org.tsitle.rtsp.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-import java.io.FileNotFoundException;
-
 public abstract class VideoStreamOutgoingBase extends AvStreamOutgoingBase {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
+	 * @param avStreamIncoming Incoming A/V stream
 	 * @param frameStartMagicbytes Magic bytes array for frame start detection
 	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
-	 * @param filename Video file name
-	 * @throws FileNotFoundException If the video file cannot be found
 	 */
 	protected VideoStreamOutgoingBase(
 				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull AvStreamIncoming avStreamIncoming,
 				byte[] frameStartMagicbytes,
-				int magicBytesLengthInBits,
-				@NonNull String filename
-			) throws FileNotFoundException {
+				int magicBytesLengthInBits
+			) {
 		super(
 				logMsgInterface,
+				avStreamIncoming,
 				frameStartMagicbytes,
-				magicBytesLengthInBits,
-				filename
+				magicBytesLengthInBits
 			);
 	}
 
@@ -33,13 +30,12 @@ public abstract class VideoStreamOutgoingBase extends AvStreamOutgoingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Checks if there could be more frames in the stream
-	 * @return True if there could be more frames, false otherwise
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
 	 */
 	@Override
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean hasMoreFrames() {
-		return (getCachedDataLengthForFramesWithStartCode() > 0 || bisAvailableBytes() > 0);
+	public boolean haveEos() {
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
 	}
 
 }

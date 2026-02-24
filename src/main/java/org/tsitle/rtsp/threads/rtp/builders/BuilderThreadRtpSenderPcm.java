@@ -4,8 +4,6 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
-import java.io.FileNotFoundException;
-
 public class BuilderThreadRtpSenderPcm {
 
 	public static Builder builder() { return new Builder(); }
@@ -25,7 +23,7 @@ public class BuilderThreadRtpSenderPcm {
 
 		//
 		@Override
-		public ThreadRtpSenderPcm build() throws FileNotFoundException {
+		public ThreadRtpSenderPcm build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsPcm.validate();

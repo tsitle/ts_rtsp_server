@@ -8,6 +8,7 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.URI;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -44,6 +45,8 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull Integer> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }
+
+	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }
 
 	//
 	public abstract T build() throws Exception;

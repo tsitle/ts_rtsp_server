@@ -5,14 +5,12 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
+import org.tsitle.rtsp.avstreams.AvStreamIncoming;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.ConfigInvalidException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
-import org.tsitle.rtsp.exceptions.InputStreamIoException;
+import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
-import java.io.FileNotFoundException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -27,6 +25,9 @@ public class RtspStreamSource {
 	/** Path to the media file */
 	@Expose
 	private @NonNull String filePath;
+	/** Path to the UNIX Socket file for the media file */
+	@Expose
+	private @NonNull String unixSocketPath;
 	/** Codec used for the stream */
 	@Expose
 	private final @NonNull ConfigSsCodec codec;
@@ -56,6 +57,7 @@ public class RtspStreamSource {
 	public RtspStreamSource() {
 		this.id = -1;
 		this.filePath = "";
+		this.unixSocketPath = "";
 		//noinspection DataFlowIssue
 		this.codec = null;
 		this.videoFps = -1.0;
@@ -78,10 +80,12 @@ public class RtspStreamSource {
 	}
 	public void setId(int id) { this.id = id; }
 
-	public @NonNull String getFilePath() {
+	public @NonNull URI getInputUri() {
 		checkPostProcessed();
-		//noinspection ConstantValue
-		return (filePath == null ? "" : filePath.strip());
+		if (! filePath.isBlank()) {
+			return URI.create("file:" + filePath);
+		}
+		return URI.create("socket:" + unixSocketPath);
 	}
 
 	public @NonNull RtpPacketType getCodec() {
@@ -151,6 +155,10 @@ public class RtspStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
+		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
+	}
+
 	/**
 	 * Post-process the Stream Source.
 	 * @param dataDir Directory containing the media files
@@ -158,7 +166,21 @@ public class RtspStreamSource {
 	public void postProcess(@NonNull Path dataDir) {
 		internalHasBeenPostProcessed = true;
 		//
-		filePath = Path.of(dataDir.toAbsolutePath().toString(), getFilePath()).toString();
+		//noinspection ConstantValue
+		if (filePath != null && ! filePath.isBlank()) {
+			filePath = dataFilenameToAbsolutePath(dataDir, filePath);
+			unixSocketPath = "";
+		} else {
+			filePath = "";
+		}
+		if (filePath.isBlank()) {
+			//noinspection ConstantValue
+			if (unixSocketPath != null && ! unixSocketPath.isBlank()) {
+				unixSocketPath = dataFilenameToAbsolutePath(dataDir, unixSocketPath);
+			} else {
+				unixSocketPath = "";
+			}
+		}
 		//
 		//noinspection ConstantValue
 		if (codec == null) {
@@ -221,12 +243,16 @@ public class RtspStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Stream Source has no ID");
 		}
 
-		if (getFilePath().isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path found for Stream Source ID '" + tmpExtSsId + "'");
+		if (filePath.isBlank() && unixSocketPath.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No file/socket path found for Stream Source ID '" + tmpExtSsId + "'");
 		}
-		if (! Path.of(getFilePath()).toFile().exists()) {
-			throw new ConfigInvalidException(FNC_NAME + ": File path '" + getFilePath() +
+		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid ile path '" + filePath +
 					"' for Stream Source ID '" + tmpExtSsId + "' does not exist");
+		}
+		if (! (unixSocketPath.isBlank() || unixSocketPath.endsWith(".sock"))) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid socket path '" + unixSocketPath +
+					"' for Stream Source ID '" + tmpExtSsId + "' - must end with '.sock'");
 		}
 
 		//noinspection ConstantValue
@@ -271,11 +297,14 @@ public class RtspStreamSource {
 
 	private void readAacHeader(@NonNull String extSsId) throws ConfigInvalidException {
 		try {
-			AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(
-					Path.of(getFilePath()).toFile().getAbsolutePath()
-				);
+			AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri());
 			BufferExt tmpBuf = new BufferExt();
-			asoAac.getNextFrame(tmpBuf);
+			try {
+				AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(avStreamIncoming);
+				asoAac.getNextFrame(tmpBuf);
+			} finally {
+				avStreamIncoming.close();
+			}
 
 			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);
 
@@ -296,7 +325,7 @@ public class RtspStreamSource {
 			}
 
 			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
-		} catch (FileNotFoundException | InputStreamIoException | InputStreamEofException e) {
+		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from AAC file for Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {

@@ -2,11 +2,9 @@ package org.tsitle.rtsp.avstreams;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-
-import java.io.FileNotFoundException;
 
 public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 
@@ -20,18 +18,17 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param filename Video file name
-	 * @throws FileNotFoundException If the video file cannot be found
+	 * @param avStreamIncoming Incoming A/V stream
 	 */
 	public VideoStreamOutgoingH26x(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull String filename
-			) throws FileNotFoundException {
+				@NonNull AvStreamIncoming avStreamIncoming
+			) {
 		super(
 				logMsgInterface,
+				avStreamIncoming,
 				new byte[0],
-				0,
-				filename
+				0
 			);
 	}
 
@@ -43,7 +40,7 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 	 * @param frameBuf Output buffer to store the frame in
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
+	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		/*

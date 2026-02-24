@@ -11,6 +11,8 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.rtsp.avdata.VideoH265Info;
 
+import java.util.Objects;
+
 public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265Info, ThreadDataProvH265> {
 
 	/**
@@ -45,6 +47,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265
 		return new ThreadDataProvH265(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsVideoCommon,
+				Objects.requireNonNull(avStreamIncoming),
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
 				paramsCommon.getDebugRewindMediaFiles()
 			);

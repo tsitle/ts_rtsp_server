@@ -73,6 +73,7 @@ public final class ThreadRtpSenderAac extends ThreadRtpSenderBase<AudioAacInfo, 
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsAudioCommon,
 				paramsAac,
+				Objects.requireNonNull(avStreamIncoming),
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
 				paramsCommon.getDebugRewindMediaFiles()
 			);

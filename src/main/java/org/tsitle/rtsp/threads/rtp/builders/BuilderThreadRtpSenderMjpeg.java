@@ -3,8 +3,6 @@ package org.tsitle.rtsp.threads.rtp.builders;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
-import java.io.FileNotFoundException;
-
 public class BuilderThreadRtpSenderMjpeg {
 
 	public static Builder builder() { return new Builder(); }
@@ -22,7 +20,7 @@ public class BuilderThreadRtpSenderMjpeg {
 
 		//
 		@Override
-		public ThreadRtpSenderMjpeg build() throws FileNotFoundException {
+		public ThreadRtpSenderMjpeg build() {
 			validateCommon();
 			validateVideoCommon();
 			threadParamsMjpeg.validate();

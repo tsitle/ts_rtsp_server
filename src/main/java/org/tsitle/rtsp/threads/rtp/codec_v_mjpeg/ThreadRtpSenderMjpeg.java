@@ -76,6 +76,7 @@ public final class ThreadRtpSenderMjpeg extends ThreadRtpSenderBase<VideoJpegInf
 		return new ThreadDataProvMjpeg(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				paramsVideoCommon,
+				Objects.requireNonNull(avStreamIncoming),
 				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
 				paramsCommon.getDebugRewindMediaFiles()
 			);

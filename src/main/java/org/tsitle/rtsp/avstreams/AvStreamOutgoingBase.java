@@ -3,54 +3,45 @@ package org.tsitle.rtsp.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
+import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Arrays;
 
 public abstract class AvStreamOutgoingBase {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
+	protected final @NonNull AvStreamIncoming avStreamIncoming;
 	private byte[] frameStartMagicbytes;
 	private int magicBytesLengthInBits;
-	private final String filename;
 
-	private FileInputStream fis;
-	private BufferedInputStream bis;
 	private byte[] cachedDataBuf = new byte[1024 * 1024];
 	private int cachedDataLength = 0;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
+	 * @param avStreamIncoming Incoming A/V stream
 	 * @param frameStartMagicbytes Magic bytes array for frame start detection
 	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
-	 * @param filename Input file name
-	 * @throws FileNotFoundException If the input file cannot be found
 	 */
 	protected AvStreamOutgoingBase(
 				@Nullable LogMsgInterface logMsgInterface,
+				@NonNull AvStreamIncoming avStreamIncoming,
 				byte[] frameStartMagicbytes,
-				int magicBytesLengthInBits,
-				@NonNull String filename
-			) throws FileNotFoundException {
+				int magicBytesLengthInBits
+			) {
 		this.logMsgInterface = logMsgInterface;
+		this.avStreamIncoming = avStreamIncoming;
 		if (magicBytesLengthInBits % 4 != 0) {
 			throw new IllegalArgumentException("magicBytesLengthInBits must be a multiple of 4");
 		}
 		this.frameStartMagicbytes = frameStartMagicbytes;
 		this.magicBytesLengthInBits = magicBytesLengthInBits;
-		this.filename = filename;
-
-		this.fis = openFile(filename);
-		this.bis = new BufferedInputStream(this.fis);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -65,73 +56,31 @@ public abstract class AvStreamOutgoingBase {
 	}
 
 	/**
-	 * Checks if there could be more frames in the stream
-	 * @return True if there could be more frames, false otherwise
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
 	 */
-	public abstract boolean hasMoreFrames();
+	public abstract boolean haveEos();
 
 	/**
 	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 */
 	public abstract void getNextFrame(@NonNull BufferExt frameBuf)
-			throws InputStreamIoException, InputStreamEofException, AvInvalidCodecDataException;
+			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException;
 
 	/**
 	 * Rewinds the stream to the beginning
+	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
 	 */
-	public void rewind() {
-		try {
-			bis.close();
-			fis.close();
-			fis = openFile(filename);
-			bis = new BufferedInputStream(fis);
-		} catch (IOException e) {
-			// this should never happen
-			throw new RuntimeException(e);
-		}
+	public void rewind() throws AvCannotOpenInputException {
+		avStreamIncoming.rewind();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	protected int bisAvailableBytes() {
-		try {
-			return bis.available();
-		} catch (IOException e) {
-			return 0;
-		}
-	}
 
 	protected int getCachedDataLengthForFramesWithStartCode() {
 		return cachedDataLength;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Reads some bytes from the stream.
-	 * @param buf Output buffer to store the data in
-	 * @param length Number of bytes to read
-	 * @return Number of bytes read
-	 */
-	protected int bisReadBytesNoCache(byte[] buf, int length) throws InputStreamIoException {
-		return bisReadBytesNoCache(buf, 0, length);
-	}
-
-	/**
-	 * Reads some bytes from the stream.
-	 * @param buf Output buffer to store the data in
-	 * @param destOffset Offset in the output buffer to start writing at
-	 * @param length Number of bytes to read
-	 * @return Number of bytes read
-	 */
-	protected int bisReadBytesNoCache(byte[] buf, int destOffset, int length) throws InputStreamIoException {
-		try {
-			return bis.read(buf, destOffset, length);
-		} catch (IOException e) {
-			throw new InputStreamIoException(e.getMessage());
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -152,7 +101,7 @@ public abstract class AvStreamOutgoingBase {
 				byte[] magicBytesVersionA,
 				byte[] magicBytesVersionB,
 				int readMaxBytes
-			) throws InputStreamIoException, InputStreamEofException {
+			) throws InputStreamIoException, InputStreamEosException {
 		if ((! isFirstFrame || (magicBytesVersionA == null && magicBytesVersionB == null)) && frameStartMagicbytes.length == 0) {
 			throw new IllegalStateException(fncName + ": frameStartMagicbytes is not set");
 		}
@@ -218,13 +167,8 @@ public abstract class AvStreamOutgoingBase {
 					break;
 				}
 				//
-				try {
-					bis.close();
-					fis.close();
-				} catch (IOException e) {
-					throw new InputStreamIoException(e.getMessage());
-				}
-				throw new InputStreamEofException();
+				avStreamIncoming.close();
+				throw new InputStreamEosException();
 			}
 		}
 	}
@@ -234,12 +178,12 @@ public abstract class AvStreamOutgoingBase {
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param bytesToRead Number of bytes to read
 	 * @throws InputStreamIoException If the stream cannot be read
-	 * @throws InputStreamEofException If the end of the stream is reached before the requested number of bytes is read
+	 * @throws InputStreamEosException If the end of the stream is reached before the requested number of bytes is read
 	 */
 	protected void internalReadRemainingFrameForFrameWithStartCode(
 				@NonNull BufferExt frameBuf,
 				int bytesToRead
-			) throws InputStreamIoException, InputStreamEofException {
+			) throws InputStreamIoException, InputStreamEosException {
 		int dstOffset = frameBuf.getUsed();
 		while (bytesToRead > 0) {
 			if (cachedDataLength > 0) {
@@ -257,7 +201,7 @@ public abstract class AvStreamOutgoingBase {
 				cachedDataLength -= toReadFromCache;
 				bytesToRead -= toReadFromCache;
 			} else if (! readMoreIntoCache()) {
-				throw new InputStreamEofException();
+				throw new InputStreamEosException();
 			}
 		}
 	}
@@ -275,19 +219,24 @@ public abstract class AvStreamOutgoingBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull FileInputStream openFile(@NonNull String filename) throws FileNotFoundException {
-		return new FileInputStream(filename);
-	}
-
-	private boolean readMoreIntoCache() throws InputStreamIoException {
+	private boolean readMoreIntoCache() throws InputStreamIoException, InputStreamEosException {
 		if (cachedDataLength == cachedDataBuf.length) {
 			cachedDataBuf = Arrays.copyOf(cachedDataBuf, cachedDataBuf.length * 2);
 		}
-		int read = bisReadBytesNoCache(cachedDataBuf, cachedDataLength, cachedDataBuf.length - cachedDataLength);
-		if (read <= 0) {
-			return false;
+		int stillToRead = cachedDataBuf.length - cachedDataLength;
+		while (stillToRead > 0) {
+			int toRead = Math.min(stillToRead, 32 * 1024);
+			int read = avStreamIncoming.readBytes(
+					cachedDataBuf,
+					cachedDataLength,
+					toRead
+				);
+			if (read <= 0) {
+				return false;
+			}
+			cachedDataLength += read;
+			stillToRead -= read;
 		}
-		cachedDataLength += read;
 		return true;
 	}
 

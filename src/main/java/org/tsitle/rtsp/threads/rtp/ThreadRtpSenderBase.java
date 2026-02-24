@@ -3,14 +3,13 @@ package org.tsitle.rtsp.threads.rtp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.CodecInfoInterface;
+import org.tsitle.rtsp.avstreams.AvStreamIncoming;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
-import org.tsitle.rtsp.exceptions.RtpFrameDataAcquException;
-import org.tsitle.rtsp.exceptions.InputStreamEofException;
-import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
@@ -32,6 +31,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	/** Length of UDP packets */
 	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
 
+	protected @Nullable AvStreamIncoming avStreamIncoming;
 	protected @Nullable TDP threadDataProv;
 
 	/** Buffer used to store the RTP/XXX payload */
@@ -157,13 +157,18 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-		//
-		resetRtpTsFrameNr();
-		//
-		beforeRunHook();
-
-		//
 		try {
+			avStreamIncoming = new AvStreamIncoming(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsCommon.getAvStreamIncomingUri().orElseThrow()
+				);
+
+			//
+			resetRtpTsFrameNr();
+			//
+			beforeRunHook();
+
+			//
 			receiveInitialClientPackets();
 
 			//
@@ -188,15 +193,20 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 					break;
 				}
 			}
-		} catch (InputStreamEofException ex) {
-			logError(FNC_NAME, "InputStreamEofException caught: " + ex);
+		} catch (AvCannotOpenInputException ex) {
+			logError(FNC_NAME, "AvCannotOpenInputException caught: " + ex.getMessage());
+		} catch (InputStreamEosException ex) {
+			logError(FNC_NAME, "InputStreamEosException caught: " + ex);
 		} catch (UdpSocketIoException ex) {
 			logError(FNC_NAME, ex.toString());
 		} catch (RtpFrameDataAcquException ex) {
 			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
-		} catch (InterruptedException e) {
+		} catch (InterruptedException ex) {
 			logError(FNC_NAME, "Interrupted while sleeping");
 		} finally {
+			if (avStreamIncoming != null) {
+				avStreamIncoming.close();
+			}
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
@@ -250,9 +260,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		if (threadDataProv == null || ! threadDataProv.isRunning()) {
 			cacheFrameData.haveErrorOther = true;
 			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
-		} else if (threadDataProv.haveEof()) {
-			cacheFrameData.haveErrorEof = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": InputStreamEofException caught";
+		} else if (threadDataProv.haveEos()) {
+			cacheFrameData.haveErrorEos = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
 		} else {
 			// get the next frame to send over the wire from the input stream
 			try {
@@ -275,9 +285,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 				// update frame number
 				incrRtpTsFrameNr();
-			} catch (InputStreamEofException e) {
-				cacheFrameData.haveErrorEof = true;
-				cacheFrameData.errorMsg = FNC_NAME + ": EOF";
+			} catch (InputStreamEosException e) {
+				cacheFrameData.haveErrorEos = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
 			}
 		}
 
@@ -385,7 +395,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop()
-			throws InterruptedException, InputStreamEofException, RtpFrameDataAcquException, UdpSocketIoException {
+			throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException {
 		if (isPaused.get()) {
 			Thread.sleep(100);
 			return true;
@@ -430,15 +440,15 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		return paramsCommon.getRtpTimestampT0().orElseThrow().rtpTsT0() + (int)elapsedTicks;
 	}
 
-	private boolean sendFrame() throws InputStreamEofException, RtpFrameDataAcquException, UdpSocketIoException {
+	private boolean sendFrame() throws InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
 
 		// acquire the next frame from the video stream
 		long tmpTsNs = System.nanoTime();
 		final FrameData frameData = cbFrameDataSupplier();
-		if (frameData.haveErrorEof) {
-			logError(FNC_NAME, "haveErrorEof: " + frameData.errorMsg);
-			throw new InputStreamEofException();
+		if (frameData.haveErrorEos) {
+			logError(FNC_NAME, "haveErrorEos: " + frameData.errorMsg);
+			throw new InputStreamEosException();
 		}
 		if (frameData.haveErrorOther) {
 			throw new RtpFrameDataAcquException(frameData.errorMsg);
