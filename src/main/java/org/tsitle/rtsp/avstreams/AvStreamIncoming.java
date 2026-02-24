@@ -135,12 +135,22 @@ public final class AvStreamIncoming {
 		final String FNC_NAME = getClass().getSimpleName() + ".readBytes()";
 
 		try {
-			int tmpRead = bis.read(buf, destOffset, length);
-			if (tmpRead == -1) {
-				haveEos = true;
-				throw new InputStreamEosException();
+			int totalDidRead = 0;
+			int stillToRead = length;
+			while (stillToRead > 0) {
+				int tmpToRead = Math.min(stillToRead, 32 * 1024);
+				int tmpDidRead = bis.read(buf, destOffset, tmpToRead);
+				if (tmpDidRead == -1) {
+					haveEos = true;
+					if (totalDidRead == 0) {
+						throw new InputStreamEosException();
+					}
+				}
+				stillToRead -= tmpDidRead;
+				destOffset += tmpDidRead;
+				totalDidRead += tmpDidRead;
 			}
-			return tmpRead;
+			return totalDidRead;
 		} catch (IOException ex) {
 			logError(FNC_NAME, "IOException caught: " + ex.getMessage());
 			throw new InputStreamIoException(ex.getMessage());

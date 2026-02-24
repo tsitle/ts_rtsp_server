@@ -145,9 +145,7 @@ public abstract class AvStreamOutgoingBase {
 					}
 				} else {
 					while (cachedDataLength < readMaxBytes) {
-						if (! readMoreIntoCache()) {
-							break;
-						}
+						readMoreIntoCache();
 					}
 					frameBuf.clear();
 					frameBuf.copyFrom(cachedDataBuf, 0, 0, readMaxBytes);
@@ -158,7 +156,9 @@ public abstract class AvStreamOutgoingBase {
 			}
 
 			// we couldn't find the start code within the current buffer - try reading more data
-			if (! readMoreIntoCache()) {
+			try {
+				readMoreIntoCache();
+			} catch (InputStreamEosException ex) {
 				if (cachedDataLength > 0) {
 					// we couldn't read more data, but we still have some data in the buffer
 					frameBuf.clear();
@@ -167,7 +167,6 @@ public abstract class AvStreamOutgoingBase {
 					break;
 				}
 				//
-				avStreamIncoming.close();
 				throw new InputStreamEosException();
 			}
 		}
@@ -200,8 +199,8 @@ public abstract class AvStreamOutgoingBase {
 				}
 				cachedDataLength -= toReadFromCache;
 				bytesToRead -= toReadFromCache;
-			} else if (! readMoreIntoCache()) {
-				throw new InputStreamEosException();
+			} else {
+				readMoreIntoCache();
 			}
 		}
 	}
@@ -219,25 +218,16 @@ public abstract class AvStreamOutgoingBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean readMoreIntoCache() throws InputStreamIoException, InputStreamEosException {
+	private void readMoreIntoCache() throws InputStreamIoException, InputStreamEosException {
 		if (cachedDataLength == cachedDataBuf.length) {
 			cachedDataBuf = Arrays.copyOf(cachedDataBuf, cachedDataBuf.length * 2);
 		}
-		int stillToRead = cachedDataBuf.length - cachedDataLength;
-		while (stillToRead > 0) {
-			int toRead = Math.min(stillToRead, 32 * 1024);
-			int read = avStreamIncoming.readBytes(
-					cachedDataBuf,
-					cachedDataLength,
-					toRead
-				);
-			if (read <= 0) {
-				return false;
-			}
-			cachedDataLength += read;
-			stillToRead -= read;
-		}
-		return true;
+		int tmpDidRead = avStreamIncoming.readBytes(
+				cachedDataBuf,
+				cachedDataLength,
+				cachedDataBuf.length - cachedDataLength
+			);
+		cachedDataLength += tmpDidRead;
 	}
 
 	private int findStartCode(byte[] data, int length, int startIdx) {
