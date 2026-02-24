@@ -102,7 +102,7 @@ public final class AudioAacParser {
 		int tmpSamplingFrequIndex = ((aacBuf.get(2) & 0x3C) >> 2);
 		resObj.samplerate = AudioAacInfo.SampleRate.of(tmpSamplingFrequIndex);
 		if (resObj.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid sample rate");
+			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
 		}
 		if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
 			throw new AvInvalidAacDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
@@ -116,7 +116,8 @@ public final class AudioAacParser {
 			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid channel configuration");
 		}
 		if (resObj.channelConfiguration > AAC_CHANNELS_MAX) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Too many channels (max. " + AAC_CHANNELS_MAX + ")");
+			throw new AvInvalidAacDataException(FNC_NAME + ": Too many channels (is=" + resObj.channelConfiguration +
+					", max=" + AAC_CHANNELS_MAX + ")");
 		}
 
 		/// Original/Copy: bit 26 (1 bit)
