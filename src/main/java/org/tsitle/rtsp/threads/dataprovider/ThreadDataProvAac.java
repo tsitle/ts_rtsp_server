@@ -5,7 +5,7 @@ import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidAacDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
@@ -43,6 +43,7 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 		//
 		try {
 			this.mediaOutgoingStream = new AudioStreamOutgoingAac(
+					logMsgInterface,
 					paramsAudioCommon.getAudioFilePath().orElseThrow()
 				);
 		} catch (FileNotFoundException e) {
@@ -67,7 +68,7 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidAacDataException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		AudioAacInfo curFrameAacInfo = aacParser.parseAacData(inputBuf);
 
 		infoQueue.add(curFrameAacInfo);

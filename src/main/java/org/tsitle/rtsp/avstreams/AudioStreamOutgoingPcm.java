@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.FileNotFoundException;
 
@@ -18,6 +19,7 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 
 	/**
 	 * Constructor.
+	 * @param logMsgInterface Log message interface
 	 * @param filename Audio file name
 	 * @param channels Number of channels (1 = mono, 2 = stereo)
 	 * @param bitsPerSample Bits per sample (8 or 16)
@@ -26,13 +28,19 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	 * @throws FileNotFoundException If the audio file cannot be found
 	 */
 	public AudioStreamOutgoingPcm(
+				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull String filename,
 				int channels,
 				int bitsPerSample,
 				int rtpSamplesPerFrame,
 				boolean isBigEndian
 			) throws FileNotFoundException {
-		super(new byte[0], 0, filename);
+		super(
+				logMsgInterface,
+				new byte[0],
+				0,
+				filename
+			);
 
 		//
 		if (channels < 1 || channels > 2) {

@@ -6,7 +6,7 @@ import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.avdata.VideoJpegParser;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpeg;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -43,7 +43,10 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 
 		//
 		try {
-			this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(
+					logMsgInterface,
+					paramsVideoCommon.getVideoFilePath().orElseThrow()
+				);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -80,7 +83,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidJpegDataException, ImageReencoderIoException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException, ImageReencoderIoException {
 		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary

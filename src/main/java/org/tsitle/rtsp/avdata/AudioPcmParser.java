@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 
 public final class AudioPcmParser {
 
@@ -27,11 +27,11 @@ public final class AudioPcmParser {
 	 * @param pcmBuf PCM data
 	 * @return Parsed PCM information
 	 */
-	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferExt pcmBuf) throws AvInvalidPcmDataException {
+	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferExt pcmBuf) throws AvInvalidCodecDataException {
 		final String FNC_NAME = AudioPcmParser.class.getSimpleName() + ".parsePcmData()";
 
 		if (pcmBuf.getUsed() < 1) {
-			throw new AvInvalidPcmDataException(FNC_NAME + ": Invalid PCM data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid PCM data size");
 		}
 		if (channels < 1 || channels > 2) {
 			throw new IllegalArgumentException(FNC_NAME + ": Invalid audio channel count: " + channels);

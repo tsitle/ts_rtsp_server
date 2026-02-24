@@ -6,7 +6,7 @@ import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidAacDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
@@ -299,7 +299,7 @@ public class RtspStreamSource {
 		} catch (FileNotFoundException | InputStreamIoException | InputStreamEofException e) {
 			throw new ConfigInvalidException("Could not read from AAC file for Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
-		} catch (AvInvalidAacDataException e) {
+		} catch (AvInvalidCodecDataException e) {
 			throw new ConfigInvalidException("Could not parse AAC header for Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		}

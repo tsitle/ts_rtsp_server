@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidJpegDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -37,7 +37,7 @@ public final class VideoJpegParser {
 	 * @return Parsed JPEG information
 	 */
 	public @NonNull VideoJpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
-			throws AvInvalidJpegDataException {
+			throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseJpegData()";
 
 		this.debugStreamOffset = debugStreamOffset;
@@ -47,7 +47,7 @@ public final class VideoJpegParser {
 
 		int offs = 0;
 		if (jpegBuf.getUsed() < 4) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data size");
 		}
 		// find SOI marker (Start of Image: 0xFFD8)
 		while (offs + 1 < jpegBuf.getUsed()) {
@@ -55,7 +55,7 @@ public final class VideoJpegParser {
 				logError(FNC_NAME, String.format("skipping invalid JPEG data @ 0x%08X: 0x%02X 0x%02X%n",
 						offs + debugStreamOffset, jpegBuf.get(offs), jpegBuf.get(offs + 1)));
 				if (offs > 20) {
-					throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data - too much garbage");
+					throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data - too much garbage");
 				}
 				++offs;
 				continue;
@@ -66,7 +66,7 @@ public final class VideoJpegParser {
 		while (offs + 1 < jpegBuf.getUsed()) {
 			byte marker = jpegBuf.get(offs++);
 			if (marker != (byte)0xFF) {
-				throw new AvInvalidJpegDataException(
+				throw new AvInvalidCodecDataException(
 						String.format("%s: Invalid JPEG data - invalid marker @ 0x%08X: 0x%02X",
 								FNC_NAME, offs + debugStreamOffset - 1, marker)
 					);
@@ -145,23 +145,23 @@ public final class VideoJpegParser {
 	 * @return Block length
 	 */
 	private int parseBlockLength(@NonNull BufferExt jpegBuf, final int blockOffset)
-			throws AvInvalidJpegDataException {
+			throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockLength()";
 
 		if (blockOffset + 4 >= jpegBuf.getUsed()) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data size");
 		}
 		int curOffs = blockOffset + 2;
 		// the block length includes the two bytes for the length itself
 		int blockLen = ( ( ((jpegBuf.get(curOffs) << 8) & 0xFF00) | (jpegBuf.get(curOffs + 1) & 0xFF) ) & 0xFFFF);
 		if (blockLen < 2) {
-			throw new AvInvalidJpegDataException(
+			throw new AvInvalidCodecDataException(
 					String.format("%s: Invalid JPEG data - invalid block length %d @ 0x%08X",
 							FNC_NAME, blockLen, debugStreamOffset + curOffs)
 				);
 		}
 		if (blockOffset + 2 + blockLen >= jpegBuf.getUsed()) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG data - data too small");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data - data too small");
 		}
 		//logDebug(FNC_NAME, curOffs, String.format("__ blockLen %d", blockLen));
 		return blockLen - 2;
@@ -175,7 +175,7 @@ public final class VideoJpegParser {
 	 * @return Offset after the block in the JPEG data
 	 */
 	private int parseBlockSOS(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
-			throws AvInvalidJpegDataException {
+			throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOS()";
 
 		/*
@@ -216,7 +216,7 @@ public final class VideoJpegParser {
 	 * @return Offset after the block in the JPEG data
 	 */
 	private int parseBlockSOF0(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
-			throws AvInvalidJpegDataException {
+			throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOF0()";
 
 		//logDebug(FNC_NAME, blockOffset, "SOF0");
@@ -224,7 +224,7 @@ public final class VideoJpegParser {
 		int curOffs = blockOffset + 2 + 2;
 
 		if (blockLen < 6) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 
 		jpegInfo.sof0_hasBaselineDCT = true;
@@ -244,14 +244,14 @@ public final class VideoJpegParser {
 		byte paramNf = jpegBuf.get(innerOffs++);
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ Nf %d", paramNf));
 		if (blockLen < 6 + (paramNf * 3)) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 		byte tmpMaxH = 0;
 		byte tmpMaxV = 0;
 		for (byte componentIx = 0; componentIx < paramNf; ++componentIx) {
 			byte componentId = jpegBuf.get(innerOffs++);
 			if (componentId < 0 || componentId > 3) {
-				throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid component ID");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid component ID");
 			}
 			/*
 			 * We are going to assume that the components come in the order Y, Cb, Cr - regardless of ID value.
@@ -269,7 +269,7 @@ public final class VideoJpegParser {
 							componentTmpHiVi, componentHi, componentVi,
 							componentQuantTableSel));*/
 			if (componentQuantTableSel < 0 || componentQuantTableSel > 3) {
-				throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid componentQuantTableSel");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid componentQuantTableSel");
 			}
 			switch (componentIx) {
 				case 0 -> jpegInfo.sof0_quantTableSelY = componentQuantTableSel;
@@ -298,7 +298,7 @@ public final class VideoJpegParser {
 
 		//
 		if (curOffs + blockLen != innerOffs) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": sanity check failed");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": sanity check failed");
 		}
 
 		return curOffs + blockLen;
@@ -312,7 +312,7 @@ public final class VideoJpegParser {
 	 * @return Offset after the block in the JPEG data
 	 */
 	private int parseBlockDQT(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
-			throws AvInvalidJpegDataException {
+			throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockDQT()";
 
 		//logDebug(FNC_NAME, blockOffset, "DQT");
@@ -325,35 +325,35 @@ public final class VideoJpegParser {
 		byte tmpPqTq = jpegBuf.get(innerOffs++);
 		byte tmpPq = (byte)((tmpPqTq >> 4) & 0x0F);  // Pq=0 for 8-bit, Pq=1 for 16-bit quantization tables
 		if (tmpPq != 0 && tmpPq != 1) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Unsupported DQT Table Precision");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DQT Table Precision");
 		}
 		byte tmpTq = (byte)(tmpPqTq & 0x0F);  // Table ID
 		if ((tmpPq == 0 && tmpTq >= jpegInfo.dqt_tables8Bit.length) ||
 				(tmpPq == 1 && tmpTq >= jpegInfo.dqt_tables16Bit.length)) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid DQT Table ID");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid DQT Table ID");
 		}
 		if (jpegInfo.dqt_tablePrecisions[tmpTq] != null) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Duplicate DQT table");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
 		if (jpegInfo.dqt_tables8Bit[tmpTq] != null || jpegInfo.dqt_tables16Bit[tmpTq] != null) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Duplicate DQT table");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
 		if (tmpPq == 0) {
 			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT8;
 			if (jpegInfo.dqt_table8bitCount >= jpegInfo.dqt_tables8Bit.length) {
-				throw new AvInvalidJpegDataException(FNC_NAME + ": Too many DQT tables");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Too many DQT tables");
 			}
 			jpegInfo.dqt_tables8Bit[tmpTq] = new VideoJpegInfo.DqtTable8Bit(tmpTq);
 		} else {
 			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT16;
 			if (jpegInfo.dqt_table16bitCount >= jpegInfo.dqt_tables16Bit.length) {
-				throw new AvInvalidJpegDataException(FNC_NAME + ": Too many DQT tables");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Too many DQT tables");
 			}
 			jpegInfo.dqt_tables16Bit[tmpTq] = new VideoJpegInfo.DqtTable16Bit(tmpTq);
 		}
 		if ((tmpPq == 0 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length + 1) ||
 				(tmpPq == 1 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length + 1)) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": Invalid JPEG block size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
@@ -378,7 +378,7 @@ public final class VideoJpegParser {
 
 		//
 		if (curOffs + blockLen != innerOffs) {
-			throw new AvInvalidJpegDataException(FNC_NAME + ": sanity check failed");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": sanity check failed");
 		}
 
 		return curOffs + blockLen;

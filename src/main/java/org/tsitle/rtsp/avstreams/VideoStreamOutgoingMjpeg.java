@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
+import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.FileNotFoundException;
 
@@ -13,11 +14,20 @@ public class VideoStreamOutgoingMjpeg extends VideoStreamOutgoingBase {
 
 	/**
 	 * Constructor.
+	 * @param logMsgInterface Log message interface
 	 * @param filename Video file name
 	 * @throws FileNotFoundException If the video file cannot be found
 	 */
-	public VideoStreamOutgoingMjpeg(@NonNull String filename) throws FileNotFoundException {
-		super(MJPEG_FRAME_START_MAGICBYTES, MJPEG_FRAME_START_MAGICBYTES.length * 8, filename);
+	public VideoStreamOutgoingMjpeg(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull String filename
+			) throws FileNotFoundException {
+		super(
+				logMsgInterface,
+				MJPEG_FRAME_START_MAGICBYTES,
+				MJPEG_FRAME_START_MAGICBYTES.length * 8,
+				filename
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -29,7 +39,10 @@ public class VideoStreamOutgoingMjpeg extends VideoStreamOutgoingBase {
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException {
+		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
+
 		internalGetNextFrameWithStartCode(
+				FNC_NAME,
 				frameBuf,
 				false,
 				null,

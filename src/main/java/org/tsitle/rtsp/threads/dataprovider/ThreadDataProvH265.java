@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.*;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26x;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
@@ -35,7 +35,10 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<VideoH265Info> {
 
 		//
 		try {
-			this.mediaOutgoingStream = new VideoStreamOutgoingH26x(paramsVideoCommon.getVideoFilePath().orElseThrow());
+			this.mediaOutgoingStream = new VideoStreamOutgoingH26x(
+					logMsgInterface,
+					paramsVideoCommon.getVideoFilePath().orElseThrow()
+				);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
@@ -58,7 +61,7 @@ public class ThreadDataProvH265 extends ThreadDataProvBase<VideoH265Info> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidH26xDataException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoH265Info curFrameH265Info = h265Parser.parseH265Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,

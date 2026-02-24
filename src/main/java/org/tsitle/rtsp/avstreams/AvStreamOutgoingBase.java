@@ -1,9 +1,13 @@
 package org.tsitle.rtsp.avstreams;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
+import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -13,6 +17,7 @@ import java.util.Arrays;
 
 public abstract class AvStreamOutgoingBase {
 
+	private final @Nullable LogMsgInterface logMsgInterface;
 	private byte[] frameStartMagicbytes;
 	private int magicBytesLengthInBits;
 	private final String filename;
@@ -24,16 +29,19 @@ public abstract class AvStreamOutgoingBase {
 
 	/**
 	 * Constructor.
+	 * @param logMsgInterface Log message interface
 	 * @param frameStartMagicbytes Magic bytes array for frame start detection
 	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
 	 * @param filename Input file name
 	 * @throws FileNotFoundException If the input file cannot be found
 	 */
 	protected AvStreamOutgoingBase(
+				@Nullable LogMsgInterface logMsgInterface,
 				byte[] frameStartMagicbytes,
 				int magicBytesLengthInBits,
 				@NonNull String filename
 			) throws FileNotFoundException {
+		this.logMsgInterface = logMsgInterface;
 		if (magicBytesLengthInBits % 4 != 0) {
 			throw new IllegalArgumentException("magicBytesLengthInBits must be a multiple of 4");
 		}
@@ -66,7 +74,8 @@ public abstract class AvStreamOutgoingBase {
 	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 */
-	public abstract void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEofException;
+	public abstract void getNextFrame(@NonNull BufferExt frameBuf)
+			throws InputStreamIoException, InputStreamEofException, AvInvalidCodecDataException;
 
 	/**
 	 * Rewinds the stream to the beginning
@@ -129,6 +138,7 @@ public abstract class AvStreamOutgoingBase {
 
 	/**
 	 * Reads the next video frame from the stream.
+	 * @param fncName Name of the calling function for logging
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param isFirstFrame Is this the first frame in the stream?
 	 * @param magicBytesVersionA Version A of the magic bytes - needs to be the longer one
@@ -136,6 +146,7 @@ public abstract class AvStreamOutgoingBase {
 	 * @param readMaxBytes Maximum number of bytes to read from the stream (-1 for unlimited)
 	 */
 	protected void internalGetNextFrameWithStartCode(
+				@NonNull String fncName,
 				@NonNull BufferExt frameBuf,
 				boolean isFirstFrame,
 				byte[] magicBytesVersionA,
@@ -143,7 +154,7 @@ public abstract class AvStreamOutgoingBase {
 				int readMaxBytes
 			) throws InputStreamIoException, InputStreamEofException {
 		if ((! isFirstFrame || (magicBytesVersionA == null && magicBytesVersionB == null)) && frameStartMagicbytes.length == 0) {
-			throw new IllegalStateException("frameStartMagicbytes is not set");
+			throw new IllegalStateException(fncName + ": frameStartMagicbytes is not set");
 		}
 
 		while (true) {
@@ -167,6 +178,7 @@ public abstract class AvStreamOutgoingBase {
 			//
 			if (firstStart > 0) {
 				// we need to skip over some garbage data before the first frame starts
+				logDebug(fncName, "Skipping " + firstStart + " bytes of garbage data");
 				System.arraycopy(cachedDataBuf, firstStart, cachedDataBuf, 0, cachedDataLength - firstStart);
 				cachedDataLength -= firstStart;
 				firstStart = 0;
@@ -251,6 +263,16 @@ public abstract class AvStreamOutgoingBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		if (logMsgInterface == null) {
+			return;
+		}
+		logMsgInterface.addMsgForLogThread(RtxpLogLevel.DEBUG, Thread.currentThread().getName(),
+				fncName + ": " + msg);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull FileInputStream openFile(@NonNull String filename) throws FileNotFoundException {

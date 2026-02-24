@@ -5,7 +5,7 @@ import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.avdata.AudioPcmParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingPcm;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidPcmDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
@@ -40,6 +40,7 @@ public class ThreadDataProvPcm extends ThreadDataProvBase<AudioPcmInfo> {
 		//
 		try {
 			this.mediaOutgoingStream = new AudioStreamOutgoingPcm(
+					logMsgInterface,
 					paramsAudioCommon.getAudioFilePath().orElseThrow(),
 					paramsPcm.getAudioChannelCount(),
 					paramsPcm.getAudioBitsPerSample(),
@@ -71,7 +72,7 @@ public class ThreadDataProvPcm extends ThreadDataProvBase<AudioPcmInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidPcmDataException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		AudioPcmInfo curFramePcmInfo = pcmParser.parsePcmData(inputBuf);
 
 		infoQueue.add(curFramePcmInfo);

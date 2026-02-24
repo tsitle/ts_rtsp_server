@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.CodecInfoH26xBase;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -90,7 +90,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			appendSrcAuToDestAu(globalTempAu, globalNextAu, globalTempAu.arrNalUnitIx);
 			//
 			resetRtpTsFrameNr();
-		} catch (InputStreamIoException | AvInvalidH26xDataException ex) {
+		} catch (InputStreamIoException | AvInvalidCodecDataException ex) {
 			logError(FNC_NAME, ex.toString());
 		}
 	}
@@ -110,7 +110,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			 */
 			try {
 				frameDataSupplierGrabAccessUnit();
-			} catch (InputStreamIoException | AvInvalidH26xDataException ex) {
+			} catch (InputStreamIoException | AvInvalidCodecDataException ex) {
 				cacheFrameData.haveErrorOther = true;
 				cacheFrameData.errorMsg = FNC_NAME + ": " + ex;
 				return cacheFrameData;
@@ -198,7 +198,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 		tmpLocalNudPtr.rtpPayloadDataPtr = tmpBufPtr;
 	}
 
-	private void frameDataSupplierGrabAccessUnit() throws InputStreamIoException, AvInvalidH26xDataException {
+	private void frameDataSupplierGrabAccessUnit() throws InputStreamIoException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".frameDataSupplierGrabAccessUnit()";
 
 		globalCurAu.reset();

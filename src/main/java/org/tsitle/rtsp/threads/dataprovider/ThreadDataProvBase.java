@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.InputStreamEofException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -158,6 +159,11 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 			if (e instanceof InputStreamIoException) {
 				logError(FNC_NAME, "InputStreamIoException caught: " + e.getMessage());
 			}
+			// we have reached the end of the input
+			eofAfterFrameNr = frameCountInp;
+			return;
+		} catch (AvInvalidCodecDataException e) {
+			logError(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
 			// we have reached the end of the input
 			eofAfterFrameNr = frameCountInp;
 			return;

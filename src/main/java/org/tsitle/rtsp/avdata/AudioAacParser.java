@@ -2,7 +2,7 @@ package org.tsitle.rtsp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidAacDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
 
 public final class AudioAacParser {
@@ -29,7 +29,7 @@ public final class AudioAacParser {
 	 * @return Remaining number of bytes to read
 	 * @throws IllegalArgumentException If AAC data size is invalid
 	 */
-	public static int getRemainingAacPayloadLengthToRead(@NonNull BufferExt adtsHeader) throws AvInvalidAacDataException {
+	public static int getRemainingAacPayloadLengthToRead(@NonNull BufferExt adtsHeader) throws AvInvalidCodecDataException {
 		if (adtsHeader.getUsed() < AAC_HEADER_SIZE_MAX) {
 			throw new IllegalArgumentException("Invalid AAC data size");
 		}
@@ -48,7 +48,7 @@ public final class AudioAacParser {
 	 * @return AAC info
 	 */
 	public static @NonNull AudioAacInfo parseAdtsHeader(@NonNull BufferExt adtsHeader)
-			throws AvInvalidAacDataException {
+			throws AvInvalidCodecDataException {
 		if (adtsHeader.getUsed() < AAC_HEADER_SIZE_MIN) {
 			throw new IllegalArgumentException("ADTS header to short");
 		}
@@ -64,11 +64,11 @@ public final class AudioAacParser {
 	 * @param aacBuf AAC data
 	 * @return Parsed AAC information
 	 */
-	public AudioAacInfo parseAacData(BufferExt aacBuf) throws AvInvalidAacDataException {
+	public AudioAacInfo parseAacData(BufferExt aacBuf) throws AvInvalidCodecDataException {
 		final String FNC_NAME = AudioAacParser.class.getSimpleName() + ".parseAacData()";
 
 		if (aacBuf.getUsed() < AAC_HEADER_SIZE_MIN) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid AAC data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size");
 		}
 
 		//
@@ -95,17 +95,17 @@ public final class AudioAacParser {
 		byte tmpAot = (byte)((aacBuf.get(2) & 0xC0) >> 6);
 		resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAot + 1);
 		if (resObj.audioObjectType == AudioAacInfo.AudioObjectType.UNKNOWN) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid audio object type");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid audio object type");
 		}
 
 		/// sampling_frequency_index: bits 18-21 (4 bits)
 		int tmpSamplingFrequIndex = ((aacBuf.get(2) & 0x3C) >> 2);
 		resObj.samplerate = AudioAacInfo.SampleRate.of(tmpSamplingFrequIndex);
 		if (resObj.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
 		}
 		if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
 		}
 
 		/// Private Bit: bit 22 (1 bit): Set by user
@@ -113,10 +113,10 @@ public final class AudioAacParser {
 		/// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
 		resObj.channelConfiguration = (((aacBuf.get(2) & 0x01) << 2) | ((aacBuf.get(3) & 0xC0) >> 6));
 		if (resObj.channelConfiguration == 0) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Invalid channel configuration");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid channel configuration");
 		}
 		if (resObj.channelConfiguration > AAC_CHANNELS_MAX) {
-			throw new AvInvalidAacDataException(FNC_NAME + ": Too many channels (is=" + resObj.channelConfiguration +
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Too many channels (is=" + resObj.channelConfiguration +
 					", max=" + AAC_CHANNELS_MAX + ")");
 		}
 
@@ -141,7 +141,7 @@ public final class AudioAacParser {
 		// CRC if 'Protection Absent' is set to 0: 2 bytes (bytes 7..8)
 		if (haveCrc) {
 			if (aacBuf.getUsed() < AAC_HEADER_SIZE_MAX) {
-				throw new AvInvalidAacDataException(FNC_NAME + ": Invalid AAC data size (missing CRC)");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size (missing CRC)");
 			}
 			resObj.samplesOffset += 2;
 			resObj.samplesLength -= 2;

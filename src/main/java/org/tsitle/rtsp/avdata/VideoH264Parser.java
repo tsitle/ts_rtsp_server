@@ -6,7 +6,7 @@ import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.rtsp.avdata.subinfo.H264PpsContext;
 import org.tsitle.rtsp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidH26xDataException;
+import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.BitReaderEosException;
 import org.tsitle.rtsp.helpers.BitReaderHelper;
 
@@ -47,14 +47,14 @@ public final class VideoH264Parser {
 				int startCodeLen,
 				@NonNull BufferExt h264Buf,
 				@Nullable H264PictureBoundaryInfo inpPictBoundInfoPrev
-			) throws AvInvalidH26xDataException {
+			) throws AvInvalidCodecDataException {
 		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseH264Data()";
 
 		VideoH264Info resObj = new VideoH264Info();
 
 		resObj.nalUnitOffset = startCodeLen;
 		if (h264Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
-			throw new AvInvalidH26xDataException(FNC_NAME + ": Invalid H264 data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid H264 data size");
 		}
 		resObj.nalUnitLength = h264Buf.getUsed() - resObj.nalUnitOffset;
 		while (resObj.nalUnitLength > 0 && h264Buf.get(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
@@ -74,7 +74,7 @@ public final class VideoH264Parser {
 		/*debugLog(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", h264Buf.getByteAt(0)));*/
 		int offs = resObj.nalUnitOffset;
 		if ((byte)(h264Buf.get(offs) & 0x80) != 0) {
-			throw new AvInvalidH26xDataException(
+			throw new AvInvalidCodecDataException(
 					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((h264Buf.get(offs) & 0x80) >> 7))
 				);
 		}
@@ -118,7 +118,7 @@ public final class VideoH264Parser {
 				resObj.isVclNalUnit = false;
 			}
 		} catch (BitReaderEosException e) {
-			throw new AvInvalidH26xDataException(FNC_NAME + ": Invalid H264 data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid H264 data size");
 		}
 
 		return resObj;
