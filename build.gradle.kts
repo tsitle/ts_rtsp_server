@@ -70,6 +70,7 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.jspecify:jspecify:1.0.0")
 	implementation("com.google.code.gson:gson:2.13.2")  // for JSON deserialization
+	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 }
 
 tasks.test {
