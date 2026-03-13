@@ -91,6 +91,10 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 		return ((! bufferQueue.isEmpty() && haveEos()) || (bufferQueue.size() >= queueSize));
 	}
 
+	public synchronized int getInputQueueSize() {
+		return bufferQueue.size();
+	}
+
 	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEosException {
 		if (haveEos() || bufferQueue.isEmpty() || infoQueue.isEmpty()) {
 			throw new InputStreamEosException();
