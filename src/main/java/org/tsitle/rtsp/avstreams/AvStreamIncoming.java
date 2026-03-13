@@ -25,7 +25,6 @@ public final class AvStreamIncoming implements AutoCloseable {
 	private final String inputUriAuth;
 
 	private InputStream gis;
-	private BufferedInputStream bis;
 
 	private boolean haveEos = false;
 
@@ -73,9 +72,6 @@ public final class AvStreamIncoming implements AutoCloseable {
 		final String FNC_NAME = getClass().getSimpleName() + ".close()";
 
 		try {
-			if (bis != null) {
-				bis.close();
-			}
 			if (gis != null) {
 				gis.close();
 			}
@@ -133,7 +129,7 @@ public final class AvStreamIncoming implements AutoCloseable {
 			int stillToRead = length;
 			while (stillToRead > 0) {
 				int tmpToRead = Math.min(stillToRead, 32 * 1024);
-				int tmpDidRead = bis.read(buf, destOffset, tmpToRead);
+				int tmpDidRead = gis.read(buf, destOffset, tmpToRead);
 				if (tmpDidRead == -1) {
 					haveEos = true;
 					if (totalDidRead == 0) {
@@ -165,7 +161,6 @@ public final class AvStreamIncoming implements AutoCloseable {
 		} catch (MqException e) {
 			throw new AvCannotOpenInputException("MqException caught: " + e.getMessage());
 		}
-		this.bis = new BufferedInputStream(this.gis);
 	}
 
 	private @NonNull InputStream openFile() throws FileNotFoundException {
