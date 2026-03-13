@@ -158,7 +158,7 @@ public abstract class AvStreamOutgoingBase {
 			// we couldn't find the start code within the current buffer - try reading more data
 			try {
 				readMoreIntoCache();
-			} catch (InputStreamEosException ex) {
+			} catch (InputStreamEosException e) {
 				if (cachedDataLength > 0) {
 					// we couldn't read more data, but we still have some data in the buffer
 					frameBuf.clear();

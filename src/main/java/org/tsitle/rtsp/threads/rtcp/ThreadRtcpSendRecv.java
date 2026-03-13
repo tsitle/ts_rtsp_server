@@ -85,8 +85,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 					}
 				}
 			}
-		} catch (UdpSocketIoException ex) {
-			logError(FNC_NAME, ex.toString());
+		} catch (UdpSocketIoException e) {
+			logError(FNC_NAME, e.toString());
 		} finally {
 			parRtcpSocketUdp.close();
 			isRunning.set(false);
@@ -119,11 +119,11 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			lastRtcpPacketReceived = Instant.now();
 		} catch (SocketTimeoutException ex1) {
 			return true;
-		} catch (IOException ex) {
+		} catch (IOException e) {
 			if (doStop.get()) {
 				return false;
 			}
-			throw new UdpSocketIoException(FNC_NAME + ": receive failed: " + ex.getMessage());
+			throw new UdpSocketIoException(FNC_NAME + ": receive failed: " + e.getMessage());
 		}
 
 		//

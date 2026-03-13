@@ -84,7 +84,8 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<AudioPcmInfo, 
 				paramsAudioCommon,
 				paramsPcm,
 				Objects.requireNonNull(avStreamIncoming),
-				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+				//(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),  @TODO
+				5,
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 	}

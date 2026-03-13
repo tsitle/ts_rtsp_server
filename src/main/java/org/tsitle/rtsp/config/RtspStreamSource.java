@@ -25,9 +25,9 @@ public class RtspStreamSource {
 	/** Path to the media file */
 	@Expose
 	private @NonNull String filePath;
-	/** Path to the UNIX Socket file for the media file */
+	/** URL of the Message Queue for the media stream */
 	@Expose
-	private @NonNull String unixSocketPath;
+	private @NonNull String mqUrl;
 	/** Codec used for the stream */
 	@Expose
 	private final @NonNull ConfigSsCodec codec;
@@ -57,7 +57,7 @@ public class RtspStreamSource {
 	public RtspStreamSource() {
 		this.id = -1;
 		this.filePath = "";
-		this.unixSocketPath = "";
+		this.mqUrl = "";
 		//noinspection DataFlowIssue
 		this.codec = null;
 		this.videoFps = -1.0;
@@ -85,7 +85,7 @@ public class RtspStreamSource {
 		if (! filePath.isBlank()) {
 			return URI.create("file:" + filePath);
 		}
-		return URI.create("socket:" + unixSocketPath);
+		return URI.create("tcp://" + mqUrl);
 	}
 
 	public @NonNull RtpPacketType getCodec() {
@@ -169,16 +169,14 @@ public class RtspStreamSource {
 		//noinspection ConstantValue
 		if (filePath != null && ! filePath.isBlank()) {
 			filePath = dataFilenameToAbsolutePath(dataDir, filePath);
-			unixSocketPath = "";
+			mqUrl = "";
 		} else {
 			filePath = "";
 		}
 		if (filePath.isBlank()) {
 			//noinspection ConstantValue
-			if (unixSocketPath != null && ! unixSocketPath.isBlank()) {
-				unixSocketPath = dataFilenameToAbsolutePath(dataDir, unixSocketPath);
-			} else {
-				unixSocketPath = "";
+			if (mqUrl == null || mqUrl.isBlank()) {
+				mqUrl = "";
 			}
 		}
 		//
@@ -243,16 +241,23 @@ public class RtspStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Stream Source has no ID");
 		}
 
-		if (filePath.isBlank() && unixSocketPath.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file/socket path found for Stream Source ID '" + tmpExtSsId + "'");
+		if (filePath.isBlank() && mqUrl.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ URL found for Stream Source ID '" + tmpExtSsId + "'");
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid ile path '" + filePath +
 					"' for Stream Source ID '" + tmpExtSsId + "' does not exist");
 		}
-		if (! (unixSocketPath.isBlank() || unixSocketPath.endsWith(".sock"))) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid socket path '" + unixSocketPath +
-					"' for Stream Source ID '" + tmpExtSsId + "' - must end with '.sock'");
+		if (! mqUrl.isBlank()) {
+			if (! mqUrl.endsWith(".mq")) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
+						"' for Stream Source ID '" + tmpExtSsId + "' - must end with '.mq'");
+			}
+			URI tmpUri = getInputUri();
+			if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
+						"' for Stream Source ID '" + tmpExtSsId + "' - must contain user info");
+			}
 		}
 
 		//noinspection ConstantValue
@@ -281,6 +286,12 @@ public class RtspStreamSource {
 		//
 		if (internalCodec == RtpPacketType.A_AAC) {
 			readAacHeader(tmpExtSsId);
+		} else if (internalCodec == RtpPacketType.A_LINEAR_PCM_S16_VAR && ! mqUrl.isBlank()) {
+			readMqLpcmHeader(tmpExtSsId);
+		} else if (internalCodec == RtpPacketType.V_H264 && ! mqUrl.isBlank()) {
+			readMqH264Header(tmpExtSsId);
+		} else if (internalCodec == RtpPacketType.V_H265 && ! mqUrl.isBlank()) {
+			readMqH265Header(tmpExtSsId);
 		}
 	}
 
@@ -296,15 +307,10 @@ public class RtspStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void readAacHeader(@NonNull String extSsId) throws ConfigInvalidException {
-		try {
-			AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri());
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			try {
-				AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(avStreamIncoming);
-				asoAac.getNextFrame(tmpBuf);
-			} finally {
-				avStreamIncoming.close();
-			}
+			AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(avStreamIncoming);
+			asoAac.getNextFrame(tmpBuf);
 
 			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);
 
@@ -330,6 +336,51 @@ public class RtspStreamSource {
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
 			throw new ConfigInvalidException("Could not parse AAC header for Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		}
+	}
+
+	private void readMqLpcmHeader(@NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+			byte[] tmpBufBytes = new byte[16];
+			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
+			if (tmpReadBytes != tmpBufBytes.length) {
+				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
+						"could not read " + tmpBufBytes.length + " bytes");
+			}
+			System.out.println("OK OK OK LPCM");  // @TODO
+		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
+			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		}
+	}
+
+	private void readMqH264Header(@NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+			byte[] tmpBufBytes = new byte[16];
+			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
+			if (tmpReadBytes != tmpBufBytes.length) {
+				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
+						"could not read " + tmpBufBytes.length + " bytes");
+			}
+			System.out.println("OK OK OK H264");  // @TODO
+		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
+			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		}
+	}
+
+	private void readMqH265Header(@NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+			byte[] tmpBufBytes = new byte[16];
+			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
+			if (tmpReadBytes != tmpBufBytes.length) {
+				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
+						"could not read " + tmpBufBytes.length + " bytes");
+			}
+			System.out.println("OK OK OK H265");  // @TODO
+		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
+			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		}
 	}

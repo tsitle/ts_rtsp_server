@@ -687,11 +687,11 @@ public class ThreadRtspServer extends ThreadBase {
 				return false;
 			}
 			return handleSuccessfulRequest(optRequestBasicInfo.get());
-		} catch (InputStreamNotReadyException e) {
+		} catch (InputStreamNotReadyException e1) {
 			try {
 				Thread.sleep(15);
 				return true;
-			} catch (InterruptedException ex) {
+			} catch (InterruptedException e2) {
 				return false;
 			}
 		}

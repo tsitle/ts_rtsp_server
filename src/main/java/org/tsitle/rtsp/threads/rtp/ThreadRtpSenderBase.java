@@ -157,11 +157,11 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-		try {
-			avStreamIncoming = new AvStreamIncoming(
+		try (AvStreamIncoming tmpAvStreamInc = new AvStreamIncoming(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
 					paramsCommon.getAvStreamIncomingUri().orElseThrow()
-				);
+				)) {
+			avStreamIncoming = tmpAvStreamInc;
 
 			//
 			resetRtpTsFrameNr();
@@ -193,20 +193,20 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 					break;
 				}
 			}
-		} catch (AvCannotOpenInputException ex) {
-			logError(FNC_NAME, "AvCannotOpenInputException caught: " + ex.getMessage());
-		} catch (InputStreamEosException ex) {
-			logError(FNC_NAME, "InputStreamEosException caught: " + ex);
-		} catch (UdpSocketIoException ex) {
-			logError(FNC_NAME, ex.toString());
-		} catch (RtpFrameDataAcquException ex) {
-			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + ex.getMessage());
-		} catch (InterruptedException ex) {
+		} catch (AvCannotOpenInputException e) {
+			logError(FNC_NAME, "AvCannotOpenInputException caught: " + e.getMessage());
+		} catch (InputStreamEosException e) {
+			logError(FNC_NAME, "InputStreamEosException caught: " + e);
+		} catch (UdpSocketIoException e) {
+			logError(FNC_NAME, e.toString());
+		} catch (RtpFrameDataAcquException e) {
+			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + e.getMessage());
+		} catch (RtpThreadsDidNotStartException e) {
+			logError(FNC_NAME, "RtpThreadsDidNotStartException caught: " + e.getMessage());
+		} catch (InterruptedException e) {
 			logError(FNC_NAME, "Interrupted while sleeping");
 		} finally {
-			if (avStreamIncoming != null) {
-				avStreamIncoming.close();
-			}
+			avStreamIncoming = null;
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
@@ -217,20 +217,16 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	protected abstract @NonNull TDP newThreadDataProv();
 
-	protected void beforeRunHook() {
+	protected void beforeRunHook() throws InterruptedException {
 		threadDataProv = newThreadDataProv();
 		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
 		threadDataProv.setDaemon(false);
 		threadDataProv.start();
 
 		//
-		while (threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
+		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
+			//noinspection BusyWait
+			Thread.sleep(50);
 		}
 	}
 
@@ -351,7 +347,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	 * Try to receive initial packets sent by the client.<br />
 	 * This is usually done for NAT/Firewall port testing.
 	 */
-	private void receiveInitialClientPackets() {
+	private void receiveInitialClientPackets() throws UdpSocketIoException {
 		DatagramPacket recvDp = new DatagramPacket(new byte[UDP_PACKET_LEN], UDP_PACKET_LEN);
 		for (int i = 0; i < 10; ++i) {
 			try {
@@ -364,7 +360,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			} catch (SocketTimeoutException e) {
 				// ignore
 			} catch (IOException e) {
-				throw new RuntimeException(e);
+				throw new UdpSocketIoException(e.getMessage());
 			}
 		}
 	}
@@ -373,14 +369,15 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	 * Wait for the parallel thread to start playback. If this is a video thread, then wait for the audio thread or vice versa.
 	 * If there is no parallel thread, then playback will start immediately.
 	 */
-	private void waitForParallelThreadToStart() throws InterruptedException {
+	private void waitForParallelThreadToStart() throws InterruptedException, RtpThreadsDidNotStartException {
 		final String FNC_NAME = getClass().getSimpleName() + ".waitForParallelThreadToStart()";
 
 		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getStreamSourceId());
+		logDebug(FNC_NAME, "Parallel thread notified");
 
 		int timeoutCnt = 0;
 		boolean isReady = false;
-		while (++timeoutCnt < 10 * 500) {
+		while (++timeoutCnt < 10 * 500 * 20) {  // @TODO
 			if (paramsCommon.getCbThreadMayStartPlayback().orElseThrow().get()) {
 				isReady = true;
 				break;
@@ -388,8 +385,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			Thread.sleep(Duration.ofNanos(100_000L));
 		}
 		if (! isReady) {
-			throw new RuntimeException(FNC_NAME + ": Timeout waiting for parallel thread to start");
+			throw new RtpThreadsDidNotStartException(FNC_NAME + ": Timeout waiting for parallel thread to start");
 		}
+		logDebug(FNC_NAME, "Parallel thread started after " + (timeoutCnt / 10) + " ms");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -581,11 +579,11 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			);
 		try {
 			parComRtpSocketUdp.send(sendDp);
-		} catch (IOException ex) {
+		} catch (IOException e) {
 			if (doStop.get()) {
 				return false;
 			}
-			throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + ex.getMessage());
+			throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + e.getMessage());
 		}
 
 		//

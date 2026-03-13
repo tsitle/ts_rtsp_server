@@ -77,7 +77,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void beforeRunHook() {
+	protected void beforeRunHook() throws InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".beforeRunHook()";
 
 		super.beforeRunHook();
@@ -90,8 +90,8 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			appendSrcAuToDestAu(globalTempAu, globalNextAu, globalTempAu.arrNalUnitIx);
 			//
 			resetRtpTsFrameNr();
-		} catch (InputStreamIoException | AvInvalidCodecDataException ex) {
-			logError(FNC_NAME, ex.toString());
+		} catch (InputStreamIoException | AvInvalidCodecDataException e) {
+			logError(FNC_NAME, e.toString());
 		}
 	}
 
@@ -110,9 +110,9 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			 */
 			try {
 				frameDataSupplierGrabAccessUnit();
-			} catch (InputStreamIoException | AvInvalidCodecDataException ex) {
+			} catch (InputStreamIoException | AvInvalidCodecDataException e) {
 				cacheFrameData.haveErrorOther = true;
-				cacheFrameData.errorMsg = FNC_NAME + ": " + ex;
+				cacheFrameData.errorMsg = FNC_NAME + ": " + e;
 				return cacheFrameData;
 			}
 		}
@@ -219,7 +219,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			 */
 			try {
 				frameDataSupplierGrabNalUnit();
-			} catch (InputStreamEosException ex) {
+			} catch (InputStreamEosException e) {
 				logDebug(FNC_NAME, "EOS reached");
 				haveEos = true;
 				continue;

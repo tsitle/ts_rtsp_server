@@ -63,7 +63,7 @@ public class RtspRequestParser {
 		do {
 			try {
 				requestLine = readOneLine(true);
-			} catch (InputStreamEosException ex) {
+			} catch (InputStreamEosException e) {
 				logError(FNC_NAME, "EOS reached");
 				return RequestBasicInfo.createUnknown();
 			}
@@ -110,18 +110,18 @@ public class RtspRequestParser {
 			try {
 				headerLine = readOneLine(false);
 				parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
-			} catch (InputStreamNotReadyException | InputStreamEosException ex) {
+			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				break;
-			} catch (RtspInvalidRequestException ex) {
-				logError(FNC_NAME, "InvalidRtspRequestException: " + ex.getMessage());
+			} catch (RtspInvalidRequestException e) {
+				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
-			} catch (RtspInvalidSessionIdException ex) {
+			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.SESSION_NOT_FOUND);
-			} catch (RtspUnsupportedAcceptTypeException ex) {
+			} catch (RtspUnsupportedAcceptTypeException e) {
 				logError(FNC_NAME, "Unsupported Accept Type, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
-			} catch (RtspUnsupportedTransportException ex) {
+			} catch (RtspUnsupportedTransportException e) {
 				logError(FNC_NAME, "Unsupported Transport, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.UNSUPPORTED_TRANSPORT);
 			}
@@ -191,8 +191,8 @@ public class RtspRequestParser {
 				}
 			}
 			return resEn;
-		} catch (NoSuchElementException ex) {
-			logError(FNC_NAME, "NoSuchElementException caught: " + ex);
+		} catch (NoSuchElementException e) {
+			logError(FNC_NAME, "NoSuchElementException caught: " + e);
 			return ServerMessageType.UNKNOWN;
 		}
 	}
@@ -211,8 +211,8 @@ public class RtspRequestParser {
 				logError(FNC_NAME, "invalid URL '" + resS + "'");
 			}
 			return resS;
-		} catch (NoSuchElementException ex) {
-			logError(FNC_NAME, "NoSuchElementException caught: " + ex);
+		} catch (NoSuchElementException e) {
+			logError(FNC_NAME, "NoSuchElementException caught: " + e);
 			return "";
 		}
 	}
@@ -251,7 +251,7 @@ public class RtspRequestParser {
 		if (! tmpRscStreamIdStr.isEmpty()) {
 			try {
 				rscStreamSourceId = Integer.parseInt(tmpRscStreamIdStr);
-			} catch (NumberFormatException ex) {
+			} catch (NumberFormatException e) {
 				// ignore
 			}
 			if (rscStreamSourceId == -1) {
