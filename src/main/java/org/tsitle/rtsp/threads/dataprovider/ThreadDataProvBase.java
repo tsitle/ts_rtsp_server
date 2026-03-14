@@ -72,6 +72,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 			}
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException");
+			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
@@ -168,6 +169,9 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>> extend
 			}
 			bufferQueue.add(tmpFrameBuf);
 		} catch (InputStreamIoException | InputStreamEosException e) {
+			if (doStop.get()) {
+				return;
+			}
 			if (e instanceof InputStreamIoException) {
 				logError(FNC_NAME, "InputStreamIoException caught while reading next frame: " + e.getMessage());
 			}

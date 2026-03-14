@@ -6,6 +6,7 @@ import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.MqInternalInputStream;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
@@ -19,10 +20,9 @@ public final class AvStreamIncoming implements AutoCloseable {
 	}
 
 	private final @Nullable LogMsgInterface logMsgInterface;
+	private final int streamSourceId;
 	private final InputType inputType;
-	private final String inputUriHost;
 	private final String inputUriPath;
-	private final String inputUriAuth;
 
 	private InputStream gis;
 
@@ -30,24 +30,31 @@ public final class AvStreamIncoming implements AutoCloseable {
 
 	/**
 	 * Constructor.
+	 * @param streamSourceId Stream source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncoming(@NonNull URI inputUri) throws AvCannotOpenInputException {
-		this(null, inputUri);
+	public AvStreamIncoming(
+				int streamSourceId,
+				@NonNull URI inputUri
+			) throws AvCannotOpenInputException {
+		this(null, streamSourceId, inputUri);
 	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
+	 * @param streamSourceId Stream source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncoming(
 				@Nullable LogMsgInterface logMsgInterface,
+				int streamSourceId,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
 		this.logMsgInterface = logMsgInterface;
+		this.streamSourceId = streamSourceId;
 		if (inputUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
 		}
@@ -56,9 +63,7 @@ public final class AvStreamIncoming implements AutoCloseable {
 			case "tcp" -> this.inputType = InputType.MQ;
 			default -> throw new AvCannotOpenInputException("Unsupported URI scheme: " + inputUri.getScheme());
 		}
-		this.inputUriHost = (this.inputType == InputType.MQ ? inputUri.getHost() : "");
-		this.inputUriPath = inputUri.getPath();
-		this.inputUriAuth = (this.inputType == InputType.MQ ? inputUri.getUserInfo() : "");
+		this.inputUriPath = (this.inputType == InputType.FILE ? inputUri.getPath() : "");
 
 		//
 		openInput();
@@ -128,7 +133,7 @@ public final class AvStreamIncoming implements AutoCloseable {
 			int totalDidRead = 0;
 			int stillToRead = length;
 			while (stillToRead > 0) {
-				int tmpToRead = Math.min(stillToRead, 32 * 1024);
+				int tmpToRead = Math.min(stillToRead, 4 * 1024);
 				int tmpDidRead = gis.read(buf, destOffset, tmpToRead);
 				if (tmpDidRead == -1) {
 					haveEos = true;
@@ -168,7 +173,7 @@ public final class AvStreamIncoming implements AutoCloseable {
 	}
 
 	private @NonNull InputStream openMq() throws MqException {
-		MqInputStream resIs = new MqInputStream(logMsgInterface, inputUriHost, inputUriPath, inputUriAuth);
+		MqInternalInputStream resIs = new MqInternalInputStream(logMsgInterface, streamSourceId);
 		resIs.connectToMq();
 		return resIs;
 	}

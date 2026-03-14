@@ -9,6 +9,7 @@ import org.tsitle.rtsp.exceptions.InputStreamNotReadyException;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
+import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.threads.*;
@@ -26,7 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
-public class ThreadRtspServer extends ThreadBase {
+public class ThreadRtspServer extends RunnableBase {
 
 	private static class ChildThreadsForOneStream {
 		final int streamSourceId;
@@ -69,18 +70,21 @@ public class ThreadRtspServer extends ThreadBase {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
+	 * @param cancelToken Cancel token
 	 * @param rtspConfig RTSP configuration
 	 * @param clientConnectionNr Client connection number
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
 	 */
 	public ThreadRtspServer(
 				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
 				int clientConnectionNr,
 				@NonNull Socket rtspSocketTcp
 			) {
-		super(logMsgInterface);
+		super(logMsgInterface, cancelToken);
 
+		//
 		this.clientConnectionNr = clientConnectionNr;
 		this.clientIpAddr = rtspSocketTcp.getInetAddress();
 
@@ -124,7 +128,7 @@ public class ThreadRtspServer extends ThreadBase {
 		//
 		try {
 			int loopCounter = 0;
-			while (! (doStop.get() || rtspSocketTcp.isClosed())) {
+			while (! (hasBeenRequestedToStop() || rtspSocketTcp.isClosed())) {
 				if (! mainLoop(++loopCounter)) {
 					break;
 				}
@@ -135,9 +139,13 @@ public class ThreadRtspServer extends ThreadBase {
 			logError(FNC_NAME, "UdpSocketIoException: " + e.getMessage());
 		} catch (SocketException e) {
 			logError(FNC_NAME, "SocketException: " + e.getMessage());
+		} catch (InterruptedException e2) {
+			logError(FNC_NAME, "InterruptedException");
+			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
+			logDebug(FNC_NAME, "stopping thread");
 			// stop sending/receiving RTP/RTCP packets
 			pauseOrStopChildThreads(false);
 			// close RTSP client socket and stream reader/writer
@@ -145,19 +153,6 @@ public class ThreadRtspServer extends ThreadBase {
 			//
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	protected void stopThreadHook() {
-		try {
-			pauseOrStopChildThreads(false);
-			//
-			rtspSocketTcp.close();
-		} catch (IOException e) {
-			// ignore
 		}
 	}
 
@@ -665,7 +660,7 @@ public class ThreadRtspServer extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop(final int loopCounter)
-			throws TcpSocketClosedException, SocketException, UdpSocketIoException {
+			throws TcpSocketClosedException, SocketException, UdpSocketIoException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
@@ -688,12 +683,8 @@ public class ThreadRtspServer extends ThreadBase {
 			}
 			return handleSuccessfulRequest(optRequestBasicInfo.get());
 		} catch (InputStreamNotReadyException e1) {
-			try {
-				Thread.sleep(15);
-				return true;
-			} catch (InterruptedException e2) {
-				return false;
-			}
+			Thread.sleep(15);
+			return true;
 		}
 	}
 

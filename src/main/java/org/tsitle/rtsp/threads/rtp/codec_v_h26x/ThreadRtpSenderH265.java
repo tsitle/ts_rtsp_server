@@ -49,7 +49,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265
 				paramsVideoCommon,
 				Objects.requireNonNull(avStreamIncoming),
 				//(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),  @TODO
-				5,
+				60,
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 	}

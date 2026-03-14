@@ -51,6 +51,7 @@ public class RtxpLogger extends ThreadBase {
 					Thread.currentThread().getName(),
 					FNC_NAME + ": InterruptedException"
 				));
+			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
 			outputMsg(createLogEntry(
 					RtxpLogLevel.ERROR,

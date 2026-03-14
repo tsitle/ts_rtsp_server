@@ -2,28 +2,41 @@ package org.tsitle.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.logging.RtxpLogger;
+import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RtspServerApp {
+
+	private static final int RTSP_THREADS_CORE = 4;
+	private static final int RTSP_THREADS_MAX = 10;  // one thread per client connection
 
 	private static RtspConfig rtspConfig = null;
 
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);
+	private static final CancelToken cancelToken = new CancelToken();
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 	private static RtxpLogger rtxpLoggerThread = new RtxpLogger();
-	private static final Map<@Nullable Integer, @Nullable ThreadRtspServer> rtspServerThreads = new ConcurrentHashMap<>();
+	private static final ExecutorService poolRtsp = new ThreadPoolExecutor(
+			RTSP_THREADS_CORE,
+			RTSP_THREADS_MAX,
+			60L, TimeUnit.SECONDS,
+			new LinkedBlockingQueue<>(100)
+		);
+	private static @Nullable ExecutorService poolMqE2I;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -45,15 +58,19 @@ public class RtspServerApp {
 					doStop.set(true);
 					//
 					int loopCnt = 0;
-					while (! isShutdownComplete.get() && loopCnt++ < 10) {
+					while (! isShutdownComplete.get() && loopCnt++ < 60) {
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
 							System.err.println(FNC_NAME + ": SDH: InterruptedException");
-							Thread.currentThread().interrupt();
+							Thread.currentThread().interrupt();  // restore flag
 						}
 					}
-					System.out.println(FNC_NAME + ": SDH: Shutdown complete");
+					if (isShutdownComplete.get()) {
+						System.out.println(FNC_NAME + ": SDH: Shutdown complete");
+					} else {
+						System.err.println(FNC_NAME + ": SDH: threads still running, forcing shutdown");
+					}
 				}
 			}));
 		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
@@ -75,6 +92,16 @@ public class RtspServerApp {
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		}
+
+		// start the ('external to internal') message queue threads
+		final List<Integer> mqStreamSources = findMqStreamSources();
+		poolMqE2I = new ThreadPoolExecutor(
+				Math.max(mqStreamSources.size(), 1),
+				Math.max(mqStreamSources.size(), 1),
+				60L, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<>(100)
+			);
+		startMqs(mqStreamSources);
 
 		// start the logger thread
 		rtxpLoggerThread.setName("RTXPLOGGER");
@@ -99,6 +126,43 @@ public class RtspServerApp {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static List<Integer> findMqStreamSources() {
+		List<Integer> resL = new ArrayList<>();
+		for (Integer streamSourceId : rtspConfig.getStreamSourceIds()) {
+			Optional<RtspStreamSource> optSs = rtspConfig.getStreamSourceObj(streamSourceId);
+			if (optSs.isEmpty()) {
+				continue;
+			}
+			if (optSs.get().getInputUri().getScheme().equals("tcp")) {
+				resL.add(streamSourceId);
+			}
+		}
+		return resL;
+	}
+
+	private static void startMqs(List<Integer> streamSourceIds) {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMqs()";
+
+		assert poolMqE2I != null;
+
+		for (Integer streamSourceId : streamSourceIds) {
+			RtspStreamSource ss = rtspConfig.getStreamSourceObj(streamSourceId).orElseThrow();
+			logDebug(FNC_NAME, "Starting MqE2I for '" +
+					ss.getInputUri().getHost() + ":" + ss.getInputUri().getPort() + ss.getInputUri().getPath() + "'");
+			ThreadMqE2I thread = new ThreadMqE2I(
+					RtspServerApp::addMsgForLogThread,
+					cancelToken,
+					streamSourceId,
+					ss.getInputUri()
+				);
+			//thread.setName("RTSP#c" + clientConnectionCount);  @TODO
+
+			poolMqE2I.submit(thread);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private static boolean runServerLoop() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".runServerLoop()";
 
@@ -108,8 +172,6 @@ public class RtspServerApp {
 
 			listenSocket.setSoTimeout(50);  // only for accept()
 			Socket socketRtspTcp;
-
-			// @TODO limit concurrent RTSP sessions
 
 			while (! doStop.get()) {
 				try {
@@ -122,14 +184,14 @@ public class RtspServerApp {
 				//
 				ThreadRtspServer thread = new ThreadRtspServer(
 						RtspServerApp::addMsgForLogThread,
+						cancelToken,
 						rtspConfig,
 						++clientConnectionCount,
 						socketRtspTcp
 					);
-				rtspServerThreads.put(clientConnectionCount, thread);
-				thread.setName("RTSP#c" + clientConnectionCount);
-				thread.setDaemon(false);
-				thread.start();
+				//thread.setName("RTSP#c" + clientConnectionCount);  @TODO
+
+				poolRtsp.submit(thread);
 			}
 		} catch (BindException e) {
 			logError(FNC_NAME, "BindException caught: " + e.getMessage());
@@ -144,22 +206,16 @@ public class RtspServerApp {
 	private static void stopThreads() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
 
-		for (Map.Entry<Integer, ThreadRtspServer> tmpEntry : rtspServerThreads.entrySet()) {
-			if (tmpEntry.getKey() == null || tmpEntry.getValue() == null) {
-				continue;
-			}
-			if (tmpEntry.getValue().isAlive()) {
-				logDebug(FNC_NAME, "Stopping thread #" + tmpEntry.getKey());
-				tmpEntry.getValue().stopThread();  // blocks until the thread has actually stopped
-				try {
-					tmpEntry.getValue().join();
-				} catch (InterruptedException e) {
-					logError(FNC_NAME, "Interrupted while joining thread " + tmpEntry.getKey());
-				}
-				logDebug(FNC_NAME, "Thread #" + tmpEntry.getKey() + " stopped");
-			} else {
-				logDebug(FNC_NAME, "Thread #" + tmpEntry.getKey() + " already stopped");
-			}
+		poolRtsp.shutdown();
+		if (poolMqE2I != null) {
+			poolMqE2I.shutdown();
+		}
+		cancelToken.cancelled = true;
+
+		stopPool(FNC_NAME, "POOLRTSP", poolRtsp);
+
+		if (poolMqE2I != null) {
+			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
 		}
 
 		rtxpLoggerThread.stopThread();
@@ -169,10 +225,25 @@ public class RtspServerApp {
 			System.err.println(FNC_NAME + ": Interrupted while joining thread RtxpLogger");
 		}
 		rtxpLoggerThread = null;
+
+		System.err.println(FNC_NAME + ": all threads stopped");
+	}
+
+	private static void stopPool(@NonNull String fncName, @NonNull String poolName, @NonNull ExecutorService poolObj) {
+		try {
+			if (! poolObj.awaitTermination(10, TimeUnit.SECONDS)) {
+				System.err.println(fncName + ": timeout, forcing shutdown " + poolName);
+				poolObj.shutdownNow();  // force shutdown
+			}
+		} catch (InterruptedException e) {
+			System.err.println(fncName + ": interrupted, forcing shutdown " + poolName);
+			poolObj.shutdownNow();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	private static void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}

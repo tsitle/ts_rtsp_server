@@ -159,6 +159,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		try (AvStreamIncoming tmpAvStreamInc = new AvStreamIncoming(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsCommon.getStreamSourceId(),
 					paramsCommon.getAvStreamIncomingUri().orElseThrow()
 				)) {
 			avStreamIncoming = tmpAvStreamInc;
@@ -205,6 +206,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			logError(FNC_NAME, "RtpThreadsDidNotStartException caught: " + e.getMessage());
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "Interrupted while sleeping");
+			Thread.currentThread().interrupt();  // restore flag
 		} finally {
 			avStreamIncoming = null;
 			isRunning.set(false);
@@ -224,9 +226,13 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		threadDataProv.start();
 
 		//
+		int loopCnt = 0;
 		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
 			//noinspection BusyWait
 			Thread.sleep(50);
+			if (++loopCnt % 10 == 0) {  // @TODO
+				logDebug(getClass().getSimpleName() + ".beforeRunHook()", "Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
+			}
 		}
 	}
 

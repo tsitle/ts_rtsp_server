@@ -2,55 +2,46 @@ package org.tsitle.rtsp.threads;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class ThreadBase extends Thread {
+public abstract class RunnableBase implements Runnable {
 
-	protected final AtomicBoolean doStop = new AtomicBoolean(false);
+	private final @NonNull CancelToken cancelToken;
 	protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
 	protected final @Nullable LogMsgInterface logMsgInterface;
 
 	/**
 	 * Constructor.
+	 * @param cancelToken Cancel token
 	 */
-	public ThreadBase() {
+	public RunnableBase(@NonNull CancelToken cancelToken) {
 		this.logMsgInterface = null;
+		this.cancelToken = cancelToken;
 	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
+	 * @param cancelToken Cancel token
 	 */
-	public ThreadBase(@NonNull LogMsgInterface logMsgInterface) {
+	public RunnableBase(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull CancelToken cancelToken
+			) {
 		this.logMsgInterface = logMsgInterface;
+		this.cancelToken = cancelToken;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public synchronized void stopThread() {
-		if (doStop.get()) {
-			return;
-		}
-		doStop.set(true);
-		stopThreadHook();
-		while (isRunning.get()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
-				break;
-			}
-		}
-	}
 
 	@SuppressWarnings("unused")
 	public synchronized boolean hasBeenRequestedToStop() {
-		return doStop.get();
+		return (cancelToken.cancelled || Thread.currentThread().isInterrupted());
 	}
 
 	@SuppressWarnings("unused")
@@ -59,10 +50,6 @@ public abstract class ThreadBase extends Thread {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	protected abstract void stopThreadHook();
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void logDebug(@NonNull String fncName, @NonNull String msg) {

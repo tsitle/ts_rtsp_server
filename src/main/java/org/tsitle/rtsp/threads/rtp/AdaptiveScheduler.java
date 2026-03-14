@@ -114,7 +114,7 @@ final class AdaptiveScheduler {
 				try {
 					Thread.sleep(sleepMillis);
 				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
+					Thread.currentThread().interrupt();  // restore flag
 					return;
 				}
 			}

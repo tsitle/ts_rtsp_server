@@ -19,7 +19,7 @@ public abstract class AvStreamOutgoingBase {
 	private byte[] frameStartMagicbytes;
 	private int magicBytesLengthInBits;
 
-	private byte[] cachedDataBuf = new byte[1024 * 1024];
+	private byte[] cachedDataBuf = new byte[4 * 1024];  // 4 kB is only the initial size - it can dynamically grow
 	private int cachedDataLength = 0;
 
 	/**
@@ -120,8 +120,10 @@ public abstract class AvStreamOutgoingBase {
 					magicBytesLengthInBits = frameStartMagicbytes.length * 8;
 					firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
 				}
+				//logDebug(fncName, "isFirstFrame firstStart " + firstStart);  // @TODO
 			} else {
 				firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
+				//logDebug(fncName, "!isFirstFrame firstStart " + firstStart);  // @TODO
 			}
 
 			//
@@ -136,6 +138,7 @@ public abstract class AvStreamOutgoingBase {
 			if (firstStart == 0) {
 				if (readMaxBytes == -1) {
 					int nextStart = findStartCode(cachedDataBuf, cachedDataLength, frameStartMagicbytes.length);
+					//logDebug(fncName, "nextStart " + nextStart);  // @TODO
 					if (nextStart > 0) {
 						frameBuf.clear();
 						frameBuf.copyFrom(cachedDataBuf, 0, 0, nextStart);
@@ -151,6 +154,7 @@ public abstract class AvStreamOutgoingBase {
 					frameBuf.copyFrom(cachedDataBuf, 0, 0, readMaxBytes);
 					System.arraycopy(cachedDataBuf, readMaxBytes, cachedDataBuf, 0, cachedDataLength - readMaxBytes);
 					cachedDataLength -= readMaxBytes;
+					//logDebug(fncName, "readMoreIntoCache until " + readMaxBytes);  // @TODO
 					break;
 				}
 			}
@@ -158,6 +162,7 @@ public abstract class AvStreamOutgoingBase {
 			// we couldn't find the start code within the current buffer - try reading more data
 			try {
 				readMoreIntoCache();
+				//logDebug(fncName, "just readMoreIntoCache");  // @TODO
 			} catch (InputStreamEosException e) {
 				if (cachedDataLength > 0) {
 					// we couldn't read more data, but we still have some data in the buffer

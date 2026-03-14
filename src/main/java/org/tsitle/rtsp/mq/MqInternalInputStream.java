@@ -1,0 +1,174 @@
+package org.tsitle.rtsp.mq;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class MqInternalInputStream extends InputStream {
+
+	private final @Nullable LogMsgInterface logMsgInterface;
+
+	private final @NonNull MqInternalSub mqInternalSub;
+
+	private @Nullable BufferExt bufferDataPtr;
+	private int bufferPos = 0;
+	private boolean isFirstMessage = true;
+
+	private final AtomicBoolean stateClosed = new AtomicBoolean(false);
+	private final AtomicBoolean stateOpened = new AtomicBoolean(false);
+
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Functional interface for logging messages
+	 * @param streamSourceId Stream source identifier
+	 */
+	public MqInternalInputStream(
+				@Nullable LogMsgInterface logMsgInterface,
+				int streamSourceId
+			) {
+		this.logMsgInterface = logMsgInterface;
+
+		//
+		this.mqInternalSub = new MqInternalSub(logMsgInterface, streamSourceId);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void connectToMq() throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".connectToMq()";
+
+		if (stateClosed.get()) {
+			throw new MqException(FNC_NAME + ": Stream had already been closed");
+		}
+		mqInternalSub.connectToMq();
+
+		stateOpened.set(true);
+	}
+
+	@Override
+	public int read() throws IOException {
+		if (bufferDataPtr == null || bufferPos >= bufferDataPtr.getUsed()) {
+			receiveNextMessage();
+			if (bufferDataPtr == null || bufferDataPtr.isEmpty()) {
+				throw new IOException("End of stream reached");
+			}
+		}
+
+		return (bufferDataPtr.get(bufferPos++) & 0xFF);
+	}
+
+	@Override
+	public int read(byte[] b, final int offs, final int len) throws IOException {
+		Objects.checkFromIndexSize(offs, len, b.length);
+
+		int totalCopied = 0;
+		while (totalCopied < len) {
+			if (bufferDataPtr == null || bufferPos >= bufferDataPtr.getUsed()) {
+				receiveNextMessage();
+				if (bufferDataPtr == null || bufferDataPtr.isEmpty()) {
+					return -1;
+				}
+			}
+
+			int remainingInInp = bufferDataPtr.getUsed() - bufferPos;
+			int toCopy = Math.min(len - totalCopied, remainingInInp);
+
+			bufferDataPtr.copyInto(bufferPos, b, offs + totalCopied, toCopy);
+
+			bufferPos += toCopy;
+			totalCopied += toCopy;
+		}
+		return totalCopied;
+	}
+
+	@Override
+	public void close() {
+		final String FNC_NAME = getClass().getSimpleName() + ".close()";
+
+		try {
+			if (stateClosed.compareAndSet(false, true)) {
+				mqInternalSub.close();
+			}
+		} catch (Exception e) {
+			logError(FNC_NAME, "Exception caught: " + e.getMessage());
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private synchronized void receiveNextMessage() throws IOException {
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveNextMessage()";
+
+		bufferPos = 0;
+		bufferDataPtr = null;
+
+		//
+		if (! stateOpened.get()) {
+			throw new IllegalStateException(FNC_NAME + ": Stream has not been opened");
+		}
+		if (stateClosed.get()) {
+			return;
+		}
+
+		//
+		Instant tmpNow1 = Instant.now();
+		try {
+			Optional<MqPacketAv> optPacket = Optional.empty();
+			for (int i = 0; i < 2; i++) {
+				optPacket = mqInternalSub.receiveMessage();
+				if (! isFirstMessage || optPacket.isPresent()) {
+					break;
+				}
+				isFirstMessage = false;
+			}
+			if (optPacket.isEmpty()) {
+				if (! stateClosed.get()) {
+					logError(FNC_NAME, "received nothing from MQ");
+				}
+				return;
+			}
+			//logDebug(FNC_NAME, "Received int MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
+			bufferDataPtr = optPacket.get().payloadDataPtr();
+		} catch (MqException e) {
+			throw new IOException("MqException caught: " + e.getMessage());
+		}
+		Instant tmpNow2 = Instant.now();
+
+		Duration tmpDur12 = Duration.between(tmpNow1, tmpNow2);
+		if (tmpDur12.toMillis() > 100) {
+			logDebug(FNC_NAME, "int MQ read time: " + (tmpDur12.toNanos() / 1_000L) + " us");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		if (logMsgInterface == null) {
+			return;
+		}
+		logMsgInterface.addMsgForLogThread(RtxpLogLevel.DEBUG, Thread.currentThread().getName(),
+				fncName + ": " + msg);
+	}
+
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		if (logMsgInterface == null) {
+			return;
+		}
+		logMsgInterface.addMsgForLogThread(RtxpLogLevel.ERROR, Thread.currentThread().getName(),
+				fncName + ": " + msg);
+	}
+
+}

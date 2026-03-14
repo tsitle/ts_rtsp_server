@@ -285,13 +285,13 @@ public class RtspStreamSource {
 
 		//
 		if (internalCodec == RtpPacketType.A_AAC) {
-			readAacHeader(tmpExtSsId);
+			readAacHeader(getId(), tmpExtSsId);
 		} else if (internalCodec == RtpPacketType.A_LINEAR_PCM_S16_VAR && ! mqUrl.isBlank()) {
-			readMqLpcmHeader(tmpExtSsId);
+			//readMqLpcmHeader(getId(), tmpExtSsId);
 		} else if (internalCodec == RtpPacketType.V_H264 && ! mqUrl.isBlank()) {
-			readMqH264Header(tmpExtSsId);
+			//readMqH264Header(getId(), tmpExtSsId);
 		} else if (internalCodec == RtpPacketType.V_H265 && ! mqUrl.isBlank()) {
-			readMqH265Header(tmpExtSsId);
+			//readMqH265Header(getId(), tmpExtSsId);
 		}
 	}
 
@@ -306,8 +306,8 @@ public class RtspStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readAacHeader(@NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+	private void readAacHeader(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
 			AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(avStreamIncoming);
 			asoAac.getNextFrame(tmpBuf);
@@ -340,8 +340,8 @@ public class RtspStreamSource {
 		}
 	}
 
-	private void readMqLpcmHeader(@NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+	private void readMqLpcmHeader(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
 			byte[] tmpBufBytes = new byte[16];
 			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
 			if (tmpReadBytes != tmpBufBytes.length) {
@@ -355,8 +355,8 @@ public class RtspStreamSource {
 		}
 	}
 
-	private void readMqH264Header(@NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+	private void readMqH264Header(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
 			byte[] tmpBufBytes = new byte[16];
 			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
 			if (tmpReadBytes != tmpBufBytes.length) {
@@ -370,8 +370,8 @@ public class RtspStreamSource {
 		}
 	}
 
-	private void readMqH265Header(@NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(null, getInputUri())) {
+	private void readMqH265Header(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
+		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
 			byte[] tmpBufBytes = new byte[16];
 			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
 			if (tmpReadBytes != tmpBufBytes.length) {
