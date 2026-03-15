@@ -47,6 +47,7 @@ public class MqChannelBus {
 	 * @param name Channel name
 	 * @return True if the channel exists
 	 */
+	@SuppressWarnings("unused")
 	public synchronized static boolean channelExists(@NonNull String name) {
 		return mapNameToId.containsKey(name);
 	}
@@ -72,10 +73,10 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
-		zmqSocket.setSndHWM(30);  // very roughly 30 audio/video packets
+		zmqSocket.setSndHWM(1000);
+		// adjust the OS's send buffer size
+		zmqSocket.setSendBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
-		// adjust the OS's TCP send buffer
-		zmqSocket.setSendBufferSize(4 * 1024 * 1024);
 		// detect dead subscribers
 		zmqSocket.setTCPKeepAlive(1);
 		zmqSocket.setTCPKeepAliveIdle(60);
@@ -100,9 +101,12 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setRcvHWM(30);  // very roughly 30 audio/video packets
+		zmqSocket.setRcvHWM(1000);
 		zmqSocket.setLinger(0);
-		zmqSocket.subscribe("".getBytes());  // subscribe to all topics
+		// adjust the OS's receive buffer size
+		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
+		// subscribe to all topics
+		zmqSocket.subscribe("".getBytes());
 
 		final String endpoint = mapIdToEndpoint.get(id);
 		zmqSocket.connect(endpoint);

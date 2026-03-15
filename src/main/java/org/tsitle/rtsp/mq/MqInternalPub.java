@@ -8,10 +8,6 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MqInternalPub implements AutoCloseable {
@@ -21,14 +17,12 @@ public class MqInternalPub implements AutoCloseable {
 
 	private final @NonNull ZContext zmqContext;
 	private ZMQ.@Nullable Socket zmqSocket;
+	private boolean zmqContextOpened;
 
 	private final AtomicBoolean stateClosed = new AtomicBoolean(false);
 	private final AtomicBoolean stateOpened = new AtomicBoolean(false);
 
-	private boolean zmqContextOpened;
-
-	private final @NonNull ByteBuffer cacheBufferData;
-
+	private @Nullable MqMsgHandlerBase msgHandler;
 
 	/**
 	 * Constructor.
@@ -45,10 +39,6 @@ public class MqInternalPub implements AutoCloseable {
 		//
 		this.zmqContext = MqContextHelper.openMqContext();
 		this.zmqContextOpened = true;
-
-		//
-		this.cacheBufferData = ByteBuffer.allocate(1024);
-		this.cacheBufferData.order(ByteOrder.BIG_ENDIAN);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -64,6 +54,8 @@ public class MqInternalPub implements AutoCloseable {
 		int chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
 
+		msgHandler = MqMsgHandlerFactory.createHandler(zmqSocket);
+
 		stateOpened.set(true);
 	}
 
@@ -72,15 +64,16 @@ public class MqInternalPub implements AutoCloseable {
 
 		//
 		ensureOpen(FNC_NAME);
+		if (msgHandler == null) {
+			throw new IllegalStateException(FNC_NAME + ": Message handler not set");
+		}
 		if (zmqSocket == null) {
 			throw new IllegalStateException(FNC_NAME + ": MQ socket not initialized");
 		}
 
 		//
-		MqMessageEncoder.encodePacketAvForInternalMq(packet, cacheBufferData);
+		msgHandler.writeMsgToMq(packet);
 
-		zmqSocket.send(cacheBufferData.array(), 0, cacheBufferData.limit(), ZMQ.SNDMORE);
-		zmqSocket.send(packet.payloadDataPtr().getBufPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
 		//logDebug(FNC_NAME, "int MQ write " + (packet.codec().isVideo() ? "VID" : "AUD"));
 	}
 
@@ -118,6 +111,7 @@ public class MqInternalPub implements AutoCloseable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		if (logMsgInterface == null) {
 			return;

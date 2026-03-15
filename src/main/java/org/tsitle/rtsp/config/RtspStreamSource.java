@@ -286,12 +286,6 @@ public class RtspStreamSource {
 		//
 		if (internalCodec == RtpPacketType.A_AAC) {
 			readAacHeader(getId(), tmpExtSsId);
-		} else if (internalCodec == RtpPacketType.A_LINEAR_PCM_S16_VAR && ! mqUrl.isBlank()) {
-			//readMqLpcmHeader(getId(), tmpExtSsId);
-		} else if (internalCodec == RtpPacketType.V_H264 && ! mqUrl.isBlank()) {
-			//readMqH264Header(getId(), tmpExtSsId);
-		} else if (internalCodec == RtpPacketType.V_H265 && ! mqUrl.isBlank()) {
-			//readMqH265Header(getId(), tmpExtSsId);
 		}
 	}
 
@@ -336,51 +330,6 @@ public class RtspStreamSource {
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
 			throw new ConfigInvalidException("Could not parse AAC header for Stream Source ID '" + extSsId + "': " +
-					e.getMessage());
-		}
-	}
-
-	private void readMqLpcmHeader(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
-			byte[] tmpBufBytes = new byte[16];
-			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
-			if (tmpReadBytes != tmpBufBytes.length) {
-				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
-						"could not read " + tmpBufBytes.length + " bytes");
-			}
-			System.out.println("OK OK OK LPCM");  // @TODO
-		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
-					e.getMessage());
-		}
-	}
-
-	private void readMqH264Header(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
-			byte[] tmpBufBytes = new byte[16];
-			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
-			if (tmpReadBytes != tmpBufBytes.length) {
-				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
-						"could not read " + tmpBufBytes.length + " bytes");
-			}
-			System.out.println("OK OK OK H264");  // @TODO
-		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
-					e.getMessage());
-		}
-	}
-
-	private void readMqH265Header(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
-			byte[] tmpBufBytes = new byte[16];
-			int tmpReadBytes = avStreamIncoming.readBytes(tmpBufBytes, 0, tmpBufBytes.length);
-			if (tmpReadBytes != tmpBufBytes.length) {
-				throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
-						"could not read " + tmpBufBytes.length + " bytes");
-			}
-			System.out.println("OK OK OK H265");  // @TODO
-		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from MQ stream for Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		}
 	}

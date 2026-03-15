@@ -21,7 +21,7 @@ public class MqInternalInputStream extends InputStream {
 
 	private final @NonNull MqInternalSub mqInternalSub;
 
-	private @Nullable BufferExt bufferDataPtr;
+	private final @NonNull BufferExt bufferData = new BufferExt();
 	private int bufferPos = 0;
 	private boolean isFirstMessage = true;
 
@@ -59,14 +59,14 @@ public class MqInternalInputStream extends InputStream {
 
 	@Override
 	public int read() throws IOException {
-		if (bufferDataPtr == null || bufferPos >= bufferDataPtr.getUsed()) {
+		if (bufferPos >= bufferData.getUsed()) {
 			receiveNextMessage();
-			if (bufferDataPtr == null || bufferDataPtr.isEmpty()) {
+			if (bufferData.isEmpty()) {
 				throw new IOException("End of stream reached");
 			}
 		}
 
-		return (bufferDataPtr.get(bufferPos++) & 0xFF);
+		return (bufferData.get(bufferPos++) & 0xFF);
 	}
 
 	@Override
@@ -75,17 +75,17 @@ public class MqInternalInputStream extends InputStream {
 
 		int totalCopied = 0;
 		while (totalCopied < len) {
-			if (bufferDataPtr == null || bufferPos >= bufferDataPtr.getUsed()) {
+			if (bufferPos >= bufferData.getUsed()) {
 				receiveNextMessage();
-				if (bufferDataPtr == null || bufferDataPtr.isEmpty()) {
+				if (bufferData.isEmpty()) {
 					return -1;
 				}
 			}
 
-			int remainingInInp = bufferDataPtr.getUsed() - bufferPos;
+			int remainingInInp = bufferData.getUsed() - bufferPos;
 			int toCopy = Math.min(len - totalCopied, remainingInInp);
 
-			bufferDataPtr.copyInto(bufferPos, b, offs + totalCopied, toCopy);
+			bufferData.copyInto(bufferPos, b, offs + totalCopied, toCopy);
 
 			bufferPos += toCopy;
 			totalCopied += toCopy;
@@ -113,7 +113,7 @@ public class MqInternalInputStream extends InputStream {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveNextMessage()";
 
 		bufferPos = 0;
-		bufferDataPtr = null;
+		bufferData.clear();
 
 		//
 		if (! stateOpened.get()) {
@@ -128,7 +128,7 @@ public class MqInternalInputStream extends InputStream {
 		try {
 			Optional<MqPacketAv> optPacket = Optional.empty();
 			for (int i = 0; i < 2; i++) {
-				optPacket = mqInternalSub.receiveMessage();
+				optPacket = mqInternalSub.receiveMessage(bufferData);
 				if (! isFirstMessage || optPacket.isPresent()) {
 					break;
 				}
@@ -141,7 +141,6 @@ public class MqInternalInputStream extends InputStream {
 				return;
 			}
 			//logDebug(FNC_NAME, "Received int MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
-			bufferDataPtr = optPacket.get().payloadDataPtr();
 		} catch (MqException e) {
 			throw new IOException("MqException caught: " + e.getMessage());
 		}
@@ -149,7 +148,7 @@ public class MqInternalInputStream extends InputStream {
 
 		Duration tmpDur12 = Duration.between(tmpNow1, tmpNow2);
 		if (tmpDur12.toMillis() > 100) {
-			logDebug(FNC_NAME, "int MQ read time: " + (tmpDur12.toNanos() / 1_000L) + " us");
+			logDebug(FNC_NAME, "int MQ read time: " + (tmpDur12.toNanos() / 1_000L) + " us");  // @TODO
 		}
 	}
 
