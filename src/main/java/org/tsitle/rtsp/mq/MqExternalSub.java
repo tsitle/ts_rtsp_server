@@ -7,11 +7,21 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 
+import java.io.IOException;
+import java.util.HexFormat;
+import java.util.Map;
+
 public class MqExternalSub extends MqReceiverSubBase {
+
+	private static final boolean ENABLE_MQ_ENCRYPTION = true;
 
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
 	private final @NonNull String mqAddrAuth;
+
+	private final ZMQ.Curve.@NonNull KeyPair mqKeyPair;
+	private @Nullable String mqServerPublicKeyZ85 = null;
+	private @Nullable String mqServerEndpoint = null;
 
 	/**
 	 * Constructor.
@@ -31,6 +41,9 @@ public class MqExternalSub extends MqReceiverSubBase {
 		this.mqAddrHostAndPort = mqAddressHostAndPort;
 		this.mqAddrPath = mqAddressPath;
 		this.mqAddrAuth = mqAddressAuth;
+
+		//
+		this.mqKeyPair = ZMQ.Curve.generateKeyPair();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -43,13 +56,9 @@ public class MqExternalSub extends MqReceiverSubBase {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		/*
-		 * - send HTTP GET request to the URL in this.inputUriStr, using Basic Auth with the credentials in this.inputUriAuth
-		 * - parse the response and store the Message Queues address in this.mqAddress
-		 * - connect to the MQ server at this.mqAddress
-		 */
-		String endpoint = "tcp://localhost:" + (mqAddrPath.contains("r_video") ? "7778" : "7779");  // @TODO
-		internalConnectToMq(endpoint);
+
+		requestMqInfo();
+		internalConnectToMq();
 
 		msgHandler = MqMsgHandlerFactory.createHandler(zmqSocket);
 
@@ -59,7 +68,34 @@ public class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void internalConnectToMq(String endpoint) {
+	private void requestMqInfo() throws MqException {
+		HttpResponseOpenMq responseOpenMq;
+		try {
+			String authUser = mqAddrAuth.split(":")[0];
+			String authPw = mqAddrAuth.split(":")[1];
+			HttpPostJson client = new HttpPostJson(authUser, authPw);
+
+			Map<String, Object> payload = Map.of(
+					"clientPubKey", encodeHexString(mqKeyPair.publicKey)
+				);
+
+			responseOpenMq = client.postJson(
+					"https://" + mqAddrHostAndPort + mqAddrPath,
+					payload,
+					HttpResponseOpenMq.class
+				);
+		} catch (IOException | InterruptedException e) {
+			throw new MqException("Could not connect to Message Queue server: " + e.getMessage());
+		} catch (Exception e) {
+			throw new MqException("Exception caught: " + e.getMessage());
+		}
+
+		String mqHostOnly = mqAddrHostAndPort.split(":")[0];
+		mqServerEndpoint = "tcp://" + mqHostOnly + ":" + responseOpenMq.mqPort();
+		mqServerPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
+	}
+
+	private void internalConnectToMq() {
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
 		zmqSocket.setReceiveTimeOut(10);
 		zmqSocket.setReconnectIVL(1000);
@@ -71,12 +107,48 @@ public class MqExternalSub extends MqReceiverSubBase {
 		// subscribe to all topics
 		zmqSocket.subscribe("".getBytes());
 
+		//
+		if (ENABLE_MQ_ENCRYPTION) {
+			if (mqServerPublicKeyZ85 == null) {
+				throw new IllegalStateException("MQ encryption is enabled, but mqServerPublicKey is not set");
+			}
+			zmqSocket.setCurveServerKey(mqServerPublicKeyZ85.getBytes(ZMQ.CHARSET));
+
+			zmqSocket.setCurvePublicKey(mqKeyPair.publicKey.getBytes(ZMQ.CHARSET));
+			zmqSocket.setCurveSecretKey(mqKeyPair.secretKey.getBytes(ZMQ.CHARSET));
+		}
+
 		// connect to publisher
-		zmqSocket.connect(endpoint);
+		if (mqServerEndpoint == null) {
+			throw new IllegalStateException("mqServerEndpoint is not set");
+		}
+		zmqSocket.connect(mqServerEndpoint);
 
 		//
 		zmqPollerObj = zmqContext.createPoller(1);
 		zmqPollerIx = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
+	}
+
+	private @NonNull String decodeHexString(@NonNull String hex) throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".decodeHexString()";
+
+		try {
+			if (hex.startsWith("0x")) {
+				hex = hex.substring(2);
+			}
+			if (hex.length() % 2 != 0) {
+				throw new IllegalArgumentException("Hex string must have even length");
+			}
+			byte[] bytes = HexFormat.of().parseHex(hex);  // throws IllegalArgumentException
+			return new String(bytes, ZMQ.CHARSET);
+		} catch (IllegalArgumentException e) {
+			throw new MqException(FNC_NAME + ": could not decode hex string: " + e.getMessage());
+		}
+	}
+
+	private static @NonNull String encodeHexString(@NonNull String plain) {
+		byte[] bytes = plain.getBytes(ZMQ.CHARSET);
+		return "0x" + HexFormat.of().withUpperCase().formatHex(bytes);
 	}
 
 }

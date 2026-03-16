@@ -155,7 +155,6 @@ public class RtspServerApp {
 					streamSourceId,
 					ss.getInputUri()
 				);
-			//thread.setName("RTSP#c" + clientConnectionCount);  @TODO
 
 			poolMqE2I.submit(thread);
 		}
@@ -189,7 +188,6 @@ public class RtspServerApp {
 						++clientConnectionCount,
 						socketRtspTcp
 					);
-				//thread.setName("RTSP#c" + clientConnectionCount);  @TODO
 
 				poolRtsp.submit(thread);
 			}

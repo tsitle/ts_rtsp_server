@@ -15,6 +15,8 @@ import java.util.Optional;
 
 public class ThreadMqE2I extends RunnableBase {
 
+	private final String threadName;
+
 	private final @NonNull MqExternalSub mqExternalSub;
 	private final @NonNull MqInternalPub mqInternalPub;
 
@@ -49,6 +51,9 @@ public class ThreadMqE2I extends RunnableBase {
 			throw new IllegalArgumentException("Missing port in input URI: " + mqUri);
 		}
 
+		this.threadName = "MQE2I#" + streamSourceId;
+
+		//
 		mqExternalSub = new MqExternalSub(
 				logMsgInterface, mqUri.getHost() + ":" + mqUri.getPort(), mqUri.getPath(), mqUri.getUserInfo()
 			);
@@ -62,6 +67,9 @@ public class ThreadMqE2I extends RunnableBase {
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
+		Thread.currentThread().setName(threadName);
+
+		//
 		isRunning.set(true);
 
 		//

@@ -49,6 +49,7 @@ public class ThreadRtspServer extends RunnableBase {
 
 	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 10;
 
+	private final String threadName;
 	private final int clientConnectionNr;
 
 	/** Client IP address */
@@ -85,6 +86,7 @@ public class ThreadRtspServer extends RunnableBase {
 		super(logMsgInterface, cancelToken);
 
 		//
+		this.threadName = "RTSP#c" + clientConnectionNr;
 		this.clientConnectionNr = clientConnectionNr;
 		this.clientIpAddr = rtspSocketTcp.getInetAddress();
 
@@ -118,6 +120,9 @@ public class ThreadRtspServer extends RunnableBase {
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
+		Thread.currentThread().setName(threadName);
+
+		//
 		isRunning.set(true);
 		logInfo(FNC_NAME, String.format("Entering RTSP loop - %s:%d%n",
 				clientIpAddr.getHostAddress(), rtspSocketTcp.getPort()));
