@@ -76,6 +76,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			throw new IllegalStateException("MQ socket not initialized");
 		}
 
+		cacheBufferData.put(packetAv.codec().isVideo() ? (byte)1 : (byte)0);
 		byte[] tmpStrBytes = packetAv.codec().getCodecName().getBytes(ZMQ.CHARSET);
 		cacheBufferData.putInt(tmpStrBytes.length);
 		cacheBufferData.put(tmpStrBytes);
@@ -115,26 +116,31 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".decodePacketAv()";
 
 		try {
+			boolean tmpIsVideo = (cacheBufferData.get() != 0);
 			// read codec
 			int tmpStrLen = cacheBufferData.getInt();
 			byte[] tmpStrBytes = new byte[tmpStrLen];
 			cacheBufferData.get(tmpStrBytes);
 			String tmpCodecStr = new String(tmpStrBytes, ZMQ.CHARSET);
-			MqPacketCodec codec = MqPacketCodec.of(tmpCodecStr);
+			MqPacketCodec tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
+			if (tmpIsVideo != tmpCodecEn.isVideo()) {
+				throw new MqException(FNC_NAME + ": Invalid codec in " + (tmpIsVideo ? "VID" : "AUD") +
+						" packet: '" + tmpCodecStr + "'");
+			}
 			//
-			boolean tmpIsCodecGuessed = (codec.isVideo() && cacheBufferData.get() != 0);
+			boolean tmpIsCodecGuessed = (tmpIsVideo && cacheBufferData.get() != 0);
 			long tmpMdTimestamp = cacheBufferData.getLong();
 			int tmpMdCounter = cacheBufferData.getInt();
-			boolean tmpMdVideoIsKeyframe = (codec.isVideo() && cacheBufferData.get() != 0);
-			int tmpMdVideoResoWidth = (codec.isVideo() ? cacheBufferData.getInt() : 0);
-			int tmpMdVideoResoHeight = (codec.isVideo() ? cacheBufferData.getInt() : 0);
-			int tmpMdVideoFps = (codec.isVideo() ? cacheBufferData.getInt() : 0);
-			int tmpMdVideoBitrate = (codec.isVideo() ? cacheBufferData.getInt() : 0);
+			boolean tmpMdVideoIsKeyframe = (tmpIsVideo && cacheBufferData.get() != 0);
+			int tmpMdVideoResoWidth = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			int tmpMdVideoResoHeight = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			int tmpMdVideoFps = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			int tmpMdVideoBitrate = (tmpIsVideo ? cacheBufferData.getInt() : 0);
 			byte tmpMdPayloadCRC8 = cacheBufferData.get();
 			payloadDataSize = cacheBufferData.getInt();
 
 			return new MqPacketAv(
-					codec,
+					tmpCodecEn,
 					tmpIsCodecGuessed,
 					tmpMdTimestamp,
 					tmpMdCounter,

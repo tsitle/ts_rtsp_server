@@ -48,6 +48,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 
 		// write the header to the Message Queue
+		writeFieldToMqBool(packetAv.codec().isVideo(), ZMQ.SNDMORE);
 		writeFieldToMqStr(packetAv.codec().getCodecName(), ZMQ.SNDMORE);
 		if (packetAv.codec().isVideo()) {
 			writeFieldToMqBool(packetAv.isCodecGuessed(), ZMQ.SNDMORE);
@@ -86,29 +87,35 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 		int frameIx = 0;
 
-		final MqPacketCodec codec;
+		final boolean tmpIsVideo = decodeFieldBool(FNC_NAME, frames, frameIx++);
+
+		final MqPacketCodec tmpCodecEn;
 		final String tmpCodecStr = decodeFieldString(FNC_NAME, frames, frameIx++);
 		try {
-			codec = MqPacketCodec.of(tmpCodecStr);
+			tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
 		} catch (IllegalArgumentException e) {
 			throw new MqException(FNC_NAME + ": Invalid codec name: '" + tmpCodecStr + "'");
 		}
+		if (tmpIsVideo != tmpCodecEn.isVideo()) {
+			throw new MqException(FNC_NAME + ": Invalid codec in " + (tmpIsVideo ? "VID" : "AUD") +
+					" packet: '" + tmpCodecStr + "'");
+		}
 
-		final boolean tmpIsCodecGuessed = (codec.isVideo() && decodeFieldBool(FNC_NAME, frames, frameIx++));
+		final boolean tmpIsCodecGuessed = (tmpIsVideo && decodeFieldBool(FNC_NAME, frames, frameIx++));
 		final long tmpMdTimestamp = decodeFieldUint64(FNC_NAME, frames, frameIx++);
 		final int tmpMdCounter = decodeFieldUint32(FNC_NAME, frames, frameIx++);
-		final boolean tmpMdVideoIsKeyframe = (codec.isVideo() && decodeFieldBool(FNC_NAME, frames, frameIx++));
-		final int tmpMdVideoResoWidth = (codec.isVideo() ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdVideoResoHeight = (codec.isVideo() ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdVideoFps = (codec.isVideo() ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdVideoBitrate = (codec.isVideo() ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final boolean tmpMdVideoIsKeyframe = (tmpIsVideo && decodeFieldBool(FNC_NAME, frames, frameIx++));
+		final int tmpMdVideoResoWidth = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final int tmpMdVideoResoHeight = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final int tmpMdVideoFps = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final int tmpMdVideoBitrate = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
 		final byte tmpMdPayloadCRC8 = decodeFieldUint08(FNC_NAME, frames, frameIx++);
 		final int tmpBinDataLen = decodeFieldUint32(FNC_NAME, frames, frameIx++);
 
 		decodeFieldBinData(FNC_NAME, frames, frameIx, tmpBinDataLen, payloadDataPtr);
 
 		return new MqPacketAv(
-				codec,
+				tmpCodecEn,
 				tmpIsCodecGuessed,
 				tmpMdTimestamp,
 				tmpMdCounter,
