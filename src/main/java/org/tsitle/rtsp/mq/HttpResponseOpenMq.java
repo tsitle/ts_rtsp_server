@@ -5,6 +5,7 @@ public record HttpResponseOpenMq(
 		String cameraStreamType,
 		int mqPort,
 		String mqServerPubKey,
+		boolean mqEncrypted,
 		String status
 	) {
 }

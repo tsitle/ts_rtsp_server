@@ -13,8 +13,6 @@ import java.util.Map;
 
 public class MqExternalSub extends MqReceiverSubBase {
 
-	private static final boolean ENABLE_MQ_ENCRYPTION = true;
-
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
 	private final @NonNull String mqAddrAuth;
@@ -22,6 +20,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private final ZMQ.Curve.@NonNull KeyPair mqKeyPair;
 	private @Nullable String mqServerPublicKeyZ85 = null;
 	private @Nullable String mqServerEndpoint = null;
+	private boolean mqEncrypted = true;
 
 	/**
 	 * Constructor.
@@ -84,6 +83,8 @@ public class MqExternalSub extends MqReceiverSubBase {
 					payload,
 					HttpResponseOpenMq.class
 				);
+		} catch (java.net.ConnectException e) {
+			throw new MqException("Could not connect to Message Queue server");
 		} catch (IOException | InterruptedException e) {
 			throw new MqException("Could not connect to Message Queue server: " + e.getMessage());
 		} catch (Exception e) {
@@ -93,6 +94,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		String mqHostOnly = mqAddrHostAndPort.split(":")[0];
 		mqServerEndpoint = "tcp://" + mqHostOnly + ":" + responseOpenMq.mqPort();
 		mqServerPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
+		mqEncrypted = responseOpenMq.mqEncrypted();
 	}
 
 	private void internalConnectToMq() {
@@ -108,7 +110,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		zmqSocket.subscribe("".getBytes());
 
 		//
-		if (ENABLE_MQ_ENCRYPTION) {
+		if (mqEncrypted) {
 			if (mqServerPublicKeyZ85 == null) {
 				throw new IllegalStateException("MQ encryption is enabled, but mqServerPublicKey is not set");
 			}
