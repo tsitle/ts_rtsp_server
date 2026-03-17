@@ -253,10 +253,18 @@ public class RtspStreamSource {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
 						"' for Stream Source ID '" + tmpExtSsId + "' - must end with '.mq'");
 			}
-			URI tmpUri = getInputUri();
+			final URI tmpUri = getInputUri();
 			if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
 						"' for Stream Source ID '" + tmpExtSsId + "' - must contain user info");
+			}
+			if (! tmpUri.getUserInfo().contains(":")) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
+						"' for Stream Source ID '" + tmpExtSsId + "' - must contain username and password separated by colon");
+			}
+			if (tmpUri.getPort() == -1) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
+						"' for Stream Source ID '" + tmpExtSsId + "' - must contain port number");
 			}
 		}
 
