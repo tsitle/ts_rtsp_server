@@ -404,7 +404,7 @@ public abstract class ThreadRtpSenderBase<
 		final String FNC_NAME = getClass().getSimpleName() + ".waitForParallelThreadToStart()";
 
 		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getStreamSourceId());
-		logDebug(FNC_NAME, "Parallel thread notified");
+		//logDebug(FNC_NAME, "Parallel thread notified");
 
 		int timeoutCnt = 0;
 		boolean isReady = false;
@@ -418,7 +418,7 @@ public abstract class ThreadRtpSenderBase<
 		if (! isReady) {
 			throw new RtpThreadsDidNotStartException(FNC_NAME + ": Timeout waiting for parallel thread to start");
 		}
-		logDebug(FNC_NAME, "Parallel thread started after " + (timeoutCnt / 10) + " ms");
+		//logDebug(FNC_NAME, "Parallel thread started after " + (timeoutCnt / 10) + " ms");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
