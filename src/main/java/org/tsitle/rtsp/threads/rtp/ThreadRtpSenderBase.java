@@ -457,11 +457,11 @@ public abstract class ThreadRtpSenderBase<
 		return rtpTsT0Adj + (int)((rtpFrameNr - 1) * rtpTicksPerFrame);
 	}
 
-	/*private int getRtpTimestampAsInt_t0adj_forNow() {
-		long elapsedNs = System.nanoTime() - rtpTsT0GenAdj;
+	private int getRtpTimestampAsInt_t0adj_forNow(long currentSysNanos) {
+		long elapsedNs = currentSysNanos - rtpTsT0GenAdj;
 		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
 		return rtpTsT0Adj + (int)elapsedTicks;
-	}*/
+	}
 
 	private int getRtpTimestampAsInt_t0org_forNow(long currentSysNanos) {
 		long elapsedNs = currentSysNanos - paramsCommon.getRtpTimestampT0().orElseThrow().rtpGenTsT0Ns();
@@ -501,7 +501,11 @@ public abstract class ThreadRtpSenderBase<
 			}
 			//
 			long tmpCurSysNanos = System.nanoTime();
-			rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);  // @TODO use foreign TS when source is MQ
+			if (paramsCommon.getIsStreamSourceFromFile()) {
+				rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);
+			} else {
+				rtpTsCurrent = getRtpTimestampAsInt_t0adj_forNow(tmpCurSysNanos);
+			}
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp(tmpCurSysNanos);
 			siStats.rtpTimestamp = rtpTsCurrent;
