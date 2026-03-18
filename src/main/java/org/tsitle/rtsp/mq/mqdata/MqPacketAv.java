@@ -1,8 +1,22 @@
-package org.tsitle.rtsp.mq;
+package org.tsitle.rtsp.mq.mqdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 
+/**
+ * Audio/video packet.
+ * @param codec The codec used for the payload
+ * @param isCodecGuessed Whether the codec was guessed or explicitly set
+ * @param mdTimestamp Metadata: timestamp of the payload (sample time)
+ * @param mdCounter Metadata: packet counter
+ * @param mdVideoIsKeyframe Metadata: is this a keyframe? (video only)
+ * @param mdVideoResoWidth Metadata: resolution width (video only)
+ * @param mdVideoResoHeight Metadata: resolution height (video only)
+ * @param mdVideoFps Metadata: frames per second (video only)
+ * @param mdVideoBitrate Metadata: bitrate (video only)
+ * @param mdPayloadCRC8 Metadata: CRC8 checksum of the payload
+ * @param payloadDataPtr Pointer to the payload data buffer
+ */
 public record MqPacketAv(
 			@NonNull MqPacketCodec codec,
 			boolean isCodecGuessed,

@@ -3,6 +3,9 @@ package org.tsitle.rtsp.mq;
 import org.jspecify.annotations.NonNull;
 import org.zeromq.ZContext;
 
+/**
+ * Helper class for managing the ZeroMQ context.
+ */
 public class MqContextHelper {
 
 	private static final int ZMQ_IO_THREAD_COUNT = 4;
@@ -10,6 +13,10 @@ public class MqContextHelper {
 	private static ZContext zmqContextObj = null;  // one context for all MQs
 	private static int zmqContextRefCount = 0;
 
+	/**
+	 * Open the ZeroMQ context if it is not already open.
+	 * @return ZeroMQ context
+	 */
 	public static synchronized @NonNull ZContext openMqContext() {
 		if (zmqContextObj == null) {
 			zmqContextObj = new ZContext(ZMQ_IO_THREAD_COUNT);
@@ -18,6 +25,9 @@ public class MqContextHelper {
 		return zmqContextObj;
 	}
 
+	/**
+	 * Close the ZeroMQ context if it is no longer necessary.
+	 */
 	public static synchronized void closeMqContext() {
 		if (zmqContextRefCount != 0 && --zmqContextRefCount == 0) {
 			zmqContextObj.close();

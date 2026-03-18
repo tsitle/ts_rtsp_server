@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
@@ -13,6 +14,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Input stream wrapper for an internal Message Queue.<br />
+ * Wraps the input from the Message Queue into an InputStream.
+ */
 @SuppressWarnings("unused")
 public class MqInternalInputStream extends InputStream {
 
@@ -45,6 +50,10 @@ public class MqInternalInputStream extends InputStream {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Connect to the Message Queue.
+	 * @throws MqException If an error has occurred
+	 */
 	public void connectToMq() throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".connectToMq()";
 
@@ -56,18 +65,31 @@ public class MqInternalInputStream extends InputStream {
 		stateOpened.set(true);
 	}
 
+	/**
+	 * Read a single byte from the stream.
+	 * @return The byte read, or -1 if the end of the stream has been reached
+	 * @throws IOException If an I/O error occurs
+	 */
 	@Override
 	public int read() throws IOException {
 		if (bufferPos >= bufferData.getUsed()) {
-			receiveNextMessage();
+			receiveMessageAv();
 			if (bufferData.isEmpty()) {
-				throw new IOException("End of stream reached");
+				return -1;
 			}
 		}
 
 		return (bufferData.get(bufferPos++) & 0xFF);
 	}
 
+	/**
+	 * Read bytes from the stream into the provided buffer.
+	 * @param b The buffer to read into
+	 * @param offs The offset within the buffer to start writing
+	 * @param len The number of bytes to read
+	 * @return The number of bytes read, or -1 if the end of the stream has been reached
+	 * @throws IOException If an I/O error occurs
+	 */
 	@Override
 	public int read(byte[] b, final int offs, final int len) throws IOException {
 		Objects.checkFromIndexSize(offs, len, b.length);
@@ -75,7 +97,7 @@ public class MqInternalInputStream extends InputStream {
 		int totalCopied = 0;
 		while (totalCopied < len) {
 			if (bufferPos >= bufferData.getUsed()) {
-				receiveNextMessage();
+				receiveMessageAv();
 				if (bufferData.isEmpty()) {
 					return -1;
 				}
@@ -92,6 +114,9 @@ public class MqInternalInputStream extends InputStream {
 		return totalCopied;
 	}
 
+	/**
+	 * Close the Message Queue.
+	 */
 	@Override
 	public void close() {
 		final String FNC_NAME = getClass().getSimpleName() + ".close()";
@@ -108,8 +133,8 @@ public class MqInternalInputStream extends InputStream {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private synchronized void receiveNextMessage() throws IOException {
-		final String FNC_NAME = getClass().getSimpleName() + ".receiveNextMessage()";
+	private synchronized void receiveMessageAv() throws IOException {
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveMessageAv()";
 
 		bufferPos = 0;
 		bufferData.clear();
@@ -126,7 +151,7 @@ public class MqInternalInputStream extends InputStream {
 		try {
 			Optional<MqPacketAv> optPacket = Optional.empty();
 			for (int i = 0; i < 2; i++) {
-				optPacket = mqInternalSub.receiveMessage(bufferData);
+				optPacket = mqInternalSub.receiveMessageAv(bufferData);
 				if (! isFirstMessage || optPacket.isPresent()) {
 					break;
 				}

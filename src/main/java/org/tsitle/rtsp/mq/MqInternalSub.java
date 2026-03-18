@@ -5,6 +5,9 @@ import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.zeromq.ZMQ;
 
+/**
+ * Subscriber for internal messages.
+ */
 public class MqInternalSub extends MqReceiverSubBase {
 
 	private final int streamSourceId;

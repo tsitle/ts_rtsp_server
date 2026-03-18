@@ -3,6 +3,7 @@ package org.tsitle.rtsp.mq;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.httpdata.HttpResponseOpenMq;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
@@ -11,6 +12,9 @@ import java.io.IOException;
 import java.util.HexFormat;
 import java.util.Map;
 
+/**
+ * Subscribes to an external Message Queue using authentication and optional encryption.
+ */
 public class MqExternalSub extends MqReceiverSubBase {
 
 	private final @NonNull String mqAddrHostAndPort;
@@ -37,6 +41,10 @@ public class MqExternalSub extends MqReceiverSubBase {
 			) {
 		super(logMsgInterface, true, false);
 
+		//
+		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
+			throw new IllegalArgumentException("MQ host/path/auth must not be empty");
+		}
 		this.mqAddrHostAndPort = mqAddressHostAndPort;
 		this.mqAddrPath = mqAddressPath;
 		this.mqAddrAuth = mqAddressAuth;
@@ -72,7 +80,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		try {
 			String authUser = mqAddrAuth.split(":")[0];
 			String authPw = mqAddrAuth.split(":")[1];
-			HttpPostJson client = new HttpPostJson(authUser, authPw);
+			HttpClientJson client = HttpClientJson.createClientWithCompletelyInsecureSsl(authUser, authPw);  // @TODO
 
 			Map<String, Object> payload = Map.of(
 					"clientPubKey", encodeHexString(mqKeyPair.publicKey)

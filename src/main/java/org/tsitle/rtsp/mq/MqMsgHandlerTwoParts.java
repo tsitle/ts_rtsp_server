@@ -4,15 +4,24 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
+import org.tsitle.rtsp.mq.mqdata.MqPacketCodec;
 import org.zeromq.ZMQ;
 
 import java.nio.BufferUnderflowException;
 import java.util.Optional;
 
+/**
+ * Message Queue handler for 'two parts' messages.
+ */
 public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 	private int payloadDataSize = 0;
 
+	/**
+	 * Constructor.
+	 * @param zmqSocket ZMQ socket
+	 */
 	public MqMsgHandlerTwoParts(ZMQ.@Nullable Socket zmqSocket) {
 		super(zmqSocket);
 	}
@@ -20,8 +29,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<MqPacketAv> readMsgFromMq(final @NonNull BufferExt payloadDataPtr) throws MqException {
-		final String FNC_NAME = getClass().getSimpleName() + ".readMsgFromMq()";
+	public Optional<MqPacketAv> readMsgAvFromMq(final @NonNull BufferExt payloadDataPtr) throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".readMsgAvFromMq()";
 
 		if (zmqSocket == null) {
 			return Optional.empty();
@@ -45,7 +54,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 		// decode the first part of the message
 		payloadDataSize = 0;
-		final MqPacketAv packetAv = decodePacketAv(payloadDataPtr);
+		final MqPacketAv packet = decodePacketAv(payloadDataPtr);
 
 		// receive the payload data
 		try {
@@ -66,41 +75,41 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			throw new MqException(FNC_NAME + ": Exception caught: " + e.getMessage());
 		}
 
-		return Optional.of(packetAv);
+		return Optional.of(packet);
 	}
 
-	public void writeMsgToMq(@NonNull MqPacketAv packetAv) {
+	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
 		cacheBufferData.clear();
 
 		if (zmqSocket == null) {
 			throw new IllegalStateException("MQ socket not initialized");
 		}
 
-		cacheBufferData.put(packetAv.codec().isVideo() ? (byte)1 : (byte)0);
-		byte[] tmpStrBytes = packetAv.codec().getCodecName().getBytes(ZMQ.CHARSET);
+		cacheBufferData.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
+		byte[] tmpStrBytes = packet.codec().getCodecName().getBytes(ZMQ.CHARSET);
 		cacheBufferData.putInt(tmpStrBytes.length);
 		cacheBufferData.put(tmpStrBytes);
-		if (packetAv.codec().isVideo()) {
-			cacheBufferData.put(packetAv.isCodecGuessed() ? (byte)1 : (byte)0);
+		if (packet.codec().isVideo()) {
+			cacheBufferData.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
 		}
-		cacheBufferData.putLong(packetAv.mdTimestamp());
-		cacheBufferData.putInt(packetAv.mdCounter());
-		if (packetAv.codec().isVideo()) {
-			cacheBufferData.put(packetAv.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
-			cacheBufferData.putInt(packetAv.mdVideoResoWidth());
-			cacheBufferData.putInt(packetAv.mdVideoResoHeight());
-			cacheBufferData.putInt(packetAv.mdVideoFps());
-			cacheBufferData.putInt(packetAv.mdVideoBitrate());
+		cacheBufferData.putLong(packet.mdTimestamp());
+		cacheBufferData.putInt(packet.mdCounter());
+		if (packet.codec().isVideo()) {
+			cacheBufferData.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
+			cacheBufferData.putInt(packet.mdVideoResoWidth());
+			cacheBufferData.putInt(packet.mdVideoResoHeight());
+			cacheBufferData.putInt(packet.mdVideoFps());
+			cacheBufferData.putInt(packet.mdVideoBitrate());
 		}
-		cacheBufferData.put(packetAv.mdPayloadCRC8());
-		cacheBufferData.putInt(packetAv.payloadDataPtr().getUsed());
+		cacheBufferData.put(packet.mdPayloadCRC8());
+		cacheBufferData.putInt(packet.payloadDataPtr().getUsed());
 
 		cacheBufferData.flip();
 
 		// write the header to the Message Queue
 		zmqSocket.send(cacheBufferData.array(), 0, cacheBufferData.limit(), ZMQ.SNDMORE);
 		// write the payload data to the Message Queue
-		zmqSocket.send(packetAv.payloadDataPtr().getBufPtr(), 0, packetAv.payloadDataPtr().getUsed(), 0);
+		zmqSocket.send(packet.payloadDataPtr().getBufPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -93,7 +93,7 @@ public class RtspServerApp {
 			System.exit(1);
 		}
 
-		// start the ('external to internal') message queue threads
+		// start the ('external to internal') Message Queue threads
 		final List<Integer> mqStreamSources = findMqStreamSources();
 		poolMqE2I = new ThreadPoolExecutor(
 				Math.max(mqStreamSources.size(), 1),

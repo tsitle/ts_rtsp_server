@@ -8,6 +8,9 @@ import org.zeromq.ZMQ;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Message Queue channel bus for internal communication.
+ */
 public class MqChannelBus {
 
 	private final static ConcurrentMap<@NonNull Integer, @NonNull String> mapIdToEndpoint = new ConcurrentHashMap<>();
@@ -73,7 +76,7 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
-		zmqSocket.setSndHWM(1000);
+		zmqSocket.setSndHWM(10);
 		// adjust the OS's send buffer size
 		zmqSocket.setSendBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
@@ -101,7 +104,7 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setRcvHWM(1000);
+		zmqSocket.setRcvHWM(10);
 		zmqSocket.setLinger(0);
 		// adjust the OS's receive buffer size
 		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);

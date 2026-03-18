@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
+import org.tsitle.rtsp.mq.mqdata.MqPacketCodec;
 import org.zeromq.ZMQ;
 
 import java.nio.ByteBuffer;
@@ -12,8 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Message Queue handler for 'segmented' messages.
+ */
 public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
+	/**
+	 * Constructor.
+	 * @param zmqSocket ZMQ socket
+	 */
 	public MqMsgHandlerSegmented(ZMQ.@Nullable Socket zmqSocket) {
 		super(zmqSocket);
 	}
@@ -21,7 +30,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<MqPacketAv> readMsgFromMq(final @NonNull BufferExt payloadDataPtr) throws MqException {
+	public Optional<MqPacketAv> readMsgAvFromMq(final @NonNull BufferExt payloadDataPtr) throws MqException {
 		if (zmqSocket == null) {
 			return Optional.empty();
 		}
@@ -42,31 +51,31 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			);
 	}
 
-	public void writeMsgToMq(@NonNull MqPacketAv packetAv) {
+	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
 		if (zmqSocket == null) {
 			throw new IllegalStateException("MQ socket not initialized");
 		}
 
 		// write the header to the Message Queue
-		writeFieldToMqBool(packetAv.codec().isVideo(), ZMQ.SNDMORE);
-		writeFieldToMqStr(packetAv.codec().getCodecName(), ZMQ.SNDMORE);
-		if (packetAv.codec().isVideo()) {
-			writeFieldToMqBool(packetAv.isCodecGuessed(), ZMQ.SNDMORE);
+		writeFieldToMqBool(packet.codec().isVideo(), ZMQ.SNDMORE);
+		writeFieldToMqStr(packet.codec().getCodecName(), ZMQ.SNDMORE);
+		if (packet.codec().isVideo()) {
+			writeFieldToMqBool(packet.isCodecGuessed(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint64(packetAv.mdTimestamp(), ZMQ.SNDMORE);
-		writeFieldToMqUint32(packetAv.mdCounter(), ZMQ.SNDMORE);
-		if (packetAv.codec().isVideo()) {
-			writeFieldToMqBool(packetAv.mdVideoIsKeyframe(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packetAv.mdVideoResoWidth(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packetAv.mdVideoResoHeight(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packetAv.mdVideoFps(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packetAv.mdVideoBitrate(), ZMQ.SNDMORE);
+		writeFieldToMqUint64(packet.mdTimestamp(), ZMQ.SNDMORE);
+		writeFieldToMqUint32(packet.mdCounter(), ZMQ.SNDMORE);
+		if (packet.codec().isVideo()) {
+			writeFieldToMqBool(packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(packet.mdVideoResoWidth(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(packet.mdVideoResoHeight(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(packet.mdVideoFps(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(packet.mdVideoBitrate(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint08(packetAv.mdPayloadCRC8(), ZMQ.SNDMORE);
-		writeFieldToMqUint32(packetAv.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
+		writeFieldToMqUint08(packet.mdPayloadCRC8(), ZMQ.SNDMORE);
+		writeFieldToMqUint32(packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
 
 		// write the payload data to the Message Queue
-		writeFieldToMqBinData(packetAv.payloadDataPtr(), 0);
+		writeFieldToMqBinData(packet.payloadDataPtr(), 0);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

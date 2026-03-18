@@ -1,5 +1,8 @@
-package org.tsitle.rtsp.mq;
+package org.tsitle.rtsp.mq.httpdata;
 
+/**
+ * Response for 'Open Message Queue' request.
+ */
 public record HttpResponseOpenMq(
 		String cameraId,
 		String cameraStreamType,

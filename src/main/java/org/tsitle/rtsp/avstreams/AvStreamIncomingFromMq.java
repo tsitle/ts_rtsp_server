@@ -8,7 +8,7 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.mq.MqInternalSub;
-import org.tsitle.rtsp.mq.MqPacketAv;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.URI;
@@ -56,7 +56,7 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 		}
 		try {
 			while (true) {
-				Optional<MqPacketAv> optPacket = mqInternalSub.receiveMessage(buf);
+				Optional<MqPacketAv> optPacket = mqInternalSub.receiveMessageAv(buf);
 				if (optPacket.isPresent()) {
 					break;
 				}

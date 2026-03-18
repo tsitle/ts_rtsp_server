@@ -1,7 +1,10 @@
-package org.tsitle.rtsp.mq;
+package org.tsitle.rtsp.mq.mqdata;
 
 import org.jspecify.annotations.NonNull;
 
+/**
+ * Codec used for the payload of A/V packets.
+ */
 public enum MqPacketCodec {
 
 	H264("H264"),

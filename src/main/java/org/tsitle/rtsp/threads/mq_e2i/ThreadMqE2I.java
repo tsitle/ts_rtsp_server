@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.mq_e2i;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.mq.MqExternalSub;
 import org.tsitle.rtsp.mq.MqInternalPub;
-import org.tsitle.rtsp.mq.MqPacketAv;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.helpers.CancelToken;
@@ -103,11 +103,11 @@ public class ThreadMqE2I extends RunnableBase {
 	private void mainLoop() throws InterruptedException, MqException {
 		Thread.sleep(1);
 
-		Optional<MqPacketAv> optPack = mqExternalSub.receiveMessage(cachePayloadData);
+		Optional<MqPacketAv> optPack = mqExternalSub.receiveMessageAv(cachePayloadData);
 		if (optPack.isEmpty()) {
 			return;
 		}
-		mqInternalPub.sendMessage(optPack.get());
+		mqInternalPub.sendMessageAv(optPack.get());
 	}
 
 }

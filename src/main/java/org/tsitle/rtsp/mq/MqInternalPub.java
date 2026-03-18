@@ -3,6 +3,7 @@ package org.tsitle.rtsp.mq;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.zeromq.ZContext;
@@ -10,6 +11,9 @@ import org.zeromq.ZMQ;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Publisher for internal messages.
+ */
 public class MqInternalPub implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
@@ -44,6 +48,10 @@ public class MqInternalPub implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Connect to the Message Queue.
+	 * @throws MqException If an error has occurred
+	 */
 	public void connectToMq() throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".connectToMq()";
 
@@ -59,8 +67,13 @@ public class MqInternalPub implements AutoCloseable {
 		stateOpened.set(true);
 	}
 
-	public void sendMessage(@NonNull MqPacketAv packet) throws MqException {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendMessage()";
+	/**
+	 * Send a message containing audio/video data to the Message Queue.
+	 * @param packet A/V packet
+	 * @throws MqException If an error has occurred
+	 */
+	public void sendMessageAv(@NonNull MqPacketAv packet) throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendMessageAv()";
 
 		//
 		ensureOpen(FNC_NAME);
@@ -72,11 +85,14 @@ public class MqInternalPub implements AutoCloseable {
 		}
 
 		//
-		msgHandler.writeMsgToMq(packet);
+		msgHandler.writeMsgAvToMq(packet);
 
 		//logDebug(FNC_NAME, "int MQ write " + (packet.codec().isVideo() ? "VID" : "AUD"));
 	}
 
+	/**
+	 * Close the Message Queue.
+	 */
 	@Override
 	public void close() {
 		final String FNC_NAME = getClass().getSimpleName() + ".close()";

@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.zeromq.ZContext;
@@ -14,7 +15,27 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Base class for Message Queue subscribers.
+ */
 public abstract class MqReceiverSubBase implements AutoCloseable {
+
+	private static class Stats {
+		@Nullable Long lastTimestampMs = null;
+		long lastRecvTimeNs = 0L;
+		@Nullable Integer lastCounter = null;
+		long avgTsDeltaSum = 0L;
+		int avgTsDeltaCnt = 0;
+		long avgRecvDeltaSum = 0L;
+		int avgRecvDeltaCnt = 0;
+		long avgTsVsRecvDeltaSum = 0L;
+		int avgTsVsRecvDeltaCnt = 0;
+		@Nullable Instant lastFpsMeasureTime;
+		int framesOutputtedCount = 0;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final boolean doValidatePayload;
@@ -31,17 +52,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 
 	protected @Nullable MqMsgHandlerBase msgHandler;
 
-	private @Nullable Long lastTimestampMs = null;
-	private long lastRecvTimeNs = 0L;
-	private @Nullable Integer lastCounter = null;
-	private long avgTsDeltaSum = 0L;
-	private int avgTsDeltaCnt = 0;
-	private long avgRecvDeltaSum = 0L;
-	private int avgRecvDeltaCnt = 0;
-	private long avgTsVsRecvDeltaSum = 0L;
-	private int avgTsVsRecvDeltaCnt = 0;
-	private @Nullable Instant lastFpsMeasureTime;
-	private int framesOutputtedCount = 0;
+	private final Stats stats = new Stats();
 
 	/**
 	 * Constructor.
@@ -66,10 +77,20 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Connect to the Message Queue.
+	 * @throws MqException If an error has occurred
+	 */
 	public abstract void connectToMq() throws MqException;
 
-	public Optional<MqPacketAv> receiveMessage(@NonNull BufferExt payloadData) throws MqException {
-		final String FNC_NAME = getClass().getSimpleName() + ".receiveMessage()";
+	/**
+	 * Receive a message containing audio/video data from the Message Queue.
+	 * @param payloadData The payload data buffer
+	 * @return Received message or empty if no message was received
+	 * @throws MqException If an error has occurred
+	 */
+	public Optional<MqPacketAv> receiveMessageAv(@NonNull BufferExt payloadData) throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveMessageAv()";
 
 		//
 		if (msgHandler == null) {
@@ -86,116 +107,45 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		}
 
 		// wait until we're ready to receive data
-		Instant tmpNow1 = Instant.now();
-		int timeoutCnt = 0;
-		while (zmqPollerObj != null) {
-			if (stateClosed.get()) {
-				return Optional.empty();
-			}
-			if (zmqPollerObj != null && zmqPollerObj.poll(1) != 0) {
-				if (zmqPollerObj != null && zmqPollerObj.pollin(zmqPollerIx)) {
-					break;
-				}
-			}
-			if (++timeoutCnt > 1000) {
-				throw new MqException(FNC_NAME + ": Timeout waiting for data");
-			}
-		}
-		if (Thread.currentThread().isInterrupted() || stateClosed.get() || zmqPollerObj == null) {
+		if (! waitForSocketReady(FNC_NAME)) {
 			return Optional.empty();
 		}
-		Instant tmpNow2 = Instant.now();
 
 		//
-		Optional<MqPacketAv> optPacket = msgHandler.readMsgFromMq(payloadData);
+		Optional<MqPacketAv> optPacket = msgHandler.readMsgAvFromMq(payloadData);
 		if (optPacket.isEmpty()) {
 			return Optional.empty();
 		}
-		Instant tmpNow5 = Instant.now();
-
-		// validate the payload data
 		//logDebug(FNC_NAME, "Received MQ " + optPacket.get());
 		//logDebug(FNC_NAME, "Received MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
+
+		// validate the payload data
 		if (doValidatePayload) {
-			msgHandler.validatePacketPayloadCRC(optPacket.get().mdPayloadCRC8(), payloadData);
-		}
-
-		Instant tmpNow6 = Instant.now();
-
-		if (doPrintDebugStats) {
-			final long tmpTimestampDeltaMs;
-			final long tmpRecvDeltaMs;
-			if (lastTimestampMs != null) {
-				tmpTimestampDeltaMs = optPacket.get().mdTimestamp() - lastTimestampMs;
-				tmpRecvDeltaMs = (System.nanoTime() - lastRecvTimeNs) / 1_000_000L;
-
-				avgTsDeltaSum += tmpTimestampDeltaMs;
-				++avgTsDeltaCnt;
-				avgRecvDeltaSum += tmpRecvDeltaMs;
-				++avgRecvDeltaCnt;
-
-				avgTsVsRecvDeltaSum += (tmpRecvDeltaMs - tmpTimestampDeltaMs);
-				++avgTsVsRecvDeltaCnt;
-			} else {
-				tmpTimestampDeltaMs = 0L;
-				tmpRecvDeltaMs = 0L;
-			}
-
-			//
-			Duration tmpDur12 = Duration.between(tmpNow1, tmpNow2);  // @TODO
-			Duration tmpDur56 = Duration.between(tmpNow5, tmpNow6);
-			Duration tmpDur16 = Duration.between(tmpNow1, tmpNow6);
-			if (tmpDur16.toMillis() > 170) {
-				logDebug(FNC_NAME, "MQ read " + (optPacket.get().codec().isVideo() ? "VID" : "AUD") + " time: " +
-						"A=" + (tmpDur12.toNanos() / 1_000L) + " us, " +
-						"B=" + (doValidatePayload ? "" + (tmpDur56.toNanos() / 1_000L) : "--") + " us // " +
-						"tot=" + (tmpDur16.toNanos() / 1_000_000L) + " ms, " +
-						"tsDelta=" + tmpTimestampDeltaMs + " ms, rcvDelta=" + tmpRecvDeltaMs + " ms");  // @TODO
-			}
-
-			if (avgTsVsRecvDeltaCnt == 250) {
-				final long tmpAvgTsDelta = avgTsDeltaSum / avgTsDeltaCnt;
-				final long tmpAvgRecvDelta = avgRecvDeltaSum / avgRecvDeltaCnt;
-				final long tmpAvgTsVsRecvDelta = avgTsVsRecvDeltaSum / avgTsVsRecvDeltaCnt;
-				logDebug(FNC_NAME, "MQ avg tsDelta=" + tmpAvgTsDelta + " ms, avg rcvDelta=" + tmpAvgRecvDelta + " ms, avg tsVsRcvDelta=" + tmpAvgTsVsRecvDelta + " ms");
-				avgTsDeltaSum = tmpAvgTsDelta;
-				avgTsDeltaCnt = 1;
-				avgRecvDeltaSum = tmpAvgRecvDelta;
-				avgRecvDeltaCnt = 1;
-				avgTsVsRecvDeltaSum = tmpAvgTsVsRecvDelta;
-				avgTsVsRecvDeltaCnt = 1;
-			}
-
-			++framesOutputtedCount;
-			if (lastFpsMeasureTime != null) {
-				Duration tmpDurLfmt = Duration.between(lastFpsMeasureTime, Instant.now());
-				long tmpMs = tmpDurLfmt.toMillis();
-				if (tmpMs >= 1_000L) {
-					logDebug(FNC_NAME, String.format(
-							"MQ fps: %f", (((double)framesOutputtedCount / (double)tmpMs) * 1_000.0)));
-					framesOutputtedCount = 0;
-					lastFpsMeasureTime = Instant.now();
-				}
-			} else {
-				lastFpsMeasureTime = Instant.now();
-			}
+			msgHandler.validateCRC8(optPacket.get().mdPayloadCRC8(), payloadData);
 		}
 
 		//
-		lastTimestampMs = optPacket.get().mdTimestamp();
-		lastRecvTimeNs = System.nanoTime();
+		if (doPrintDebugStats) {
+			printDebugStats(FNC_NAME, optPacket.get().mdTimestamp());
+		}
+		stats.lastTimestampMs = optPacket.get().mdTimestamp();
+		stats.lastRecvTimeNs = System.nanoTime();
 
-		if (lastCounter != null) {
-			final int tmpCounterDelta = optPacket.get().mdCounter() - lastCounter;
+		//
+		if (stats.lastCounter != null) {
+			final int tmpCounterDelta = optPacket.get().mdCounter() - stats.lastCounter;
 			if (tmpCounterDelta != 1) {
 				logWarn(FNC_NAME, "MQ counter delta " + tmpCounterDelta);
 			}
 		}
-		lastCounter = optPacket.get().mdCounter();
+		stats.lastCounter = optPacket.get().mdCounter();
 
 		return optPacket;
 	}
 
+	/**
+	 * Close the Message Queue.
+	 */
 	@Override
 	public void close() {
 		final String FNC_NAME = getClass().getSimpleName() + ".close()";
@@ -223,6 +173,70 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		if (zmqContextOpened) {
 			MqContextHelper.closeMqContext();
 			zmqContextOpened = false;
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean waitForSocketReady(@NonNull String fncName) throws MqException {
+		int timeoutCnt = 0;
+		while (zmqPollerObj != null) {
+			if (stateClosed.get()) {
+				return false;
+			}
+			if (zmqPollerObj != null && zmqPollerObj.poll(1) != 0) {
+				if (zmqPollerObj != null && zmqPollerObj.pollin(zmqPollerIx)) {
+					break;
+				}
+			}
+			if (++timeoutCnt > 1000) {
+				throw new MqException(fncName + ": Timeout waiting for data");
+			}
+		}
+		return (! Thread.currentThread().isInterrupted() && ! stateClosed.get() && zmqPollerObj != null);
+	}
+
+	private void printDebugStats(@NonNull String fncName, long curMdTimestampMs) {
+		if (stats.lastTimestampMs != null) {
+			final long tmpTimestampDeltaMs = curMdTimestampMs - stats.lastTimestampMs;
+			final long tmpRecvDeltaMs = (System.nanoTime() - stats.lastRecvTimeNs) / 1_000_000L;
+
+			stats.avgTsDeltaSum += tmpTimestampDeltaMs;
+			++stats.avgTsDeltaCnt;
+			stats.avgRecvDeltaSum += tmpRecvDeltaMs;
+			++stats.avgRecvDeltaCnt;
+
+			stats.avgTsVsRecvDeltaSum += (tmpRecvDeltaMs - tmpTimestampDeltaMs);
+			++stats.avgTsVsRecvDeltaCnt;
+		}
+
+		//
+		if (stats.avgTsVsRecvDeltaCnt == 250) {
+			final long tmpAvgTsDelta = stats.avgTsDeltaSum / stats.avgTsDeltaCnt;
+			final long tmpAvgRecvDelta = stats.avgRecvDeltaSum / stats.avgRecvDeltaCnt;
+			final long tmpAvgTsVsRecvDelta = stats.avgTsVsRecvDeltaSum / stats.avgTsVsRecvDeltaCnt;
+			logDebug(fncName, "MQ avg tsDelta=" + tmpAvgTsDelta + " | rcvDelta=" + tmpAvgRecvDelta +
+					" | tsVsRcvDelta=" + tmpAvgTsVsRecvDelta + " ms");
+			stats.avgTsDeltaSum = tmpAvgTsDelta;
+			stats.avgTsDeltaCnt = 1;
+			stats.avgRecvDeltaSum = tmpAvgRecvDelta;
+			stats.avgRecvDeltaCnt = 1;
+			stats.avgTsVsRecvDeltaSum = tmpAvgTsVsRecvDelta;
+			stats.avgTsVsRecvDeltaCnt = 1;
+		}
+
+		++stats.framesOutputtedCount;
+		if (stats.lastFpsMeasureTime != null) {
+			Duration tmpDurLfmt = Duration.between(stats.lastFpsMeasureTime, Instant.now());
+			long tmpMs = tmpDurLfmt.toMillis();
+			if (tmpMs >= 1_000L) {
+				logDebug(fncName, String.format(
+						"MQ fps: %f", (((double)stats.framesOutputtedCount / (double)tmpMs) * 1_000.0)));
+				stats.framesOutputtedCount = 0;
+				stats.lastFpsMeasureTime = Instant.now();
+			}
+		} else {
+			stats.lastFpsMeasureTime = Instant.now();
 		}
 	}
 
