@@ -6,6 +6,7 @@ import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.helpers.CancelToken;
+import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
@@ -152,6 +153,21 @@ public class RtspServerApp {
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,
 					cancelToken,
+					(int cbArgStreamSourceId, @NonNull MqCodecSettings cbArgCodecSettings) -> {
+							RtspStreamSource tmpCbSs = rtspConfig.getStreamSourceObj(cbArgStreamSourceId).orElseThrow();
+							if (cbArgCodecSettings.codec != null) {
+								tmpCbSs.setMqDynamicCodec(cbArgCodecSettings.codec.getRtpPacketType());
+							}
+							if (cbArgCodecSettings.videoFps != null) {
+								tmpCbSs.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
+							}
+							if (cbArgCodecSettings.audioSamplerate != null) {
+								tmpCbSs.setMqDynamicAudioSampleRateHz(cbArgCodecSettings.audioSamplerate);
+							}
+							if (cbArgCodecSettings.audioChannels != null) {
+								tmpCbSs.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
+							}
+						},
 					streamSourceId,
 					ss.getInputUri()
 				);

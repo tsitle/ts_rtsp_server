@@ -3,10 +3,12 @@ package org.tsitle.rtsp.threads.mq_e2i;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.mq.MqExternalSub;
 import org.tsitle.rtsp.mq.MqInternalPub;
+import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
 import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.helpers.CancelToken;
+import org.tsitle.rtsp.mq.mqdata.MqPacketCodec;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
 
@@ -15,12 +17,16 @@ import java.util.Optional;
 
 public class ThreadMqE2I extends RunnableBase {
 
+	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
+	private final int streamSourceId;
+
 	private final String threadName;
 
 	private final @NonNull MqExternalSub mqExternalSub;
 	private final @NonNull MqInternalPub mqInternalPub;
 
 	private final @NonNull BufferExt cachePayloadData = new BufferExt();
+	private final @NonNull MqCodecSettings cacheCodecSettings = new MqCodecSettings();
 
 	/**
 	 * Constructor.
@@ -32,11 +38,15 @@ public class ThreadMqE2I extends RunnableBase {
 	public ThreadMqE2I(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
+				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
 				int streamSourceId,
 				@NonNull URI mqUri
 			) {
 		super(logMsgInterface, cancelToken);
 
+		//
+		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
+		this.streamSourceId = streamSourceId;
 		//
 		if (mqUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (mqUri='" + mqUri + "')");
@@ -46,9 +56,6 @@ public class ThreadMqE2I extends RunnableBase {
 		}
 		if (mqUri.getUserInfo() == null || mqUri.getUserInfo().isEmpty()) {
 			throw new IllegalArgumentException("Missing authentification in input URI: " + mqUri);
-		}
-		if (mqUri.getPort() == -1) {
-			throw new IllegalArgumentException("Missing port in input URI: " + mqUri);
 		}
 
 		this.threadName = "MQE2I#" + streamSourceId;
@@ -103,11 +110,34 @@ public class ThreadMqE2I extends RunnableBase {
 	private void mainLoop() throws InterruptedException, MqException {
 		Thread.sleep(1);
 
-		Optional<MqPacketAv> optPack = mqExternalSub.receiveMessageAv(cachePayloadData);
-		if (optPack.isEmpty()) {
+		Optional<MqPacketAv> optPacket = mqExternalSub.receiveMessageAv(cachePayloadData);
+		if (optPacket.isEmpty()) {
 			return;
 		}
-		mqInternalPub.sendMessageAv(optPack.get());
+		MqPacketAv packet = optPacket.get();
+		//
+		boolean haveChanges = false;
+		if (cacheCodecSettings.codec == null || cacheCodecSettings.codec.ordinal() != packet.codec().ordinal()) {
+			// the codec should never actually change during a session - but we need to read it once
+			cacheCodecSettings.codec = packet.codec();
+			if (! packet.codec().isVideo()) {
+				// samplerate and channel count should never actually change during a session - but we need to read it once
+				cacheCodecSettings.audioSamplerate = (cacheCodecSettings.codec == MqPacketCodec.LPCM16_8K_MONO ? 8000 : null);
+				cacheCodecSettings.audioChannels = (cacheCodecSettings.codec == MqPacketCodec.LPCM16_8K_MONO ? 1 : null);
+			}
+			haveChanges = true;
+		}
+		if (packet.codec().isVideo() &&
+				(cacheCodecSettings.videoFps == null || cacheCodecSettings.videoFps != packet.mdVideoFps())) {
+			// the framerate can change during a session
+			cacheCodecSettings.videoFps = packet.mdVideoFps();
+			haveChanges = true;
+		}
+		if (haveChanges) {
+			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(streamSourceId, cacheCodecSettings);
+		}
+		//
+		mqInternalPub.sendMessageAv(packet);
 	}
 
 }

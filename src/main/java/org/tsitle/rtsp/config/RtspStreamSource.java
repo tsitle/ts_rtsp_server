@@ -13,6 +13,7 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Stream Source within an Input Source for RTSP streams.
@@ -56,6 +57,19 @@ public class RtspStreamSource {
 	/** Internal use: Codec used for the stream */
 	@GsonAnnoExclude
 	private @NonNull RtpPacketType internalCodec;
+
+	/** for MQs: Codec */
+	@GsonAnnoExclude
+	private final AtomicInteger mqDynamicCodec = new AtomicInteger(RtpPacketType.UNKNOWN.getValue());
+	/** for MQs: Video frames per second */
+	@GsonAnnoExclude
+	private final AtomicInteger mqDynamicVideoFps = new AtomicInteger(-1);
+	/** for MQs: Audio sample rate in Hz */
+	@GsonAnnoExclude
+	private final AtomicInteger mqDynamicAudioSampleRateHz = new AtomicInteger(-1);
+	/** for MQs: Audio channel count */
+	@GsonAnnoExclude
+	private final AtomicInteger mqDynamicAudioChannelCount = new AtomicInteger(-1);
 
 	public RtspStreamSource() {
 		this.id = -1;
@@ -107,26 +121,42 @@ public class RtspStreamSource {
 		return filePath.isBlank();
 	}
 
-	public @NonNull RtpPacketType getCodec() {
+	public synchronized @NonNull RtpPacketType getCodec() {
 		checkPostProcessed();
+		if (getIsSourceFromMq()) {
+			// the actual codec will be determined dynamically when reading from a MQ
+			return RtpPacketType.of((byte)mqDynamicCodec.get());
+		}
 		//noinspection ConstantValue
 		return (internalCodec == null ? RtpPacketType.UNKNOWN : internalCodec);
 	}
 
-	public double getVideoFps() {
+	public synchronized double getVideoFps() {
 		checkPostProcessed();
+		if (getIsSourceFromMq()) {
+			// the actual FPS doesn't matter when reading from a MQ, but it will be determined dynamically when reading from a MQ
+			return mqDynamicVideoFps.doubleValue();
+		}
 		//noinspection ConstantValue
 		return (videoFps == null ? -1.0 : videoFps);
 	}
 
-	public int getAudioSampleRateHz() {
+	public synchronized int getAudioSampleRateHz() {
 		checkPostProcessed();
+		if (getIsSourceFromMq()) {
+			// the actual samplerate will be determined dynamically when reading from a MQ
+			return mqDynamicAudioSampleRateHz.get();
+		}
 		//noinspection ConstantValue
 		return (audioSampleRateHz == null ? -1 : audioSampleRateHz);
 	}
 
-	public int getAudioChannelCount() {
+	public synchronized int getAudioChannelCount() {
 		checkPostProcessed();
+		if (getIsSourceFromMq()) {
+			// the actual channel count will be determined dynamically when reading from a MQ
+			return mqDynamicAudioChannelCount.get();
+		}
 		//noinspection ConstantValue
 		return (audioChannelCount == null ? -1 : audioChannelCount);
 	}
@@ -135,6 +165,9 @@ public class RtspStreamSource {
 	public int getRtpAudioSamplesPerFrame(double videoFps) {
 		checkPostProcessed();
 		//
+		if (getIsSourceFromMq()) {
+			return 1;  // the actual value doesn't matter when reading from a MQ
+		}
 		if (videoFps <= 0) {
 			throw new IllegalArgumentException("videoFps must be positive");
 		}
@@ -159,6 +192,9 @@ public class RtspStreamSource {
 
 	public boolean getIsAudioBigEndian() {
 		checkPostProcessed();
+		if (getIsSourceFromMq()) {
+			return true;  // when reading from a MQ, the audio data is expected to be big-endian
+		}
 		//noinspection ConstantValue
 		return (isAudioBigEndian != null && isAudioBigEndian);
 	}
@@ -171,6 +207,16 @@ public class RtspStreamSource {
 		checkPostProcessed();
 		return aacAudioSpecificConfigHex;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public synchronized void setMqDynamicCodec(@NonNull RtpPacketType value) { this.mqDynamicCodec.set(value.getValue()); }
+
+	public synchronized void setMqDynamicVideoFps(int value) { this.mqDynamicVideoFps.set(value); }
+
+	public synchronized void setMqDynamicAudioSampleRateHz(int value) { this.mqDynamicAudioSampleRateHz.set(value); }
+
+	public synchronized void setMqDynamicAudioChannelCount(int value) { this.mqDynamicAudioChannelCount.set(value); }
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -265,6 +311,7 @@ public class RtspStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Stream Source has no ID");
 		}
 
+		//
 		if (filePath.isBlank() && mqUrl.isBlank()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ URL found for Stream Source ID '" + tmpExtSsId + "'");
 		}
@@ -273,51 +320,44 @@ public class RtspStreamSource {
 					"' for Stream Source ID '" + tmpExtSsId + "' does not exist");
 		}
 		if (! mqUrl.isBlank()) {
-			if (! mqUrl.endsWith(".mq")) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
-						"' for Stream Source ID '" + tmpExtSsId + "' - must end with '.mq'");
-			}
-			final URI tmpUri = getInputUri();
-			if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
-						"' for Stream Source ID '" + tmpExtSsId + "' - must contain user info");
-			}
-			if (! tmpUri.getUserInfo().contains(":")) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
-						"' for Stream Source ID '" + tmpExtSsId + "' - must contain username and password separated by colon");
-			}
-			if (tmpUri.getPort() == -1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid MQ URL '" + mqUrl +
-						"' for Stream Source ID '" + tmpExtSsId + "' - must contain port number");
-			}
-		}
-
-		//noinspection ConstantValue
-		if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": No (valid) codec defined for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid codec for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (internalCodec.isVideo() && getVideoFps() < 1.0) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (internalCodec.isAudio() && getAudioSampleRateHz() < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (internalCodec.isAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
-		}
-		if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+			validateMqUrl(FNC_NAME, tmpExtSsId, mqUrl);
+			//
+			final String tmpUriAuth = getInputUri().getUserInfo();
+			final String tmpUriHost = getInputUri().getHost();
+			final int tmpUriPort = getInputUri().getPort();
+			final String tmpUriPath = getInputUri().getPath();
+			mqUrl = tmpUriAuth + "@" + tmpUriHost + ":" + (tmpUriPort != -1 ? tmpUriPort : 443) + tmpUriPath;
 		}
 
 		//
-		if (enabled && internalCodec == RtpPacketType.A_AAC) {
-			readAacHeader(getId(), tmpExtSsId);
+		if (getIsSourceFromFile()) {
+			//noinspection ConstantValue
+			if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
+				throw new ConfigInvalidException(FNC_NAME + ": No (valid) codec defined for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid codec for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (internalCodec.isVideo() && getVideoFps() < 1.0) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (internalCodec.isAudio() && getAudioSampleRateHz() < 1) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (internalCodec.isAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+			}
+			if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+			}
+
+			//
+			if (enabled && internalCodec == RtpPacketType.A_AAC) {
+				readAacHeader(getId(), tmpExtSsId);
+			}
 		}
 	}
 
@@ -327,6 +367,31 @@ public class RtspStreamSource {
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
 			throw new IllegalStateException("Stream Source has not been post-processed yet");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void validateMqUrl(@NonNull String fncName, @NonNull String extSsId, @NonNull String mqUrl) throws ConfigInvalidException {
+		final String errMsgPrefix = fncName + ": Invalid MQ URL '" + mqUrl + "' for Stream Source ID '" + extSsId + "' - ";
+
+		if (! mqUrl.endsWith(".mq")) {
+			throw new ConfigInvalidException(errMsgPrefix + "must end with '.mq'");
+		}
+		final URI tmpUri = getInputUri();
+		if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {
+			throw new ConfigInvalidException(errMsgPrefix + "must contain user info");
+		}
+		if (! tmpUri.getUserInfo().contains(":")) {
+			throw new ConfigInvalidException(errMsgPrefix + "must contain username and password separated by colon");
+		}
+		final String tmpAuthUser = tmpUri.getUserInfo().split(":")[0];
+		if (tmpAuthUser.isBlank()) {
+			throw new ConfigInvalidException(errMsgPrefix + "must contain username");
+		}
+		final String tmpAuthPw = tmpUri.getUserInfo().split(":")[1];
+		if (tmpAuthPw.isBlank()) {
+			throw new ConfigInvalidException(errMsgPrefix + "must contain password");
 		}
 	}
 

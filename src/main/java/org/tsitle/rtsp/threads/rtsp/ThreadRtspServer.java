@@ -361,7 +361,9 @@ public class ThreadRtspServer extends RunnableBase {
 				break;
 			default:
 				if (tmpStreamInfo.rtspStreamSource.getCodec().isPcmAudio()) {
-					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);  // only when the source is a file
+					// the virtual FPS value only when the source is a file
+					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
+					//
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpStreamInfo,

@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.mq.mqdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
 /**
  * Codec used for the payload of A/V packets.
@@ -27,5 +28,15 @@ public enum MqPacketCodec {
 	}
 
 	public boolean isVideo() { return (this == H264 || this == H265); }
+
+	public @NonNull RtpPacketType getRtpPacketType() {
+		return switch (this) {
+				case H264 -> RtpPacketType.V_H264;
+				case H265 -> RtpPacketType.V_H265;
+				case LPCM16_8K_MONO -> RtpPacketType.A_LINEAR_PCM_S16_VAR;
+				//noinspection UnnecessaryDefault
+				default -> throw new IllegalStateException("Cannot map codec: " + this);
+			};
+	}
 
 }
