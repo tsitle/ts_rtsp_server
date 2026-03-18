@@ -22,6 +22,8 @@ data/**/*.eac3
 data/**/*.ac3
 data/**/*.aac
 
+data/**/*.crt
+
 config-*.json
 !config-SAMPLE.json
 
