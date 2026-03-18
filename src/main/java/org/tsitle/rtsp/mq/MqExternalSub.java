@@ -17,6 +17,18 @@ import java.util.Map;
  */
 public class MqExternalSub extends MqReceiverSubBase {
 
+	private static class MqSettings {
+		boolean haveSettings = false;
+
+		@NonNull String serverEndpoint = "";
+		@NonNull String serverPublicKeyZ85 = "";
+		boolean isEncrypted = true;
+		boolean areMsgsSegmented = false;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private static final boolean DO_VALIDATE_PAYLOAD = false;
 
 	private final @NonNull String mqAddrHostAndPort;
@@ -24,10 +36,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private final @NonNull String mqAddrAuth;
 
 	private final ZMQ.Curve.@NonNull KeyPair mqKeyPair;
-	private @Nullable String mqServerPublicKeyZ85 = null;
-	private @Nullable String mqServerEndpoint = null;
-	private boolean mqEncrypted = true;
-	private boolean mqMsgSegmented = false;
+	private final MqSettings mqSettings = new MqSettings();
 
 	/**
 	 * Constructor.
@@ -48,7 +57,14 @@ public class MqExternalSub extends MqReceiverSubBase {
 		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
 			throw new IllegalArgumentException("MQ host/path/auth must not be empty");
 		}
-		this.mqAddrHostAndPort = mqAddressHostAndPort;
+		if (! mqAddressAuth.contains(":")) {
+			throw new IllegalArgumentException("MQ auth must contain user and password separated by colon");
+		}
+		if (! mqAddressHostAndPort.contains(":")) {
+			this.mqAddrHostAndPort = mqAddressHostAndPort + ":443";  // default HTTPS port
+		} else {
+			this.mqAddrHostAndPort = mqAddressHostAndPort;
+		}
 		this.mqAddrPath = mqAddressPath;
 		this.mqAddrAuth = mqAddressAuth;
 
@@ -70,7 +86,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		requestMqInfo();
 		internalConnectToMq();
 
-		msgHandler = MqMsgHandlerFactory.createHandlerExternalMq(zmqSocket, mqMsgSegmented);
+		msgHandler = MqMsgHandlerFactory.createHandlerExternalMq(zmqSocket, mqSettings.areMsgsSegmented);
 
 		stateOpened.set(true);
 	}
@@ -79,37 +95,39 @@ public class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void requestMqInfo() throws MqException {
+		final String mqHttpUrl = "https://" + mqAddrHostAndPort + mqAddrPath;
 		HttpResponseOpenMq responseOpenMq;
 		try {
-			String authUser = mqAddrAuth.split(":")[0];
-			String authPw = mqAddrAuth.split(":")[1];
-			HttpClientJson client = HttpClientJson.createClientWithCompletelyInsecureSsl(authUser, authPw);  // @TODO
+			final String tmpAuthUser = mqAddrAuth.split(":")[0];
+			final String tmpAuthPw = mqAddrAuth.split(":")[1];
+			HttpClientJson client = HttpClientJson.createClientWithCompletelyInsecureSsl(tmpAuthUser, tmpAuthPw);  // @TODO
 
 			Map<String, Object> payload = Map.of(
 					"clientPubKey", encodeHexString(mqKeyPair.publicKey)
 				);
 
-			responseOpenMq = client.postJson(
-					"https://" + mqAddrHostAndPort + mqAddrPath,
-					payload,
-					HttpResponseOpenMq.class
-				);
+			responseOpenMq = client.postJson(mqHttpUrl, payload, HttpResponseOpenMq.class);
 		} catch (java.net.ConnectException e) {
-			throw new MqException("Could not connect to Message Queue server");
+			throw new MqException("Could not connect to Message Queue HTTP server '" + mqHttpUrl + "'");
 		} catch (IOException | InterruptedException e) {
-			throw new MqException("Could not connect to Message Queue server: " + e.getMessage());
+			throw new MqException("Connecting to Message Queue HTTP server '" + mqHttpUrl + "' failed: " + e.getMessage());
 		} catch (Exception e) {
-			throw new MqException("Exception caught: " + e.getMessage());
+			throw new MqException("Exception caught while connecting to " +
+					"Message Queue HTTP server '" + mqHttpUrl + "': " + e.getMessage());
 		}
 
-		String mqHostOnly = mqAddrHostAndPort.split(":")[0];
-		mqServerEndpoint = "tcp://" + mqHostOnly + ":" + responseOpenMq.mqPort();
-		mqServerPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
-		mqEncrypted = responseOpenMq.mqEncrypted();
-		mqMsgSegmented = responseOpenMq.mqMsgSegmented();
+		final String tmpMqHostOnly = mqAddrHostAndPort.split(":")[0];
+		mqSettings.serverEndpoint = "tcp://" + tmpMqHostOnly + ":" + responseOpenMq.mqPort();
+		mqSettings.serverPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
+		mqSettings.isEncrypted = responseOpenMq.mqEncrypted();
+		mqSettings.areMsgsSegmented = responseOpenMq.mqMsgSegmented();
+		mqSettings.haveSettings = true;
 	}
 
 	private void internalConnectToMq() {
+		if (! mqSettings.haveSettings) {
+			throw new IllegalStateException("MQ settings have not been requested yet");
+		}
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
 		zmqSocket.setReceiveTimeOut(10);
 		zmqSocket.setReconnectIVL(1000);
@@ -122,21 +140,21 @@ public class MqExternalSub extends MqReceiverSubBase {
 		zmqSocket.subscribe("".getBytes());
 
 		//
-		if (mqEncrypted) {
-			if (mqServerPublicKeyZ85 == null) {
-				throw new IllegalStateException("MQ encryption is enabled, but mqServerPublicKey is not set");
+		if (mqSettings.isEncrypted) {
+			if (mqSettings.serverPublicKeyZ85.isBlank()) {
+				throw new IllegalStateException("MQ encryption is enabled, but ServerPublicKey is not set");
 			}
-			zmqSocket.setCurveServerKey(mqServerPublicKeyZ85.getBytes(ZMQ.CHARSET));
+			zmqSocket.setCurveServerKey(mqSettings.serverPublicKeyZ85.getBytes(ZMQ.CHARSET));
 
 			zmqSocket.setCurvePublicKey(mqKeyPair.publicKey.getBytes(ZMQ.CHARSET));
 			zmqSocket.setCurveSecretKey(mqKeyPair.secretKey.getBytes(ZMQ.CHARSET));
 		}
 
 		// connect to publisher
-		if (mqServerEndpoint == null) {
-			throw new IllegalStateException("mqServerEndpoint is not set");
+		if (mqSettings.serverEndpoint.isBlank()) {
+			throw new IllegalStateException("ServerEndpoint is not set");
 		}
-		zmqSocket.connect(mqServerEndpoint);
+		zmqSocket.connect(mqSettings.serverEndpoint);
 
 		//
 		zmqPollerObj = zmqContext.createPoller(1);
