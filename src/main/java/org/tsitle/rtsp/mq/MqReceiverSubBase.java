@@ -116,29 +116,30 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		if (optPacket.isEmpty()) {
 			return Optional.empty();
 		}
-		//logDebug(FNC_NAME, "Received MQ " + optPacket.get());
-		//logDebug(FNC_NAME, "Received MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
+		final MqPacketAv packet = optPacket.get();
+		//logDebug(FNC_NAME, "Received MQ " + packet);
+		//logDebug(FNC_NAME, "Received MQ Packet " + (packet.codec().isVideo() ? "VID" : "AUD"));
 
-		// validate the payload data
-		if (doValidatePayload) {
-			msgHandler.validateCRC8(optPacket.get().mdPayloadCRC8(), payloadData);
+		// validate the payload data (if the checksum is 0x00, we assume that the sender did not compute it)
+		if (doValidatePayload && packet.mdPayloadCRC8() != 0x00) {
+			msgHandler.validateCRC8(packet.mdPayloadCRC8(), payloadData);
 		}
 
 		//
 		if (doPrintDebugStats) {
-			printDebugStats(FNC_NAME, optPacket.get().mdTimestamp());
+			printDebugStats(FNC_NAME, packet.mdTimestamp());
 		}
-		stats.lastTimestampMs = optPacket.get().mdTimestamp();
+		stats.lastTimestampMs = packet.mdTimestamp();
 		stats.lastRecvTimeNs = System.nanoTime();
 
 		//
 		if (stats.lastCounter != null) {
-			final int tmpCounterDelta = optPacket.get().mdCounter() - stats.lastCounter;
+			final int tmpCounterDelta = packet.mdCounter() - stats.lastCounter;
 			if (tmpCounterDelta != 1) {
 				logWarn(FNC_NAME, "MQ counter delta " + tmpCounterDelta);
 			}
 		}
-		stats.lastCounter = optPacket.get().mdCounter();
+		stats.lastCounter = packet.mdCounter();
 
 		return optPacket;
 	}

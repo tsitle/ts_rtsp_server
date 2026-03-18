@@ -30,7 +30,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final boolean DO_VALIDATE_PAYLOAD = false;
+	private static final boolean DO_VALIDATE_PAYLOAD = true;
 
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
@@ -59,7 +59,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 
 		//
 		this.mqSslCertPath = mqSslCertPath.strip();
- 		//
+		//
 		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
 			throw new IllegalArgumentException("MQ host/path/auth must not be empty");
 		}
