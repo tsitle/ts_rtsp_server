@@ -12,6 +12,7 @@ import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.*;
@@ -418,6 +419,12 @@ public class ThreadRtspServer extends RunnableBase {
 			if (childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				throw new IllegalStateException(FNC_NAME + ": Child threads already exist");
 			}
+			//
+			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getCodec() == RtpPacketType.UNKNOWN) {
+				logError(FNC_NAME, "ss=" + tmpSsObj.getId() + ": Source is a message queue, but codec is not set");
+				continue;
+			}
+			//
 			ChildThreadsForOneStream ctfos = new ChildThreadsForOneStream(tmpSsObj.getId(), inputSourceId);
 			childThreadsForOneStreamMap.put(tmpSsObj.getId(), ctfos);
 

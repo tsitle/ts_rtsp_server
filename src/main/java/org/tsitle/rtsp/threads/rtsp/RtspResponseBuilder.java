@@ -137,6 +137,11 @@ public class RtspResponseBuilder {
 			throw new IllegalStateException(FNC_NAME + ": Input Source not found");
 		}
 
+		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
+			sendResponseNack(ServerResponseStatusCode.BAD_REQUEST);
+			return;
+		}
+
 		List<String> contents = new ArrayList<>();
 		String des = buildResponseDescribe(rtspInputSource);
 		contents.add(des);
@@ -311,6 +316,18 @@ public class RtspResponseBuilder {
 		if (cbWriteDataLines == null) {
 			throw new IllegalStateException(FNC_NAME + ": Callback functions not set");
 		}
+	}
+
+	private boolean checkStreamsForInputSource(String fncName, RtspInputSource rtspInputSource) {
+		Optional<RtspStreamSource> optSsObjVideo =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), true);
+		Optional<RtspStreamSource> optSsObjAudio =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), false);
+		if (! (optSsObjVideo.isPresent() || optSsObjAudio.isPresent())) {
+			logError(fncName, "No valid Stream Source found for Input Source '" + rtspInputSource.getId() + "'");
+			return false;
+		}
+		return true;
 	}
 
 	private void buildResponseDescribe_sdp_stream(
@@ -502,6 +519,9 @@ public class RtspResponseBuilder {
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
 	private void internalLog(
 				@SuppressWarnings("SameParameterValue") @NonNull RtxpLogLevel logLevel,
