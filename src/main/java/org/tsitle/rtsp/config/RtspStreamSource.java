@@ -220,7 +220,7 @@ public class RtspStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
+	public static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
 		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
 	}
 

@@ -148,6 +148,13 @@ public class RtspServerApp {
 
 		for (Integer streamSourceId : streamSourceIds) {
 			RtspStreamSource ss = rtspConfig.getStreamSourceObj(streamSourceId).orElseThrow();
+			Optional<String> tmpSslCertPath;
+			try {
+				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(ss.getInputUri());
+			} catch (ConfigInvalidException e) {
+				// should never happen
+				throw new IllegalStateException(e);
+			}
 			logDebug(FNC_NAME, "Starting MqE2I for '" +
 					ss.getInputUri().getHost() + ":" + ss.getInputUri().getPort() + ss.getInputUri().getPath() + "'");
 			ThreadMqE2I thread = new ThreadMqE2I(
@@ -169,7 +176,8 @@ public class RtspServerApp {
 							}
 						},
 					streamSourceId,
-					ss.getInputUri()
+					ss.getInputUri(),
+					tmpSslCertPath.orElse("")
 				);
 
 			poolMqE2I.submit(thread);

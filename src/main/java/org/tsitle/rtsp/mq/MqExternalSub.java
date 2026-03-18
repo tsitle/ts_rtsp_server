@@ -9,6 +9,7 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HexFormat;
 import java.util.Map;
 
@@ -34,6 +35,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
 	private final @NonNull String mqAddrAuth;
+	private final @NonNull String mqSslCertPath;
 
 	private final ZMQ.Curve.@NonNull KeyPair mqKeyPair;
 	private final MqSettings mqSettings = new MqSettings();
@@ -44,16 +46,20 @@ public class MqExternalSub extends MqReceiverSubBase {
 	 * @param mqAddressHostAndPort Message queue host address (IP/hostname and port)
 	 * @param mqAddressPath Message queue path
 	 * @param mqAddressAuth Message queue authentication (User:Password)
+	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
 	public MqExternalSub(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String mqAddressHostAndPort,
 				@NonNull String mqAddressPath,
-				@NonNull String mqAddressAuth
+				@NonNull String mqAddressAuth,
+				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, DO_VALIDATE_PAYLOAD, false);
 
 		//
+		this.mqSslCertPath = mqSslCertPath.strip();
+ 		//
 		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
 			throw new IllegalArgumentException("MQ host/path/auth must not be empty");
 		}
@@ -100,7 +106,12 @@ public class MqExternalSub extends MqReceiverSubBase {
 		try {
 			final String tmpAuthUser = mqAddrAuth.split(":")[0];
 			final String tmpAuthPw = mqAddrAuth.split(":")[1];
-			HttpClientJson client = HttpClientJson.createClientWithCompletelyInsecureSsl(tmpAuthUser, tmpAuthPw);  // @TODO
+			HttpClientJson client;
+			if (mqSslCertPath.isBlank()) {
+				client = HttpClientJson.createClientWithCompletelyInsecureSsl(tmpAuthUser, tmpAuthPw);
+			} else {
+				client = HttpClientJson.createClientWithRemoteCertForSsl(tmpAuthUser, tmpAuthPw, Path.of(mqSslCertPath));
+			}
 
 			Map<String, Object> payload = Map.of(
 					"clientPubKey", encodeHexString(mqKeyPair.publicKey)

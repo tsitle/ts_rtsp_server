@@ -34,13 +34,15 @@ public class ThreadMqE2I extends RunnableBase {
 	 * @param cancelToken Cancel token
 	 * @param streamSourceId Stream source identifier
 	 * @param mqUri URI of the Message queue (User:Password + IP/hostname + port + path)
+	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
 	public ThreadMqE2I(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
 				int streamSourceId,
-				@NonNull URI mqUri
+				@NonNull URI mqUri,
+				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, cancelToken);
 
@@ -62,7 +64,11 @@ public class ThreadMqE2I extends RunnableBase {
 
 		//
 		mqExternalSub = new MqExternalSub(
-				logMsgInterface, mqUri.getHost() + ":" + mqUri.getPort(), mqUri.getPath(), mqUri.getUserInfo()
+				logMsgInterface,
+				mqUri.getHost() + ":" + mqUri.getPort(),
+				mqUri.getPath(),
+				mqUri.getUserInfo(),
+				mqSslCertPath.strip()
 			);
 		mqInternalPub = new MqInternalPub(logMsgInterface, streamSourceId);
 	}

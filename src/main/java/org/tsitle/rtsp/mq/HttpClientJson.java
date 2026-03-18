@@ -142,11 +142,18 @@ public class HttpClientJson {
 				.POST(HttpRequest.BodyPublishers.ofString(jsonBody))
 				.build();
 
-		HttpResponse<String> response = httpClient.send(
-				request,
-				HttpResponse.BodyHandlers.ofString()
-			);
-
+		HttpResponse<String> response;
+		try {
+			response = httpClient.send(
+					request,
+					HttpResponse.BodyHandlers.ofString()
+				);
+		} catch (IOException e) {
+			if (e.getMessage().contains("sun.security.provider.certpath.SunCertPathBuilderException")) {
+				throw new IOException("Remote SSL certificate does not match the trusted local certificate");
+			}
+			throw e;
+		}
 		if (response.statusCode() < 200 || response.statusCode() >= 300) {
 			throw new IOException("HTTP " + response.statusCode() + " returned: " + response.body());
 		}

@@ -5,7 +5,9 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
+import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -16,6 +18,9 @@ public class RtspConfig {
 	/** RTSP Server TCP port */
 	@Expose
 	private final int serverTcpPort;
+	/** Map of MQ Server SSL Certificates (the map keys are unique host-port combinations) */
+	@Expose
+	private @NonNull Map<@NonNull String, @NonNull String> mqServerSslCertificates;
 	/** Map of Stream Sources (the map keys are unique Stream Source identifiers) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull RtspStreamSource> streamSources;
@@ -50,6 +55,7 @@ public class RtspConfig {
 	 */
 	public RtspConfig() {
 		this.serverTcpPort = RtspConstants.SERVER_RTSP_TCP_PORT;
+		this.mqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
 		this.dataDir = "";
@@ -72,6 +78,50 @@ public class RtspConfig {
 	public int getServerTcpPort() {
 		checkPostProcessed();
 		return serverTcpPort;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Get the path to the SSL certificate file for the given host and port.
+	 * @param mqServerUri URI of the MQ server
+	 * @return Path to the SSL certificate file
+	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 */
+	public Optional<String> getMqServerSslCertificatePath(@NonNull URI mqServerUri) throws ConfigInvalidException {
+		return getMqServerSslCertificatePath(mqServerUri.getHost() + ":" + mqServerUri.getPort());
+	}
+
+	/**
+	 * Get the path to the SSL certificate file for the given host and port.
+	 * @param hostAndPort Host and port (e.g. 'example.com:443' or '192.168.3.4:8976')
+	 * @return Path to the SSL certificate file
+	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 */
+	public Optional<String> getMqServerSslCertificatePath(@NonNull String hostAndPort) throws ConfigInvalidException {
+		if (hostAndPort.isBlank()) {
+			return Optional.empty();
+		}
+		URI tmpUri = URI.create((hostAndPort.startsWith("https://") ? "" : "https://") + hostAndPort);
+		String tmpHost = tmpUri.getHost();
+		int tmpPort = (tmpUri.getPort() == -1 ? 443 : tmpUri.getPort());
+		String tmpSearch1 = tmpHost + ":" + tmpPort;
+		String tmpPathStr = null;
+		if (mqServerSslCertificates.containsKey(tmpSearch1)) {
+			tmpPathStr = mqServerSslCertificates.get(tmpSearch1);
+		}
+		if (tmpPathStr == null && mqServerSslCertificates.containsKey(tmpHost)) {
+			tmpPathStr = mqServerSslCertificates.get(tmpHost);
+		}
+		if (tmpPathStr == null || tmpPathStr.isBlank()) {
+			return Optional.empty();
+		}
+		String resStr = RtspStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), tmpPathStr);
+		Path tmpPathObj = Paths.get(resStr);
+		if (! tmpPathObj.toFile().exists()) {
+			throw new ConfigInvalidException("SSL certificate file '" + resStr + "' for host '" + tmpSearch1 + "' not found");
+		}
+		return Optional.of(resStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -274,6 +324,14 @@ public class RtspConfig {
 					getDataDirAsString() + "'");
 		}
 		//
+		for (Map.Entry<@NonNull String, @NonNull String> entry : mqServerSslCertificates.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			getMqServerSslCertificatePath(entry.getKey());
+		}
+		//
 		List<Integer> tmpSsIdList = getStreamSourceIds();
 		if (tmpSsIdList.isEmpty()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found in configuration");
@@ -281,6 +339,14 @@ public class RtspConfig {
 		for (int tmpSsId : tmpSsIdList) {
 			RtspStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
 			tmpSsObj.validate(internalMapStreamSourceIdIntToExt);
+			//
+			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getEnabled()) {
+				Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());
+				if (tmpCert.isEmpty()) {
+					String tmpExtSsId = internalMapStreamSourceIdIntToExt.get(tmpSsId);
+					System.err.println(FNC_NAME + ": Warning: Stream Source '" + tmpExtSsId + "' has no SSL certificate");
+				}
+			}
 		}
 		//
 		List<String> tmpIsIdList = getInputSourceIds();
