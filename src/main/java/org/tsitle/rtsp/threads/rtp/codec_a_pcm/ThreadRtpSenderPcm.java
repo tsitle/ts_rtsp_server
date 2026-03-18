@@ -2,11 +2,14 @@ package org.tsitle.rtsp.threads.rtp.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioPcmInfo;
+import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcm;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcmFromFile;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcmFromMq;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -14,7 +17,10 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<AudioPcmInfo, ThreadDataProvPcm> {
+public final class ThreadRtpSenderPcm<
+			AVSTRIC extends AvStreamIncomingBase,
+			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
+		> extends ThreadRtpSenderBase<AudioPcmInfo, AVSTRIC, AVSTROG, ThreadDataProvBase<AudioPcmInfo, AVSTROG>> {
 
 	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final ParamsThreadRtpSenderPcm paramsPcm;
@@ -34,16 +40,22 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<AudioPcmInfo, 
 
 	/**
 	 * Constructor.
+	 * @param avStreamIncomingType Class of the AvStreamIncoming object
+	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsPcm Thread-specific parameters
 	 */
 	public ThreadRtpSenderPcm(
+				Class<AVSTRIC> avStreamIncomingType,
+				Class<AVSTROG> avStreamOutgoingType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm
 			) {
 		super(
+				avStreamIncomingType,
+				avStreamOutgoingType,
 				paramsCommon,
 				Objects.requireNonNull(paramsPcm).getAudioSampleRateHz(),
 				Objects.requireNonNull(paramsPcm).getAudioCodec()
@@ -78,15 +90,32 @@ public final class ThreadRtpSenderPcm extends ThreadRtpSenderBase<AudioPcmInfo, 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvPcm newThreadDataProv() {
-		return new ThreadDataProvPcm(
-				paramsCommon.getLogMsgInterface().orElseThrow(),
-				paramsAudioCommon,
-				paramsPcm,
-				Objects.requireNonNull(avStreamIncoming),
-				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
-				paramsCommon.getDebugRewindMediaFiles()
-			);
+	protected @NonNull ThreadDataProvBase<AudioPcmInfo, AVSTROG> newThreadDataProv() {
+		if (avStreamOutgoingType == AudioStreamOutgoingPcmFromFile.class) {
+			ThreadDataProvPcmFromFile resObj = new ThreadDataProvPcmFromFile(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsAudioCommon,
+					paramsPcm,
+					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+					paramsCommon.getDebugRewindMediaFiles()
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioPcmInfo, AVSTROG> typedProvider = (ThreadDataProvBase<AudioPcmInfo, AVSTROG>)resObj;
+			return typedProvider;
+		}
+		if (avStreamOutgoingType == AudioStreamOutgoingPcmFromMq.class) {
+			ThreadDataProvPcmFromMq resObj = new ThreadDataProvPcmFromMq(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsAudioCommon,
+					paramsPcm,
+					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioPcmInfo, AVSTROG> typedProvider = (ThreadDataProvBase<AudioPcmInfo, AVSTROG>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("avStreamOutgoingType must be AudioStreamOutgoingPcmFromXxx");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -16,6 +16,9 @@ public class RtspInputSource {
 	/** Input Source ID */
 	@GsonAnnoExclude
 	private @NonNull String id;
+	/** Is this Stream Source enabled? */
+	@Expose
+	private @NonNull Boolean enabled;
 	/** Stream Source IDs within the input source */
 	@Expose
 	private @NonNull Set<@NonNull String> streamSourceIds;
@@ -29,6 +32,7 @@ public class RtspInputSource {
 
 	public RtspInputSource() {
 		this.id = "";
+		this.enabled = true;
 		this.streamSourceIds = new HashSet<>();
 
 		//noinspection DataFlowIssue
@@ -49,6 +53,11 @@ public class RtspInputSource {
 		this.id = (id == null ? "" : id.strip());
 	}
 
+	public boolean getEnabled() {
+		checkPostProcessed();
+		return enabled;
+	}
+
 	public @NonNull Set<@NonNull Integer> getStreamSourceIds() {
 		checkPostProcessed();
 		return Set.copyOf(internalStreamSourceIds);
@@ -66,6 +75,12 @@ public class RtspInputSource {
 			) throws ConfigInvalidException {
 		internalHasBeenPostProcessed = true;
 
+		//
+		//noinspection ConstantValue
+		if (enabled == null) {
+			enabled = true;
+		}
+		//
 		//noinspection ConstantValue
 		if (internalStreamSourceIds == null) {
 			createInternalStreamSourcesMap(mapStreamSourceIdExtToInt);
@@ -105,7 +120,12 @@ public class RtspInputSource {
 			if (! streamSources.containsKey(tmpSsId)) {
 				String tmpExtSsId = mapStreamSourceIdIntToExt.get(tmpSsId);
 				throw new ConfigInvalidException(FNC_NAME + ": Non-existing Stream Source ID '" + tmpExtSsId + "'" +
-						" found for Input Source ID '" + id + "'");
+						" used for Input Source ID '" + id + "'");
+			}
+			if (! streamSources.get(tmpSsId).getEnabled()) {
+				String tmpExtSsId = mapStreamSourceIdIntToExt.get(tmpSsId);
+				throw new ConfigInvalidException(FNC_NAME + ": Disabled Stream Source ID '" + tmpExtSsId + "'" +
+						" used for Input Source ID '" + id + "'");
 			}
 		}
 	}

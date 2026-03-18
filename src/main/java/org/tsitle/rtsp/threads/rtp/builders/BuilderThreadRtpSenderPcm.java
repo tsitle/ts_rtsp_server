@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
+import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
@@ -8,7 +9,7 @@ public class BuilderThreadRtpSenderPcm {
 
 	public static Builder builder() { return new Builder(); }
 
-	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderPcm> {
+	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderPcm<?, ?>> {
 
 		// Thread-specific fields
 		private final ParamsThreadRtpSenderPcm threadParamsPcm = new ParamsThreadRtpSenderPcm();
@@ -23,12 +24,23 @@ public class BuilderThreadRtpSenderPcm {
 
 		//
 		@Override
-		public ThreadRtpSenderPcm build() {
+		public ThreadRtpSenderPcm<?, ?> build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsPcm.validate();
 
-			return new ThreadRtpSenderPcm(
+			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+				return new ThreadRtpSenderPcm<>(
+						AvStreamIncomingFromFile.class,
+						AudioStreamOutgoingPcmFromFile.class,
+						threadParamsCommon,
+						threadParamsAudio,
+						threadParamsPcm
+					);
+			}
+			return new ThreadRtpSenderPcm<>(
+					AvStreamIncomingFromMq.class,
+					AudioStreamOutgoingPcmFromMq.class,
 					threadParamsCommon,
 					threadParamsAudio,
 					threadParamsPcm

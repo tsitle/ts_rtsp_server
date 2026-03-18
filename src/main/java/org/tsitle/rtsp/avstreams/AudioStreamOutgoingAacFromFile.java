@@ -8,7 +8,7 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
+public class AudioStreamOutgoingAacFromFile extends AvStreamOutgoingFromFileBase {
 
 	private static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};  // only 12 bits
 
@@ -16,8 +16,8 @@ public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 	 * Constructor.
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public AudioStreamOutgoingAac(
-				@NonNull AvStreamIncoming avStreamIncoming
+	public AudioStreamOutgoingAacFromFile(
+				@NonNull AvStreamIncomingFromFile avStreamIncoming
 			) {
 		super(
 				null,
@@ -32,9 +32,9 @@ public class AudioStreamOutgoingAac extends AvStreamOutgoingBase {
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public AudioStreamOutgoingAac(
+	public AudioStreamOutgoingAacFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncoming avStreamIncoming
+				@NonNull AvStreamIncomingFromFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,

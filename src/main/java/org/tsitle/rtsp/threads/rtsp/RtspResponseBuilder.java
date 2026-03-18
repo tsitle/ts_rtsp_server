@@ -344,17 +344,19 @@ public class RtspResponseBuilder {
 								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get(),
 						CRLF));
 			}
-			/*
-			 * a: Session Attribute: Packetization interval (in milliseconds)
-			 *    Length of time in milliseconds represented by the media in a packet.
-			 *    This is probably only meaningful for audio data. It should not be necessary
-			 *    to know ptime to decode RTP or vat audio, and it is intended
-			 *    as a recommendation for the encoding/packetisation of audio.
-			 */
-			sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS, CRLF));
+			if (tmpSsObj.getIsSourceFromFile()) {
+				/*
+				 * a: Session Attribute: Packetization interval (in milliseconds)
+				 *    Length of time in milliseconds represented by the media in a packet.
+				 *    This is probably only meaningful for audio data. It should not be necessary
+				 *    to know ptime to decode RTP or vat audio, and it is intended
+				 *    as a recommendation for the encoding/packetisation of audio.
+				 */
+				sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS, CRLF));
+			}
 		}
 		//
-		if (useVideo) {
+		if (useVideo && tmpSsObj.getIsSourceFromFile()) {
 			// a: Session Attribute: video framerate
 			sw.write(String.format("a=framerate:%.2f%s", tmpSsObj.getVideoFps(), CRLF).replace(",", "."));
 		}

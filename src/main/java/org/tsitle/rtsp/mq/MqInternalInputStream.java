@@ -9,12 +9,11 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("unused")
 public class MqInternalInputStream extends InputStream {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
@@ -124,7 +123,6 @@ public class MqInternalInputStream extends InputStream {
 		}
 
 		//
-		Instant tmpNow1 = Instant.now();
 		try {
 			Optional<MqPacketAv> optPacket = Optional.empty();
 			for (int i = 0; i < 2; i++) {
@@ -138,22 +136,17 @@ public class MqInternalInputStream extends InputStream {
 				if (! stateClosed.get()) {
 					logError(FNC_NAME, "received nothing from MQ");
 				}
-				return;
-			}
-			//logDebug(FNC_NAME, "Received int MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
+			} /*else {
+				logDebug(FNC_NAME, "Received int MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
+			}*/
 		} catch (MqException e) {
 			throw new IOException("MqException caught: " + e.getMessage());
-		}
-		Instant tmpNow2 = Instant.now();
-
-		Duration tmpDur12 = Duration.between(tmpNow1, tmpNow2);
-		if (tmpDur12.toMillis() > 100) {
-			logDebug(FNC_NAME, "int MQ read time: " + (tmpDur12.toNanos() / 1_000L) + " us");  // @TODO
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		if (logMsgInterface == null) {
 			return;

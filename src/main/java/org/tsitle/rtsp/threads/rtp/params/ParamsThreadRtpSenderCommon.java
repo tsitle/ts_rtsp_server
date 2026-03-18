@@ -41,6 +41,9 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	/** Stream Source ID (not the SSRC) */
 	private int streamSourceId;
 	private boolean isSetStreamSourceId;
+	/** Is Stream Source read from a file? */
+	private boolean isStreamSourceFromFile;
+	private boolean isSetIsStreamSourceFromFile;
 
 	/** Client IP address */
 	private InetAddress clientIpAddr;
@@ -111,6 +114,12 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	public void setStreamSourceId(int streamSourceId) {
 		this.streamSourceId = streamSourceId;
 		this.isSetStreamSourceId = true;
+	}
+
+	public boolean getIsStreamSourceFromFile() { return isStreamSourceFromFile; }
+	public void setIsStreamSourceFromFile(boolean value) {
+		this.isStreamSourceFromFile = value;
+		this.isSetIsStreamSourceFromFile = true;
 	}
 
 	public Optional<InetAddress> getClientIpAddr() { return Optional.ofNullable(clientIpAddr); }
@@ -229,6 +238,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
 
 		requireIsSet(isSetStreamSourceId, "isSetStreamSourceId");
+		requireIsSet(isSetIsStreamSourceFromFile, "isSetIsStreamSourceFromFile");
 
 		requireIsSet(isSetClientIpAddr, "clientIpAddr");
 		requireIsSet(isSetClientDestPortRtp, "clientDestPortRtp");

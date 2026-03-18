@@ -1,34 +1,34 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.AudioAacInfo;
-import org.tsitle.rtsp.avdata.AudioAacParser;
-import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
-import org.tsitle.rtsp.avstreams.AvStreamIncoming;
+import org.tsitle.rtsp.avdata.AudioPcmInfo;
+import org.tsitle.rtsp.avdata.AudioPcmParser;
+import org.tsitle.rtsp.avstreams.AudioStreamOutgoingPcmFromFile;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
-import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
+import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
-public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
+public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioPcmInfo> {
 
-	private final AudioAacParser aacParser;
+	private final AudioPcmParser pcmParser;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param paramsAudioCommon Common Audio thread parameters
-	 * @param paramsAac Thread-specific parameters
+	 * @param paramsPcm Thread-specific parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvAac(
+	public ThreadDataProvPcmFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
-				@NonNull ParamsThreadRtpSenderAac paramsAac,
-				@NonNull AvStreamIncoming avStreamIncoming,
+				@NonNull ParamsThreadRtpSenderPcm paramsPcm,
+				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -40,11 +40,21 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 
 		//
 		paramsAudioCommon.validate();
-		paramsAac.validate();
+		paramsPcm.validate();
 
 		//
-		this.mediaOutgoingStream = new AudioStreamOutgoingAac(logMsgInterface, avStreamIncoming);
-		this.aacParser = new AudioAacParser();
+		this.mediaOutgoingStream = new AudioStreamOutgoingPcmFromFile(
+				logMsgInterface,
+				avStreamIncoming,
+				paramsPcm.getAudioChannelCount(),
+				paramsPcm.getAudioBitsPerSample(),
+				paramsPcm.getRtpAudioSpf(),
+				paramsPcm.getIsAudioInputBigEndian()
+			);
+		this.pcmParser = new AudioPcmParser(
+				paramsPcm.getAudioChannelCount(),
+				paramsPcm.getAudioBitsPerSample()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -64,9 +74,9 @@ public class ThreadDataProvAac extends ThreadDataProvBase<AudioAacInfo> {
 
 	@Override
 	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioAacInfo curFrameAacInfo = aacParser.parseAacData(inputBuf);
+		AudioPcmInfo curFramePcmInfo = pcmParser.parsePcmData(inputBuf);
 
-		infoQueue.add(curFrameAacInfo);
+		infoQueue.add(curFramePcmInfo);
 	}
 
 }

@@ -4,8 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.ImageReencoder;
 import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.avdata.VideoJpegParser;
-import org.tsitle.rtsp.avstreams.AvStreamIncoming;
-import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpeg;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
+import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpegFromFile;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
@@ -15,7 +15,7 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 import java.io.IOException;
 
-public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
+public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
 
 	private final BufferExt cacheTempBuffer = new BufferExt();
 
@@ -30,10 +30,10 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvMjpeg(
+	public ThreadDataProvMjpegFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				@NonNull AvStreamIncoming avStreamIncoming,
+				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -47,7 +47,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 		paramsVideoCommon.validate();
 
 		//
-		this.mediaOutgoingStream = new VideoStreamOutgoingMjpeg(logMsgInterface, avStreamIncoming);
+		this.mediaOutgoingStream = new VideoStreamOutgoingMjpegFromFile(logMsgInterface, avStreamIncoming);
 		this.imageReencoder = new ImageReencoder();
 		this.jpegParser = new VideoJpegParser(
 				logMsgInterface,
@@ -81,7 +81,7 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException, ImageReencoderIoException {
+	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary
@@ -94,15 +94,19 @@ public class ThreadDataProvMjpeg extends ThreadDataProvBase<VideoJpegInfo> {
 			/*
 			 * To provide a compatible JPEG image, we need to re-encode the image.
 			 */
-			if (curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-					curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
-				imageReencoder.scaleImage(
-						cacheTempBuffer,
-						RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
-						inputBuf
-					);
-			} else {
-				imageReencoder.reencodeImage(cacheTempBuffer, inputBuf);
+			try {
+				if (curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+						curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+					imageReencoder.scaleImage(
+							cacheTempBuffer,
+							RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
+							inputBuf
+						);
+				} else {
+					imageReencoder.reencodeImage(cacheTempBuffer, inputBuf);
+				}
+			} catch (ImageReencoderIoException e) {
+				throw new AvInvalidCodecDataException("ImageReencoderIoException caught: " + e.getMessage());
 			}
 			/*if (frameCountInp == 0) {
 				writeJpegToFile(curImageDataPtr, "reenc", (int)(frameCountInp + 1));

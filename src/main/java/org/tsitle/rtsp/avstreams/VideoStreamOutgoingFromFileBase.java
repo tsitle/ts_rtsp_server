@@ -3,7 +3,7 @@ package org.tsitle.rtsp.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public abstract class VideoStreamOutgoingBase extends AvStreamOutgoingBase {
+public abstract class VideoStreamOutgoingFromFileBase extends AvStreamOutgoingFromFileBase {
 
 	/**
 	 * Constructor.
@@ -12,9 +12,9 @@ public abstract class VideoStreamOutgoingBase extends AvStreamOutgoingBase {
 	 * @param frameStartMagicbytes Magic bytes array for frame start detection
 	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
 	 */
-	protected VideoStreamOutgoingBase(
+	protected VideoStreamOutgoingFromFileBase(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncoming avStreamIncoming,
+				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				byte[] frameStartMagicbytes,
 				int magicBytesLengthInBits
 			) {

@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
+import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.threads.rtp.codec_a_aac.ThreadRtpSenderAac;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
 
@@ -7,7 +8,7 @@ public class BuilderThreadRtpSenderAac {
 
 	public static Builder builder() { return new Builder(); }
 
-	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAac> {
+	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAac<?, ?>> {
 
 		// Thread-specific fields
 		private final ParamsThreadRtpSenderAac threadParamsAac = new ParamsThreadRtpSenderAac();
@@ -17,16 +18,21 @@ public class BuilderThreadRtpSenderAac {
 
 		//
 		@Override
-		public ThreadRtpSenderAac build() {
+		public ThreadRtpSenderAac<?, ?> build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsAac.validate();
 
-			return new ThreadRtpSenderAac(
-					threadParamsCommon,
-					threadParamsAudio,
-					threadParamsAac
-				);
+			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+				return new ThreadRtpSenderAac<>(
+						AvStreamIncomingFromFile.class,
+						AudioStreamOutgoingAacFromFile.class,
+						threadParamsCommon,
+						threadParamsAudio,
+						threadParamsAac
+					);
+			}
+			throw new RuntimeException("Not implemented");
 		}
 
 	}

@@ -5,28 +5,16 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
-import org.tsitle.rtsp.exceptions.MqException;
-import org.tsitle.rtsp.mq.MqInternalInputStream;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.io.*;
 import java.net.URI;
 
-public final class AvStreamIncoming implements AutoCloseable {
+public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 
-	private enum InputType {
-		FILE, MQ
-	}
-
-	private final @Nullable LogMsgInterface logMsgInterface;
-	private final int streamSourceId;
-	private final InputType inputType;
 	private final String inputUriPath;
 
 	private InputStream gis;
-
-	private boolean haveEos = false;
 
 	/**
 	 * Constructor.
@@ -34,7 +22,7 @@ public final class AvStreamIncoming implements AutoCloseable {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncoming(
+	public AvStreamIncomingFromFile(
 				int streamSourceId,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
@@ -48,65 +36,26 @@ public final class AvStreamIncoming implements AutoCloseable {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncoming(
+	public AvStreamIncomingFromFile(
 				@Nullable LogMsgInterface logMsgInterface,
 				int streamSourceId,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		this.logMsgInterface = logMsgInterface;
-		this.streamSourceId = streamSourceId;
+		super(logMsgInterface, streamSourceId);
+
 		if (inputUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
 		}
-		switch (inputUri.getScheme()) {
-			case "file" -> this.inputType = InputType.FILE;
-			case "tcp" -> this.inputType = InputType.MQ;
-			default -> throw new AvCannotOpenInputException("Unsupported URI scheme: " + inputUri.getScheme());
+		if (! inputUri.getScheme().equals("file")) {
+			throw new IllegalArgumentException("Input URI scheme must be 'file'");
 		}
-		this.inputUriPath = (this.inputType == InputType.FILE ? inputUri.getPath() : "");
+		this.inputUriPath = inputUri.getPath();
 
 		//
 		openInput();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public void close() {
-		final String FNC_NAME = getClass().getSimpleName() + ".close()";
-
-		try {
-			if (gis != null) {
-				gis.close();
-			}
-			//
-			haveEos = true;
-		} catch (IOException e) {
-			logError(FNC_NAME, "IOException caught: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * Rewinds the stream to the beginning
-	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
-	 */
-	public void rewind() throws AvCannotOpenInputException {
-		close();
-		//
-		openInput();
-		//
-		haveEos = false;
-	}
-
-	/**
-	 * Checks if we can still read data from the stream.
-	 * @return True if the end of the stream has been reached, false otherwise
-	 */
-	public boolean haveEos() {
-		return haveEos;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -153,39 +102,46 @@ public final class AvStreamIncoming implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Rewinds the stream to the beginning
+	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
+	 */
+	@Override
+	public void rewind() throws AvCannotOpenInputException {
+		close();
+		//
+		openInput();
+		//
+		haveEos = false;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public void close() {
+		final String FNC_NAME = getClass().getSimpleName() + ".close()";
+
+		try {
+			if (gis != null) {
+				gis.close();
+			}
+		} catch (IOException e) {
+			logError(FNC_NAME, "IOException caught: " + e.getMessage());
+		}
+		//
+		haveEos = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void openInput() throws AvCannotOpenInputException {
 		try {
-			this.gis = switch (inputType) {
-					case FILE -> openFile();
-					case MQ -> openMq();
-				};
+			this.gis = new FileInputStream(inputUriPath);
 		} catch (FileNotFoundException e) {
 			throw new AvCannotOpenInputException("FileNotFoundException caught: " + e.getMessage());
-		} catch (MqException e) {
-			throw new AvCannotOpenInputException("MqException caught: " + e.getMessage());
 		}
-	}
-
-	private @NonNull InputStream openFile() throws FileNotFoundException {
-		return new FileInputStream(inputUriPath);
-	}
-
-	private @NonNull InputStream openMq() throws MqException {
-		MqInternalInputStream resIs = new MqInternalInputStream(logMsgInterface, streamSourceId);
-		resIs.connectToMq();
-		return resIs;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		if (logMsgInterface == null) {
-			return;
-		}
-		logMsgInterface.addMsgForLogThread(RtxpLogLevel.ERROR, Thread.currentThread().getName(),
-				fncName + ": " + msg);
 	}
 
 }

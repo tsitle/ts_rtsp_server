@@ -97,13 +97,17 @@ public final class VideoH264Parser {
 		//
 		try {
 			if (VideoH264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
-				parseSliceForBoundary(
-						cacheH264RbspBuf,
-						resObj.pictBoundInfo
-					);
-				resObj.isVclFirstSliceSegmentInPic = isFirstVclOfNewPicture(inpPictBoundInfoPrev, resObj.pictBoundInfo);
-				/*debugLog(FNC_NAME, debugStreamOffset, offs,
-							String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
+				if (haveAllRequiredMetadataPackets()) {
+					parseSliceForBoundary(
+							cacheH264RbspBuf,
+							resObj.pictBoundInfo
+						);
+					resObj.isVclFirstSliceSegmentInPic = isFirstVclOfNewPicture(inpPictBoundInfoPrev, resObj.pictBoundInfo);
+					/*debugLog(FNC_NAME, debugStreamOffset, offs,
+								String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
+				} else {
+					resObj.isVclFirstSliceSegmentInPic = false;  // we pretend to know it is not 1stSliceSegmentInPic
+				}
 				resObj.isVclNalUnit = true;
 			} else {
 				if (resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS) {
@@ -122,6 +126,13 @@ public final class VideoH264Parser {
 		}
 
 		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean haveAllRequiredMetadataPackets() {
+		return (! mapSpsContext.isEmpty());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -324,16 +335,19 @@ public final class VideoH264Parser {
 		outPictBoundInfo.picParameterSetId = br.readH26xUE();
 
 		//
-		if (! mapPpsContext.containsKey(outPictBoundInfo.picParameterSetId)) {
-			throw new IllegalArgumentException(FNC_NAME + ": PPS context not found for ID=" +
-					outPictBoundInfo.picParameterSetId);
+		int tmpSpsId = 0;
+		if (! mapPpsContext.isEmpty()) {
+			if (! mapPpsContext.containsKey(outPictBoundInfo.picParameterSetId)) {
+				throw new IllegalArgumentException(FNC_NAME + ": PPS context not found for ID=" +
+						outPictBoundInfo.picParameterSetId);
+			}
+			H264PpsContext tmpPpsContext = mapPpsContext.get(outPictBoundInfo.picParameterSetId);
+			tmpSpsId = tmpPpsContext.spsId;
 		}
-		H264PpsContext tmpPpsContext = mapPpsContext.get(outPictBoundInfo.picParameterSetId);
-		if (! mapSpsContext.containsKey(tmpPpsContext.spsId)) {
-			throw new IllegalArgumentException(FNC_NAME + ": SPS context not found for ID=" +
-					tmpPpsContext.spsId);
+		if (! mapSpsContext.containsKey(tmpSpsId)) {
+			throw new IllegalArgumentException(FNC_NAME + ": SPS context not found for ID=" + tmpSpsId);
 		}
-		H264SpsContext tmpSpsContext = mapSpsContext.get(tmpPpsContext.spsId);
+		H264SpsContext tmpSpsContext = mapSpsContext.get(tmpSpsId);
 
 		int frameNumBits = tmpSpsContext.log2MaxFrameNumMinus4 + 4;
 		outPictBoundInfo.frameNum = br.readBits(frameNumBits);

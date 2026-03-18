@@ -133,7 +133,7 @@ public class RtspServerApp {
 			if (optSs.isEmpty()) {
 				continue;
 			}
-			if (optSs.get().getInputUri().getScheme().equals("tcp")) {
+			if (optSs.get().getEnabled() && optSs.get().getIsSourceFromMq()) {
 				resL.add(streamSourceId);
 			}
 		}

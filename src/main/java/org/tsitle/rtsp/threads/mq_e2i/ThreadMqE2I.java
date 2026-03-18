@@ -41,7 +41,7 @@ public class ThreadMqE2I extends RunnableBase {
 		if (mqUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (mqUri='" + mqUri + "')");
 		}
-		if (! mqUri.getScheme().equals("tcp")) {
+		if (! mqUri.getScheme().equals("https")) {
 			throw new IllegalArgumentException("Unsupported input URI scheme: " + mqUri.getScheme());
 		}
 		if (mqUri.getUserInfo() == null || mqUri.getUserInfo().isEmpty()) {

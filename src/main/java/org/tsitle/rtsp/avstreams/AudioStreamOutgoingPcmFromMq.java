@@ -6,13 +6,12 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
+public class AudioStreamOutgoingPcmFromMq extends AvStreamOutgoingFromMqBase {
 
 	private final boolean isBigEndian;
 
 	private final int bytesPerSample;
 	private final int bytesPerChannelAndSample;
-	private final int rtpFrameSizeBytes;
 	private final BufferExt cachedDataBuf2 = new BufferExt();
 
 	/**
@@ -21,23 +20,16 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	 * @param avStreamIncoming Incoming A/V stream
 	 * @param channels Number of channels (1 = mono, 2 = stereo)
 	 * @param bitsPerSample Bits per sample (8 or 16)
-	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public AudioStreamOutgoingPcm(
+	public AudioStreamOutgoingPcmFromMq(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncoming avStreamIncoming,
+				@NonNull AvStreamIncomingFromMq avStreamIncoming,
 				int channels,
 				int bitsPerSample,
-				int rtpSamplesPerFrame,
 				boolean isBigEndian
 			) {
-		super(
-				logMsgInterface,
-				avStreamIncoming,
-				new byte[0],
-				0
-			);
+		super(logMsgInterface, avStreamIncoming);
 
 		//
 		if (channels < 1 || channels > 2) {
@@ -46,17 +38,13 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 		if (bitsPerSample != 8 && bitsPerSample != 16) {
 			throw new IllegalArgumentException("Invalid audio bits per sample: " + bitsPerSample);
 		}
-		if (rtpSamplesPerFrame < 1) {
-			throw new IllegalArgumentException("Invalid audio samples per frame: " + rtpSamplesPerFrame);
-		}
 
 		this.isBigEndian = isBigEndian;
 
 		this.bytesPerSample = bitsPerSample / 8;
 		this.bytesPerChannelAndSample = channels * bytesPerSample;
-		this.rtpFrameSizeBytes = channels * rtpSamplesPerFrame * this.bytesPerSample;
 
-		this.cachedDataBuf2.increaseSize(this.rtpFrameSizeBytes);
+		this.cachedDataBuf2.increaseSize(1024);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -79,10 +67,8 @@ public class AudioStreamOutgoingPcm extends AvStreamOutgoingBase {
 	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
 		BufferExt readIntoPtr = (isBigEndian || bytesPerSample == 1 ? frameBuf : cachedDataBuf2);
 		//
-		frameBuf.clear();
-		frameBuf.increaseSize(rtpFrameSizeBytes);
-		//
-		int tmpRead = avStreamIncoming.readBytes(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
+		avStreamIncoming.readFrame(readIntoPtr);
+		int tmpRead = readIntoPtr.getUsed();
 		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
 			// discard any partial samples
 			tmpRead -= (tmpRead % bytesPerChannelAndSample);

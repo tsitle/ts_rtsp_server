@@ -6,29 +6,24 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
-public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
+public class VideoStreamOutgoingMjpegFromFile extends VideoStreamOutgoingFromFileBase {
 
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
-	private static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 4-byte version */
-	private static final byte[] H26X_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
-
-	private boolean isFirstFrame = true;
+	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public VideoStreamOutgoingH26x(
+	public VideoStreamOutgoingMjpegFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncoming avStreamIncoming
+				@NonNull AvStreamIncomingFromFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				new byte[0],
-				0
+				MJPEG_FRAME_START_MAGICBYTES,
+				MJPEG_FRAME_START_MAGICBYTES.length * 8
 			);
 	}
 
@@ -43,19 +38,14 @@ public class VideoStreamOutgoingH26x extends VideoStreamOutgoingBase {
 	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
-		/*
-		 * A H264/H265 NAL Unit can either start with 0x00000001 or 0x000001.<br />
-		 * Therefore, we first need to check whether to use the 3-byte or the 4-byte version.
-		 */
 		internalGetNextFrameWithStartCode(
 				FNC_NAME,
 				frameBuf,
-				isFirstFrame,
-				H26X_FRAME_START_MAGICBYTES_4,
-				H26X_FRAME_START_MAGICBYTES_3,
+				false,
+				null,
+				null,
 				-1
 			);
-		isFirstFrame = false;
 	}
 
 }

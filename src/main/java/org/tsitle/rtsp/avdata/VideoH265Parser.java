@@ -10,6 +10,9 @@ public class VideoH265Parser {
 
 	public VideoH265Parser() { }
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Parses the H265 data and returns an H265Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H265 data in the H265 stream (used for error messages)

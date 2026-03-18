@@ -299,6 +299,10 @@ public class RtspRequestParser {
 			throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
 					"Non-existing Input Source ID in URL path: '" + rscUrlPathMod + "'");
 		}
+		if (! optInputSource.get().getEnabled()) {
+			throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
+					"Disabled Input Source used in URL path: '" + rscUrlPathMod + "'");
+		}
 		rtspSessionInfo.inputSourceUrlPerSmtMap.put(requestType, resourceUrl);
 		rtspSessionInfo.inputSourceObjPerSmtMap.put(requestType, optInputSource.get());
 

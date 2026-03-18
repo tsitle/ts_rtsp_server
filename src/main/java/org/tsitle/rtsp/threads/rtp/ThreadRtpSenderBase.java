@@ -3,7 +3,9 @@ package org.tsitle.rtsp.threads.rtp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.CodecInfoInterface;
-import org.tsitle.rtsp.avstreams.AvStreamIncoming;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingBase;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingFactory;
+import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
@@ -18,12 +20,18 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP extends ThreadDataProvBase<I>> extends ThreadPausableBase {
+public abstract class ThreadRtpSenderBase<
+			I extends CodecInfoInterface<I>,
+			AVSTRIC extends AvStreamIncomingBase,
+			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>,
+			TDP extends ThreadDataProvBase<I, AVSTROG>
+		> extends ThreadPausableBase {
 
 	/** Interval for sending Sender Reports (in milliseconds) */
 	private static final int SEND_SR_INTERVAL_MS = 500;
@@ -31,8 +39,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 	/** Length of UDP packets */
 	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
 
-	protected @Nullable AvStreamIncoming avStreamIncoming;
+	protected final Class<AVSTRIC> avStreamIncomingType;
+	protected @Nullable AVSTRIC avStreamIncomingObj;
 	protected @Nullable TDP threadDataProv;
+	protected final Class<AVSTROG> avStreamOutgoingType;
 
 	/** Buffer used to store the RTP/XXX payload */
 	protected final BufferExt cacheRtpInnerPayloadBuf = new BufferExt();
@@ -75,11 +85,15 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 	/**
 	 * Constructor.
+	 * @param avStreamIncomingType Class of the AvStreamIncoming object
+	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
 	 * @param paramsCommon Thread parameters
 	 * @param rtpClockrate RTP Clock Rate
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderBase(
+				Class<AVSTRIC> avStreamIncomingType,
+				Class<AVSTROG> avStreamOutgoingType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int rtpClockrate,
 				@NonNull RtpPacketType rtpPacketType
@@ -98,13 +112,16 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		}
 
 		//
+ 		///
+		this.avStreamIncomingType = avStreamIncomingType;
+		this.avStreamOutgoingType = avStreamOutgoingType;
 		///
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
 		final double sendIntervalNs = (rtpPacketType.isVideo() ?
 				(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond()) :
-				(double)(RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS * 1_000_000L)
+				(double)(RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS * 1_000_000L)
 			);
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is < 1ms");
@@ -157,12 +174,14 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-		try (AvStreamIncoming tmpAvStreamInc = new AvStreamIncoming(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
+		final URI tmpAvStreamIncomingUri = paramsCommon.getAvStreamIncomingUri().orElseThrow();
+		try (AVSTRIC tmpAvStreamInc = AvStreamIncomingFactory.createAvStreamIncoming(
+					avStreamIncomingType,
+					paramsCommon.getLogMsgInterface().orElse(null),
 					paramsCommon.getStreamSourceId(),
-					paramsCommon.getAvStreamIncomingUri().orElseThrow()
+					tmpAvStreamIncomingUri
 				)) {
-			avStreamIncoming = tmpAvStreamInc;
+			avStreamIncomingObj = tmpAvStreamInc;
 
 			//
 			resetRtpTsFrameNr();
@@ -207,8 +226,10 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "Interrupted while sleeping");
 			Thread.currentThread().interrupt();  // restore flag
+		} catch (Exception e) {
+			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
-			avStreamIncoming = null;
+			avStreamIncomingObj = null;
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
@@ -230,8 +251,9 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
 			//noinspection BusyWait
 			Thread.sleep(50);
-			if (++loopCnt % 10 == 0) {  // @TODO
-				logDebug(getClass().getSimpleName() + ".beforeRunHook()", "Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
+			if (++loopCnt % 10 == 0) {
+				logDebug(getClass().getSimpleName() + ".beforeRunHook()",
+						"Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
 			}
 		}
 	}
@@ -383,7 +405,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 
 		int timeoutCnt = 0;
 		boolean isReady = false;
-		while (++timeoutCnt < 10 * 500 * 20) {  // @TODO
+		while (++timeoutCnt < 10 * 1000 * 5) {  // 5 seconds
 			if (paramsCommon.getCbThreadMayStartPlayback().orElseThrow().get()) {
 				isReady = true;
 				break;
@@ -461,18 +483,22 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataPtr == null");
 		}
 		//
-		long tmpDeltaSendFrameNs = (System.nanoTime() - tmpTsNs);
-		if (tmpDeltaSendFrameNs > 1_000_000L) {
-			logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+		if (paramsCommon.getIsStreamSourceFromFile()) {
+			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
+			if (tmpDeltaFdsNs > 1_000_000L) {
+				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
+			}
 		}
 
 		// only sleep if this is the first packet of the frame/AU
 		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
-			adaptiveScheduler.waitForNextFrame();
+			if (paramsCommon.getIsStreamSourceFromFile()) {
+				adaptiveScheduler.waitForNextFrame();
+			}
 			//
 			long tmpCurSysNanos = System.nanoTime();
-			rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);
+			rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);  // @TODO use foreign TS when source is MQ
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp(tmpCurSysNanos);
 			siStats.rtpTimestamp = rtpTsCurrent;
@@ -533,7 +559,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 			isFirstPktOfFrame = true;
 			isMainLoopStateA = false;
 			//
-			tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
+			long tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
 			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
 				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
@@ -593,22 +619,7 @@ public abstract class ThreadRtpSenderBase<I extends CodecInfoInterface<I>, TDP e
 		}
 
 		//
-		/*if (isFirstPktOfFrameOrAu && rtpPacketType.isVideo()) {
-			long tmpNtp = getNtpTimestamp();
-			logDebug(FNC_NAME, "frameNr=" + frameData.rtpFrameNr + ", RTP Timestamp=" + rtpTsCurrent + ", NTP=" + NtpTimestampHelper.ntpTimestampToInstant(tmpNtp));
-		}*/
-
-		//
 		if (! isLastPktOfFrameOrAu && estTotalPktCnt > 1) {
-			/*
-			long tmpSleepIntvNs = (long)((double)(adaptiveScheduler.getSendIntervalNs() - 5_000_000L) / (double)(estTotalPktCnt + 3));
-			if (tmpSleepIntvNs > 1000L) {
-				adaptiveScheduler.sleepUntilNanos(
-						System.nanoTime() + tmpSleepIntvNs,
-						false
-					);
-			}
-			*/  // @TODO
 			adaptiveScheduler.sleepUntilNanos(System.nanoTime() + 50_000L, false);
 		}
 		//

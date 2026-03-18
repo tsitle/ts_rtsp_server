@@ -33,7 +33,7 @@ public class ThreadRtspServer extends RunnableBase {
 		final int streamSourceId;
 		final String inputSourceId;
 
-		ThreadRtpSenderBase<?, ?> rtpThreadSender;
+		ThreadRtpSenderBase<?, ?, ?, ?> rtpThreadSender;
 
 		ThreadRtcpSendRecv rtcpThreadSendRecv;
 		int rtcpLastTargetCongestionLevel = -1;
@@ -249,7 +249,7 @@ public class ThreadRtspServer extends RunnableBase {
 		tmpStreamInfo.tpServerSocketRtcp = null;
 	}
 
-	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
+	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 			B buildThreadRtpSender(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -262,6 +262,7 @@ public class ThreadRtspServer extends RunnableBase {
 				.comDebugSessionId(rtspSessionInfo.rtspSessionId)
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comStreamSourceId(streamInfo.rtspStreamSource.getId())
+				.comIsStreamSourceFromFile(streamInfo.rtspStreamSource.getIsSourceFromFile())
 				.comClientIpAddr(clientIpAddr)
 				.comClientDestPortRtp(streamInfo.tpClientDestPortRtp)
 				.comRtpSocketUdp(streamInfo.tpServerSrcSocketRtp)
@@ -278,7 +279,7 @@ public class ThreadRtspServer extends RunnableBase {
 				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri());
 	}
 
-	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
+	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 			B buildThreadVideo(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -288,7 +289,7 @@ public class ThreadRtspServer extends RunnableBase {
 		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock);
 	}
 
-	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?>>
+	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 					B buildThreadAudio(
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
@@ -360,7 +361,7 @@ public class ThreadRtspServer extends RunnableBase {
 				break;
 			default:
 				if (tmpStreamInfo.rtspStreamSource.getCodec().isPcmAudio()) {
-					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_MS);
+					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);  // only when the source is a file
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpStreamInfo,

@@ -28,6 +28,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comDebugRewindMediaFiles(boolean v) { this.threadParamsCommon.setDebugRewindMediaFiles(v); return self(); }
 
 	public B comStreamSourceId(int v) { this.threadParamsCommon.setStreamSourceId(v); return self(); }
+	public B comIsStreamSourceFromFile(boolean v) { this.threadParamsCommon.setIsStreamSourceFromFile(v); return self(); }
 
 	public B comClientIpAddr(@NonNull InetAddress v) { this.threadParamsCommon.setClientIpAddr(v); return self(); }
 	public B comClientDestPortRtp(int v) { this.threadParamsCommon.setClientDestPortRtp(v); return self(); }

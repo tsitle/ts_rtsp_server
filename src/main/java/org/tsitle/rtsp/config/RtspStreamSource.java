@@ -4,8 +4,8 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
-import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAac;
-import org.tsitle.rtsp.avstreams.AvStreamIncoming;
+import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAacFromFile;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -22,6 +22,9 @@ public class RtspStreamSource {
 	/** Stream Source ID */
 	@GsonAnnoExclude
 	private @NonNull Integer id;
+	/** Is this Stream Source enabled? */
+	@Expose
+	private @NonNull Boolean enabled;
 	/** Path to the media file */
 	@Expose
 	private @NonNull String filePath;
@@ -56,6 +59,7 @@ public class RtspStreamSource {
 
 	public RtspStreamSource() {
 		this.id = -1;
+		this.enabled = true;
 		this.filePath = "";
 		this.mqUrl = "";
 		//noinspection DataFlowIssue
@@ -80,12 +84,27 @@ public class RtspStreamSource {
 	}
 	public void setId(int id) { this.id = id; }
 
+	public boolean getEnabled() {
+		checkPostProcessed();
+		return enabled;
+	}
+
 	public @NonNull URI getInputUri() {
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
 			return URI.create("file:" + filePath);
 		}
-		return URI.create("tcp://" + mqUrl);
+		return URI.create("https://" + mqUrl);
+	}
+
+	public boolean getIsSourceFromFile() {
+		checkPostProcessed();
+		return (! filePath.isBlank());
+	}
+
+	public boolean getIsSourceFromMq() {
+		checkPostProcessed();
+		return filePath.isBlank();
 	}
 
 	public @NonNull RtpPacketType getCodec() {
@@ -166,6 +185,11 @@ public class RtspStreamSource {
 	public void postProcess(@NonNull Path dataDir) {
 		internalHasBeenPostProcessed = true;
 		//
+		//noinspection ConstantValue
+		if (enabled == null) {
+			enabled = true;
+		}
+ 		//
 		//noinspection ConstantValue
 		if (filePath != null && ! filePath.isBlank()) {
 			filePath = dataFilenameToAbsolutePath(dataDir, filePath);
@@ -292,7 +316,7 @@ public class RtspStreamSource {
 		}
 
 		//
-		if (internalCodec == RtpPacketType.A_AAC) {
+		if (enabled && internalCodec == RtpPacketType.A_AAC) {
 			readAacHeader(getId(), tmpExtSsId);
 		}
 	}
@@ -309,9 +333,9 @@ public class RtspStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void readAacHeader(int intSsId, @NonNull String extSsId) throws ConfigInvalidException {
-		try (AvStreamIncoming avStreamIncoming = new AvStreamIncoming(intSsId, getInputUri())) {
+		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(intSsId, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			AudioStreamOutgoingAac asoAac = new AudioStreamOutgoingAac(avStreamIncoming);
+			AudioStreamOutgoingAacFromFile asoAac = new AudioStreamOutgoingAacFromFile(avStreamIncoming);
 			asoAac.getNextFrame(tmpBuf);
 
 			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);

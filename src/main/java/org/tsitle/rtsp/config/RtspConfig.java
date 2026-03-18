@@ -82,7 +82,9 @@ public class RtspConfig {
 	 */
 	public @NonNull List<@NonNull Integer> getStreamSourceIds() {
 		checkPostProcessed();
-		return List.copyOf(internalStreamSources.keySet().stream().sorted().toList());
+		return List.copyOf(
+				internalStreamSources.keySet().stream().sorted().toList()
+			);
 	}
 
 	/**
@@ -104,7 +106,9 @@ public class RtspConfig {
 	 */
 	public @NonNull List<@NonNull String> getInputSourceIds() {
 		checkPostProcessed();
-		return List.copyOf(inputSources.keySet().stream().sorted().toList());
+		return List.copyOf(
+				inputSources.keySet().stream().sorted().toList()
+			);
 	}
 
 	/**
@@ -168,7 +172,7 @@ public class RtspConfig {
 		}
 		for (int tmpSsId : optInputSource.get().getStreamSourceIds()) {
 			Optional<RtspStreamSource> optStreamSource = getStreamSourceObj(tmpSsId);
-			if (optStreamSource.isEmpty()) {
+			if (optStreamSource.isEmpty() || ! optStreamSource.get().getEnabled()) {
 				continue;
 			}
 			if ((isVideo && optStreamSource.get().getCodec().isVideo()) ||
@@ -285,7 +289,9 @@ public class RtspConfig {
 		}
 		for (String tmpIsId : tmpIsIdList) {
 			RtspInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
-			tmpIsObj.validate(internalStreamSources, internalMapStreamSourceIdIntToExt);
+			if (tmpIsObj.getEnabled()) {
+				tmpIsObj.validate(internalStreamSources, internalMapStreamSourceIdIntToExt);
+			}
 		}
 	}
 

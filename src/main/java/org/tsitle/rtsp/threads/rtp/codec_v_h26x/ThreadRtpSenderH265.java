@@ -1,10 +1,13 @@
 package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265FromFile;
+import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265FromMq;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
@@ -13,20 +16,29 @@ import org.tsitle.rtsp.avdata.VideoH265Info;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265Info, ThreadDataProvH265> {
+public final class ThreadRtpSenderH265<
+			AVSTRIC extends AvStreamIncomingBase,
+			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
+		> extends ThreadRtpSenderH26xBase<VideoH265Info, AVSTRIC, AVSTROG, ThreadDataProvBase<VideoH265Info, AVSTROG>> {
 
 	/**
 	 * Constructor.
+	 * @param avStreamIncomingType Class of the AvStreamIncoming object
+	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param paramsH265 Thread-specific parameters
 	 */
 	public ThreadRtpSenderH265(
+				Class<AVSTRIC> avStreamIncomingType,
+				Class<AVSTROG> avStreamOutgoingType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull ParamsThreadRtpSenderH265 paramsH265
 			) {
 		super(
+				avStreamIncomingType,
+				avStreamOutgoingType,
 				paramsCommon,
 				paramsVideoCommon,
 				RtpPacketType.V_H265
@@ -43,14 +55,30 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvH265 newThreadDataProv() {
-		return new ThreadDataProvH265(
-				paramsCommon.getLogMsgInterface().orElseThrow(),
-				paramsVideoCommon,
-				Objects.requireNonNull(avStreamIncoming),
-				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
-				paramsCommon.getDebugRewindMediaFiles()
-			);
+	protected @NonNull ThreadDataProvBase<VideoH265Info, AVSTROG> newThreadDataProv() {
+		if (avStreamOutgoingType == VideoStreamOutgoingH26xFromFile.class) {
+			ThreadDataProvH265FromFile resObj = new ThreadDataProvH265FromFile(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsVideoCommon,
+					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+					paramsCommon.getDebugRewindMediaFiles()
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoH265Info, AVSTROG> typedProvider = (ThreadDataProvBase<VideoH265Info, AVSTROG>)resObj;
+			return typedProvider;
+		}
+		if (avStreamOutgoingType == VideoStreamOutgoingH26xFromMq.class) {
+			ThreadDataProvH265FromMq resObj = new ThreadDataProvH265FromMq(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsVideoCommon,
+					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoH265Info, AVSTROG> typedProvider = (ThreadDataProvBase<VideoH265Info, AVSTROG>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("avStreamOutgoingType must be VideoStreamOutgoingH26xFromXxx");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -81,13 +109,13 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected boolean isNonVclSei(VideoH265Info nalInfo) {
+	protected boolean isNalUnitNonVclSei(VideoH265Info nalInfo) {
 		return (nalInfo.nalUnitTypeEn == VideoH265Info.NalUnitType.NVCL_SEI_PREFIX ||
 				nalInfo.nalUnitTypeEn == VideoH265Info.NalUnitType.NVCL_SEI_SUFFIX);
 	}
 
 	@Override
-	protected boolean isLeadingNonVcl(VideoH265Info nalInfo) {
+	protected boolean isNalUnitLeadingNonVcl(VideoH265Info nalInfo) {
 		if (nalInfo.isVclNalUnit) {
 			return false;
 		}
@@ -99,7 +127,7 @@ public final class ThreadRtpSenderH265 extends ThreadRtpSenderH26xBase<VideoH265
 	}
 
 	@Override
-	protected boolean isTrailingNonVcl(VideoH265Info nalInfo) {
+	protected boolean isNalUnitTrailingNonVcl(VideoH265Info nalInfo) {
 		if (nalInfo.isVclNalUnit) {
 			return false;
 		}

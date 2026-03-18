@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.CodecInfoH26xBase;
+import org.tsitle.rtsp.avstreams.AvStreamIncomingBase;
+import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp.exceptions.InputStreamEosException;
@@ -17,7 +19,12 @@ import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import java.util.Objects;
 import java.util.Optional;
 
-public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TDP extends ThreadDataProvBase<I>> extends ThreadRtpSenderBase<I, TDP> {
+public abstract class ThreadRtpSenderH26xBase<
+			I extends CodecInfoH26xBase<I>,
+			AVSTRIC extends AvStreamIncomingBase,
+			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>,
+			TDP extends ThreadDataProvBase<I, AVSTROG>
+		> extends ThreadRtpSenderBase<I, AVSTRIC, AVSTROG, TDP> {
 
 	protected final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
@@ -30,20 +37,27 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 	private final H26xAccessUnit<I> globalCurAu = new H26xAccessUnit<>("CUR");
 	private final H26xAccessUnit<I> globalNextAu = new H26xAccessUnit<>("NEXT");
 	protected H26xNalUnitData<I> globalCurNudPtr = null;
+
 	private final RtpH26xPayloadBuffer rtpPayloadBufObj = new RtpH26xPayloadBuffer();
 
 	/**
 	 * Constructor.
+	 * @param avStreamIncomingType Class of the AvStreamIncoming object
+	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderH26xBase(
+				Class<AVSTRIC> avStreamIncomingType,
+				Class<AVSTROG> avStreamOutgoingType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull RtpPacketType rtpPacketType
 			) {
 		super(
+				avStreamIncomingType,
+				avStreamOutgoingType,
 				paramsCommon,
 				RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(rtpPacketType),
 				rtpPacketType
@@ -151,11 +165,11 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected abstract boolean isNonVclSei(I nalInfo);
+	protected abstract boolean isNalUnitNonVclSei(I nalInfo);
 
-	protected abstract boolean isLeadingNonVcl(I nalInfo);
+	protected abstract boolean isNalUnitLeadingNonVcl(I nalInfo);
 
-	protected abstract boolean isTrailingNonVcl(I nalInfo);
+	protected abstract boolean isNalUnitTrailingNonVcl(I nalInfo);
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -322,7 +336,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 			}
 
 			// filter out SEI NAL Units
-			if (isNonVclSei(tmpInpNud.h26xInfo)) {
+			if (isNalUnitNonVclSei(tmpInpNud.h26xInfo)) {
 				tmpInpNud.reset();
 				continue;
 			}
@@ -333,7 +347,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 				case AuState.SEEKING_AU_START:
 					if (tmpInpNud.h26xInfo.isVclNalUnit && tmpInpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
 						state = AuState.IN_AU_VCL;
-					} else if (isLeadingNonVcl(tmpInpNud.h26xInfo)) {
+					} else if (isNalUnitLeadingNonVcl(tmpInpNud.h26xInfo)) {
 						state = AuState.IN_AU_PREFIX;
 					}
 					// add to globalCurAu
@@ -342,7 +356,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 					if (tmpInpNud.h26xInfo.isVclNalUnit && tmpInpNud.h26xInfo.isVclFirstSliceSegmentInPic) {
 						// add to globalCurAu
 						state = AuState.IN_AU_VCL;
-					} else if (! isLeadingNonVcl(tmpInpNud.h26xInfo)) {
+					} else if (! isNalUnitLeadingNonVcl(tmpInpNud.h26xInfo)) {
 						// This NAL doesn't belong to the current AU
 						stopLoop = true;
 					} /*else {
@@ -358,7 +372,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 							// More slices of the current picture
 							// add to globalCurAu
 						}*/
-					} else if (isTrailingNonVcl(tmpInpNud.h26xInfo)) {
+					} else if (isNalUnitTrailingNonVcl(tmpInpNud.h26xInfo)) {
 						// add to globalCurAu
 						state = AuState.IN_AU_SUFFIX;
 					} else {
@@ -367,7 +381,7 @@ public abstract class ThreadRtpSenderH26xBase<I extends CodecInfoH26xBase<I>, TD
 					}
 					break;
 				case AuState.IN_AU_SUFFIX:
-					if (! isTrailingNonVcl(tmpInpNud.h26xInfo)) {
+					if (! isNalUnitTrailingNonVcl(tmpInpNud.h26xInfo)) {
 						// This starts a new AU
 						stopLoop = true;
 					} /*else {
