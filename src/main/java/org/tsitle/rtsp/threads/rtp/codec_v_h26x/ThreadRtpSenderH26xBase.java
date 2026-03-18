@@ -188,6 +188,9 @@ public abstract class ThreadRtpSenderH26xBase<
 
 		// get the next frame to send over the wire from the input stream
 		threadDataProv.getNextFrame(cacheOrgVideoFrameBuf, cacheH26xInfo);
+		if (cacheOrgVideoFrameBuf.isEmpty()) {
+			throw new InputStreamEosException();
+		}
 
 		//
 		if (globalTempAu.arrNalUnitCount == globalTempAu.arrNalUnitData.size()) {

@@ -291,6 +291,9 @@ public abstract class ThreadRtpSenderBase<
 			// get the next frame to send over the wire from the input stream
 			try {
 				threadDataProv.getNextFrame(cacheOrgFrameBuf, codecInfoObj);
+				if (cacheOrgFrameBuf.isEmpty()) {
+					throw new InputStreamEosException();
+				}
 
 				//
 				cacheFrameData.totalFrameSize = cacheOrgFrameBuf.getUsed();
