@@ -17,6 +17,8 @@ import java.util.Map;
  */
 public class MqExternalSub extends MqReceiverSubBase {
 
+	private static final boolean DO_VALIDATE_PAYLOAD = false;
+
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
 	private final @NonNull String mqAddrAuth;
@@ -25,6 +27,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private @Nullable String mqServerPublicKeyZ85 = null;
 	private @Nullable String mqServerEndpoint = null;
 	private boolean mqEncrypted = true;
+	private boolean mqMsgSegmented = false;
 
 	/**
 	 * Constructor.
@@ -39,7 +42,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 				@NonNull String mqAddressPath,
 				@NonNull String mqAddressAuth
 			) {
-		super(logMsgInterface, true, false);
+		super(logMsgInterface, DO_VALIDATE_PAYLOAD, false);
 
 		//
 		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
@@ -67,7 +70,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		requestMqInfo();
 		internalConnectToMq();
 
-		msgHandler = MqMsgHandlerFactory.createHandler(zmqSocket);
+		msgHandler = MqMsgHandlerFactory.createHandlerExternalMq(zmqSocket, mqMsgSegmented);
 
 		stateOpened.set(true);
 	}
@@ -103,6 +106,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		mqServerEndpoint = "tcp://" + mqHostOnly + ":" + responseOpenMq.mqPort();
 		mqServerPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
 		mqEncrypted = responseOpenMq.mqEncrypted();
+		mqMsgSegmented = responseOpenMq.mqMsgSegmented();
 	}
 
 	private void internalConnectToMq() {

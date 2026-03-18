@@ -10,6 +10,9 @@ import org.zeromq.ZMQ;
  */
 public class MqInternalSub extends MqReceiverSubBase {
 
+	private static final boolean DO_VALIDATE_PAYLOAD = false;
+	private static final boolean DO_PRINT_DEBUG_STATS = false;
+
 	private final int streamSourceId;
 
 	/**
@@ -21,7 +24,7 @@ public class MqInternalSub extends MqReceiverSubBase {
 				@Nullable LogMsgInterface logMsgInterface,
 				int streamSourceId
 			) {
-		super(logMsgInterface, false, true);
+		super(logMsgInterface, DO_VALIDATE_PAYLOAD, DO_PRINT_DEBUG_STATS);
 
 		this.streamSourceId = streamSourceId;
 	}
@@ -43,7 +46,7 @@ public class MqInternalSub extends MqReceiverSubBase {
 		zmqPollerObj = zmqContext.createPoller(1);
 		zmqPollerIx = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
 
-		msgHandler = MqMsgHandlerFactory.createHandler(zmqSocket);
+		msgHandler = MqMsgHandlerFactory.createHandlerInternalMq(zmqSocket);
 
 		stateOpened.set(true);
 		logDebug(FNC_NAME, "Connected to MQ channel: " + chanName);

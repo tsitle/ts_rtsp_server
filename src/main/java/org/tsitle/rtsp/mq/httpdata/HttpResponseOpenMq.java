@@ -9,6 +9,7 @@ public record HttpResponseOpenMq(
 		int mqPort,
 		String mqServerPubKey,
 		boolean mqEncrypted,
+		boolean mqMsgSegmented,
 		String status
 	) {
 }

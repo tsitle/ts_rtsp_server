@@ -229,9 +229,9 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		if (stats.lastFpsMeasureTime != null) {
 			Duration tmpDurLfmt = Duration.between(stats.lastFpsMeasureTime, Instant.now());
 			long tmpMs = tmpDurLfmt.toMillis();
-			if (tmpMs >= 1_000L) {
+			if (tmpMs >= 5_000L) {
 				logDebug(fncName, String.format(
-						"MQ fps: %f", (((double)stats.framesOutputtedCount / (double)tmpMs) * 1_000.0)));
+						"MQ fps: %.1f", (((double)stats.framesOutputtedCount / (double)tmpMs) * 1_000.0)));
 				stats.framesOutputtedCount = 0;
 				stats.lastFpsMeasureTime = Instant.now();
 			}
