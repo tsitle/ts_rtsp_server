@@ -8,6 +8,7 @@ import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.rtsp.avdata.subinfo.H264PpsContext;
 import org.tsitle.rtsp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromMq;
+import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromFile;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromMq;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
@@ -34,7 +35,7 @@ public class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<VideoH264
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {
-		super(logMsgInterface);
+		super(logMsgInterface, true);
 
 		//
 		paramsVideoCommon.validate();
@@ -54,7 +55,12 @@ public class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<VideoH264
 
 	@Override
 	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		int magicBytesLength = findH26xMagicBytesLength(inputBuf);
+		if (magicBytesLength == -1) {
+			magicBytesLength = findH26xMagicBytesLength(inputBuf);
+			magicBytesArrPtr = (magicBytesLength == 3 ?
+					VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3 :
+					VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4);
+		}
 		//
 		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
@@ -68,6 +74,11 @@ public class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<VideoH264
 		haveAllRequiredMetadataPackets = h264Parser.haveAllRequiredMetadataPackets();
 		//
 		return curFrameH264Info;
+	}
+
+	@Override
+	protected int findNextMagicBytes(final BufferExt inputBuf) {
+		return findH26xNextNalUnit(inputBuf);
 	}
 
 }

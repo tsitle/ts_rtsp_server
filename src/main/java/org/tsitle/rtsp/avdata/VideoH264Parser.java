@@ -71,7 +71,7 @@ public final class VideoH264Parser {
 		 *  +---------------+
 		 */
 
-		/*debugLog(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", h264Buf.getByteAt(0)));*/
+		/*logDebugTemp(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", h264Buf.getByteAt(0)));*/
 		int offs = resObj.nalUnitOffset;
 		if ((byte)(h264Buf.get(offs) & 0x80) != 0) {
 			throw new AvInvalidCodecDataException(
@@ -103,10 +103,10 @@ public final class VideoH264Parser {
 							resObj.pictBoundInfo
 						);
 					resObj.isVclFirstSliceSegmentInPic = isFirstVclOfNewPicture(inpPictBoundInfoPrev, resObj.pictBoundInfo);
-					/*debugLog(FNC_NAME, debugStreamOffset, offs,
-								String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
+					/*logDebugTemp(FNC_NAME, debugStreamOffset, offs,
+							String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
 				} else {
-					resObj.isVclFirstSliceSegmentInPic = false;  // we pretend to know it is not 1stSliceSegmentInPic
+					resObj.isVclFirstSliceSegmentInPic = false;  // we pretend to know that it is not the 1stSliceSegmentInPic
 				}
 				resObj.isVclNalUnit = true;
 			} else {
@@ -335,7 +335,7 @@ public final class VideoH264Parser {
 		outPictBoundInfo.picParameterSetId = br.readH26xUE();
 
 		//
-		int tmpSpsId = 0;
+		int tmpSpsId = 0;  // we assume that the SPS ID is 0 as long as we haven't received the PPS context
 		if (! mapPpsContext.isEmpty()) {
 			if (! mapPpsContext.containsKey(outPictBoundInfo.picParameterSetId)) {
 				throw new IllegalArgumentException(FNC_NAME + ": PPS context not found for ID=" +
@@ -397,5 +397,12 @@ public final class VideoH264Parser {
 
 		return false;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/*private void logDebugTemp(String fncName, long debugStreamOffset, int curOffset, String msg) {
+		//if (debugStreamOffset != 0) { return; }
+		System.out.println(fncName + ": " + debugStreamOffset + "+" + curOffset + ": " + msg);
+	}*/
 
 }

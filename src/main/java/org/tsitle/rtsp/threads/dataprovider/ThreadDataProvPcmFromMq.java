@@ -28,7 +28,7 @@ public class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<AudioPcmIn
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {
-		super(logMsgInterface);
+		super(logMsgInterface, false);
 
 		//
 		paramsAudioCommon.validate();
