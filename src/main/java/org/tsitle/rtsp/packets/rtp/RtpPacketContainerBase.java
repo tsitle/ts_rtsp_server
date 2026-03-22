@@ -66,14 +66,15 @@ public class RtpPacketContainerBase {
 	/**
 	 * Constructor.
 	 * @param packetData RTP packet bitstream including header and payload
+	 * @param onlyCopyHeader If true, copy only the main RTP header into the packet buffer.
 	 */
-	private RtpPacketContainerBase(@NonNull BufferExt packetData) {
+	private RtpPacketContainerBase(@NonNull BufferExt packetData, boolean onlyCopyHeader) {
 		if (packetData.getUsed() < RTP_CONT_HEADER_SIZE) {
 			throw new IllegalArgumentException("Invalid RTP packet size");
 		}
 
 		//
-		this.packetBuf.copyOf(packetData);
+		this.packetBuf.copyOf(packetData, 0, onlyCopyHeader ? RTP_CONT_HEADER_SIZE : packetData.getUsed());
 
 		// parse header fields
 		this.hdBaseVersion = (byte)(((this.packetBuf.get(0) & 0xC0) >>> 6) & 0x03);
@@ -99,7 +100,28 @@ public class RtpPacketContainerBase {
 				@NonNull RtpPacketType expectedPayloadType,
 				@NonNull BufferExt packetData
 			) {
-		this(packetData);
+		this(packetData, false);
+		//
+		if (this.hdBasePayloadType != expectedPayloadType) {
+			throw new IllegalArgumentException(
+					String.format("Invalid RTP payload type (is=0x%02X, exp=0x%02X)",
+							this.hdBasePayloadType.getValue(), expectedPayloadType.getValue())
+				);
+		}
+	}
+
+	/**
+	 * Constructor.
+	 * @param expectedPayloadType Expected RTP payload type
+	 * @param packetData RTP packet bitstream including header and payload
+	 * @param onlyCopyHeader If true, copy only the main RTP header into the packet buffer.
+	 */
+	protected RtpPacketContainerBase(
+				@NonNull RtpPacketType expectedPayloadType,
+				@NonNull BufferExt packetData,
+				boolean onlyCopyHeader
+			) {
+		this(packetData, onlyCopyHeader);
 		//
 		if (this.hdBasePayloadType != expectedPayloadType) {
 			throw new IllegalArgumentException(
@@ -160,7 +182,6 @@ public class RtpPacketContainerBase {
 	 * Returns the sequence number of the RTP packet.
 	 * @return Sequence number (16 bits unsigned)
 	 */
-	@SuppressWarnings("unused")
 	public short getSequenceNumber() {
 		return hdBaseSequenceNumber;
 	}
@@ -178,16 +199,35 @@ public class RtpPacketContainerBase {
 	 * Returns the SSRC ID of the RTP packet.
 	 * @return SSRC ID
 	 */
-	@SuppressWarnings("unused")
 	public int getSsrcId() {
 		return hdBaseSsrc;
+	}
+
+	/**
+	 * Checks if the RTP packet contains a CSRC list.
+	 * @return True if the RTP packet contains a CSRC list
+	 */
+	public boolean hasCsrcList() {
+		return (hdBaseCsrcCount > 0);
+	}
+
+	/**
+	 * Checks if the RTP packet contains a header extension.
+	 * @return True if the RTP packet contains a header extension
+	 */
+	public boolean hasHeaderExtension() {
+		return hdBaseExtension;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [" +
+		return toString(false);
+	}
+
+	public @NonNull String toString(boolean skipClassName) {
+		return (skipClassName ? "" : getClass().getSimpleName() + " [") +
 				"Version: " + hdBaseVersion +
 				", Padding: " + hdBasePadding +
 				", Extension: " + hdBaseExtension +
@@ -197,7 +237,7 @@ public class RtpPacketContainerBase {
 				", SequenceNumber: " + hdBaseSequenceNumber +
 				", TimeStamp: " + Integer.toUnsignedString(hdBaseTimestamp) +
 				", SSRC: " + Integer.toUnsignedString(hdBaseSsrc) +
-				"]";
+				(skipClassName ? "" : "]");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -210,10 +250,7 @@ public class RtpPacketContainerBase {
 	 */
 	@SuppressWarnings("unused")
 	public static RtpBaseContainerInfo parsePacketHeader(@NonNull BufferExt packetData) {
-		BufferExt tmpBuf = new BufferExt();
-		tmpBuf.copyFrom(packetData, 0, 0, RTP_CONT_HEADER_SIZE);
-
-		RtpPacketContainerBase tmpCb = new RtpPacketContainerBase(tmpBuf);
+		RtpPacketContainerBase tmpCb = new RtpPacketContainerBase(packetData, true);
 
 		return new RtpBaseContainerInfo(
 				tmpCb.hdBasePayloadType,

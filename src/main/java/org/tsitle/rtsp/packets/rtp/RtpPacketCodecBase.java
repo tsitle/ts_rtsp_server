@@ -86,11 +86,15 @@ public abstract class RtpPacketCodecBase extends RtpPacketContainerBase {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [" +
-				super.toString() +
+		return toString(false);
+	}
+
+	public @NonNull String toString(boolean skipClassName) {
+		return (skipClassName ? "" : getClass().getSimpleName() + " [") +
+				super.toString(skipClassName) +
 				", innerHeaderSz: " + Integer.toUnsignedString(getRawInnerHeaderSize()) +
 				", innerPayloadSz: " + Integer.toUnsignedString(getRawInnerPayloadSize()) +
-				"]";
+				(skipClassName ? "" : "]");
 	}
 
 }

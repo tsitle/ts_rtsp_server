@@ -174,7 +174,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getClass().getSimpleName()).append(" [");
-		sb.append(super.toString());
+		sb.append(super.toString(true));
 		sb.append(", H265PayType: ").append(hdInnPayTypeEn);
 		if (hdInnPayTypeEn == H265PayloadType.UNKNOWN) {
 			sb.append(" (o=").append(Integer.toUnsignedString(hdInnPayTypeBy)).append(")");
