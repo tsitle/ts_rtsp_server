@@ -22,6 +22,7 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_TOKEN_DES_CONTBASE = "Content-Base:";
 	static final String RTSP_RR_HEADER_TOKEN_DES_CONTTYPE = "Content-Type:";
 	static final String RTSP_RR_HEADER_TOKEN_SET_TRANSPORT = "Transport:";
+	static final String RTSP_RR_HEADER_TOKEN_SET_KEYMGMT = "KeyMgmt:";
 	static final String RTSP_RR_HEADER_TOKEN_PLA_RANGE = "Range:";
 	static final String RTSP_RR_HEADER_TOKEN_PLA_RTPINFO = "RTP-Info:";
 	static final String RTSP_RR_HEADER_TOKEN_OPT_PUBLIC = "Public:";
@@ -32,20 +33,25 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date:";
 	///
-	static final String RTSP_RR_HEADER_VALUE_DES_ACCEPT = "application/sdp";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPUDP = "RTP/AVP";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP = "RTP/AVP/TCP";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_UNICAST = "unicast";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT = "client_port=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_SERVERPORT = "server_port=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_DESTIP = "destination=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_SOURCEIP = "source=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_SSRC = "ssrc=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TP_INTERLEAVED = "interleaved=";
-	static final String RTSP_RR_HEADER_VALUE_SET_TIMEOUT = "timeout=";
-	static final String RTSP_RR_HEADER_VALUE_PLA_RI_URL = "url=";
-	static final String RTSP_RR_HEADER_VALUE_PLA_RI_SEQ = "seq=";
-	static final String RTSP_RR_HEADER_VALUE_PLA_RI_RTPTIME = "rtptime=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT = "client_port=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT = "server_port=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP = "destination=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP = "source=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC = "ssrc=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED = "interleaved=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT = "timeout=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT = "prot=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_KM_URI = "uri=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA = "data=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL = "url=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ = "seq=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME = "rtptime=";
+	static final String RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT = "application/sdp";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP = "RTP/AVP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP = "RTP/SAVP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP = "RTP/AVP/TCP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY = "mikey";
 	///
 	static final Map<RtpPacketType, String> RTSP_SDP_TAG_A_CODEC_MAPPING = new TreeMap<>() {{
 			put(RtpPacketType.A_AAC, "mpeg4-generic");

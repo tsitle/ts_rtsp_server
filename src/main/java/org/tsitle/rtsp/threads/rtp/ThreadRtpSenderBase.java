@@ -11,6 +11,7 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -146,7 +147,9 @@ public abstract class ThreadRtpSenderBase<
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
-		//noinspection ConstantValue
+		if (paramsCommon.getIsRtpEncryptionEnabled()) {
+			udpMaxPacketLenDelta += SrtpContext.SRT_EXTRA_PACKET_SIZE;
+		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
 			throw new AssertionError("UDP packet length too small");
 		}
@@ -600,7 +603,7 @@ public abstract class ThreadRtpSenderBase<
 		// retrieve the packet bitstream and store it in an array of bytes
 		if (curPacketContainer.getPacketSize() > UDP_PACKET_LEN) {
 			throw new IllegalStateException(FNC_NAME + ": buffer > UDP_PACKET_LEN (d=" +
-					(curPacketContainer.getPacketSize() - UDP_PACKET_LEN) + "):");
+					(curPacketContainer.getPacketSize() - UDP_PACKET_LEN) + ")");
 		}
 
 		if (parComRtpSocketUdp.isClosed()) {
@@ -690,12 +693,31 @@ public abstract class ThreadRtpSenderBase<
 	}
 
 	private void sendSenderReport() {
-		// Compound packet
+		final String FNC_NAME = getClass().getSimpleName() + ".sendSenderReport()";
+
+		//
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
 
 		//
-		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow().accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
+		BufferExt encrPacketCompoundBuf = new BufferExt();
+		BufferExt outpPacketPtr = packetCompoundBuf;
+		if (paramsCommon.getIsRtpEncryptionEnabled()) {
+			SrtpContext srtpCtx = paramsCommon.getSrtpContext().orElseThrow();
+			try {
+				srtpCtx.protectRtcpSrCompound(
+						packetCompoundBuf,
+						paramsCommon.getRtspSsrcId(),
+						encrPacketCompoundBuf
+					);
+			} catch (SrtpSecurityException e) {
+				logError(FNC_NAME, "SrtpSecurityException caught: " + e.getMessage());
+				return;
+			}
+			outpPacketPtr = encrPacketCompoundBuf;
+		}
+		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow()
+				.accept(paramsCommon.getRtspSsrcId(), outpPacketPtr);
 
 		siStats.lastSenderInfoSent = Instant.now();
 	}

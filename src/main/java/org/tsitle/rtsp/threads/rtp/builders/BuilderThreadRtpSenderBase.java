@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtp.builders;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
@@ -48,6 +49,9 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }
 
 	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }
+
+	public B comIsRtpEncryptionEnabled(boolean v) { this.threadParamsCommon.setIsRtpEncryptionEnabled(v); return self(); }
+	public B comSrtpContext(@NonNull SrtpContext v) { this.threadParamsCommon.setSrtpContext(v); return self(); }
 
 	//
 	public abstract T build() throws Exception;

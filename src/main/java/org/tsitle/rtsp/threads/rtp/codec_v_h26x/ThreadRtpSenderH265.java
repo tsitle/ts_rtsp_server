@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avstreams.*;
+import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -97,13 +99,31 @@ public final class ThreadRtpSenderH265<
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
 				", isLastFragment=" + curFragmentData.isLastFragment() +
 				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/
-		return new RtpPacketH265(
+		RtpPacketH265 plainPacket = new RtpPacketH265(
 				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment(),
 				globalCurNudPtr.h26xInfo,
 				cacheRtpInnerPayloadBuf
 			);
+		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+			return plainPacket;
+		}
+
+		//
+		RtpPacketContainerBase encryptedPacket;
+		try {
+			encryptedPacket = new RtpEncryptedPacket(
+					RtpPacketType.V_H265,
+					plainPacket,
+					paramsCommon.getSrtpContext().orElseThrow()
+				);
+		} catch (SrtpSecurityException e) {
+			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
+			logError(FNC_NAME, errMsg);
+			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
+		}
+		return encryptedPacket;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

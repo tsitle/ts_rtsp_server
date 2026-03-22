@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtp.params;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
@@ -87,6 +88,13 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	/** Incoming A/V stream URI */
 	private URI avStreamIncomingUri;
 	private boolean isSetAvStreamIncomingUri;
+
+	/** Is RTP/RTCP encryption enabled? */
+	private boolean isRtpEncryptionEnabled;
+	private boolean isSetIsRtpEncryptionEnabled;
+	/** SRTP context */
+	private SrtpContext srtpContext;
+	private boolean isSetSrtpContext;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -194,6 +202,18 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetAvStreamIncomingUri = true;
 	}
 
+	public boolean getIsRtpEncryptionEnabled() { return isRtpEncryptionEnabled; }
+	public void setIsRtpEncryptionEnabled(boolean isRtpEncryptionEnabled) {
+		this.isRtpEncryptionEnabled = isRtpEncryptionEnabled;
+		this.isSetIsRtpEncryptionEnabled = true;
+	}
+
+	public Optional<SrtpContext> getSrtpContext() { return Optional.ofNullable(srtpContext); }
+	public void setSrtpContext(@NonNull SrtpContext srtpContext) {
+		this.srtpContext = srtpContext.clone();
+		this.isSetSrtpContext = true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void validate() {
@@ -221,6 +241,10 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 			} catch (UnknownHostException e) {
 				// this should never happen
 				throw new RuntimeException(e);
+			}
+			//
+			if (srtpContext != null) {
+				clone.srtpContext = srtpContext.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -258,6 +282,9 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
+
+		requireIsSet(isSetIsRtpEncryptionEnabled, "isRtpEncryptionEnabled");
+		requireIsSet(isSetSrtpContext, "srtpContext");
 	}
 
 	private void validateParamValues() {
@@ -293,6 +320,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
+
+		requireNonNull(srtpContext, "srtpContext");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

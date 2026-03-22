@@ -124,6 +124,9 @@ public class RtspRequestParser {
 			} catch (RtspUnsupportedTransportException e) {
 				logError(FNC_NAME, "Unsupported Transport, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.UNSUPPORTED_TRANSPORT);
+			} catch (RtspMissingEncryptionParamsException e) {
+				logError(FNC_NAME, "Missing encryption parameters, rejecting request");
+				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 			}
 		} while (! headerLine.isBlank());
 
@@ -274,6 +277,10 @@ public class RtspRequestParser {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
+			if (! rtspSessionInfo.streamsMapSrtpCtx.containsKey(rscStreamSourceId)) {
+				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
+						"Missing SRTP Context for Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
+			}
 			RtspSessionInfo.StreamInfo streamInfo = new RtspSessionInfo.StreamInfo();
 			streamInfo.rtspStreamSource = rtspStreamSource;
 			streamInfo.inputSourceUrlSetup = resourceUrl;
@@ -281,6 +288,7 @@ public class RtspRequestParser {
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
+			streamInfo.srtpContext = rtspSessionInfo.streamsMapSrtpCtx.get(rscStreamSourceId).clone();  // always clone the SRTP Context
 			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
@@ -339,7 +347,7 @@ public class RtspRequestParser {
 				RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				String headerLine
 			) throws RtspInvalidSessionIdException, RtspUnsupportedAcceptTypeException,
-				RtspInvalidRequestException, RtspUnsupportedTransportException {
+				RtspInvalidRequestException, RtspUnsupportedTransportException, RtspMissingEncryptionParamsException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine()";
 
 		if (headerLine.isBlank()) {
@@ -369,13 +377,18 @@ public class RtspRequestParser {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received TRANSPORT header in non-SETUP request");
 			}
 			parseHeaderLine_setup_transport(requestUrlInputOrStreamSource, headerLine);
+		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT)) {
+			if (requestType != ServerMessageType.SETUP) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP request");
+			}
+			parseHeaderLine_setup_keymgmt(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {
 			if (requestType != ServerMessageType.PLAY) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received RANGE header in non-PLAY request");
 			}
 			parseHeaderLine_range(headerLine);
 		} else {
-			logError(FNC_NAME, "Received unknown header: '" + headerLine + "'");
+			logWarn(FNC_NAME, "Received unknown header: '" + headerLine + "'");
 		}
 	}
 
@@ -409,7 +422,7 @@ public class RtspRequestParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_describe_accept()";
 
 		String tmpDataType = headerLine.substring(RTSP_RR_HEADER_TOKEN_DES_ACCEPT.length()).strip();
-		if (! RTSP_RR_HEADER_VALUE_DES_ACCEPT.equals(tmpDataType)) {
+		if (! RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT.equals(tmpDataType)) {
 			logError(FNC_NAME, "Invalid Accept header value: '" + tmpDataType + "'");
 			throw new RtspUnsupportedAcceptTypeException();
 		}
@@ -430,6 +443,7 @@ public class RtspRequestParser {
 		tmpStreamInfo.tpIsUnicast = false;
 		tmpStreamInfo.tpClientDestPortRtp = 0;
 		tmpStreamInfo.tpClientDestPortRtcp = 0;
+		tmpStreamInfo.tpIsEncr = false;
 		//
 		String tmpTransp = headerLine.substring(RTSP_RR_HEADER_TOKEN_SET_TRANSPORT.length()).strip();
 		//logDebug(FNC_NAME, "Transport='" + tmpTransp + "'");
@@ -437,30 +451,81 @@ public class RtspRequestParser {
 		StringTokenizer tokens = new StringTokenizer(tmpTransp, ";");
 		while (tokens.hasMoreTokens()) {
 			String curToken = tokens.nextToken();
-			if (RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPUDP.equals(curToken)) {
-				//logDebug(FNC_NAME, "type=" + RTSP_RR_HEADER_VALUE_TP_RTPAVPUDP);
+			if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP.equals(curToken)) {
+				//logDebug(FNC_NAME, "type=" + curToken);
 				tmpStreamInfo.tpIsUdp = true;
-			} else if (RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP.equals(curToken)) {
-				logDebug(FNC_NAME, "type=" + RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPTCP);  // @TODO implement RTP over TCP
+				tmpStreamInfo.tpIsEncr = false;
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP.equals(curToken)) {
+				//logDebug(FNC_NAME, "type=" + curToken);
+				tmpStreamInfo.tpIsUdp = true;
+				tmpStreamInfo.tpIsEncr = true;
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP.equals(curToken)) {
+				logWarn(FNC_NAME, "type=" + curToken);  // @TODO implement RTP over TCP
 				tmpStreamInfo.tpIsUdp = false;
-			} else if (RTSP_RR_HEADER_VALUE_SET_TP_UNICAST.equals(curToken)) {
-				//logDebug(FNC_NAME, "uni/multi=" + RTSP_RR_HEADER_VALUE_TP_UNICAST);
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST.equals(curToken)) {
+				//logDebug(FNC_NAME, "uni/multi=" + curToken);
 				tmpStreamInfo.tpIsUnicast = true;
-			} else if (curToken.startsWith(RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT)) {
-				String tmpSub = curToken.substring(RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT.length());
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)) {
+				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				String[] tmpPorts = tmpSub.split("-");
 				tmpStreamInfo.tpClientDestPortRtp = Integer.parseInt(tmpPorts[0]);
 				tmpStreamInfo.tpClientDestPortRtcp = Integer.parseInt(tmpPorts[1]);
 				tmpStreamInfo.tpIsInterleaved = false;
-			} else if (curToken.startsWith(RTSP_RR_HEADER_VALUE_SET_TP_INTERLEAVED)) {
-				String tmpSub = curToken.substring(RTSP_RR_HEADER_VALUE_SET_TP_INTERLEAVED.length());
-				logDebug(FNC_NAME, "interleaved=" + tmpSub);  // @TODO implement RTP over TCP
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)) {
+				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
+				logWarn(FNC_NAME, "interleaved=" + tmpSub);  // @TODO implement RTP over TCP
 				tmpStreamInfo.tpIsInterleaved = true;
+			} else {
+				logWarn(FNC_NAME, "Unknown Transport parameter: '" + curToken + "'");
 			}
 		}
 
 		if (! tmpStreamInfo.isTransportValid()) {
 			throw new RtspUnsupportedTransportException();
+		}
+	}
+
+	private void parseHeaderLine_setup_keymgmt(
+				RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				String headerLine
+			) throws RtspMissingEncryptionParamsException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_setup_keymgmt()";
+
+		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(
+				FNC_NAME,
+				requestUrlInputOrStreamSource.streamSourceId
+			);
+
+		boolean haveKeyData = false;
+		//
+		String tmpKeymgmt = headerLine.substring(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT.length()).strip();
+		//logDebug(FNC_NAME, "Keymgmt='" + tmpKeymgmt + "'");
+		// e.g. 'KeyMgmt: prot=mikey; uri="rtsp://.../streamid00"; data="[BASE64 ENCODED DATA]"'
+		StringTokenizer tokens = new StringTokenizer(tmpKeymgmt, ";");
+		while (tokens.hasMoreTokens()) {
+			String curToken = tokens.nextToken().strip();
+			if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT)) {
+				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT.length());
+				if (! tmpSub.equals(RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY)) {
+					throw new RtspMissingEncryptionParamsException();
+				}
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA)) {
+				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA.length())
+						.replace("\"", "").replace("'", "").strip();
+				try {
+					Objects.requireNonNull(tmpStreamInfo.srtpContext).setClientMikey(tmpSub);
+					haveKeyData = true;
+				} catch (SrtpSecurityException e) {
+					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());
+					throw new RtspMissingEncryptionParamsException();
+				}
+			} else if (! curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_URI)) {
+				logWarn(FNC_NAME, "Unknown Keymgmt parameter: '" + curToken + "'");
+			}
+		}
+
+		if (! haveKeyData) {
+			throw new RtspMissingEncryptionParamsException();
 		}
 	}
 
@@ -495,6 +560,9 @@ public class RtspRequestParser {
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void logWarn(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.WARN, fncName, msg);
 	}
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);

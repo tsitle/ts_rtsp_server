@@ -9,6 +9,7 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -129,13 +130,10 @@ public class RtspResponseBuilder {
 	private void sendResponseDescribe() {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseDescribe()";
 
-		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerSmtMap.getOrDefault(
-				ServerMessageType.DESCRIBE,
-				null
-			);
-		if (rtspInputSource == null) {
+		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.DESCRIBE)) {
 			throw new IllegalStateException(FNC_NAME + ": Input Source not found");
 		}
+		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.DESCRIBE);
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
 			sendResponseNack(ServerResponseStatusCode.BAD_REQUEST);
@@ -176,7 +174,7 @@ public class RtspResponseBuilder {
 		//
 		List<String> contents = new ArrayList<>();
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_SESSION + " " + rtspSessionInfo.rtspSessionId + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TIMEOUT + RtspConstants.RTSP_SESSION_TIMEOUT);
+				RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT + RtspConstants.RTSP_SESSION_TIMEOUT);
 
 		// we need to open the sockets now so we can get the port numbers
 		findAndOpenUdpSocketPorts(tmpStreamInfo);
@@ -186,20 +184,23 @@ public class RtspResponseBuilder {
 		 *   RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=38852-38853;server_port=6970-6971;ssrc=DEADBEEF
 		 * See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
 		 */
+		Objects.requireNonNull(rtspSessionInfo.clientIpAddr);
+		Objects.requireNonNull(tmpStreamInfo.tpServerSrcSocketRtp);
+		Objects.requireNonNull(tmpStreamInfo.tpServerSocketRtcp);
 		String tmpRtspHostIp = findRtspHostIp(ServerMessageType.SETUP);
 		String tmpLine = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT + " " +
-				RTSP_RR_HEADER_VALUE_SET_TP_RTPAVPUDP + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TP_UNICAST + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TP_DESTIP + rtspSessionInfo.clientIpAddr.getHostAddress() + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TP_SOURCEIP + tmpRtspHostIp + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TP_CLIENTPORT +
+				(tmpStreamInfo.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP) + ";" +
+				RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST + ";" +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP + rtspSessionInfo.clientIpAddr.getHostAddress() + ";" +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP + tmpRtspHostIp + ";" +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT +
 					Integer.toUnsignedString(tmpStreamInfo.tpClientDestPortRtp) + "-" +
 					Integer.toUnsignedString(tmpStreamInfo.tpClientDestPortRtcp) + ";" +
-				RTSP_RR_HEADER_VALUE_SET_TP_SERVERPORT +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT +
 					Integer.toUnsignedString(tmpStreamInfo.tpServerSrcSocketRtp.getLocalPort()) + "-" +
 					Integer.toUnsignedString(tmpStreamInfo.tpServerSocketRtcp.getLocalPort()) +
 				(rtspSessionInfo.lastRequestRtspProtoVersion.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2) ?
-							";" + RTSP_RR_HEADER_VALUE_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId)  // only valid for unicast transmission
+							";" + RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId)  // only valid for unicast transmission
 							: ""
 						);
 		contents.add(tmpLine);
@@ -226,11 +227,11 @@ public class RtspResponseBuilder {
 				tmpRtpInfoSb.append(",");
 			}
 			tmpRtpInfoSb
-					.append(RTSP_RR_HEADER_VALUE_PLA_RI_URL).append(tmpStreamInfo.inputSourceUrlSetup)
+					.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL).append(tmpStreamInfo.inputSourceUrlSetup)
 					.append(";")
-					.append(RTSP_RR_HEADER_VALUE_PLA_RI_SEQ).append(Integer.toUnsignedString(tmpStreamInfo.rtspRtpSeqNrT0))
+					.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ).append(Integer.toUnsignedString(tmpStreamInfo.rtspRtpSeqNrT0))
 					.append(";")
-					.append(RTSP_RR_HEADER_VALUE_PLA_RI_RTPTIME).append(Integer.toUnsignedString(tmpStreamInfo.rtspRtpTimestampT0));
+					.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME).append(Integer.toUnsignedString(tmpStreamInfo.rtspRtpTimestampT0));
 		}
 		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RTPINFO + " " + tmpRtpInfoSb);
 		contents.add("");
@@ -348,10 +349,11 @@ public class RtspResponseBuilder {
 		}
 		// m: Media Description with available codec(s)
 		final int tmpM_port = 0;
-		sw.write(String.format("m=%s %d RTP/AVP %d%s",
-				(useVideo ? "video" : "audio"), tmpM_port, tmpSsObj.getCodec().getValue(), CRLF));
+		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
+				(useVideo ? "video" : "audio"), tmpM_port, rtspSessionInfo.isRtpEncryptionEnabled ? "S" : "",
+				tmpSsObj.getCodec().getValue(), CRLF));
 		// c: Connection Information (can be an IP address or a hostname)
-		sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
+		//sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
 		//
 		if (tmpSsObj.getCodec().isPcmAudio()) {
 			if (tmpSsObj.getCodec().getPcmAudioBitsPerSample().isPresent()) {
@@ -410,7 +412,7 @@ public class RtspResponseBuilder {
 								CRLF
 					));
 				break;
-			case RtpPacketType.V_H264, RtpPacketType.V_H265:
+			case RtpPacketType.V_H264:
 				sw.write(
 						String.format(
 								"a=fmtp:%d " +
@@ -424,6 +426,10 @@ public class RtspResponseBuilder {
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
+
+		//
+		SrtpContext srtpCtx = new SrtpContext();
+		rtspSessionInfo.streamsMapSrtpCtx.put(tmpSsObj.getId(), srtpCtx);  // always store the context
 	}
 
 	/**
@@ -490,7 +496,7 @@ public class RtspResponseBuilder {
 		StringWriter sw = new StringWriter();
 		String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerSmtMap.get(ServerMessageType.DESCRIBE);
 		sw.write(String.format("%s %s/%s", RTSP_RR_HEADER_TOKEN_DES_CONTBASE, tmpUrlBase, CRLF));
-		sw.write(String.format("%s %s%s", RTSP_RR_HEADER_TOKEN_DES_CONTTYPE, RTSP_RR_HEADER_VALUE_DES_ACCEPT, CRLF));
+		sw.write(String.format("%s %s%s", RTSP_RR_HEADER_TOKEN_DES_CONTTYPE, RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT, CRLF));
 		sw.write(String.format("%s %d%s", RTSP_RR_HEADER_TOKEN_XXX_CONTLEN, (body.length() + CRLF.length()), CRLF));
 		sw.write(CRLF);
 		sw.write(body);
