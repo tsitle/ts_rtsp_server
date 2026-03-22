@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
@@ -123,12 +124,16 @@ public class RtcpPacketHeader implements Cloneable {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [" +
+		return toString(false);
+	}
+
+	public @NonNull String toString(boolean skipClassName) {
+		return (skipClassName ? "" : getClass().getSimpleName() + " [") +
 				"Version: " + hdVersion +
 				", Padding: " + hdPadding +
 				", Type: " + hdPayloadType + " (o=" + getOrgPayloadType() + ")" +
 				", PayloadSize: " + Integer.toUnsignedString(hdPayloadSize) +
-				"]";
+				(skipClassName ? "" : "]");
 	}
 
 	@Override

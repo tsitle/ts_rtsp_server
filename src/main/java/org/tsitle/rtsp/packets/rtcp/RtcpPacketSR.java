@@ -179,7 +179,7 @@ public class RtcpPacketSR {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				mainPktHd +
+				mainPktHd.toString(true) +
 				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +
 				", " + senderInfoBlock +
 				", RRB Count: " + recpReportBlocks.size() +

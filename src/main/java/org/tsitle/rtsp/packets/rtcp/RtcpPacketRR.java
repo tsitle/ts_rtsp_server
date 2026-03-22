@@ -150,7 +150,7 @@ public class RtcpPacketRR {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				mainPktHd +
+				mainPktHd.toString(true) +
 				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +
 				", RRB Count: " + recpReportBlocks.size() +
 				", " + recpReportBlocks +

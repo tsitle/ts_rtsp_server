@@ -151,7 +151,7 @@ public class RtcpPacketSDES {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				mainPktHd +
+				mainPktHd.toString(true) +
 				", XSRCB Count: " + xsrcBlocks.size() +
 				", " + xsrcBlocks +
 				"]";

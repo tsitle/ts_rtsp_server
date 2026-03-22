@@ -171,7 +171,7 @@ public class RtcpPacketBYE {
 						.toArray(String[]::new)
 			);
 		return getClass().getSimpleName() + " [" +
-				mainPktHd +
+				mainPktHd.toString(true) +
 				", XSRC Count: " + bdXsrcList.size() +
 				", XSRCs: " + tmpXsrcs +
 				", RFL: '" + bdReasonForLeaving + "'" +
