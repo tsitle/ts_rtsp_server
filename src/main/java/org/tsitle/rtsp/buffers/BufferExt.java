@@ -235,6 +235,25 @@ public class BufferExt implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		}
+		if (obj instanceof BufferExt other) {
+			if (used != other.used) {
+				return false;
+			}
+			for (int i = 0; i < used; i++) {
+				if (buf[i] != other.buf[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public BufferExt clone() {
 		try {
 			BufferExt clone = (BufferExt)super.clone();

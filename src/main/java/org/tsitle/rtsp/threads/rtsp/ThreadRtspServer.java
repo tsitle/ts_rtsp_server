@@ -237,6 +237,8 @@ public class ThreadRtspServer extends RunnableBase {
 				.clientDestPortRtcp(tmpStreamInfo.tpClientDestPortRtcp)
 				.rtcpSocketUdp(Objects.requireNonNull(tmpStreamInfo.tpServerSocketRtcp))
 				.rtspSsrcId(tmpStreamInfo.rtspSsrcId)
+				.comIsRtpEncryptionEnabled(rtspSessionInfo.isRtpEncryptionEnabled)
+				.comSrtpContext(Objects.requireNonNull(tmpStreamInfo.srtpContext))
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP#c" + clientConnectionNr +

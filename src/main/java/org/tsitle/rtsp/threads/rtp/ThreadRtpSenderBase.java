@@ -148,7 +148,7 @@ public abstract class ThreadRtpSenderBase<
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
 		if (paramsCommon.getIsRtpEncryptionEnabled()) {
-			udpMaxPacketLenDelta += SrtpContext.SRT_EXTRA_PACKET_SIZE;
+			udpMaxPacketLenDelta += paramsCommon.getSrtpContext().orElseThrow().getSrtpExtraPacketLength();
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
 			throw new AssertionError("UDP packet length too small");

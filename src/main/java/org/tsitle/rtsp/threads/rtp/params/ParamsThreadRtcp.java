@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
@@ -36,6 +37,13 @@ public final class ParamsThreadRtcp implements Cloneable {
 	/** RTSP Synchronization Source Identifier of the stream */
 	private int rtspSsrcId;
 	private boolean isSetRtspSsrcId;
+
+	/** Is RTP/RTCP encryption enabled? */
+	private boolean isRtpEncryptionEnabled;
+	private boolean isSetIsRtpEncryptionEnabled;
+	/** SRTP context */
+	private SrtpContext srtpContext;
+	private boolean isSetSrtpContext;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -85,6 +93,18 @@ public final class ParamsThreadRtcp implements Cloneable {
 		this.isSetRtspSsrcId = true;
 	}
 
+	public boolean getIsRtpEncryptionEnabled() { return isRtpEncryptionEnabled; }
+	public void setIsRtpEncryptionEnabled(boolean isRtpEncryptionEnabled) {
+		this.isRtpEncryptionEnabled = isRtpEncryptionEnabled;
+		this.isSetIsRtpEncryptionEnabled = true;
+	}
+
+	public Optional<SrtpContext> getSrtpContext() { return Optional.ofNullable(srtpContext); }
+	public void setSrtpContext(@NonNull SrtpContext srtpContext) {
+		this.srtpContext = srtpContext.clone();
+		this.isSetSrtpContext = true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void validate() {
@@ -105,6 +125,10 @@ public final class ParamsThreadRtcp implements Cloneable {
 				// this should never happen
 				throw new RuntimeException(e);
 			}
+			//
+			if (srtpContext != null) {
+				clone.srtpContext = srtpContext.clone();
+			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -122,6 +146,9 @@ public final class ParamsThreadRtcp implements Cloneable {
 		requireIsSet(isSetClientDestPortRtcp, "clientDestPortRtcp");
 		requireIsSet(isSetRtcpSocketUdp, "rtcpSocketUdp");
 		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
+
+		requireIsSet(isSetIsRtpEncryptionEnabled, "isRtpEncryptionEnabled");
+		requireIsSet(isSetSrtpContext, "srtpContext");
 	}
 
 	private void validateParamValues() {
@@ -138,6 +165,8 @@ public final class ParamsThreadRtcp implements Cloneable {
 			throw new IllegalArgumentException(errPrefix + "clientDestPortRtcp must be > 0 and <= 65535");
 		}
 		requireNonNull(rtcpSocketUdp, "rtcpSocketUdp");
+
+		requireNonNull(srtpContext, "srtpContext");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

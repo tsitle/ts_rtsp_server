@@ -412,7 +412,14 @@ public class SrtpContextTest {
 		ByteBuffer ivBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivBuf.putInt(0);
 		ivBuf.putInt(ssrc);
-		ivBuf.putLong(packetIndex);
+		ivBuf.putShort((short)0);
+		ivBuf.put((byte)((packetIndex >>> 40) & 0xFF));
+		ivBuf.put((byte)((packetIndex >>> 32) & 0xFF));
+		ivBuf.put((byte)((packetIndex >>> 24) & 0xFF));
+		ivBuf.put((byte)((packetIndex >>> 16) & 0xFF));
+		ivBuf.put((byte)((packetIndex >>> 8) & 0xFF));
+		ivBuf.put((byte)(packetIndex & 0xFF));
+
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			iv[i] ^= rtpSessionSalt[i];
 		}
@@ -454,8 +461,9 @@ public class SrtpContextTest {
 		ByteBuffer ivBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivBuf.putInt(0);
 		ivBuf.putInt(ssrc);
+		ivBuf.putShort((short)0);
 		ivBuf.putInt(srtcpIndexOnly);
-		ivBuf.putInt(0);
+		ivBuf.putShort((short)0);
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			iv[i] ^= rtcpSessionSalt[i];
 		}

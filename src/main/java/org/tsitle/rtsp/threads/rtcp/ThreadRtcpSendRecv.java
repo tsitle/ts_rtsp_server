@@ -2,7 +2,9 @@ package org.tsitle.rtsp.threads.rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
+import org.tsitle.rtsp.security.SrtpContext;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -32,6 +34,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
+	private final SrtpContext srtcpContextRecv;
+
 	/**
 	 * Constructor.
 	 * @param params Thread parameters
@@ -43,6 +47,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		this.params = params.clone();
 		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
+		this.srtcpContextRecv = params.getSrtpContext().orElseThrow().clone();
 
 		//
 		byte[] rtcpBuf = new byte[1024];
@@ -161,6 +166,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private void handleReceived() {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleReceived()";
 
+		boolean wasDecr = false;
 		while (! cacheRecvBuf1.isEmpty()) {
 			if (cacheRecvBuf1.getUsed() >= 4 &&
 					(cacheRecvBuf1.get(0) == (byte)0xCE && cacheRecvBuf1.get(1) == (byte)0xFA &&
@@ -178,10 +184,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				continue;
 			}
 
-			/*
-			 * 055686F812C4AD9D7916AD1D2972DC510BA07D7D2CBEBCD6 80000000 551E67DA 5D0189BC1B318BB9AA36
-			 */
-
 			//
 			final RtcpPacketHeader rtcpPktHd = new RtcpPacketHeader(cacheRecvBuf1);
 			final int tmpPktSz = rtcpPktHd.getPacketSize();
@@ -190,15 +192,37 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 						", exp= le " + cacheRecvBuf1.getUsed() + ")");
 				logWarn(FNC_NAME, "Discarded packet: 0x" + cacheRecvBuf1.toHexString());
 				logWarn(FNC_NAME, "Discarded packet: " + rtcpPktHd);
+				cacheRecvBuf1.clear();
 				break;
 			}
-			if (tmpPktSz < cacheRecvBuf1.getUsed()) {
-				cacheRecvBuf3.copyOf(cacheRecvBuf1, 0, tmpPktSz);  // contains the current packet
-				cacheRecvBuf2.copyOf(cacheRecvBuf1, tmpPktSz, cacheRecvBuf1.getUsed() - tmpPktSz);
-				cacheRecvBuf1.copyOf(cacheRecvBuf2);
-			} else {
-				cacheRecvBuf3.copyOf(cacheRecvBuf1);  // contains the current packet
-				cacheRecvBuf1.clear();
+
+			boolean tmpWasDecr = false;
+			if (! wasDecr && params.getIsRtpEncryptionEnabled()) {
+				try {
+					tmpWasDecr = srtcpContextRecv.unprotectRtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+					if (tmpWasDecr) {
+						cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
+						cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
+						cacheRecvBuf2.clear();
+						//
+						wasDecr = true;
+					}
+				} catch (SrtpSecurityException e) {
+					logError(FNC_NAME, "SrtpSecurityException caught: " + e.getMessage());
+					cacheRecvBuf1.clear();
+					return;
+				}
+			}
+
+			if (! tmpWasDecr) {
+				if (tmpPktSz < cacheRecvBuf1.getUsed()) {
+					cacheRecvBuf3.copyOf(cacheRecvBuf1, 0, tmpPktSz);  // contains the current packet
+					cacheRecvBuf2.copyOf(cacheRecvBuf1, tmpPktSz, cacheRecvBuf1.getUsed() - tmpPktSz);
+					cacheRecvBuf1.copyOf(cacheRecvBuf2);
+				} else {
+					cacheRecvBuf3.copyOf(cacheRecvBuf1);  // contains the current packet
+					cacheRecvBuf1.clear();
+				}
 			}
 
 			// handle the payload
