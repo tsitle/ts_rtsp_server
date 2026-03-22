@@ -533,19 +533,19 @@ public class SrtpContext implements Cloneable {
 		 * Byte layout before XOR:
 		 *   [0..3]   = 0x00000000
 		 *   [4..7]   = SSRC
-		 *   [8..9]   = 0x0000
-		 *   [10..15] = packetIndex (48 bits)
+		 *   [8..13]  = packetIndex (48 bits)
+		 *   [14..15] = 0x0000
 		 */
 		ByteBuffer buf = ByteBuffer.wrap(tmpIvBytes).order(ByteOrder.BIG_ENDIAN);
 		buf.putInt(0);
 		buf.putInt(ssrc);
-		buf.putShort((short)0);
 		buf.put((byte)((packetIndex >>> 40) & 0xFF));
 		buf.put((byte)((packetIndex >>> 32) & 0xFF));
 		buf.put((byte)((packetIndex >>> 24) & 0xFF));
 		buf.put((byte)((packetIndex >>> 16) & 0xFF));
 		buf.put((byte)((packetIndex >>> 8) & 0xFF));
 		buf.put((byte)(packetIndex & 0xFF));
+		buf.putShort((short)0);
 
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			tmpIvBytes[i] ^= ctxRtpSessionSalt[i];
