@@ -9,11 +9,31 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
-import java.util.HexFormat;
 
 public class MikeyParser {
 
-	public record SrtpKeys(byte[] masterKey, byte[] masterSalt) { }
+	public record SrtpKeys(byte[] masterKey, byte[] masterSalt, int authKeyLen, int mki) { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static class MikeyData {
+		int hdCsbId;
+		byte hdCsNr;
+
+		final BufferExt hdRandData = new BufferExt();
+
+		int spAuthKeyLen = KeySizes.AUTH_KEY_SIZE_160;
+
+		final BufferExt kemacMasterKey = new BufferExt();
+		final BufferExt kemacMasterSalt = new BufferExt();
+		final BufferExt kemacTekTgkSalt = new BufferExt();
+		MickeyMsgKemacKv kemacKvType = MickeyMsgKemacKv.MMKEMKV_UNKNOWN;
+		final BufferExt kemacKvDataSpiOrMki = new BufferExt();
+		final BufferExt kemacKvDataIntvF = new BufferExt();
+		final BufferExt kemacKvDataIntvT = new BufferExt();
+		boolean kemacHaveKeys = false;
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -31,9 +51,13 @@ public class MikeyParser {
 		} catch (IllegalArgumentException e) {
 			throw new SrtpSecurityException("Invalid base64 encoding");
 		}
+
+		//
+		final MikeyData mikeyData = new MikeyData();
+
+		//
 		ByteBuffer buf = ByteBuffer.wrap(msg).order(ByteOrder.BIG_ENDIAN);
 
-		System.err.println("MIKEY: " + "0x" + HexFormat.of().withUpperCase().formatHex(msg));  // @TODO
 		// parse MIKEY header -- RFC-3830 Section 6.1 (Common Header payload aka HDR)
 		///
 		byte tmpHdVers = buf.get();  // version
@@ -42,38 +66,38 @@ public class MikeyParser {
 		}
 		byte tmpHdDt = buf.get();  // data type
 		byte tmpHdNp = buf.get();  // next payload
-		buf.get();  // V | PRF_FUNC
+		byte tmpHdVandPrf = buf.get();  // V | PRF_FUNC
+		byte tmpHdV = (byte)(tmpHdVandPrf & (byte)0x80);
+		if (tmpHdV == (byte)0x80) {  // V==0x80 => response expected
+			throw new SrtpSecurityException(String.format("Unsupported MIKEY V value: 0x%02X", tmpHdV));
+		}
+		byte tmpHdPrf = (byte)(tmpHdVandPrf & (byte)0x7F);
+		if (tmpHdPrf != (byte)0x00) {  // PRF_FUNC==0x00 => MIKEY-1
+			throw new SrtpSecurityException(String.format("Unsupported MIKEY PRF value: 0x%02X", tmpHdPrf));
+		}
 		///
-		buf.getInt();  // CSB_ID
+		mikeyData.hdCsbId = buf.getInt();  // CSB_ID
 		///
-		buf.get();  // #CS
+		mikeyData.hdCsNr = buf.get();  // #CS (indicates the number of Crypto Sessions that will be handled within the CBS)
 		byte tmpCsIdMapType = buf.get();  // CS_ID_map_type
 		buf.getShort();  // CS_ID_map_info
 		MickeyMsgDataType tmpDataType = MickeyMsgDataType.of(tmpHdDt);
-		System.err.println("MIKEY: hdr.dataTp=" + tmpDataType);  // @TODO
 		MickeyMsgPayloadType nextPayloadType = MickeyMsgPayloadType.of(tmpHdNp);
-		System.err.println("MIKEY: hdr.nextPay=" + nextPayloadType);  // @TODO
 		if (tmpDataType != MickeyMsgDataType.MMDT_PRE_SHARED_KEY) {
-			throw new SrtpSecurityException("Unsupported MIKEY data type: " + String.format(" (0x%02X)", tmpHdDt));
+			throw new SrtpSecurityException(String.format("Unsupported MIKEY data type: 0x%02X", tmpHdDt));
 		}
 		if (nextPayloadType == MickeyMsgPayloadType.MMPT_UNKNOWN) {
-			throw new SrtpSecurityException("Unknown MIKEY payload type: " + String.format(" (0x%02X)", tmpHdNp));
+			throw new SrtpSecurityException(String.format("Unknown MIKEY payload type: 0x%02X", tmpHdNp));
 		}
-		if (tmpCsIdMapType == 0x00) {  // SRTP-ID
+		if (tmpCsIdMapType == 0x00) {  // CS_ID_map_type==0 => SRTP-ID
 			/*
 			 * these 7 bytes could not be identified from RFC-3830. just skipping them for now
 			 */
-			buf.get();
-			buf.get();
-			buf.get();
-			buf.getInt();
+			byte[] tmpCsMapData = new byte[7];
+			buf.get(tmpCsMapData);
 		}
 
 		try {
-			BufferExt outpMasterKey = new BufferExt();
-			BufferExt outpMasterSalt = new BufferExt();
-			boolean foundKemacPayload = false;
-
 			while (buf.remaining() >= 4) {
 				/*
 				 * Common Header: 01000500 FD3B3879 01000008 (will change with every request)
@@ -88,101 +112,17 @@ public class MikeyParser {
 				 */
 				byte tmpBy = buf.get();
 				MickeyMsgPayloadType tmpNextPt = MickeyMsgPayloadType.of(tmpBy);
-				System.err.println("MIKEY: pay.nextPay=" + tmpNextPt + String.format(" (0x%02X)", tmpBy));  // @TODO
 				if (tmpNextPt == MickeyMsgPayloadType.MMPT_UNKNOWN) {
-					throw new SrtpSecurityException("Unknown MIKEY payload type: " + String.format(" (0x%02X)", tmpBy));
+					throw new SrtpSecurityException(String.format("Unknown MIKEY payload type: 0x%02X", tmpBy));
 				}
 
 				//
 				boolean stopLoop = false;
 				switch (nextPayloadType) {
-					case MMPT_T:
-						tmpBy = buf.get();
-						MickeyMsgTimestampType tmpTsTp = MickeyMsgTimestampType.of(tmpBy);
-						System.err.println("MIKEY: pay.T.ts=" + tmpTsTp + String.format(" (0x%02X)", tmpBy));  // @TODO
-						if (tmpTsTp == MickeyMsgTimestampType.MMTST_UNKNOWN) {
-							throw new SrtpSecurityException("Unknown MIKEY timestamp type: " + String.format(" (0x%02X)", tmpBy));
-						}
-						if (tmpTsTp != MickeyMsgTimestampType.MMTST_COUNTER) {
-							buf.getLong();  // TS value 64-bits
-						} else {
-							buf.getInt();  // TS value 32-bits
-						}
-						break;
-					case MMPT_RAND:
-						tmpBy = buf.get();  // RAND_LEN
-						System.err.println("MIKEY: pay.RAND.l=" + Integer.toUnsignedString(tmpBy));  // @TODO
-						if (buf.remaining() < tmpBy) {
-							throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
-									tmpBy + ", got " + buf.remaining() + ")");
-						}
-						byte[] tmpRandData = new byte[tmpBy];
-						buf.get(tmpRandData);
-						System.err.println("MIKEY: pay.RAND.data=" + "0x" +
-								HexFormat.of().withUpperCase().formatHex(tmpRandData));  // @TODO
-						break;
-					case MMPT_SP:
-						tmpBy = buf.get();  // Policy No
-						System.err.println("MIKEY: pay.SP.polno=" + Integer.toUnsignedString(tmpBy));  // @TODO
-						tmpBy = buf.get();  // Prot Type
-						System.err.println("MIKEY: pay.SP.prottp=" + Integer.toUnsignedString(tmpBy));  // @TODO
-						short tmpSpLen = buf.getShort();  // Policy param length
-						if (buf.remaining() < tmpSpLen) {
-							throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
-									tmpSpLen + ", got " + buf.remaining() + ")");
-						}
-						byte[] tmpPolicyData = new byte[tmpSpLen];
-						buf.get(tmpPolicyData);
-						//
-						ByteBuffer tmpSpParamsBuf = ByteBuffer.wrap(tmpPolicyData).order(ByteOrder.BIG_ENDIAN);
-						while (tmpSpParamsBuf.remaining() > 2) {
-							tmpBy = tmpSpParamsBuf.get();  // Parameter Type
-							System.err.println("MIKEY: pay.SP.x.partp=" + Integer.toUnsignedString(tmpBy));  // @TODO
-							tmpBy = tmpSpParamsBuf.get();  // Parameter Length
-							if (tmpSpParamsBuf.remaining() < tmpBy) {
-								throw new SrtpSecurityException("Invalid MIKEY SP payload length (needed " +
-										tmpBy + ", got " + tmpSpParamsBuf.remaining() + ")");
-							}
-							byte[] tmpPolParamData = new byte[tmpBy];
-							tmpSpParamsBuf.get(tmpPolParamData);
-							System.err.println("MIKEY: pay.SP.x.pardata=" + "0x" +
-									HexFormat.of().withUpperCase().formatHex(tmpPolParamData));  // @TODO
-						}
-						break;
-					case MMPT_KEMAC:
-						tmpBy = buf.get();
-						MickeyMsgEncrAlg tmpEncrAlg = MickeyMsgEncrAlg.of(tmpBy);
-						System.err.println("MIKEY: pay.KEMAC.ea=" + tmpEncrAlg + String.format(" (0x%02X)", tmpBy));  // @TODO
-						if (tmpEncrAlg == MickeyMsgEncrAlg.MMEA_UNKNOWN) {
-							throw new SrtpSecurityException("Unknown MIKEY encr algo: " + String.format(" (0x%02X)", tmpBy));
-						}
-						short tmpEncrDataLen = buf.getShort();
-						System.err.println("MIKEY: pay.KEMAC.edl=" + Integer.toUnsignedString(tmpEncrDataLen));  // @TODO
-						if (buf.remaining() < tmpEncrDataLen) {
-							throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
-									tmpEncrDataLen + ", got " + buf.remaining() + ")");
-						}
-						byte[] tmpEncrData = new byte[tmpEncrDataLen];
-						buf.get(tmpEncrData);
-						System.err.println("MIKEY: pay.KEMAC.encrdata=" + "0x" +
-								HexFormat.of().withUpperCase().formatHex(tmpEncrData));  // @TODO
-						parseKemacKeyDataSubPayload(tmpEncrData, outpMasterKey, outpMasterSalt);
-						//
-						tmpBy = buf.get();
-						System.err.println("MIKEY: pay.KEMAC.ma=" + String.format(" (0x%02X)", tmpBy));  // @TODO
-						if (tmpBy == 1) {
-							final int KEMAC_MAC_DATA_LEN = 10;
-							if (buf.remaining() < KEMAC_MAC_DATA_LEN) {
-								throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
-										KEMAC_MAC_DATA_LEN + ", got " + buf.remaining() + ")");
-							}
-							byte[] tmpMacData = new byte[KEMAC_MAC_DATA_LEN];
-							buf.get(tmpMacData);
-							System.err.println("MIKEY: pay.KEMAC.macdata=" + "0x" +
-									HexFormat.of().withUpperCase().formatHex(tmpMacData));  // @TODO
-						}
-						//
-						foundKemacPayload = true;
+					case MMPT_T: parsePtTimestamp(buf); break;
+					case MMPT_RAND: parsePtRand(buf, mikeyData); break;
+					case MMPT_SP: parsePtSecurityPolicy(buf, mikeyData); break;
+					case MMPT_KEMAC: tmpNextPt = parsePtKemac(buf, mikeyData); break;
 					default:
 						stopLoop = true;
 				}
@@ -197,14 +137,18 @@ public class MikeyParser {
 				}
 			}
 
-			if (foundKemacPayload) {
-				byte[] tmpMk = new byte[outpMasterKey.getUsed()];
-				outpMasterKey.copyInto(0, tmpMk, 0, tmpMk.length);
-				byte[] tmpMs = new byte[outpMasterSalt.getUsed()];
-				outpMasterSalt.copyInto(0, tmpMs, 0, tmpMs.length);
-				System.err.println("MIKEY: master Key : " + "0x" + HexFormat.of().withUpperCase().formatHex(tmpMk));  // @TODO
-				System.err.println("MIKEY: master Salt: " + "0x" + HexFormat.of().withUpperCase().formatHex(tmpMs));  // @TODO
-				return new MikeyParser.SrtpKeys(tmpMk, tmpMs);
+			if (mikeyData.kemacHaveKeys) {
+				byte[] tmpMk = new byte[mikeyData.kemacMasterKey.getUsed()];
+				mikeyData.kemacMasterKey.copyInto(0, tmpMk, 0, tmpMk.length);
+				byte[] tmpMs = new byte[mikeyData.kemacMasterSalt.getUsed()];
+				mikeyData.kemacMasterSalt.copyInto(0, tmpMs, 0, tmpMs.length);
+				if (! mikeyData.kemacKvDataSpiOrMki.isEmpty() && mikeyData.kemacKvDataSpiOrMki.getUsed() != 4) {
+					throw new SrtpSecurityException("Invalid MIKEY MKI length " + mikeyData.kemacKvDataSpiOrMki.getUsed());
+				}
+				int tmpMki = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ?
+						0 : ByteBuffer.wrap(mikeyData.kemacKvDataSpiOrMki.getBufPtr()).getInt()
+					);
+				return new MikeyParser.SrtpKeys(tmpMk, tmpMs, mikeyData.spAuthKeyLen, tmpMki);
 			}
 		} catch (BufferUnderflowException e) {
 			throw new SrtpSecurityException("Invalid MIKEY payload length");
@@ -216,36 +160,204 @@ public class MikeyParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static void parsePtTimestamp(ByteBuffer buf) throws SrtpSecurityException {
+		byte tmpBy = buf.get();
+		MickeyMsgTimestampType tmpTsTp = MickeyMsgTimestampType.of(tmpBy);
+		if (tmpTsTp == MickeyMsgTimestampType.MMTST_UNKNOWN) {
+			throw new SrtpSecurityException(String.format("Unknown MIKEY Timestamp type: 0x%02X", tmpBy));
+		}
+		if (tmpTsTp != MickeyMsgTimestampType.MMTST_COUNTER) {
+			buf.getLong();  // TS value 64-bits
+		} else {
+			buf.getInt();  // TS value 32-bits
+		}
+	}
+
+	private static void parsePtRand(ByteBuffer buf, final MikeyData mikeyData) throws SrtpSecurityException {
+		byte tmpBy = buf.get();
+		extractBytes("RAND", buf, tmpBy, mikeyData.hdRandData);
+	}
+
+	private static void parsePtSecurityPolicy(ByteBuffer buf, final MikeyData mikeyData) throws SrtpSecurityException {
+		buf.get();  // Policy No
+		byte tmpBy = buf.get();  // Prot Type
+		if (tmpBy != 0x00) {  // PROT==0x00 => SRTP
+			throw new SrtpSecurityException(String.format("Unsupported MIKEY SP prot type: 0x%02X", tmpBy));
+		}
+		short tmpSpLen = buf.getShort();  // Policy param length
+		if (buf.remaining() < tmpSpLen) {
+			throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
+					tmpSpLen + ", got " + buf.remaining() + ")");
+		}
+		byte[] tmpPolicyData = new byte[tmpSpLen];
+		buf.get(tmpPolicyData);
+		//
+		ByteBuffer tmpSpParamsBuf = ByteBuffer.wrap(tmpPolicyData).order(ByteOrder.BIG_ENDIAN);
+		while (tmpSpParamsBuf.remaining() >= 2) {
+			tmpBy = tmpSpParamsBuf.get();  // Parameter Type
+			MickeyMsgSecPolicyParamType mmspType = MickeyMsgSecPolicyParamType.of(tmpBy);
+			if (mmspType == MickeyMsgSecPolicyParamType.MMSPPT_UNKNOWN) {
+				throw new SrtpSecurityException(String.format("Unknown MIKEY SP Parameter type: 0x%02X", tmpBy));
+			}
+			tmpBy = tmpSpParamsBuf.get();  // Parameter Length
+			if (tmpSpParamsBuf.remaining() < tmpBy) {
+				throw new SrtpSecurityException("Invalid MIKEY SP payload length (needed " +
+						tmpBy + ", got " + tmpSpParamsBuf.remaining() + ")");
+			}
+			if (tmpBy == 0) {
+				continue;
+			}
+			byte[] tmpPolParamData = new byte[tmpBy];
+			tmpSpParamsBuf.get(tmpPolParamData);
+
+			switch (mmspType) {
+				case MMSPPT_ENCALG:
+					if (tmpPolParamData[0] != 0x01) {  // ENC_ALG==0x01 => AES-CM (AES-128-CTR)
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Encr Algo type 0x%02X", tmpPolParamData[0])
+							);
+					}
+					break;
+				case MMSPPT_SEKL:
+					if (tmpPolParamData[0] != KeySizes.AES_128_KEY_SIZE) {
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Encr Key Length 0x%02X", tmpPolParamData[0])
+						);
+					}
+					break;
+				case MMSPPT_AUTHALG:
+					if (tmpPolParamData[0] != 0x01) {  // AUTH_ALG==0x01 => HMAC-SHA-1
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Encr Auth Algo type 0x%02X", tmpPolParamData[0])
+							);
+					}
+					break;
+				case MMSPPT_SAKL:
+					if (tmpPolParamData[0] != KeySizes.AUTH_KEY_SIZE_080 && tmpPolParamData[0] != KeySizes.AUTH_KEY_SIZE_160) {
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Auth Key Length 0x%02X", tmpPolParamData[0])
+							);
+					}
+					mikeyData.spAuthKeyLen = tmpPolParamData[0];
+					break;
+				case MMSPPT_SSKL:
+					if (tmpPolParamData[0] != KeySizes.SALT_SIZE) {
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Salt Key Length 0x%02X", tmpPolParamData[0])
+							);
+					}
+					break;
+				case MMSPPT_SPRF:
+					if (tmpPolParamData[0] != 0x00) {  // PRF_ALG==0x00 => AES-CM (AES-128-CTR)
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP PRF Algo type 0x%02X", tmpPolParamData[0])
+							);
+					}
+					break;
+				case MMSPPT_SRTPENCEN:
+					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+						throw new SrtpSecurityException("Unsupported MIKEY SP SRTP Encr Enabled value");
+					}
+					break;
+				case MMSPPT_SRTCPENCEN:
+					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+						throw new SrtpSecurityException("Unsupported MIKEY SP SRTCP Encr Enabled value");
+					}
+					break;
+				case MMSPPT_SRTPAUTHEN:
+					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+						throw new SrtpSecurityException("Unsupported MIKEY SP SRTP Auth Enabled value");
+					}
+					break;
+				case MMSPPT_AUTHTAGLEN:
+					if (tmpPolParamData[0] != KeySizes.AUTH_TAG_SIZE) {
+						throw new SrtpSecurityException(
+								String.format("Unsupported MIKEY SP Auth Tag Length 0x%02X", tmpPolParamData[0])
+							);
+					}
+					break;
+				case MMSPPT_SFECO:
+				case MMSPPT_SRTPREFIXLEN:
+				case MMSPPT_KDR:
+					// nothing to check for the time being
+					break;
+				default:
+					throw new SrtpSecurityException("Unhandled MIKEY SP Parameter " + mmspType);
+			}
+		}
+	}
+
+	private static MickeyMsgPayloadType parsePtKemac(ByteBuffer buf, final MikeyData mikeyData) throws SrtpSecurityException {
+		byte tmpBy = buf.get();
+		MickeyMsgEncrAlg tmpEncrAlg = MickeyMsgEncrAlg.of(tmpBy);
+		validateKemacEncrAlgo(tmpBy, tmpEncrAlg);
+
+		short tmpEncrDataLen = buf.getShort();
+		if (buf.remaining() < tmpEncrDataLen) {
+			throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
+					tmpEncrDataLen + ", got " + buf.remaining() + ")");
+		}
+		byte[] tmpEncrData = new byte[tmpEncrDataLen];
+		buf.get(tmpEncrData);
+		MickeyMsgPayloadType resEn = parseKemacKeyDataSubPayload(tmpEncrData, mikeyData);
+		//
+		tmpBy = buf.get();
+		if (tmpBy == 0x01) {  // KEMAC_MAC_ALG==0x01 => HMAC-SHA-1-160
+			final int KEMAC_MAC_DATA_LEN = 10;
+			if (buf.remaining() < KEMAC_MAC_DATA_LEN) {
+				throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +
+						KEMAC_MAC_DATA_LEN + ", got " + buf.remaining() + ")");
+			}
+			byte[] tmpMacData = new byte[KEMAC_MAC_DATA_LEN];
+			buf.get(tmpMacData);
+		}
+
+		return resEn;
+	}
+
+	private static void validateKemacEncrAlgo(byte rawVal, MickeyMsgEncrAlg encrAlg) throws SrtpSecurityException {
+		if (encrAlg == MickeyMsgEncrAlg.MMEA_UNKNOWN) {
+			throw new SrtpSecurityException(String.format("Unknown MIKEY encr algo: 0x%02X", rawVal));
+		}
+		if (encrAlg != MickeyMsgEncrAlg.MMEA_NULL) {
+			throw new SrtpSecurityException("Unsupported MIKEY encr algo: " + encrAlg);
+		}
+	}
+
 	/**
 	 * Parse the KEMAC key data sub-payload.<br />
 	 * See <a href="https://www.rfc-editor.org/rfc/rfc3830.html#section-6.13">RFC-3830 Section 6.13</a>
 	 */
-	private static void parseKemacKeyDataSubPayload(byte[] kemac, BufferExt outpMasterKey, BufferExt outpMasterSalt)
-			throws SrtpSecurityException {
-		ByteBuffer buf = ByteBuffer.wrap(kemac).order(ByteOrder.BIG_ENDIAN);
+	private static MickeyMsgPayloadType parseKemacKeyDataSubPayload(
+				byte[] kemacSubPayload,
+				final MikeyData mikeyData
+			) throws SrtpSecurityException {
+		ByteBuffer buf = ByteBuffer.wrap(kemacSubPayload).order(ByteOrder.BIG_ENDIAN);
 
 		/*
 		 * 00 20 001E A5F06FCC8793C6631D5FDB536C1CF02E F6CC27DBDD42D136CA70AF6EF81F
 		 */
 
 		byte tmpBy = buf.get();  // next payload type
-		MickeyMsgPayloadType tmpNextPt = MickeyMsgPayloadType.of(tmpBy);
-		if (tmpNextPt == MickeyMsgPayloadType.MMPT_UNKNOWN) {
-			throw new SrtpSecurityException("Invalid payload type in MIKEY KEMAC");
+		MickeyMsgPayloadType resEn = MickeyMsgPayloadType.of(tmpBy);
+		if (resEn == MickeyMsgPayloadType.MMPT_UNKNOWN) {
+			throw new SrtpSecurityException(String.format("Unknown payload type in MIKEY KEMAC: 0x%02X", tmpBy));
 		}
 
+		//
+ 		///
 		tmpBy = buf.get();  // type and KV (key validity period)
+		///
 		byte tmpSubPt = (byte)((tmpBy & 0xF0) >> 4);
 		MickeyMsgKemacPayloadType tmpKemacPt = MickeyMsgKemacPayloadType.of(tmpSubPt);
-		System.err.println("MIKEY: pay.KEMAC.spt=" + tmpKemacPt + String.format(" (0x%02X)", tmpBy));  // @TODO
 		if (tmpKemacPt == MickeyMsgKemacPayloadType.MMKEMPT_UNKNOWN) {
-			throw new SrtpSecurityException("Invalid sub-payload type in MIKEY KEMAC");
+			throw new SrtpSecurityException(String.format("Unknown sub-payload type in MIKEY KEMAC: 0x%02X", tmpSubPt));
 		}
+		///
 		byte tmpKv = (byte)(tmpBy & 0x0F);
-		MickeyMsgKemacKv tmpKemacKv = MickeyMsgKemacKv.of(tmpKv);
-		System.err.println("MIKEY: pay.KEMAC.kv=" + tmpKemacKv + String.format(" (0x%02X)", tmpBy));  // @TODO
-		if (tmpKemacKv == MickeyMsgKemacKv.MMKEMKV_UNKNOWN) {
-			throw new SrtpSecurityException("Invalid KV in MIKEY KEMAC");
+		mikeyData.kemacKvType = MickeyMsgKemacKv.of(tmpKv);
+		if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_UNKNOWN) {
+			throw new SrtpSecurityException(String.format("Unknown KV in MIKEY KEMAC: 0x%02X", tmpKv));
 		}
 
 		short tmpKeyDataLen = buf.getShort();
@@ -257,7 +369,7 @@ public class MikeyParser {
 		buf.get(keyData);
 
 		// SRTP expects 16 byte key + 14 byte salt
-		if (keyData.length < KeySizes.AES_128_KEY_SIZE + KeySizes.SALT_SIZE) {
+		if (keyData.length != KeySizes.AES_128_KEY_SIZE + KeySizes.SALT_SIZE) {
 			throw new SrtpSecurityException("Invalid SRTP key length in MIKEY KEMAC");
 		}
 
@@ -267,47 +379,39 @@ public class MikeyParser {
 		System.arraycopy(keyData, 0, tmpMasterKey, 0, KeySizes.AES_128_KEY_SIZE);
 		System.arraycopy(keyData, KeySizes.AES_128_KEY_SIZE, tmpMasterSalt, 0, KeySizes.SALT_SIZE);
 
-		outpMasterKey.copyOf(tmpMasterKey);
-		outpMasterSalt.copyOf(tmpMasterSalt);
+		mikeyData.kemacMasterKey.copyOf(tmpMasterKey);
+		mikeyData.kemacMasterSalt.copyOf(tmpMasterSalt);
+		mikeyData.kemacHaveKeys = true;
 
-		// Master Salt
+		// TGK/TEK Salt
 		if (tmpKemacPt == MickeyMsgKemacPayloadType.MMKEMPT_TGK_SALT ||
 				tmpKemacPt == MickeyMsgKemacPayloadType.MMKEMPT_TEK_SALT) {
 			short tmpSaltLen = buf.getShort();
-			if (buf.remaining() < tmpSaltLen) {
-				throw new SrtpSecurityException("Invalid MIKEY KEMAC payload length (needed " +
-						tmpSaltLen + ", got " + buf.remaining() + ")");
-			}
-			byte[] tmpSaltData = new byte[tmpSaltLen];
-			buf.get(tmpSaltData);
+			extractBytes("KEMAC TGK/TEK Salt", buf, tmpSaltLen, mikeyData.kemacTekTgkSalt);
 		}
 
 		// KV data
-		if (tmpKemacKv == MickeyMsgKemacKv.MMKEMKV_SPI) {
+		if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_SPI) {
 			byte tmpKvLen = buf.get();
-			if (buf.remaining() < tmpKvLen) {
-				throw new SrtpSecurityException("Invalid MIKEY KEMAC payload length (needed " +
-						tmpKvLen + ", got " + buf.remaining() + ")");
-			}
-			byte[] tmpKvData = new byte[tmpKvLen];
-			buf.get(tmpKvData);
-		} else if (tmpKemacKv == MickeyMsgKemacKv.MMKEMKV_INTV) {
+			extractBytes("KEMAC KV SPI", buf, tmpKvLen, mikeyData.kemacKvDataSpiOrMki);
+		} else if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_INTV) {
 			byte tmpVfLen = buf.get();
-			if (buf.remaining() < tmpVfLen) {
-				throw new SrtpSecurityException("Invalid MIKEY KEMAC payload length (needed " +
-						tmpVfLen + ", got " + buf.remaining() + ")");
-			}
-			byte[] tmpVfData = new byte[tmpVfLen];
-			buf.get(tmpVfData);
-			//
+			extractBytes("KEMAC KV INTV F", buf, tmpVfLen, mikeyData.kemacKvDataIntvF);
 			byte tmpVtLen = buf.get();
-			if (buf.remaining() < tmpVtLen) {
-				throw new SrtpSecurityException("Invalid MIKEY KEMAC payload length (needed " +
-						tmpVtLen + ", got " + buf.remaining() + ")");
-			}
-			byte[] tmpVtData = new byte[tmpVtLen];
-			buf.get(tmpVtData);
+			extractBytes("KEMAC KV INTV T", buf, tmpVtLen, mikeyData.kemacKvDataIntvT);
 		}
+
+		return resEn;
+	}
+
+	private static void extractBytes(String desc, ByteBuffer buf, int length, BufferExt output) throws SrtpSecurityException {
+		if (buf.remaining() < length) {
+			throw new SrtpSecurityException("Invalid MIKEY " + desc + " length (needed " +
+					length + ", got " + buf.remaining() + ")");
+		}
+		byte[] tmpData = new byte[length];
+		buf.get(tmpData);
+		output.copyOf(tmpData);
 	}
 
 }

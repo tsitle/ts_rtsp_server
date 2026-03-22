@@ -25,12 +25,13 @@ public class SrtpKeyDerivation {
 	 * Derive session keys for SRTP according to RFC-3711 Section 4.3.1
 	 * @param masterKey Master key
 	 * @param masterSalt Master salt
+	 * @param authKeyLen Authentication key length
 	 * @return Session keys
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
-	public static SessionKeys deriveForRtp(byte[] masterKey, byte[] masterSalt) throws SrtpSecurityException {
+	public static SessionKeys deriveForRtp(byte[] masterKey, byte[] masterSalt, int authKeyLen) throws SrtpSecurityException {
 		byte[] encKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_ENC, KeySizes.AES_128_KEY_SIZE);
-		byte[] authKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_AUTH, KeySizes.AUTH_KEY_SIZE);
+		byte[] authKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_AUTH, authKeyLen);
 		byte[] salt = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE);
 
 		return new SessionKeys(encKey, authKey, salt);
@@ -40,12 +41,13 @@ public class SrtpKeyDerivation {
 	 * Derive session keys for SRTCP according to RFC-3711 Section 4.3.1
 	 * @param masterKey Master key
 	 * @param masterSalt Master salt
+	 * @param authKeyLen Authentication key length
 	 * @return Session keys
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
-	public static SessionKeys deriveForRtcp(byte[] masterKey, byte[] masterSalt) throws SrtpSecurityException {
+	public static SessionKeys deriveForRtcp(byte[] masterKey, byte[] masterSalt, int authKeyLen) throws SrtpSecurityException {
 		byte[] encKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_ENC, KeySizes.AES_128_KEY_SIZE);
-		byte[] authKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_AUTH, KeySizes.AUTH_KEY_SIZE);
+		byte[] authKey = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_AUTH, authKeyLen);
 		byte[] salt = prf(masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE);
 
 		return new SessionKeys(encKey, authKey, salt);
@@ -54,6 +56,9 @@ public class SrtpKeyDerivation {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * PRF (Pseudo Random Function) for Key Derivation
+	 */
 	private static byte[] prf(
 				byte[] masterKey,
 				byte[] masterSalt,

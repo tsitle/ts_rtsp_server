@@ -30,7 +30,7 @@ public class SrtpContextTest {
 	void srtpContext_protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
 		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
 		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
-		SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt);
+		SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 		SrtpContext ctx = new SrtpContext();
 		injectRtpKeys(ctx, rtpKeys.encKey(), rtpKeys.authKey(), rtpKeys.salt());
@@ -77,7 +77,7 @@ public class SrtpContextTest {
 	void srtpContext_protectRtcpSrCompound_should_encrypt_payload_and_append_index_and_auth_tag() throws Exception {
 		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
 		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
-		SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt);
+		SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 		SrtpContext ctx = new SrtpContext();
 		injectRtcpKeys(ctx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
@@ -131,8 +131,8 @@ public class SrtpContextTest {
 			rnd.nextBytes(masterKey);
 			rnd.nextBytes(masterSalt);
 
-			SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt);
-			SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt);
+			SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+			SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 			// ---------------- RTP ----------------
 			SrtpContext rtpCtx = new SrtpContext();
@@ -220,8 +220,8 @@ public class SrtpContextTest {
 			rnd.nextBytes(masterKey);
 			rnd.nextBytes(masterSalt);
 
-			SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt);
-			SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt);
+			SrtpKeyDerivation.SessionKeys rtpKeys = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+			SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 			// ---------------- RTP with non-zero ROC ----------------
 			SrtpContext rtpCtx = new SrtpContext();
@@ -306,7 +306,7 @@ public class SrtpContextTest {
 	void srtpContext_rtcp_index_should_wrap_at_31_bits_boundary() throws Exception {
 		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
 		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
-		SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt);
+		SrtpKeyDerivation.SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 		SrtpContext ctx = new SrtpContext();
 		injectRtcpKeys(ctx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0x7FFFFFFE);

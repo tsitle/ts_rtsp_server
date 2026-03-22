@@ -131,6 +131,7 @@ public class RtcpPacketHeader implements Cloneable {
 		return (skipClassName ? "" : getClass().getSimpleName() + " [") +
 				"Version: " + hdVersion +
 				", Padding: " + hdPadding +
+				", ItemCount: " + hdItemCount +
 				", Type: " + hdPayloadType + " (o=" + getOrgPayloadType() + ")" +
 				", PayloadSize: " + Integer.toUnsignedString(hdPayloadSize) +
 				(skipClassName ? "" : "]");

@@ -2,6 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.security.constants.KeySizes;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -24,7 +25,7 @@ class SrtpKeyDerivationTest {
 		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
 		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
 
-		SrtpKeyDerivation.SessionKeys rtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt);
+		SrtpKeyDerivation.SessionKeys rtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 		assertArrayEquals(
 				HEX.parseHex("C61E7A93744F39EE10734AFE3FF7A087"),
@@ -51,8 +52,8 @@ class SrtpKeyDerivationTest {
 		new SecureRandom().nextBytes(masterSalt);
 
 		// Your implementation
-		SrtpKeyDerivation.SessionKeys myRtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt);
-		SrtpKeyDerivation.SessionKeys myRtcp = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt);
+		SrtpKeyDerivation.SessionKeys myRtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+		SrtpKeyDerivation.SessionKeys myRtcp = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
 
 		// Independent reference (RFC 3711, key_derivation_rate=0 => r=0)
 		byte[] refRtpEnc = refDerive(masterKey, masterSalt, (byte) 0x00, 16);

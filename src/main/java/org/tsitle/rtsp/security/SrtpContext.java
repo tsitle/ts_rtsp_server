@@ -17,11 +17,12 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HexFormat;
 
 public class SrtpContext implements Cloneable {
 
 	/** Number of bytes added to the RTP packet by SRTP encryption */
-	public static int SRT_EXTRA_PACKET_SIZE = 10;
+	public static int SRT_EXTRA_PACKET_SIZE = KeySizes.AUTH_TAG_SIZE;
 
 	/** Master AES-128 key (16 bytes) */
 	private final byte[] ctxMasterEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
@@ -32,15 +33,15 @@ public class SrtpContext implements Cloneable {
 	private final byte[] ctxRtpSessionEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
 	/** RTP Session salt (14 bytes) */
 	private final byte[] ctxRtpSessionSalt = new byte[KeySizes.SALT_SIZE];
-	/** RTP Session HMAC-SHA1 key (20 bytes) */
-	private final byte[] ctxRtpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE];
+	/** RTP Session HMAC-SHA1 key (10 or 20 bytes) */
+	private byte[] ctxRtpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE_160];
 
 	/** RTCP Session AES-128 key (16 bytes) */
 	private final byte[] ctxRtcpSessionEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
 	/** RTCP Session salt (14 bytes) */
 	private final byte[] ctxRtcpSessionSalt = new byte[KeySizes.SALT_SIZE];
-	/** RTCP Session HMAC-SHA1 key (20 bytes) */
-	private final byte[] ctxRtcpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE];
+	/** RTCP Session HMAC-SHA1 key (10 or 20 bytes) */
+	private byte[] ctxRtcpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE_160];
 
 	/** Rollover counter for RTP packets */
 	private long ctxRtpRoc = 0;
@@ -67,20 +68,27 @@ public class SrtpContext implements Cloneable {
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
 	public void setClientMikey(@NonNull String msgB64) throws SrtpSecurityException {
+		System.err.println("MIKEY: " + "b64:" + msgB64);  // @TODO
+
 		MikeyParser.SrtpKeys keys = MikeyParser.parseKeyMgmtData(msgB64);
 		System.arraycopy(keys.masterKey(), 0, ctxMasterEncKey, 0, KeySizes.AES_128_KEY_SIZE);
 		System.arraycopy(keys.masterSalt(), 0, ctxMasterSalt, 0, KeySizes.SALT_SIZE);
+		System.err.println("MIKEY: master Key : " + "0x" + HexFormat.of().withUpperCase().formatHex(ctxMasterEncKey));  // @TODO
+		System.err.println("MIKEY: master Salt: " + "0x" + HexFormat.of().withUpperCase().formatHex(ctxMasterSalt));  // @TODO
+		System.err.println("MIKEY: MKI: " + String.format("0x%04X", keys.mki()));  // @TODO
 
 		//
-		SrtpKeyDerivation.SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtp(ctxMasterEncKey, ctxMasterSalt);
+		SrtpKeyDerivation.SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtp(ctxMasterEncKey, ctxMasterSalt, keys.authKeyLen());
 		System.arraycopy(tmpSessionKeys.encKey(), 0, ctxRtpSessionEncKey, 0, tmpSessionKeys.encKey().length);
 		System.arraycopy(tmpSessionKeys.salt(), 0, ctxRtpSessionSalt, 0, tmpSessionKeys.salt().length);
+		ctxRtpSessionAuthKey = new byte[tmpSessionKeys.authKey().length];
 		System.arraycopy(tmpSessionKeys.authKey(), 0, ctxRtpSessionAuthKey, 0, tmpSessionKeys.authKey().length);
 
 		//
-		tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(ctxMasterEncKey, ctxMasterSalt);
+		tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(ctxMasterEncKey, ctxMasterSalt, keys.authKeyLen());
 		System.arraycopy(tmpSessionKeys.encKey(), 0, ctxRtcpSessionEncKey, 0, tmpSessionKeys.encKey().length);
 		System.arraycopy(tmpSessionKeys.salt(), 0, ctxRtcpSessionSalt, 0, tmpSessionKeys.salt().length);
+		ctxRtcpSessionAuthKey = new byte[tmpSessionKeys.authKey().length];
 		System.arraycopy(tmpSessionKeys.authKey(), 0, ctxRtcpSessionAuthKey, 0, tmpSessionKeys.authKey().length);
 
 		//
@@ -226,11 +234,15 @@ public class SrtpContext implements Cloneable {
 
 			System.arraycopy(this.ctxRtpSessionEncKey, 0, clone.ctxRtpSessionEncKey, 0, this.ctxRtpSessionEncKey.length);
 			System.arraycopy(this.ctxRtpSessionSalt, 0, clone.ctxRtpSessionSalt, 0, this.ctxRtpSessionSalt.length);
-			System.arraycopy(this.ctxRtpSessionAuthKey, 0, clone.ctxRtpSessionAuthKey, 0, this.ctxRtpSessionAuthKey.length);
+			if (this.ctxRtpSessionAuthKey != null) {
+				System.arraycopy(this.ctxRtpSessionAuthKey, 0, clone.ctxRtpSessionAuthKey, 0, this.ctxRtpSessionAuthKey.length);
+			}
 
 			System.arraycopy(this.ctxRtcpSessionEncKey, 0, clone.ctxRtcpSessionEncKey, 0, this.ctxRtcpSessionEncKey.length);
 			System.arraycopy(this.ctxRtcpSessionSalt, 0, clone.ctxRtcpSessionSalt, 0, this.ctxRtcpSessionSalt.length);
-			System.arraycopy(this.ctxRtcpSessionAuthKey, 0, clone.ctxRtcpSessionAuthKey, 0, this.ctxRtcpSessionAuthKey.length);
+			if (this.ctxRtcpSessionAuthKey != null) {
+				System.arraycopy(this.ctxRtcpSessionAuthKey, 0, clone.ctxRtcpSessionAuthKey, 0, this.ctxRtcpSessionAuthKey.length);
+			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -269,6 +281,9 @@ public class SrtpContext implements Cloneable {
 	}
 
 	private void computeAuthTagForRtp(@NonNull BufferExt encrRtpPacket, long packetIndex) throws SrtpSecurityException {
+		if (ctxRtpSessionAuthKey == null) {
+			throw new SrtpSecurityException("RTP session auth key not set");
+		}
 		try {
 			Mac mac = Mac.getInstance("HmacSHA1");
 			mac.init(new SecretKeySpec(ctxRtpSessionAuthKey, "HmacSHA1"));
@@ -280,13 +295,16 @@ public class SrtpContext implements Cloneable {
 
 			byte[] fullTag = mac.doFinal();
 			cacheAuthTagBuf.copyOf(fullTag);
-			cacheAuthTagBuf.setUsed(10);  // 80-bit tag
+			cacheAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
 		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
 	}
 
 	private void computeAuthTagForRtcp(@NonNull BufferExt encrRtcpPacket) throws SrtpSecurityException {
+		if (ctxRtcpSessionAuthKey == null) {
+			throw new SrtpSecurityException("RTP session auth key not set");
+		}
 		try {
 			Mac mac = Mac.getInstance("HmacSHA1");
 			mac.init(new SecretKeySpec(ctxRtcpSessionAuthKey, "HmacSHA1"));
@@ -295,7 +313,7 @@ public class SrtpContext implements Cloneable {
 
 			byte[] fullTag = mac.doFinal();
 			cacheAuthTagBuf.copyOf(fullTag);
-			cacheAuthTagBuf.setUsed(10);  // 80-bit tag
+			cacheAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
 		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}

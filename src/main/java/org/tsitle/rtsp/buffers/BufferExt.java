@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.buffers;
 
+import org.jspecify.annotations.NonNull;
+
 /**
  * BufferExt provides a resizable byte buffer with methods for copying data and accessing buffer contents.
  */
@@ -217,6 +219,33 @@ public class BufferExt implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Convert the buffer to a hex string.
+	 * @return Hex string representation
+	 */
+	public @NonNull String toHexString() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < used; i++) {
+			sb.append(String.format("%02X", buf[i]));
+		}
+		return sb.toString();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public BufferExt clone() {
+		try {
+			BufferExt clone = (BufferExt)super.clone();
+			clone.buf = buf.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void validateArgs(int srcDataLen, int srcOffset, int dstOffset, int len) {
@@ -231,17 +260,6 @@ public class BufferExt implements Cloneable {
 		}
 		if (srcOffset + len > srcDataLen) {
 			throw new IllegalArgumentException("Invalid source offset / len");
-		}
-	}
-
-	@Override
-	public BufferExt clone() {
-		try {
-			BufferExt clone = (BufferExt)super.clone();
-			clone.buf = buf.clone();
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
 		}
 	}
 

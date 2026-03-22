@@ -178,17 +178,18 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				continue;
 			}
 
+			/*
+			 * 055686F812C4AD9D7916AD1D2972DC510BA07D7D2CBEBCD6 80000000 551E67DA 5D0189BC1B318BB9AA36
+			 */
+
 			//
 			final RtcpPacketHeader rtcpPktHd = new RtcpPacketHeader(cacheRecvBuf1);
 			final int tmpPktSz = rtcpPktHd.getPacketSize();
 			if (tmpPktSz < 0 || tmpPktSz > cacheRecvBuf1.getUsed()) {
-				logError(FNC_NAME, "have invalid RTCP packet, discarding it");
-				// output each byte of the packet to the console for debugging purposes
-				StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < cacheRecvBuf1.getUsed(); i++) {
-					sb.append(String.format("%02X ", cacheRecvBuf1.get(i)));
-				}
-				logError(FNC_NAME, "Discarded packet: 0x" + sb);
+				logWarn(FNC_NAME, "have invalid RTCP packet, discarding it (sz=" + tmpPktSz +
+						", exp= le " + cacheRecvBuf1.getUsed() + ")");
+				logWarn(FNC_NAME, "Discarded packet: 0x" + cacheRecvBuf1.toHexString());
+				logWarn(FNC_NAME, "Discarded packet: " + rtcpPktHd);
 				break;
 			}
 			if (tmpPktSz < cacheRecvBuf1.getUsed()) {
@@ -215,7 +216,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 					handleRtcpPacketBYE(rtcpPktHd);
 					break;
 				default:
-					logError(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
+					logWarn(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
 			}
 		}
 	}
