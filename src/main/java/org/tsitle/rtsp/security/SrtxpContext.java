@@ -24,6 +24,30 @@ import java.util.Arrays;
  */
 public class SrtxpContext implements Cloneable {
 
+	private static class CtxCipherAndMac implements Cloneable {
+		@Nullable Cipher cipherObj = null;
+		@Nullable SecretKeySpec sksCipherObj = null;
+		@Nullable Mac macObj = null;
+		@Nullable SecretKeySpec sksMacObj = null;
+
+		@Override
+		public CtxCipherAndMac clone() {
+			try {
+				CtxCipherAndMac clone = (CtxCipherAndMac)super.clone();
+				clone.cipherObj = null;
+				clone.sksCipherObj = null;
+				clone.macObj = null;
+				clone.sksMacObj = null;
+				return clone;
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Size of the SRTCP Index Field in bytes */
 	public static final int SRTCP_INDEX_FIELD_SIZE = 4;
 
@@ -59,6 +83,11 @@ public class SrtxpContext implements Cloneable {
 	private int ctxMasterKeyIdentifierVal = 0;
 	/** Auth key length */
 	private int ctxAuthKeyLength = 0;
+
+	private @NonNull CtxCipherAndMac ctxCamRtpEncr = new CtxCipherAndMac();
+	private @NonNull CtxCipherAndMac ctxCamRtpDecr = new CtxCipherAndMac();
+	private @NonNull CtxCipherAndMac ctxCamRtcpEncr = new CtxCipherAndMac();
+	private @NonNull CtxCipherAndMac ctxCamRtcpDecr = new CtxCipherAndMac();
 
 	public SrtxpContext() {
 	}
@@ -173,18 +202,25 @@ public class SrtxpContext implements Cloneable {
 		// build IV
 		buildIvForRtp(srtpPacketIndex, ssrcId, curIvBuf);
 
+		//
+		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtpEncr, ctxSessionKeysRtp);
+		assert camPtr.cipherObj != null;
+		assert camPtr.sksCipherObj != null;
+		assert camPtr.macObj != null;
+		assert camPtr.sksMacObj != null;
+
 		// encrypt payload
 		encryptPayload(
-				buildCipherObject(),
+				camPtr.cipherObj,
+				camPtr.sksCipherObj,
 				rtpPacketBuf,
 				RTP_PLAIN_HEADER_SIZE,
-				ctxSessionKeysRtp.encKey(),
 				curIvBuf,
 				outputEncryptedPacketBuf
 			);
 
 		// compute auth tag (10 bytes)
-		computeAuthTagForRtp(outputEncryptedPacketBuf, srtpPacketIndex, curAuthTagBuf);
+		computeAuthTagForRtp(camPtr.macObj, camPtr.sksMacObj, outputEncryptedPacketBuf, srtpPacketIndex, curAuthTagBuf);
 
 		// append MKI (4 bytes)
 		if (ctxMasterKeyIdentifierLength != 0) {
@@ -259,12 +295,19 @@ public class SrtxpContext implements Cloneable {
 		// build IV
 		buildIvForRtcp(srtcpIndexOnly, ssrcId, curIvBuf);
 
+		//
+		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtcpEncr, ctxSessionKeysRtcp);
+		assert camPtr.cipherObj != null;
+		assert camPtr.sksCipherObj != null;
+		assert camPtr.macObj != null;
+		assert camPtr.sksMacObj != null;
+
 		// encrypt RTCP payload
 		encryptPayload(
-				buildCipherObject(),
+				camPtr.cipherObj,
+				camPtr.sksCipherObj,
 				rtcpPacketBuf,
 				RTCP_PLAIN_HEADER_SIZE,
-				ctxSessionKeysRtcp.encKey(),
 				curIvBuf,
 				outputEncryptedPacketBuf
 			);
@@ -276,7 +319,7 @@ public class SrtxpContext implements Cloneable {
 		outputEncryptedPacketBuf.append(tmpIndexEbitBufArr);
 
 		// compute auth tag over: encrypted RTCP packet + SRTCP index/E-bit
-		computeAuthTagForRtcp(outputEncryptedPacketBuf, curAuthTagBuf);
+		computeAuthTagForRtcp(camPtr.macObj, camPtr.sksMacObj, outputEncryptedPacketBuf, curAuthTagBuf);
 
 		// append MKI (4 bytes)
 		if (ctxMasterKeyIdentifierVal != 0) {
@@ -325,6 +368,13 @@ public class SrtxpContext implements Cloneable {
 		 */
 
 		//
+		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtcpDecr, ctxSessionKeysRtcp);
+		assert camPtr.cipherObj != null;
+		assert camPtr.sksCipherObj != null;
+		assert camPtr.macObj != null;
+		assert camPtr.sksMacObj != null;
+
+		//
 		final BufferExt curIvBuf = new BufferExt();
 		final BufferExt curAuthTagBufRcvd = new BufferExt();
 		final BufferExt curAuthTagBufExp = new BufferExt();
@@ -341,7 +391,7 @@ public class SrtxpContext implements Cloneable {
 				0,
 				srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifierLength
 			);
-		computeAuthTagForRtcp(remaingEncrBuf, curAuthTagBufExp);
+		computeAuthTagForRtcp(camPtr.macObj, camPtr.sksMacObj, remaingEncrBuf, curAuthTagBufExp);
 
 		//
 		int inpSz = srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE;
@@ -393,10 +443,10 @@ public class SrtxpContext implements Cloneable {
 		// decrypt RTCP payload
 		remaingEncrBuf.copyOf(srtcpPacketBuf, 0, inpSz);
 		decryptPayload(
-				buildCipherObject(),
+				camPtr.cipherObj,
+				camPtr.sksCipherObj,
 				remaingEncrBuf,
 				RTCP_PLAIN_HEADER_SIZE,
-				ctxSessionKeysRtcp.encKey(),
 				curIvBuf,
 				outputDecryptedPacketBuf
 			);
@@ -420,6 +470,11 @@ public class SrtxpContext implements Cloneable {
 				clone.ctxSessionKeysRtcp = this.ctxSessionKeysRtcp.clone();
 			}
 
+			clone.ctxCamRtpEncr = this.ctxCamRtpEncr.clone();
+			clone.ctxCamRtpDecr = this.ctxCamRtpDecr.clone();
+			clone.ctxCamRtcpEncr = this.ctxCamRtcpEncr.clone();
+			clone.ctxCamRtcpDecr = this.ctxCamRtcpDecr.clone();
+
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -430,10 +485,10 @@ public class SrtxpContext implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void encryptPayload(
-				@NonNull Cipher cipher,
+				@NonNull Cipher cipherObj,
+				@NonNull SecretKeySpec sksCipherObj,
 				@NonNull BufferExt plainPacket,
 				int pktHeaderSize,
-				@NonNull BufferExt sessionEncKey,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputEncrPacket
 			) throws SrtpSecurityException {
@@ -442,10 +497,9 @@ public class SrtxpContext implements Cloneable {
 		outputEncrPacket.setUsed(plainPacket.getUsed());
 
 		try {
-			SecretKeySpec key = new SecretKeySpec(sessionEncKey.getBufPtr(), 0, sessionEncKey.getUsed(), "AES");
-			cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
+			cipherObj.init(Cipher.ENCRYPT_MODE, sksCipherObj, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
 
-			cipher.doFinal(
+			cipherObj.doFinal(
 					plainPacket.getBufPtr(),
 					pktHeaderSize,
 					outputEncrPacket.getUsed() - pktHeaderSize,
@@ -459,10 +513,10 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	private void decryptPayload(
-				@NonNull Cipher cipher,
+				@NonNull Cipher cipherObj,
+				@NonNull SecretKeySpec sksCipherObj,
 				@NonNull BufferExt encrPacket,
 				int pktHeaderSize,  // @TODO implement unprotectRtp
-				@NonNull BufferExt sessionEncKey,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputPlainPacket
 			) throws SrtpSecurityException {
@@ -475,10 +529,9 @@ public class SrtxpContext implements Cloneable {
 		outputPlainPacket.setUsed(encrPacket.getUsed());
 
 		try {
-			SecretKeySpec key = new SecretKeySpec(sessionEncKey.getBufPtr(), 0, sessionEncKey.getUsed(), "AES");
-			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
+			cipherObj.init(Cipher.DECRYPT_MODE, sksCipherObj, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
 
-			cipher.doFinal(
+			cipherObj.doFinal(
 					encrPacket.getBufPtr(),
 					pktHeaderSize,
 					outputPlainPacket.getUsed() - pktHeaderSize,
@@ -494,6 +547,8 @@ public class SrtxpContext implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void computeAuthTagForRtp(
+				@NonNull Mac macObj,
+				@NonNull SecretKeySpec sksMacObj,
 				@NonNull BufferExt encrRtpPacket,
 				long packetIndex,
 				@NonNull BufferExt curAuthTagBuf
@@ -503,29 +558,24 @@ public class SrtxpContext implements Cloneable {
 		}
 
 		try {
-			Mac mac = Mac.getInstance("HmacSHA1");
-			mac.init(
-					new SecretKeySpec(
-							ctxSessionKeysRtp.authKey().getBufPtr(),
-							0,
-							ctxSessionKeysRtp.authKey().getUsed(),
-							"HmacSHA1"
-				));
+			macObj.init(sksMacObj);
 
-			mac.update(encrRtpPacket.getBufPtr(), 0, encrRtpPacket.getUsed());
+			macObj.update(encrRtpPacket.getBufPtr(), 0, encrRtpPacket.getUsed());
 
 			byte[] rocBytes = ByteBuffer.allocate(4).putInt((int)(packetIndex >> 16)).array();
-			mac.update(rocBytes);
+			macObj.update(rocBytes);
 
-			byte[] fullTag = mac.doFinal();
+			byte[] fullTag = macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
-		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
+		} catch (InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
 	}
 
 	private void computeAuthTagForRtcp(
+				@NonNull Mac macObj,
+				@NonNull SecretKeySpec sksMacObj,
 				@NonNull BufferExt encrRtcpPacket,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
@@ -534,21 +584,14 @@ public class SrtxpContext implements Cloneable {
 		}
 
 		try {
-			Mac mac = Mac.getInstance("HmacSHA1");
-			mac.init(
-					new SecretKeySpec(
-							ctxSessionKeysRtcp.authKey().getBufPtr(),
-							0,
-							ctxSessionKeysRtcp.authKey().getUsed(),
-							"HmacSHA1"
-				));
+			macObj.init(sksMacObj);
 
-			mac.update(encrRtcpPacket.getBufPtr(), 0, encrRtcpPacket.getUsed());
+			macObj.update(encrRtcpPacket.getBufPtr(), 0, encrRtcpPacket.getUsed());
 
-			byte[] fullTag = mac.doFinal();
+			byte[] fullTag = macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
-		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
+		} catch (InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
 	}
@@ -640,6 +683,45 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull CtxCipherAndMac buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+		if (cam.cipherObj == null) {
+			cam.cipherObj = buildCipherObject();
+		}
+		if (cam.sksCipherObj == null) {
+			cam.sksCipherObj = buildSecretKeySpecObject(sessionKeys.encKey(), true);
+		}
+		if (cam.macObj == null) {
+			cam.macObj = buildMacObject();
+		}
+		if (cam.sksMacObj == null) {
+			cam.sksMacObj = buildSecretKeySpecObject(sessionKeys.authKey(), false);
+		}
+		return cam;
+	}
+
+	private @NonNull SecretKeySpec buildSecretKeySpecObject(@NonNull BufferExt sessionKey, boolean isForEnc) throws SrtpSecurityException {
+		if (isForEnc) {
+			validateSessionEncKey(sessionKey);
+		} else {
+			validateSessionAuthKey(sessionKey);
+		}
+		try {
+			return new SecretKeySpec(sessionKey.getBufPtr(), 0, sessionKey.getUsed(), isForEnc ? "AES" : "HmacSHA1");
+		} catch (IllegalArgumentException e) {
+			throw new SrtpSecurityException("Invalid key for SKS: " + e.getMessage());
+		}
+	}
+
+	private static @NonNull Mac buildMacObject() throws SrtpSecurityException {
+		try {
+			return Mac.getInstance("HmacSHA1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new SrtpSecurityException("Could not build Mac object: " + e.getMessage());
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull Cipher buildCipherObject() throws SrtpSecurityException {
@@ -664,20 +746,28 @@ public class SrtxpContext implements Cloneable {
 		if (! haveMikey) {
 			throw new SrtpSecurityException("Client MIKEY not set");
 		}
-		if (ctxAuthKeyLength <= 0) {
-			throw new SrtpSecurityException("Session Auth Key length not set");
-		}
-		if (sessionKeys.encKey().getUsed() != KeySizes.AES_128_KEY_SIZE) {
-			throw new SrtpSecurityException("Invalid RTP Session Encr Key length (expected " +
-					KeySizes.AES_128_KEY_SIZE + " bytes, got " + sessionKeys.encKey().getUsed() + ")");
-		}
+		validateSessionEncKey(sessionKeys.encKey());
 		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtpSecurityException("Invalid RTP Session Salt length (expected " +
 					KeySizes.SALT_SIZE + " bytes, got " + sessionKeys.salt().getUsed() + ")");
 		}
-		if (sessionKeys.authKey().getUsed() != ctxAuthKeyLength) {
+		validateSessionAuthKey(sessionKeys.authKey());
+	}
+
+	static void validateSessionEncKey(@NonNull BufferExt sessionEncKey) throws SrtpSecurityException {
+		if (sessionEncKey.getUsed() != KeySizes.AES_128_KEY_SIZE) {
+			throw new SrtpSecurityException("Invalid RTP Session Encr Key length (expected " +
+					KeySizes.AES_128_KEY_SIZE + " bytes, got " + sessionEncKey.getUsed() + ")");
+		}
+	}
+
+	void validateSessionAuthKey(@NonNull BufferExt sessionAuthKey) throws SrtpSecurityException {
+		if (ctxAuthKeyLength <= 0) {
+			throw new SrtpSecurityException("Session Auth Key length not set");
+		}
+		if (sessionAuthKey.getUsed() != ctxAuthKeyLength) {
 			throw new SrtpSecurityException("Invalid RTP Session Auth Key length (expected " +
-					ctxAuthKeyLength + " bytes, got " + sessionKeys.authKey().getUsed() + ")");
+					ctxAuthKeyLength + " bytes, got " + sessionAuthKey.getUsed() + ")");
 		}
 	}
 
