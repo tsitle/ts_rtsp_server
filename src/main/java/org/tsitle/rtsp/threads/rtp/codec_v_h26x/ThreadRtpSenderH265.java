@@ -2,8 +2,6 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
-import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -87,13 +85,11 @@ public final class ThreadRtpSenderH265<
 
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbRtpPacketPayloadSupplier()";
-
 		if (globalCurNudPtr == null) {
-			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr == null");
+			throw new IllegalStateException("globalCurNudPtr == null");
 		}
 		if (globalCurNudPtr.h26xInfo == null) {
-			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr.h26xInfo == null");
+			throw new IllegalStateException("globalCurNudPtr.h26xInfo == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
@@ -109,21 +105,7 @@ public final class ThreadRtpSenderH265<
 		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
 			return plainPacket;
 		}
-
-		//
-		RtpPacketContainerBase encryptedPacket;
-		try {
-			encryptedPacket = new RtpEncryptedPacket(
-					RtpPacketType.V_H265,
-					plainPacket,
-					paramsCommon.getSrtpContext().orElseThrow()
-				);
-		} catch (SrtpSecurityException e) {
-			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
-			logError(FNC_NAME, errMsg);
-			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
-		}
-		return encryptedPacket;
+		return encryptRtpPacketPayload(plainPacket);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

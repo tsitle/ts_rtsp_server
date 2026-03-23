@@ -115,12 +115,16 @@ public final class ThreadRtpSenderMjpeg<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
-		return new RtpPacketMjpeg(
+		RtpPacketMjpeg plainPacket = new RtpPacketMjpeg(
 				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFrameJpegInfo,
 				cacheRtpInnerPayloadBuf
 			);
+		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+			return plainPacket;
+		}
+		return encryptRtpPacketPayload(plainPacket);
 	}
 
 }

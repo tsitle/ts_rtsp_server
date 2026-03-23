@@ -122,12 +122,16 @@ public final class ThreadRtpSenderAac<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
-		return new RtpPacketAac(
+		RtpPacketAac plainPacket = new RtpPacketAac(
 				cacheParamsBase,
 				(byte)curFragmentData.fragmentIndex(),
 				curFrameAacInfo,
 				cacheRtpInnerPayloadBuf
 			);
+		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+			return plainPacket;
+		}
+		return encryptRtpPacketPayload(plainPacket);
 	}
 
 }

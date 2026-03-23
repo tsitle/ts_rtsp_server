@@ -349,6 +349,25 @@ public abstract class ThreadRtpSenderBase<
 
 	protected abstract @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData);
 
+	protected @NonNull RtpPacketContainerBase encryptRtpPacketPayload(@NonNull RtpPacketContainerBase plainPacket) {
+		final String FNC_NAME = getClass().getSimpleName() + ".encryptRtpPacketPayload()";
+
+		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+			return plainPacket;
+		}
+		try {
+			return new RtpEncryptedPacket(
+					plainPacket.getPayloadType(),
+					plainPacket,
+					paramsCommon.getSrtpContext().orElseThrow()
+				);
+		} catch (SrtpSecurityException e) {
+			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
+			logError(FNC_NAME, errMsg);
+			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected short getRtpSequNr() {

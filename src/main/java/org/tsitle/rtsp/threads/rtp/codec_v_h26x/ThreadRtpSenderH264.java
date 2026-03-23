@@ -85,25 +85,27 @@ public final class ThreadRtpSenderH264<
 
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbRtpPacketPayloadSupplier()";
-
 		if (globalCurNudPtr == null) {
-			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr == null");
+			throw new IllegalStateException("globalCurNudPtr == null");
 		}
 		if (globalCurNudPtr.h26xInfo == null) {
-			throw new IllegalStateException(FNC_NAME + ": globalCurNudPtr.h26xInfo == null");
+			throw new IllegalStateException("globalCurNudPtr.h26xInfo == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
 				", isLastFragment=" + curFragmentData.isLastFragment() +
 				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/
-		return new RtpPacketH264(
+		RtpPacketH264 plainPacket = new RtpPacketH264(
 				cacheParamsBase,
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment(),
 				globalCurNudPtr.h26xInfo,
 				cacheRtpInnerPayloadBuf
 			);
+		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+			return plainPacket;
+		}
+		return encryptRtpPacketPayload(plainPacket);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
