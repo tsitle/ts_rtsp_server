@@ -179,7 +179,22 @@ public abstract class ThreadRtpSenderH26xBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void frameDataSupplierGrabNalUnit() throws InputStreamEosException {
-		if (threadDataProv == null || ! threadDataProv.isRunning()) {
+		final String FNC_NAME = getClass().getSimpleName() + ".frameDataSupplierGrabNalUnit()";
+
+		int timeoutCnt = 0;
+		while (threadDataProv != null && ! threadDataProv.isRunning() && timeoutCnt++ < 250) {
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();  // restore flag
+				throw new InputStreamEosException();
+			}
+		}
+		if (threadDataProv == null) {
+			throw new InputStreamEosException();
+		}
+		if (! threadDataProv.isRunning()) {
+			logError(FNC_NAME, "threadDataProv is not running");
 			throw new InputStreamEosException();
 		}
 		if (cacheH26xInfo == null) {
@@ -189,6 +204,7 @@ public abstract class ThreadRtpSenderH26xBase<
 		// get the next frame to send over the wire from the input stream
 		threadDataProv.getNextFrame(cacheOrgVideoFrameBuf, cacheH26xInfo);
 		if (cacheOrgVideoFrameBuf.isEmpty()) {
+			logWarn(FNC_NAME, "cacheOrgVideoFrameBuf isEmpty");
 			throw new InputStreamEosException();
 		}
 
@@ -237,7 +253,7 @@ public abstract class ThreadRtpSenderH26xBase<
 			try {
 				frameDataSupplierGrabNalUnit();
 			} catch (InputStreamEosException e) {
-				logDebug(FNC_NAME, "EOS reached");
+				logWarn(FNC_NAME, "EOS reached");
 				haveEos = true;
 				continue;
 			}
