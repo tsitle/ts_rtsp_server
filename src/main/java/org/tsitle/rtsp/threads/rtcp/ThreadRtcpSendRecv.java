@@ -199,14 +199,13 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			boolean tmpWasDecr = false;
 			if (! wasDecr && params.getIsRtxpEncryptionEnabled()) {
 				try {
-					tmpWasDecr = srtcpContextRecv.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-					if (tmpWasDecr) {
-						cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
-						cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
-						cacheRecvBuf2.clear();
-						//
-						wasDecr = true;
-					}
+					srtcpContextRecv.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+					cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
+					cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
+					cacheRecvBuf2.clear();
+					//
+					wasDecr = true;
+					tmpWasDecr = true;
 				} catch (SrtpSecurityException e) {
 					logError(FNC_NAME, "SrtpSecurityException caught: " + e.getMessage());
 					cacheRecvBuf1.clear();

@@ -38,8 +38,7 @@ class SrtcpProtectRoundTripTest {
 		assertFalse(Arrays.equals(compoundRtcp, encrypted), "Encrypted packet should differ from plaintext");
 
 		BufferExt decryptedBuf = new BufferExt();
-		boolean wasDecrypted = receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
-		assertTrue(wasDecrypted, "Packet should be recognized and decrypted as SRTCP");
+		receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
 
 		byte[] decrypted = new byte[decryptedBuf.getUsed()];
 		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
@@ -90,8 +89,7 @@ class SrtcpProtectRoundTripTest {
 			senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
 
 			BufferExt decryptedBuf = new BufferExt();
-			boolean wasDecrypted = receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
-			assertTrue(wasDecrypted, "Round " + i + ": packet should be decrypted");
+			receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
 
 			byte[] decrypted = new byte[decryptedBuf.getUsed()];
 			decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);

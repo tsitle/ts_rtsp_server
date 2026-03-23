@@ -25,10 +25,10 @@ import java.util.Arrays;
 public class SrtxpContext implements Cloneable {
 
 	private static class CtxCipherAndMac implements Cloneable {
-		@Nullable Cipher cipherObj = null;
-		@Nullable SecretKeySpec sksCipherObj = null;
-		@Nullable Mac macObj = null;
-		@Nullable SecretKeySpec sksMacObj = null;
+		Cipher cipherObj = null;
+		SecretKeySpec sksCipherObj = null;
+		Mac macObj = null;
+		SecretKeySpec sksMacObj = null;
 
 		@Override
 		public CtxCipherAndMac clone() {
@@ -64,10 +64,14 @@ public class SrtxpContext implements Cloneable {
 	/** Session keys for RTCP/SRTCP */
 	private @Nullable SessionKeys ctxSessionKeysRtcp = null;
 
-	/** For RTP encryption: Rollover counter for RTP packets */
-	private long ctxStateRtpRoc = 0;
+	/** For RTP encryption: Rollover counter */
+	private long ctxStateRtpRocOutbound = 0;
+	/** For SRTP decryption: Rollover counter */
+	private long ctxStateRtpRocInbound = 0;
+	/** For SRTP decryption: Last packet index */
+	private long ctxStateSrtpLastIndex = -1;
 
-	/** For RTCP encryption: Packet index for RTCP packets */
+	/** For RTCP encryption: Packet index */
 	private int ctxStateRtcpIndex = 0;
 	/** For SRTCP decryption: Sender SSRC */
 	private int ctxStateSrtcpSsrc = 0;
@@ -160,8 +164,8 @@ public class SrtxpContext implements Cloneable {
 	 * @param rtpPacketBuf RTP packet buffer
 	 * @param hasCsrcList Whether the RTP packet header contains a CSRC list
 	 * @param hasHeaderExtension Whether the RTP packet header contains a header extension
-	 * @param seqNr Sequence number of the RTP packet
-	 * @param ssrcId SSRC ID of the RTP packet
+	 * @param hdSeqNr Sequence number of the RTP packet
+	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputEncryptedPacketBuf Encrypted RTP packet buffer
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
@@ -169,8 +173,8 @@ public class SrtxpContext implements Cloneable {
 				@NonNull BufferExt rtpPacketBuf,
 				boolean hasCsrcList,
 				boolean hasHeaderExtension,
-				int seqNr,
-				int ssrcId,
+				int hdSeqNr,
+				int hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
 		if (! haveMikey) {
@@ -193,21 +197,17 @@ public class SrtxpContext implements Cloneable {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxStateRtpRoc << 16) | seqNr);
+		final long srtpPacketIndex = ((ctxStateRtpRocOutbound << 16) | hdSeqNr);
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
 		final BufferExt curAuthTagBuf = new BufferExt();
 
 		// build IV
-		buildIvForRtp(srtpPacketIndex, ssrcId, curIvBuf);
+		buildIvForRtp(srtpPacketIndex, hdSsrcId, curIvBuf);
 
 		//
 		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtpEncr, ctxSessionKeysRtp);
-		assert camPtr.cipherObj != null;
-		assert camPtr.sksCipherObj != null;
-		assert camPtr.macObj != null;
-		assert camPtr.sksMacObj != null;
 
 		// encrypt payload
 		encryptPayload(
@@ -232,10 +232,109 @@ public class SrtxpContext implements Cloneable {
 		outputEncryptedPacketBuf.append(curAuthTagBuf);  // 10 bytes
 
 		// update ROC if sequence wrapped
-		if (seqNr == 0xFFFF) {
-			ctxStateRtpRoc++;
+		if (hdSeqNr == 0xFFFF) {
+			ctxStateRtpRocOutbound++;
 		}
 	}
+
+	/**
+	 * Decrypt an SRTP packet buffer according to RFC-3711 Section 3.1
+	 * @param srtpPacketBuf SRTP packet buffer
+	 * @param hdSeqNr Sequence number of the RTP packet
+	 * @param hdSsrcId SSRC ID of the RTP packet
+	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtpSecurityException If any kind of error occurred
+	 */
+	public void unprotectSrtp(
+				@NonNull BufferExt srtpPacketBuf,
+				int hdSeqNr,
+				int hdSsrcId,
+				@NonNull BufferExt outputDecryptedPacketBuf
+			) throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+		if (ctxSessionKeysRtp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
+
+		if (srtpPacketBuf.getUsed() < RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) {
+			throw new SrtpSecurityException("Invalid SRTP packet length: " +
+					srtpPacketBuf.getUsed() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
+		}
+
+		//
+		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtpDecr, ctxSessionKeysRtp);
+
+		//
+		final BufferExt curIvBuf = new BufferExt();
+		final BufferExt curAuthTagBufRcvd = new BufferExt();
+		final BufferExt curAuthTagBufExp = new BufferExt();
+		final BufferExt remaingEncrBuf = new BufferExt();
+
+		// SRTP packet index
+		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | hdSeqNr);
+		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
+			throw new SrtpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
+		}
+		ctxStateSrtpLastIndex = srtpPacketIndex;
+
+		// Auth Tag
+		curAuthTagBufRcvd.copyOf(
+				srtpPacketBuf,
+				srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE,
+				KeySizes.AUTH_TAG_SIZE
+			);
+		remaingEncrBuf.copyOf(
+				srtpPacketBuf,
+				0,
+				srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifierLength
+			);
+		computeAuthTagForRtp(camPtr.macObj, camPtr.sksMacObj, remaingEncrBuf, srtpPacketIndex, curAuthTagBufExp);
+
+		//
+		int inpSz = srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE;
+		ByteBuffer inpBuf = ByteBuffer
+				.wrap(srtpPacketBuf.getBufPtr(), 0, inpSz)
+				.order(ByteOrder.BIG_ENDIAN);
+
+		// MKI
+		if (ctxMasterKeyIdentifierLength != 0) {
+			inpBuf.position(inpSz - ctxMasterKeyIdentifierLength);
+			int tmpMki = inpBuf.getInt();
+			if (tmpMki != ctxMasterKeyIdentifierVal) {
+				throw new SrtpSecurityException("Invalid MKI in SRTP packet");
+			}
+			inpSz -= ctxMasterKeyIdentifierLength;
+		}
+
+		// validate the Auth Tag
+		if (! curAuthTagBufExp.equals(curAuthTagBufRcvd)) {
+			throw new SrtpSecurityException("Invalid Auth Tag in SRTP packet (rcvd=" +
+					curAuthTagBufRcvd.toHexString() + ", exp=" + curAuthTagBufExp.toHexString() + ")");
+		}
+
+		// build IV
+		buildIvForRtp(srtpPacketIndex, hdSsrcId, curIvBuf);
+
+		// decrypt RTP payload
+		remaingEncrBuf.copyOf(srtpPacketBuf, 0, inpSz);
+		decryptPayload(
+				camPtr.cipherObj,
+				camPtr.sksCipherObj,
+				remaingEncrBuf,
+				RTP_PLAIN_HEADER_SIZE,
+				curIvBuf,
+				outputDecryptedPacketBuf
+			);
+
+		// update ROC if sequence wrapped
+		if (hdSeqNr == 0xFFFF) {
+			ctxStateRtpRocInbound++;
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Encrypt an RTCP packet buffer containing a compound RR packet according to RFC-3711 Section 3.4
@@ -297,10 +396,6 @@ public class SrtxpContext implements Cloneable {
 
 		//
 		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtcpEncr, ctxSessionKeysRtcp);
-		assert camPtr.cipherObj != null;
-		assert camPtr.sksCipherObj != null;
-		assert camPtr.macObj != null;
-		assert camPtr.sksMacObj != null;
 
 		// encrypt RTCP payload
 		encryptPayload(
@@ -334,16 +429,13 @@ public class SrtxpContext implements Cloneable {
 		ctxStateRtcpIndex = ((ctxStateRtcpIndex + 1) & 0x7FFFFFFF);
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-
 	/**
 	 * Decrypt an SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @param outputDecryptedPacketBuf Decrypted RTCP packet buffer
-	 * @return True if the packet was decrypted, false otherwise
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
-	public boolean unprotectSrtcpCompound(
+	public void unprotectSrtcpCompound(
 				@NonNull BufferExt srtcpPacketBuf,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
@@ -354,10 +446,9 @@ public class SrtxpContext implements Cloneable {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
 
-		if (srtcpPacketBuf.getUsed() < getSrtcpExtraPacketLength()) {
-			// packet might not be encrypted
-			outputDecryptedPacketBuf.copyOf(srtcpPacketBuf);
-			return false;
+		if (srtcpPacketBuf.getUsed() < RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) {
+			throw new SrtpSecurityException("Invalid SRTCP packet length: " +
+					srtcpPacketBuf.getUsed() + " < " + (RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) + " bytes");
 		}
 
 		/*
@@ -369,10 +460,6 @@ public class SrtxpContext implements Cloneable {
 
 		//
 		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtcpDecr, ctxSessionKeysRtcp);
-		assert camPtr.cipherObj != null;
-		assert camPtr.sksCipherObj != null;
-		assert camPtr.macObj != null;
-		assert camPtr.sksMacObj != null;
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
@@ -450,7 +537,6 @@ public class SrtxpContext implements Cloneable {
 				curIvBuf,
 				outputDecryptedPacketBuf
 			);
-		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -516,7 +602,7 @@ public class SrtxpContext implements Cloneable {
 				@NonNull Cipher cipherObj,
 				@NonNull SecretKeySpec sksCipherObj,
 				@NonNull BufferExt encrPacket,
-				int pktHeaderSize,  // @TODO implement unprotectRtp
+				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputPlainPacket
 			) throws SrtpSecurityException {

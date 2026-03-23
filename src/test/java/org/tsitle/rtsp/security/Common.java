@@ -132,11 +132,17 @@ class Common {
 		return f.getInt(target);
 	}
 
+	static long getPrivateLong(Object target, String fieldName) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		return f.getLong(target);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static void srtpCtxInjectRtpKeys(SrtxpContext ctx, SessionKeys sessionKeys, long roc) throws Exception {
 		Common.setPrivateBoolean(ctx, "haveMikey", true);
-		Common.setPrivateLong(ctx, "ctxStateRtpRoc", roc);
+		Common.setPrivateLong(ctx, "ctxStateRtpRocOutbound", roc);
 		Common.setPrivateInt(ctx, "ctxAuthKeyLength", KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
