@@ -121,7 +121,7 @@ public final class ThreadRtpSenderMjpeg<
 				curFrameJpegInfo,
 				cacheRtpInnerPayloadBuf
 			);
-		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
 		return encryptRtpPacketPayload(plainPacket);

@@ -102,7 +102,7 @@ public final class ThreadRtpSenderH265<
 				globalCurNudPtr.h26xInfo,
 				cacheRtpInnerPayloadBuf
 			);
-		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
 		return encryptRtpPacketPayload(plainPacket);

@@ -9,7 +9,7 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.security.SrtpContext;
+import org.tsitle.rtsp.security.SrtxpContext;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -350,7 +350,7 @@ public class RtspResponseBuilder {
 		// m: Media Description with available codec(s)
 		final int tmpM_port = 0;
 		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
-				(useVideo ? "video" : "audio"), tmpM_port, rtspSessionInfo.isRtpEncryptionEnabled ? "S" : "",
+				(useVideo ? "video" : "audio"), tmpM_port, rtspSessionInfo.isRtxpEncryptionEnabled ? "S" : "",
 				tmpSsObj.getCodec().getValue(), CRLF));
 		// c: Connection Information (can be an IP address or a hostname)
 		//sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
@@ -428,8 +428,8 @@ public class RtspResponseBuilder {
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
 
 		//
-		SrtpContext srtpCtx = new SrtpContext();
-		rtspSessionInfo.streamsMapSrtpCtx.put(tmpSsObj.getId(), srtpCtx);  // always store the context
+		SrtxpContext srtpCtx = new SrtxpContext();
+		rtspSessionInfo.streamsMapSrtxpCtx.put(tmpSsObj.getId(), srtpCtx);  // always store the context
 	}
 
 	/**

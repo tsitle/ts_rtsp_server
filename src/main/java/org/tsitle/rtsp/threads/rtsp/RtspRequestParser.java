@@ -277,9 +277,9 @@ public class RtspRequestParser {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
-			if (! rtspSessionInfo.streamsMapSrtpCtx.containsKey(rscStreamSourceId)) {
+			if (! rtspSessionInfo.streamsMapSrtxpCtx.containsKey(rscStreamSourceId)) {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Missing SRTP Context for Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
+						"Missing SRTxP Context for Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
 			RtspSessionInfo.StreamInfo streamInfo = new RtspSessionInfo.StreamInfo();
 			streamInfo.rtspStreamSource = rtspStreamSource;
@@ -288,7 +288,7 @@ public class RtspRequestParser {
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
-			streamInfo.srtpContext = rtspSessionInfo.streamsMapSrtpCtx.get(rscStreamSourceId).clone();  // always clone the SRTP Context
+			streamInfo.srtxpContext = rtspSessionInfo.streamsMapSrtxpCtx.get(rscStreamSourceId).clone();  // always clone the SRTxP Context
 			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
@@ -513,7 +513,7 @@ public class RtspRequestParser {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA.length())
 						.replace("\"", "").replace("'", "").strip();
 				try {
-					Objects.requireNonNull(tmpStreamInfo.srtpContext).setClientMikey(tmpSub);
+					Objects.requireNonNull(tmpStreamInfo.srtxpContext).setClientMikey(tmpSub);
 					haveKeyData = true;
 				} catch (SrtpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());
@@ -558,6 +558,7 @@ public class RtspRequestParser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}

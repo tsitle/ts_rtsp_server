@@ -197,6 +197,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 				clone.dqt_tables16Bit[i] = (DqtTable16Bit)dqt_tables16Bit[i].clone();
 			}
 			if (dht_tableCount > 0) {
+				clone.dqt_tablePrecisions = new QuantizationTablePrecision[dht_tableCount];
 				System.arraycopy(dqt_tablePrecisions, 0, clone.dqt_tablePrecisions, 0, dht_tableCount);
 			}
 			return clone;

@@ -254,6 +254,15 @@ public class BufferExt implements Cloneable {
 	}
 
 	@Override
+	public int hashCode() {
+		int result = Integer.hashCode(used);
+		for (int i = 0; i < used; i++) {
+			result = 31 * result + Byte.hashCode(buf[i]);
+		}
+		return result;
+	}
+
+	@Override
 	public BufferExt clone() {
 		try {
 			BufferExt clone = (BufferExt)super.clone();

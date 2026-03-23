@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
@@ -18,49 +19,48 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-public class SrtpContext implements Cloneable {
+/**
+ * Context for SRTP/RTP and SRTCP/RTCP encryption/decryption
+ */
+public class SrtxpContext implements Cloneable {
 
-	/** Size of the Master Key Identifier in bytes */
-	public static final int MKI_SIZE = 4;
 	/** Size of the SRTCP Index Field in bytes */
 	public static final int SRTCP_INDEX_FIELD_SIZE = 4;
 
+	private static final int RTP_PLAIN_HEADER_SIZE = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE;
+	private static final int RTCP_PLAIN_HEADER_SIZE = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
+
 	/** Master AES-128 key (16 bytes) */
-	private final byte[] ctxMasterEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
+	private BufferExt ctxMasterEncKey = new BufferExt();
 	/** Master SRTP salt (14 bytes) */
-	private final byte[] ctxMasterSalt = new byte[KeySizes.SALT_SIZE];
+	private BufferExt ctxMasterSalt = new BufferExt();
 
-	/** RTP Session AES-128 key (16 bytes) */
-	private final byte[] ctxRtpSessionEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
-	/** RTP Session salt (14 bytes) */
-	private final byte[] ctxRtpSessionSalt = new byte[KeySizes.SALT_SIZE];
-	/** RTP Session HMAC-SHA1 key (10 or 20 bytes) */
-	private byte[] ctxRtpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE_160];
-
-	/** RTCP Session AES-128 key (16 bytes) */
-	private final byte[] ctxRtcpSessionEncKey = new byte[KeySizes.AES_128_KEY_SIZE];
-	/** RTCP Session salt (14 bytes) */
-	private final byte[] ctxRtcpSessionSalt = new byte[KeySizes.SALT_SIZE];
-	/** RTCP Session HMAC-SHA1 key (10 or 20 bytes) */
-	private byte[] ctxRtcpSessionAuthKey = new byte[KeySizes.AUTH_KEY_SIZE_160];
+	/** Session keys for RTP/SRTP */
+	private @Nullable SessionKeys ctxSessionKeysRtp = null;
+	/** Session keys for RTCP/SRTCP */
+	private @Nullable SessionKeys ctxSessionKeysRtcp = null;
 
 	/** For RTP encryption: Rollover counter for RTP packets */
-	private long ctxRtpRoc = 0;
+	private long ctxStateRtpRoc = 0;
 
 	/** For RTCP encryption: Packet index for RTCP packets */
-	private int ctxRtcpIndex = 0;
+	private int ctxStateRtcpIndex = 0;
 	/** For SRTCP decryption: Sender SSRC */
-	private int ctxSrtcpSsrc = 0;
+	private int ctxStateSrtcpSsrc = 0;
 	/** For SRTCP decryption: Last packet index */
-	private int ctxSrtcpLastIndex = -1;
+	private int ctxStateSrtcpLastIndex = -1;
 
 	/** Have we received a MIKEY message? */
 	private boolean haveMikey = false;
 
-	/** Master key identifier */
-	private int ctxMasterKeyIdentifier = 0;
+	/** Master key identifier length */
+	private int ctxMasterKeyIdentifierLength = 0;
+	/** Master key identifier value */
+	private int ctxMasterKeyIdentifierVal = 0;
+	/** Auth key length */
+	private int ctxAuthKeyLength = 0;
 
-	public SrtpContext() {
+	public SrtxpContext() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -77,37 +77,51 @@ public class SrtpContext implements Cloneable {
 			throw new SrtpSecurityException("Client MIKEY already set");
 		}
 
+		// parse MIKEY message
 		MikeyParser.SrtpKeys keys = MikeyParser.parseKeyMgmtData(msgB64);
-		System.arraycopy(keys.masterKey(), 0, ctxMasterEncKey, 0, KeySizes.AES_128_KEY_SIZE);
-		System.arraycopy(keys.masterSalt(), 0, ctxMasterSalt, 0, KeySizes.SALT_SIZE);
-		ctxMasterKeyIdentifier = keys.mki();
-
-		//
-		SrtpKeyDerivation.SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtp(ctxMasterEncKey, ctxMasterSalt, keys.authKeyLen());
-		System.arraycopy(tmpSessionKeys.encKey(), 0, ctxRtpSessionEncKey, 0, tmpSessionKeys.encKey().length);
-		System.arraycopy(tmpSessionKeys.salt(), 0, ctxRtpSessionSalt, 0, tmpSessionKeys.salt().length);
-		ctxRtpSessionAuthKey = new byte[tmpSessionKeys.authKey().length];
-		System.arraycopy(tmpSessionKeys.authKey(), 0, ctxRtpSessionAuthKey, 0, tmpSessionKeys.authKey().length);
-
-		//
-		tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(ctxMasterEncKey, ctxMasterSalt, keys.authKeyLen());
-		System.arraycopy(tmpSessionKeys.encKey(), 0, ctxRtcpSessionEncKey, 0, tmpSessionKeys.encKey().length);
-		System.arraycopy(tmpSessionKeys.salt(), 0, ctxRtcpSessionSalt, 0, tmpSessionKeys.salt().length);
-		ctxRtcpSessionAuthKey = new byte[tmpSessionKeys.authKey().length];
-		System.arraycopy(tmpSessionKeys.authKey(), 0, ctxRtcpSessionAuthKey, 0, tmpSessionKeys.authKey().length);
+		ctxMasterEncKey.copyOf(keys.masterKey());
+		ctxMasterSalt.copyOf(keys.masterSalt());
+		ctxMasterKeyIdentifierLength = keys.mkiLen();
+		ctxMasterKeyIdentifierVal = keys.mkiVal();
+		ctxAuthKeyLength = keys.authKeyLen();
 
 		//
 		haveMikey = true;
+
+		//
+		final Cipher cipherAesCtr = buildCipherObject();
+
+		//
+		SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtp(cipherAesCtr, ctxMasterEncKey, ctxMasterSalt, ctxAuthKeyLength);
+		setRtpSessionKeys(tmpSessionKeys);
+
+		//
+		tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxMasterEncKey, ctxMasterSalt, ctxAuthKeyLength);
+		setRtcpSessionKeys(tmpSessionKeys);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public int getSrtpExtraPacketLength() {
-		return KeySizes.AUTH_TAG_SIZE + (ctxMasterKeyIdentifier != 0 ? MKI_SIZE : 0);
+	/**
+	 * Get the extra packet length for encrypted SRTP packets
+	 * @return Extra packet length
+	 */
+	public int getSrtpExtraPacketLength() throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+		return (KeySizes.AUTH_TAG_SIZE + ctxMasterKeyIdentifierLength);
 	}
 
-	public int getSrtcpExtraPacketLength() {
-		return KeySizes.AUTH_TAG_SIZE + (ctxMasterKeyIdentifier != 0 ? MKI_SIZE : 0) + SRTCP_INDEX_FIELD_SIZE;
+	/**
+	 * Get the extra packet length for encrypted SRTCP packets
+	 * @return Extra packet length
+	 */
+	public int getSrtcpExtraPacketLength() throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+		return (KeySizes.AUTH_TAG_SIZE + SRTCP_INDEX_FIELD_SIZE + ctxMasterKeyIdentifierLength);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -133,6 +147,9 @@ public class SrtpContext implements Cloneable {
 		if (! haveMikey) {
 			throw new SrtpSecurityException("Client MIKEY not set");
 		}
+		if (ctxSessionKeysRtp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
 
 		/*
 		 * Encrypted SRTP format:
@@ -147,7 +164,7 @@ public class SrtpContext implements Cloneable {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxRtpRoc << 16) | seqNr);
+		final long srtpPacketIndex = ((ctxStateRtpRoc << 16) | seqNr);
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
@@ -158,9 +175,10 @@ public class SrtpContext implements Cloneable {
 
 		// encrypt payload
 		encryptPayload(
+				buildCipherObject(),
 				rtpPacketBuf,
-				RtpPacketContainerBase.RTP_CONT_HEADER_SIZE,
-				ctxRtpSessionEncKey,
+				RTP_PLAIN_HEADER_SIZE,
+				ctxSessionKeysRtp.encKey(),
 				curIvBuf,
 				outputEncryptedPacketBuf
 			);
@@ -169,10 +187,8 @@ public class SrtpContext implements Cloneable {
 		computeAuthTagForRtp(outputEncryptedPacketBuf, srtpPacketIndex, curAuthTagBuf);
 
 		// append MKI (4 bytes)
-		if (ctxMasterKeyIdentifier != 0) {
-			byte[] tmpMkiBufArr = new byte[MKI_SIZE];
-			ByteBuffer tmpMkiBufObj = ByteBuffer.wrap(tmpMkiBufArr).order(ByteOrder.BIG_ENDIAN);
-			tmpMkiBufObj.putInt(ctxMasterKeyIdentifier);
+		if (ctxMasterKeyIdentifierLength != 0) {
+			byte[] tmpMkiBufArr = getMkiAsByteArray();
 			outputEncryptedPacketBuf.append(tmpMkiBufArr);
 		}
 
@@ -181,7 +197,7 @@ public class SrtpContext implements Cloneable {
 
 		// update ROC if sequence wrapped
 		if (seqNr == 0xFFFF) {
-			ctxRtpRoc++;
+			ctxStateRtpRoc++;
 		}
 	}
 
@@ -216,20 +232,23 @@ public class SrtpContext implements Cloneable {
 		if (! haveMikey) {
 			throw new SrtpSecurityException("Client MIKEY not set");
 		}
-		final int rtcpSrRrExtendedHeaderLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
-		if (rtcpPacketBuf.getUsed() < rtcpSrRrExtendedHeaderLen) {
+		if (ctxSessionKeysRtcp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
+
+		if (rtcpPacketBuf.getUsed() < RTCP_PLAIN_HEADER_SIZE) {
 			throw new SrtpSecurityException("Invalid RTCP packet length");
 		}
 
 		/*
 		 * Encrypted SRTCP format:
-		 *   [RTCP packet header plaintext][encrypted RTCP payload][SRTCP index/E-bit][auth tag]
+		 *   [RTCP packet header plaintext][encrypted RTCP payload][SRTCP index/E-bit][MKI][auth tag]
 		 *
 		 * SRTCP may only use packets where the first part MUST be a sender report or a receiver report.
 		 */
 
 		// SRTCP index is 31 bits + 1 E-bit (encryption flag) in the MSB
-		final int srtcpIndexOnly = (ctxRtcpIndex & 0x7FFFFFFF);
+		final int srtcpIndexOnly = (ctxStateRtcpIndex & 0x7FFFFFFF);
 		final int srtcpIndexEbit = 0x80000000;
 		final int srtcpIndexField = (srtcpIndexEbit | srtcpIndexOnly);
 
@@ -242,9 +261,10 @@ public class SrtpContext implements Cloneable {
 
 		// encrypt RTCP payload
 		encryptPayload(
+				buildCipherObject(),
 				rtcpPacketBuf,
-				rtcpSrRrExtendedHeaderLen,
-				ctxRtcpSessionEncKey,
+				RTCP_PLAIN_HEADER_SIZE,
+				ctxSessionKeysRtcp.encKey(),
 				curIvBuf,
 				outputEncryptedPacketBuf
 			);
@@ -259,10 +279,8 @@ public class SrtpContext implements Cloneable {
 		computeAuthTagForRtcp(outputEncryptedPacketBuf, curAuthTagBuf);
 
 		// append MKI (4 bytes)
-		if (ctxMasterKeyIdentifier != 0) {
-			byte[] tmpMkiBufArr = new byte[MKI_SIZE];
-			ByteBuffer tmpMkiBufObj = ByteBuffer.wrap(tmpMkiBufArr).order(ByteOrder.BIG_ENDIAN);
-			tmpMkiBufObj.putInt(ctxMasterKeyIdentifier);
+		if (ctxMasterKeyIdentifierVal != 0) {
+			byte[] tmpMkiBufArr = getMkiAsByteArray();
 			outputEncryptedPacketBuf.append(tmpMkiBufArr);
 		}
 
@@ -270,27 +288,29 @@ public class SrtpContext implements Cloneable {
 		outputEncryptedPacketBuf.append(curAuthTagBuf);
 
 		// advance RTCP index
-		ctxRtcpIndex = ((ctxRtcpIndex + 1) & 0x7FFFFFFF);
+		ctxStateRtcpIndex = ((ctxStateRtcpIndex + 1) & 0x7FFFFFFF);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt an RTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
+	 * Decrypt an SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @param outputDecryptedPacketBuf Decrypted RTCP packet buffer
 	 * @return True if the packet was decrypted, false otherwise
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
-	public boolean unprotectRtcpCompound(
+	public boolean unprotectSrtcpCompound(
 				@NonNull BufferExt srtcpPacketBuf,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
 		if (! haveMikey) {
 			throw new SrtpSecurityException("Client MIKEY not set");
 		}
-		final int rtcpSrRrExtendedHeaderLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
-		final int mkiLength = (ctxMasterKeyIdentifier != 0 ? MKI_SIZE : 0);
+		if (ctxSessionKeysRtcp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
+
 		if (srtcpPacketBuf.getUsed() < getSrtcpExtraPacketLength()) {
 			// packet might not be encrypted
 			outputDecryptedPacketBuf.copyOf(srtcpPacketBuf);
@@ -316,7 +336,11 @@ public class SrtpContext implements Cloneable {
 				srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE,
 				KeySizes.AUTH_TAG_SIZE
 			);
-		remaingEncrBuf.copyOf(srtcpPacketBuf, 0, srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - mkiLength);
+		remaingEncrBuf.copyOf(
+				srtcpPacketBuf,
+				0,
+				srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifierLength
+			);
 		computeAuthTagForRtcp(remaingEncrBuf, curAuthTagBufExp);
 
 		//
@@ -326,13 +350,13 @@ public class SrtpContext implements Cloneable {
 				.order(ByteOrder.BIG_ENDIAN);
 
 		// MKI
-		if (mkiLength != 0) {
-			inpBuf.position(inpSz - mkiLength);
+		if (ctxMasterKeyIdentifierLength != 0) {
+			inpBuf.position(inpSz - ctxMasterKeyIdentifierLength);
 			int tmpMki = inpBuf.getInt();
-			if (tmpMki != ctxMasterKeyIdentifier) {
+			if (tmpMki != ctxMasterKeyIdentifierVal) {
 				throw new SrtpSecurityException("Invalid MKI in SRTCP packet");
 			}
-			inpSz -= mkiLength;
+			inpSz -= ctxMasterKeyIdentifierLength;
 		}
 
 		// validate the Auth Tag
@@ -349,19 +373,19 @@ public class SrtpContext implements Cloneable {
 		if (tmpIndexEbit != 0x80000000) {
 			throw new SrtpSecurityException("Invalid E-bit in SRTCP packet");
 		}
-		if (ctxSrtcpLastIndex >= tmpIndexOnly) {
+		if (ctxStateSrtcpLastIndex >= tmpIndexOnly) {
 			throw new SrtpSecurityException("Invalid SRTCP packet index");
 		}
-		ctxSrtcpLastIndex = tmpIndexOnly;
+		ctxStateSrtcpLastIndex = tmpIndexOnly;
 		inpSz -= SRTCP_INDEX_FIELD_SIZE;
 
 		// Sender SSRC
 		inpBuf.position(RtcpPacketHeader.HEADER_SIZE);
 		int tmpSenderSsrc = inpBuf.getInt();
-		if (ctxSrtcpSsrc != 0 && tmpSenderSsrc != ctxSrtcpSsrc) {
+		if (ctxStateSrtcpSsrc != 0 && tmpSenderSsrc != ctxStateSrtcpSsrc) {
 			throw new SrtpSecurityException("Invalid Sender SSRC in SRTCP packet");
 		}
-		ctxSrtcpSsrc = tmpSenderSsrc;
+		ctxStateSrtcpSsrc = tmpSenderSsrc;
 
 		// build IV
 		buildIvForRtcp(tmpIndexOnly, tmpSenderSsrc, curIvBuf);
@@ -369,9 +393,10 @@ public class SrtpContext implements Cloneable {
 		// decrypt RTCP payload
 		remaingEncrBuf.copyOf(srtcpPacketBuf, 0, inpSz);
 		decryptPayload(
+				buildCipherObject(),
 				remaingEncrBuf,
-				rtcpSrRrExtendedHeaderLen,
-				ctxRtcpSessionEncKey,
+				RTCP_PLAIN_HEADER_SIZE,
+				ctxSessionKeysRtcp.encKey(),
 				curIvBuf,
 				outputDecryptedPacketBuf
 			);
@@ -381,24 +406,20 @@ public class SrtpContext implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public SrtpContext clone() {
+	public SrtxpContext clone() {
 		try {
-			SrtpContext clone = (SrtpContext)super.clone();
+			SrtxpContext clone = (SrtxpContext)super.clone();
 
-			System.arraycopy(this.ctxMasterEncKey, 0, clone.ctxMasterEncKey, 0, this.ctxMasterEncKey.length);
-			System.arraycopy(this.ctxMasterSalt, 0, clone.ctxMasterSalt, 0, this.ctxMasterSalt.length);
+			clone.ctxMasterEncKey = this.ctxMasterEncKey.clone();
+			clone.ctxMasterSalt = this.ctxMasterSalt.clone();
 
-			System.arraycopy(this.ctxRtpSessionEncKey, 0, clone.ctxRtpSessionEncKey, 0, this.ctxRtpSessionEncKey.length);
-			System.arraycopy(this.ctxRtpSessionSalt, 0, clone.ctxRtpSessionSalt, 0, this.ctxRtpSessionSalt.length);
-			if (this.ctxRtpSessionAuthKey != null) {
-				System.arraycopy(this.ctxRtpSessionAuthKey, 0, clone.ctxRtpSessionAuthKey, 0, this.ctxRtpSessionAuthKey.length);
+			if (this.ctxSessionKeysRtp != null) {
+				clone.ctxSessionKeysRtp = this.ctxSessionKeysRtp.clone();
+			}
+			if (this.ctxSessionKeysRtcp != null) {
+				clone.ctxSessionKeysRtcp = this.ctxSessionKeysRtcp.clone();
 			}
 
-			System.arraycopy(this.ctxRtcpSessionEncKey, 0, clone.ctxRtcpSessionEncKey, 0, this.ctxRtcpSessionEncKey.length);
-			System.arraycopy(this.ctxRtcpSessionSalt, 0, clone.ctxRtcpSessionSalt, 0, this.ctxRtcpSessionSalt.length);
-			if (this.ctxRtcpSessionAuthKey != null) {
-				System.arraycopy(this.ctxRtcpSessionAuthKey, 0, clone.ctxRtcpSessionAuthKey, 0, this.ctxRtcpSessionAuthKey.length);
-			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -409,9 +430,10 @@ public class SrtpContext implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void encryptPayload(
+				@NonNull Cipher cipher,
 				@NonNull BufferExt plainPacket,
 				int pktHeaderSize,
-				byte[] sessionEncKey,
+				@NonNull BufferExt sessionEncKey,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputEncrPacket
 			) throws SrtpSecurityException {
@@ -420,8 +442,7 @@ public class SrtpContext implements Cloneable {
 		outputEncrPacket.setUsed(plainPacket.getUsed());
 
 		try {
-			Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
-			SecretKeySpec key = new SecretKeySpec(sessionEncKey, "AES");
+			SecretKeySpec key = new SecretKeySpec(sessionEncKey.getBufPtr(), 0, sessionEncKey.getUsed(), "AES");
 			cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
 
 			cipher.doFinal(
@@ -431,16 +452,17 @@ public class SrtpContext implements Cloneable {
 					outputEncrPacket.getBufPtr(),
 					pktHeaderSize
 				);
-		} catch (NoSuchAlgorithmException | NoSuchPaddingException | ShortBufferException | IllegalBlockSizeException |
+		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
 	}
 
 	private void decryptPayload(
+				@NonNull Cipher cipher,
 				@NonNull BufferExt encrPacket,
-				int pktHeaderSize,
-				byte[] sessionEncKey,
+				int pktHeaderSize,  // @TODO implement unprotectRtp
+				@NonNull BufferExt sessionEncKey,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputPlainPacket
 			) throws SrtpSecurityException {
@@ -453,8 +475,7 @@ public class SrtpContext implements Cloneable {
 		outputPlainPacket.setUsed(encrPacket.getUsed());
 
 		try {
-			Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
-			SecretKeySpec key = new SecretKeySpec(sessionEncKey, "AES");
+			SecretKeySpec key = new SecretKeySpec(sessionEncKey.getBufPtr(), 0, sessionEncKey.getUsed(), "AES");
 			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
 
 			cipher.doFinal(
@@ -464,7 +485,7 @@ public class SrtpContext implements Cloneable {
 					outputPlainPacket.getBufPtr(),
 					pktHeaderSize
 				);
-		} catch (NoSuchAlgorithmException | NoSuchPaddingException | ShortBufferException | IllegalBlockSizeException |
+		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
@@ -477,12 +498,19 @@ public class SrtpContext implements Cloneable {
 				long packetIndex,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
-		if (ctxRtpSessionAuthKey == null) {
-			throw new SrtpSecurityException("RTP session auth key not set");
+		if (ctxSessionKeysRtp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
 		}
+
 		try {
 			Mac mac = Mac.getInstance("HmacSHA1");
-			mac.init(new SecretKeySpec(ctxRtpSessionAuthKey, "HmacSHA1"));
+			mac.init(
+					new SecretKeySpec(
+							ctxSessionKeysRtp.authKey().getBufPtr(),
+							0,
+							ctxSessionKeysRtp.authKey().getUsed(),
+							"HmacSHA1"
+				));
 
 			mac.update(encrRtpPacket.getBufPtr(), 0, encrRtpPacket.getUsed());
 
@@ -501,12 +529,19 @@ public class SrtpContext implements Cloneable {
 				@NonNull BufferExt encrRtcpPacket,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
-		if (ctxRtcpSessionAuthKey == null) {
-			throw new SrtpSecurityException("RTP session auth key not set");
+		if (ctxSessionKeysRtcp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
 		}
+
 		try {
 			Mac mac = Mac.getInstance("HmacSHA1");
-			mac.init(new SecretKeySpec(ctxRtcpSessionAuthKey, "HmacSHA1"));
+			mac.init(
+					new SecretKeySpec(
+							ctxSessionKeysRtcp.authKey().getBufPtr(),
+							0,
+							ctxSessionKeysRtcp.authKey().getUsed(),
+							"HmacSHA1"
+				));
 
 			mac.update(encrRtcpPacket.getBufPtr(), 0, encrRtcpPacket.getUsed());
 
@@ -520,7 +555,11 @@ public class SrtpContext implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void buildIvForRtp(long packetIndex, int ssrc, @NonNull BufferExt curIvBuf) {
+	private void buildIvForRtp(long packetIndex, int ssrc, @NonNull BufferExt curIvBuf) throws SrtpSecurityException {
+		if (ctxSessionKeysRtp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
+
 		final byte[] tmpIvBytes = new byte[KeySizes.AES_128_KEY_SIZE];
 		Arrays.fill(tmpIvBytes, (byte)0);
 
@@ -548,13 +587,17 @@ public class SrtpContext implements Cloneable {
 		buf.putShort((short)0);
 
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
-			tmpIvBytes[i] ^= ctxRtpSessionSalt[i];
+			tmpIvBytes[i] ^= ctxSessionKeysRtp.salt().get(i);
 		}
 
 		curIvBuf.copyOf(tmpIvBytes);
 	}
 
-	private void buildIvForRtcp(int packetIndex, int ssrc, @NonNull BufferExt curIvBuf) {
+	private void buildIvForRtcp(int packetIndex, int ssrc, @NonNull BufferExt curIvBuf) throws SrtpSecurityException {
+		if (ctxSessionKeysRtcp == null) {
+			throw new SrtpSecurityException("Session Keys not set");
+		}
+
 		final byte[] tmpIvBytes = new byte[KeySizes.AES_128_KEY_SIZE];
 		Arrays.fill(tmpIvBytes, (byte)0);
 
@@ -578,10 +621,64 @@ public class SrtpContext implements Cloneable {
 
 		// XOR first 112 bits with session salt
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
-			tmpIvBytes[i] ^= ctxRtcpSessionSalt[i];
+			tmpIvBytes[i] ^= ctxSessionKeysRtcp.salt().get(i);
 		}
 
 		curIvBuf.copyOf(tmpIvBytes);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private byte[] getMkiAsByteArray() throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+		byte[] resBa = new byte[ctxMasterKeyIdentifierLength];
+		ByteBuffer tmpMkiBufObj = ByteBuffer.wrap(resBa).order(ByteOrder.BIG_ENDIAN);
+		tmpMkiBufObj.putInt(ctxMasterKeyIdentifierVal);
+		return resBa;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	static @NonNull Cipher buildCipherObject() throws SrtpSecurityException {
+		try {
+			return Cipher.getInstance("AES/CTR/NoPadding");
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+			throw new SrtpSecurityException("Could not build Cipher object: " + e.getMessage());
+		}
+	}
+
+	void setRtpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+		validateSessionKeys(sessionKeys);
+		ctxSessionKeysRtp = sessionKeys.clone();
+	}
+
+	void setRtcpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+		validateSessionKeys(sessionKeys);
+		ctxSessionKeysRtcp = sessionKeys.clone();
+	}
+
+	void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+		if (ctxAuthKeyLength <= 0) {
+			throw new SrtpSecurityException("Session Auth Key length not set");
+		}
+		if (sessionKeys.encKey().getUsed() != KeySizes.AES_128_KEY_SIZE) {
+			throw new SrtpSecurityException("Invalid RTP Session Encr Key length (expected " +
+					KeySizes.AES_128_KEY_SIZE + " bytes, got " + sessionKeys.encKey().getUsed() + ")");
+		}
+		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
+			throw new SrtpSecurityException("Invalid RTP Session Salt length (expected " +
+					KeySizes.SALT_SIZE + " bytes, got " + sessionKeys.salt().getUsed() + ")");
+		}
+		if (sessionKeys.authKey().getUsed() != ctxAuthKeyLength) {
+			throw new SrtpSecurityException("Invalid RTP Session Auth Key length (expected " +
+					ctxAuthKeyLength + " bytes, got " + sessionKeys.authKey().getUsed() + ")");
+		}
 	}
 
 }

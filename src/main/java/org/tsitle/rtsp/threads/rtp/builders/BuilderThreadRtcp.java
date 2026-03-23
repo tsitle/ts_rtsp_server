@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.security.SrtpContext;
+import org.tsitle.rtsp.security.SrtxpContext;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -31,8 +31,8 @@ public class BuilderThreadRtcp {
 
 		public Builder rtspSsrcId(int v) { this.threadParams.setRtspSsrcId(v); return this; }
 
-		public Builder comIsRtpEncryptionEnabled(boolean v) { this.threadParams.setIsRtpEncryptionEnabled(v); return this; }
-		public Builder comSrtpContext(@NonNull SrtpContext v) { this.threadParams.setSrtpContext(v); return this; }
+		public Builder comIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setIsRtxpEncryptionEnabled(v); return this; }
+		public Builder comSrtxpContext(@NonNull SrtxpContext v) { this.threadParams.setSrtxpContext(v); return this; }
 
 		//
 		public ThreadRtcpSendRecv build() {

@@ -128,7 +128,7 @@ public final class ThreadRtpSenderAac<
 				curFrameAacInfo,
 				cacheRtpInnerPayloadBuf
 			);
-		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
 		return encryptRtpPacketPayload(plainPacket);

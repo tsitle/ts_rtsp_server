@@ -1,47 +1,42 @@
 package org.tsitle.rtsp.security;
 
 import org.junit.jupiter.api.Test;
+import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
-import org.tsitle.rtsp.security.constants.KeySizes;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
-import java.util.HexFormat;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SrtpKeyDerivationTest {
 
-	private static final HexFormat HEX = HexFormat.of();
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
 	@Test
 	void rfc3711_rtp_vector_should_match() throws SrtpSecurityException {
-		// RFC 3711 key derivation test vector (AES-128 / HMAC-SHA1 / salt 112)
-		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
-		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
+		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		SrtpKeyDerivation.SessionKeys rtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+		final BufferExt expectedEncKey = Common.createBufferFromHex("C61E7A93744F39EE10734AFE3FF7A087");
+		final BufferExt expectedAuthKey = Common.createBufferFromHex("CEBE321F6FF7716B6FD4AB49AF256A156D38BAA4");
+		final BufferExt expectedSalt = Common.createBufferFromHex("30CBBC08863D8C85D49DB34A9AE1");
 
-		assertArrayEquals(
-				HEX.parseHex("C61E7A93744F39EE10734AFE3FF7A087"),
-				rtp.encKey(),
-				"RTP enc key mismatch"
-			);
-		assertArrayEquals(
-				HEX.parseHex("CEBE321F6FF7716B6FD4AB49AF256A156D38BAA4"),
-				rtp.authKey(),
-				"RTP auth key mismatch"
-			);
-		assertArrayEquals(
-				HEX.parseHex("30CBBC08863D8C85D49DB34A9AE1"),
-				rtp.salt(),
-				"RTP salt mismatch"
-			);
+		assertEquals(expectedEncKey, rtpKeys.encKey(), "RTP enc key mismatch");
+		assertEquals(expectedAuthKey, rtpKeys.authKey(), "RTP auth key mismatch");
+		assertEquals(expectedSalt, rtpKeys.salt(), "RTP salt mismatch");
+	}
+
+	@Test
+	void rfc3711_rtcp_vector_should_match() throws SrtpSecurityException {
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
+
+		final BufferExt expectedEncKey = Common.createBufferFromHex("4C1AA45A81F73D61C800BBB00FBB1EAA");
+		final BufferExt expectedAuthKey = Common.createBufferFromHex("8D54534FEB49AE8E7993A6BD0B844FC323A93DFD");
+		final BufferExt expectedSalt = Common.createBufferFromHex("9581C7AD87B3E530BF3E4454A8B3");
+
+		assertEquals(expectedEncKey, rtcpKeys.encKey(), "RTCP enc key mismatch");
+		assertEquals(expectedAuthKey, rtcpKeys.authKey(), "RTCP auth key mismatch");
+		assertEquals(expectedSalt, rtcpKeys.salt(), "RTCP salt mismatch");
 	}
 
 	@Test
@@ -51,9 +46,9 @@ class SrtpKeyDerivationTest {
 		new SecureRandom().nextBytes(masterKey);
 		new SecureRandom().nextBytes(masterSalt);
 
-		// Your implementation
-		SrtpKeyDerivation.SessionKeys myRtp = SrtpKeyDerivation.deriveForRtp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
-		SrtpKeyDerivation.SessionKeys myRtcp = SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+		//
+		SessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(Common.createBufferFromBa(masterKey), Common.createBufferFromBa(masterSalt));
+		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(Common.createBufferFromBa(masterKey), Common.createBufferFromBa(masterSalt));
 
 		// Independent reference (RFC 3711, key_derivation_rate=0 => r=0)
 		byte[] refRtpEnc = refDerive(masterKey, masterSalt, (byte) 0x00, 16);
@@ -63,13 +58,13 @@ class SrtpKeyDerivationTest {
 		byte[] refRtcpAuth = refDerive(masterKey, masterSalt, (byte) 0x04, 20);
 		byte[] refRtcpSalt = refDerive(masterKey, masterSalt, (byte) 0x05, 14);
 
-		assertArrayEquals(refRtpEnc, myRtp.encKey(), "RTP enc mismatch");
-		assertArrayEquals(refRtpAuth, myRtp.authKey(), "RTP auth mismatch");
-		assertArrayEquals(refRtpSalt, myRtp.salt(), "RTP salt mismatch");
+		assertEquals(Common.createBufferFromBa(refRtpEnc), rtpKeys.encKey(), "RTP enc mismatch");
+		assertEquals(Common.createBufferFromBa(refRtpAuth), rtpKeys.authKey(), "RTP auth mismatch");
+		assertEquals(Common.createBufferFromBa(refRtpSalt), rtpKeys.salt(), "RTP salt mismatch");
 
-		assertArrayEquals(refRtcpEnc, myRtcp.encKey(), "RTCP enc mismatch");
-		assertArrayEquals(refRtcpAuth, myRtcp.authKey(), "RTCP auth mismatch");
-		assertArrayEquals(refRtcpSalt, myRtcp.salt(), "RTCP salt mismatch");
+		assertEquals(Common.createBufferFromBa(refRtcpEnc), rtcpKeys.encKey(), "RTCP enc mismatch");
+		assertEquals(Common.createBufferFromBa(refRtcpAuth), rtcpKeys.authKey(), "RTCP auth mismatch");
+		assertEquals(Common.createBufferFromBa(refRtcpSalt), rtcpKeys.salt(), "RTCP salt mismatch");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

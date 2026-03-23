@@ -12,7 +12,13 @@ import java.util.Base64;
 
 public class MikeyParser {
 
-	public record SrtpKeys(byte[] masterKey, byte[] masterSalt, int authKeyLen, int mki) { }
+	public record SrtpKeys(
+			@NonNull BufferExt masterKey,
+			@NonNull BufferExt masterSalt,
+			int authKeyLen,
+			int mkiLen,
+			int mkiVal
+		) { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -20,6 +26,7 @@ public class MikeyParser {
 	private static class MikeyData {
 		int hdCsbId;
 		byte hdCsNr;
+		short hdCsIdMapInfo;
 
 		final BufferExt hdRandData = new BufferExt();
 
@@ -80,7 +87,7 @@ public class MikeyParser {
 		///
 		mikeyData.hdCsNr = buf.get();  // #CS (indicates the number of Crypto Sessions that will be handled within the CBS)
 		byte tmpCsIdMapType = buf.get();  // CS_ID_map_type
-		buf.getShort();  // CS_ID_map_info
+		mikeyData.hdCsIdMapInfo = buf.getShort();  // CS_ID_map_info
 		MickeyMsgDataType tmpDataType = MickeyMsgDataType.of(tmpHdDt);
 		MickeyMsgPayloadType nextPayloadType = MickeyMsgPayloadType.of(tmpHdNp);
 		if (tmpDataType != MickeyMsgDataType.MMDT_PRE_SHARED_KEY) {
@@ -91,7 +98,7 @@ public class MikeyParser {
 		}
 		if (tmpCsIdMapType == 0x00) {  // CS_ID_map_type==0 => SRTP-ID
 			/*
-			 * these 7 bytes could not be identified from RFC-3830. just skipping them for now
+			 * these 7 bytes could not be identified from RFC-3830. just skipping them for now @TODO
 			 */
 			byte[] tmpCsMapData = new byte[7];
 			buf.get(tmpCsMapData);
@@ -138,17 +145,20 @@ public class MikeyParser {
 			}
 
 			if (mikeyData.kemacHaveKeys) {
-				byte[] tmpMk = new byte[mikeyData.kemacMasterKey.getUsed()];
-				mikeyData.kemacMasterKey.copyInto(0, tmpMk, 0, tmpMk.length);
-				byte[] tmpMs = new byte[mikeyData.kemacMasterSalt.getUsed()];
-				mikeyData.kemacMasterSalt.copyInto(0, tmpMs, 0, tmpMs.length);
-				if (! mikeyData.kemacKvDataSpiOrMki.isEmpty() && mikeyData.kemacKvDataSpiOrMki.getUsed() != 4) {
+				int tmpMkiLen = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ? 0 : KeySizes.MKI_SIZE);
+				if (! mikeyData.kemacKvDataSpiOrMki.isEmpty() && mikeyData.kemacKvDataSpiOrMki.getUsed() != tmpMkiLen) {
 					throw new SrtpSecurityException("Invalid MIKEY MKI length " + mikeyData.kemacKvDataSpiOrMki.getUsed());
 				}
-				int tmpMki = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ?
-						0 : ByteBuffer.wrap(mikeyData.kemacKvDataSpiOrMki.getBufPtr()).getInt()
+				int tmpMkiVal = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ?
+						0 : ByteBuffer.wrap(mikeyData.kemacKvDataSpiOrMki.getBufPtr()).order(ByteOrder.BIG_ENDIAN).getInt()
 					);
-				return new MikeyParser.SrtpKeys(tmpMk, tmpMs, mikeyData.spAuthKeyLen, tmpMki);
+				return new MikeyParser.SrtpKeys(
+						mikeyData.kemacMasterKey.clone(),
+						mikeyData.kemacMasterSalt.clone(),
+						mikeyData.spAuthKeyLen,
+						tmpMkiLen,
+						tmpMkiVal
+					);
 			}
 		} catch (BufferUnderflowException e) {
 			throw new SrtpSecurityException("Invalid MIKEY payload length");

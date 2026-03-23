@@ -152,7 +152,7 @@ public final class ThreadRtpSenderPcm<
 				curFramePcmInfo,
 				cacheRtpInnerPayloadBuf
 			);
-		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
 
@@ -162,7 +162,7 @@ public final class ThreadRtpSenderPcm<
 			encryptedPacket = new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
 					plainPacket,
-					paramsCommon.getSrtpContext().orElseThrow()
+					paramsCommon.getSrtxpContext().orElseThrow()
 				);
 		} catch (SrtpSecurityException e) {
 			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();

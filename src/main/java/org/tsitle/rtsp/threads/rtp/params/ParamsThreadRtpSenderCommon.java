@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtp.params;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
-import org.tsitle.rtsp.security.SrtpContext;
+import org.tsitle.rtsp.security.SrtxpContext;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
@@ -90,11 +90,11 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	private boolean isSetAvStreamIncomingUri;
 
 	/** Is RTP/RTCP encryption enabled? */
-	private boolean isRtpEncryptionEnabled;
-	private boolean isSetIsRtpEncryptionEnabled;
-	/** SRTP context */
-	private SrtpContext srtpContext;
-	private boolean isSetSrtpContext;
+	private boolean isRtxpEncryptionEnabled;
+	private boolean isSetIsRtxpEncryptionEnabled;
+	/** SRTxP context */
+	private SrtxpContext srtxpContext;
+	private boolean isSetSrtxpContext;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -202,16 +202,16 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetAvStreamIncomingUri = true;
 	}
 
-	public boolean getIsRtpEncryptionEnabled() { return isRtpEncryptionEnabled; }
-	public void setIsRtpEncryptionEnabled(boolean isRtpEncryptionEnabled) {
-		this.isRtpEncryptionEnabled = isRtpEncryptionEnabled;
-		this.isSetIsRtpEncryptionEnabled = true;
+	public boolean getIsRtxpEncryptionEnabled() { return isRtxpEncryptionEnabled; }
+	public void setIsRtxpEncryptionEnabled(boolean value) {
+		this.isRtxpEncryptionEnabled = value;
+		this.isSetIsRtxpEncryptionEnabled = true;
 	}
 
-	public Optional<SrtpContext> getSrtpContext() { return Optional.ofNullable(srtpContext); }
-	public void setSrtpContext(@NonNull SrtpContext srtpContext) {
-		this.srtpContext = srtpContext.clone();
-		this.isSetSrtpContext = true;
+	public Optional<SrtxpContext> getSrtxpContext() { return Optional.ofNullable(srtxpContext); }
+	public void setSrtxpContext(@NonNull SrtxpContext value) {
+		this.srtxpContext = value.clone();
+		this.isSetSrtxpContext = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -243,8 +243,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 				throw new RuntimeException(e);
 			}
 			//
-			if (srtpContext != null) {
-				clone.srtpContext = srtpContext.clone();
+			if (srtxpContext != null) {
+				clone.srtxpContext = srtxpContext.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -283,8 +283,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
 
-		requireIsSet(isSetIsRtpEncryptionEnabled, "isRtpEncryptionEnabled");
-		requireIsSet(isSetSrtpContext, "srtpContext");
+		requireIsSet(isSetIsRtxpEncryptionEnabled, "isRtxpEncryptionEnabled");
+		requireIsSet(isSetSrtxpContext, "srtxpContext");
 	}
 
 	private void validateParamValues() {
@@ -321,7 +321,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
 
-		requireNonNull(srtpContext, "srtpContext");
+		requireNonNull(srtxpContext, "srtxpContext");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

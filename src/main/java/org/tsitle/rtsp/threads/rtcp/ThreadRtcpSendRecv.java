@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
-import org.tsitle.rtsp.security.SrtpContext;
+import org.tsitle.rtsp.security.SrtxpContext;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -34,7 +34,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
-	private final SrtpContext srtcpContextRecv;
+	private final SrtxpContext srtcpContextRecv;
 
 	/**
 	 * Constructor.
@@ -47,7 +47,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		this.params = params.clone();
 		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
-		this.srtcpContextRecv = params.getSrtpContext().orElseThrow().clone();
+		this.srtcpContextRecv = params.getSrtxpContext().orElseThrow().clone();
 
 		//
 		byte[] rtcpBuf = new byte[1024];
@@ -197,9 +197,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 
 			boolean tmpWasDecr = false;
-			if (! wasDecr && params.getIsRtpEncryptionEnabled()) {
+			if (! wasDecr && params.getIsRtxpEncryptionEnabled()) {
 				try {
-					tmpWasDecr = srtcpContextRecv.unprotectRtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+					tmpWasDecr = srtcpContextRecv.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
 					if (tmpWasDecr) {
 						cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
 						cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);

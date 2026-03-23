@@ -11,7 +11,7 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
-import org.tsitle.rtsp.security.SrtpContext;
+import org.tsitle.rtsp.security.SrtxpContext;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -147,8 +147,12 @@ public abstract class ThreadRtpSenderBase<
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
-		if (paramsCommon.getIsRtpEncryptionEnabled()) {
-			udpMaxPacketLenDelta += paramsCommon.getSrtpContext().orElseThrow().getSrtpExtraPacketLength();
+		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+			try {
+				udpMaxPacketLenDelta += paramsCommon.getSrtxpContext().orElseThrow().getSrtpExtraPacketLength();
+			} catch (SrtpSecurityException e) {
+				throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
+			}
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
 			throw new AssertionError("UDP packet length too small");
@@ -352,14 +356,14 @@ public abstract class ThreadRtpSenderBase<
 	protected @NonNull RtpPacketContainerBase encryptRtpPacketPayload(@NonNull RtpPacketContainerBase plainPacket) {
 		final String FNC_NAME = getClass().getSimpleName() + ".encryptRtpPacketPayload()";
 
-		if (! paramsCommon.getIsRtpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
 		try {
 			return new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
 					plainPacket,
-					paramsCommon.getSrtpContext().orElseThrow()
+					paramsCommon.getSrtxpContext().orElseThrow()
 				);
 		} catch (SrtpSecurityException e) {
 			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
@@ -721,10 +725,10 @@ public abstract class ThreadRtpSenderBase<
 		//
 		BufferExt encrPacketCompoundBuf = new BufferExt();
 		BufferExt outpPacketPtr = packetCompoundBuf;
-		if (paramsCommon.getIsRtpEncryptionEnabled()) {
-			SrtpContext srtpCtx = paramsCommon.getSrtpContext().orElseThrow();
+		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+			SrtxpContext srtcpCtx = paramsCommon.getSrtxpContext().orElseThrow();
 			try {
-				srtpCtx.protectRtcpSrCompound(
+				srtcpCtx.protectRtcpSrCompound(
 						packetCompoundBuf,
 						paramsCommon.getRtspSsrcId(),
 						encrPacketCompoundBuf

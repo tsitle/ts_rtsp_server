@@ -5,35 +5,24 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
-import java.lang.reflect.Field;
+import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HexFormat;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SrtcpSrCompoundRoundTripTest {
-
-	private static final HexFormat HEX = HexFormat.of();
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
+class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtcp_compound_sr_should_restore_original_packet() throws Exception {
-		// RFC 3711 test vector master material (deterministic, no sensitive runtime secrets)
-		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
-		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		SrtpKeyDerivation.SessionKeys rtcpKeys =
-				SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
-
-		SrtpContext senderCtx = new SrtpContext();
-		SrtpContext receiverCtx = new SrtpContext();
-		injectRtcpKeys(senderCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
-		injectRtcpKeys(receiverCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
+		SrtxpContext senderCtx = new SrtxpContext();
+		SrtxpContext receiverCtx = new SrtxpContext();
+		Common.srtpCtxInjectRtcpKeys(senderCtx, rtcpKeys, 0);
+		Common.srtpCtxInjectRtcpKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = 0x11223344;
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
@@ -49,7 +38,7 @@ class SrtcpSrCompoundRoundTripTest {
 		assertFalse(Arrays.equals(compoundRtcp, encrypted), "Encrypted packet should differ from plaintext");
 
 		BufferExt decryptedBuf = new BufferExt();
-		boolean wasDecrypted = receiverCtx.unprotectRtcpCompound(encryptedBuf, decryptedBuf);
+		boolean wasDecrypted = receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
 		assertTrue(wasDecrypted, "Packet should be recognized and decrypted as SRTCP");
 
 		byte[] decrypted = new byte[decryptedBuf.getUsed()];
@@ -68,13 +57,18 @@ class SrtcpSrCompoundRoundTripTest {
 		rnd.nextBytes(masterKey);
 		rnd.nextBytes(masterSalt);
 
-		SrtpKeyDerivation.SessionKeys rtcpKeys =
-				SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
+		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
+		SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(
+				cipherAesCtr,
+				Common.createBufferFromBa(masterKey),
+				Common.createBufferFromBa(masterSalt),
+				KeySizes.AUTH_KEY_SIZE_160
+			);
 
-		SrtpContext senderCtx = new SrtpContext();
-		SrtpContext receiverCtx = new SrtpContext();
-		injectRtcpKeys(senderCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
-		injectRtcpKeys(receiverCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
+		SrtxpContext senderCtx = new SrtxpContext();
+		SrtxpContext receiverCtx = new SrtxpContext();
+		Common.srtpCtxInjectRtcpKeys(senderCtx, rtcpKeys, 0);
+		Common.srtpCtxInjectRtcpKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = rnd.nextInt();
 
@@ -96,7 +90,7 @@ class SrtcpSrCompoundRoundTripTest {
 			senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
 
 			BufferExt decryptedBuf = new BufferExt();
-			boolean wasDecrypted = receiverCtx.unprotectRtcpCompound(encryptedBuf, decryptedBuf);
+			boolean wasDecrypted = receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
 			assertTrue(wasDecrypted, "Round " + i + ": packet should be decrypted");
 
 			byte[] decrypted = new byte[decryptedBuf.getUsed()];
@@ -106,7 +100,7 @@ class SrtcpSrCompoundRoundTripTest {
 			BufferExt replayOut = new BufferExt();
 			assertThrows(
 					SrtpSecurityException.class,
-					() -> receiverCtx.unprotectRtcpCompound(encryptedBuf, replayOut),
+					() -> receiverCtx.unprotectSrtcpCompound(encryptedBuf, replayOut),
 					"Round " + i + ": replayed packet must be rejected due to index check"
 				);
 		}
@@ -114,16 +108,12 @@ class SrtcpSrCompoundRoundTripTest {
 
 	@Test
 	void unprotect_should_fail_when_encrypted_packet_is_tampered() throws Exception {
-		byte[] masterKey = HEX.parseHex("E1F97A0D3E018BE0D64FA32C06DE4139");
-		byte[] masterSalt = HEX.parseHex("0EC675AD498AFEEBB6960B3AABE6");
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		SrtpKeyDerivation.SessionKeys rtcpKeys =
-				SrtpKeyDerivation.deriveForRtcp(masterKey, masterSalt, KeySizes.AUTH_KEY_SIZE_160);
-
-		SrtpContext senderCtx = new SrtpContext();
-		SrtpContext receiverCtx = new SrtpContext();
-		injectRtcpKeys(senderCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
-		injectRtcpKeys(receiverCtx, rtcpKeys.encKey(), rtcpKeys.authKey(), rtcpKeys.salt(), 0);
+		SrtxpContext senderCtx = new SrtxpContext();
+		SrtxpContext receiverCtx = new SrtxpContext();
+		Common.srtpCtxInjectRtcpKeys(senderCtx, rtcpKeys, 0);
+		Common.srtpCtxInjectRtcpKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = 0x55667788;
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
@@ -147,7 +137,7 @@ class SrtcpSrCompoundRoundTripTest {
 		BufferExt out = new BufferExt();
 		SrtpSecurityException ex = assertThrows(
 				SrtpSecurityException.class,
-				() -> receiverCtx.unprotectRtcpCompound(tamperedBuf, out)
+				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out)
 			);
 
 		assertTrue(
@@ -212,42 +202,6 @@ class SrtcpSrCompoundRoundTripTest {
 		System.arraycopy(sr, 0, compound, 0, sr.length);
 		System.arraycopy(bye, 0, compound, sr.length, bye.length);
 		return compound;
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	private static void injectRtcpKeys(
-				SrtpContext ctx,
-				byte[] encKey,
-				byte[] authKey,
-				byte[] salt,
-				int srtcpIndex
-			) throws Exception {
-		copyIntoPrivateByteArray(ctx, "ctxRtcpSessionEncKey", encKey);
-		copyIntoPrivateByteArray(ctx, "ctxRtcpSessionAuthKey", authKey);
-		copyIntoPrivateByteArray(ctx, "ctxRtcpSessionSalt", salt);
-		setPrivateBoolean(ctx, "haveMikey", true);
-		setPrivateInt(ctx, "ctxRtcpIndex", srtcpIndex);
-	}
-
-	private static void copyIntoPrivateByteArray(Object target, String fieldName, byte[] value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		byte[] dst = (byte[]) f.get(target);
-		System.arraycopy(value, 0, dst, 0, dst.length);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	private static void setPrivateBoolean(Object target, String fieldName, boolean value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.setBoolean(target, value);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	private static void setPrivateInt(Object target, String fieldName, int value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.setInt(target, value);
 	}
 
 }
