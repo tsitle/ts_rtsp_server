@@ -18,7 +18,7 @@ class JitsiSrtpProtectRoundTripTest {
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
-		int seqNr = 0x1234;
+		short seqNr = 0x1234;
 		int ssrc = 0x11223344;
 
 		byte[] rtpHeader = new byte[] {
@@ -54,7 +54,7 @@ class JitsiSrtpProtectRoundTripTest {
 		SrtxpContext ctx = new SrtxpContext();
 		Common.srtpCtxInjectRtpKeys(ctx, jitsiRtpKeys, 0L);
 
-		int seqNr = 0x1234;
+		short seqNr = 0x1234;
 		int ssrc = 0x11223344;
 
 		byte[] rtpHeader = new byte[] {

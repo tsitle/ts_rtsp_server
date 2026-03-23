@@ -19,7 +19,7 @@ public class SrtxpContextTest {
 		final SrtxpContext ctx = new SrtxpContext();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
-		final int seqNr = 0x1234;
+		final short seqNr = 0x1234;
 		final int ssrc = 0xDEC0ADDE;
 
 		final byte[] header = new byte[] {
@@ -115,7 +115,7 @@ public class SrtxpContextTest {
 			final SrtxpContext rtpCtx = new SrtxpContext();
 			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, 0L);
 
-			final int rndSeqNr = rnd.nextInt(0x10000);
+			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
 
 			final int rndRtpPayloadLen = rnd.nextInt(1, 400);
@@ -204,7 +204,7 @@ public class SrtxpContextTest {
 			final long rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
 			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, rndStateRoc);
 
-			final int rndSeqNr = rnd.nextInt(0x10000);
+			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
 
 			final int rndRtpPayloadLen = rnd.nextInt(1, 500);

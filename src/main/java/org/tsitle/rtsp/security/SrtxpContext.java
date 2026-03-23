@@ -173,7 +173,7 @@ public class SrtxpContext implements Cloneable {
 				@NonNull BufferExt rtpPacketBuf,
 				boolean hasCsrcList,
 				boolean hasHeaderExtension,
-				int hdSeqNr,
+				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
@@ -197,7 +197,7 @@ public class SrtxpContext implements Cloneable {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxStateRtpRocOutbound << 16) | hdSeqNr);
+		final long srtpPacketIndex = ((ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
@@ -232,7 +232,7 @@ public class SrtxpContext implements Cloneable {
 		outputEncryptedPacketBuf.append(curAuthTagBuf);  // 10 bytes
 
 		// update ROC if sequence wrapped
-		if (hdSeqNr == 0xFFFF) {
+		if (hdSeqNr == (short)0xFFFF) {
 			ctxStateRtpRocOutbound++;
 		}
 	}
@@ -247,7 +247,7 @@ public class SrtxpContext implements Cloneable {
 	 */
 	public void unprotectSrtp(
 				@NonNull BufferExt srtpPacketBuf,
-				int hdSeqNr,
+				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
@@ -273,7 +273,7 @@ public class SrtxpContext implements Cloneable {
 		final BufferExt remaingEncrBuf = new BufferExt();
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | hdSeqNr);
+		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
 			throw new SrtpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
@@ -329,7 +329,7 @@ public class SrtxpContext implements Cloneable {
 			);
 
 		// update ROC if sequence wrapped
-		if (hdSeqNr == 0xFFFF) {
+		if (hdSeqNr == (short)0xFFFF) {
 			ctxStateRtpRocInbound++;
 		}
 	}

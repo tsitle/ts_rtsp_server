@@ -160,12 +160,12 @@ class Common {
 	static byte[] buildExpectedSrtpPacket(
 				byte[] plainRtpPacket,
 				@NonNull SessionKeys rtpKeys,
-				int seqNr,
+				short seqNr,
 				int ssrc,
 				long stateRoc
 			) throws Exception {
 		int headerLen = 12;
-		long packetIndex = (stateRoc << 16) | (seqNr & 0xFFFFL);
+		long packetIndex = (stateRoc << 16) | ((long)seqNr & 0xFFFFL);
 
 		byte[] iv = new byte[KeySizes.AES_128_KEY_SIZE];
 		ByteBuffer ivByBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);

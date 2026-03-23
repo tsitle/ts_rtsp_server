@@ -18,7 +18,7 @@ public class JitsiSrtpContextCompatibilityTest {
 		SrtxpContext ctx = new SrtxpContext();
 		Common.srtpCtxInjectRtpKeys(ctx, jitsiRtpKeys, 0L);
 
-		int seqNr = 0x1234;
+		short seqNr = 0x1234;
 		int ssrc = 0x10203040;
 
 		byte[] header = new byte[]{

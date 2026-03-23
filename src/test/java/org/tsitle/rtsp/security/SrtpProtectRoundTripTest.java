@@ -17,7 +17,7 @@ class SrtpProtectRoundTripTest {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
-		final int seqNr = 0x1234;
+		final short seqNr = 0x1234;
 		final int ssrc = 0x11223344;
 
 		final byte[] rtpHeader = new byte[] {
@@ -63,7 +63,7 @@ class SrtpProtectRoundTripTest {
 		final int ssrc = 0x11223344;
 
 		// Packet 1: sequence at wrap boundary (0xFFFF)
-		final int seq1 = 0xFFFF;
+		final short seq1 = (short)0xFFFF;
 		final byte[] pkt1 = buildRtpPacket(seq1, ssrc, Common.HEX.parseHex("0102030405060708090A0B0C0D0E0F10"));
 
 		final BufferExt in1 = new BufferExt();
@@ -82,7 +82,7 @@ class SrtpProtectRoundTripTest {
 		assertEquals(1L, Common.getPrivateLong(receiverCtx, "ctxStateRtpRocInbound"), "Receiver ROC should increment after SEQ wrap");
 
 		// Packet 2: post-wrap sequence (0x0000), must use ROC=1
-		final int seq2 = 0x0000;
+		final short seq2 = 0x0000;
 		final byte[] pkt2 = buildRtpPacket(seq2, ssrc, Common.HEX.parseHex("A1A2A3A4A5A6A7A8A9AAABACADAEAFB0"));
 
 		final BufferExt in2 = new BufferExt();
@@ -110,7 +110,7 @@ class SrtpProtectRoundTripTest {
 		final int ssrc = 0x11223344;
 
 		// First packet at wrap boundary
-		final int seqWrap = 0xFFFF;
+		final short seqWrap = (short)0xFFFF;
 		final byte[] pktWrap = buildRtpPacket(seqWrap, ssrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
 
 		final BufferExt inWrap = new BufferExt();
@@ -126,7 +126,7 @@ class SrtpProtectRoundTripTest {
 		assertArrayEquals(pktWrap, decWrapBytes, "Wrap-boundary packet should decrypt correctly");
 
 		// Second packet after wrap
-		final int seqAfterWrap = 0x0000;
+		final short seqAfterWrap = 0x0000;
 		final byte[] pktAfterWrap = buildRtpPacket(seqAfterWrap, ssrc, Common.HEX.parseHex("2122232425262728292A2B2C2D2E2F30"));
 
 		final BufferExt inAfterWrap = new BufferExt();
@@ -167,7 +167,7 @@ class SrtpProtectRoundTripTest {
 		final int ssrc = 0x11223344;
 
 		// First packet far from wrap-boundary
-		final int seqNoWrap = 0x0FFF;
+		final short seqNoWrap = (short)0x0FFF;
 		final byte[] pktWrap = buildRtpPacket(seqNoWrap, ssrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
 
 		final BufferExt inWrap = new BufferExt();
@@ -199,7 +199,7 @@ class SrtpProtectRoundTripTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("SameParameterValue")
-	private static byte[] buildRtpPacket(int seqNr, int ssrc, byte[] payload) {
+	private static byte[] buildRtpPacket(short seqNr, int ssrc, byte[] payload) {
 		final byte[] rtpHeader = new byte[] {
 				(byte) 0x80, (byte) 0x60,
 				(byte) (seqNr >>> 8), (byte) seqNr,
