@@ -86,6 +86,7 @@ tasks.compileJava.configure {
 application {
 	mainClass = "org.tsitle.rtsp.RtspServerApp"
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
+	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 }
 
 tasks.jar {
@@ -106,8 +107,15 @@ runtime {
 	imageDir = File(layout.buildDirectory.get().toString(), "${propProjName}-${osName}-${cpuArch}-${version}")
 	imageZip = File(layout.buildDirectory.get().toString(), "${propProjName}-${osName}-${cpuArch}-${version}.zip")
 
-	// reduce the size of the launcher image
-	options.set(listOf("--strip-debug", "--compress", "zip-6", "--no-header-files", "--no-man-pages"))
+	// reduce the size of the launcher image and very importantly, add the SunEC module
+	options.set(listOf(
+		"--strip-debug",
+		"--compress",
+		"zip-6",
+		"--no-header-files",
+		"--no-man-pages",
+		"--add-modules", "jdk.crypto.ec"
+	))
 }
 
 // org.beryx.runtime: Creates a ZIP archive of the custom runtime image including the JRE
