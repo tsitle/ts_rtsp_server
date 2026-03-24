@@ -7,6 +7,8 @@ import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.security.MikeyParser;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -516,7 +518,8 @@ public class RtspRequestParser {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA.length())
 						.replace("\"", "").replace("'", "").strip();
 				try {
-					Objects.requireNonNull(tmpStreamInfo.srtxpContext).setClientMikey(tmpSub);
+					SrtxpKmd kmd = MikeyParser.parseKeyMgmtData(tmpSub);
+					Objects.requireNonNull(tmpStreamInfo.srtxpContext).setKmd(kmd);
 					haveKeyData = true;
 				} catch (SrtpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());

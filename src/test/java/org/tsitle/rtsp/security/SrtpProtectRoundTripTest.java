@@ -206,8 +206,8 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0);
 
 		BufferExt mki = Common.createBufferFromHex("01020304");
-		Common.setPrivateBufferExt(senderCtx, "ctxMasterKeyIdentifier", mki);
-		Common.setPrivateBufferExt(receiverCtx, "ctxMasterKeyIdentifier", mki);
+		senderCtx.setKmdMasterKeyIdentifier(mki);
+		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
 		final short seqNoWrap = (short)0x0FFF;
 		final int senderSsrc = 0x10203040;

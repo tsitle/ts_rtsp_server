@@ -19,44 +19,36 @@ public class SrtpKeyDerivation {
 	/**
 	 * Derive session keys for RTP/SRTP according to RFC-3711 Section 4.3.1
 	 * @param cipher Cipher object
-	 * @param masterKey Master key
-	 * @param masterSalt Master salt
-	 * @param authKeyLen Authentication key length
+	 * @param kmd Key Management Data
 	 * @return Session keys
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtp(
 				@NonNull Cipher cipher,
-				@NonNull BufferExt masterKey,
-				@NonNull BufferExt masterSalt,
-				int authKeyLen
+				@NonNull SrtxpKmd kmd
 			) throws SrtpSecurityException {
 		return new SessionKeys(
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_ENC, KeySizes.AES_128_KEY_SIZE),
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_AUTH, authKeyLen),
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE)
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, KeySizes.AES_128_KEY_SIZE),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen()),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE)
 			);
 	}
 
 	/**
 	 * Derive session keys for RTCP/SRTCP according to RFC-3711 Section 4.3.1
 	 * @param cipher Cipher object
-	 * @param masterKey Master key
-	 * @param masterSalt Master salt
-	 * @param authKeyLen Authentication key length
+	 * @param kmd Key Management Data
 	 * @return Session keys
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtcp(
 				@NonNull Cipher cipher,
-				@NonNull BufferExt masterKey,
-				@NonNull BufferExt masterSalt,
-				int authKeyLen
+				@NonNull SrtxpKmd kmd
 			) throws SrtpSecurityException {
 		return new SessionKeys(
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_ENC, KeySizes.AES_128_KEY_SIZE),
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_AUTH, authKeyLen),
-				prf(cipher, masterKey, masterSalt, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE)
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, KeySizes.AES_128_KEY_SIZE),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen()),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE)
 			);
 	}
 
@@ -68,15 +60,14 @@ public class SrtpKeyDerivation {
 	 */
 	private static @NonNull BufferExt prf(
 				@NonNull Cipher cipher,
-				@NonNull BufferExt masterKey,
-				@NonNull BufferExt masterSalt,
+				@NonNull SrtxpKmd kmd,
 				@NonNull PrfDeriveLabel label,
 				int outLen
 			) throws SrtpSecurityException {
-		if (masterKey.getUsed() != KeySizes.AES_128_KEY_SIZE) {
+		if (kmd.masterKey().getUsed() != KeySizes.AES_128_KEY_SIZE) {
 			throw new SrtpSecurityException("Invalid master key length, expected " + KeySizes.AES_128_KEY_SIZE + " bytes");
 		}
-		if (masterSalt.getUsed() != KeySizes.SALT_SIZE) {
+		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
 		}
 
@@ -93,12 +84,12 @@ public class SrtpKeyDerivation {
 		 * and with the output keystream truncated to the n first (left-most) bits.
 		 */
 
-		byte[] iv = buildKeyDerivationIv(masterSalt, label.getValue(), 0L);
+		byte[] iv = buildKeyDerivationIv(kmd.masterSalt(), label.getValue(), 0L);
 
 		try {
 			cipher.init(
 					Cipher.ENCRYPT_MODE,
-					new SecretKeySpec(masterKey.getBufPtr(), 0, masterKey.getUsed(), "AES"),
+					new SecretKeySpec(kmd.masterKey().getBufPtr(), 0, kmd.masterKey().getUsed(), "AES"),
 					new IvParameterSpec(iv)
 				);
 

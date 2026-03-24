@@ -52,44 +52,48 @@ class Common {
 
 	static @NonNull SessionKeys createSessionKeysDefaultRtp() throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
-		return SrtpKeyDerivation.deriveForRtp(
-				cipherAesCtr,
+		SrtxpKmd kmd = new SrtxpKmd(
 				Common.DEFAULT_MASTER_KEY,
 				Common.DEFAULT_MASTER_SALT,
-				KeySizes.AUTH_KEY_SIZE_160
+				KeySizes.AUTH_KEY_SIZE_160,
+				new BufferExt()
 			);
+		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
 	static @NonNull SessionKeys createSessionKeysDefaultRtcp() throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
-		return SrtpKeyDerivation.deriveForRtcp(
-				cipherAesCtr,
+		SrtxpKmd kmd = new SrtxpKmd(
 				Common.DEFAULT_MASTER_KEY,
 				Common.DEFAULT_MASTER_SALT,
-				KeySizes.AUTH_KEY_SIZE_160
+				KeySizes.AUTH_KEY_SIZE_160,
+				new BufferExt()
 			);
+		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull SessionKeys createSessionKeysNonDefRtp(@NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
-		return SrtpKeyDerivation.deriveForRtp(
-				cipherAesCtr,
+		SrtxpKmd kmd = new SrtxpKmd(
 				mk,
 				ms,
-				KeySizes.AUTH_KEY_SIZE_160
+				KeySizes.AUTH_KEY_SIZE_160,
+				new BufferExt()
 			);
+		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
 	static @NonNull SessionKeys createSessionKeysNonDefRtcp(@NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
-		return SrtpKeyDerivation.deriveForRtcp(
-				cipherAesCtr,
+		SrtxpKmd kmd = new SrtxpKmd(
 				mk,
 				ms,
-				KeySizes.AUTH_KEY_SIZE_160
+				KeySizes.AUTH_KEY_SIZE_160,
+				new BufferExt()
 			);
+		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -103,7 +107,7 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("SameParameterValue")
+	@SuppressWarnings({"SameParameterValue", "unused"})
 	static void setPrivateBoolean(Object target, String fieldName, boolean value) throws Exception {
 		Field f = target.getClass().getDeclaredField(fieldName);
 		f.setAccessible(true);
@@ -117,13 +121,14 @@ class Common {
 		f.setLong(target, value);
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	static void setPrivateInt(Object target, String fieldName, int value) throws Exception {
 		Field f = target.getClass().getDeclaredField(fieldName);
 		f.setAccessible(true);
 		f.setInt(target, value);
 	}
 
-	@SuppressWarnings("SameParameterValue")
+	@SuppressWarnings({"SameParameterValue", "unused"})
 	static void setPrivateBufferExt(Object target, String fieldName, BufferExt value) throws Exception {
 		Field f = target.getClass().getDeclaredField(fieldName);
 		f.setAccessible(true);
@@ -148,16 +153,14 @@ class Common {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static void srtpCtxInjectRtpKeys(SrtxpContext ctx, SessionKeys sessionKeys, long roc) throws Exception {
-		Common.setPrivateBoolean(ctx, "haveMikey", true);
 		Common.setPrivateLong(ctx, "ctxStateRtpRocOutbound", roc);
-		Common.setPrivateInt(ctx, "ctxAuthKeyLength", KeySizes.AUTH_KEY_SIZE_160);
+		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
 	static void srtpCtxInjectRtcpKeys(SrtxpContext ctx, SessionKeys sessionKeys, int idx) throws Exception {
-		Common.setPrivateBoolean(ctx, "haveMikey", true);
 		Common.setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
-		Common.setPrivateInt(ctx, "ctxAuthKeyLength", KeySizes.AUTH_KEY_SIZE_160);
+		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtcpSessionKeys(sessionKeys);
 	}
 

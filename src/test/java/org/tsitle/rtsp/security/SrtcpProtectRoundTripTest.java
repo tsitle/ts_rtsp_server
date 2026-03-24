@@ -5,7 +5,6 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
-import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.SecureRandom;
@@ -56,12 +55,9 @@ class SrtcpProtectRoundTripTest {
 		rnd.nextBytes(masterKey);
 		rnd.nextBytes(masterSalt);
 
-		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
-		SessionKeys rtcpKeys = SrtpKeyDerivation.deriveForRtcp(
-				cipherAesCtr,
+		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
 				Common.createBufferFromBa(masterKey),
-				Common.createBufferFromBa(masterSalt),
-				KeySizes.AUTH_KEY_SIZE_160
+				Common.createBufferFromBa(masterSalt)
 			);
 
 		SrtxpContext senderCtx = new SrtxpContext();
@@ -154,8 +150,8 @@ class SrtcpProtectRoundTripTest {
 		Common.srtpCtxInjectRtcpKeys(receiverCtx, rtcpKeys, 0);
 
 		BufferExt mki = Common.createBufferFromHex("01020304");
-		Common.setPrivateBufferExt(senderCtx, "ctxMasterKeyIdentifier", mki);
-		Common.setPrivateBufferExt(receiverCtx, "ctxMasterKeyIdentifier", mki);
+		senderCtx.setKmdMasterKeyIdentifier(mki);
+		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
 		int senderSsrc = 0x10203040;
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
