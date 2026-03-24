@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtcp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
@@ -34,7 +35,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
-	private final SrtcpContextInbound srtcpCtxInbound;
+	private final @Nullable SrtcpContextInbound srtcpCtxInbound;
 
 	/**
 	 * Constructor.
@@ -49,10 +50,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
 
 		//
-		try {
-			this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmd().orElseThrow());
-		} catch (SrtpSecurityException e) {
-			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
+		if (params.getIsRtxpEncryptionEnabled()) {
+			try {
+				this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmd().orElseThrow());
+			} catch (SrtpSecurityException e) {
+				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+						"SrtpSecurityException caught: " + e.getMessage());
+			}
+		} else {
+			this.srtcpCtxInbound = null;
 		}
 
 		//
@@ -203,7 +209,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 
 			boolean tmpWasDecr = false;
-			if (! wasDecr && params.getIsRtxpEncryptionEnabled()) {
+			if (! wasDecr && params.getIsRtxpEncryptionEnabled() && srtcpCtxInbound != null) {
 				try {
 					srtcpCtxInbound.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
 					cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
