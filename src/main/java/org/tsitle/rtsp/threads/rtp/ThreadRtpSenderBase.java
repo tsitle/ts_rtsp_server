@@ -85,8 +85,8 @@ public abstract class ThreadRtpSenderBase<
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
 
-	protected final SrtpContextOutbound srtpCtxOutbound;
-	private final SrtcpContextOutbound srtcpCtxOutbound;
+	protected final @Nullable SrtpContextOutbound srtpCtxOutbound;
+	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
 	private @Nullable RtpEncryptedPacket cacheRtpEncrPacket = null;
 
 	/**
@@ -144,11 +144,17 @@ public abstract class ThreadRtpSenderBase<
 			);
 
 		//
-		try {
-			this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
-			this.srtcpCtxOutbound = new SrtcpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
-		} catch (SrtpSecurityException e) {
-			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
+		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+			try {
+				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
+				this.srtcpCtxOutbound = new SrtcpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
+			} catch (SrtpSecurityException e) {
+				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+						"SrtpSecurityException caught: " + e.getMessage());
+			}
+		} else {
+			this.srtpCtxOutbound = null;
+			this.srtcpCtxOutbound = null;
 		}
 
 		//
@@ -365,10 +371,11 @@ public abstract class ThreadRtpSenderBase<
 	protected @NonNull RtpPacketContainerBase encryptRtpPacketPayload(@NonNull RtpPacketContainerBase plainPacket) {
 		final String FNC_NAME = getClass().getSimpleName() + ".encryptRtpPacketPayload()";
 
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (! paramsCommon.getIsRtxpEncryptionEnabled() || srtpCtxOutbound == null) {
 			return plainPacket;
 		}
 		try {
+			Instant tmpInstant1 = Instant.now();
 			if (cacheRtpEncrPacket == null) {
 				cacheRtpEncrPacket = new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
@@ -377,6 +384,11 @@ public abstract class ThreadRtpSenderBase<
 				);
 			} else {
 				cacheRtpEncrPacket.updatePacketBuffer(plainPacket);
+			}
+			Instant tmpInstant2 = Instant.now();
+			long delta = Duration.between(tmpInstant1, tmpInstant2).toNanos();
+			if (delta > 1000000L) {
+				logWarn(FNC_NAME, String.format("encryptRtpPacketPayload() took %.2f ms", (double)delta / 1000000.0));
 			}
 			return cacheRtpEncrPacket;
 		} catch (SrtpSecurityException e) {
@@ -739,7 +751,7 @@ public abstract class ThreadRtpSenderBase<
 		//
 		BufferExt encrPacketCompoundBuf = new BufferExt();
 		BufferExt outpPacketPtr = packetCompoundBuf;
-		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (paramsCommon.getIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
 			try {
 				srtcpCtxOutbound.protectRtcpSrCompound(
 						packetCompoundBuf,
