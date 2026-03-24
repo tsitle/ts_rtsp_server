@@ -14,6 +14,8 @@ import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
 import java.io.*;
 import java.net.*;
+import java.security.Provider;
+import java.security.Security;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +46,8 @@ public class RtspServerApp {
 
 	public static void main(String[] argv) {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".main()";
+
+		verifyTlsCryptoProviders();
 
 		//
 		if (argv.length != 1) {
@@ -125,6 +129,22 @@ public class RtspServerApp {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void verifyTlsCryptoProviders() {
+		boolean hasSunEc = Arrays.stream(Security.getProviders())
+				.map(Provider::getName)
+				.anyMatch("SunEC"::equals);
+
+		if (! hasSunEc) {
+			throw new IllegalStateException(
+					"Missing required JCA provider 'SunEC' in runtime image. " +
+					"TLS/ECDHE handshakes may fail. " +
+					"Rebuild runtime image with jlink module: --add-modules jdk.crypto.ec"
+				);
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static List<Integer> findMqStreamSources() {
