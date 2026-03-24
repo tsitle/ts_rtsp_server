@@ -5,10 +5,23 @@ import org.jspecify.annotations.NonNull;
 /**
  * BufferExt provides a resizable byte buffer with methods for copying data and accessing buffer contents.
  */
-public class BufferExt implements Cloneable {
+public final class BufferExt implements Cloneable {
 
 	private byte[] buf = new byte[1024 * 64];
 	private int used;
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public BufferExt() { }
+
+	public BufferExt(byte[] buf) {
+		copyOf(buf);
+	}
+
+	public BufferExt(byte[] buf, int offset, int length) {
+		copyOf(buf, offset, length);
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -39,7 +52,6 @@ public class BufferExt implements Cloneable {
 	 * Checks if the buffer is empty.
 	 * @return True if the buffer is empty, false otherwise
 	 */
-	@SuppressWarnings("unused")
 	public boolean isEmpty() {
 		return (used == 0);
 	}
@@ -116,21 +128,9 @@ public class BufferExt implements Cloneable {
 	/**
 	 * Copy data from a byte array into the buffer. Overwrites any existing data.
 	 * @param srcData Source byte array
-	 * @param len Length of data to copy
-	 */
-	@SuppressWarnings("unused")
-	public void copyOf(byte[] srcData, int len) {
-		clear();
-		copyFrom(srcData, 0, 0, len);
-	}
-
-	/**
-	 * Copy data from a byte array into the buffer. Overwrites any existing data.
-	 * @param srcData Source byte array
 	 * @param srcOffset Source offset
 	 * @param len Length of data to copy
 	 */
-	@SuppressWarnings("unused")
 	public void copyOf(byte[] srcData, int srcOffset, int len) {
 		clear();
 		copyFrom(srcData, srcOffset, 0, len);
