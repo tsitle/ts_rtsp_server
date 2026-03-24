@@ -64,7 +64,7 @@ public class RtspSessionInfo {
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
 	/** Sequence Number of RTSP messages within the session */
-	public int rtspSeqNr = 0;
+	public int rtspSeqNr = -1;
 
 	/** Playback range request value from client */
 	public @NonNull String clientPlaybackRangeValue = "";

@@ -392,12 +392,15 @@ public class RtspRequestParser {
 		}
 	}
 
-	private void parseHeaderLine_cseq(String headerLine) {
-		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_cseq()";
+	private void parseHeaderLine_cseq(String headerLine) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_cseq()";
 
-		String tmpCseq = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
-		rtspSessionInfo.rtspSeqNr = Integer.parseInt(tmpCseq);
-		//logDebug(FNC_NAME, "Cseq=" + rtspVariables.rtspSeqNr);
+		String tmpCseqStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
+		int tmpCseqInt = Integer.parseInt(tmpCseqStr);
+		if (tmpCseqInt <= rtspSessionInfo.rtspSeqNr) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Received old CSeq");
+		}
+		rtspSessionInfo.rtspSeqNr = tmpCseqInt;
 	}
 
 	private void parseHeaderLine_useragent(String headerLine) {
