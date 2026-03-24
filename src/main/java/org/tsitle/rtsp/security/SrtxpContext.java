@@ -3,6 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketSR;
@@ -81,10 +82,8 @@ public class SrtxpContext implements Cloneable {
 	/** Have we received a MIKEY message? */
 	private boolean haveMikey = false;
 
-	/** Master key identifier length */
-	private int ctxMasterKeyIdentifierLength = 0;
-	/** Master key identifier value */
-	private int ctxMasterKeyIdentifierVal = 0;
+	/** Master key identifier */
+	private @NonNull BufferExt ctxMasterKeyIdentifier = new BufferExt();
 	/** Auth key length */
 	private int ctxAuthKeyLength = 0;
 
@@ -114,8 +113,7 @@ public class SrtxpContext implements Cloneable {
 		MikeyParser.SrtpKeys keys = MikeyParser.parseKeyMgmtData(msgB64);
 		ctxMasterEncKey.copyOf(keys.masterKey());
 		ctxMasterSalt.copyOf(keys.masterSalt());
-		ctxMasterKeyIdentifierLength = keys.mkiLen();
-		ctxMasterKeyIdentifierVal = keys.mkiVal();
+		ctxMasterKeyIdentifier = keys.mki().clone();
 		ctxAuthKeyLength = keys.authKeyLen();
 
 		//
@@ -140,10 +138,8 @@ public class SrtxpContext implements Cloneable {
 	 * @return Extra packet length
 	 */
 	public int getSrtpExtraPacketLength() throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
-		return (KeySizes.AUTH_TAG_SIZE + ctxMasterKeyIdentifierLength);
+		validateHaveMikey();
+		return (KeySizes.AUTH_TAG_SIZE + ctxMasterKeyIdentifier.getUsed());
 	}
 
 	/**
@@ -151,10 +147,8 @@ public class SrtxpContext implements Cloneable {
 	 * @return Extra packet length
 	 */
 	public int getSrtcpExtraPacketLength() throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
-		return (KeySizes.AUTH_TAG_SIZE + SRTCP_INDEX_FIELD_SIZE + ctxMasterKeyIdentifierLength);
+		validateHaveMikey();
+		return (KeySizes.AUTH_TAG_SIZE + SRTCP_INDEX_FIELD_SIZE + ctxMasterKeyIdentifier.getUsed());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -177,9 +171,7 @@ public class SrtxpContext implements Cloneable {
 				int hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
+		validateHaveMikey();
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -219,17 +211,23 @@ public class SrtxpContext implements Cloneable {
 				outputEncryptedPacketBuf
 			);
 
-		// compute auth tag (10 bytes)
-		computeAuthTagForRtp(camPtr.macObj, camPtr.sksMacObj, outputEncryptedPacketBuf, srtpPacketIndex, curAuthTagBuf);
+		// compute Auth Tag over: encrypted RTP packet
+		final BufferView encrPktView = new BufferView(outputEncryptedPacketBuf);
+		computeAuthTagForRtp(
+				camPtr.macObj,
+				camPtr.sksMacObj,
+				encrPktView,
+				srtpPacketIndex,
+				curAuthTagBuf
+			);
 
-		// append MKI (4 bytes)
-		if (ctxMasterKeyIdentifierLength != 0) {
-			byte[] tmpMkiBufArr = getMkiAsByteArray();
-			outputEncryptedPacketBuf.append(tmpMkiBufArr);
+		// append MKI
+		if (! ctxMasterKeyIdentifier.isEmpty()) {
+			outputEncryptedPacketBuf.append(ctxMasterKeyIdentifier);
 		}
 
-		// build final SRTP packet
-		outputEncryptedPacketBuf.append(curAuthTagBuf);  // 10 bytes
+		// append Auth Tag
+		outputEncryptedPacketBuf.append(curAuthTagBuf);
 
 		// update ROC if sequence wrapped
 		if (hdSeqNr == (short)0xFFFF) {
@@ -251,9 +249,7 @@ public class SrtxpContext implements Cloneable {
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
+		validateHaveMikey();
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -268,9 +264,6 @@ public class SrtxpContext implements Cloneable {
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
-		final BufferExt curAuthTagBufRcvd = new BufferExt();
-		final BufferExt curAuthTagBufExp = new BufferExt();
-		final BufferExt remaingEncrBuf = new BufferExt();
 
 		// SRTP packet index
 		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
@@ -279,50 +272,31 @@ public class SrtxpContext implements Cloneable {
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
 
-		// Auth Tag
-		curAuthTagBufRcvd.copyOf(
-				srtpPacketBuf,
-				srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE,
-				KeySizes.AUTH_TAG_SIZE
-			);
-		remaingEncrBuf.copyOf(
-				srtpPacketBuf,
-				0,
-				srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifierLength
-			);
-		computeAuthTagForRtp(camPtr.macObj, camPtr.sksMacObj, remaingEncrBuf, srtpPacketIndex, curAuthTagBufExp);
+		//
+		final BufferView encrPktView = new BufferView(srtpPacketBuf);
+
+		// validate Auth Tag
+		validateAuthTag(encrPktView, camPtr, true, srtpPacketIndex);
 
 		//
-		int inpSz = srtpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE;
-		ByteBuffer inpBuf = ByteBuffer
-				.wrap(srtpPacketBuf.getBufPtr(), 0, inpSz)
-				.order(ByteOrder.BIG_ENDIAN);
+		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
 
-		// MKI
-		if (ctxMasterKeyIdentifierLength != 0) {
-			inpBuf.position(inpSz - ctxMasterKeyIdentifierLength);
-			int tmpMki = inpBuf.getInt();
-			if (tmpMki != ctxMasterKeyIdentifierVal) {
-				throw new SrtpSecurityException("Invalid MKI in SRTP packet");
-			}
-			inpSz -= ctxMasterKeyIdentifierLength;
-		}
-
-		// validate the Auth Tag
-		if (! curAuthTagBufExp.equals(curAuthTagBufRcvd)) {
-			throw new SrtpSecurityException("Invalid Auth Tag in SRTP packet (rcvd=" +
-					curAuthTagBufRcvd.toHexString() + ", exp=" + curAuthTagBufExp.toHexString() + ")");
+		// validate MKI
+		if (! ctxMasterKeyIdentifier.isEmpty()) {
+			encrPktView.setOffset(encrPktView.getLength() - ctxMasterKeyIdentifier.getUsed());
+			validateMki(encrPktView, "SRTP");
+			encrPktView.increaseLength(-1 * ctxMasterKeyIdentifier.getUsed());
 		}
 
 		// build IV
 		buildIvForRtp(srtpPacketIndex, hdSsrcId, curIvBuf);
 
 		// decrypt RTP payload
-		remaingEncrBuf.copyOf(srtpPacketBuf, 0, inpSz);
+		encrPktView.setOffset(0);
 		decryptPayload(
 				camPtr.cipherObj,
 				camPtr.sksCipherObj,
-				remaingEncrBuf,
+				encrPktView,
 				RTP_PLAIN_HEADER_SIZE,
 				curIvBuf,
 				outputDecryptedPacketBuf
@@ -364,9 +338,7 @@ public class SrtxpContext implements Cloneable {
 				int ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
+		validateHaveMikey();
 		if (ctxSessionKeysRtcp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -377,7 +349,7 @@ public class SrtxpContext implements Cloneable {
 
 		/*
 		 * Encrypted SRTCP format:
-		 *   [RTCP packet header plaintext][encrypted RTCP payload][SRTCP index/E-bit][MKI][auth tag]
+		 *   [RTCP packet header plaintext][encrypted RTCP payload][E-bit|SRTCP index][MKI][auth tag]
 		 *
 		 * SRTCP may only use packets where the first part MUST be a sender report or a receiver report.
 		 */
@@ -413,16 +385,23 @@ public class SrtxpContext implements Cloneable {
 		tmpIndexEbitBufObj.putInt(srtcpIndexField);
 		outputEncryptedPacketBuf.append(tmpIndexEbitBufArr);
 
-		// compute auth tag over: encrypted RTCP packet + SRTCP index/E-bit
-		computeAuthTagForRtcp(camPtr.macObj, camPtr.sksMacObj, outputEncryptedPacketBuf, curAuthTagBuf);
+		//
+		final BufferView encrPktView = new BufferView(outputEncryptedPacketBuf);
 
-		// append MKI (4 bytes)
-		if (ctxMasterKeyIdentifierVal != 0) {
-			byte[] tmpMkiBufArr = getMkiAsByteArray();
-			outputEncryptedPacketBuf.append(tmpMkiBufArr);
+		// compute Auth Tag over: encrypted RTCP packet + SRTCP index/E-bit
+		computeAuthTagForRtcp(
+				camPtr.macObj,
+				camPtr.sksMacObj,
+				encrPktView,
+				curAuthTagBuf
+			);
+
+		// append MKI
+		if (! ctxMasterKeyIdentifier.isEmpty()) {
+			outputEncryptedPacketBuf.append(ctxMasterKeyIdentifier);
 		}
 
-		// append auth tag (10 bytes for HMAC-SHA1-80)
+		// append Auth Tag
 		outputEncryptedPacketBuf.append(curAuthTagBuf);
 
 		// advance RTCP index
@@ -439,9 +418,7 @@ public class SrtxpContext implements Cloneable {
 				@NonNull BufferExt srtcpPacketBuf,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
+		validateHaveMikey();
 		if (ctxSessionKeysRtcp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -451,60 +428,31 @@ public class SrtxpContext implements Cloneable {
 					srtcpPacketBuf.getUsed() + " < " + (RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) + " bytes");
 		}
 
-		/*
-		 * Encrypted SRTCP format:
-		 *   [RTCP packet header plaintext][encrypted RTCP payload][SRTCP index/E-bit][MKI][auth tag]
-		 *
-		 * SRTCP may use only packets where the first part MUST be a sender report or a receiver report.
-		 */
-
 		//
 		CtxCipherAndMac camPtr = buildCamObject(ctxCamRtcpDecr, ctxSessionKeysRtcp);
 
 		//
 		final BufferExt curIvBuf = new BufferExt();
-		final BufferExt curAuthTagBufRcvd = new BufferExt();
-		final BufferExt curAuthTagBufExp = new BufferExt();
-		final BufferExt remaingEncrBuf = new BufferExt();
-
-		// Auth Tag
-		curAuthTagBufRcvd.copyOf(
-				srtcpPacketBuf,
-				srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE,
-				KeySizes.AUTH_TAG_SIZE
-			);
-		remaingEncrBuf.copyOf(
-				srtcpPacketBuf,
-				0,
-				srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifierLength
-			);
-		computeAuthTagForRtcp(camPtr.macObj, camPtr.sksMacObj, remaingEncrBuf, curAuthTagBufExp);
 
 		//
-		int inpSz = srtcpPacketBuf.getUsed() - KeySizes.AUTH_TAG_SIZE;
-		ByteBuffer inpBuf = ByteBuffer
-				.wrap(srtcpPacketBuf.getBufPtr(), 0, inpSz)
-				.order(ByteOrder.BIG_ENDIAN);
+		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
 
-		// MKI
-		if (ctxMasterKeyIdentifierLength != 0) {
-			inpBuf.position(inpSz - ctxMasterKeyIdentifierLength);
-			int tmpMki = inpBuf.getInt();
-			if (tmpMki != ctxMasterKeyIdentifierVal) {
-				throw new SrtpSecurityException("Invalid MKI in SRTCP packet");
-			}
-			inpSz -= ctxMasterKeyIdentifierLength;
-		}
+		// validate Auth Tag
+		validateAuthTag(encrPktView, camPtr, false, 0L);
 
-		// validate the Auth Tag
-		if (! curAuthTagBufExp.equals(curAuthTagBufRcvd)) {
-			throw new SrtpSecurityException("Invalid Auth Tag in SRTCP packet (rcvd=" +
-					curAuthTagBufRcvd.toHexString() + ", exp=" + curAuthTagBufExp.toHexString() + ")");
+		//
+		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
+
+		// validate MKI
+		if (! ctxMasterKeyIdentifier.isEmpty()) {
+			encrPktView.setOffset(encrPktView.getLength() - ctxMasterKeyIdentifier.getUsed());
+			validateMki(encrPktView, "SRTCP");
+			encrPktView.increaseLength(-1 * ctxMasterKeyIdentifier.getUsed());
 		}
 
 		// SRTCP index is 31 bits + 1 E-bit (encryption flag) in the MSB
-		inpBuf.position(inpSz - SRTCP_INDEX_FIELD_SIZE);
-		int tmpIndexField = inpBuf.getInt();
+		encrPktView.setOffset(encrPktView.getLength() - SRTCP_INDEX_FIELD_SIZE);
+		int tmpIndexField = encrPktView.getIntFromBigEndian(false);
 		int tmpIndexEbit = (tmpIndexField & 0x80000000);
 		int tmpIndexOnly = (tmpIndexField & 0x7FFFFFFF);
 		if (tmpIndexEbit != 0x80000000) {
@@ -514,13 +462,15 @@ public class SrtxpContext implements Cloneable {
 			throw new SrtpSecurityException("Invalid SRTCP packet index");
 		}
 		ctxStateSrtcpLastIndex = tmpIndexOnly;
-		inpSz -= SRTCP_INDEX_FIELD_SIZE;
+		encrPktView.increaseLength(-1 * SRTCP_INDEX_FIELD_SIZE);
 
-		// Sender SSRC
-		inpBuf.position(RtcpPacketHeader.HEADER_SIZE);
-		int tmpSenderSsrc = inpBuf.getInt();
+		// validate Sender SSRC
+		encrPktView.setOffset(RtcpPacketHeader.HEADER_SIZE);
+		int tmpSenderSsrc = encrPktView.getIntFromBigEndian(false);
 		if (ctxStateSrtcpSsrc != 0 && tmpSenderSsrc != ctxStateSrtcpSsrc) {
-			throw new SrtpSecurityException("Invalid Sender SSRC in SRTCP packet");
+			System.err.println(srtcpPacketBuf.toHexString());
+			throw new SrtpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
+					String.format("is=0x%08X, expected=0x%08X", tmpSenderSsrc, ctxStateSrtcpSsrc));
 		}
 		ctxStateSrtcpSsrc = tmpSenderSsrc;
 
@@ -528,11 +478,11 @@ public class SrtxpContext implements Cloneable {
 		buildIvForRtcp(tmpIndexOnly, tmpSenderSsrc, curIvBuf);
 
 		// decrypt RTCP payload
-		remaingEncrBuf.copyOf(srtcpPacketBuf, 0, inpSz);
+		encrPktView.setOffset(0);
 		decryptPayload(
 				camPtr.cipherObj,
 				camPtr.sksCipherObj,
-				remaingEncrBuf,
+				encrPktView,
 				RTCP_PLAIN_HEADER_SIZE,
 				curIvBuf,
 				outputDecryptedPacketBuf
@@ -555,6 +505,8 @@ public class SrtxpContext implements Cloneable {
 			if (this.ctxSessionKeysRtcp != null) {
 				clone.ctxSessionKeysRtcp = this.ctxSessionKeysRtcp.clone();
 			}
+
+			clone.ctxMasterKeyIdentifier = this.ctxMasterKeyIdentifier.clone();
 
 			clone.ctxCamRtpEncr = this.ctxCamRtpEncr.clone();
 			clone.ctxCamRtpDecr = this.ctxCamRtpDecr.clone();
@@ -580,7 +532,6 @@ public class SrtxpContext implements Cloneable {
 			) throws SrtpSecurityException {
 		outputEncrPacket.copyOf(plainPacket, 0, pktHeaderSize);
 		outputEncrPacket.increaseSize(plainPacket.getUsed() + 64);  // reserve some extra memory for the AuthTag etc.
-		outputEncrPacket.setUsed(plainPacket.getUsed());
 
 		try {
 			cipherObj.init(Cipher.ENCRYPT_MODE, sksCipherObj, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
@@ -588,10 +539,11 @@ public class SrtxpContext implements Cloneable {
 			cipherObj.doFinal(
 					plainPacket.getBufPtr(),
 					pktHeaderSize,
-					outputEncrPacket.getUsed() - pktHeaderSize,
+					plainPacket.getUsed() - pktHeaderSize,
 					outputEncrPacket.getBufPtr(),
 					pktHeaderSize
 				);
+			outputEncrPacket.setUsed(plainPacket.getUsed());
 		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
@@ -601,29 +553,34 @@ public class SrtxpContext implements Cloneable {
 	private void decryptPayload(
 				@NonNull Cipher cipherObj,
 				@NonNull SecretKeySpec sksCipherObj,
-				@NonNull BufferExt encrPacket,
+				@NonNull BufferView encrPktView,
 				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputPlainPacket
 			) throws SrtpSecurityException {
 		if (pktHeaderSize > 0) {
-			outputPlainPacket.copyOf(encrPacket, 0, pktHeaderSize);
+			outputPlainPacket.copyOf(encrPktView.getInternalBaPtr(), 0, pktHeaderSize);
 		} else {
 			outputPlainPacket.clear();
 		}
-		outputPlainPacket.increaseSize(encrPacket.getUsed());
-		outputPlainPacket.setUsed(encrPacket.getUsed());
+		outputPlainPacket.increaseSize(encrPktView.getLength());
 
 		try {
-			cipherObj.init(Cipher.DECRYPT_MODE, sksCipherObj, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
+			cipherObj.init(
+					Cipher.DECRYPT_MODE,
+					sksCipherObj,
+					new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed())
+				);
 
 			cipherObj.doFinal(
-					encrPacket.getBufPtr(),
+					encrPktView.getInternalBaPtr(),
 					pktHeaderSize,
-					outputPlainPacket.getUsed() - pktHeaderSize,
+					encrPktView.getLength() - pktHeaderSize,
 					outputPlainPacket.getBufPtr(),
 					pktHeaderSize
 				);
+			//
+			outputPlainPacket.setUsed(encrPktView.getLength());
 		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
@@ -635,7 +592,7 @@ public class SrtxpContext implements Cloneable {
 	private void computeAuthTagForRtp(
 				@NonNull Mac macObj,
 				@NonNull SecretKeySpec sksMacObj,
-				@NonNull BufferExt encrRtpPacket,
+				@NonNull BufferView encrPktView,
 				long packetIndex,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
@@ -646,14 +603,17 @@ public class SrtxpContext implements Cloneable {
 		try {
 			macObj.init(sksMacObj);
 
-			macObj.update(encrRtpPacket.getBufPtr(), 0, encrRtpPacket.getUsed());
+			macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
 
-			byte[] rocBytes = ByteBuffer.allocate(4).putInt((int)(packetIndex >> 16)).array();
+			byte[] rocBytes = ByteBuffer.allocate(4)
+					.order(ByteOrder.BIG_ENDIAN)
+					.putInt((int)(packetIndex >> 16))
+					.array();
 			macObj.update(rocBytes);
 
 			byte[] fullTag = macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
-			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
+			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
@@ -662,7 +622,7 @@ public class SrtxpContext implements Cloneable {
 	private void computeAuthTagForRtcp(
 				@NonNull Mac macObj,
 				@NonNull SecretKeySpec sksMacObj,
-				@NonNull BufferExt encrRtcpPacket,
+				@NonNull BufferView encrPktView,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
 		if (ctxSessionKeysRtcp == null) {
@@ -672,11 +632,11 @@ public class SrtxpContext implements Cloneable {
 		try {
 			macObj.init(sksMacObj);
 
-			macObj.update(encrRtcpPacket.getBufPtr(), 0, encrRtcpPacket.getUsed());
+			macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
 
 			byte[] fullTag = macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
-			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // 80-bit tag
+			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
 			throw new SrtpSecurityException(e.getMessage());
 		}
@@ -758,18 +718,6 @@ public class SrtxpContext implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private byte[] getMkiAsByteArray() throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
-		byte[] resBa = new byte[ctxMasterKeyIdentifierLength];
-		ByteBuffer tmpMkiBufObj = ByteBuffer.wrap(resBa).order(ByteOrder.BIG_ENDIAN);
-		tmpMkiBufObj.putInt(ctxMasterKeyIdentifierVal);
-		return resBa;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
 	private @NonNull CtxCipherAndMac buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
 		if (cam.cipherObj == null) {
 			cam.cipherObj = buildCipherObject();
@@ -808,6 +756,71 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private void validateHaveMikey() throws SrtpSecurityException {
+		if (! haveMikey) {
+			throw new SrtpSecurityException("Client MIKEY not set");
+		}
+	}
+
+	private void validateAuthTag(
+				@NonNull BufferView bufView,
+				@NonNull CtxCipherAndMac camPtr,
+				boolean isRtpPkt,
+				long srtpPacketIndex
+			) throws SrtpSecurityException {
+		validateHaveMikey();
+
+		BufferExt authTagRcvd = new BufferExt();
+		BufferExt authTagActual = new BufferExt();
+
+		// copy Auth Tag from the received packet
+		bufView.setOffset(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
+		bufView.setLength(KeySizes.AUTH_TAG_SIZE);
+		bufView.copyViewIntoBe(authTagRcvd);
+
+		// compute Auth Tag over: encrypted RTxP packet
+		bufView.setOffset(0);
+		bufView.setLength(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE - ctxMasterKeyIdentifier.getUsed());
+		if (isRtpPkt) {
+			computeAuthTagForRtp(
+					camPtr.macObj,
+					camPtr.sksMacObj,
+					bufView,
+					srtpPacketIndex,
+					authTagActual
+			);
+		} else {
+			computeAuthTagForRtcp(
+					camPtr.macObj,
+					camPtr.sksMacObj,
+					bufView,
+					authTagActual
+				);
+		}
+
+		// validate Auth Tag
+		if (! authTagActual.equals(authTagRcvd)) {
+			throw new SrtpSecurityException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
+					authTagRcvd.toHexString() + ", exp=" + authTagActual.toHexString() + ")");
+		}
+	}
+
+	private void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtpSecurityException {
+		validateHaveMikey();
+
+		BufferExt tmpMkiBe = new BufferExt();
+		final int orgLen = bufView.getLength();
+		bufView.setLength(ctxMasterKeyIdentifier.getUsed());
+		bufView.copyViewIntoBe(tmpMkiBe);
+		if (! ctxMasterKeyIdentifier.equals(tmpMkiBe)) {
+			throw new SrtpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
+					"is=" + tmpMkiBe.toHexString() + ", exp=" + ctxMasterKeyIdentifier.toHexString());
+		}
+		bufView.setLength(orgLen);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull Cipher buildCipherObject() throws SrtpSecurityException {
@@ -829,9 +842,7 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
-		if (! haveMikey) {
-			throw new SrtpSecurityException("Client MIKEY not set");
-		}
+		validateHaveMikey();
 		validateSessionEncKey(sessionKeys.encKey());
 		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtpSecurityException("Invalid RTP Session Salt length (expected " +
@@ -848,6 +859,7 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	void validateSessionAuthKey(@NonNull BufferExt sessionAuthKey) throws SrtpSecurityException {
+		validateHaveMikey();
 		if (ctxAuthKeyLength <= 0) {
 			throw new SrtpSecurityException("Session Auth Key length not set");
 		}

@@ -144,6 +144,57 @@ class SrtcpProtectRoundTripTest {
 			);
 	}
 
+	@Test
+	void protect_then_unprotect_srtcp_compound_sr_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
+
+		SrtxpContext senderCtx = new SrtxpContext();
+		SrtxpContext receiverCtx = new SrtxpContext();
+		Common.srtpCtxInjectRtcpKeys(senderCtx, rtcpKeys, 0);
+		Common.srtpCtxInjectRtcpKeys(receiverCtx, rtcpKeys, 0);
+
+		BufferExt mki = Common.createBufferFromHex("01020304");
+		Common.setPrivateBufferExt(senderCtx, "ctxMasterKeyIdentifier", mki);
+		Common.setPrivateBufferExt(receiverCtx, "ctxMasterKeyIdentifier", mki);
+
+		int senderSsrc = 0x10203040;
+		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
+
+		BufferExt plainBuf = new BufferExt();
+		plainBuf.copyOf(compoundRtcp);
+
+		BufferExt encryptedBuf = new BufferExt();
+		senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
+
+		BufferExt decryptedBuf = new BufferExt();
+		receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
+
+		byte[] decrypted = new byte[decryptedBuf.getUsed()];
+		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
+		assertArrayEquals(compoundRtcp, decrypted, "SRTCP round-trip with MKI must restore original packet");
+
+		byte[] tampered = new byte[encryptedBuf.getUsed()];
+		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
+
+		int mkiStart = tampered.length - KeySizes.AUTH_TAG_SIZE - mki.getUsed();
+		tampered[mkiStart] ^= 0x01;
+
+		BufferExt tamperedBuf = new BufferExt();
+		tamperedBuf.copyOf(tampered);
+
+		BufferExt out = new BufferExt();
+		SrtpSecurityException ex = assertThrows(
+				SrtpSecurityException.class,
+				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out),
+				"Packet with wrong MKI must be rejected"
+			);
+
+		assertTrue(
+				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTCP packet"),
+				"Failure reason should indicate MKI validation"
+			);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 

@@ -3,6 +3,7 @@ package org.tsitle.rtsp.security;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.security.constants.KeySizes;
 
 import java.util.Arrays;
 
@@ -192,6 +193,60 @@ class SrtpProtectRoundTripTest {
 		assertTrue(
 				ex.getMessage() != null && ex.getMessage().contains("Invalid SRTP packet index"),
 				"Replay rejection should be caused by SRTP packet index validation"
+			);
+	}
+
+	@Test
+	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
+		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp();
+
+		SrtxpContext senderCtx = new SrtxpContext();
+		SrtxpContext receiverCtx = new SrtxpContext();
+		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0);
+		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0);
+
+		BufferExt mki = Common.createBufferFromHex("01020304");
+		Common.setPrivateBufferExt(senderCtx, "ctxMasterKeyIdentifier", mki);
+		Common.setPrivateBufferExt(receiverCtx, "ctxMasterKeyIdentifier", mki);
+
+		final short seqNoWrap = (short)0x0FFF;
+		final int senderSsrc = 0x10203040;
+		final byte[] pktOrg = buildRtpPacket(seqNoWrap, senderSsrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
+
+		BufferExt plainBuf = new BufferExt();
+		plainBuf.copyOf(pktOrg);
+
+		BufferExt encryptedBuf = new BufferExt();
+		senderCtx.protectRtp(plainBuf, false, false, seqNoWrap, senderSsrc, encryptedBuf);
+
+		BufferExt decryptedBuf = new BufferExt();
+		receiverCtx.unprotectSrtp(encryptedBuf, seqNoWrap, senderSsrc, decryptedBuf);
+
+		byte[] decrypted = new byte[decryptedBuf.getUsed()];
+		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
+		assertArrayEquals(pktOrg, decrypted, "SRTP round-trip with MKI must restore original packet");
+
+		byte[] tampered = new byte[encryptedBuf.getUsed()];
+		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
+
+		int mkiStart = tampered.length - KeySizes.AUTH_TAG_SIZE - mki.getUsed();
+		tampered[mkiStart] ^= 0x01;
+
+		BufferExt tamperedBuf = new BufferExt();
+		tamperedBuf.copyOf(tampered);
+
+		Common.setPrivateLong(receiverCtx, "ctxStateSrtpLastIndex", -1L);  // by-pass replay protection
+
+		BufferExt out = new BufferExt();
+		SrtpSecurityException ex = assertThrows(
+				SrtpSecurityException.class,
+				() -> receiverCtx.unprotectSrtp(tamperedBuf, seqNoWrap, senderSsrc, out),
+				"Packet with wrong MKI must be rejected"
+			);
+		System.err.println(ex.getMessage());
+		assertTrue(
+				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTP packet"),
+				"Failure reason should indicate MKI validation"
 			);
 	}
 

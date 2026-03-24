@@ -16,33 +16,35 @@ public class MikeyParser {
 			@NonNull BufferExt masterKey,
 			@NonNull BufferExt masterSalt,
 			int authKeyLen,
-			int mkiLen,
-			int mkiVal
+			@NonNull BufferExt mki
 		) { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static class MikeyData {
-		int hdCsbId;
-		/** Number of entries in the {@code hdCsIdMapInfoPolArr}, {@code hdCsIdMapInfoSsrcArr} and {@code hdCsIdMapInfoRocArr} arrays */
-		byte hdCsNr;
-		byte[] hdCsIdMapInfoPolArr = new byte[0];
-		int[] hdCsIdMapInfoSsrcArr = new int[0];
-		int[] hdCsIdMapInfoRocArr = new int[0];
+		public int hdCsbId;
+		/**
+		 * Number of entries in the {@code hdCsIdMapInfoPolArr}, {@code hdCsIdMapInfoSsrcArr} and {@code hdCsIdMapInfoRocArr} arrays.<br />
+		 * Also used to reference Security Policies to those arrays.
+		 */
+		public byte hdCsNr;
+		public byte[] hdCsIdMapInfoPolArr = new byte[0];
+		public int[] hdCsIdMapInfoSsrcArr = new int[0];
+		public int[] hdCsIdMapInfoRocArr = new int[0];
 
-		final BufferExt hdRandData = new BufferExt();
+		public final BufferExt hdRandData = new BufferExt();
 
-		int spAuthKeyLen = KeySizes.AUTH_KEY_SIZE_160;
+		public int spAuthKeyLen = KeySizes.AUTH_KEY_SIZE_160;
 
-		final BufferExt kemacMasterKey = new BufferExt();
-		final BufferExt kemacMasterSalt = new BufferExt();
-		final BufferExt kemacTekTgkSalt = new BufferExt();
-		MickeyMsgKemacKv kemacKvType = MickeyMsgKemacKv.MMKEMKV_UNKNOWN;
-		final BufferExt kemacKvDataSpiOrMki = new BufferExt();
-		final BufferExt kemacKvDataIntvF = new BufferExt();
-		final BufferExt kemacKvDataIntvT = new BufferExt();
-		boolean kemacHaveKeys = false;
+		public final BufferExt kemacMasterKey = new BufferExt();
+		public final BufferExt kemacMasterSalt = new BufferExt();
+		public final BufferExt kemacTekTgkSalt = new BufferExt();
+		public MickeyMsgKemacKv kemacKvType = MickeyMsgKemacKv.MMKEMKV_UNKNOWN;
+		public final BufferExt kemacKvDataSpiOrMki = new BufferExt();
+		public final BufferExt kemacKvDataIntvF = new BufferExt();
+		public final BufferExt kemacKvDataIntvT = new BufferExt();
+		public boolean kemacHaveKeys = false;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -163,19 +165,11 @@ public class MikeyParser {
 			}
 
 			if (mikeyData.kemacHaveKeys) {
-				int tmpMkiLen = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ? 0 : KeySizes.MKI_SIZE);
-				if (! mikeyData.kemacKvDataSpiOrMki.isEmpty() && mikeyData.kemacKvDataSpiOrMki.getUsed() != tmpMkiLen) {
-					throw new SrtpSecurityException("Invalid MIKEY MKI length " + mikeyData.kemacKvDataSpiOrMki.getUsed());
-				}
-				int tmpMkiVal = (mikeyData.kemacKvDataSpiOrMki.isEmpty() ?
-						0 : ByteBuffer.wrap(mikeyData.kemacKvDataSpiOrMki.getBufPtr()).order(ByteOrder.BIG_ENDIAN).getInt()
-					);
 				return new MikeyParser.SrtpKeys(
 						mikeyData.kemacMasterKey.clone(),
 						mikeyData.kemacMasterSalt.clone(),
 						mikeyData.spAuthKeyLen,
-						tmpMkiLen,
-						tmpMkiVal
+						mikeyData.kemacKvDataSpiOrMki.clone()
 					);
 			}
 		} catch (BufferUnderflowException e) {
@@ -422,9 +416,9 @@ public class MikeyParser {
 		}
 
 		// KV data
-		if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_SPI) {
+		if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
 			byte tmpKvLen = buf.get();
-			extractBytes("KEMAC KV SPI", buf, tmpKvLen, mikeyData.kemacKvDataSpiOrMki);
+			extractBytes("KEMAC KV SPI/MKI", buf, tmpKvLen, mikeyData.kemacKvDataSpiOrMki);
 		} else if (mikeyData.kemacKvType == MickeyMsgKemacKv.MMKEMKV_INTV) {
 			byte tmpVfLen = buf.get();
 			extractBytes("KEMAC KV INTV F", buf, tmpVfLen, mikeyData.kemacKvDataIntvF);

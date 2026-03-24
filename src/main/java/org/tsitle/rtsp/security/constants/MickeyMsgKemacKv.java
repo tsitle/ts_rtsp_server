@@ -7,7 +7,7 @@ public enum MickeyMsgKemacKv {
 	/** Null */
 	MMKEMKV_NULL((byte)0x00),
 	/** The key is associated with the SPI/MKI */
-	MMKEMKV_SPI((byte)0x01),
+	MMKEMKV_SPI_OR_MKI((byte)0x01),
 	/** The key has a start and expiration time (e.g., an SRTP TEK) */
 	MMKEMKV_INTV((byte)0x02),
 	/** Unknown */

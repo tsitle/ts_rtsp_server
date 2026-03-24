@@ -123,6 +123,13 @@ class Common {
 		f.setInt(target, value);
 	}
 
+	@SuppressWarnings("SameParameterValue")
+	static void setPrivateBufferExt(Object target, String fieldName, BufferExt value) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		f.set(target, value.clone());
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("SameParameterValue")
