@@ -49,7 +49,7 @@ public class ThreadRtspServer extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 10;
+	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 15;
 
 	private final String threadName;
 	private final int clientConnectionNr;
@@ -693,6 +693,7 @@ public class ThreadRtspServer extends RunnableBase {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspConstants.RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
 				logError(FNC_NAME, "RTSP session timeout after " + tmpTimeDiff + " seconds");
+				// @TODO send BYE packet
 				return false;
 			}
 		}
