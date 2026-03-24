@@ -39,7 +39,14 @@ public abstract class SrtxpContextBase {
 	/** Session keys for RTCP/SRTCP */
 	protected @Nullable SessionKeys ctxSessionKeysRtcp = null;
 
+	/** Cipher/CipherSks/Mac/MacSks objects */
 	protected @NonNull CtxCipherAndMac ctxCam = new CtxCipherAndMac();
+
+	protected final BufferExt cacheIvBuf = new BufferExt();
+	protected final BufferExt cacheAuthTagBuf = new BufferExt();
+	private final BufferExt cacheValidateMkiBuf = new BufferExt();
+	private final BufferExt cacheAuthTagRcvdBuf = new BufferExt();
+	private final BufferExt cacheAuthTagActualBuf = new BufferExt();
 
 	/**
 	 * Constructor.
@@ -61,14 +68,15 @@ public abstract class SrtxpContextBase {
 			SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd);
 			setRtcpSessionKeys(tmpSessionKeys);
 		}
+
+		//
+		buildCamObject(ctxCam, isRtp ? ctxSessionKeysRtp : ctxSessionKeysRtcp);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void encryptPayload(
-				@NonNull Cipher cipherObj,
-				@NonNull SecretKeySpec sksCipherObj,
 				@NonNull BufferExt plainPacket,
 				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
@@ -78,13 +86,17 @@ public abstract class SrtxpContextBase {
 		outputEncrPacket.increaseSize(plainPacket.getUsed() + 64);  // reserve some extra memory for the AuthTag etc.
 
 		try {
-			cipherObj.init(Cipher.ENCRYPT_MODE, sksCipherObj, new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed()));
+			ctxCam.cipherObj.init(
+					Cipher.ENCRYPT_MODE,
+					ctxCam.sksCipherObj,
+					new IvParameterSpec(curIvBuf.getBaPtr(), 0, curIvBuf.getUsed())
+				);
 
-			cipherObj.doFinal(
-					plainPacket.getBufPtr(),
+			ctxCam.cipherObj.doFinal(
+					plainPacket.getBaPtr(),
 					pktHeaderSize,
 					plainPacket.getUsed() - pktHeaderSize,
-					outputEncrPacket.getBufPtr(),
+					outputEncrPacket.getBaPtr(),
 					pktHeaderSize
 				);
 			outputEncrPacket.setUsed(plainPacket.getUsed());
@@ -95,8 +107,6 @@ public abstract class SrtxpContextBase {
 	}
 
 	protected void decryptPayload(
-				@NonNull Cipher cipherObj,
-				@NonNull SecretKeySpec sksCipherObj,
 				@NonNull BufferView encrPktView,
 				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
@@ -110,17 +120,17 @@ public abstract class SrtxpContextBase {
 		outputPlainPacket.increaseSize(encrPktView.getLength());
 
 		try {
-			cipherObj.init(
+			ctxCam.cipherObj.init(
 					Cipher.DECRYPT_MODE,
-					sksCipherObj,
-					new IvParameterSpec(curIvBuf.getBufPtr(), 0, curIvBuf.getUsed())
+					ctxCam.sksCipherObj,
+					new IvParameterSpec(curIvBuf.getBaPtr(), 0, curIvBuf.getUsed())
 				);
 
-			cipherObj.doFinal(
+			ctxCam.cipherObj.doFinal(
 					encrPktView.getInternalBaPtr(),
 					pktHeaderSize,
 					encrPktView.getLength() - pktHeaderSize,
-					outputPlainPacket.getBufPtr(),
+					outputPlainPacket.getBaPtr(),
 					pktHeaderSize
 				);
 			//
@@ -134,8 +144,6 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void computeAuthTagForRtp(
-				@NonNull Mac macObj,
-				@NonNull SecretKeySpec sksMacObj,
 				@NonNull BufferView encrPktView,
 				long packetIndex,
 				@NonNull BufferExt curAuthTagBuf
@@ -145,17 +153,17 @@ public abstract class SrtxpContextBase {
 		}
 
 		try {
-			macObj.init(sksMacObj);
+			ctxCam.macObj.init(ctxCam.sksMacObj);
 
-			macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
+			ctxCam.macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
 
 			byte[] rocBytes = ByteBuffer.allocate(4)
 					.order(ByteOrder.BIG_ENDIAN)
 					.putInt((int)(packetIndex >> 16))
 					.array();
-			macObj.update(rocBytes);
+			ctxCam.macObj.update(rocBytes);
 
-			byte[] fullTag = macObj.doFinal();
+			byte[] fullTag = ctxCam.macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
@@ -164,8 +172,6 @@ public abstract class SrtxpContextBase {
 	}
 
 	protected void computeAuthTagForRtcp(
-				@NonNull Mac macObj,
-				@NonNull SecretKeySpec sksMacObj,
 				@NonNull BufferView encrPktView,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
@@ -174,11 +180,11 @@ public abstract class SrtxpContextBase {
 		}
 
 		try {
-			macObj.init(sksMacObj);
+			ctxCam.macObj.init(ctxCam.sksMacObj);
 
-			macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
+			ctxCam.macObj.update(encrPktView.getInternalBaPtr(), encrPktView.getOffset(), encrPktView.getLength());
 
-			byte[] fullTag = macObj.doFinal();
+			byte[] fullTag = ctxCam.macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
@@ -188,7 +194,7 @@ public abstract class SrtxpContextBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected @NonNull CtxCipherAndMac buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+	protected void buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
 		if (cam.cipherObj == null) {
 			cam.cipherObj = buildCipherObject();
 		}
@@ -201,7 +207,6 @@ public abstract class SrtxpContextBase {
 		if (cam.sksMacObj == null) {
 			cam.sksMacObj = buildSecretKeySpecObject(sessionKeys.authKey(), false);
 		}
-		return cam;
 	}
 
 	protected @NonNull SecretKeySpec buildSecretKeySpecObject(@NonNull BufferExt sessionKey, boolean isForEnc) throws SrtpSecurityException {
@@ -211,7 +216,7 @@ public abstract class SrtxpContextBase {
 			validateSessionAuthKey(sessionKey);
 		}
 		try {
-			return new SecretKeySpec(sessionKey.getBufPtr(), 0, sessionKey.getUsed(), isForEnc ? "AES" : "HmacSHA1");
+			return new SecretKeySpec(sessionKey.getBaPtr(), 0, sessionKey.getUsed(), isForEnc ? "AES" : "HmacSHA1");
 		} catch (IllegalArgumentException e) {
 			throw new SrtpSecurityException("Invalid key for SKS: " + e.getMessage());
 		}
@@ -229,53 +234,37 @@ public abstract class SrtxpContextBase {
 
 	protected void validateAuthTag(
 				@NonNull BufferView bufView,
-				@NonNull CtxCipherAndMac camPtr,
 				boolean isRtpPkt,
 				long srtpPacketIndex
 			) throws SrtpSecurityException {
-		BufferExt authTagRcvd = new BufferExt();
-		BufferExt authTagActual = new BufferExt();
-
 		// copy Auth Tag from the received packet
 		bufView.setOffset(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
 		bufView.setLength(KeySizes.AUTH_TAG_SIZE);
-		bufView.copyViewIntoBe(authTagRcvd);
+		bufView.copyViewIntoBe(cacheAuthTagRcvdBuf);
 
 		// compute Auth Tag over: encrypted RTxP packet
 		bufView.setOffset(0);
 		bufView.setLength(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE - ctxKmd.mki().getUsed());
 		if (isRtpPkt) {
-			computeAuthTagForRtp(
-					camPtr.macObj,
-					camPtr.sksMacObj,
-					bufView,
-					srtpPacketIndex,
-					authTagActual
-			);
+			computeAuthTagForRtp(bufView, srtpPacketIndex, cacheAuthTagActualBuf);
 		} else {
-			computeAuthTagForRtcp(
-					camPtr.macObj,
-					camPtr.sksMacObj,
-					bufView,
-					authTagActual
-				);
+			computeAuthTagForRtcp(bufView, cacheAuthTagActualBuf);
 		}
 
 		// validate Auth Tag
-		if (! authTagActual.equals(authTagRcvd)) {
+		if (! cacheAuthTagActualBuf.equals(cacheAuthTagRcvdBuf)) {
 			throw new SrtpSecurityException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
-					authTagRcvd.toHexString() + ", exp=" + authTagActual.toHexString() + ")");
+					cacheAuthTagRcvdBuf.toHexString() + ", exp=" + cacheAuthTagActualBuf.toHexString() + ")");
 		}
 	}
 
 	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtpSecurityException {
-		BufferExt tmpMkiBe = new BufferExt();
 		final int orgLen = bufView.getLength();
 		bufView.setLength(ctxKmd.mki().getUsed());
-		bufView.copyViewIntoBe(tmpMkiBe);
-		if (! ctxKmd.mki().equals(tmpMkiBe)) {
+		bufView.copyViewIntoBe(cacheValidateMkiBuf);
+		if (! ctxKmd.mki().equals(cacheValidateMkiBuf)) {
 			throw new SrtpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
-					"is=" + tmpMkiBe.toHexString() + ", exp=" + ctxKmd.mki().toHexString());
+					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toHexString());
 		}
 		bufView.setLength(orgLen);
 	}

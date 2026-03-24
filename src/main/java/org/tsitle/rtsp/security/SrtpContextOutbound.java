@@ -62,35 +62,20 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		// SRTP packet index
 		final long srtpPacketIndex = ((ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 
-		//
-		final BufferExt curIvBuf = new BufferExt();
-		final BufferExt curAuthTagBuf = new BufferExt();
-
 		// build IV
-		buildIvForRtp(srtpPacketIndex, hdSsrcId, curIvBuf);
-
-		//
-		CtxCipherAndMac camPtr = buildCamObject(ctxCam, ctxSessionKeysRtp);
+		buildIvForRtp(srtpPacketIndex, hdSsrcId, cacheIvBuf);
 
 		// encrypt payload
 		encryptPayload(
-				camPtr.cipherObj,
-				camPtr.sksCipherObj,
 				rtpPacketBuf,
 				RTP_PLAIN_HEADER_SIZE,
-				curIvBuf,
+				cacheIvBuf,
 				outputEncryptedPacketBuf
 			);
 
 		// compute Auth Tag over: encrypted RTP packet
 		final BufferView encrPktView = new BufferView(outputEncryptedPacketBuf);
-		computeAuthTagForRtp(
-				camPtr.macObj,
-				camPtr.sksMacObj,
-				encrPktView,
-				srtpPacketIndex,
-				curAuthTagBuf
-			);
+		computeAuthTagForRtp(encrPktView, srtpPacketIndex, cacheAuthTagBuf);
 
 		// append MKI
 		if (! ctxKmd.mki().isEmpty()) {
@@ -98,7 +83,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		}
 
 		// append Auth Tag
-		outputEncryptedPacketBuf.append(curAuthTagBuf);
+		outputEncryptedPacketBuf.append(cacheAuthTagBuf);
 
 		// update ROC if sequence wrapped
 		if (hdSeqNr == (short)0xFFFF) {

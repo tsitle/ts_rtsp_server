@@ -89,7 +89,7 @@ public class SrtpKeyDerivation {
 		try {
 			cipher.init(
 					Cipher.ENCRYPT_MODE,
-					new SecretKeySpec(kmd.masterKey().getBufPtr(), 0, kmd.masterKey().getUsed(), "AES"),
+					new SecretKeySpec(kmd.masterKey().getBaPtr(), 0, kmd.masterKey().getUsed(), "AES"),
 					new IvParameterSpec(iv)
 				);
 
@@ -112,7 +112,7 @@ public class SrtpKeyDerivation {
 		byte[] iv = new byte[KeySizes.AES_128_KEY_SIZE];
 
 		// IV = x = master_salt
-		System.arraycopy(masterSalt.getBufPtr(), 0, iv, 0, KeySizes.SALT_SIZE);
+		System.arraycopy(masterSalt.getBaPtr(), 0, iv, 0, KeySizes.SALT_SIZE);
 
 		// right-aligned key_id = <label>(8) || r(48) occupies x bytes [7..13]
 		int offs = ((112 - 48) / 8) - 1;

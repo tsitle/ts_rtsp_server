@@ -49,16 +49,10 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		}
 
 		//
-		CtxCipherAndMac camPtr = buildCamObject(ctxCam, ctxSessionKeysRtcp);
-
-		//
-		final BufferExt curIvBuf = new BufferExt();
-
-		//
 		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
 
 		// validate Auth Tag
-		validateAuthTag(encrPktView, camPtr, false, 0L);
+		validateAuthTag(encrPktView, false, 0L);
 
 		//
 		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
@@ -95,16 +89,14 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		ctxStateSrtcpSsrc = tmpSenderSsrc;
 
 		// build IV
-		buildIvForRtcp(tmpIndexOnly, tmpSenderSsrc, curIvBuf);
+		buildIvForRtcp(tmpIndexOnly, tmpSenderSsrc, cacheIvBuf);
 
 		// decrypt RTCP payload
 		encrPktView.setOffset(0);
 		decryptPayload(
-				camPtr.cipherObj,
-				camPtr.sksCipherObj,
 				encrPktView,
 				RTCP_PLAIN_HEADER_SIZE,
-				curIvBuf,
+				cacheIvBuf,
 				outputDecryptedPacketBuf
 			);
 	}

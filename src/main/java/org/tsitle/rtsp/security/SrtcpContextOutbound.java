@@ -76,23 +76,14 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 		final int srtcpIndexEbit = 0x80000000;
 		final int srtcpIndexField = (srtcpIndexEbit | srtcpIndexOnly);
 
-		//
-		final BufferExt curIvBuf = new BufferExt();
-		final BufferExt curAuthTagBuf = new BufferExt();
-
 		// build IV
-		buildIvForRtcp(srtcpIndexOnly, ssrcId, curIvBuf);
-
-		//
-		CtxCipherAndMac camPtr = buildCamObject(ctxCam, ctxSessionKeysRtcp);
+		buildIvForRtcp(srtcpIndexOnly, ssrcId, cacheIvBuf);
 
 		// encrypt RTCP payload
 		encryptPayload(
-				camPtr.cipherObj,
-				camPtr.sksCipherObj,
 				rtcpPacketBuf,
 				RTCP_PLAIN_HEADER_SIZE,
-				curIvBuf,
+				cacheIvBuf,
 				outputEncryptedPacketBuf
 			);
 
@@ -106,12 +97,7 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 		final BufferView encrPktView = new BufferView(outputEncryptedPacketBuf);
 
 		// compute Auth Tag over: encrypted RTCP packet + SRTCP index/E-bit
-		computeAuthTagForRtcp(
-				camPtr.macObj,
-				camPtr.sksMacObj,
-				encrPktView,
-				curAuthTagBuf
-			);
+		computeAuthTagForRtcp(encrPktView, cacheAuthTagBuf);
 
 		// append MKI
 		if (! ctxKmd.mki().isEmpty()) {
@@ -119,7 +105,7 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 		}
 
 		// append Auth Tag
-		outputEncryptedPacketBuf.append(curAuthTagBuf);
+		outputEncryptedPacketBuf.append(cacheAuthTagBuf);
 
 		// advance RTCP index
 		ctxStateRtcpIndex = ((ctxStateRtcpIndex + 1) & 0x7FFFFFFF);

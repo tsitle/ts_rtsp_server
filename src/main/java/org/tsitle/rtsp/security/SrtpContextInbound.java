@@ -4,10 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
 /**
- * Context for inbound SRTP packet decryption
+ * Context for inbound SRTP packet decryption according to RFC-3711 Section 3.1
  */
 public class SrtpContextInbound extends SrtpContextBase {
 
@@ -29,7 +30,26 @@ public class SrtpContextInbound extends SrtpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt an SRTP packet buffer according to RFC-3711 Section 3.1
+	 * Decrypt an SRTP packet
+	 * @param srtpPacket SRTP packet
+	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtpSecurityException If any kind of error occurred
+	 */
+	@SuppressWarnings("unused")
+	public void unprotectSrtp(
+				@NonNull RtpEncryptedPacket srtpPacket,
+				@NonNull BufferExt outputDecryptedPacketBuf
+			) throws SrtpSecurityException {
+		unprotectSrtp(
+				srtpPacket.getPacketBufferView(),
+				srtpPacket.getSequenceNumber(),
+				srtpPacket.getSsrcId(),
+				outputDecryptedPacketBuf
+			);
+	}
+
+	/**
+	 * Decrypt an SRTP packet buffer
 	 * @param srtpPacketBuf SRTP packet buffer
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
@@ -42,20 +62,32 @@ public class SrtpContextInbound extends SrtpContextBase {
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
+		final BufferView encrPktView = new BufferView(srtpPacketBuf);
+		unprotectSrtp(encrPktView, hdSeqNr, hdSsrcId, outputDecryptedPacketBuf);
+	}
+
+	/**
+	 * Decrypt an SRTP packet buffer
+	 * @param srtpPacketBufView SRTP packet buffer view
+	 * @param hdSeqNr Sequence number of the RTP packet
+	 * @param hdSsrcId SSRC ID of the RTP packet
+	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtpSecurityException If any kind of error occurred
+	 */
+	public void unprotectSrtp(
+				@NonNull BufferView srtpPacketBufView,
+				short hdSeqNr,
+				int hdSsrcId,
+				@NonNull BufferExt outputDecryptedPacketBuf
+			) throws SrtpSecurityException {
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
 
-		if (srtpPacketBuf.getUsed() < RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) {
+		if (srtpPacketBufView.getLength() < RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) {
 			throw new SrtpSecurityException("Invalid SRTP packet length: " +
-					srtpPacketBuf.getUsed() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
+					srtpPacketBufView.getLength() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
 		}
-
-		//
-		CtxCipherAndMac camPtr = buildCamObject(ctxCam, ctxSessionKeysRtp);
-
-		//
-		final BufferExt curIvBuf = new BufferExt();
 
 		// SRTP packet index
 		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
@@ -64,33 +96,28 @@ public class SrtpContextInbound extends SrtpContextBase {
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
 
-		//
-		final BufferView encrPktView = new BufferView(srtpPacketBuf);
-
 		// validate Auth Tag
-		validateAuthTag(encrPktView, camPtr, true, srtpPacketIndex);
+		validateAuthTag(srtpPacketBufView, true, srtpPacketIndex);
 
 		//
-		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
+		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
 
 		// validate MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.mki().getUsed());
-			validateMki(encrPktView, "SRTP");
-			encrPktView.increaseLength(-1 * ctxKmd.mki().getUsed());
+			srtpPacketBufView.setOffset(srtpPacketBufView.getLength() - ctxKmd.mki().getUsed());
+			validateMki(srtpPacketBufView, "SRTP");
+			srtpPacketBufView.increaseLength(-1 * ctxKmd.mki().getUsed());
 		}
 
 		// build IV
-		buildIvForRtp(srtpPacketIndex, hdSsrcId, curIvBuf);
+		buildIvForRtp(srtpPacketIndex, hdSsrcId, cacheIvBuf);
 
 		// decrypt RTP payload
-		encrPktView.setOffset(0);
+		srtpPacketBufView.setOffset(0);
 		decryptPayload(
-				camPtr.cipherObj,
-				camPtr.sksCipherObj,
-				encrPktView,
+				srtpPacketBufView,
 				RTP_PLAIN_HEADER_SIZE,
-				curIvBuf,
+				cacheIvBuf,
 				outputDecryptedPacketBuf
 			);
 

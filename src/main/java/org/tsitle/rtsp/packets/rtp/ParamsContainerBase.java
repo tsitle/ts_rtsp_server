@@ -8,11 +8,33 @@ public final class ParamsContainerBase {
 	public short sequenceNumber;
 	/** Set marker flag? */
 	public boolean doSetMarker;
-	/** RTP timestamp of the frame (and the packet) */
+	/** RTP timestamp of the packet */
 	public int rtpTimestamp;
 
+	/**
+	 * Constructor.
+	 */
 	public ParamsContainerBase() {
 		reset();
+	}
+
+	/**
+	 * Constructor.
+	 * @param rtspSsrcId RTSP Synchronization Source Identifier
+	 * @param sequenceNumber Sequence number of the packet (16 bits unsigned)
+	 * @param doSetMarker Set marker flag?
+	 * @param rtpTimestamp RTP timestamp of the packet
+	 */
+	public ParamsContainerBase(
+				int rtspSsrcId,
+				short sequenceNumber,
+				boolean doSetMarker,
+				int rtpTimestamp
+			) {
+		this.rtspSsrcId = rtspSsrcId;
+		this.sequenceNumber = sequenceNumber;
+		this.doSetMarker = doSetMarker;
+		this.rtpTimestamp = rtpTimestamp;
 	}
 
 	public void reset() {

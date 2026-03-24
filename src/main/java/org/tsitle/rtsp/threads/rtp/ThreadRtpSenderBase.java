@@ -87,6 +87,7 @@ public abstract class ThreadRtpSenderBase<
 
 	protected final SrtpContextOutbound srtpCtxOutbound;
 	private final SrtcpContextOutbound srtcpCtxOutbound;
+	private @Nullable RtpEncryptedPacket cacheRtpEncrPacket = null;
 
 	/**
 	 * Constructor.
@@ -368,11 +369,16 @@ public abstract class ThreadRtpSenderBase<
 			return plainPacket;
 		}
 		try {
-			return new RtpEncryptedPacket(
+			if (cacheRtpEncrPacket == null) {
+				cacheRtpEncrPacket = new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
 					plainPacket,
 					srtpCtxOutbound
 				);
+			} else {
+				cacheRtpEncrPacket.updatePacketBuffer(plainPacket);
+			}
+			return cacheRtpEncrPacket;
 		} catch (SrtpSecurityException e) {
 			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
 			logError(FNC_NAME, errMsg);
@@ -645,7 +651,7 @@ public abstract class ThreadRtpSenderBase<
 		}
 		// send the packet as a DatagramPacket over the UDP socket
 		DatagramPacket sendDp = new DatagramPacket(
-				curPacketContainer.getPacketBufferPtr(),
+				curPacketContainer.getPacketBufferPtr().getBaPtr(),
 				curPacketContainer.getPacketSize(),
 				paramsCommon.getClientIpAddr().orElseThrow(),
 				paramsCommon.getClientDestPortRtp()

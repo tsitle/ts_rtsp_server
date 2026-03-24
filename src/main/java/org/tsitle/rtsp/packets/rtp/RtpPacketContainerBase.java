@@ -2,6 +2,7 @@ package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 /**
  * RTP Packet Container base class.<br />
@@ -144,12 +145,19 @@ public class RtpPacketContainerBase {
 	}
 
 	/**
-	 * Returns a pointer to the raw RTP packet buffer.<br />
-	 * <b>Note:</b> Use in combination with {@code getPacketSize()} - not {@code bufPtr.length}!
+	 * Returns a pointer to the raw RTP packet buffer.
 	 * @return Pointer to the raw RTP packet buffer
 	 */
-	public byte[] getPacketBufferPtr() {
-		return packetBuf.getBufPtr();
+	public @NonNull BufferExt getPacketBufferPtr() {
+		return packetBuf;
+	}
+
+	/**
+	 * Returns a view of the raw RTP packet buffer.
+	 * @return View of the raw RTP packet buffer
+	 */
+	public @NonNull BufferView getPacketBufferView() {
+		return new BufferView(packetBuf);
 	}
 
 	/**
@@ -260,6 +268,19 @@ public class RtpPacketContainerBase {
 				tmpCb.hdBaseMarker,
 				tmpCb.hdBaseTimestamp
 			);
+	}
+
+	/**
+	 * Creates a new RTP packet header with the given payload type and parameters.
+	 * @param payloadType RTP payload type
+	 * @param paramsBase RTP packet parameters
+	 * @return RTP packet header
+	 */
+	public static RtpPacketContainerBase createPacketHeader(
+				@NonNull RtpPacketType payloadType,
+				@NonNull ParamsContainerBase paramsBase
+			) {
+		return new RtpPacketContainerBase(payloadType, paramsBase);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

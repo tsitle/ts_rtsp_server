@@ -9,27 +9,40 @@ import org.tsitle.rtsp.security.SrtpContextOutbound;
  */
 public class RtpEncryptedPacket extends RtpPacketContainerBase {
 
+	private final @NonNull SrtpContextOutbound srtpCtx;
+
 	/**
 	 * Constructor.
 	 * @param payloadType RTP payload type
 	 * @param plainPacket Plain RTP packet
-	 * @param srtxpContext SRTxP context
+	 * @param srtpCtx SRTxP context
 	 */
 	public RtpEncryptedPacket(
 				@NonNull RtpPacketType payloadType,
 				@NonNull RtpPacketContainerBase plainPacket,
-				@NonNull SrtpContextOutbound srtxpContext
+				@NonNull SrtpContextOutbound srtpCtx
 			) throws SrtpSecurityException {
 		super(payloadType, plainPacket.packetBuf, true);
 
+		this.srtpCtx = srtpCtx;
+
 		//
-		srtxpContext.protectRtp(
+		updatePacketBuffer(plainPacket);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void updatePacketBuffer(@NonNull RtpPacketContainerBase plainPacket) throws SrtpSecurityException {
+		packetBuf.copyOf(plainPacket.packetBuf, 0, RTP_CONT_HEADER_SIZE);
+
+		srtpCtx.protectRtp(
 				plainPacket.packetBuf,
 				plainPacket.hasCsrcList(),
 				plainPacket.hasHeaderExtension(),
 				plainPacket.getSequenceNumber(),
 				plainPacket.getSsrcId(),
-				this.packetBuf
+				packetBuf
 			);
 	}
 
