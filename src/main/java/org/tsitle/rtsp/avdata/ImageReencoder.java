@@ -199,7 +199,7 @@ public class ImageReencoder {
 	private @NonNull BufferedImage convertBytesIntoImage(@NonNull BufferExt imageBuf) throws ImageReencoderIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".convertBytesIntoImage()";
 
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBuf.getBufPtr(), 0, imageBuf.getUsed())) {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBuf.getBaPtr(), 0, imageBuf.getUsed())) {
 			return ImageIO.read(bais);
 		} catch (IOException e) {
 			throw new ImageReencoderIoException(FNC_NAME + ": " + e.getMessage());

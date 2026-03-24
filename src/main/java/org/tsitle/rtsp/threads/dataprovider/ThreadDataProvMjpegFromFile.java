@@ -125,7 +125,7 @@ public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<Vide
 	@SuppressWarnings({"unused", "SameParameterValue"})
 	private void writeJpegToFile(@NonNull BufferExt data, @NonNull String baseFilename, int frameNr) {
 		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(String.format("%s_%06d.jpg", baseFilename, frameNr))) {
-			fos.write(data.getBufPtr(), 0, data.getUsed());
+			fos.write(data.getBaPtr(), 0, data.getUsed());
 		} catch (IOException e) {
 			logError("writeJpegToFile()", "IOException caught: " + e.getMessage());
 		}

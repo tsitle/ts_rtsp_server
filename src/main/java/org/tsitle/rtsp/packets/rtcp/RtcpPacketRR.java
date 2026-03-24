@@ -82,7 +82,7 @@ public class RtcpPacketRR {
 		this.rawPayload.copyOf(packet, RtcpPacketHeader.HEADER_SIZE, INNER_HEADER_SIZE + allItemsPayloadSize);
 
 		// Parse payload fields
-		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBufPtr());  // big-endian by default
+		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
 		this.hdSsrcSender = bb.getInt();
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			RtcpInnerRecpReportBlock block = RtcpInnerRecpReportBlock.decodeFromBuffer(i, bb);

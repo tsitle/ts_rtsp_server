@@ -82,7 +82,7 @@ public class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase
 		frameBuf.clear();
 		frameBuf.increaseSize(rtpFrameSizeBytes);
 		//
-		int tmpRead = avStreamIncoming.readBytes(readIntoPtr.getBufPtr(), rtpFrameSizeBytes);
+		int tmpRead = avStreamIncoming.readBytes(readIntoPtr.getBaPtr(), rtpFrameSizeBytes);
 		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
 			// discard any partial samples
 			tmpRead -= (tmpRead % bytesPerChannelAndSample);
@@ -98,8 +98,8 @@ public class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase
 
 		// convert to big-endian
 		for (int i = 0; i + 1 < tmpRead; i += bytesPerSample) {
-			frameBuf.getBufPtr()[i] = readIntoPtr.get(i + 1);
-			frameBuf.getBufPtr()[i + 1] = readIntoPtr.get(i);
+			frameBuf.getBaPtr()[i] = readIntoPtr.get(i + 1);
+			frameBuf.getBaPtr()[i + 1] = readIntoPtr.get(i);
 		}
 		frameBuf.setUsed(tmpRead);
 	}

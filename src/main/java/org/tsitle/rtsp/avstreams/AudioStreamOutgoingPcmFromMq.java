@@ -84,8 +84,8 @@ public class AudioStreamOutgoingPcmFromMq extends AvStreamOutgoingFromMqBase {
 
 		// convert to big-endian
 		for (int i = 0; i + 1 < tmpRead; i += bytesPerSample) {
-			frameBuf.getBufPtr()[i] = readIntoPtr.get(i + 1);
-			frameBuf.getBufPtr()[i + 1] = readIntoPtr.get(i);
+			frameBuf.getBaPtr()[i] = readIntoPtr.get(i + 1);
+			frameBuf.getBaPtr()[i + 1] = readIntoPtr.get(i);
 		}
 		frameBuf.setUsed(tmpRead);
 	}

@@ -94,7 +94,7 @@ public class RtcpPacketBYE {
 		this.rawPayload.copyOf(packet, RtcpPacketHeader.HEADER_SIZE, allItemsPayloadSize);
 
 		// Parse payload fields
-		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBufPtr());  // big-endian by default
+		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
 		int totalBytesRead = RtcpPacketHeader.HEADER_SIZE;
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			this.bdXsrcList.add(bb.getInt());

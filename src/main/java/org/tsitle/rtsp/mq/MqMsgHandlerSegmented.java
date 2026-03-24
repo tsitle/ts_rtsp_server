@@ -244,7 +244,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 	private void writeFieldToMqBinData(final @NonNull BufferExt value, @SuppressWarnings("SameParameterValue") int flags) {
 		//noinspection DataFlowIssue
-		zmqSocket.send(value.getBufPtr(), 0, value.getUsed(), flags);
+		zmqSocket.send(value.getBaPtr(), 0, value.getUsed(), flags);
 	}
 
 }

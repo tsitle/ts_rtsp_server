@@ -43,7 +43,7 @@ public final class BufferView {
 	 * @return Buffer pointer
 	 */
 	public byte[] getInternalBaPtr() {
-		return bufPtr.getBufPtr();
+		return bufPtr.getBaPtr();
 	}
 
 	/**

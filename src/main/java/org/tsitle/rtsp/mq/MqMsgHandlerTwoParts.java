@@ -64,7 +64,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			}
 			payloadDataPtr.increaseSize(payloadDataSize);  // prepare buffer size
 			// blocks until one message is successfully retrieved, or stops when timeout set by setReceiveTimeOut(int) expires
-			int tmpRecvRes = zmqSocket.recv(payloadDataPtr.getBufPtr(), 0, payloadDataSize, 0);
+			int tmpRecvRes = zmqSocket.recv(payloadDataPtr.getBaPtr(), 0, payloadDataSize, 0);
 			if (tmpRecvRes != payloadDataSize) {
 				throw new MqException(FNC_NAME + ": Received too few data from socket");
 			}
@@ -109,7 +109,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		// write the header to the Message Queue
 		zmqSocket.send(cacheBufferData.array(), 0, cacheBufferData.limit(), ZMQ.SNDMORE);
 		// write the payload data to the Message Queue
-		zmqSocket.send(packet.payloadDataPtr().getBufPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
+		zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

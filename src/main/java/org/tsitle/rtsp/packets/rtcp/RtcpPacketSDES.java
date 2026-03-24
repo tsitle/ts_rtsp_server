@@ -75,7 +75,7 @@ public class RtcpPacketSDES {
 		}
 
 		// Parse payload fields
-		ByteBuffer bbIn = ByteBuffer.wrap(tmpPayloadBuf.getBufPtr());  // big-endian by default
+		ByteBuffer bbIn = ByteBuffer.wrap(tmpPayloadBuf.getBaPtr(), 0, tmpPayloadBuf.getUsed());  // big-endian by default
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			RtcpInnerXsrcBlock block = RtcpInnerXsrcBlock.decodeFromBuffer(i, bbIn);
 			this.xsrcBlocks.add(block);

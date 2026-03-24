@@ -100,7 +100,7 @@ public class RtcpPacketSR {
 		}
 
 		// Parse payload fields
-		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBufPtr());  // big-endian by default
+		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
 		this.hdSsrcSender = bb.getInt();
 		this.senderInfoBlock = RtcpInnerSenderInfoBlock.decodeFromBuffer(bb);
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
