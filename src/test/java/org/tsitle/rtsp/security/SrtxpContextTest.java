@@ -17,25 +17,19 @@ public class SrtxpContextTest {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
 		final SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
-		Common.srtpCtxInjectKeys(ctx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0L);
 
-		final short seqNr = 0x1234;
-		final int ssrc = 0xDEC0ADDE;
+		final short hdSeqNr = 0x1234;
+		final int hdSsrc = 0xDEC0ADDE;
 
-		final byte[] header = new byte[] {
-				(byte) 0x80, (byte) 0x60, // V=2,P=0,X=0,CC=0 ; M=0, PT=96
-				(byte) (seqNr >>> 8), (byte) seqNr,
-				0x11, 0x22, 0x33, 0x44,   // RTP timestamp
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16), (byte) (ssrc >>> 8), (byte) ssrc
-			};
-		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF00010203");
-		final byte[] plainPacket = Common.concat(header, payload);
+		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
+		final byte[] plainPacket = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
 		final BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(plainPacket);
 		final BufferExt outBuf = new BufferExt();
 
-		ctx.protectRtp(plainBuf, false, false, seqNr, ssrc, outBuf);
+		ctx.protectRtp(plainBuf, false, false, hdSeqNr, hdSsrc, outBuf);
 
 		final byte[] actual = new byte[outBuf.getUsed()];
 		outBuf.copyInto(0, actual, 0, actual.length);
@@ -43,8 +37,8 @@ public class SrtxpContextTest {
 		final byte[] expected = Common.buildExpectedSrtpPacket(
 				plainPacket,
 				rtpKeys,
-				seqNr,
-				ssrc,
+				hdSeqNr,
+				hdSsrc,
 				0L
 			);
 
@@ -60,7 +54,7 @@ public class SrtxpContextTest {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
 		final SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
-		Common.srtcpCtxInjectKeys(ctx, false, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(ctx, rtcpKeys, 0);
 
 		final int ssrc = 0xDEC0ADDE;
 		final int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -113,7 +107,7 @@ public class SrtxpContextTest {
 
 			// ---------------- RTP ----------------
 			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault();
-			Common.srtpCtxInjectKeys(rtpCtx, false, rtpKeys, 0L);
+			Common.srtpCtxInjectKeys(rtpCtx, rtpKeys, 0L);
 
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
@@ -122,13 +116,7 @@ public class SrtxpContextTest {
 			final byte[] rndRtpPayload = new byte[rndRtpPayloadLen];
 			rnd.nextBytes(rndRtpPayload);
 
-			final byte[] rtpHeader = new byte[] {
-					(byte) 0x80, (byte) 0x60,
-					(byte) (rndSeqNr >>> 8), (byte) rndSeqNr,
-					(byte) rnd.nextInt(256), (byte) rnd.nextInt(256), (byte) rnd.nextInt(256), (byte) rnd.nextInt(256),
-					(byte) (rndSsrcRtp >>> 24), (byte) (rndSsrcRtp >>> 16), (byte) (rndSsrcRtp >>> 8), (byte) rndSsrcRtp
-				};
-			final byte[] plainRtp = Common.concat(rtpHeader, rndRtpPayload);
+			final byte[] plainRtp = Common.buildRtpPacket(rndSeqNr, rndSsrcRtp, rndRtpPayload);
 
 			final BufferExt rtpIn = new BufferExt();
 			rtpIn.copyOf(plainRtp);
@@ -151,7 +139,7 @@ public class SrtxpContextTest {
 
 			// ---------------- RTCP ----------------
 			final SrtcpContextOutbound rtcpCtx = Common.createSrtcpCtxOutboundDefault();
-			Common.srtcpCtxInjectKeys(rtcpCtx, false, rtcpKeys, 0);
+			Common.srtcpCtxInjectKeys(rtcpCtx, rtcpKeys, 0);
 
 			final int rndSsrcRtcp = rnd.nextInt();
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -202,7 +190,7 @@ public class SrtxpContextTest {
 			// ---------------- RTP with non-zero ROC ----------------
 			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault();
 			final long rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
-			Common.srtpCtxInjectKeys(rtpCtx, false, rtpKeys, rndStateRoc);
+			Common.srtpCtxInjectKeys(rtpCtx, rtpKeys, rndStateRoc);
 
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
@@ -211,13 +199,7 @@ public class SrtxpContextTest {
 			final byte[] rndRtpPayload = new byte[rndRtpPayloadLen];
 			rnd.nextBytes(rndRtpPayload);
 
-			final byte[] rtpHeader = new byte[] {
-					(byte) 0x80, (byte) 0x60,
-					(byte) (rndSeqNr >>> 8), (byte) rndSeqNr,
-					(byte) rnd.nextInt(256), (byte) rnd.nextInt(256), (byte) rnd.nextInt(256), (byte) rnd.nextInt(256),
-					(byte) (rndSsrcRtp >>> 24), (byte) (rndSsrcRtp >>> 16), (byte) (rndSsrcRtp >>> 8), (byte) rndSsrcRtp
-				};
-			final byte[] plainRtp = Common.concat(rtpHeader, rndRtpPayload);
+			final byte[] plainRtp = Common.buildRtpPacket(rndSeqNr, rndSsrcRtp, rndRtpPayload);
 
 			final BufferExt rtpIn = new BufferExt();
 			rtpIn.copyOf(plainRtp);
@@ -241,7 +223,7 @@ public class SrtxpContextTest {
 			// ---------------- RTCP with non-zero start index ----------------
 			final SrtcpContextOutbound rtcpCtx = Common.createSrtcpCtxOutboundDefault();
 			final int rndStateStartIndex = rnd.nextInt(1, 0x7FFFFFFF); // non-zero, 31-bit
-			Common.srtcpCtxInjectKeys(rtcpCtx, false, rtcpKeys, rndStateStartIndex);
+			Common.srtcpCtxInjectKeys(rtcpCtx, rtcpKeys, rndStateStartIndex);
 
 			final int rndSsrcRtcp = rnd.nextInt();
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -279,7 +261,7 @@ public class SrtxpContextTest {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
 		final SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
-		Common.srtcpCtxInjectKeys(ctx, false, rtcpKeys, 0x7FFFFFFE);
+		Common.srtcpCtxInjectKeys(ctx, rtcpKeys, 0x7FFFFFFE);
 
 		final int ssrc = 0x55667788;
 		final int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;

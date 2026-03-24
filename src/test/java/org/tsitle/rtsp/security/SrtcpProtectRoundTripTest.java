@@ -20,8 +20,8 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
-		Common.srtcpCtxInjectKeys(senderCtx, false, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, true, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = 0x11223344;
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
@@ -62,8 +62,8 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
-		Common.srtcpCtxInjectKeys(senderCtx, false, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, true, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = rnd.nextInt();
 
@@ -106,8 +106,8 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
-		Common.srtcpCtxInjectKeys(senderCtx, false, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, true, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
 		int senderSsrc = 0x55667788;
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
@@ -146,8 +146,8 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
-		Common.srtcpCtxInjectKeys(senderCtx, false, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, true, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
 		BufferExt mki = Common.createBufferFromHex("01020304");
 		senderCtx.setKmdMasterKeyIdentifier(mki);

@@ -5,8 +5,6 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
-import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class SrtpProtectRoundTripTest {
@@ -17,20 +15,13 @@ class SrtpProtectRoundTripTest {
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
-		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
 
-		final short seqNr = 0x1234;
-		final int ssrc = 0x11223344;
+		final short hdSeqNr = 0x1234;
+		final int hdSsrc = 0x11223344;
 
-		final byte[] rtpHeader = new byte[] {
-				(byte) 0x80, (byte) 0x60,                    // V=2, P=0, X=0, CC=0; M=0, PT=96
-				(byte) (seqNr >>> 8), (byte) seqNr,          // sequence number
-				0x01, 0x02, 0x03, 0x04,                      // timestamp
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16),
-				(byte) (ssrc >>> 8), (byte) ssrc             // SSRC
-			};
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
-		final byte[] originalRtp = Common.concat(rtpHeader, payload);
+		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
 		final BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(originalRtp);
@@ -39,18 +30,12 @@ class SrtpProtectRoundTripTest {
 		final BufferExt decryptedBuf = new BufferExt();
 
 		// Act: encrypt then decrypt
-		senderCtx.protectRtp(plainBuf, false, false, seqNr, ssrc, encryptedBuf);
-		receiverCtx.unprotectSrtp(encryptedBuf, seqNr, ssrc, decryptedBuf);
-
-		final byte[] encrypted = new byte[encryptedBuf.getUsed()];
-		encryptedBuf.copyInto(0, encrypted, 0, encrypted.length);
-
-		final byte[] decrypted = new byte[decryptedBuf.getUsed()];
-		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
+		senderCtx.protectRtp(plainBuf, false, false, hdSeqNr, hdSsrc, encryptedBuf);
+		receiverCtx.unprotectSrtp(encryptedBuf, hdSeqNr, hdSsrc, decryptedBuf);
 
 		// Assert
-		assertArrayEquals(originalRtp, decrypted, "Decrypted RTP must match original RTP packet");
-		assertFalse(Arrays.equals(originalRtp, encrypted), "Encrypted SRTP packet should differ from original RTP packet");
+		assertEquals(plainBuf, decryptedBuf, "Decrypted RTP must match original RTP packet");
+		assertNotEquals(plainBuf, encryptedBuf, "Encrypted SRTP packet should differ from original RTP packet");
 	}
 
 	@Test
@@ -59,22 +44,23 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
-		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
 
-		final int ssrc = 0x11223344;
+		final int hdSsrc = 0x11223344;
 
 		// Packet 1: sequence at wrap boundary (0xFFFF)
-		final short seq1 = (short)0xFFFF;
-		final byte[] pkt1 = buildRtpPacket(seq1, ssrc, Common.HEX.parseHex("0102030405060708090A0B0C0D0E0F10"));
+		final short hdSeqNr1 = (short)0xFFFF;
+		final byte[] payload1 = Common.HEX.parseHex("0102030405060708090A0B0C0D0E0F10");
+		final byte[] pkt1 = Common.buildRtpPacket(hdSeqNr1, hdSsrc, payload1);
 
 		final BufferExt in1 = new BufferExt();
 		in1.copyOf(pkt1);
 		final BufferExt enc1 = new BufferExt();
 		final BufferExt dec1 = new BufferExt();
 
-		senderCtx.protectRtp(in1, false, false, seq1, ssrc, enc1);
-		receiverCtx.unprotectSrtp(enc1, seq1, ssrc, dec1);
+		senderCtx.protectRtp(in1, false, false, hdSeqNr1, hdSsrc, enc1);
+		receiverCtx.unprotectSrtp(enc1, hdSeqNr1, hdSsrc, dec1);
 
 		final byte[] decPkt1 = new byte[dec1.getUsed()];
 		dec1.copyInto(0, decPkt1, 0, decPkt1.length);
@@ -84,16 +70,17 @@ class SrtpProtectRoundTripTest {
 		assertEquals(1L, Common.getPrivateLong(receiverCtx, "ctxStateRtpRocInbound"), "Receiver ROC should increment after SEQ wrap");
 
 		// Packet 2: post-wrap sequence (0x0000), must use ROC=1
-		final short seq2 = 0x0000;
-		final byte[] pkt2 = buildRtpPacket(seq2, ssrc, Common.HEX.parseHex("A1A2A3A4A5A6A7A8A9AAABACADAEAFB0"));
+		final short hdSeqNr2 = 0x0000;
+		final byte[] payload2 = Common.HEX.parseHex("A1A2A3A4A5A6A7A8A9AAABACADAEAFB0");
+		final byte[] pkt2 = Common.buildRtpPacket(hdSeqNr2, hdSsrc, payload2);
 
 		final BufferExt in2 = new BufferExt();
 		in2.copyOf(pkt2);
 		final BufferExt enc2 = new BufferExt();
 		final BufferExt dec2 = new BufferExt();
 
-		senderCtx.protectRtp(in2, false, false, seq2, ssrc, enc2);
-		receiverCtx.unprotectSrtp(enc2, seq2, ssrc, dec2);
+		senderCtx.protectRtp(in2, false, false, hdSeqNr2, hdSsrc, enc2);
+		receiverCtx.unprotectSrtp(enc2, hdSeqNr2, hdSsrc, dec2);
 
 		final byte[] decPkt2 = new byte[dec2.getUsed()];
 		dec2.copyInto(0, decPkt2, 0, decPkt2.length);
@@ -106,38 +93,40 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
-		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
 
-		final int ssrc = 0x11223344;
+		final int hdSsrc = 0xABCD1234;
 
 		// First packet at wrap boundary
-		final short seqWrap = (short)0xFFFF;
-		final byte[] pktWrap = buildRtpPacket(seqWrap, ssrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
+		final short hdSeqNrWrap = (short)0xFFFF;
+		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
+		final byte[] pktWrap = Common.buildRtpPacket(hdSeqNrWrap, hdSsrc, payload1);
 
 		final BufferExt inWrap = new BufferExt();
 		inWrap.copyOf(pktWrap);
 		final BufferExt encWrap = new BufferExt();
 		final BufferExt decWrap = new BufferExt();
 
-		senderCtx.protectRtp(inWrap, false, false, seqWrap, ssrc, encWrap);
-		receiverCtx.unprotectSrtp(encWrap, seqWrap, ssrc, decWrap);
+		senderCtx.protectRtp(inWrap, false, false, hdSeqNrWrap, hdSsrc, encWrap);
+		receiverCtx.unprotectSrtp(encWrap, hdSeqNrWrap, hdSsrc, decWrap);
 
 		final byte[] decWrapBytes = new byte[decWrap.getUsed()];
 		decWrap.copyInto(0, decWrapBytes, 0, decWrapBytes.length);
 		assertArrayEquals(pktWrap, decWrapBytes, "Wrap-boundary packet should decrypt correctly");
 
 		// Second packet after wrap
-		final short seqAfterWrap = 0x0000;
-		final byte[] pktAfterWrap = buildRtpPacket(seqAfterWrap, ssrc, Common.HEX.parseHex("2122232425262728292A2B2C2D2E2F30"));
+		final short hdSeqNrAfterWrap = 0x0000;
+		final byte[] payload2 = Common.HEX.parseHex("2122232425262728292A2B2C2D2E2F30");
+		final byte[] pktAfterWrap = Common.buildRtpPacket(hdSeqNrAfterWrap, hdSsrc, payload2);
 
 		final BufferExt inAfterWrap = new BufferExt();
 		inAfterWrap.copyOf(pktAfterWrap);
 		final BufferExt encAfterWrap = new BufferExt();
 		final BufferExt decAfterWrap = new BufferExt();
 
-		senderCtx.protectRtp(inAfterWrap, false, false, seqAfterWrap, ssrc, encAfterWrap);
-		receiverCtx.unprotectSrtp(encAfterWrap, seqAfterWrap, ssrc, decAfterWrap);
+		senderCtx.protectRtp(inAfterWrap, false, false, hdSeqNrAfterWrap, hdSsrc, encAfterWrap);
+		receiverCtx.unprotectSrtp(encAfterWrap, hdSeqNrAfterWrap, hdSsrc, decAfterWrap);
 
 		final byte[] decAfterWrapBytes = new byte[decAfterWrap.getUsed()];
 		decAfterWrap.copyInto(0, decAfterWrapBytes, 0, decAfterWrapBytes.length);
@@ -147,7 +136,7 @@ class SrtpProtectRoundTripTest {
 		final BufferExt replayOut = new BufferExt();
 		final SrtpSecurityException ex = assertThrows(
 				SrtpSecurityException.class,
-				() -> receiverCtx.unprotectSrtp(encWrap, seqWrap, ssrc, replayOut),
+				() -> receiverCtx.unprotectSrtp(encWrap, hdSeqNrWrap, hdSsrc, replayOut),
 				"Replayed packet must be rejected due to packet index"
 			);
 
@@ -163,31 +152,32 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
-		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
 
-		final int ssrc = 0x11223344;
+		final int hdSsrc = 0x11223344;
 
 		// First packet far from wrap-boundary
-		final short seqNoWrap = (short)0x0FFF;
-		final byte[] pktWrap = buildRtpPacket(seqNoWrap, ssrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
+		final short hdSeqNrDoesntWrap = (short)0x0FFF;
+		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
+		final byte[] pktDoesntWrap = Common.buildRtpPacket(hdSeqNrDoesntWrap, hdSsrc, payload1);
 
 		final BufferExt inWrap = new BufferExt();
-		inWrap.copyOf(pktWrap);
+		inWrap.copyOf(pktDoesntWrap);
 		final BufferExt encWrap = new BufferExt();
 		final BufferExt decWrap = new BufferExt();
 
-		senderCtx.protectRtp(inWrap, false, false, seqNoWrap, ssrc, encWrap);
-		receiverCtx.unprotectSrtp(encWrap, seqNoWrap, ssrc, decWrap);
+		senderCtx.protectRtp(inWrap, false, false, hdSeqNrDoesntWrap, hdSsrc, encWrap);
+		receiverCtx.unprotectSrtp(encWrap, hdSeqNrDoesntWrap, hdSsrc, decWrap);
 
 		final byte[] decWrapBytes = new byte[decWrap.getUsed()];
 		decWrap.copyInto(0, decWrapBytes, 0, decWrapBytes.length);
-		assertArrayEquals(pktWrap, decWrapBytes, "Wrap-boundary packet should decrypt correctly");
+		assertArrayEquals(pktDoesntWrap, decWrapBytes, "Wrap-boundary packet should decrypt correctly");
 
 		// Replay the already-accepted packet -> must fail (index identical than last seen)
 		final SrtpSecurityException ex = assertThrows(
 				SrtpSecurityException.class,
-				() -> receiverCtx.unprotectSrtp(encWrap, seqNoWrap, ssrc, decWrap),
+				() -> receiverCtx.unprotectSrtp(encWrap, hdSeqNrDoesntWrap, hdSsrc, decWrap),
 				"Replayed packet must be rejected due to packet index check"
 			);
 
@@ -203,25 +193,26 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
-		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0);
-		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0);
 
 		BufferExt mki = Common.createBufferFromHex("01020304");
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
-		final short seqNoWrap = (short)0x0FFF;
-		final int senderSsrc = 0x10203040;
-		final byte[] pktOrg = buildRtpPacket(seqNoWrap, senderSsrc, Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20"));
+		final short hdSeqNrDoesntWrap = (short)0x0FFF;
+		final int hdSenderSsrc = 0x10203040;
+		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
+		final byte[] pktOrg = Common.buildRtpPacket(hdSeqNrDoesntWrap, hdSenderSsrc, payload1);
 
 		BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(pktOrg);
 
 		BufferExt encryptedBuf = new BufferExt();
-		senderCtx.protectRtp(plainBuf, false, false, seqNoWrap, senderSsrc, encryptedBuf);
+		senderCtx.protectRtp(plainBuf, false, false, hdSeqNrDoesntWrap, hdSenderSsrc, encryptedBuf);
 
 		BufferExt decryptedBuf = new BufferExt();
-		receiverCtx.unprotectSrtp(encryptedBuf, seqNoWrap, senderSsrc, decryptedBuf);
+		receiverCtx.unprotectSrtp(encryptedBuf, hdSeqNrDoesntWrap, hdSenderSsrc, decryptedBuf);
 
 		byte[] decrypted = new byte[decryptedBuf.getUsed()];
 		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
@@ -241,7 +232,7 @@ class SrtpProtectRoundTripTest {
 		BufferExt out = new BufferExt();
 		SrtpSecurityException ex = assertThrows(
 				SrtpSecurityException.class,
-				() -> receiverCtx.unprotectSrtp(tamperedBuf, seqNoWrap, senderSsrc, out),
+				() -> receiverCtx.unprotectSrtp(tamperedBuf, hdSeqNrDoesntWrap, hdSenderSsrc, out),
 				"Packet with wrong MKI must be rejected"
 			);
 		System.err.println(ex.getMessage());
@@ -249,21 +240,6 @@ class SrtpProtectRoundTripTest {
 				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTP packet"),
 				"Failure reason should indicate MKI validation"
 			);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("SameParameterValue")
-	private static byte[] buildRtpPacket(short seqNr, int ssrc, byte[] payload) {
-		final byte[] rtpHeader = new byte[] {
-				(byte) 0x80, (byte) 0x60,
-				(byte) (seqNr >>> 8), (byte) seqNr,
-				0x01, 0x02, 0x03, 0x04,
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16),
-				(byte) (ssrc >>> 8), (byte) ssrc
-			};
-		return Common.concat(rtpHeader, payload);
 	}
 
 }

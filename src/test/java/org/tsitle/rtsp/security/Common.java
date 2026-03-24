@@ -3,6 +3,9 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.packets.rtp.ParamsContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
 import javax.crypto.Cipher;
@@ -170,20 +173,38 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static void srtpCtxInjectKeys(SrtpContextBase ctx, boolean isInbound, SessionKeys sessionKeys, long roc) throws Exception {
-		if (! isInbound) {
+	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys, long roc) throws Exception {
+		if (ctx instanceof SrtpContextOutbound) {
 			Common.setPrivateLong(ctx, "ctxStateRtpRocOutbound", roc);
 		}
 		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
-	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, boolean isInbound, SessionKeys sessionKeys, int idx) throws Exception {
-		if (! isInbound) {
+	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SessionKeys sessionKeys, int idx) throws Exception {
+		if (ctx instanceof SrtcpContextOutbound) {
 			Common.setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
 		}
 		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtcpSessionKeys(sessionKeys);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	static byte[] buildRtpPacket(short hdSeqNr, int hdSsrc, byte[] payload) {
+		RtpPacketContainerBase rtpPktCb = RtpPacketContainerBase.createPacketHeader(
+				RtpPacketType.V_JPEG,
+				new ParamsContainerBase(
+						hdSsrc,
+						hdSeqNr,
+						false,
+						0x01020304
+					)
+			);
+		final byte[] originalHd = new byte[rtpPktCb.getPacketSize()];
+		rtpPktCb.getPacketBufferPtr().copyInto(0, originalHd, 0, originalHd.length);
+
+		return Common.concat(originalHd, payload);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -218,14 +239,14 @@ class Common {
 		Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
 		cipher.init(
 				Cipher.ENCRYPT_MODE,
-				new SecretKeySpec(rtpKeys.encKey().getBufPtr(), 0, rtpKeys.encKey().getUsed(), "AES"),
+				new SecretKeySpec(rtpKeys.encKey().getBaPtr(), 0, rtpKeys.encKey().getUsed(), "AES"),
 				new IvParameterSpec(iv)
 			);
 		cipher.doFinal(plainRtpPacket, headerLen, plainRtpPacket.length - headerLen, encrypted, headerLen);
 
 		Mac mac = Mac.getInstance("HmacSHA1");
 		mac.init(
-				new SecretKeySpec(rtpKeys.authKey().getBufPtr(), 0, rtpKeys.authKey().getUsed(), "HmacSHA1")
+				new SecretKeySpec(rtpKeys.authKey().getBaPtr(), 0, rtpKeys.authKey().getUsed(), "HmacSHA1")
 			);
 		mac.update(encrypted);
 		byte[] rocBytes = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN)
@@ -260,7 +281,7 @@ class Common {
 		Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
 		cipher.init(
 				Cipher.ENCRYPT_MODE,
-				new SecretKeySpec(rtcpSessionKeys.encKey().getBufPtr(), 0, rtcpSessionKeys.encKey().getUsed(), "AES"),
+				new SecretKeySpec(rtcpSessionKeys.encKey().getBaPtr(), 0, rtcpSessionKeys.encKey().getUsed(), "AES"),
 				new IvParameterSpec(iv)
 			);
 		cipher.doFinal(
@@ -278,7 +299,7 @@ class Common {
 
 		Mac mac = Mac.getInstance("HmacSHA1");
 		mac.init(
-				new SecretKeySpec(rtcpSessionKeys.authKey().getBufPtr(), 0, rtcpSessionKeys.authKey().getUsed(), "HmacSHA1")
+				new SecretKeySpec(rtcpSessionKeys.authKey().getBaPtr(), 0, rtcpSessionKeys.authKey().getUsed(), "HmacSHA1")
 			);
 		mac.update(authInput);
 		byte[] tag10 = Arrays.copyOf(mac.doFinal(), 10);

@@ -16,30 +16,24 @@ public class JitsiSrtpContextCompatibilityTest {
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
-		Common.srtpCtxInjectKeys(ctx, false, jitsiRtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0L);
 
-		short seqNr = 0x1234;
-		int ssrc = 0x10203040;
+		short hdSeqNr = 0x1234;
+		int hdSsrc = 0x10203040;
 
-		byte[] header = new byte[]{
-				(byte) 0x80, (byte) 0x60,
-				(byte) (seqNr >>> 8), (byte) seqNr,
-				0x01, 0x02, 0x03, 0x04,
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16), (byte) (ssrc >>> 8), (byte) ssrc
-			};
-		byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
-		byte[] plain = Common.concat(header, payload);
+		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
+		final byte[] plain = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
 		BufferExt in = new BufferExt();
 		in.copyOf(plain);
 		BufferExt out = new BufferExt();
 
-		ctx.protectRtp(in, false, false, seqNr, ssrc, out);
+		ctx.protectRtp(in, false, false, hdSeqNr, hdSsrc, out);
 
 		byte[] actual = new byte[out.getUsed()];
 		out.copyInto(0, actual, 0, actual.length);
 
-		byte[] expected = Common.buildExpectedSrtpPacket(plain, jitsiRtpKeys, seqNr, ssrc, 0L);
+		byte[] expected = Common.buildExpectedSrtpPacket(plain, jitsiRtpKeys, hdSeqNr, hdSsrc, 0L);
 		assertArrayEquals(expected, actual);
 	}
 
@@ -51,7 +45,7 @@ public class JitsiSrtpContextCompatibilityTest {
 		SessionKeys jitsiRtcpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtcp();
 
 		SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
-		Common.srtcpCtxInjectKeys(ctx, false, jitsiRtcpKeys, packetIndex);
+		Common.srtcpCtxInjectKeys(ctx, jitsiRtcpKeys, packetIndex);
 
 		int ssrc = 0x10203040;
 		int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;

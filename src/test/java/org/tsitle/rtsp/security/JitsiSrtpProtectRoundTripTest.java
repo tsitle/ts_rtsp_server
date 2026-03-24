@@ -16,31 +16,24 @@ class JitsiSrtpProtectRoundTripTest {
 		// derive RTP session keys
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
-		Common.srtpCtxInjectKeys(ctx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0L);
 
-		short seqNr = 0x1234;
-		int ssrc = 0x11223344;
+		short hdSeqNr = 0x1234;
+		int hdSsrc = 0x11223344;
 
-		byte[] rtpHeader = new byte[] {
-				(byte) 0x80, (byte) 0x60,                    // V=2, PT=96
-				(byte) (seqNr >>> 8), (byte) seqNr,          // sequence
-				0x01, 0x02, 0x03, 0x04,                      // timestamp
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16),
-				(byte) (ssrc >>> 8), (byte) ssrc             // SSRC
-			};
-		byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
-		byte[] originalRtp = Common.concat(rtpHeader, payload);
+		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
+		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
 		BufferExt in = new BufferExt();
 		in.copyOf(originalRtp);
 		BufferExt encrypted = new BufferExt();
 
-		ctx.protectRtp(in, false, false, seqNr, ssrc, encrypted);
+		ctx.protectRtp(in, false, false, hdSeqNr, hdSsrc, encrypted);
 
 		byte[] srtpPacket = new byte[encrypted.getUsed()];
 		encrypted.copyInto(0, srtpPacket, 0, srtpPacket.length);
 
-		byte[] decryptedByJitsi = jitsiDecryptSrtp(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, ssrc, srtpPacket);
+		byte[] decryptedByJitsi = jitsiDecryptSrtp(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, hdSsrc, srtpPacket);
 
 		assertArrayEquals(originalRtp, decryptedByJitsi,
 				"Jitsi-decrypted RTP must match original RTP packet byte-for-byte");
@@ -52,31 +45,24 @@ class JitsiSrtpProtectRoundTripTest {
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
-		Common.srtpCtxInjectKeys(ctx, false, jitsiRtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0L);
 
-		short seqNr = 0x1234;
-		int ssrc = 0x11223344;
+		short hdSeqNr = 0x1234;
+		int hdSsrc = 0x11223344;
 
-		byte[] rtpHeader = new byte[] {
-				(byte) 0x80, (byte) 0x60,
-				(byte) (seqNr >>> 8), (byte) seqNr,
-				0x01, 0x02, 0x03, 0x04,
-				(byte) (ssrc >>> 24), (byte) (ssrc >>> 16),
-				(byte) (ssrc >>> 8), (byte) ssrc
-			};
-		byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
-		byte[] originalRtp = Common.concat(rtpHeader, payload);
+		final byte[] payload = Common.HEX.parseHex("445566778899AABBCCDDEEFF01AB23CD45EF");
+		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
 		BufferExt in = new BufferExt();
 		in.copyOf(originalRtp);
 		BufferExt encrypted = new BufferExt();
 
-		ctx.protectRtp(in, false, false, seqNr, ssrc, encrypted);
+		ctx.protectRtp(in, false, false, hdSeqNr, hdSsrc, encrypted);
 
 		byte[] srtpPacket = new byte[encrypted.getUsed()];
 		encrypted.copyInto(0, srtpPacket, 0, srtpPacket.length);
 
-		byte[] decryptedByJitsi = jitsiDecryptSrtp(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, ssrc, srtpPacket);
+		byte[] decryptedByJitsi = jitsiDecryptSrtp(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, hdSsrc, srtpPacket);
 
 		assertArrayEquals(originalRtp, decryptedByJitsi,
 				"Jitsi-decrypted RTP must match original RTP packet byte-for-byte");
