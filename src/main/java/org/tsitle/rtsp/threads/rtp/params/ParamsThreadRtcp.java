@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.DatagramSocket;
@@ -41,9 +41,9 @@ public final class ParamsThreadRtcp implements Cloneable {
 	/** Is RTP/RTCP encryption enabled? */
 	private boolean isRtxpEncryptionEnabled;
 	private boolean isSetIsRtxpEncryptionEnabled;
-	/** SRTxP context */
-	private SrtxpContext srtxpContext;
-	private boolean isSetSrtxpContext;
+	/** SRTxP KMD */
+	private SrtxpKmd srtxpKmd;
+	private boolean isSetSrtxpKmd;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -99,10 +99,10 @@ public final class ParamsThreadRtcp implements Cloneable {
 		this.isSetIsRtxpEncryptionEnabled = true;
 	}
 
-	public Optional<SrtxpContext> getSrtxpContext() { return Optional.ofNullable(srtxpContext); }
-	public void setSrtxpContext(@NonNull SrtxpContext ctx) {
-		this.srtxpContext = ctx.clone();
-		this.isSetSrtxpContext = true;
+	public Optional<SrtxpKmd> getSrtxpKmd() { return Optional.ofNullable(srtxpKmd); }
+	public void setSrtxpKmd(@NonNull SrtxpKmd value) {
+		this.srtxpKmd = value.clone();
+		this.isSetSrtxpKmd = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -126,8 +126,8 @@ public final class ParamsThreadRtcp implements Cloneable {
 				throw new RuntimeException(e);
 			}
 			//
-			if (srtxpContext != null) {
-				clone.srtxpContext = srtxpContext.clone();
+			if (srtxpKmd != null) {
+				clone.srtxpKmd = srtxpKmd.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -148,7 +148,7 @@ public final class ParamsThreadRtcp implements Cloneable {
 		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
 
 		requireIsSet(isSetIsRtxpEncryptionEnabled, "isRtxpEncryptionEnabled");
-		requireIsSet(isSetSrtxpContext, "srtxpContext");
+		requireIsSet(isSetSrtxpKmd, "srtxpKmd");
 	}
 
 	private void validateParamValues() {
@@ -166,7 +166,7 @@ public final class ParamsThreadRtcp implements Cloneable {
 		}
 		requireNonNull(rtcpSocketUdp, "rtcpSocketUdp");
 
-		requireNonNull(srtxpContext, "srtxpContext");
+		requireNonNull(srtxpKmd, "srtxpKmd");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

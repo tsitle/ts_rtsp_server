@@ -15,7 +15,7 @@ public class JitsiSrtpContextCompatibilityTest {
 		// derive keys via Jitsi reflection
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
-		SrtxpContext ctx = new SrtxpContext();
+		SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(ctx, jitsiRtpKeys, 0L);
 
 		short seqNr = 0x1234;
@@ -50,7 +50,7 @@ public class JitsiSrtpContextCompatibilityTest {
 		// Derive keys via Jitsi reflection
 		SessionKeys jitsiRtcpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtcp();
 
-		SrtxpContext ctx = new SrtxpContext();
+		SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtcpKeys(ctx, jitsiRtcpKeys, packetIndex);
 
 		int ssrc = 0x10203040;

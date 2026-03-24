@@ -84,6 +84,9 @@ public abstract class ThreadRtpSenderBase<
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
 
+	protected final SrtxpContext srtpCtxOutbound;
+	private final SrtxpContext srtcpCtxOutbound;
+
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
@@ -139,6 +142,14 @@ public abstract class ThreadRtpSenderBase<
 			);
 
 		//
+		try {
+			this.srtpCtxOutbound = new SrtxpContext(paramsCommon.getSrtxpKmd().orElseThrow());
+			this.srtcpCtxOutbound = new SrtxpContext(paramsCommon.getSrtxpKmd().orElseThrow());
+		} catch (SrtpSecurityException e) {
+			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
+		}
+
+		//
 		udpMaxPacketLenDelta = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4;
 		if (rtpPacketType == RtpPacketType.V_JPEG) {
 			// RTP/JPEG header can be rather big
@@ -149,7 +160,7 @@ public abstract class ThreadRtpSenderBase<
 		}
 		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
 			try {
-				udpMaxPacketLenDelta += paramsCommon.getSrtxpContext().orElseThrow().getSrtpExtraPacketLength();
+				udpMaxPacketLenDelta += this.srtpCtxOutbound.getSrtpExtraPacketLength();
 			} catch (SrtpSecurityException e) {
 				throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
 			}
@@ -363,7 +374,7 @@ public abstract class ThreadRtpSenderBase<
 			return new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
 					plainPacket,
-					paramsCommon.getSrtxpContext().orElseThrow()
+					srtpCtxOutbound
 				);
 		} catch (SrtpSecurityException e) {
 			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
@@ -726,9 +737,8 @@ public abstract class ThreadRtpSenderBase<
 		BufferExt encrPacketCompoundBuf = new BufferExt();
 		BufferExt outpPacketPtr = packetCompoundBuf;
 		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
-			SrtxpContext srtcpCtx = paramsCommon.getSrtxpContext().orElseThrow();
 			try {
-				srtcpCtx.protectRtcpSrCompound(
+				srtcpCtxOutbound.protectRtcpSrCompound(
 						packetCompoundBuf,
 						paramsCommon.getRtspSsrcId(),
 						encrPacketCompoundBuf

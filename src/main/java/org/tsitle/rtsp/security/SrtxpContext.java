@@ -56,7 +56,7 @@ public class SrtxpContext implements Cloneable {
 	private static final int RTCP_PLAIN_HEADER_SIZE = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
 
 	/** Key Management Data */
-	private @NonNull SrtxpKmd ctxKmd = new SrtxpKmd();
+	private @NonNull SrtxpKmd ctxKmd;
 
 	/** Session keys for RTP/SRTP */
 	private @Nullable SessionKeys ctxSessionKeysRtp = null;
@@ -77,33 +77,18 @@ public class SrtxpContext implements Cloneable {
 	/** For SRTCP decryption: Last packet index */
 	private int ctxStateSrtcpLastIndex = -1;
 
-	/** Has the Key Management Data been set? */
-	private boolean haveKmd = false;
-
 	private @NonNull CtxCipherAndMac ctxCamRtpEncr = new CtxCipherAndMac();
 	private @NonNull CtxCipherAndMac ctxCamRtpDecr = new CtxCipherAndMac();
 	private @NonNull CtxCipherAndMac ctxCamRtcpEncr = new CtxCipherAndMac();
 	private @NonNull CtxCipherAndMac ctxCamRtcpDecr = new CtxCipherAndMac();
 
-	public SrtxpContext() {
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
 	/**
-	 * Set the Key Management Data and derive the session keys from it.<br />
+	 * Constructor.
 	 * @param kmd Key Management Data
 	 * @throws SrtpSecurityException If any kind of error occurred
 	 */
-	public void setKmd(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
-		if (haveKmd) {
-			throw new SrtpSecurityException("KMD already set");
-		}
-
-		//
+	public SrtxpContext(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
 		ctxKmd = kmd.clone();
-		haveKmd = true;
 
 		//
 		final Cipher cipherAesCtr = buildCipherObject();
@@ -118,13 +103,13 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Get the extra packet length for encrypted SRTP packets
 	 * @return Extra packet length
 	 */
 	public int getSrtpExtraPacketLength() throws SrtpSecurityException {
-		validateHaveKmd();
 		return (KeySizes.AUTH_TAG_SIZE + ctxKmd.mki().getUsed());
 	}
 
@@ -132,8 +117,7 @@ public class SrtxpContext implements Cloneable {
 	 * Get the extra packet length for encrypted SRTCP packets
 	 * @return Extra packet length
 	 */
-	public int getSrtcpExtraPacketLength() throws SrtpSecurityException {
-		validateHaveKmd();
+	public int getSrtcpExtraPacketLength() {
 		return (KeySizes.AUTH_TAG_SIZE + SRTCP_INDEX_FIELD_SIZE + ctxKmd.mki().getUsed());
 	}
 
@@ -157,7 +141,6 @@ public class SrtxpContext implements Cloneable {
 				int hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
-		validateHaveKmd();
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -235,7 +218,6 @@ public class SrtxpContext implements Cloneable {
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
-		validateHaveKmd();
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -324,7 +306,6 @@ public class SrtxpContext implements Cloneable {
 				int ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtpSecurityException {
-		validateHaveKmd();
 		if (ctxSessionKeysRtcp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -404,7 +385,6 @@ public class SrtxpContext implements Cloneable {
 				@NonNull BufferExt srtcpPacketBuf,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtpSecurityException {
-		validateHaveKmd();
 		if (ctxSessionKeysRtcp == null) {
 			throw new SrtpSecurityException("Session Keys not set");
 		}
@@ -740,20 +720,12 @@ public class SrtxpContext implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void validateHaveKmd() throws SrtpSecurityException {
-		if (! haveKmd) {
-			throw new SrtpSecurityException("KMD not set");
-		}
-	}
-
 	private void validateAuthTag(
 				@NonNull BufferView bufView,
 				@NonNull CtxCipherAndMac camPtr,
 				boolean isRtpPkt,
 				long srtpPacketIndex
 			) throws SrtpSecurityException {
-		validateHaveKmd();
-
 		BufferExt authTagRcvd = new BufferExt();
 		BufferExt authTagActual = new BufferExt();
 
@@ -790,8 +762,6 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	private void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtpSecurityException {
-		validateHaveKmd();
-
 		BufferExt tmpMkiBe = new BufferExt();
 		final int orgLen = bufView.getLength();
 		bufView.setLength(ctxKmd.mki().getUsed());
@@ -806,7 +776,6 @@ public class SrtxpContext implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
-		validateHaveKmd();
 		validateSessionEncKey(sessionKeys.encKey());
 		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtpSecurityException("Invalid RTP Session Salt length (expected " +
@@ -823,7 +792,6 @@ public class SrtxpContext implements Cloneable {
 	}
 
 	private void validateSessionAuthKey(@NonNull BufferExt sessionAuthKey) throws SrtpSecurityException {
-		validateHaveKmd();
 		if (ctxKmd.authKeyLen() <= 0) {
 			throw new SrtpSecurityException("Session Auth Key length not set");
 		}
@@ -865,13 +833,11 @@ public class SrtxpContext implements Cloneable {
 	@SuppressWarnings("SameParameterValue")
 	void setKmdAuthKeyLength(int authKeyLen) {
 		ctxKmd = new SrtxpKmd(ctxKmd.masterKey().clone(), ctxKmd.masterSalt().clone(), authKeyLen, ctxKmd.mki().clone());
-		haveKmd = true;
 	}
 
 	/** For Unit Tests only */
 	void setKmdMasterKeyIdentifier(@NonNull BufferExt mki) {
 		ctxKmd = new SrtxpKmd(ctxKmd.masterKey().clone(), ctxKmd.masterSalt().clone(), ctxKmd.authKeyLen(), mki);
-		haveKmd = true;
 	}
 
 }

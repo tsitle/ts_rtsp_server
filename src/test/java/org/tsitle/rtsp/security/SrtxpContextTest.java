@@ -16,7 +16,7 @@ public class SrtxpContextTest {
 	void srtpContext_protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext ctx = new SrtxpContext();
+		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
 		final short seqNr = 0x1234;
@@ -59,7 +59,7 @@ public class SrtxpContextTest {
 	void srtpContext_protectRtcpSrCompound_should_encrypt_payload_and_append_index_and_auth_tag() throws Exception {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		final SrtxpContext ctx = new SrtxpContext();
+		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtcpKeys(ctx, rtcpKeys, 0);
 
 		final int ssrc = 0xDEC0ADDE;
@@ -112,7 +112,7 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			// ---------------- RTP ----------------
-			final SrtxpContext rtpCtx = new SrtxpContext();
+			final SrtxpContext rtpCtx = Common.createSrtxpCtxDefault();
 			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, 0L);
 
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
@@ -150,7 +150,7 @@ public class SrtxpContextTest {
 			assertArrayEquals(rtpExpected, rtpActual, "RTP mismatch at round=" + i);
 
 			// ---------------- RTCP ----------------
-			final SrtxpContext rtcpCtx = new SrtxpContext();
+			final SrtxpContext rtcpCtx = Common.createSrtxpCtxDefault();
 			Common.srtpCtxInjectRtcpKeys(rtcpCtx, rtcpKeys, 0);
 
 			final int rndSsrcRtcp = rnd.nextInt();
@@ -200,7 +200,7 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			// ---------------- RTP with non-zero ROC ----------------
-			final SrtxpContext rtpCtx = new SrtxpContext();
+			final SrtxpContext rtpCtx = Common.createSrtxpCtxDefault();
 			final long rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
 			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, rndStateRoc);
 
@@ -239,7 +239,7 @@ public class SrtxpContextTest {
 			assertArrayEquals(rtpExpected, rtpActual, "RTP mismatch with non-zero ROC at round=" + i);
 
 			// ---------------- RTCP with non-zero start index ----------------
-			final SrtxpContext rtcpCtx = new SrtxpContext();
+			final SrtxpContext rtcpCtx = Common.createSrtxpCtxDefault();
 			final int rndStateStartIndex = rnd.nextInt(1, 0x7FFFFFFF); // non-zero, 31-bit
 			Common.srtpCtxInjectRtcpKeys(rtcpCtx, rtcpKeys, rndStateStartIndex);
 
@@ -278,7 +278,7 @@ public class SrtxpContextTest {
 	void srtpContext_rtcp_index_should_wrap_at_31_bits_boundary() throws Exception {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		final SrtxpContext ctx = new SrtxpContext();
+		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtcpKeys(ctx, rtcpKeys, 0x7FFFFFFE);
 
 		final int ssrc = 0x55667788;

@@ -14,7 +14,7 @@ class SrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
 		// Arrange
-		final SrtxpContext ctx = new SrtxpContext();
+		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
@@ -56,8 +56,8 @@ class SrtpProtectRoundTripTest {
 	void protectAndUnprotect_should_handle_roc_wrap_from_seq_ffff_to_0000() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = new SrtxpContext();
-		final SrtxpContext receiverCtx = new SrtxpContext();
+		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
+		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
 
@@ -103,8 +103,8 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_after_roc_wrap() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = new SrtxpContext();
-		final SrtxpContext receiverCtx = new SrtxpContext();
+		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
+		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
 
@@ -160,8 +160,8 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_for_old_seqnr() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = new SrtxpContext();
-		final SrtxpContext receiverCtx = new SrtxpContext();
+		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
+		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
 
@@ -200,8 +200,8 @@ class SrtpProtectRoundTripTest {
 	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp();
 
-		SrtxpContext senderCtx = new SrtxpContext();
-		SrtxpContext receiverCtx = new SrtxpContext();
+		SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
+		SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0);
 		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0);
 

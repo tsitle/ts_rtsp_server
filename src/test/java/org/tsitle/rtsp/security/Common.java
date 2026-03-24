@@ -50,6 +50,16 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	static @NonNull SrtxpContext createSrtxpCtxDefault() throws SrtpSecurityException {
+		SrtxpKmd kmd = new SrtxpKmd(
+				Common.DEFAULT_MASTER_KEY,
+				Common.DEFAULT_MASTER_SALT,
+				KeySizes.AUTH_KEY_SIZE_160,
+				new BufferExt()
+			);
+		return new SrtxpContext(kmd);
+	}
+
 	static @NonNull SessionKeys createSessionKeysDefaultRtp() throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContext.buildCipherObject();
 		SrtxpKmd kmd = new SrtxpKmd(

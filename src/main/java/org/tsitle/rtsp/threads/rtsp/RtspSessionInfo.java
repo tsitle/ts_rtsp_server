@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtxpKmd;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -49,8 +49,8 @@ public class RtspSessionInfo {
 		/** Requested transport encryption type */
 		public boolean tpIsEncr = false;
 
-		/** SRTxP context */
-		public @Nullable SrtxpContext srtxpContext = null;
+		/** SRTxP KMD */
+		public @Nullable SrtxpKmd srtxpKmd = null;
 
 		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 		public boolean isTransportValid() {
@@ -81,8 +81,8 @@ public class RtspSessionInfo {
 	public @NonNull Map<@NonNull ServerMessageType, @NonNull String> inputSourceUrlPerSmtMap = new ConcurrentHashMap<>();
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */
 	public @NonNull Map<@NonNull ServerMessageType, @NonNull RtspInputSource> inputSourceObjPerSmtMap = new ConcurrentHashMap<>();
-	/** Initial SRTxP Context - one per Stream (the map keys are unique Stream Source identifiers) */
-	public @NonNull Map<@NonNull Integer, @NonNull SrtxpContext> streamsMapSrtxpCtx = new ConcurrentHashMap<>();
+	/** SRTxP KMD - one per Stream (the map keys are unique Stream Source identifiers) */
+	public @NonNull Map<@NonNull Integer, @NonNull SrtxpKmd> streamsMapSrtxpKmd = new ConcurrentHashMap<>();
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;

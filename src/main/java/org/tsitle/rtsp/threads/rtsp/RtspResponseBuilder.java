@@ -9,7 +9,7 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -428,8 +428,8 @@ public class RtspResponseBuilder {
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
 
 		//
-		SrtxpContext srtpCtx = new SrtxpContext();
-		rtspSessionInfo.streamsMapSrtxpCtx.put(tmpSsObj.getId(), srtpCtx);  // always store the context
+		SrtxpKmd srtxpKmd = new SrtxpKmd();
+		rtspSessionInfo.streamsMapSrtxpKmd.put(tmpSsObj.getId(), srtxpKmd);  // always store the KMD
 	}
 
 	/**

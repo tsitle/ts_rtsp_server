@@ -14,7 +14,7 @@ class JitsiSrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v1() throws Exception {
 		// derive RTP session keys
-		SrtxpContext ctx = new SrtxpContext();
+		SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
 
@@ -51,7 +51,7 @@ class JitsiSrtpProtectRoundTripTest {
 		// derive RTP session keys using Jitsi KDF
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
-		SrtxpContext ctx = new SrtxpContext();
+		SrtxpContext ctx = Common.createSrtxpCtxDefault();
 		Common.srtpCtxInjectRtpKeys(ctx, jitsiRtpKeys, 0L);
 
 		short seqNr = 0x1234;

@@ -279,7 +279,7 @@ public class RtspRequestParser {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
-			if (! rtspSessionInfo.streamsMapSrtxpCtx.containsKey(rscStreamSourceId)) {
+			if (! rtspSessionInfo.streamsMapSrtxpKmd.containsKey(rscStreamSourceId)) {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing SRTxP Context for Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
@@ -290,7 +290,7 @@ public class RtspRequestParser {
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
-			streamInfo.srtxpContext = rtspSessionInfo.streamsMapSrtxpCtx.get(rscStreamSourceId).clone();  // always clone the SRTxP Context
+			streamInfo.srtxpKmd = rtspSessionInfo.streamsMapSrtxpKmd.get(rscStreamSourceId).clone();  // always clone the SRTxP Context
 			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
@@ -519,7 +519,7 @@ public class RtspRequestParser {
 						.replace("\"", "").replace("'", "").strip();
 				try {
 					SrtxpKmd kmd = MikeyParser.parseKeyMgmtData(tmpSub);
-					Objects.requireNonNull(tmpStreamInfo.srtxpContext).setKmd(kmd);
+					tmpStreamInfo.srtxpKmd = kmd.clone();
 					haveKeyData = true;
 				} catch (SrtpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());

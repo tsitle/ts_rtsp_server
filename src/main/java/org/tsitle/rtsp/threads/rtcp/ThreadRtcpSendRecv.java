@@ -34,7 +34,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
-	private final SrtxpContext srtcpContextRecv;
+	private final SrtxpContext srtcpCtxInbound;
 
 	/**
 	 * Constructor.
@@ -47,7 +47,13 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		this.params = params.clone();
 		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
-		this.srtcpContextRecv = params.getSrtxpContext().orElseThrow().clone();
+
+		//
+		try {
+			this.srtcpCtxInbound = new SrtxpContext(params.getSrtxpKmd().orElseThrow());
+		} catch (SrtpSecurityException e) {
+			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
+		}
 
 		//
 		byte[] rtcpBuf = new byte[1024];
@@ -199,7 +205,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			boolean tmpWasDecr = false;
 			if (! wasDecr && params.getIsRtxpEncryptionEnabled()) {
 				try {
-					srtcpContextRecv.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+					srtcpCtxInbound.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
 					cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
 					cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
 					cacheRecvBuf2.clear();

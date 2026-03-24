@@ -4,8 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
-import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -142,8 +140,6 @@ public final class ThreadRtpSenderPcm<
 
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbRtpPacketPayloadSupplier()";
-
 		prepareRtpPacketDataForFragment(curFragmentData);
 		RtpPacketPcm plainPacket = new RtpPacketPcm(
 				cacheParamsBase,
@@ -155,21 +151,7 @@ public final class ThreadRtpSenderPcm<
 		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
 			return plainPacket;
 		}
-
-		//
-		RtpPacketContainerBase encryptedPacket;
-		try {
-			encryptedPacket = new RtpEncryptedPacket(
-					plainPacket.getPayloadType(),
-					plainPacket,
-					paramsCommon.getSrtxpContext().orElseThrow()
-				);
-		} catch (SrtpSecurityException e) {
-			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
-			logError(FNC_NAME, errMsg);
-			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
-		}
-		return encryptedPacket;
+		return encryptRtpPacketPayload(plainPacket);
 	}
 
 }
