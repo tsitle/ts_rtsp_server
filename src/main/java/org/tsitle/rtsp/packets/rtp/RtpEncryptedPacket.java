@@ -2,7 +2,7 @@ package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtpContextOutbound;
 
 /**
  * RTP Encrypted Packet.
@@ -18,7 +18,7 @@ public class RtpEncryptedPacket extends RtpPacketContainerBase {
 	public RtpEncryptedPacket(
 				@NonNull RtpPacketType payloadType,
 				@NonNull RtpPacketContainerBase plainPacket,
-				@NonNull SrtxpContext srtxpContext
+				@NonNull SrtpContextOutbound srtxpContext
 			) throws SrtpSecurityException {
 		super(payloadType, plainPacket.packetBuf, true);
 

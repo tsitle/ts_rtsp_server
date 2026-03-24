@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -34,7 +34,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
-	private final SrtxpContext srtcpCtxInbound;
+	private final SrtcpContextInbound srtcpCtxInbound;
 
 	/**
 	 * Constructor.
@@ -50,7 +50,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		//
 		try {
-			this.srtcpCtxInbound = new SrtxpContext(params.getSrtxpKmd().orElseThrow());
+			this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmd().orElseThrow());
 		} catch (SrtpSecurityException e) {
 			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
 		}

@@ -15,8 +15,8 @@ public class JitsiSrtpContextCompatibilityTest {
 		// derive keys via Jitsi reflection
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
-		SrtxpContext ctx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(ctx, jitsiRtpKeys, 0L);
+		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
+		Common.srtpCtxInjectKeys(ctx, false, jitsiRtpKeys, 0L);
 
 		short seqNr = 0x1234;
 		int ssrc = 0x10203040;
@@ -50,8 +50,8 @@ public class JitsiSrtpContextCompatibilityTest {
 		// Derive keys via Jitsi reflection
 		SessionKeys jitsiRtcpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtcp();
 
-		SrtxpContext ctx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtcpKeys(ctx, jitsiRtcpKeys, packetIndex);
+		SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
+		Common.srtcpCtxInjectKeys(ctx, false, jitsiRtcpKeys, packetIndex);
 
 		int ssrc = 0x10203040;
 		int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;

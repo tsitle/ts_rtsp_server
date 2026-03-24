@@ -14,9 +14,10 @@ class SrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
 		// Arrange
-		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
-		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
 
 		final short seqNr = 0x1234;
 		final int ssrc = 0x11223344;
@@ -38,8 +39,8 @@ class SrtpProtectRoundTripTest {
 		final BufferExt decryptedBuf = new BufferExt();
 
 		// Act: encrypt then decrypt
-		ctx.protectRtp(plainBuf, false, false, seqNr, ssrc, encryptedBuf);
-		ctx.unprotectSrtp(encryptedBuf, seqNr, ssrc, decryptedBuf);
+		senderCtx.protectRtp(plainBuf, false, false, seqNr, ssrc, encryptedBuf);
+		receiverCtx.unprotectSrtp(encryptedBuf, seqNr, ssrc, decryptedBuf);
 
 		final byte[] encrypted = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, encrypted, 0, encrypted.length);
@@ -56,10 +57,10 @@ class SrtpProtectRoundTripTest {
 	void protectAndUnprotect_should_handle_roc_wrap_from_seq_ffff_to_0000() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
-		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
 
 		final int ssrc = 0x11223344;
 
@@ -103,10 +104,10 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_after_roc_wrap() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
-		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
 
 		final int ssrc = 0x11223344;
 
@@ -160,10 +161,10 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_for_old_seqnr() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
-		final SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0L);
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0L);
 
 		final int ssrc = 0x11223344;
 
@@ -200,10 +201,10 @@ class SrtpProtectRoundTripTest {
 	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp();
 
-		SrtxpContext senderCtx = Common.createSrtxpCtxDefault();
-		SrtxpContext receiverCtx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(senderCtx, rtpKeys, 0);
-		Common.srtpCtxInjectRtpKeys(receiverCtx, rtpKeys, 0);
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		Common.srtpCtxInjectKeys(senderCtx, false, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(receiverCtx, true, rtpKeys, 0);
 
 		BufferExt mki = Common.createBufferFromHex("01020304");
 		senderCtx.setKmdMasterKeyIdentifier(mki);

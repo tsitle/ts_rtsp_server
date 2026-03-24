@@ -13,11 +13,11 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SrtxpContextTest {
 
 	@Test
-	void srtpContext_protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
+	void protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
 
-		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtpKeys(ctx, rtpKeys, 0L);
+		final SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
+		Common.srtpCtxInjectKeys(ctx, false, rtpKeys, 0L);
 
 		final short seqNr = 0x1234;
 		final int ssrc = 0xDEC0ADDE;
@@ -56,11 +56,11 @@ public class SrtxpContextTest {
 	}
 
 	@Test
-	void srtpContext_protectRtcpSrCompound_should_encrypt_payload_and_append_index_and_auth_tag() throws Exception {
+	void protectRtcpSrCompound_should_encrypt_payload_and_append_index_and_auth_tag() throws Exception {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtcpKeys(ctx, rtcpKeys, 0);
+		final SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
+		Common.srtcpCtxInjectKeys(ctx, false, rtcpKeys, 0);
 
 		final int ssrc = 0xDEC0ADDE;
 		final int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -99,7 +99,7 @@ public class SrtxpContextTest {
 	}
 
 	@Test
-	void srtpContext_fuzz_randomized_rtp_and_rtcp_should_match_reference() throws Exception {
+	void fuzz_randomized_rtp_and_rtcp_should_match_reference() throws Exception {
 		final SecureRandom rnd = new SecureRandom();
 		final int rounds = 200;
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
@@ -112,8 +112,8 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			// ---------------- RTP ----------------
-			final SrtxpContext rtpCtx = Common.createSrtxpCtxDefault();
-			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, 0L);
+			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault();
+			Common.srtpCtxInjectKeys(rtpCtx, false, rtpKeys, 0L);
 
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
@@ -150,8 +150,8 @@ public class SrtxpContextTest {
 			assertArrayEquals(rtpExpected, rtpActual, "RTP mismatch at round=" + i);
 
 			// ---------------- RTCP ----------------
-			final SrtxpContext rtcpCtx = Common.createSrtxpCtxDefault();
-			Common.srtpCtxInjectRtcpKeys(rtcpCtx, rtcpKeys, 0);
+			final SrtcpContextOutbound rtcpCtx = Common.createSrtcpCtxOutboundDefault();
+			Common.srtcpCtxInjectKeys(rtcpCtx, false, rtcpKeys, 0);
 
 			final int rndSsrcRtcp = rnd.nextInt();
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -187,7 +187,7 @@ public class SrtxpContextTest {
 	}
 
 	@Test
-	void srtpContext_fuzz_randomized_with_non_zero_roc_and_srtcp_index_should_match_reference() throws Exception {
+	void fuzz_randomized_with_non_zero_roc_and_srtcp_index_should_match_reference() throws Exception {
 		final SecureRandom rnd = new SecureRandom();
 		final int rounds = 150;
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
@@ -200,9 +200,9 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			// ---------------- RTP with non-zero ROC ----------------
-			final SrtxpContext rtpCtx = Common.createSrtxpCtxDefault();
+			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault();
 			final long rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
-			Common.srtpCtxInjectRtpKeys(rtpCtx, rtpKeys, rndStateRoc);
+			Common.srtpCtxInjectKeys(rtpCtx, false, rtpKeys, rndStateRoc);
 
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
 			final int rndSsrcRtp = rnd.nextInt();
@@ -239,9 +239,9 @@ public class SrtxpContextTest {
 			assertArrayEquals(rtpExpected, rtpActual, "RTP mismatch with non-zero ROC at round=" + i);
 
 			// ---------------- RTCP with non-zero start index ----------------
-			final SrtxpContext rtcpCtx = Common.createSrtxpCtxDefault();
+			final SrtcpContextOutbound rtcpCtx = Common.createSrtcpCtxOutboundDefault();
 			final int rndStateStartIndex = rnd.nextInt(1, 0x7FFFFFFF); // non-zero, 31-bit
-			Common.srtpCtxInjectRtcpKeys(rtcpCtx, rtcpKeys, rndStateStartIndex);
+			Common.srtcpCtxInjectKeys(rtcpCtx, false, rtcpKeys, rndStateStartIndex);
 
 			final int rndSsrcRtcp = rnd.nextInt();
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
@@ -275,11 +275,11 @@ public class SrtxpContextTest {
 	}
 
 	@Test
-	void srtpContext_rtcp_index_should_wrap_at_31_bits_boundary() throws Exception {
+	void rtcp_index_should_wrap_at_31_bits_boundary() throws Exception {
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
 
-		final SrtxpContext ctx = Common.createSrtxpCtxDefault();
-		Common.srtpCtxInjectRtcpKeys(ctx, rtcpKeys, 0x7FFFFFFE);
+		final SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
+		Common.srtcpCtxInjectKeys(ctx, false, rtcpKeys, 0x7FFFFFFE);
 
 		final int ssrc = 0x55667788;
 		final int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;

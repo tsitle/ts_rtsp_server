@@ -11,7 +11,8 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
-import org.tsitle.rtsp.security.SrtxpContext;
+import org.tsitle.rtsp.security.SrtcpContextOutbound;
+import org.tsitle.rtsp.security.SrtpContextOutbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -84,8 +85,8 @@ public abstract class ThreadRtpSenderBase<
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
 
-	protected final SrtxpContext srtpCtxOutbound;
-	private final SrtxpContext srtcpCtxOutbound;
+	protected final SrtpContextOutbound srtpCtxOutbound;
+	private final SrtcpContextOutbound srtcpCtxOutbound;
 
 	/**
 	 * Constructor.
@@ -143,8 +144,8 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		try {
-			this.srtpCtxOutbound = new SrtxpContext(paramsCommon.getSrtxpKmd().orElseThrow());
-			this.srtcpCtxOutbound = new SrtxpContext(paramsCommon.getSrtxpKmd().orElseThrow());
+			this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
+			this.srtcpCtxOutbound = new SrtcpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
 		} catch (SrtpSecurityException e) {
 			throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
 		}
@@ -159,11 +160,7 @@ public abstract class ThreadRtpSenderBase<
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
 		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
-			try {
-				udpMaxPacketLenDelta += this.srtpCtxOutbound.getSrtpExtraPacketLength();
-			} catch (SrtpSecurityException e) {
-				throw new IllegalArgumentException("SrtpSecurityException caught: " + e.getMessage());
-			}
+			udpMaxPacketLenDelta += this.srtpCtxOutbound.getSrtpExtraPacketLength();
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
 			throw new AssertionError("UDP packet length too small");
