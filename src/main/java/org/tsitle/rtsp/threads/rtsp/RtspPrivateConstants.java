@@ -1,10 +1,5 @@
 package org.tsitle.rtsp.threads.rtsp;
 
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-
-import java.util.Map;
-import java.util.TreeMap;
-
 class RtspPrivateConstants {
 
 	/** Maximum length for RTSP Resource URLs */
@@ -62,28 +57,6 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY = "mikey";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";
-	///
-	static final Map<RtpPacketType, String> RTSP_SDP_TAG_A_CODEC_MAPPING = new TreeMap<>() {{
-			put(RtpPacketType.A_AAC, "mpeg4-generic");
-			put(RtpPacketType.A_PCMU_8KHZ_MONO, "PCMU");
-			put(RtpPacketType.A_PCMU_VAR, "PCMU");
-			put(RtpPacketType.A_LINEAR_PCM_U08_VAR, "L8");
-			put(RtpPacketType.A_LINEAR_PCM_S16_441K_MONO, "L16");
-			put(RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO, "L16");
-			put(RtpPacketType.A_LINEAR_PCM_S16_VAR, "L16");
-			put(RtpPacketType.V_JPEG, "JPEG");
-			put(RtpPacketType.V_H264, "H264");
-			put(RtpPacketType.V_H265, "H265");
-		}};
-	///
-	static final Map<ServerResponseStatusCode, String> RTSP_RR_SC_MAP_TO_STR = new TreeMap<>() {{
-			put(ServerResponseStatusCode.OK, "OK");
-			put(ServerResponseStatusCode.BAD_REQUEST, "Bad Request");
-			put(ServerResponseStatusCode.UNAUTHORIZED, "Unauthorized");
-			put(ServerResponseStatusCode.NOT_FOUND, "Not Found");
-			put(ServerResponseStatusCode.SESSION_NOT_FOUND, "Session Not Found");
-			put(ServerResponseStatusCode.UNSUPPORTED_TRANSPORT, "Unsupported Transport");
-		}};
 
 	/** Stream types according to ISO/IEC 14496-1 */
 	enum IsoIec14496_1_StreamType {

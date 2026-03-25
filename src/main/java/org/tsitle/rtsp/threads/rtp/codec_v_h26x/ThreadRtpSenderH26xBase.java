@@ -14,7 +14,6 @@ import org.tsitle.rtsp.threads.rtp.FrameData;
 import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -59,7 +58,7 @@ public abstract class ThreadRtpSenderH26xBase<
 				avStreamIncomingType,
 				avStreamOutgoingType,
 				paramsCommon,
-				RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(rtpPacketType),
+				rtpPacketType.getVideoCodecRtpClockrate(),
 				rtpPacketType
 			);
 
@@ -69,7 +68,7 @@ public abstract class ThreadRtpSenderH26xBase<
 		}
 
 		//
-		this.rtpTicksPerFrame = (long)((double)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(rtpPacketType) /
+		this.rtpTicksPerFrame = (long)((double)rtpPacketType.getVideoCodecRtpClockrate() /
 				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
 
 		//

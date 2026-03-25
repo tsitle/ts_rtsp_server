@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp;
 
+import org.jspecify.annotations.NonNull;
+
 public enum ServerResponseStatusCode {
 
 	OK(200),
@@ -18,6 +20,19 @@ public enum ServerResponseStatusCode {
 	}
 	public int getValue() {
 		return value;
+	}
+
+	public @NonNull String getReasonPhrase() {
+		return switch (this) {
+				case OK -> "OK";
+				case BAD_REQUEST -> "Bad Request";
+				case UNAUTHORIZED -> "Unauthorized";
+				case FORBIDDEN -> "Forbidden";
+				case NOT_FOUND -> "Not Found";
+				case METHOD_NOT_ALLOWED -> "Method Not Allowed";
+				case SESSION_NOT_FOUND -> "Session Not Found";
+				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
+			};
 	}
 
 }

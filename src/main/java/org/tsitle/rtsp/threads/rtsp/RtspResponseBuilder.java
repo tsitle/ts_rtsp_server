@@ -354,9 +354,22 @@ public class RtspResponseBuilder {
 			return;
 		}
 		RtspStreamSource tmpSsObj = optSsObj.get();
-		if (! RTSP_SDP_TAG_A_CODEC_MAPPING.containsKey(tmpSsObj.getCodec())) {
-			throw new IllegalStateException(FNC_NAME + ": Unsupported codec: " + tmpSsObj.getCodec());
+
+		//
+		final String sdpCodecName;
+		try {
+			sdpCodecName = tmpSsObj.getCodec().getSdpCodecName();
+		} catch (IllegalStateException e) {
+			throw new IllegalStateException(FNC_NAME + ": " + e.getMessage());
 		}
+
+		final int videoRtpClockRate;
+		try {
+			videoRtpClockRate = (useVideo ? tmpSsObj.getCodec().getVideoCodecRtpClockrate() : 0);
+		} catch (IllegalStateException e) {
+			throw new IllegalStateException(FNC_NAME + ": " + e.getMessage());
+		}
+
 		// m: Media Description with available codec(s)
 		final int tmpM_port = 0;
 		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
@@ -390,11 +403,9 @@ public class RtspResponseBuilder {
 			sw.write(String.format("a=framerate:%.2f%s", tmpSsObj.getVideoFps(), CRLF).replace(",", "."));
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
-		final String tmpA_Map = RTSP_SDP_TAG_A_CODEC_MAPPING.get(tmpSsObj.getCodec()) +
+		final String tmpA_Map = sdpCodecName +
 				"/" +
-				(useVideo ?
-						RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(tmpSsObj.getCodec()) :
-						tmpSsObj.getAudioSampleRateHz()) +
+				(useVideo ? videoRtpClockRate : tmpSsObj.getAudioSampleRateHz()) +
 				(useVideo ? "" : "/" + tmpSsObj.getAudioChannelCount());
 		sw.write(String.format("a=rtpmap:%d %s%s", tmpSsObj.getCodec().getValue(), tmpA_Map, CRLF));
 		//
@@ -523,7 +534,7 @@ public class RtspResponseBuilder {
 		//
 		List<String> outputLines = new ArrayList<>();
 		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
-				errorCode.getValue() + " " + RTSP_RR_SC_MAP_TO_STR.get(errorCode) + CRLF);
+				errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
 		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspSeqNrResponse + CRLF);
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);

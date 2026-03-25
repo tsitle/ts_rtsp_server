@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.packets.rtp;
 
+import org.jspecify.annotations.NonNull;
+
 import java.util.Optional;
 
 /**
@@ -134,6 +136,28 @@ public enum RtpPacketType {
 						A_LINEAR_PCM_S16_VAR
 					-> Optional.of(16);
 				default -> Optional.empty();
+			};
+	}
+
+	/** Get SDP codec name for the packet type (or codec) */
+	public @NonNull String getSdpCodecName() {
+		return switch (this) {
+				case A_AAC -> "mpeg4-generic";
+				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
+				case A_LINEAR_PCM_U08_VAR -> "L8";
+				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> "L16";
+				case V_JPEG -> "JPEG";
+				case V_H264 -> "H264";
+				case V_H265 -> "H265";
+				default -> throw new IllegalStateException("Unsupported codec: " + this);
+			};
+	}
+
+	/** Get RTP Clock rate for the packet type (or codec) */
+	public int getVideoCodecRtpClockrate() {
+		return switch(this) {
+				case V_JPEG, V_H264, V_H265 -> 90000;
+				default -> throw new IllegalStateException("Unsupported video codec: " + this);
 			};
 	}
 

@@ -13,7 +13,6 @@ import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.avdata.VideoJpegInfo;
 
 import java.util.Objects;
@@ -50,12 +49,12 @@ public final class ThreadRtpSenderMjpeg<
 				avStreamIncomingType,
 				avStreamOutgoingType,
 				paramsCommon,
-				RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_JPEG),
+				RtpPacketType.V_JPEG.getVideoCodecRtpClockrate(),
 				RtpPacketType.V_JPEG
 			);
 
 		//
-		this.rtpTicksPerFrame = (long)((double)RtspConstants.RTP_CODEC_CLOCKRATE_MAPPING.get(RtpPacketType.V_JPEG) /
+		this.rtpTicksPerFrame = (long)((double)RtpPacketType.V_JPEG.getVideoCodecRtpClockrate() /
 				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
 
 		//
