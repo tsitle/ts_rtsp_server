@@ -604,35 +604,8 @@ public class ThreadRtspServer extends RunnableBase {
 		SessionState nextState = rtspSessionInfo.sessionState;
 
 		// check whether the request is allowed in the current RTSP state
-		boolean wasOk = (requestBasicInfo.serverMessageType == ServerMessageType.OPTIONS ||
-				requestBasicInfo.serverMessageType == ServerMessageType.DESCRIBE);
-
-		switch (rtspSessionInfo.sessionState) {
-			case INIT:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP) {  // SETUP is allowed in INIT and READY states
-					wasOk = true;
-				}
-				break;
-			case READY:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP ||  // SETUP is allowed in INIT and READY states
-						requestBasicInfo.serverMessageType == ServerMessageType.PLAY ||
-						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
-					wasOk = true;
-				}
-				break;
-			case PLAYING:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.PAUSE ||
-						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
-					wasOk = true;
-				}
-				break;
-		}
-
-		if (! wasOk) {
-			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
-			logError(FNC_NAME, String.format("Request %s not valid for current RTSP state %s, rejecting it with code %s",
-					requestBasicInfo.serverMessageType,
-					rtspSessionInfo.sessionState, requestBasicInfo.statusCode));
+		checkRequestTypeVsState(requestBasicInfo);
+		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
 			rtspResponseBuilder.sendResponse(requestBasicInfo);
 			return false;
 		}
@@ -690,6 +663,46 @@ public class ThreadRtspServer extends RunnableBase {
 			logDebug(FNC_NAME, "RTSP state is now " + nextState);
 		}
 		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkRequestTypeVsState(@NonNull RequestBasicInfo requestBasicInfo) {
+		final String FNC_NAME = getClass().getSimpleName() + ".checkRequestTypeVsState()";
+
+		if (requestBasicInfo.serverMessageType == ServerMessageType.OPTIONS ||
+				requestBasicInfo.serverMessageType == ServerMessageType.DESCRIBE) {
+			return;
+		}
+
+		boolean wasOk = false;
+		switch (rtspSessionInfo.sessionState) {
+			case INIT:
+				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP) {  // SETUP is allowed in INIT and READY states
+					wasOk = true;
+				}
+				break;
+			case READY:
+				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP ||  // SETUP is allowed in INIT and READY states
+						requestBasicInfo.serverMessageType == ServerMessageType.PLAY ||
+						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
+					wasOk = true;
+				}
+				break;
+			case PLAYING:
+				if (requestBasicInfo.serverMessageType == ServerMessageType.PAUSE ||
+						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
+					wasOk = true;
+				}
+				break;
+		}
+
+		if (! wasOk) {
+			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
+			logWarn(FNC_NAME, String.format("Request %s not valid for current RTSP state %s, rejecting it with code %s",
+					requestBasicInfo.serverMessageType,
+					rtspSessionInfo.sessionState, requestBasicInfo.statusCode));
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
