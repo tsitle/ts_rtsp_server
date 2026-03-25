@@ -27,5 +27,6 @@ class MikeyData {
 	public final BufferExt kemacKvDataIntvF = new BufferExt();
 	public final BufferExt kemacKvDataIntvT = new BufferExt();
 	public boolean kemacHaveKeys = false;
+	public boolean kemacHaveNonTekOnlyPayload = false;
 
 }

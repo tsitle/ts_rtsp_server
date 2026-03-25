@@ -87,6 +87,12 @@ public final class MikeyParser {
 		if (! mikeyData.kemacHaveKeys) {
 			throw new SrtpSecurityException("No KEMAC payload found");
 		}
+		if (mikeyData.kemacKvType != MickeyMsgKemacKv.MMKEMKV_SPI_OR_MKI && mikeyData.kemacKvType != MickeyMsgKemacKv.MMKEMKV_NULL) {
+			throw new SrtpSecurityException("Unsupported KEMAC KV type");
+		}
+		if (mikeyData.kemacHaveNonTekOnlyPayload) {
+			throw new SrtpSecurityException("Unsupported KEMAC payload type (only TEK w/o Salt is supported)");
+		}
 		return new SrtxpKmd(
 				mikeyData.kemacMasterKey,
 				mikeyData.kemacMasterSalt,
@@ -357,6 +363,9 @@ public final class MikeyParser {
 		MickeyMsgKemacPayloadType tmpKemacPt = MickeyMsgKemacPayloadType.of(tmpSubPt);
 		if (tmpKemacPt == MickeyMsgKemacPayloadType.MMKEMPT_UNKNOWN) {
 			throw new SrtpSecurityException(String.format("Unknown sub-payload type in MIKEY KEMAC: 0x%02X", tmpSubPt));
+		}
+		if (tmpKemacPt != MickeyMsgKemacPayloadType.MMKEMPT_TEK_ONLY) {
+			mikeyData.kemacHaveNonTekOnlyPayload = true;
 		}
 		///
 		byte tmpKv = (byte)(tmpBy & 0x0F);
