@@ -64,13 +64,14 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 		ByteBuffer buf = ByteBuffer.wrap(tmpIvBytes).order(ByteOrder.BIG_ENDIAN);
 		buf.putInt(0);
 		buf.putInt(ssrc);
-		buf.put((byte)((packetIndex >>> 40) & 0xFF));
+		/*buf.put((byte)((packetIndex >>> 40) & 0xFF));
 		buf.put((byte)((packetIndex >>> 32) & 0xFF));
 		buf.put((byte)((packetIndex >>> 24) & 0xFF));
 		buf.put((byte)((packetIndex >>> 16) & 0xFF));
 		buf.put((byte)((packetIndex >>> 8) & 0xFF));
 		buf.put((byte)(packetIndex & 0xFF));
-		buf.putShort((short)0);
+		buf.putShort((short)0);*/
+		buf.putLong(packetIndex << 16);
 
 		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			tmpIvBytes[i] ^= ctxSessionKeysRtp.salt().get(i);
