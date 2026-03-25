@@ -303,7 +303,7 @@ public final class MikeyParser {
 
 	private static MickeyMsgPayloadType parsePtKemac(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();
-		MickeyMsgEncrAlg tmpEncrAlg = MickeyMsgEncrAlg.of(tmpBy);  // encryption algorithm (for the KEMAC data)
+		MickeyMsgKemacEncrAlg tmpEncrAlg = MickeyMsgKemacEncrAlg.of(tmpBy);  // encryption algorithm (for the KEMAC data)
 		validateKemacEncrAlgo(tmpBy, tmpEncrAlg);
 
 		short tmpEncrDataLen = msgBb.getShort();
@@ -329,11 +329,11 @@ public final class MikeyParser {
 		return resEn;
 	}
 
-	private static void validateKemacEncrAlgo(byte rawVal, MickeyMsgEncrAlg encrAlg) throws SrtpSecurityException {
-		if (encrAlg == MickeyMsgEncrAlg.MMEA_UNKNOWN) {
+	private static void validateKemacEncrAlgo(byte rawVal, MickeyMsgKemacEncrAlg encrAlg) throws SrtpSecurityException {
+		if (encrAlg == MickeyMsgKemacEncrAlg.MMEA_UNKNOWN) {
 			throw new SrtpSecurityException(String.format("Unknown MIKEY encr algo: 0x%02X", rawVal));
 		}
-		if (encrAlg != MickeyMsgEncrAlg.MMEA_NULL) {
+		if (encrAlg != MickeyMsgKemacEncrAlg.MMEA_NULL) {
 			throw new SrtpSecurityException("Unsupported MIKEY encr algo: " + encrAlg);
 		}
 	}

@@ -188,7 +188,7 @@ public final class MikeyGenerator {
 		// next payload
 		msgBb.put(nextPt.getValue());
 		// encryption algorithm (for the KEMAC data)
-		msgBb.put(MickeyMsgEncrAlg.MMEA_NULL.getValue());
+		msgBb.put(MickeyMsgKemacEncrAlg.MMEA_NULL.getValue());
 		//
 		BufferExt tmpKeyData = new BufferExt();
 		buildKemacData(kmd, nextPt, tmpKeyData);

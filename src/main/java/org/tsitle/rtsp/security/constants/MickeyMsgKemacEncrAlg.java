@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgEncrAlg {
+public enum MickeyMsgKemacEncrAlg {
 
 	/** NULL */
 	MMEA_NULL((byte)0x00),
@@ -14,14 +14,14 @@ public enum MickeyMsgEncrAlg {
 	MMEA_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgEncrAlg(byte value) {
+	MickeyMsgKemacEncrAlg(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgEncrAlg of(byte value) {
-		for (MickeyMsgEncrAlg type : MickeyMsgEncrAlg.values()) {
+	public static @NonNull MickeyMsgKemacEncrAlg of(byte value) {
+		for (MickeyMsgKemacEncrAlg type : MickeyMsgKemacEncrAlg.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}
