@@ -4,9 +4,9 @@ public class MikeyOtherConstants {
 
 	/** Common Header: version */
 	public static final byte MOC_CHD_VERSION = (byte)0x01;
-	/** Common Header: V==0x80 => response expected, 0x00 => no response expected */
+	/** Common Header: V==0x80 => verification message expected */
 	public static final byte MOC_CHD_V_BIT_RESP = (byte)0x80;
-	/** Common Header: V==0x80 => response expected, 0x00 => no response expected */
+	/** Common Header: V==0x00 => no verification message expected */
 	public static final byte MOC_CHD_V_BIT_NORESP = (byte)0x00;
 	/** Common Header: PRF_FUNC==0x00 => MIKEY-1 */
 	public static final byte MOC_CHD_PRF_FUNC_MIKEY1 = (byte)0x00;
@@ -24,7 +24,7 @@ public class MikeyOtherConstants {
 	/** Payload type SP: ENABLED==0x01 => True */
 	public static final byte MOC_PT_SP_ENABLED = (byte)0x01;
 
-	/** Payload type KEMAC: KEMAC_MAC_ALG==0x01 => HMAC-SHA-1-160 */
+	/** Payload type KEMAC: KEMAC_MAC_ALG==0x00 => None */
 	public static final byte MOC_KEMAC_MAC_ALG_NONE = (byte)0x00;
 	/** Payload type KEMAC: KEMAC_MAC_ALG==0x01 => HMAC-SHA-1-160 */
 	public static final byte MOC_KEMAC_MAC_ALG_HMACSHA1160 = (byte)0x01;
