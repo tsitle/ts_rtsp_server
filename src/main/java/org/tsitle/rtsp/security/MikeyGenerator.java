@@ -191,7 +191,7 @@ public final class MikeyGenerator {
 		msgBb.put(MickeyMsgEncrAlg.MMEA_NULL.getValue());
 		//
 		BufferExt tmpKeyData = new BufferExt();
-		buildKeyData(kmd, nextPt, tmpKeyData);
+		buildKemacData(kmd, nextPt, tmpKeyData);
 		// KEMAC data length
 		msgBb.putShort((short)tmpKeyData.getUsed());
 		// KEMAC data
@@ -201,7 +201,7 @@ public final class MikeyGenerator {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private static void buildKeyData(@NonNull SrtxpKmd kmd, MickeyMsgPayloadType nextPt, BufferExt outputKeyData) {
+	private static void buildKemacData(@NonNull SrtxpKmd kmd, MickeyMsgPayloadType nextPt, BufferExt outputKeyData) {
 		outputKeyData.increaseSize(1024);
 		ByteBuffer msgBb = ByteBuffer.wrap(outputKeyData.getBaPtr()).order(ByteOrder.BIG_ENDIAN);
 
@@ -209,9 +209,10 @@ public final class MikeyGenerator {
 		msgBb.put(nextPt.getValue());
 
 		// type and KV (key validity period)
+		MickeyMsgKemacKv tmpKvType = (kmd.mki().isEmpty() ? MickeyMsgKemacKv.MMKEMKV_NULL : MickeyMsgKemacKv.MMKEMKV_SPI_OR_MKI);
 		msgBb.put((byte)(
 				((MickeyMsgKemacPayloadType.MMKEMPT_TEK_ONLY.getValue() << 4) & 0xF0)
-				| (MickeyMsgKemacKv.MMKEMKV_SPI_OR_MKI.getValue() & 0x0F)
+				| (tmpKvType.getValue() & 0x0F)
 			));
 
 		// key data length
@@ -221,11 +222,14 @@ public final class MikeyGenerator {
 		msgBb.put(kmd.masterKey().getBaPtr(), 0, kmd.masterKey().getUsed());
 		msgBb.put(kmd.masterSalt().getBaPtr(), 0, kmd.masterSalt().getUsed());
 
-		// KV data length
-		msgBb.put((byte)kmd.mki().getUsed());
-		// KV data
-		if (! kmd.mki().isEmpty()) {
-			msgBb.put(kmd.mki().getBaPtr(), 0, kmd.mki().getUsed());
+		//
+		if (tmpKvType == MickeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
+			// KV data length
+			msgBb.put((byte)kmd.mki().getUsed());
+			// KV data
+			if (! kmd.mki().isEmpty()) {
+				msgBb.put(kmd.mki().getBaPtr(), 0, kmd.mki().getUsed());
+			}
 		}
 
 		//
