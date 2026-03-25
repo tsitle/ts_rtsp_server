@@ -158,9 +158,12 @@ public final class MikeyParser {
 			mikeyData.hdCsIdMapInfoSsrcArr[i] = msgBb.getInt();  // SSRC_x
 			mikeyData.hdCsIdMapInfoRocArr[i] = msgBb.getInt();  // ROC_x
 		}
-		if (mikeyData.hdCsNr != 0x01) {
+		if (mikeyData.hdCsNr != 1) {
 			// yes, we could have skipped the above loop
 			throw new SrtpSecurityException("Multiple MIKEY Security Policies are not supported");
+		}
+		if (mikeyData.hdCsIdMapInfoRocArr[0] != 0) {
+			throw new SrtpSecurityException("Initial ROC in MIKEY CHD is not 0");
 		}
 
 		return nextPayloadType;
