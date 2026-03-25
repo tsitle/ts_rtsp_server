@@ -31,6 +31,13 @@ public class RequestBasicInfo {
 		return res;
 	}
 
+	public static RequestBasicInfo createUnsupportedMethod() {
+		RequestBasicInfo res = new RequestBasicInfo();
+		res.serverMessageType = ServerMessageType.UNKNOWN;
+		res.statusCode = ServerResponseStatusCode.METHOD_NOT_ALLOWED;
+		return res;
+	}
+
 	public static RequestBasicInfo createKnownWithError(ServerMessageType serverMessageType, ServerResponseStatusCode statusCode) {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.serverMessageType = serverMessageType;

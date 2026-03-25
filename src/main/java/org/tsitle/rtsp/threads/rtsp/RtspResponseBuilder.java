@@ -5,6 +5,7 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
@@ -92,10 +93,19 @@ public class RtspResponseBuilder {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseNack()";
 
 		List<String> contents = new ArrayList<>();
+		if (statusCode == ServerResponseStatusCode.UNAUTHORIZED) {
+			if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
+				rtspSessionInfo.authInfo.authNonceServer = buildNonceServer();
+			}
+			contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
+					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
+					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
+					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5);
+		}
 		contents.add("");
 		internalSendResponse(statusCode, contents);
 		logDebug(FNC_NAME, "Sent response '" + statusCode +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseAck() {
@@ -106,7 +116,7 @@ public class RtspResponseBuilder {
 		contents.add("");
 		internalSendResponse(contents);
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseOptions() {
@@ -124,7 +134,7 @@ public class RtspResponseBuilder {
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
 				"' to Client (<" +
 				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
-				">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseDescribe() {
@@ -145,7 +155,7 @@ public class RtspResponseBuilder {
 		contents.add(des);
 		internalSendResponse(contents);
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				"' to Client (CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	/**
@@ -207,7 +217,7 @@ public class RtspResponseBuilder {
 		contents.add("");
 		internalSendResponse(contents);
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	private void sendResponsePlay() {
@@ -237,7 +247,7 @@ public class RtspResponseBuilder {
 		contents.add("");
 		internalSendResponse(contents);
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNr + ")\n");
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -514,11 +524,17 @@ public class RtspResponseBuilder {
 		List<String> outputLines = new ArrayList<>();
 		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
 				errorCode.getValue() + " " + RTSP_RR_SC_MAP_TO_STR.get(errorCode) + CRLF);
-		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspSeqNr + CRLF);
+		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspSeqNrResponse + CRLF);
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);
 		}
 		cbWriteDataLines.accept(outputLines);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String buildNonceServer() {
+		return HashMd5Helper.hashOfString(UUID.randomUUID().toString(), false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

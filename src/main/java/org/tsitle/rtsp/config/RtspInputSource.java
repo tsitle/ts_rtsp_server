@@ -16,9 +16,12 @@ public class RtspInputSource {
 	/** Input Source ID */
 	@GsonAnnoExclude
 	private @NonNull String id;
-	/** Is this Stream Source enabled? */
+	/** Is this Input Source enabled? */
 	@Expose
 	private @NonNull Boolean enabled;
+	/** Does this Input Source need authentication? */
+	@Expose
+	private @NonNull Boolean needsAuthentication;
 	/** Stream Source IDs within the input source */
 	@Expose
 	private @NonNull Set<@NonNull String> streamSourceIds;
@@ -33,6 +36,7 @@ public class RtspInputSource {
 	public RtspInputSource() {
 		this.id = "";
 		this.enabled = true;
+		this.needsAuthentication = true;
 		this.streamSourceIds = new HashSet<>();
 
 		//noinspection DataFlowIssue
@@ -56,6 +60,11 @@ public class RtspInputSource {
 	public boolean getEnabled() {
 		checkPostProcessed();
 		return enabled;
+	}
+
+	public boolean getNeedsAuthentication() {
+		checkPostProcessed();
+		return needsAuthentication;
 	}
 
 	public @NonNull Set<@NonNull Integer> getStreamSourceIds() {

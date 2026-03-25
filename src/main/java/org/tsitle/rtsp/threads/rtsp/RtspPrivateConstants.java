@@ -32,6 +32,8 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_TOKEN_XXX_SERVER = "Server:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date:";
+	static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH = "Authorization:";
+	static final String RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH = "WWW-Authenticate:";
 	///
 	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT = "client_port=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT = "server_port=";
@@ -46,12 +48,20 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL = "url=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ = "seq=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME = "rtptime=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER = "username=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM = "realm=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE = "nonce=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI = "uri=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP = "response=";
+	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO = "algorithm=";
 	static final String RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT = "application/sdp";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP = "RTP/AVP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP = "RTP/SAVP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP = "RTP/AVP/TCP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY = "mikey";
+	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
+	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";
 	///
 	static final Map<RtpPacketType, String> RTSP_SDP_TAG_A_CODEC_MAPPING = new TreeMap<>() {{
 			put(RtpPacketType.A_AAC, "mpeg4-generic");

@@ -18,6 +18,9 @@ public class RtspConfig {
 	/** RTSP Server TCP port */
 	@Expose
 	private final int serverTcpPort;
+	/** Map of Users (the map keys are unique usernames) */
+	@Expose
+	private @NonNull Map<@NonNull String, @NonNull String> users;
 	/** Map of MQ Server SSL Certificates (the map keys are unique host-port combinations) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> mqServerSslCertificates;
@@ -55,6 +58,7 @@ public class RtspConfig {
 	 */
 	public RtspConfig() {
 		this.serverTcpPort = RtspConstants.SERVER_RTSP_TCP_PORT;
+		this.users = new HashMap<>();
 		this.mqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
@@ -83,6 +87,18 @@ public class RtspConfig {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
+	 * Get the user password for the given username.
+	 * @param username Username
+	 * @return User password
+	 */
+	public Optional<String> getUserPassword(@NonNull String username) {
+		checkPostProcessed();
+		return Optional.ofNullable(users.get(username));
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
 	 * Get the path to the SSL certificate file for the given host and port.
 	 * @param mqServerUri URI of the MQ server
 	 * @return Path to the SSL certificate file
@@ -99,6 +115,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
 	 */
 	public Optional<String> getMqServerSslCertificatePath(@NonNull String hostAndPort) throws ConfigInvalidException {
+		checkPostProcessed();
 		if (hostAndPort.isBlank()) {
 			return Optional.empty();
 		}

@@ -59,12 +59,37 @@ public class RtspSessionInfo {
 		}
 	}
 
+	public static class AuthInfo {
+		/** Authentication credentials: username */
+		public @NonNull String authUser = "";
+		/** Authentication credentials: realm from the client */
+		public @NonNull String authRealmClient = "";
+		/** Authentication credentials: nonce from the server */
+		public @NonNull String authNonceServer = "";
+		/** Authentication credentials: nonce from the client */
+		public @NonNull String authNonceClient = "";
+		/** Authentication credentials: URI */
+		public @NonNull String authUri = "";
+		/** Authentication credentials: response */
+		public @NonNull String authResp = "";
+
+		public void resetPerRequest() {
+			authUser = "";
+			authRealmClient = "";
+			authNonceClient = "";
+			authUri = "";
+			authResp = "";
+		}
+	}
+
 	/** Client IP address */
 	public @Nullable InetAddress clientIpAddr = null;
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
-	/** Sequence Number of RTSP messages within the session */
-	public int rtspSeqNr = -1;
+	/** Expected Sequence Number of RTSP messages within the session to receive from the client */
+	public int rtspSeqNrExpected = 0;
+	/** Sequence Number of RTSP messages within the session in responses from the server */
+	public int rtspSeqNrResponse = 0;
 
 	/** Playback range request value from client */
 	public @NonNull String clientPlaybackRangeValue = "";
@@ -73,7 +98,10 @@ public class RtspSessionInfo {
 	public @NonNull String lastRequestRtspProtoVersion = "-";
 
 	/** Is RTP/RTCP encryption enabled? */
-	public boolean isRtxpEncryptionEnabled = true;  // @TODO
+	public boolean isRtxpEncryptionEnabled = false;  // @TODO
+
+	/** Authentication-related info */
+	public @NonNull AuthInfo authInfo = new AuthInfo();
 
 	/** Streams info - one per SETUP request (the map keys are unique Stream Source identifiers) */
 	public @NonNull Map<@NonNull Integer, @NonNull StreamInfo> streamsMapSetup = new ConcurrentHashMap<>();

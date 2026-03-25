@@ -29,4 +29,7 @@ public class RtspConstants {
 	/** Samples per frame for AAC-LC audio */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO = 1024;
 
+	/** RTSP Authorization Realm */
+	public static final String RTSP_AUTH_REALM = "RTSP Server A1B2C3D4";
+
 }

@@ -60,6 +60,9 @@ public class RtspRequestParser {
 
 		checkCallbackFncs();
 
+		//
+		rtspSessionInfo.authInfo.resetPerRequest();
+
 		// parse request lines and extract the requestType:
 		String requestLine;
 		do {
@@ -79,7 +82,7 @@ public class RtspRequestParser {
 		final ServerMessageType requestType = parseServerMessageType(requestLine);
 		if (requestType == ServerMessageType.UNKNOWN) {
 			logError(FNC_NAME, "Unknown request type in requestLine '" + requestLine + "'");
-			return RequestBasicInfo.createUnknown();
+			return RequestBasicInfo.createUnsupportedMethod();
 		}
 
 		// read resource URL from the requestLine
@@ -99,7 +102,7 @@ public class RtspRequestParser {
 		} catch (RtspInvalidUriException e) {
 			logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 					"), rejecting request");
-			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.FORBIDDEN);
 		} catch (RtspInputSourceIdNotFoundException e) {
 			logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 					"), rejecting request");
@@ -128,6 +131,9 @@ public class RtspRequestParser {
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.UNSUPPORTED_TRANSPORT);
 			} catch (RtspMissingEncryptionParamsException e) {
 				logError(FNC_NAME, "Missing encryption parameters, rejecting request");
+				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+			} catch (RtspMissingAuthParamsException e) {
+				logError(FNC_NAME, "Missing authentication parameters, rejecting request");
 				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 			}
 		} while (! headerLine.isBlank());
@@ -349,7 +355,8 @@ public class RtspRequestParser {
 				RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				String headerLine
 			) throws RtspInvalidSessionIdException, RtspUnsupportedAcceptTypeException,
-				RtspInvalidRequestException, RtspUnsupportedTransportException, RtspMissingEncryptionParamsException {
+				RtspInvalidRequestException, RtspUnsupportedTransportException,
+				RtspMissingEncryptionParamsException, RtspMissingAuthParamsException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine()";
 
 		if (headerLine.isBlank()) {
@@ -369,6 +376,8 @@ public class RtspRequestParser {
 			parseHeaderLine_session(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_DATE)) {
 			parseHeaderLine_date(headerLine);
+		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_AUTH)) {
+			parseHeaderLine_auth(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
 			if (requestType != ServerMessageType.DESCRIBE) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received ACCEPT header in non-DESCRIBE request");
@@ -399,10 +408,12 @@ public class RtspRequestParser {
 
 		String tmpCseqStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
 		int tmpCseqInt = Integer.parseInt(tmpCseqStr);
-		if (tmpCseqInt <= rtspSessionInfo.rtspSeqNr) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": Received old CSeq");
+		if (tmpCseqInt > rtspSessionInfo.rtspSeqNrExpected) {
+			rtspSessionInfo.rtspSeqNrExpected = tmpCseqInt;
+		} else if (tmpCseqInt < rtspSessionInfo.rtspSeqNrExpected) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq");
 		}
-		rtspSessionInfo.rtspSeqNr = tmpCseqInt;
+		rtspSessionInfo.rtspSeqNrResponse = rtspSessionInfo.rtspSeqNrExpected++;
 	}
 
 	private void parseHeaderLine_useragent(String headerLine) {
@@ -515,8 +526,7 @@ public class RtspRequestParser {
 					throw new RtspMissingEncryptionParamsException();
 				}
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA)) {
-				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA.length())
-						.replace("\"", "").replace("'", "").strip();
+				String tmpSub = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA);
 				try {
 					SrtxpKmd kmd = MikeyParser.parseKeyMgmtData(tmpSub);
 					tmpStreamInfo.srtxpKmd = kmd.clone();
@@ -550,6 +560,61 @@ public class RtspRequestParser {
 		if (tmp.isBlank()) {
 			logError(FNC_NAME, "Invalid empty Date header value - ignoring");
 		}
+	}
+
+	private void parseHeaderLine_auth(String headerLine) throws RtspMissingAuthParamsException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_auth()";
+
+		String tmpHdLine = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_AUTH.length()).strip();
+		if (tmpHdLine.isBlank()) {
+			logError(FNC_NAME, "Invalid empty Auth header value - ignoring");
+			return;
+		}
+		// e.g. 'Authorization: Digest username="admin", realm="Abcdef Some", nonce="xxx", uri="rtsp://xxx:88/videoMain", response="xxx"'
+		if (! tmpHdLine.startsWith(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX)) {
+			throw new RtspMissingAuthParamsException();
+		}
+		tmpHdLine = tmpHdLine.substring(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.length()).strip();
+		StringTokenizer tokens = new StringTokenizer(tmpHdLine, ",");
+		boolean haveUser = false;
+		boolean haveRealm = false;
+		boolean haveNonce = false;
+		boolean haveUri = false;
+		boolean haveResp = false;
+		while (tokens.hasMoreTokens()) {
+			String curToken = tokens.nextToken().strip();
+			if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER)) {
+				rtspSessionInfo.authInfo.authUser = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER);
+				haveUser = true;  // tolerate empty username now and reject it later
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM)) {
+				rtspSessionInfo.authInfo.authRealmClient = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
+				haveRealm = (! rtspSessionInfo.authInfo.authRealmClient.isBlank());
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE)) {
+				rtspSessionInfo.authInfo.authNonceClient = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
+				rtspSessionInfo.authInfo.authNonceClient = rtspSessionInfo.authInfo.authNonceClient.toLowerCase();
+				haveNonce = (! rtspSessionInfo.authInfo.authNonceClient.isBlank());
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI)) {
+				rtspSessionInfo.authInfo.authUri = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI);
+				haveUri = (! rtspSessionInfo.authInfo.authUri.isBlank());
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP)) {
+				rtspSessionInfo.authInfo.authResp = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP);
+				rtspSessionInfo.authInfo.authResp = rtspSessionInfo.authInfo.authResp.toLowerCase();
+				haveResp = true;  // tolerate empty challenge-response now and reject it later
+			} else {
+				logWarn(FNC_NAME, "Unknown Auth parameter: '" + curToken + "'");
+			}
+		}
+
+		if (! (haveUser && haveRealm && haveNonce && haveUri && haveResp)) {
+			throw new RtspMissingAuthParamsException();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull String extractKeyValue(@NonNull String inputStr, @NonNull String key) {
+		return inputStr.substring(key.length())
+				.replace("\"", "").replace("'", "").strip();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
