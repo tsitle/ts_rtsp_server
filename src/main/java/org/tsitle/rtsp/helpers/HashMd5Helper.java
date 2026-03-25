@@ -6,7 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class HashMd5Helper {
+public final class HashMd5Helper {
+
+	private HashMd5Helper() { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull String hashOfBytes(byte[] bytes, boolean outputUppercase) {
 		MessageDigest md;

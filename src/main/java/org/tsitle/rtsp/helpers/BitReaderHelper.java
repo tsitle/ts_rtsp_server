@@ -7,7 +7,7 @@ import org.tsitle.rtsp.exceptions.BitReaderEosException;
 /**
  * Helper class for reading bits from a buffer.
  */
-public class BitReaderHelper {
+public final class BitReaderHelper {
 
 	private final BufferExt buffer;
 	private int currentByte;
@@ -22,6 +22,9 @@ public class BitReaderHelper {
 		this.buffer = buffer;
 		this.bytePos = offset;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Reads the next single bit from the bitstream.

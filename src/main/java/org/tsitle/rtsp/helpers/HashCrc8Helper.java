@@ -12,7 +12,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
  *    XorOut       = 0x00
  *    ReflectOut   = False
  */
-public class HashCrc8Helper {
+public final class HashCrc8Helper {
 
 	private static final byte[] CRC8_TABLE = {
 			(byte)0x00, (byte)0x07, (byte)0x0e, (byte)0x09, (byte)0x1c, (byte)0x1b, (byte)0x12, (byte)0x15,
@@ -48,6 +48,8 @@ public class HashCrc8Helper {
 			(byte)0xde, (byte)0xd9, (byte)0xd0, (byte)0xd7, (byte)0xc2, (byte)0xc5, (byte)0xcc, (byte)0xcb,
 			(byte)0xe6, (byte)0xe1, (byte)0xe8, (byte)0xef, (byte)0xfa, (byte)0xfd, (byte)0xf4, (byte)0xf3
 		};
+
+	public HashCrc8Helper() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * Helper class for writing bits to a buffer.
  */
-public class BitWriterHelper {
+public final class BitWriterHelper {
 
 	private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 	/** Accumulates bits */
