@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgPayloadType {
+public enum MikeyMsgPayloadType {
 
 	/** Last payload */
 	MMPT_LAST((byte)0x00),
@@ -38,14 +38,14 @@ public enum MickeyMsgPayloadType {
 	MMPT_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgPayloadType(byte value) {
+	MikeyMsgPayloadType(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgPayloadType of(byte value) {
-		for (MickeyMsgPayloadType type : MickeyMsgPayloadType.values()) {
+	public static @NonNull MikeyMsgPayloadType of(byte value) {
+		for (MikeyMsgPayloadType type : MikeyMsgPayloadType.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

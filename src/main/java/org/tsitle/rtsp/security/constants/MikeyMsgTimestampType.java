@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgTimestampType {
+public enum MikeyMsgTimestampType {
 
 	/** NTP-UTC, 64-bits timestamp value */
 	MMTST_NTP_UTC((byte)0x00),
@@ -14,14 +14,14 @@ public enum MickeyMsgTimestampType {
 	MMTST_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgTimestampType(byte value) {
+	MikeyMsgTimestampType(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgTimestampType of(byte value) {
-		for (MickeyMsgTimestampType type : MickeyMsgTimestampType.values()) {
+	public static @NonNull MikeyMsgTimestampType of(byte value) {
+		for (MikeyMsgTimestampType type : MikeyMsgTimestampType.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

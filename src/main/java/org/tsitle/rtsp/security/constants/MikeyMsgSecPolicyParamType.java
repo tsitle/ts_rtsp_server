@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgSecPolicyParamType {
+public enum MikeyMsgSecPolicyParamType {
 
 	/** Encryption algorithm */
 	MMSPPT_ENCALG((byte)0x00),
@@ -34,14 +34,14 @@ public enum MickeyMsgSecPolicyParamType {
 	MMSPPT_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgSecPolicyParamType(byte value) {
+	MikeyMsgSecPolicyParamType(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgSecPolicyParamType of(byte value) {
-		for (MickeyMsgSecPolicyParamType type : MickeyMsgSecPolicyParamType.values()) {
+	public static @NonNull MikeyMsgSecPolicyParamType of(byte value) {
+		for (MikeyMsgSecPolicyParamType type : MikeyMsgSecPolicyParamType.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

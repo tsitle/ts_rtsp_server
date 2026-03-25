@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgKemacPayloadType {
+public enum MikeyMsgKemacPayloadType {
 
 	/** TGK */
 	MMKEMPT_TGK_ONLY((byte)0x00),
@@ -16,14 +16,14 @@ public enum MickeyMsgKemacPayloadType {
 	MMKEMPT_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgKemacPayloadType(byte value) {
+	MikeyMsgKemacPayloadType(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgKemacPayloadType of(byte value) {
-		for (MickeyMsgKemacPayloadType type : MickeyMsgKemacPayloadType.values()) {
+	public static @NonNull MikeyMsgKemacPayloadType of(byte value) {
+		for (MikeyMsgKemacPayloadType type : MikeyMsgKemacPayloadType.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

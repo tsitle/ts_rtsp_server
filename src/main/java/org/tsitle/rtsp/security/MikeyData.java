@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.security;
 
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.security.constants.MickeyMsgKemacKv;
+import org.tsitle.rtsp.security.constants.MikeyMsgKemacKv;
 
 class MikeyData {
 
@@ -22,7 +22,7 @@ class MikeyData {
 	public final BufferExt kemacMasterKey = new BufferExt();
 	public final BufferExt kemacMasterSalt = new BufferExt();
 	public final BufferExt kemacTekTgkSalt = new BufferExt();
-	public MickeyMsgKemacKv kemacKvType = MickeyMsgKemacKv.MMKEMKV_UNKNOWN;
+	public MikeyMsgKemacKv kemacKvType = MikeyMsgKemacKv.MMKEMKV_UNKNOWN;
 	public final BufferExt kemacKvDataSpiOrMki = new BufferExt();
 	public final BufferExt kemacKvDataIntvF = new BufferExt();
 	public final BufferExt kemacKvDataIntvT = new BufferExt();

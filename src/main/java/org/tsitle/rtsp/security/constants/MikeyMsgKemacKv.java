@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgKemacKv {
+public enum MikeyMsgKemacKv {
 
 	/** Null */
 	MMKEMKV_NULL((byte)0x00),
@@ -14,14 +14,14 @@ public enum MickeyMsgKemacKv {
 	MMKEMKV_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgKemacKv(byte value) {
+	MikeyMsgKemacKv(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgKemacKv of(byte value) {
-		for (MickeyMsgKemacKv type : MickeyMsgKemacKv.values()) {
+	public static @NonNull MikeyMsgKemacKv of(byte value) {
+		for (MikeyMsgKemacKv type : MikeyMsgKemacKv.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

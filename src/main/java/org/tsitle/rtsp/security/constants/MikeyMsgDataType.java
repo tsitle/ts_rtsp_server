@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security.constants;
 
 import org.jspecify.annotations.NonNull;
 
-public enum MickeyMsgDataType {
+public enum MikeyMsgDataType {
 
 	/** Initiator's pre-shared key message */
 	MMDT_PRE_SHARED_KEY((byte)0x00),
@@ -22,14 +22,14 @@ public enum MickeyMsgDataType {
 	MMDT_UNKNOWN((byte)0xFF);
 
 	private final byte value;
-	MickeyMsgDataType(byte value) {
+	MikeyMsgDataType(byte value) {
 		this.value = value;
 	}
 	public byte getValue() {
 		return value;
 	}
-	public static @NonNull MickeyMsgDataType of(byte value) {
-		for (MickeyMsgDataType type : MickeyMsgDataType.values()) {
+	public static @NonNull MikeyMsgDataType of(byte value) {
+		for (MikeyMsgDataType type : MikeyMsgDataType.values()) {
 			if (type.getValue() == value) {
 				return type;
 			}

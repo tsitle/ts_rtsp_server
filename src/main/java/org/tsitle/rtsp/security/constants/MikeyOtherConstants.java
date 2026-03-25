@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.security.constants;
 
-public class MickeyOtherConstants {
+public class MikeyOtherConstants {
 
 	/** Common Header: version */
 	public static final byte MOC_CHD_VERSION = (byte)0x01;
@@ -9,7 +9,7 @@ public class MickeyOtherConstants {
 	/** Common Header: V==0x80 => response expected, 0x00 => no response expected */
 	public static final byte MOC_CHD_V_BIT_NORESP = (byte)0x00;
 	/** Common Header: PRF_FUNC==0x00 => MIKEY-1 */
-	public static final byte MOC_CHD_PRF_FUNC_MICKEY1 = (byte)0x00;
+	public static final byte MOC_CHD_PRF_FUNC_MIKEY1 = (byte)0x00;
 	/** Common Header: CS_ID_map_type==0 => SRTP-ID */
 	public static final byte MOC_CHD_CS_ID_MAP_TYPE_SRTP_ID = (byte)0x00;
 
