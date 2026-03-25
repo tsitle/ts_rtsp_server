@@ -10,38 +10,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
 
-public class MikeyParser {
+public final class MikeyParser {
 
-	private static class MikeyData {
-		public int hdCsbId;
-		/**
-		 * Number of entries in the {@code hdCsIdMapInfoPolArr}, {@code hdCsIdMapInfoSsrcArr} and {@code hdCsIdMapInfoRocArr} arrays.<br />
-		 * Also used to reference Security Policies to those arrays.
-		 */
-		public byte hdCsNr;
-		public byte[] hdCsIdMapInfoPolArr = new byte[0];
-		public int[] hdCsIdMapInfoSsrcArr = new int[0];
-		public int[] hdCsIdMapInfoRocArr = new int[0];
-
-		public final BufferExt hdRandData = new BufferExt();
-
-		public int spAuthKeyLen = KeySizes.AUTH_KEY_SIZE_160;
-
-		public final BufferExt kemacMasterKey = new BufferExt();
-		public final BufferExt kemacMasterSalt = new BufferExt();
-		public final BufferExt kemacTekTgkSalt = new BufferExt();
-		public MickeyMsgKemacKv kemacKvType = MickeyMsgKemacKv.MMKEMKV_UNKNOWN;
-		public final BufferExt kemacKvDataSpiOrMki = new BufferExt();
-		public final BufferExt kemacKvDataIntvF = new BufferExt();
-		public final BufferExt kemacKvDataIntvT = new BufferExt();
-		public boolean kemacHaveKeys = false;
-	}
+	private MikeyParser() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Parse a MIKEY message according to RFC-3830 Section 6.2 (Key data transport payload aka KEMAC).
+	 * Parse a MIKEY message according to RFC-3830 Section 6.2 (Key data transport payload).
 	 * @param msgB64 Base64 encoded MIKEY message
 	 * @return SRTxP Key Management Data
 	 * @throws SrtpSecurityException If any kind of error occurred
@@ -74,6 +51,7 @@ public class MikeyParser {
 		// parse MIKEY header -- RFC-3830 Section 6.1 (Common Header payload aka HDR)
 		MickeyMsgPayloadType nextPayloadType = parseCommonHeader(msgBb, mikeyData);
 
+		// parse MIKEY payloads
 		try {
 			while (msgBb.remaining() >= 4) {
 				byte tmpBy = msgBb.get();
@@ -113,7 +91,8 @@ public class MikeyParser {
 				mikeyData.kemacMasterKey,
 				mikeyData.kemacMasterSalt,
 				mikeyData.spAuthKeyLen,
-				mikeyData.kemacKvDataSpiOrMki
+				mikeyData.kemacKvDataSpiOrMki,
+				mikeyData.hdCsIdMapInfoSsrcArr[0]
 			);
 	}
 
@@ -123,7 +102,7 @@ public class MikeyParser {
 	private static MickeyMsgPayloadType parseCommonHeader(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		// version
 		byte tmpHdVers = msgBb.get();
-		if (tmpHdVers != 0x01) {
+		if (tmpHdVers != MickeyOtherConstants.MOC_CHD_VERSION) {
 			throw new SrtpSecurityException("Unsupported MIKEY version");
 		}
 		// data type
@@ -140,12 +119,12 @@ public class MikeyParser {
 		}
 		// V | PRF_FUNC
 		byte tmpHdVandPrf = msgBb.get();
-		byte tmpHdV = (byte)(tmpHdVandPrf & (byte)0x80);
-		if (tmpHdV == (byte)0x80) {  // V==0x80 => response expected
+		byte tmpHdV = (byte)(tmpHdVandPrf & MickeyOtherConstants.MOC_CHD_V_BIT_RESP);
+		if (tmpHdV == MickeyOtherConstants.MOC_CHD_V_BIT_RESP) {
 			throw new SrtpSecurityException(String.format("Unsupported MIKEY V value: 0x%02X", tmpHdV));
 		}
 		byte tmpHdPrf = (byte)(tmpHdVandPrf & (byte)0x7F);
-		if (tmpHdPrf != (byte)0x00) {  // PRF_FUNC==0x00 => MIKEY-1
+		if (tmpHdPrf != MickeyOtherConstants.MOC_CHD_PRF_FUNC_MICKEY1) {
 			throw new SrtpSecurityException(String.format("Unsupported MIKEY PRF value: 0x%02X", tmpHdPrf));
 		}
 		// CSB_ID
@@ -154,7 +133,7 @@ public class MikeyParser {
 		mikeyData.hdCsNr = msgBb.get();
 		// CS_ID_map_type
 		byte tmpCsIdMapType = msgBb.get();
-		if (tmpCsIdMapType != 0x00) {  // CS_ID_map_type==0 => SRTP-ID
+		if (tmpCsIdMapType != MickeyOtherConstants.MOC_CHD_CS_ID_MAP_TYPE_SRTP_ID) {
 			throw new SrtpSecurityException(String.format("Unsupported MIKEY CS_ID_map_type value: 0x%02X", tmpCsIdMapType));
 		}
 
@@ -238,7 +217,7 @@ public class MikeyParser {
 
 			switch (mmspType) {
 				case MMSPPT_ENCALG:
-					if (tmpPolParamData[0] != 0x01) {  // ENC_ALG==0x01 => AES-CM (AES-128-CTR)
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_ENC_ALG_AESCM) {
 						throw new SrtpSecurityException(
 								String.format("Unsupported MIKEY SP Encr Algo type 0x%02X", tmpPolParamData[0])
 							);
@@ -252,7 +231,7 @@ public class MikeyParser {
 					}
 					break;
 				case MMSPPT_AUTHALG:
-					if (tmpPolParamData[0] != 0x01) {  // AUTH_ALG==0x01 => HMAC-SHA-1
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_AUTH_ALG_HMACSHA1) {
 						throw new SrtpSecurityException(
 								String.format("Unsupported MIKEY SP Encr Auth Algo type 0x%02X", tmpPolParamData[0])
 							);
@@ -274,28 +253,28 @@ public class MikeyParser {
 					}
 					break;
 				case MMSPPT_SPRF:
-					if (tmpPolParamData[0] != 0x00) {  // PRF_ALG==0x00 => AES-CM (AES-128-CTR)
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_PRF_ALG_AESCM) {
 						throw new SrtpSecurityException(
 								String.format("Unsupported MIKEY SP PRF Algo type 0x%02X", tmpPolParamData[0])
 							);
 					}
 					break;
 				case MMSPPT_SRTPENCEN:
-					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_ENABLED) {
 						throw new SrtpSecurityException("Unsupported MIKEY SP SRTP Encr Enabled value");
 					}
 					break;
 				case MMSPPT_SRTCPENCEN:
-					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_ENABLED) {
 						throw new SrtpSecurityException("Unsupported MIKEY SP SRTCP Encr Enabled value");
 					}
 					break;
 				case MMSPPT_SRTPAUTHEN:
-					if (tmpPolParamData[0] != 0x01) {  // ENABLED==0x01 => True
+					if (tmpPolParamData[0] != MickeyOtherConstants.MOC_PT_SP_ENABLED) {
 						throw new SrtpSecurityException("Unsupported MIKEY SP SRTP Auth Enabled value");
 					}
 					break;
-				case MMSPPT_AUTHTAGLEN:
+				case MMSPPT_AUTHTAGLENGTH:
 					if (tmpPolParamData[0] != KeySizes.AUTH_TAG_SIZE) {
 						throw new SrtpSecurityException(
 								String.format("Unsupported MIKEY SP Auth Tag Length 0x%02X", tmpPolParamData[0])
@@ -315,7 +294,7 @@ public class MikeyParser {
 
 	private static MickeyMsgPayloadType parsePtKemac(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();
-		MickeyMsgEncrAlg tmpEncrAlg = MickeyMsgEncrAlg.of(tmpBy);
+		MickeyMsgEncrAlg tmpEncrAlg = MickeyMsgEncrAlg.of(tmpBy);  // encryption algorithm (for the KEMAC data)
 		validateKemacEncrAlgo(tmpBy, tmpEncrAlg);
 
 		short tmpEncrDataLen = msgBb.getShort();
@@ -327,8 +306,8 @@ public class MikeyParser {
 		msgBb.get(tmpEncrData);
 		MickeyMsgPayloadType resEn = parseKemacKeyDataSubPayload(tmpEncrData, mikeyData);
 		//
-		tmpBy = msgBb.get();
-		if (tmpBy == 0x01) {  // KEMAC_MAC_ALG==0x01 => HMAC-SHA-1-160
+		tmpBy = msgBb.get();  // MAC algorithm (for the KEMAC data)
+		if (tmpBy == MickeyOtherConstants.MOC_KEMAC_MAC_ALG_HMACSHA1160) {
 			final int KEMAC_MAC_DATA_LEN = 10;
 			if (msgBb.remaining() < KEMAC_MAC_DATA_LEN) {
 				throw new SrtpSecurityException("Invalid MIKEY payload length (needed " +

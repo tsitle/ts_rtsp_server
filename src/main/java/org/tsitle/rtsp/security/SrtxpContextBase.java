@@ -298,14 +298,14 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For Unit Tests only */
-	@SuppressWarnings("SameParameterValue")
-	void setKmdAuthKeyLength(int authKeyLen) {
-		ctxKmd = new SrtxpKmd(ctxKmd.masterKey().clone(), ctxKmd.masterSalt().clone(), authKeyLen, ctxKmd.mki().clone());
-	}
-
-	/** For Unit Tests only */
 	void setKmdMasterKeyIdentifier(@NonNull BufferExt mki) {
-		ctxKmd = new SrtxpKmd(ctxKmd.masterKey().clone(), ctxKmd.masterSalt().clone(), ctxKmd.authKeyLen(), mki);
+		ctxKmd = new SrtxpKmd(
+				ctxKmd.masterKey().clone(),
+				ctxKmd.masterSalt().clone(),
+				ctxKmd.authKeyLen(),
+				mki,
+				ctxKmd.ssrcId()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

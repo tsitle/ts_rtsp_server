@@ -14,7 +14,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
-public class SrtpKeyDerivation {
+public final class SrtpKeyDerivation {
+
+	private SrtpKeyDerivation() { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Derive session keys for RTP/SRTP according to RFC-3711 Section 4.3.1

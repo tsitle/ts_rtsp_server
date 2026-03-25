@@ -27,7 +27,7 @@ public enum MickeyMsgSecPolicyParamType {
 	/** SRTP authentication off/on */
 	MMSPPT_SRTPAUTHEN((byte)0x0A),
 	/** Authentication tag length */
-	MMSPPT_AUTHTAGLEN((byte)0x0B),
+	MMSPPT_AUTHTAGLENGTH((byte)0x0B),
 	/** SRTP prefix length */
 	MMSPPT_SRTPREFIXLEN((byte)0x0C),
 	/** Unknown */

@@ -14,7 +14,4 @@ public class KeySizes {
 	/** Size of the Authentication Tag in bytes */
 	public static final int AUTH_TAG_SIZE = 10;
 
-	/** Size of the Master Key Identifier in bytes */
-	public static final int MKI_SIZE = 4;
-
 }
