@@ -170,6 +170,7 @@ class Common {
 		return f.getInt(target);
 	}
 
+	@SuppressWarnings("unused")
 	static long getPrivateLong(Object target, String fieldName) throws Exception {
 		Field f = target.getClass().getDeclaredField(fieldName);
 		f.setAccessible(true);
@@ -178,9 +179,9 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys, long roc) throws Exception {
+	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys, int roc) throws Exception {
 		if (ctx instanceof SrtpContextOutbound) {
-			Common.setPrivateLong(ctx, "ctxStateRtpRocOutbound", roc);
+			Common.setPrivateInt(ctx, "ctxStateRtpRocOutbound", roc);
 		}
 		ctx.setRtpSessionKeys(sessionKeys);
 	}

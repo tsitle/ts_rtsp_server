@@ -20,7 +20,7 @@ public class SrtxpContextTest {
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
 		final SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0);
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
 		final byte[] plainPacket = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -113,7 +113,7 @@ public class SrtxpContextTest {
 
 			// ---------------- RTP ----------------
 			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault(rndSsrcRtp);
-			Common.srtpCtxInjectKeys(rtpCtx, rtpKeys, 0L);
+			Common.srtpCtxInjectKeys(rtpCtx, rtpKeys, 0);
 
 			final int rndRtpPayloadLen = rnd.nextInt(1, 400);
 			final byte[] rndRtpPayload = new byte[rndRtpPayloadLen];
@@ -197,7 +197,7 @@ public class SrtxpContextTest {
 
 			// ---------------- RTP with non-zero ROC ----------------
 			final SrtpContextOutbound rtpCtx = Common.createSrtpCtxOutboundDefault(rndSsrcRtp);
-			final long rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
+			final int rndStateRoc = rnd.nextInt(1, 100_000); // non-zero, keeps math simple and fast
 			Common.srtpCtxInjectKeys(rtpCtx, rtpKeys, rndStateRoc);
 
 			final int rndRtpPayloadLen = rnd.nextInt(1, 500);

@@ -11,7 +11,7 @@ import org.tsitle.rtsp.exceptions.SrtpSecurityException;
 public class SrtpContextOutbound extends SrtpContextBase {
 
 	/** For RTP encryption: Rollover counter */
-	private long ctxStateRtpRocOutbound = 0;
+	private int ctxStateRtpRocOutbound = 0;
 
 	/**
 	 * Constructor.
@@ -60,7 +60,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		final long srtpPacketIndex = (((long)ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 
 		// build IV
 		buildIvForRtp(srtpPacketIndex, hdSsrcId, cacheIvBuf);
@@ -75,7 +75,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 
 		// compute Auth Tag over: encrypted RTP packet
 		final BufferView encrPktView = new BufferView(outputEncryptedPacketBuf);
-		computeAuthTagForRtp(encrPktView, srtpPacketIndex, cacheAuthTagBuf);
+		computeAuthTagForRtp(encrPktView, ctxStateRtpRocOutbound, cacheAuthTagBuf);
 
 		// append MKI
 		if (! ctxKmd.mki().isEmpty()) {

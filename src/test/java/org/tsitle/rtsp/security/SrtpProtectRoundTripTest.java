@@ -18,7 +18,7 @@ class SrtpProtectRoundTripTest {
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
-		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
 
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -46,8 +46,8 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0);
 
 		// Packet 1: sequence at wrap boundary (0xFFFF)
 		final short hdSeqNr1 = (short)0xFFFF;
@@ -66,8 +66,8 @@ class SrtpProtectRoundTripTest {
 		dec1.copyInto(0, decPkt1, 0, decPkt1.length);
 		assertArrayEquals(pkt1, decPkt1, "Packet with SEQ=0xFFFF should decrypt correctly");
 
-		assertEquals(1L, Common.getPrivateLong(senderCtx, "ctxStateRtpRocOutbound"), "Sender ROC should increment after SEQ wrap");
-		assertEquals(1L, Common.getPrivateLong(receiverCtx, "ctxStateRtpRocInbound"), "Receiver ROC should increment after SEQ wrap");
+		assertEquals(1, Common.getPrivateInt(senderCtx, "ctxStateRtpRocOutbound"), "Sender ROC should increment after SEQ wrap");
+		assertEquals(1, Common.getPrivateInt(receiverCtx, "ctxStateRtpRocInbound"), "Receiver ROC should increment after SEQ wrap");
 
 		// Packet 2: post-wrap sequence (0x0000), must use ROC=1
 		final short hdSeqNr2 = 0x0000;
@@ -95,8 +95,8 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0);
 
 		// First packet at wrap boundary
 		final short hdSeqNrWrap = (short)0xFFFF;
@@ -154,8 +154,8 @@ class SrtpProtectRoundTripTest {
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
-		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
+		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0);
 
 		// First packet far from wrap-boundary
 		final short hdSeqNrDoesntWrap = (short)0x0FFF;

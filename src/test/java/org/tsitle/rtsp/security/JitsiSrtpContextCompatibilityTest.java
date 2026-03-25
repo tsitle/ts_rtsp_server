@@ -19,7 +19,7 @@ public class JitsiSrtpContextCompatibilityTest {
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0L);
+		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0);
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
 		final byte[] plain = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);

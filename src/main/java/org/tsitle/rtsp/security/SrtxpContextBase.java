@@ -145,7 +145,7 @@ public abstract class SrtxpContextBase {
 
 	protected void computeAuthTagForRtp(
 				@NonNull BufferView encrPktView,
-				long packetIndex,
+				int roc,
 				@NonNull BufferExt curAuthTagBuf
 			) throws SrtpSecurityException {
 		if (ctxSessionKeysRtp == null) {
@@ -159,7 +159,7 @@ public abstract class SrtxpContextBase {
 
 			byte[] rocBytes = ByteBuffer.allocate(4)
 					.order(ByteOrder.BIG_ENDIAN)
-					.putInt((int)(packetIndex >> 16))
+					.putInt(roc)
 					.array();
 			ctxCam.macObj.update(rocBytes);
 
@@ -235,7 +235,7 @@ public abstract class SrtxpContextBase {
 	protected void validateAuthTag(
 				@NonNull BufferView bufView,
 				boolean isRtpPkt,
-				long srtpPacketIndex
+				int srtpRoc
 			) throws SrtpSecurityException {
 		// copy Auth Tag from the received packet
 		bufView.setOffset(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
@@ -246,7 +246,7 @@ public abstract class SrtxpContextBase {
 		bufView.setOffset(0);
 		bufView.setLength(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE - ctxKmd.mki().getUsed());
 		if (isRtpPkt) {
-			computeAuthTagForRtp(bufView, srtpPacketIndex, cacheAuthTagActualBuf);
+			computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
 		} else {
 			computeAuthTagForRtcp(bufView, cacheAuthTagActualBuf);
 		}

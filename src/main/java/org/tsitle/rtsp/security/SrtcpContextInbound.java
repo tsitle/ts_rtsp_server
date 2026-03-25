@@ -52,7 +52,7 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
 
 		// validate Auth Tag
-		validateAuthTag(encrPktView, false, 0L);
+		validateAuthTag(encrPktView, false, 0);
 
 		//
 		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);

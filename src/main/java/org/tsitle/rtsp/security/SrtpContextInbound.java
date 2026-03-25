@@ -13,7 +13,7 @@ import org.tsitle.rtsp.security.constants.KeySizes;
 public class SrtpContextInbound extends SrtpContextBase {
 
 	/** For SRTP decryption: Rollover counter */
-	private long ctxStateRtpRocInbound = 0;
+	private int ctxStateRtpRocInbound = 0;
 	/** For SRTP decryption: Last packet index */
 	private long ctxStateSrtpLastIndex = -1;
 
@@ -90,14 +90,14 @@ public class SrtpContextInbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = ((ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		final long srtpPacketIndex = (((long)ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
 			throw new SrtpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
 
 		// validate Auth Tag
-		validateAuthTag(srtpPacketBufView, true, srtpPacketIndex);
+		validateAuthTag(srtpPacketBufView, true, ctxStateRtpRocInbound);
 
 		//
 		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
