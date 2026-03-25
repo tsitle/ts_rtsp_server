@@ -116,7 +116,7 @@ public class RtspRequestParser {
 		}
 
 		// parse header lines
-		String headerLine;
+		String headerLine = "";
 		do {
 			try {
 				headerLine = readOneLine(false);
@@ -126,27 +126,21 @@ public class RtspRequestParser {
 			} catch (RtspInvalidRequestException e) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
-				break;
 			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting request");
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.SESSION_NOT_FOUND; }
-				break;
 			} catch (RtspUnsupportedAcceptTypeException e) {
 				logError(FNC_NAME, "Unsupported Accept Type, rejecting request");
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
-				break;
 			} catch (RtspUnsupportedTransportException e) {
 				logError(FNC_NAME, "Unsupported Transport, rejecting request");
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.UNSUPPORTED_TRANSPORT; }
-				break;
 			} catch (RtspMissingEncryptionParamsException e) {
 				logError(FNC_NAME, "Missing encryption parameters, rejecting request");
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
-				break;
 			} catch (RtspMissingAuthParamsException e) {
 				logError(FNC_NAME, "Missing authentication parameters, rejecting request");
 				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
-				break;
 			}
 		} while (! headerLine.isBlank());
 
