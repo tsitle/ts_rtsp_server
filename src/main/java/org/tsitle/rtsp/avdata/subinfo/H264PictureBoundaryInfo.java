@@ -109,7 +109,7 @@ public final class H264PictureBoundaryInfo implements Cloneable {
 		baos.write(deltaPicOrderCnt0);
 		baos.write(deltaPicOrderCnt1);
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }

@@ -186,7 +186,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 			throw new RuntimeException(e);
 		}
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }

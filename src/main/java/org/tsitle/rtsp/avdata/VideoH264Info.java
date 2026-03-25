@@ -182,7 +182,7 @@ public final class VideoH264Info extends CodecInfoH26xBase<VideoH264Info> implem
 			throw new RuntimeException(e);
 		}
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }

@@ -55,7 +55,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 				throw new RuntimeException(e);
 			}
 
-			return HashMd5Helper.hashOfBytes(baos.toByteArray());
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 		}
 	}
 
@@ -270,7 +270,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		baos.write(foundEoi ? 1 : 0);
 		baos.write(foundCom ? 1 : 0);
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }

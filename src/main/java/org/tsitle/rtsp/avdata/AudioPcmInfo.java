@@ -89,7 +89,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 		baos.write(bitsPerSample);
 		baos.write(samplesPerChannelInAudioData);
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }

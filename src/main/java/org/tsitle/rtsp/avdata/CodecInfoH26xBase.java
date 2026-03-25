@@ -59,7 +59,7 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 		baos.write(isVclNalUnit ? 1 : 0);
 		baos.write(isVclFirstSliceSegmentInPic ? 1 : 0);
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

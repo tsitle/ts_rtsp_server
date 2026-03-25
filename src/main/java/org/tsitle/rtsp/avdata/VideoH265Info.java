@@ -183,7 +183,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 		baos.write(nuhLayerId);
 		baos.write(nuhTemporalIdPlus1);
 
-		return HashMd5Helper.hashOfBytes(baos.toByteArray());
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}
 
 }
