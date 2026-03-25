@@ -49,19 +49,19 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 1;
 
 	/** Payload Header: RTP/H265 Payload Type as byte (6 bits) */
-	private final byte hdInnPayTypeBy;
+	private byte hdInnPayTypeBy;
 	/** Payload Header: RTP/H265 Payload Type as enum */
-	private final @NonNull H265PayloadType hdInnPayTypeEn;
+	private @NonNull H265PayloadType hdInnPayTypeEn;
 	/** Payload Header: Layer ID, required to be equal to zero (6 bits) */
-	private final byte hdInnPayNuhLayerId;
+	private byte hdInnPayNuhLayerId;
 	/** Payload Header: Temporal identifier of the NAL unit plus 1, required to be unequal to zero (3 bits) */
-	private final byte hdInnPayNuhTemporalIdPlus1;
+	private byte hdInnPayNuhTemporalIdPlus1;
 	/** FU Header: S bit, needs to be zero for the first packet and one for later packets (1 bit) */
-	private final boolean hdInnFuS;
+	private boolean hdInnFuS;
 	/** FU Header: E bit, needs to be one for the last packet and zero for all other packets (1 bit) */
-	private final boolean hdInnFuE;
+	private boolean hdInnFuE;
 	/** FU Header: NAL Unit Type, must be equal to the field Type of the NAL Unit (6 bits) */
-	private final byte hdInnFuTypeBy;
+	private byte hdInnFuTypeBy;
 
 	/**
 	 * Constructor.
@@ -81,51 +81,8 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 		super(RtpPacketType.V_H265, paramsBase);
 
 		//
-		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
-			throw new IllegalArgumentException("Invalid fragment offset");
-		}
-		if (h265Info.nuhLayerId != 0 || h265Info.nuhTemporalIdPlus1 == 0) {
-			throw new IllegalArgumentException("Cannot process this kind of H265");
-		}
-
-		/*
-		 * Transmission Modes:
-		 *   - SRST: a Single RTP stream on a Single media Transport
-		 *   - MRST: Multiple RTP streams over a Single media Transport
-		 *   - MRMT: Multiple RTP streams on Multiple media Transports
-		 */
-
-		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
-
-		// set inner main header fields
-		this.hdInnPayTypeBy = (isFragmented ? H265PayloadType.FU.getValue() : h265Info.nalUnitTypeBy);
-		this.hdInnPayTypeEn = H265PayloadType.of(this.hdInnPayTypeBy);
-		this.hdInnPayNuhLayerId = h265Info.nuhLayerId;
-		this.hdInnPayNuhTemporalIdPlus1 = h265Info.nuhTemporalIdPlus1;
-		this.hdInnFuS = (this.hdInnPayTypeEn == H265PayloadType.FU && fragmentOffset == 0);
-		this.hdInnFuE = (this.hdInnPayTypeEn == H265PayloadType.FU && isLastFragment);
-		this.hdInnFuTypeBy = (this.hdInnPayTypeEn == H265PayloadType.FU ? h265Info.nalUnitTypeBy : 0x00);
-
-		// build the inner header bitstream (main header + optional FU header)
-		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
-		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
-		this.packetBuf.append(tmpRtpXxxHeader);
-
-		/*
-		 * Copy the inner payload bitstream:
-		 *   - FU packets: The NAL Unit header of the fragmented NAL Unit is not included as such in the FU payload.
-		 *   - Single NAL Unit packets: NAL Unit payload data (the NAL Unit excluding its NAL Unit header)
-		 *     of the contained NAL unit.
-		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
-		 * we need to skip the NAL Unit header.
-		 */
-		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH265Parser.NAL_UNIT_HEADER_SIZE : 0);
-		this.packetBuf.copyFrom(
-				payloadData,
-				skip,
-				this.packetBuf.getUsed(),
-				payloadData.getUsed() - skip
-			);
+		this.hdInnPayTypeEn = H265PayloadType.UNKNOWN;
+		updatePacket(paramsBase, fragmentOffset, isLastFragment, h265Info, payloadData);
 	}
 
 	/**
@@ -168,6 +125,73 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Update the entire packet.
+	 * @param paramsBase Base Container parameters
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the H265 frame data) (24 bits)
+	 * @param isLastFragment Is this the last fragment of the frame?
+	 * @param h265Info H265 info
+	 * @param payloadData Payload data
+	 */
+	public void updatePacket(
+				@NonNull ParamsContainerBase paramsBase,
+				int fragmentOffset,
+				boolean isLastFragment,
+				@NonNull VideoH265Info h265Info,
+				@NonNull BufferExt payloadData
+			) {
+		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
+			throw new IllegalArgumentException("Invalid fragment offset");
+		}
+		if (h265Info.nuhLayerId != 0 || h265Info.nuhTemporalIdPlus1 == 0) {
+			throw new IllegalArgumentException("Cannot process this kind of H265");
+		}
+
+		//
+		updatePacketHeader(paramsBase);
+
+		/*
+		 * Transmission Modes:
+		 *   - SRST: a Single RTP stream on a Single media Transport
+		 *   - MRST: Multiple RTP streams over a Single media Transport
+		 *   - MRMT: Multiple RTP streams on Multiple media Transports
+		 */
+
+		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
+
+		// set inner main header fields
+		this.hdInnPayTypeBy = (isFragmented ? H265PayloadType.FU.getValue() : h265Info.nalUnitTypeBy);
+		this.hdInnPayTypeEn = H265PayloadType.of(this.hdInnPayTypeBy);
+		this.hdInnPayNuhLayerId = h265Info.nuhLayerId;
+		this.hdInnPayNuhTemporalIdPlus1 = h265Info.nuhTemporalIdPlus1;
+		this.hdInnFuS = (this.hdInnPayTypeEn == H265PayloadType.FU && fragmentOffset == 0);
+		this.hdInnFuE = (this.hdInnPayTypeEn == H265PayloadType.FU && isLastFragment);
+		this.hdInnFuTypeBy = (this.hdInnPayTypeEn == H265PayloadType.FU ? h265Info.nalUnitTypeBy : 0x00);
+
+		// build the inner header bitstream (main header + optional FU header)
+		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
+
+		/*
+		 * Copy the inner payload bitstream:
+		 *   - FU packets: The NAL Unit header of the fragmented NAL Unit is not included as such in the FU payload.
+		 *   - Single NAL Unit packets: NAL Unit payload data (the NAL Unit excluding its NAL Unit header)
+		 *     of the contained NAL unit.
+		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
+		 * we need to skip the NAL Unit header.
+		 */
+		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH265Parser.NAL_UNIT_HEADER_SIZE : 0);
+		this.packetBuf.copyFrom(
+				payloadData,
+				skip,
+				this.packetBuf.getUsed(),
+				payloadData.getUsed() - skip
+			);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

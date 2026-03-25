@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
@@ -28,6 +29,7 @@ public final class ThreadRtpSenderMjpeg<
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
 	private final BufferExt cacheBufForFD = new BufferExt();
+	private @Nullable RtpPacketMjpeg cachePlainPacket = null;
 
 	/**
 	 * Constructor.
@@ -115,16 +117,25 @@ public final class ThreadRtpSenderMjpeg<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
-		RtpPacketMjpeg plainPacket = new RtpPacketMjpeg(
-				cacheParamsBase,
-				curFragmentData.fragmentOffset(),
-				curFrameJpegInfo,
-				cacheRtpInnerPayloadBuf
-			);
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
-			return plainPacket;
+		if (cachePlainPacket == null) {
+			cachePlainPacket = new RtpPacketMjpeg(
+					cacheParamsBase,
+					curFragmentData.fragmentOffset(),
+					curFrameJpegInfo,
+					cacheRtpInnerPayloadBuf
+				);
+		} else {
+			cachePlainPacket.updatePacket(
+					cacheParamsBase,
+					curFragmentData.fragmentOffset(),
+					curFrameJpegInfo,
+					cacheRtpInnerPayloadBuf
+				);
 		}
-		return encryptRtpPacketPayload(plainPacket);
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+			return cachePlainPacket;
+		}
+		return encryptRtpPacketPayload(cachePlainPacket);
 	}
 
 }

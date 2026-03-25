@@ -24,21 +24,21 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	 *   2=Image is an even field of an interlaced video signal<br />
 	 *   3=Image is a single field from an interlaced video signal
 	 */
-	private final byte hdInnFirstByte;
+	private byte hdInnFirstByte;
 	/** Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits) */
-	private final int hdInnFragmentOffset;
+	private int hdInnFragmentOffset;
 	/**
 	 * JPEG Type (8 bits)<br />
 	 *   0=YCbCr 4:2:2<br />
 	 *   1=YCbCr 4:2:0
 	 */
-	private final byte hdInnType;
+	private byte hdInnType;
 	/** Q value (8 bits) */
-	private final byte hdInnQ;
+	private byte hdInnQ;
 	/** Image width divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private final byte hdInnImageWidthDiv8;
+	private byte hdInnImageWidthDiv8;
 	/** Image height divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private final byte hdInnImageHeightDiv8;
+	private byte hdInnImageHeightDiv8;
 
 	/**
 	 * Constructor.
@@ -56,36 +56,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		super(RtpPacketType.V_JPEG, paramsBase);
 
 		//
-		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
-			throw new IllegalArgumentException("Invalid fragment offset");
-		}
-		if (jpegInfo.sof0_imgWidth <= 0 || jpegInfo.sof0_imgWidth > IMAGE_MAX_WIDTH_HEIGHT ||
-				jpegInfo.sof0_imgHeight <= 0 || jpegInfo.sof0_imgHeight > IMAGE_MAX_WIDTH_HEIGHT ||
-				(jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
-						jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
-				jpegInfo.sof0_precision != 8 ||
-				jpegInfo.sos_scanDataOffs < 0 || jpegInfo.sos_scanDataLength < 1 ||
-				jpegInfo.sof2_isProgressive ||
-				jpegInfo.dqt_table16bitCount != 0 ||
-				! jpegInfo.foundEoi || jpegInfo.usesDri) {
-			throw new IllegalArgumentException("Cannot process this kind of JPEG");
-		}
-
-		// set inner main header fields
-		this.hdInnFirstByte = (byte)0;
-		this.hdInnFragmentOffset = fragmentOffset;
-		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
-		this.hdInnQ = (byte)255;
-		this.hdInnImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
-		this.hdInnImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
-
-		// build the inner header bitstream (main header + optional QT header)
-		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields(fragmentOffset == 0, jpegInfo);
-		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
-		this.packetBuf.append(tmpRtpXxxHeader);
-
-		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		updatePacket(paramsBase, fragmentOffset, jpegInfo, payloadData);
 	}
 
 	/**
@@ -120,6 +91,58 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Update the entire packet.
+	 * @param paramsBase Base Container parameters
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits)
+	 * @param jpegInfo JPEG info
+	 * @param payloadData Payload data
+	 */
+	public void updatePacket(
+				@NonNull ParamsContainerBase paramsBase,
+				int fragmentOffset,
+				@NonNull VideoJpegInfo jpegInfo,
+				@NonNull BufferExt payloadData
+			) {
+		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
+			throw new IllegalArgumentException("Invalid fragment offset");
+		}
+
+		//
+		updatePacketHeader(paramsBase);
+
+		//
+		if (jpegInfo.sof0_imgWidth <= 0 || jpegInfo.sof0_imgWidth > IMAGE_MAX_WIDTH_HEIGHT ||
+				jpegInfo.sof0_imgHeight <= 0 || jpegInfo.sof0_imgHeight > IMAGE_MAX_WIDTH_HEIGHT ||
+				(jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
+						jpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
+				jpegInfo.sof0_precision != 8 ||
+				jpegInfo.sos_scanDataOffs < 0 || jpegInfo.sos_scanDataLength < 1 ||
+				jpegInfo.sof2_isProgressive ||
+				jpegInfo.dqt_table16bitCount != 0 ||
+				! jpegInfo.foundEoi || jpegInfo.usesDri) {
+			throw new IllegalArgumentException("Cannot process this kind of JPEG");
+		}
+
+		// set inner main header fields
+		this.hdInnFirstByte = (byte)0;
+		this.hdInnFragmentOffset = fragmentOffset;
+		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
+		this.hdInnQ = (byte)255;
+		this.hdInnImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
+		this.hdInnImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
+
+		// build the inner header bitstream (main header + optional QT header)
+		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields(fragmentOffset == 0, jpegInfo);
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
+
+		// copy the inner payload bitstream
+		this.packetBuf.append(payloadData);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

@@ -22,15 +22,15 @@ public class RtpPacketContainerBase {
 	/** CSRC Count (4 bits) */
 	private final byte hdBaseCsrcCount;
 	/** Is the marker bit set? (1 bit) */
-	private final boolean hdBaseMarker;
+	private boolean hdBaseMarker;
 	/** Payload type (7 bits) */
 	private final @NonNull RtpPacketType hdBasePayloadType;
 	/** Original Payload type as byte */
 	private final byte orgPayloadTypeByte;
 	/** Sequence number (16 bits unsigned) */
-	private final short hdBaseSequenceNumber;
+	private short hdBaseSequenceNumber;
 	/** Timestamp (32 bits) */
-	private final int hdBaseTimestamp;
+	private int hdBaseTimestamp;
 	/** Synchronization Source Identifier (identifies the server) (32 bits) */
 	private final int hdBaseSsrc;
 
@@ -46,22 +46,19 @@ public class RtpPacketContainerBase {
 				@NonNull RtpPacketType payloadType,
 				@NonNull ParamsContainerBase paramsBase
 			) {
-		// fill static header fields
+		// set static header fields
 		this.hdBaseVersion = 2;
 		this.hdBasePadding = false;
 		this.hdBaseExtension = false;
 		this.hdBaseCsrcCount = 0;
 		this.hdBaseSsrc = paramsBase.rtspSsrcId;
 
-		// fill dynamic header fields
-		this.hdBaseMarker = paramsBase.doSetMarker;
-		this.hdBaseSequenceNumber = paramsBase.sequenceNumber;
-		this.hdBaseTimestamp = paramsBase.rtpTimestamp;
+		// set dynamic header fields
 		this.hdBasePayloadType = payloadType;
 		this.orgPayloadTypeByte = payloadType.getValue();
 
-		// build the header bistream
-		buildRawHeaderFromFields();
+		// set remaining dynamic header fields and build the header bitstream
+		updatePacketHeader(paramsBase);
 	}
 
 	/**
@@ -281,6 +278,20 @@ public class RtpPacketContainerBase {
 				@NonNull ParamsContainerBase paramsBase
 			) {
 		return new RtpPacketContainerBase(payloadType, paramsBase);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected void updatePacketHeader(@NonNull ParamsContainerBase paramsBase) {
+		// set dynamic header fields
+		hdBaseMarker = paramsBase.doSetMarker;
+		hdBaseSequenceNumber = paramsBase.sequenceNumber;
+		hdBaseTimestamp = paramsBase.rtpTimestamp;
+
+		// build the header bistream
+		packetBuf.clear();
+		buildRawHeaderFromFields();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

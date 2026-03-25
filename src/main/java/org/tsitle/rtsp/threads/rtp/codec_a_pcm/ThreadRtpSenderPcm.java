@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.buffers.BufferExt;
@@ -37,6 +38,7 @@ public final class ThreadRtpSenderPcm<
 	/** Buffer used to store the current frame from the input stream */
 	private final BufferExt cacheOrgAudioFrameBuf = new BufferExt();
 	private final BufferExt cacheBufForFD = new BufferExt();
+	private @Nullable RtpPacketPcm cachePlainPacket = null;
 
 	/**
 	 * Constructor.
@@ -141,17 +143,25 @@ public final class ThreadRtpSenderPcm<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
-		RtpPacketPcm plainPacket = new RtpPacketPcm(
-				cacheParamsBase,
-				rtpPayloadType,
-				curFragmentData.fragmentOffset(),
-				curFramePcmInfo,
-				cacheRtpInnerPayloadBuf
-			);
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
-			return plainPacket;
+		if (cachePlainPacket == null) {
+			cachePlainPacket = new RtpPacketPcm(
+					cacheParamsBase,
+					rtpPayloadType,
+					curFragmentData.fragmentOffset(),
+					curFramePcmInfo,
+					cacheRtpInnerPayloadBuf
+				);
+		} else {
+			cachePlainPacket.updatePacket(
+					cacheParamsBase,
+					curFragmentData.fragmentOffset(),
+					cacheRtpInnerPayloadBuf
+				);
 		}
-		return encryptRtpPacketPayload(plainPacket);
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+			return cachePlainPacket;
+		}
+		return encryptRtpPacketPayload(cachePlainPacket);
 	}
 
 }

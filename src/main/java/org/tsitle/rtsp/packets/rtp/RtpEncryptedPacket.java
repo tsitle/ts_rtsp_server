@@ -27,13 +27,18 @@ public class RtpEncryptedPacket extends RtpPacketContainerBase {
 		this.srtpCtx = srtpCtx;
 
 		//
-		updatePacketBuffer(plainPacket);
+		updatePacket(plainPacket);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void updatePacketBuffer(@NonNull RtpPacketContainerBase plainPacket) throws SrtpSecurityException {
+	/**
+	 * Update the entire packet with the contents of the given plain packet.
+	 * @param plainPacket Plain RTP packet
+	 * @throws SrtpSecurityException If any kind of error occurred during the SRTP encryption
+	 */
+	public void updatePacket(@NonNull RtpPacketContainerBase plainPacket) throws SrtpSecurityException {
 		packetBuf.copyOf(plainPacket.packetBuf, 0, RTP_CONT_HEADER_SIZE);
 
 		srtpCtx.protectRtp(

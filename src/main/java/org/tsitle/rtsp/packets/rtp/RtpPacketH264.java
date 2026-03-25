@@ -55,17 +55,17 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 1;
 
 	/** Payload Header: RTP/H264 Payload Type as byte (6 bits) */
-	private final byte hdInnPayTypeBy;
+	private byte hdInnPayTypeBy;
 	/** Payload Header: RTP/H264 Payload Type as enum */
-	private final @NonNull H264PayloadType hdInnPayTypeEn;
+	private @NonNull H264PayloadType hdInnPayTypeEn;
 	/** Payload Header: Ref IDC - indicates importance: 0=not used for reference, >0=used for reference (2 bits) */
-	private final byte hdInnPayNuhRefIdc;
+	private byte hdInnPayNuhRefIdc;
 	/** FU Header: S bit, needs to be zero for the first packet and one for later packets (1 bit) */
-	private final boolean hdInnFuS;
+	private boolean hdInnFuS;
 	/** FU Header: E bit, needs to be one for the last packet and zero for all other packets (1 bit) */
-	private final boolean hdInnFuE;
+	private boolean hdInnFuE;
 	/** FU Header: NAL Unit Type, must be equal to the field Type of the NAL Unit (6 bits) */
-	private final byte hdInnFuTypeBy;
+	private byte hdInnFuTypeBy;
 
 	/**
 	 * Constructor.
@@ -85,47 +85,8 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 		super(RtpPacketType.V_H264, paramsBase);
 
 		//
-		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
-			throw new IllegalArgumentException("Invalid fragment offset");
-		}
-
-		/*
-		 * Transmission Modes:
-		 *   - SRST: a Single RTP stream on a Single media Transport
-		 *   - MRST: Multiple RTP streams over a Single media Transport
-		 *   - MRMT: Multiple RTP streams on Multiple media Transports
-		 */
-
-		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
-
-		// set inner main header fields
-		this.hdInnPayTypeBy = (isFragmented ? H264PayloadType.FU_A.getValue() : h264Info.nalUnitTypeBy);
-		this.hdInnPayTypeEn = H264PayloadType.of(this.hdInnPayTypeBy);
-		this.hdInnPayNuhRefIdc = h264Info.nuhRefIdc;
-		this.hdInnFuS = (this.hdInnPayTypeEn == H264PayloadType.FU_A && fragmentOffset == 0);
-		this.hdInnFuE = (this.hdInnPayTypeEn == H264PayloadType.FU_A && isLastFragment);
-		this.hdInnFuTypeBy = (this.hdInnPayTypeEn == H264PayloadType.FU_A ? h264Info.nalUnitTypeBy : 0x00);
-
-		// build the inner header bitstream (main header + optional FU header)
-		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
-		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
-		this.packetBuf.append(tmpRtpXxxHeader);
-
-		/*
-		 * Copy the inner payload bitstream:
-		 *   - FU packets: The NAL Unit header of the fragmented NAL Unit is not included as such in the FU payload.
-		 *   - Single NAL Unit packets: NAL Unit payload data (the NAL Unit excluding its NAL Unit header)
-		 *     of the contained NAL unit.
-		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
-		 * we need to skip the NAL Unit header.
-		 */
-		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH264Parser.NAL_UNIT_HEADER_SIZE : 0);
-		this.packetBuf.copyFrom(
-				payloadData,
-				skip,
-				this.packetBuf.getUsed(),
-				payloadData.getUsed() - skip
-			);
+		this.hdInnPayTypeEn = H264PayloadType.UNKNOWN;
+		updatePacket(paramsBase, fragmentOffset, isLastFragment, h264Info, payloadData);
 	}
 
 	/**
@@ -167,6 +128,69 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Update the entire packet.
+	 * @param paramsBase Base Container parameters
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the H264 frame data) (24 bits)
+	 * @param isLastFragment Is this the last fragment of the frame?
+	 * @param h264Info H264 info
+	 * @param payloadData Payload data
+	 */
+	public void updatePacket(
+				@NonNull ParamsContainerBase paramsBase,
+				int fragmentOffset,
+				boolean isLastFragment,
+				@NonNull VideoH264Info h264Info,
+				@NonNull BufferExt payloadData
+			) {
+		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
+			throw new IllegalArgumentException("Invalid fragment offset");
+		}
+
+		//
+		updatePacketHeader(paramsBase);
+
+		/*
+		 * Transmission Modes:
+		 *   - SRST: a Single RTP stream on a Single media Transport
+		 *   - MRST: Multiple RTP streams over a Single media Transport
+		 *   - MRMT: Multiple RTP streams on Multiple media Transports
+		 */
+
+		final boolean isFragmented = (fragmentOffset != 0 || ! isLastFragment);
+
+		// set inner main header fields
+		this.hdInnPayTypeBy = (isFragmented ? H264PayloadType.FU_A.getValue() : h264Info.nalUnitTypeBy);
+		this.hdInnPayTypeEn = H264PayloadType.of(this.hdInnPayTypeBy);
+		this.hdInnPayNuhRefIdc = h264Info.nuhRefIdc;
+		this.hdInnFuS = (this.hdInnPayTypeEn == H264PayloadType.FU_A && fragmentOffset == 0);
+		this.hdInnFuE = (this.hdInnPayTypeEn == H264PayloadType.FU_A && isLastFragment);
+		this.hdInnFuTypeBy = (this.hdInnPayTypeEn == H264PayloadType.FU_A ? h264Info.nalUnitTypeBy : 0x00);
+
+		// build the inner header bitstream (main header + optional FU header)
+		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
+
+		/*
+		 * Copy the inner payload bitstream:
+		 *   - FU packets: The NAL Unit header of the fragmented NAL Unit is not included as such in the FU payload.
+		 *   - Single NAL Unit packets: NAL Unit payload data (the NAL Unit excluding its NAL Unit header)
+		 *     of the contained NAL unit.
+		 * So for all Single NAL Unit packets and the first packet of a fragmented NAL Unit,
+		 * we need to skip the NAL Unit header.
+		 */
+		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH264Parser.NAL_UNIT_HEADER_SIZE : 0);
+		this.packetBuf.copyFrom(
+				payloadData,
+				skip,
+				this.packetBuf.getUsed(),
+				payloadData.getUsed() - skip
+			);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

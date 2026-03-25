@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.*;
 import org.tsitle.rtsp.avstreams.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
@@ -20,6 +21,8 @@ public final class ThreadRtpSenderH264<
 			AVSTRIC extends AvStreamIncomingBase,
 			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
 		> extends ThreadRtpSenderH26xBase<VideoH264Info, AVSTRIC, AVSTROG, ThreadDataProvBase<VideoH264Info, AVSTROG>> {
+
+	private @Nullable RtpPacketH264 cachePlainPacket = null;
 
 	/**
 	 * Constructor.
@@ -95,17 +98,27 @@ public final class ThreadRtpSenderH264<
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
 				", isLastFragment=" + curFragmentData.isLastFragment() +
 				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/
-		RtpPacketH264 plainPacket = new RtpPacketH264(
-				cacheParamsBase,
-				curFragmentData.fragmentOffset(),
-				curFragmentData.isLastFragment(),
-				globalCurNudPtr.h26xInfo,
-				cacheRtpInnerPayloadBuf
-			);
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
-			return plainPacket;
+		if (cachePlainPacket == null) {
+			cachePlainPacket = new RtpPacketH264(
+					cacheParamsBase,
+					curFragmentData.fragmentOffset(),
+					curFragmentData.isLastFragment(),
+					globalCurNudPtr.h26xInfo,
+					cacheRtpInnerPayloadBuf
+				);
+		} else {
+			cachePlainPacket.updatePacket(
+					cacheParamsBase,
+					curFragmentData.fragmentOffset(),
+					curFragmentData.isLastFragment(),
+					globalCurNudPtr.h26xInfo,
+					cacheRtpInnerPayloadBuf
+				);
 		}
-		return encryptRtpPacketPayload(plainPacket);
+		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+			return cachePlainPacket;
+		}
+		return encryptRtpPacketPayload(cachePlainPacket);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

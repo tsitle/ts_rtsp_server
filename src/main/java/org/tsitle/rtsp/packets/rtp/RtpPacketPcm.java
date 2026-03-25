@@ -35,24 +35,14 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 		if (! packetType.isPcmAudio()) {
 			throw new IllegalArgumentException("Invalid RTP packet type");
 		}
-		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
-			throw new IllegalArgumentException("Invalid fragment offset");
-		}
 		if (pcmInfo.samplesPerChannelInAudioData < 1 || pcmInfo.samplesPerChannelInAudioData > 0xFFFFFF ||
 				(pcmInfo.bitsPerSample != 8 && pcmInfo.bitsPerSample != 16) ||
 				pcmInfo.channels < 1 || pcmInfo.channels > 2) {
 			throw new IllegalArgumentException("Cannot process this kind of PCM");
 		}
 
-		// set inner main header fields
-		/* there are none */
-
-		// build the inner header bitstream
-		this.payloadSpecHeaderSize = 0;
-		/* there is none */
-
-		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		//
+		updatePacket(paramsBase, fragmentOffset, payloadData);
 	}
 
 	/**
@@ -73,6 +63,38 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 
 		// parse inner main header fields
 		/* there are none */
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Update the entire packet.
+	 * @param paramsBase Base Container parameters
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the PCM frame data) (24 bits)
+	 * @param payloadData Payload data
+	 */
+	public void updatePacket(
+				@NonNull ParamsContainerBase paramsBase,
+				int fragmentOffset,
+				@NonNull BufferExt payloadData
+			) {
+		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
+			throw new IllegalArgumentException("Invalid fragment offset");
+		}
+
+		//
+		updatePacketHeader(paramsBase);
+
+		// set inner main header fields
+		/* there are none */
+
+		// build the inner header bitstream
+		this.payloadSpecHeaderSize = 0;
+		/* there is none */
+
+		// copy the inner payload bitstream
+		this.packetBuf.append(payloadData);
 	}
 
 }

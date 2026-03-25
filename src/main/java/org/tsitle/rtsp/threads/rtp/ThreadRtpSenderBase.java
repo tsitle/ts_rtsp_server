@@ -383,7 +383,7 @@ public abstract class ThreadRtpSenderBase<
 					srtpCtxOutbound
 				);
 			} else {
-				cacheRtpEncrPacket.updatePacketBuffer(plainPacket);
+				cacheRtpEncrPacket.updatePacket(plainPacket);
 			}
 			Instant tmpInstant2 = Instant.now();
 			long delta = Duration.between(tmpInstant1, tmpInstant2).toNanos();

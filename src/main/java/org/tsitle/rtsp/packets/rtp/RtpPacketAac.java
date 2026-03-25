@@ -17,9 +17,9 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	public static final int HEADER_FLD_INDEXDELTA_LENGTH_BITS = 0;
 
 	/** Size of the AAC frame in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
-	private final short hdInnAuSize;
+	private short hdInnAuSize;
 	/** Access Unit Index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits) */
-	private final byte hdInnAuIndex;
+	private byte hdInnAuIndex;
 
 	/**
 	 * Constructor.
@@ -37,37 +37,7 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		super(RtpPacketType.A_AAC, paramsBase);
 
 		//
-		if (fragmentIndex < 0 || fragmentIndex > 0x07) {
-			throw new IllegalArgumentException("Invalid fragment index");
-		}
-		if (aacInfo.channelConfiguration == 0) {
-			throw new IllegalArgumentException("Cannot process this kind of AAC");
-		}
-		if (payloadData.getUsed() != aacInfo.getPayloadLength()) {
-			throw new IllegalArgumentException("Invalid AAC payload size");
-		}
-
-		/*
-		 *  +-------------------------------------------------------------------+
-		 *  | AU-headers-length (16)                                            |
-		 *  +-------------------------------------------------------------------+
-		 *  | AU-header (13 bits 'size' + 3 bits 'index' + 0 bits 'indexDelta') |
-		 *  +-------------------------------------------------------------------+
-		 *  | AAC frame bytes                                                   |
-		 *  +-------------------------------------------------------------------+
-		 */
-
-		// set inner main header fields
-		this.hdInnAuSize = (short)aacInfo.getPayloadLength();
-		this.hdInnAuIndex = fragmentIndex;
-
-		// build the inner header bitstream
-		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
-		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
-		this.packetBuf.append(tmpRtpXxxHeader);
-
-		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		updatePacket(paramsBase, fragmentIndex, aacInfo, payloadData);
 	}
 
 	/**
@@ -96,6 +66,58 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 			throw new IllegalArgumentException("Invalid RTP payload size (is=" +
 					tmpPaySz + ", exp=" + hdInnAuSize + ")");
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Update the entire packet.
+	 * @param paramsBase Base Container parameters
+	 * @param fragmentIndex Fragment index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits)
+	 * @param aacInfo AAC info
+	 * @param payloadData Payload data
+	 */
+	public void updatePacket(
+				@NonNull ParamsContainerBase paramsBase,
+				byte fragmentIndex,
+				@NonNull AudioAacInfo aacInfo,
+				@NonNull BufferExt payloadData
+			) {
+		if (fragmentIndex < 0 || fragmentIndex > 0x07) {
+			throw new IllegalArgumentException("Invalid fragment index");
+		}
+		if (aacInfo.channelConfiguration == 0) {
+			throw new IllegalArgumentException("Cannot process this kind of AAC");
+		}
+		if (payloadData.getUsed() != aacInfo.getPayloadLength()) {
+			throw new IllegalArgumentException("Invalid AAC payload size");
+		}
+
+		//
+		updatePacketHeader(paramsBase);
+
+		/*
+		 *  +-------------------------------------------------------------------+
+		 *  | AU-headers-length (16)                                            |
+		 *  +-------------------------------------------------------------------+
+		 *  | AU-header (13 bits 'size' + 3 bits 'index' + 0 bits 'indexDelta') |
+		 *  +-------------------------------------------------------------------+
+		 *  | AAC frame bytes                                                   |
+		 *  +-------------------------------------------------------------------+
+		 */
+
+		// set inner main header fields
+		this.hdInnAuSize = (short)aacInfo.getPayloadLength();
+		this.hdInnAuIndex = fragmentIndex;
+
+		// build the inner header bitstream
+		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
+		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
+		this.packetBuf.append(tmpRtpXxxHeader);
+
+		// copy the inner payload bitstream
+		this.packetBuf.append(payloadData);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
