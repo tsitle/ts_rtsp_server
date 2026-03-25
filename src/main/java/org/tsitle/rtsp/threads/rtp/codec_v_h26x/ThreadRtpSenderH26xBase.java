@@ -240,12 +240,11 @@ public abstract class ThreadRtpSenderH26xBase<
 		moveNextAuToTempAu();
 
 		//
-		boolean haveEos = false;
 		boolean haveAuStartVcl = globalTempAu.arrNalUnitData.stream()
 				.filter(nud -> nud.h26xInfo != null)
 				.anyMatch(nud -> nud.h26xInfo.isVclFirstSliceSegmentInPic);
 
-		while (threadDataProv != null && ! threadDataProv.haveEos() && ! haveEos) {
+		while (threadDataProv != null && ! threadDataProv.haveEos()) {
 			/*
 			 * Try to grab the next NAL Unit from the video stream.
 			 * Stores the result in globalTempAu.
@@ -253,9 +252,10 @@ public abstract class ThreadRtpSenderH26xBase<
 			try {
 				frameDataSupplierGrabNalUnit();
 			} catch (InputStreamEosException e) {
-				logWarn(FNC_NAME, "EOS reached");
-				haveEos = true;
-				continue;
+				if (threadDataProv != null && threadDataProv.isRunning()) {
+					logWarn(FNC_NAME, "EOS reached");
+				}
+				break;
 			}
 
 			//
