@@ -29,6 +29,8 @@ class Common {
 	static final BufferExt DEFAULT_MASTER_KEY = createBufferFromHex("E1F97A0D3E018BE0D64FA32C06DE4139");
 	static final BufferExt DEFAULT_MASTER_SALT = createBufferFromHex("0EC675AD498AFEEBB6960B3AABE6");
 
+	static final int AUTH_KEY_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_AUTH_KEY_LEN;
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -53,67 +55,70 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull SrtxpKmd createSrtxpKmdDefault() {
+	static @NonNull SrtxpKmd createSrtxpKmdDefault(int ssrcId) {
 		return new SrtxpKmd(
 				Common.DEFAULT_MASTER_KEY,
 				Common.DEFAULT_MASTER_SALT,
-				KeySizes.AUTH_KEY_SIZE_160,
-				new BufferExt()
+				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				new BufferExt(),
+				ssrcId
 			);
 	}
 
-	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault() throws SrtpSecurityException {
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault(int ssrcId) throws SrtpSecurityException {
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextInbound(kmd);
 	}
 
-	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault() throws SrtpSecurityException {
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault(int ssrcId) throws SrtpSecurityException {
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextOutbound(kmd);
 	}
 
-	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault() throws SrtpSecurityException {
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault(int ssrcId) throws SrtpSecurityException {
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextInbound(kmd);
 	}
 
-	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault() throws SrtpSecurityException {
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault(int ssrcId) throws SrtpSecurityException {
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextOutbound(kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtp() throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtp(int ssrcId) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtcp() throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtcp(int ssrcId) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdDefault();
+		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull SrtxpKmd createSrtxpKmdNonDef(@NonNull BufferExt mk, @NonNull BufferExt ms) {
+	static @NonNull SrtxpKmd createSrtxpKmdNonDef(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) {
 		return new SrtxpKmd(
 				mk,
 				ms,
-				KeySizes.AUTH_KEY_SIZE_160,
-				new BufferExt()
+				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				new BufferExt(),
+				ssrcId
 			);
 	}
 
-	static @NonNull SessionKeys createSessionKeysNonDefRtp(@NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
+	@SuppressWarnings("SameParameterValue")
+	static @NonNull SessionKeys createSessionKeysNonDefRtp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdNonDef(mk, ms);
+		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
 		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysNonDefRtcp(@NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysNonDefRtcp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdNonDef(mk, ms);
+		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
 		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
@@ -177,7 +182,6 @@ class Common {
 		if (ctx instanceof SrtpContextOutbound) {
 			Common.setPrivateLong(ctx, "ctxStateRtpRocOutbound", roc);
 		}
-		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
@@ -185,7 +189,6 @@ class Common {
 		if (ctx instanceof SrtcpContextOutbound) {
 			Common.setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
 		}
-		ctx.setKmdAuthKeyLength(KeySizes.AUTH_KEY_SIZE_160);
 		ctx.setRtcpSessionKeys(sessionKeys);
 	}
 

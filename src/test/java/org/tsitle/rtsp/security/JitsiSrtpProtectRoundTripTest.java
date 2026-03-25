@@ -13,13 +13,13 @@ class JitsiSrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v1() throws Exception {
-		// derive RTP session keys
-		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
-		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
-		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0L);
+		final short hdSeqNr = 0x1289;
+		final int hdSsrc = 0xAB12CD34;
 
-		short hdSeqNr = 0x1234;
-		int hdSsrc = 0x11223344;
+		// derive RTP session keys
+		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
+		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0L);
 
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -41,14 +41,14 @@ class JitsiSrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v2() throws Exception {
+		final short hdSeqNr = 0x1234;
+		final int hdSsrc = 0x11223344;
+
 		// derive RTP session keys using Jitsi KDF
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
-		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
+		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0L);
-
-		short hdSeqNr = 0x1234;
-		int hdSsrc = 0x11223344;
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AABBCCDDEEFF01AB23CD45EF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);

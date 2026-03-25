@@ -53,7 +53,7 @@ class JitsiCommon {
 				org.jitsi.srtp.SrtpPolicy.AESCM_ENCRYPTION,
 				KeySizes.AES_128_KEY_SIZE,
 				org.jitsi.srtp.SrtpPolicy.HMACSHA1_AUTHENTICATION,
-				KeySizes.AUTH_KEY_SIZE_160,
+				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
 				KeySizes.AUTH_TAG_SIZE,
 				KeySizes.SALT_SIZE
 			);
@@ -62,7 +62,7 @@ class JitsiCommon {
 	static @NonNull SessionKeys jitsiCreateSessionKeysDefaultRtp() throws Exception {
 		// Derive keys via Jitsi reflection (labels 0,1,2 for RTP)
 		byte[] rtpEnc = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 0, KeySizes.AES_128_KEY_SIZE);
-		byte[] rtpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 1, KeySizes.AUTH_KEY_SIZE_160);
+		byte[] rtpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 1, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] rtpSalt = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 2, KeySizes.SALT_SIZE);
 
 		return new SessionKeys(
@@ -75,7 +75,7 @@ class JitsiCommon {
 	static @NonNull SessionKeys jitsiCreateSessionKeysDefaultRtcp() throws Exception {
 		// Derive keys via Jitsi reflection (labels 3,4,5 for RTCP)
 		byte[] rtcpEnc = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 3, KeySizes.AES_128_KEY_SIZE);
-		byte[] rtcpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 4, KeySizes.AUTH_KEY_SIZE_160);
+		byte[] rtcpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 4, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] rtcpSalt = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 5, KeySizes.SALT_SIZE);
 
 		return new SessionKeys(

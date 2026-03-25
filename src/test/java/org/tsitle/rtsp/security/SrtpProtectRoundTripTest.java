@@ -11,14 +11,14 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
-		// Arrange
-		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
-		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
-		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
-
 		final short hdSeqNr = 0x1234;
 		final int hdSsrc = 0x11223344;
+
+		// Arrange
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
+		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
 
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -40,14 +40,14 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protectAndUnprotect_should_handle_roc_wrap_from_seq_ffff_to_0000() throws Exception {
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
+		final int hdSsrc = 0x11223344;
 
-		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
-		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
-
-		final int hdSsrc = 0x11223344;
 
 		// Packet 1: sequence at wrap boundary (0xFFFF)
 		final short hdSeqNr1 = (short)0xFFFF;
@@ -89,14 +89,14 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void unprotectSrtp_should_reject_replay_after_roc_wrap() throws Exception {
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
+		final int hdSsrc = 0xABCD1234;
 
-		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
-		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
-
-		final int hdSsrc = 0xABCD1234;
 
 		// First packet at wrap boundary
 		final short hdSeqNrWrap = (short)0xFFFF;
@@ -148,14 +148,14 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void unprotectSrtp_should_reject_replay_for_old_seqnr() throws Exception {
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp();
+		final int hdSsrc = 0x11223344;
 
-		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
-		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0L);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0L);
-
-		final int hdSsrc = 0x11223344;
 
 		// First packet far from wrap-boundary
 		final short hdSeqNrDoesntWrap = (short)0x0FFF;
@@ -189,10 +189,13 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
-		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp();
+		final short hdSeqNrDoesntWrap = (short)0x0FFF;
+		final int hdSenderSsrc = 0x10203040;
 
-		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault();
-		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault();
+		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp(hdSenderSsrc);
+
+		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSenderSsrc);
+		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSenderSsrc);
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys, 0);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys, 0);
 
@@ -200,8 +203,6 @@ class SrtpProtectRoundTripTest {
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
-		final short hdSeqNrDoesntWrap = (short)0x0FFF;
-		final int hdSenderSsrc = 0x10203040;
 		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
 		final byte[] pktOrg = Common.buildRtpPacket(hdSeqNrDoesntWrap, hdSenderSsrc, payload1);
 
@@ -235,7 +236,7 @@ class SrtpProtectRoundTripTest {
 				() -> receiverCtx.unprotectSrtp(tamperedBuf, hdSeqNrDoesntWrap, hdSenderSsrc, out),
 				"Packet with wrong MKI must be rejected"
 			);
-		System.err.println(ex.getMessage());
+
 		assertTrue(
 				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTP packet"),
 				"Failure reason should indicate MKI validation"

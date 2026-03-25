@@ -16,21 +16,22 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtcp_compound_sr_should_restore_original_packet() throws Exception {
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
+		final int hdSsrc = 0x11223344;
 
-		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
-		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+
+		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
+		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
-		int senderSsrc = 0x11223344;
-		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
+		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(hdSsrc);
 
 		BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(compoundRtcp);
 
 		BufferExt encryptedBuf = new BufferExt();
-		senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
+		senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
 
 		byte[] encrypted = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, encrypted, 0, encrypted.length);
@@ -55,17 +56,18 @@ class SrtcpProtectRoundTripTest {
 		rnd.nextBytes(masterKey);
 		rnd.nextBytes(masterSalt);
 
+		final int hdSsrc = rnd.nextInt();
+
 		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
+				hdSsrc,
 				Common.createBufferFromBa(masterKey),
 				Common.createBufferFromBa(masterSalt)
 			);
 
-		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
-		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
+		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
+		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
-
-		int senderSsrc = rnd.nextInt();
 
 		for (int i = 0; i < rounds; i++) {
 			long ntpMsw = Integer.toUnsignedLong(rnd.nextInt());
@@ -75,14 +77,14 @@ class SrtcpProtectRoundTripTest {
 			long octetCount = Integer.toUnsignedLong(rnd.nextInt());
 
 			byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(
-					senderSsrc, ntpMsw, ntpLsw, rtpTs, pktCount, octetCount
+					hdSsrc, ntpMsw, ntpLsw, rtpTs, pktCount, octetCount
 				);
 
 			BufferExt plainBuf = new BufferExt();
 			plainBuf.copyOf(compoundRtcp);
 
 			BufferExt encryptedBuf = new BufferExt();
-			senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
+			senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
 
 			BufferExt decryptedBuf = new BufferExt();
 			receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
@@ -102,21 +104,22 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void unprotect_should_fail_when_encrypted_packet_is_tampered() throws Exception {
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
+		final int hdSsrc = 0x55667788;
 
-		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
-		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+
+		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
+		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
-		int senderSsrc = 0x55667788;
-		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
+		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(hdSsrc);
 
 		BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(compoundRtcp);
 
 		BufferExt encryptedBuf = new BufferExt();
-		senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
+		senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
 
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
@@ -142,10 +145,12 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtcp_compound_sr_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp();
+		final int hdSsrc = 0x10203040;
 
-		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault();
-		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault();
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+
+		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
+		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
@@ -153,14 +158,13 @@ class SrtcpProtectRoundTripTest {
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
-		int senderSsrc = 0x10203040;
-		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(senderSsrc);
+		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(hdSsrc);
 
 		BufferExt plainBuf = new BufferExt();
 		plainBuf.copyOf(compoundRtcp);
 
 		BufferExt encryptedBuf = new BufferExt();
-		senderCtx.protectRtcpSrCompound(plainBuf, senderSsrc, encryptedBuf);
+		senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
 
 		BufferExt decryptedBuf = new BufferExt();
 		receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);

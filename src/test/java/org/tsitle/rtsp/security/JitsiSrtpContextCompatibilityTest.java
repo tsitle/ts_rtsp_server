@@ -12,14 +12,14 @@ public class JitsiSrtpContextCompatibilityTest {
 
 	@Test
 	void rtp_should_match_when_keys_are_derived_by_jitsi_kdf() throws Exception {
+		final short hdSeqNr = 0x1234;
+		final int hdSsrc = 0x10203040;
+
 		// derive keys via Jitsi reflection
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
-		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault();
+		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0L);
-
-		short hdSeqNr = 0x1234;
-		int hdSsrc = 0x10203040;
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
 		final byte[] plain = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -39,15 +39,15 @@ public class JitsiSrtpContextCompatibilityTest {
 
 	@Test
 	void rtcp_should_match_when_keys_are_derived_by_jitsi_kdf() throws Exception {
+		final int hdSsrc = 0x10203040;
 		final int packetIndex = 0x12345678;
 
 		// Derive keys via Jitsi reflection
 		SessionKeys jitsiRtcpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtcp();
 
-		SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault();
+		SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		Common.srtcpCtxInjectKeys(ctx, jitsiRtcpKeys, packetIndex);
 
-		int ssrc = 0x10203040;
 		int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
 
 		byte[] plainRtcp = new byte[hdrLen + 20];
@@ -60,13 +60,13 @@ public class JitsiSrtpContextCompatibilityTest {
 		BufferExt out = new BufferExt();
 
 		int before = Common.getPrivateInt(ctx, "ctxStateRtcpIndex");
-		ctx.protectRtcpSrCompound(in, ssrc, out);
+		ctx.protectRtcpSrCompound(in, hdSsrc, out);
 		int after = Common.getPrivateInt(ctx, "ctxStateRtcpIndex");
 
 		byte[] actual = new byte[out.getUsed()];
 		out.copyInto(0, actual, 0, actual.length);
 
-		byte[] expected = Common.buildExpectedSrtcpPacket(plainRtcp, jitsiRtcpKeys, ssrc, packetIndex, hdrLen);
+		byte[] expected = Common.buildExpectedSrtcpPacket(plainRtcp, jitsiRtcpKeys, hdSsrc, packetIndex, hdrLen);
 
 		assertArrayEquals(expected, actual);
 		assertEquals((before + 1) & 0x7FFFFFFF, after);
