@@ -1,18 +1,21 @@
 package org.tsitle.rtsp.threads.rtsp;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 public class RequestBasicInfo {
 
 	public static class RequestUrlInputOrStreamSource {
-		String inputSourceId = null;
+		@Nullable String inputSourceId = null;
 		int streamSourceId = -1;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public ServerMessageType serverMessageType = ServerMessageType.UNKNOWN;
-	public ServerResponseStatusCode statusCode = ServerResponseStatusCode.OK;
-	public RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
+	public @NonNull ServerMessageType serverMessageType = ServerMessageType.UNKNOWN;
+	public @NonNull ServerResponseStatusCode statusCode = ServerResponseStatusCode.OK;
+	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
 
 	private RequestBasicInfo() { }
 
@@ -25,27 +28,33 @@ public class RequestBasicInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RequestBasicInfo createUnknown() {
+	public static @NonNull RequestBasicInfo createUnknown() {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.serverMessageType = ServerMessageType.UNKNOWN;
 		return res;
 	}
 
-	public static RequestBasicInfo createUnsupportedMethod() {
+	public static @NonNull RequestBasicInfo createUnsupportedMethod() {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.serverMessageType = ServerMessageType.UNKNOWN;
 		res.statusCode = ServerResponseStatusCode.METHOD_NOT_ALLOWED;
 		return res;
 	}
 
-	public static RequestBasicInfo createKnownWithError(ServerMessageType serverMessageType, ServerResponseStatusCode statusCode) {
+	public static @NonNull RequestBasicInfo createKnownWithError(
+				@NonNull ServerMessageType serverMessageType,
+				@NonNull ServerResponseStatusCode statusCode
+			) {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.serverMessageType = serverMessageType;
 		res.statusCode = statusCode;
 		return res;
 	}
 
-	public static RequestBasicInfo createOk(ServerMessageType serverMessageType, RequestUrlInputOrStreamSource requestUrlInputOrStreamSource) {
+	public static @NonNull RequestBasicInfo createOk(
+				@NonNull ServerMessageType serverMessageType,
+				@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
+			) {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.serverMessageType = serverMessageType;
 		res.requestUrlInputOrStreamSource = requestUrlInputOrStreamSource;

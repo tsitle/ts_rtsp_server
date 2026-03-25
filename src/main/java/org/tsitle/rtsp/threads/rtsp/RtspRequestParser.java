@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
@@ -92,21 +93,23 @@ public class RtspRequestParser {
 		}
 
 		// handle resource URL
-		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource;
-		try {
-			if (resourceUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
-				resourceUrl = resourceUrl.substring(0, RTSP_MAX_RESOURCE_URL_LENGTH);  // just in case
-				throw new RtspInvalidUriException("Resource URL too long");
+		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
+		if (requestType != ServerMessageType.OPTIONS) {
+			try {
+				if (resourceUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
+					resourceUrl = resourceUrl.substring(0, RTSP_MAX_RESOURCE_URL_LENGTH);  // just in case
+					throw new RtspInvalidUriException("Resource URL too long");
+				}
+				requestUrlInputOrStreamSource = handleResourceUrl(requestType, resourceUrl);
+			} catch (RtspInvalidUriException e) {
+				logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+						"), rejecting request");
+				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.FORBIDDEN);
+			} catch (RtspInputSourceIdNotFoundException e) {
+				logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+						"), rejecting request");
+				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.NOT_FOUND);
 			}
-			requestUrlInputOrStreamSource = handleResourceUrl(requestType, resourceUrl);
-		} catch (RtspInvalidUriException e) {
-			logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
-					"), rejecting request");
-			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.FORBIDDEN);
-		} catch (RtspInputSourceIdNotFoundException e) {
-			logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
-					"), rejecting request");
-			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.NOT_FOUND);
 		}
 
 		// parse header lines
@@ -239,7 +242,7 @@ public class RtspRequestParser {
 
 		/*
 		 * Extract Input Source ID from the requestLine.
-		 * For DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN requests, the Resource URL needs to contain only the Input Source ID (== SDP name):
+		 * For DESCRIBE/PLAY/PAUSE/TEARDOWN requests, the Resource URL needs to contain only the Input Source ID (== SDP name):
 		 *   rtsp://localhost:1051/movie.sdp
 		 * For SETUP requests, the Resource URL can contain the Input Source ID and the Stream ID, or it only contains the Stream ID:
 		 *   rtsp://localhost:1051/movie.sdp/streamid0
@@ -351,9 +354,9 @@ public class RtspRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void parseHeaderLine(
-				ServerMessageType requestType,
-				RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				String headerLine
+				@NonNull ServerMessageType requestType,
+				RequestBasicInfo.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				@NonNull String headerLine
 			) throws RtspInvalidSessionIdException, RtspUnsupportedAcceptTypeException,
 				RtspInvalidRequestException, RtspUnsupportedTransportException,
 				RtspMissingEncryptionParamsException, RtspMissingAuthParamsException {
@@ -387,10 +390,16 @@ public class RtspRequestParser {
 			if (requestType != ServerMessageType.SETUP) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received TRANSPORT header in non-SETUP request");
 			}
+			if (requestUrlInputOrStreamSource == null) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP request");
+			}
 			parseHeaderLine_setup_transport(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT)) {
 			if (requestType != ServerMessageType.SETUP) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP request");
+			}
+			if (requestUrlInputOrStreamSource == null) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP request");
 			}
 			parseHeaderLine_setup_keymgmt(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {

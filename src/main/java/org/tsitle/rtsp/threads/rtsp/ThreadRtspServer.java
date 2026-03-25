@@ -624,7 +624,7 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		switch (requestBasicInfo.serverMessageType) {
 			case ServerMessageType.SETUP:
-				final int tmpSsId = requestBasicInfo.requestUrlInputOrStreamSource.streamSourceId;
+				final int tmpSsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).streamSourceId;
 				// sanity check
 				if (! rtspSessionInfo.streamsMapSetup.containsKey(tmpSsId)) {
 					// this should never happen
@@ -640,7 +640,7 @@ public class ThreadRtspServer extends RunnableBase {
 				nextState = SessionState.READY;
 				break;
 			case ServerMessageType.PLAY:
-				final String tmpIsId = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
+				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
 				logInfo(FNC_NAME, "Starting playback for is='" + tmpIsId + "'");
 				startChildThreads(tmpIsId);
 				nextState = SessionState.PLAYING;
@@ -671,20 +671,15 @@ public class ThreadRtspServer extends RunnableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkRequestTypeVsState()";
 
 		if (requestBasicInfo.serverMessageType == ServerMessageType.OPTIONS ||
-				requestBasicInfo.serverMessageType == ServerMessageType.DESCRIBE) {
+				requestBasicInfo.serverMessageType == ServerMessageType.DESCRIBE ||
+				requestBasicInfo.serverMessageType == ServerMessageType.SETUP) {
 			return;
 		}
 
 		boolean wasOk = false;
 		switch (rtspSessionInfo.sessionState) {
-			case INIT:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP) {  // SETUP is allowed in INIT and READY states
-					wasOk = true;
-				}
-				break;
 			case READY:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.SETUP ||  // SETUP is allowed in INIT and READY states
-						requestBasicInfo.serverMessageType == ServerMessageType.PLAY ||
+				if (requestBasicInfo.serverMessageType == ServerMessageType.PLAY ||
 						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
 					wasOk = true;
 				}
@@ -718,7 +713,7 @@ public class ThreadRtspServer extends RunnableBase {
 			case ServerMessageType.PLAY:
 			case ServerMessageType.PAUSE:
 			case ServerMessageType.TEARDOWN:
-				final String tmpIsId = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
+				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
 				final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
 				if (tmpOptInputSource.isEmpty()) {
 					wasOk = false;

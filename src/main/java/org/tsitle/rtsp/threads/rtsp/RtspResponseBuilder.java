@@ -57,7 +57,7 @@ public class RtspResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void sendResponse(RequestBasicInfo requestBasicInfo) throws SocketException {
+	public void sendResponse(@NonNull RequestBasicInfo requestBasicInfo) throws SocketException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
 		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
@@ -72,7 +72,7 @@ public class RtspResponseBuilder {
 				sendResponseDescribe();
 				break;
 			case SETUP:
-				sendResponseSetup(requestBasicInfo.requestUrlInputOrStreamSource);
+				sendResponseSetup(Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource));
 				break;
 			case PLAY:
 				sendResponsePlay();
@@ -89,7 +89,7 @@ public class RtspResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendResponseNack(ServerResponseStatusCode statusCode) {
+	private void sendResponseNack(@NonNull ServerResponseStatusCode statusCode) {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseNack()";
 
 		List<String> contents = new ArrayList<>();
@@ -163,7 +163,7 @@ public class RtspResponseBuilder {
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
 	 */
-	private void sendResponseSetup(RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
+	private void sendResponseSetup(RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
 			throws SocketException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseSetup()";
 
