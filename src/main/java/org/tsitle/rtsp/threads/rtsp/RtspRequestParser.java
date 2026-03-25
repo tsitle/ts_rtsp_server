@@ -92,6 +92,9 @@ public class RtspRequestParser {
 			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
 		}
 
+		//
+		ServerResponseStatusCode respStatusCode = ServerResponseStatusCode.OK;
+
 		// handle resource URL
 		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
 		if (requestType != ServerMessageType.OPTIONS) {
@@ -104,11 +107,11 @@ public class RtspRequestParser {
 			} catch (RtspInvalidUriException e) {
 				logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.FORBIDDEN);
+				respStatusCode = ServerResponseStatusCode.FORBIDDEN;
 			} catch (RtspInputSourceIdNotFoundException e) {
 				logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.NOT_FOUND);
+				respStatusCode = ServerResponseStatusCode.NOT_FOUND;
 			}
 		}
 
@@ -122,25 +125,34 @@ public class RtspRequestParser {
 				break;
 			} catch (RtspInvalidRequestException e) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
+				break;
 			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.SESSION_NOT_FOUND);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.SESSION_NOT_FOUND; }
+				break;
 			} catch (RtspUnsupportedAcceptTypeException e) {
 				logError(FNC_NAME, "Unsupported Accept Type, rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
+				break;
 			} catch (RtspUnsupportedTransportException e) {
 				logError(FNC_NAME, "Unsupported Transport, rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.UNSUPPORTED_TRANSPORT);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.UNSUPPORTED_TRANSPORT; }
+				break;
 			} catch (RtspMissingEncryptionParamsException e) {
 				logError(FNC_NAME, "Missing encryption parameters, rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
+				break;
 			} catch (RtspMissingAuthParamsException e) {
 				logError(FNC_NAME, "Missing authentication parameters, rejecting request");
-				return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+				if (respStatusCode == ServerResponseStatusCode.OK) { respStatusCode = ServerResponseStatusCode.BAD_REQUEST; }
+				break;
 			}
 		} while (! headerLine.isBlank());
 
+		if (respStatusCode != ServerResponseStatusCode.OK) {
+			return RequestBasicInfo.createKnownWithError(requestType, respStatusCode);
+		}
 		return RequestBasicInfo.createOk(requestType, requestUrlInputOrStreamSource);
 	}
 
@@ -416,10 +428,10 @@ public class RtspRequestParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_cseq()";
 
 		String tmpCseqStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
-		int tmpCseqInt = Integer.parseInt(tmpCseqStr);
-		if (tmpCseqInt > rtspSessionInfo.rtspSeqNrExpected) {
-			rtspSessionInfo.rtspSeqNrExpected = tmpCseqInt;
-		} else if (tmpCseqInt < rtspSessionInfo.rtspSeqNrExpected) {
+		rtspSessionInfo.rtspSeqNrLastRcvd = Integer.parseInt(tmpCseqStr);
+		if (rtspSessionInfo.rtspSeqNrLastRcvd > rtspSessionInfo.rtspSeqNrExpected) {
+			rtspSessionInfo.rtspSeqNrExpected = rtspSessionInfo.rtspSeqNrLastRcvd;
+		} else if (rtspSessionInfo.rtspSeqNrLastRcvd < rtspSessionInfo.rtspSeqNrExpected) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq");
 		}
 		rtspSessionInfo.rtspSeqNrResponse = rtspSessionInfo.rtspSeqNrExpected++;

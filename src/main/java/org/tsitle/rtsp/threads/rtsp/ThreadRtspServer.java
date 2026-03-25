@@ -583,12 +583,14 @@ public class ThreadRtspServer extends RunnableBase {
 
 		RequestBasicInfo requestBasicInfo = rtspRequestParser.parseRequest();  // blocks for setSoTimeout() value
 		if (! requestBasicInfo.isValid()) {
-			logError(FNC_NAME, String.format("Received invalid RTSP request, rejecting it with code %s",
-					requestBasicInfo.statusCode));
+			logError(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
+					requestBasicInfo.serverMessageType,
+					requestBasicInfo.statusCode, rtspSessionInfo.rtspSeqNrLastRcvd));
 			rtspResponseBuilder.sendResponse(requestBasicInfo);
 			return Optional.empty();
 		}
-		logDebug(FNC_NAME, String.format("Received %s request", requestBasicInfo.serverMessageType));
+		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%d)",
+				requestBasicInfo.serverMessageType, rtspSessionInfo.rtspSeqNrLastRcvd));
 		return Optional.of(requestBasicInfo);
 	}
 

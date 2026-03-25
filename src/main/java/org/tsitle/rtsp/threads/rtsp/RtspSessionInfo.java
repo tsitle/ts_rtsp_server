@@ -86,6 +86,8 @@ public class RtspSessionInfo {
 	public @Nullable InetAddress clientIpAddr = null;
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
+	/** Last received Sequence Number of RTSP messages within the session from the client */
+	public int rtspSeqNrLastRcvd = -1;
 	/** Expected Sequence Number of RTSP messages within the session to receive from the client */
 	public int rtspSeqNrExpected = 0;
 	/** Sequence Number of RTSP messages within the session in responses from the server */
