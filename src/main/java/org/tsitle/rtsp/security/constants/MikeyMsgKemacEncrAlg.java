@@ -6,7 +6,7 @@ public enum MikeyMsgKemacEncrAlg {
 
 	/** NULL */
 	MMEA_NULL((byte)0x00),
-	/** AES-CM-128 */
+	/** AES-CM-128 (AES-CTR with a specific IV construction and packet counter layout) */
 	MMEA_AESCM128((byte)0x01),
 	/** AES Key Wrap using a 128-bit key */
 	MMEA_AESKW128((byte)0x02),

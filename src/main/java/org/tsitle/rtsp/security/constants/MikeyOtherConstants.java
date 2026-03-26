@@ -15,11 +15,11 @@ public class MikeyOtherConstants {
 
 	/** Payload type SP: PROT==0x00 => SRTP */
 	public static final byte MOC_PT_SP_PROT_SRTP = (byte)0x00;
-	/** Payload type SP: ENC_ALG==0x01 => AES-CM (AES-128-CTR) */
+	/** Payload type SP: ENC_ALG==0x01 => AES-CM (AES-CTR with a specific IV construction and packet counter layout) */
 	public static final byte MOC_PT_SP_ENC_ALG_AESCM = (byte)0x01;
 	/** Payload type SP: AUTH_ALG==0x01 => HMAC-SHA-1 */
 	public static final byte MOC_PT_SP_AUTH_ALG_HMACSHA1 = (byte)0x01;
-	/** Payload type SP: PRF_ALG==0x00 => AES-CM (AES-128-CTR) */
+	/** Payload type SP: PRF_ALG==0x00 => AES-CM ((AES-CTR with a specific IV construction and packet counter layout)) */
 	public static final byte MOC_PT_SP_PRF_ALG_AESCM = (byte)0x00;
 	/** Payload type SP: ENABLED==0x01 => True */
 	public static final byte MOC_PT_SP_ENABLED = (byte)0x01;

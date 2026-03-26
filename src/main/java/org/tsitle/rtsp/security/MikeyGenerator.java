@@ -11,6 +11,10 @@ import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.Base64;
 
+/**
+ * Generator for MIKEY messages.<br />
+ * MIKEY: Multimedia Internet KEYing, see <a href="https://datatracker.ietf.org/doc/html/rfc3830">RFC-3830</a>
+ */
 public final class MikeyGenerator {
 
 	private MikeyGenerator() { }
@@ -19,7 +23,7 @@ public final class MikeyGenerator {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Generate a MIKEY message according to RFC-3830 Section 6.2 (Key data transport payload).
+	 * Generate a MIKEY message.
 	 * @param kmd SRTxP Key Management Data
 	 * @return Base64 encoded MIKEY message
 	 */
@@ -53,6 +57,9 @@ public final class MikeyGenerator {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Write Common Header payload (RFC-3830 Section 6.1)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void writeCommonHeader(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, int rtspSsrcId) {
 		// version
@@ -84,6 +91,9 @@ public final class MikeyGenerator {
 		msgBb.putInt(0);  // ROC_x
 	}
 
+	/**
+	 * Write Timestamp payload (RFC-3830 Section 6.6)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void writePtTimestamp(ByteBuffer msgBb, MikeyMsgPayloadType nextPt) {
 		// next payload
@@ -94,6 +104,9 @@ public final class MikeyGenerator {
 		msgBb.putLong(NtpTimestampHelper.instantToNtpTimestamp(Instant.now()));
 	}
 
+	/**
+	 * Write RAND payload (RFC-3830 Section 6.11)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void writePtRand(ByteBuffer msgBb, MikeyMsgPayloadType nextPt) {
 		// next payload
@@ -106,6 +119,9 @@ public final class MikeyGenerator {
 		msgBb.put(tmpRandData.getBaPtr(), 0, tmpRandData.getUsed());
 	}
 
+	/**
+	 * Write Security Policy payload (RFC-3830 Section 6.10)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void writePtSp(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) {
 		// next payload
@@ -183,6 +199,9 @@ public final class MikeyGenerator {
 		outputPolicyData.setUsed(msgBb.position());
 	}
 
+	/**
+	 * Write Key data transport payload aka KEMAC (RFC-3830 Section 6.2)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void writePtKemac(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) {
 		// next payload
@@ -200,6 +219,9 @@ public final class MikeyGenerator {
 		msgBb.put(MikeyOtherConstants.MOC_KEMAC_MAC_ALG_NONE);
 	}
 
+	/**
+	 * Write the KEMAC key data sub-payload (RFC-3830 Section 6.13)
+	 */
 	@SuppressWarnings("SameParameterValue")
 	private static void buildKemacData(@NonNull SrtxpKmd kmd, MikeyMsgPayloadType nextPt, BufferExt outputKeyData) {
 		outputKeyData.increaseSize(1024);

@@ -10,6 +10,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
 
+/**
+ * Parser for MIKEY messages.<br />
+ * MIKEY: Multimedia Internet KEYing, see <a href="https://datatracker.ietf.org/doc/html/rfc3830">RFC-3830</a>
+ */
 public final class MikeyParser {
 
 	private MikeyParser() { }
@@ -18,7 +22,7 @@ public final class MikeyParser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Parse a MIKEY message according to RFC-3830 Section 6.2 (Key data transport payload).
+	 * Parse a MIKEY message.
 	 * @param msgB64 Base64 encoded MIKEY message
 	 * @return SRTxP Key Management Data
 	 * @throws SrtpSecurityException If any kind of error occurred
@@ -105,6 +109,9 @@ public final class MikeyParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Parse Common Header payload (RFC-3830 Section 6.1)
+	 */
 	private static MikeyMsgPayloadType parseCommonHeader(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		// version
 		byte tmpHdVers = msgBb.get();
@@ -171,6 +178,9 @@ public final class MikeyParser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Parse Timestamp payload (RFC-3830 Section 6.6)
+	 */
 	private static void parsePtTimestamp(ByteBuffer msgBb) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();
 		MikeyMsgTimestampType tmpTsTp = MikeyMsgTimestampType.of(tmpBy);
@@ -184,11 +194,17 @@ public final class MikeyParser {
 		}
 	}
 
+	/**
+	 * Parse RAND payload (RFC-3830 Section 6.11)
+	 */
 	private static void parsePtRand(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();
 		extractBytes("RAND", msgBb, tmpBy, mikeyData.hdRandData);
 	}
 
+	/**
+	 * Parse Security Policy payload (RFC-3830 Section 6.10)
+	 */
 	private static void parsePtSecurityPolicy(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();  // Policy No
 		if (tmpBy != 0x00) {
@@ -301,6 +317,9 @@ public final class MikeyParser {
 		}
 	}
 
+	/**
+	 * Parse Key data transport payload aka KEMAC (RFC-3830 Section 6.2)
+	 */
 	private static MikeyMsgPayloadType parsePtKemac(ByteBuffer msgBb, final MikeyData mikeyData) throws SrtpSecurityException {
 		byte tmpBy = msgBb.get();
 		MikeyMsgKemacEncrAlg tmpEncrAlg = MikeyMsgKemacEncrAlg.of(tmpBy);  // encryption algorithm (for the KEMAC data)
@@ -339,8 +358,7 @@ public final class MikeyParser {
 	}
 
 	/**
-	 * Parse the KEMAC key data sub-payload.<br />
-	 * See <a href="https://www.rfc-editor.org/rfc/rfc3830.html#section-6.13">RFC-3830 Section 6.13</a>
+	 * Parse the KEMAC key data sub-payload (RFC-3830 Section 6.13)
 	 */
 	private static MikeyMsgPayloadType parseKemacKeyDataSubPayload(
 				byte[] kemacSubPayload,
