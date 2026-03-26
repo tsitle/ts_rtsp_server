@@ -63,6 +63,18 @@ public class NtpTest {
 		assertTrue(delta.toNanos() >= 45_102_030L + 1032L && delta.toNanos() <= 45_102_030L + 1033L);
 	}
 
+	@Test
+	void ntp_test4() {
+		final Instant expInstant = Instant.parse("2026-03-26T06:46:20.134876999Z");
+		final long ntpExpected = Long.parseUnsignedLong("17108986676413680783");
+		final long ntpActual = NtpTimestampHelper.instantToNtpTimestamp(expInstant);
+		final long deltaAbs = Math.abs(ntpExpected - ntpActual);
+		final long deltaNanosAbs = Math.abs(NtpTimestampHelper.diffNanos(ntpExpected, ntpActual));
+
+		assertTrue(deltaAbs < 5L);  // small difference expected due to a rounding error
+		assertTrue(deltaNanosAbs < 2L);  // 1ns difference expected due to a rounding error
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
