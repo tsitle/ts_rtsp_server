@@ -14,9 +14,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
-public final class SrtpKeyDerivation {
+public final class SrtxpKeyDerivation {
 
-	private SrtpKeyDerivation() { }
+	private SrtxpKeyDerivation() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ public final class SrtpKeyDerivation {
 				@NonNull SrtxpKmd kmd
 			) throws SrtxpSecurityException {
 		return new SessionKeys(
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, KeySizes.AES_128_KEY_SIZE),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, kmd.encrKeyLen()),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen()),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE)
 			);
@@ -51,7 +51,7 @@ public final class SrtpKeyDerivation {
 				@NonNull SrtxpKmd kmd
 			) throws SrtxpSecurityException {
 		return new SessionKeys(
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, KeySizes.AES_128_KEY_SIZE),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, kmd.encrKeyLen()),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen()),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE)
 			);
@@ -113,8 +113,8 @@ public final class SrtpKeyDerivation {
 				byte label,
 				@SuppressWarnings("SameParameterValue") long r48
 			) {
-		// x is 112 bits (14 bytes), IV is 128 bits (16 bytes)
-		byte[] iv = new byte[KeySizes.AES_128_KEY_SIZE];
+		// x is 112 bits (14 bytes), IV is always 128 bits (16 bytes) regardless of key size
+		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
 
 		// IV = x = master_salt
 		System.arraycopy(masterSalt.getBaPtr(), 0, iv, 0, KeySizes.SALT_SIZE);

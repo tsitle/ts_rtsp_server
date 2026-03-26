@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.ParamsContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -25,16 +25,27 @@ class Common {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	// RFC 3711 test vector master material (deterministic, no sensitive runtime secrets)
-	static final BufferExt DEFAULT_MASTER_KEY = createBufferFromHex("E1F97A0D3E018BE0D64FA32C06DE4139");
-	static final BufferExt DEFAULT_MASTER_SALT = createBufferFromHex("0EC675AD498AFEEBB6960B3AABE6");
-
+	static final int ENCR_KEY_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_ENCR_KEY_LEN;
+	//static final int ENCR_KEY_SIZE_FOR_ALL_TESTS = KeySizes.AES_KEY_SIZE_256;
 	static final int AUTH_KEY_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_AUTH_KEY_LEN;
+	//static final int AUTH_KEY_SIZE_FOR_ALL_TESTS = KeySizes.AUTH_KEY_SIZE_080;
+	static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_AUTH_TAG_LEN;
+	//static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = 17;
+	static final int SALT_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_SALT_LEN;
+
+	// RFC 3711 test vector master material (deterministic, no sensitive runtime secrets)
+	static final BufferExt MASTER_KEY_128 = createBufferFromHex("E1F97A0D3E018BE0D64FA32C06DE4139");
+	static final BufferExt MASTER_KEY_256 = createBufferFromHex("AAF97A0D3E018BE0D64FA32C06DE4139E1F97A0D3E018BE0D64FA32C06DE41FF");
+	static final BufferExt DEFAULT_MASTER_KEY = (ENCR_KEY_SIZE_FOR_ALL_TESTS == 16 ? MASTER_KEY_128 : MASTER_KEY_256);
+	static final BufferExt DEFAULT_MASTER_SALT = createBufferFromHex("0EC675AD498AFEEBB6960B3AABE6");
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull BufferExt createBufferFromHex(@NonNull String hexStr) {
+		if (hexStr.startsWith("0x")) {
+			hexStr = hexStr.substring(2);
+		}
 		byte[] data = HEX.parseHex(hexStr);
 		BufferExt buf = new BufferExt();
 		buf.copyOf(data);
@@ -57,69 +68,73 @@ class Common {
 
 	static @NonNull SrtxpKmd createSrtxpKmdDefault(int ssrcId) {
 		return new SrtxpKmd(
-				Common.DEFAULT_MASTER_KEY,
-				Common.DEFAULT_MASTER_SALT,
-				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				ENCR_KEY_SIZE_FOR_ALL_TESTS,
+				DEFAULT_MASTER_KEY,
+				DEFAULT_MASTER_SALT,
+				AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				AUTH_TAG_SIZE_FOR_ALL_TESTS,
 				new BufferExt(),
 				ssrcId
 			);
 	}
 
-	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault(int ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextInbound(kmd);
 	}
 
-	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault(int ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextOutbound(kmd);
 	}
 
-	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault(int ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextInbound(kmd);
 	}
 
-	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault(int ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextOutbound(kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtp(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtp(int ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
-		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtcp(int ssrcId) throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtcp(int ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
-		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull SrtxpKmd createSrtxpKmdNonDef(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) {
 		return new SrtxpKmd(
+				ENCR_KEY_SIZE_FOR_ALL_TESTS,
 				mk,
 				ms,
-				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				AUTH_TAG_SIZE_FOR_ALL_TESTS,
 				new BufferExt(),
 				ssrcId
 			);
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	static @NonNull SessionKeys createSessionKeysNonDefRtp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysNonDefRtp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
-		return SrtpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysNonDefRtcp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtpSecurityException {
+	static @NonNull SessionKeys createSessionKeysNonDefRtcp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
-		return SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -181,14 +196,14 @@ class Common {
 
 	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys, int roc) throws Exception {
 		if (ctx instanceof SrtpContextOutbound) {
-			Common.setPrivateInt(ctx, "ctxStateRtpRocOutbound", roc);
+			setPrivateInt(ctx, "ctxStateRtpRocOutbound", roc);
 		}
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
 	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SessionKeys sessionKeys, int idx) throws Exception {
 		if (ctx instanceof SrtcpContextOutbound) {
-			Common.setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
+			setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
 		}
 		ctx.setRtcpSessionKeys(sessionKeys);
 	}
@@ -208,7 +223,7 @@ class Common {
 		final byte[] originalHd = new byte[rtpPktCb.getPacketSize()];
 		rtpPktCb.getPacketBufferPtr().copyInto(0, originalHd, 0, originalHd.length);
 
-		return Common.concat(originalHd, payload);
+		return concat(originalHd, payload);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -224,7 +239,7 @@ class Common {
 		int headerLen = 12;
 		long packetIndex = (stateRoc << 16) | ((long)seqNr & 0xFFFFL);
 
-		byte[] iv = new byte[KeySizes.AES_128_KEY_SIZE];
+		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
 		ByteBuffer ivByBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivByBuf.putInt(0);
 		ivByBuf.putInt(ssrc);
@@ -235,7 +250,7 @@ class Common {
 		ivByBuf.put((byte)((packetIndex >>> 8) & 0xFF));
 		ivByBuf.put((byte)(packetIndex & 0xFF));
 		ivByBuf.putShort((short)0);
-		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
+		for (int i = 0; i < Common.SALT_SIZE_FOR_ALL_TESTS; i++) {
 			iv[i] ^= rtpKeys.salt().get(i);
 		}
 
@@ -257,9 +272,9 @@ class Common {
 				.putInt((int)(packetIndex >>> 16))
 				.array();
 		mac.update(rocBytes);
-		byte[] tag10 = Arrays.copyOf(mac.doFinal(), KeySizes.AUTH_TAG_SIZE);
+		byte[] tag10 = Arrays.copyOf(mac.doFinal(), AUTH_TAG_SIZE_FOR_ALL_TESTS);
 
-		return Common.concat(encrypted, tag10);
+		return concat(encrypted, tag10);
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -270,14 +285,14 @@ class Common {
 				int stateIndexOnly,
 				int rtcpSrRrExtendedHeaderLen
 			) throws Exception {
-		byte[] iv = new byte[KeySizes.AES_128_KEY_SIZE];
+		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
 		ByteBuffer ivBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivBuf.putInt(0);
 		ivBuf.putInt(ssrc);
 		ivBuf.putShort((short)0);
 		ivBuf.putInt(stateIndexOnly);
 		ivBuf.putShort((short)0);
-		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
+		for (int i = 0; i < Common.SALT_SIZE_FOR_ALL_TESTS; i++) {
 			iv[i] ^= rtcpSessionKeys.salt().get(i);
 		}
 
@@ -299,16 +314,16 @@ class Common {
 		int srtcpIndexField = 0x80000000 | (stateIndexOnly & 0x7FFFFFFF);
 		byte[] indexBytes = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(srtcpIndexField).array();
 
-		byte[] authInput = Common.concat(encrypted, indexBytes);
+		byte[] authInput = concat(encrypted, indexBytes);
 
 		Mac mac = Mac.getInstance("HmacSHA1");
 		mac.init(
 				new SecretKeySpec(rtcpSessionKeys.authKey().getBaPtr(), 0, rtcpSessionKeys.authKey().getUsed(), "HmacSHA1")
 			);
 		mac.update(authInput);
-		byte[] tag10 = Arrays.copyOf(mac.doFinal(), 10);
+		byte[] tag10 = Arrays.copyOf(mac.doFinal(), AUTH_TAG_SIZE_FOR_ALL_TESTS);
 
-		return Common.concat(authInput, tag10);
+		return concat(authInput, tag10);
 	}
 
 }

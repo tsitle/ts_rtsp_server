@@ -4,13 +4,13 @@ import org.jspecify.annotations.NonNull;
 
 public enum MikeyMsgKemacPayloadType {
 
-	/** TGK */
+	/** TGK (TEK Generation Key) */
 	MMKEMPT_TGK_ONLY((byte)0x00),
-	/** TGK+SALT */
+	/** TGK+SALT (TEK Generation Key) */
 	MMKEMPT_TGK_SALT((byte)0x01),
-	/** TEK */
+	/** TEK (Traffic Encryption Key) */
 	MMKEMPT_TEK_ONLY((byte)0x02),
-	/** TEK+SALT */
+	/** TEK+SALT (Traffic Encryption Key) */
 	MMKEMPT_TEK_SALT((byte)0x03),
 	/** Unknown */
 	MMKEMPT_UNKNOWN((byte)0xFF);

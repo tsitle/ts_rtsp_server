@@ -2,8 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
-import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -51,8 +50,8 @@ class SrtcpProtectRoundTripTest {
 		final SecureRandom rnd = new SecureRandom();
 		final int rounds = 64;
 
-		byte[] masterKey = new byte[16];
-		byte[] masterSalt = new byte[14];
+		byte[] masterKey = new byte[Common.ENCR_KEY_SIZE_FOR_ALL_TESTS];
+		byte[] masterSalt = new byte[Common.SALT_SIZE_FOR_ALL_TESTS];
 		rnd.nextBytes(masterKey);
 		rnd.nextBytes(masterSalt);
 
@@ -95,7 +94,7 @@ class SrtcpProtectRoundTripTest {
 
 			BufferExt replayOut = new BufferExt();
 			assertThrows(
-					SrtpSecurityException.class,
+					SrtxpSecurityException.class,
 					() -> receiverCtx.unprotectSrtcpCompound(encryptedBuf, replayOut),
 					"Round " + i + ": replayed packet must be rejected due to index check"
 				);
@@ -132,8 +131,8 @@ class SrtcpProtectRoundTripTest {
 		tamperedBuf.copyOf(tampered);
 
 		BufferExt out = new BufferExt();
-		SrtpSecurityException ex = assertThrows(
-				SrtpSecurityException.class,
+		SrtxpSecurityException ex = assertThrows(
+				SrtxpSecurityException.class,
 				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out)
 			);
 
@@ -176,15 +175,15 @@ class SrtcpProtectRoundTripTest {
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
 
-		int mkiStart = tampered.length - KeySizes.AUTH_TAG_SIZE - mki.getUsed();
+		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.getUsed();
 		tampered[mkiStart] ^= 0x01;
 
 		BufferExt tamperedBuf = new BufferExt();
 		tamperedBuf.copyOf(tampered);
 
 		BufferExt out = new BufferExt();
-		SrtpSecurityException ex = assertThrows(
-				SrtpSecurityException.class,
+		SrtxpSecurityException ex = assertThrows(
+				SrtxpSecurityException.class,
 				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out),
 				"Packet with wrong MKI must be rejected"
 			);

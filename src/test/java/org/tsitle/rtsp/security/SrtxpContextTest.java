@@ -99,8 +99,8 @@ public class SrtxpContextTest {
 		final int rounds = 200;
 
 		for (int i = 0; i < rounds; i++) {
-			final byte[] rndMasterKey = new byte[16];
-			final byte[] rndMasterSalt = new byte[14];
+			final byte[] rndMasterKey = new byte[Common.ENCR_KEY_SIZE_FOR_ALL_TESTS];
+			final byte[] rndMasterSalt = new byte[Common.SALT_SIZE_FOR_ALL_TESTS];
 			rnd.nextBytes(rndMasterKey);
 			rnd.nextBytes(rndMasterSalt);
 
@@ -183,8 +183,8 @@ public class SrtxpContextTest {
 		final int rounds = 150;
 
 		for (int i = 0; i < rounds; i++) {
-			final byte[] rndMasterKey = new byte[16];
-			final byte[] rndMasterSalt = new byte[14];
+			final byte[] rndMasterKey = new byte[Common.ENCR_KEY_SIZE_FOR_ALL_TESTS];
+			final byte[] rndMasterSalt = new byte[Common.SALT_SIZE_FOR_ALL_TESTS];
 			rnd.nextBytes(rndMasterKey);
 			rnd.nextBytes(rndMasterSalt);
 

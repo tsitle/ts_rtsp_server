@@ -5,7 +5,6 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
-import org.tsitle.rtsp.security.constants.KeySizes;
 
 /**
  * Context for inbound SRTP packet decryption according to RFC-3711 Section 3.1
@@ -100,7 +99,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 		validateAuthTag(srtpPacketBufView, true, ctxStateRtpRocInbound);
 
 		//
-		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
+		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - ctxKmd.authTagLen());
 
 		// validate MKI
 		if (! ctxKmd.mki().isEmpty()) {

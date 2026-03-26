@@ -12,23 +12,35 @@ import java.util.Objects;
  */
 public final class SrtxpKmd implements Cloneable {
 
+	public static final int DEFAULT_ENCR_KEY_LEN = KeySizes.AES_KEY_SIZE_128;
 	public static final int DEFAULT_AUTH_KEY_LEN = KeySizes.AUTH_KEY_SIZE_160;
+	public static final int DEFAULT_AUTH_TAG_LEN = 10;
+	public static final int DEFAULT_SALT_LEN = KeySizes.SALT_SIZE;
 
+	/** Encryption Key length */
+	private int encrKeyLen;
 	/** Master AES-128 key (16 bytes) */
 	private @NonNull BufferExt masterKey;
 	/** Master Salt (14 bytes) */
 	private @NonNull BufferExt masterSalt;
 	/** Auth Key length */
 	private int authKeyLen;
+	/** Auth Tag length */
+	private int authTagLen;
 	/** Master Key Identifier */
 	private @NonNull BufferExt mki;
 	/** SSRC ID */
 	private int ssrcId;
 
+	/**
+	 * Constructor - initializes all fields to empty values.
+	 */
 	public SrtxpKmd() {
 		this(
+				0,
 				new BufferExt(),
 				new BufferExt(),
+				0,
 				0,
 				new BufferExt(),
 				0
@@ -37,22 +49,28 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Constructor.
-	 * @param masterKey Master key
-	 * @param masterSalt Master salt
-	 * @param authKeyLen Authentication key length
+	 * @param encrKeyLen Encryption Key length
+	 * @param masterKey Master Key
+	 * @param masterSalt Master Salt
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
 	 * @param mki Master Key Identifier (can be empty)
 	 * @param ssrcId SSRC ID
 	 */
 	public SrtxpKmd(
+				int encrKeyLen,
 				@NonNull BufferExt masterKey,
 				@NonNull BufferExt masterSalt,
 				int authKeyLen,
+				int authTagLen,
 				@NonNull BufferExt mki,
 				int ssrcId
 			) {
+		this.encrKeyLen = encrKeyLen;
 		this.masterKey = masterKey.clone();
 		this.masterSalt = masterSalt.clone();
 		this.authKeyLen = authKeyLen;
+		this.authTagLen = authTagLen;
 		this.mki = mki.clone();
 		this.ssrcId = ssrcId;
 	}
@@ -66,9 +84,33 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createWithDefaults(int ssrcId) {
+		return createWithCustomKeySizes(
+				DEFAULT_ENCR_KEY_LEN,
+				DEFAULT_AUTH_KEY_LEN,
+				DEFAULT_AUTH_TAG_LEN,
+				ssrcId
+			);
+	}
+
+	/**
+	 * Create a new KMD object with custom key sizes and random values
+	 * @param encrKeyLen Encryption Key length
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
+	 * @param ssrcId SSRC ID
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createWithCustomKeySizes(
+				int encrKeyLen,
+				int authKeyLen,
+				int authTagLen,
+				int ssrcId
+			) {
 		SrtxpKmd resObj = new SrtxpKmd();
-		RandomHelper.getSecureRandomBytes(KeySizes.AES_128_KEY_SIZE, resObj.masterKey);
-		resObj.authKeyLen = DEFAULT_AUTH_KEY_LEN;
+		resObj.encrKeyLen = encrKeyLen;
+		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
+		resObj.authKeyLen = authKeyLen;
+		resObj.authTagLen = authTagLen;
 		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
 		RandomHelper.getSecureRandomBytes(4, resObj.mki);
 		resObj.ssrcId = ssrcId;
@@ -91,20 +133,28 @@ public final class SrtxpKmd implements Cloneable {
 		}
 	}
 
+	public int encrKeyLen() {
+		return encrKeyLen;
+	}
+
 	public @NonNull BufferExt masterKey() {
-		return masterKey;
+		return masterKey.clone();
 	}
 
 	public @NonNull BufferExt masterSalt() {
-		return masterSalt;
+		return masterSalt.clone();
 	}
 
 	public int authKeyLen() {
 		return authKeyLen;
 	}
 
+	public int authTagLen() {
+		return authTagLen;
+	}
+
 	public @NonNull BufferExt mki() {
-		return mki;
+		return mki.clone();
 	}
 
 	public int ssrcId() {
@@ -120,24 +170,28 @@ public final class SrtxpKmd implements Cloneable {
 			return false;
 		}
 		var that = (SrtxpKmd) obj;
-		return (Objects.equals(this.masterKey, that.masterKey) &&
+		return (this.encrKeyLen == that.encrKeyLen &&
+				Objects.equals(this.masterKey, that.masterKey) &&
 				Objects.equals(this.masterSalt, that.masterSalt) &&
 				this.authKeyLen == that.authKeyLen &&
+				this.authTagLen == that.authTagLen &&
 				Objects.equals(this.mki, that.mki) &&
 				this.ssrcId == that.ssrcId);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(masterKey, masterSalt, authKeyLen, mki, ssrcId);
+		return Objects.hash(encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId);
 	}
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				"masterKey=0x" + masterKey.toHexString() +
+				"encrKeyLen=" + encrKeyLen +
+				", masterKey=0x" + masterKey.toHexString() +
 				", masterSalt=0x" + masterSalt.toHexString() +
 				", authKeyLen=" + authKeyLen +
+				", authTagLen=" + authTagLen +
 				", mki=" + (mki.isEmpty() ? "empty" : "0x" + mki.toHexString()) +
 				", ssrcId=" + String.format("0x%08X", ssrcId) +
 				"]";

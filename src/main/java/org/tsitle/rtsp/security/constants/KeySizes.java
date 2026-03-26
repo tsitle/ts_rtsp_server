@@ -2,8 +2,10 @@ package org.tsitle.rtsp.security.constants;
 
 public class KeySizes {
 
-	/** Size of the AES-128 key in bytes */
-	public static final int AES_128_KEY_SIZE = 16;
+	/** Size of the AES Encryption key in bytes - for AES-CM-128 */
+	public static final int AES_KEY_SIZE_128 = 16;
+	/** Size of the AES Encryption key in bytes - for AES-CM-256 */
+	public static final int AES_KEY_SIZE_256 = 32;
 	/** Size of the Authentication Key in bytes - for HMAC-SHA1-80 */
 	public static final int AUTH_KEY_SIZE_080 = 10;
 	/** Size of the Authentication Key in bytes - for HMAC-SHA1-160 */
@@ -11,7 +13,7 @@ public class KeySizes {
 	/** Size of the Salt in bytes */
 	public static final int SALT_SIZE = 14;
 
-	/** Size of the Authentication Tag in bytes */
-	public static final int AUTH_TAG_SIZE = 10;
+	/** Size of the SHA1-160 hash in bytes - for HMAC-SHA1-160 */
+	public static final int SHA1_SIZE_160 = 20;
 
 }

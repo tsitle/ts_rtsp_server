@@ -222,7 +222,7 @@ public final class BufferExt implements Cloneable {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [used=" + used + ", buf=0x" + toHexString() + "]";
+		return getClass().getSimpleName() + " [used=" + used + ", buf=" + toHexString(true) + "]";
 	}
 
 	/**
@@ -230,7 +230,22 @@ public final class BufferExt implements Cloneable {
 	 * @return Hex string representation
 	 */
 	public @NonNull String toHexString() {
+		return toHexString(false);
+	}
+
+	/**
+	 * Convert the buffer to a hex string.
+	 * @param withPrefix If true, the string will start with "0x"
+	 * @return Hex string representation
+	 */
+	public @NonNull String toHexString(boolean withPrefix) {
+		if (used == 0) {
+			return "";
+		}
 		StringBuilder sb = new StringBuilder();
+		if (withPrefix) {
+			sb.append("0x");
+		}
 		for (int i = 0; i < used; i++) {
 			sb.append(String.format("%02X", buf[i]));
 		}

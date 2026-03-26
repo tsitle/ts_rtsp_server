@@ -2,6 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.*;
@@ -27,9 +28,11 @@ public final class MikeyGenerator {
 	 * @param kmd SRTxP Key Management Data
 	 * @return Base64 encoded MIKEY message
 	 */
-	public static @NonNull String generate(@NonNull SrtxpKmd kmd) {
+	public static @NonNull String generate(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
+		final String FNC_NAME = MikeyGenerator.class.getSimpleName() + ".generate()";
+
 		if (kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_080 && kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_160) {
-			throw new IllegalArgumentException("Unsupported auth key length");
+			throw new SrtxpSecurityException(FNC_NAME + ": Unsupported Auth Key length");
 		}
 
 		//
@@ -101,7 +104,8 @@ public final class MikeyGenerator {
 		// timestamp type
 		msgBb.put(MikeyMsgTimestampType.MMTST_NTP_UTC.getValue());
 		// timestamp value 64-bits
-		msgBb.putLong(NtpTimestampHelper.instantToNtpTimestamp(Instant.now()));
+		long tmpTsVal = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
+		msgBb.putLong(tmpTsVal);
 	}
 
 	/**
@@ -123,7 +127,7 @@ public final class MikeyGenerator {
 	 * Write Security Policy payload (RFC-3830 Section 6.10)
 	 */
 	@SuppressWarnings("SameParameterValue")
-	private static void writePtSp(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) {
+	private static void writePtSp(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		// next payload
 		msgBb.put(nextPt.getValue());
 		// Policy No
@@ -133,7 +137,7 @@ public final class MikeyGenerator {
 		msgBb.put(MikeyOtherConstants.MOC_PT_SP_PROT_SRTP);
 		//
 		BufferExt tmpPolicyData = new BufferExt();
-		buildSpParams(kmd, tmpPolicyData);
+		buildSubSpParams(kmd, tmpPolicyData);
 		// Policy param length
 		msgBb.putShort((short)tmpPolicyData.getUsed());
 		// Policy parameters
@@ -141,7 +145,9 @@ public final class MikeyGenerator {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private static void buildSpParams(@NonNull SrtxpKmd kmd, BufferExt outputPolicyData) {
+	private static void buildSubSpParams(@NonNull SrtxpKmd kmd, BufferExt outputPolicyData) throws SrtxpSecurityException {
+		final String FNC_NAME = MikeyGenerator.class.getSimpleName() + ".buildSubSpParams()";
+
 		outputPolicyData.increaseSize(1024);
 		ByteBuffer msgBb = ByteBuffer.wrap(outputPolicyData.getBaPtr()).order(ByteOrder.BIG_ENDIAN);
 
@@ -151,9 +157,10 @@ public final class MikeyGenerator {
 		msgBb.put(MikeyOtherConstants.MOC_PT_SP_ENC_ALG_AESCM);
 
 		// -- SEKL --
+		if (kmd.encrKeyLen() < 0 || kmd.encrKeyLen() > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid Encr Key length"); }
 		msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_SEKL.getValue());  // Parameter Type
 		msgBb.put((byte)0x01);  // Parameter Length
-		msgBb.put((byte)KeySizes.AES_128_KEY_SIZE);
+		msgBb.put((byte)kmd.encrKeyLen());
 
 		// -- AUTHALG --
 		msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_AUTHALG.getValue());  // Parameter Type
@@ -161,11 +168,13 @@ public final class MikeyGenerator {
 		msgBb.put(MikeyOtherConstants.MOC_PT_SP_AUTH_ALG_HMACSHA1);
 
 		// -- SAKL --
+		if (kmd.authKeyLen() < 0 || kmd.authKeyLen() > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid Auth Key length"); }
 		msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_SAKL.getValue());  // Parameter Type
 		msgBb.put((byte)0x01);  // Parameter Length
 		msgBb.put((byte)kmd.authKeyLen());
 
 		// -- SSKL --
+		if (KeySizes.SALT_SIZE < 0 || KeySizes.SALT_SIZE > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid Salt length"); }
 		msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_SSKL.getValue());  // Parameter Type
 		msgBb.put((byte)0x01);  // Parameter Length
 		msgBb.put((byte)KeySizes.SALT_SIZE);
@@ -191,9 +200,10 @@ public final class MikeyGenerator {
 		msgBb.put(MikeyOtherConstants.MOC_PT_SP_ENABLED);
 
 		// -- AUTHTAGLENGTH --
+		if (kmd.authTagLen() < 0 || kmd.authTagLen() > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid Auth Tag length"); }
 		msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_AUTHTAGLENGTH.getValue());  // Parameter Type
 		msgBb.put((byte)0x01);  // Parameter Length
-		msgBb.put((byte)KeySizes.AUTH_TAG_SIZE);
+		msgBb.put((byte)kmd.authTagLen());
 
 		//
 		outputPolicyData.setUsed(msgBb.position());
@@ -203,14 +213,14 @@ public final class MikeyGenerator {
 	 * Write Key data transport payload aka KEMAC (RFC-3830 Section 6.2)
 	 */
 	@SuppressWarnings("SameParameterValue")
-	private static void writePtKemac(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) {
+	private static void writePtKemac(ByteBuffer msgBb, MikeyMsgPayloadType nextPt, @NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		// next payload
 		msgBb.put(nextPt.getValue());
 		// encryption algorithm (for the KEMAC data)
 		msgBb.put(MikeyMsgKemacEncrAlg.MMEA_NULL.getValue());
 		//
 		BufferExt tmpKeyData = new BufferExt();
-		buildKemacData(kmd, nextPt, tmpKeyData);
+		buildSubPtKemacData(kmd, MikeyMsgPayloadType.MMPT_LAST, tmpKeyData);
 		// KEMAC data length
 		msgBb.putShort((short)tmpKeyData.getUsed());
 		// KEMAC data
@@ -223,11 +233,17 @@ public final class MikeyGenerator {
 	 * Write the KEMAC key data sub-payload (RFC-3830 Section 6.13)
 	 */
 	@SuppressWarnings("SameParameterValue")
-	private static void buildKemacData(@NonNull SrtxpKmd kmd, MikeyMsgPayloadType nextPt, BufferExt outputKeyData) {
+	private static void buildSubPtKemacData(
+				@NonNull SrtxpKmd kmd,
+				MikeyMsgPayloadType nextPt,
+				BufferExt outputKeyData
+			) throws SrtxpSecurityException {
+		final String FNC_NAME = MikeyGenerator.class.getSimpleName() + ".buildSubPtKemacData()";
+
 		outputKeyData.increaseSize(1024);
 		ByteBuffer msgBb = ByteBuffer.wrap(outputKeyData.getBaPtr()).order(ByteOrder.BIG_ENDIAN);
 
-		// next payload (repeated here for some reason)
+		// next payload (in case we have more than one sub-payload)
 		msgBb.put(nextPt.getValue());
 
 		// type and KV (key validity period)
@@ -238,7 +254,13 @@ public final class MikeyGenerator {
 			));
 
 		// key data length
-		short keyDataLen = (short)(KeySizes.AES_128_KEY_SIZE + KeySizes.SALT_SIZE);
+		if (kmd.encrKeyLen() != kmd.masterKey().getUsed()) {
+			throw new SrtxpSecurityException(FNC_NAME + ": Encr Key length doesn't match Master Key length");
+		}
+		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
+			throw new SrtxpSecurityException(FNC_NAME + ": Salt length doesn't match Master Salt length");
+		}
+		short keyDataLen = (short)(kmd.encrKeyLen() + KeySizes.SALT_SIZE);
 		msgBb.putShort(keyDataLen);
 		// key data
 		msgBb.put(kmd.masterKey().getBaPtr(), 0, kmd.masterKey().getUsed());
@@ -247,6 +269,7 @@ public final class MikeyGenerator {
 		//
 		if (tmpKvType == MikeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
 			// KV data length
+			if (kmd.mki().getUsed() > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid KV SPI/MKI length"); }
 			msgBb.put((byte)kmd.mki().getUsed());
 			// KV data
 			if (! kmd.mki().isEmpty()) {

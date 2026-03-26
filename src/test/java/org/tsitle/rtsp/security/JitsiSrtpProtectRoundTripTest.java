@@ -84,8 +84,8 @@ class JitsiSrtpProtectRoundTripTest {
 				false,  // is sender?
 				Common.createByteArrayFromBuffer(masterKey),
 				Common.createByteArrayFromBuffer(masterSalt),
-				policyObj,
-				policyObj,
+				policyObj,  // SRTP Policy
+				policyObj,  // SRTCP Policy
 				loggerObj
 			);
 

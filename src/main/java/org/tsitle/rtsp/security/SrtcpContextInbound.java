@@ -5,7 +5,6 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
-import org.tsitle.rtsp.security.constants.KeySizes;
 
 /**
  * Context for inbound SRTCP packet decryption
@@ -55,7 +54,7 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		validateAuthTag(encrPktView, false, 0);
 
 		//
-		encrPktView.setLength(encrPktView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
+		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen());
 
 		// validate MKI
 		if (! ctxKmd.mki().isEmpty()) {

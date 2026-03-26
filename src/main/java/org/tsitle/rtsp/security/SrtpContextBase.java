@@ -35,7 +35,7 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 	 * @return Extra packet length
 	 */
 	public int getSrtpExtraPacketLength() {
-		return (KeySizes.AUTH_TAG_SIZE + ctxKmd.mki().getUsed());
+		return (ctxKmd.authTagLen() + ctxKmd.mki().getUsed());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
-		final byte[] tmpIvBytes = new byte[KeySizes.AES_128_KEY_SIZE];
+		final byte[] tmpIvBytes = new byte[KeySizes.AES_KEY_SIZE_128];  // IV is always 128 bits (16 bytes) regardless of key size
 		Arrays.fill(tmpIvBytes, (byte)0);
 
 		/*

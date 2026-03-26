@@ -58,14 +58,28 @@ public abstract class SrtxpContextBase {
 		ctxKmd = kmd.clone();
 
 		//
+		if (kmd.encrKeyLen() != KeySizes.AES_KEY_SIZE_128 && kmd.encrKeyLen() != KeySizes.AES_KEY_SIZE_256) {
+			throw new SrtxpSecurityException("Encryption Key length must be 16 or 32 bytes");
+		}
+		if (kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_080 && kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_160) {
+			throw new SrtxpSecurityException("Auth Key length must be 10 or 20 bytes");
+		}
+		if (kmd.authTagLen() < 1) {
+			throw new SrtxpSecurityException("Auth Tag length must be > 0");
+		}
+		if (kmd.authTagLen() > KeySizes.SHA1_SIZE_160) {  // Auth Tag cannot be longer than what SHA1-160 can output
+			throw new SrtxpSecurityException("Auth Tag length must be <= " + KeySizes.SHA1_SIZE_160 + " bytes");
+		}
+
+		//
 		final Cipher cipherAesCtr = buildCipherObject();
 
 		//
 		if (isRtp) {
-			SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtp(cipherAesCtr, ctxKmd);
+			SessionKeys tmpSessionKeys = SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, ctxKmd);
 			setRtpSessionKeys(tmpSessionKeys);
 		} else {
-			SessionKeys tmpSessionKeys = SrtpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd);
+			SessionKeys tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd);
 			setRtcpSessionKeys(tmpSessionKeys);
 		}
 
@@ -165,7 +179,7 @@ public abstract class SrtxpContextBase {
 
 			byte[] fullTag = ctxCam.macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
-			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
+			curAuthTagBuf.setUsed(ctxKmd.authTagLen());  // cut off what we don't need
 		} catch (InvalidKeyException e) {
 			throw new SrtxpSecurityException(e.getMessage());
 		}
@@ -186,7 +200,7 @@ public abstract class SrtxpContextBase {
 
 			byte[] fullTag = ctxCam.macObj.doFinal();
 			curAuthTagBuf.copyOf(fullTag);
-			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
+			curAuthTagBuf.setUsed(ctxKmd.authTagLen());  // cut off what we don't need
 		} catch (InvalidKeyException e) {
 			throw new SrtxpSecurityException(e.getMessage());
 		}
@@ -238,13 +252,13 @@ public abstract class SrtxpContextBase {
 				int srtpRoc
 			) throws SrtxpSecurityException {
 		// copy Auth Tag from the received packet
-		bufView.setOffset(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
-		bufView.setLength(KeySizes.AUTH_TAG_SIZE);
+		bufView.setOffset(bufView.getInternalBeLength() - ctxKmd.authTagLen());
+		bufView.setLength(ctxKmd.authTagLen());
 		bufView.copyViewIntoBe(cacheAuthTagRcvdBuf);
 
 		// compute Auth Tag over: encrypted RTxP packet
 		bufView.setOffset(0);
-		bufView.setLength(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE - ctxKmd.mki().getUsed());
+		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getUsed());
 		if (isRtpPkt) {
 			computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
 		} else {
@@ -300,9 +314,11 @@ public abstract class SrtxpContextBase {
 	/** For Unit Tests only */
 	void setKmdMasterKeyIdentifier(@NonNull BufferExt mki) {
 		ctxKmd = new SrtxpKmd(
+				ctxKmd.encrKeyLen(),
 				ctxKmd.masterKey().clone(),
 				ctxKmd.masterSalt().clone(),
 				ctxKmd.authKeyLen(),
+				ctxKmd.authTagLen(),
 				mki,
 				ctxKmd.ssrcId()
 			);
@@ -320,10 +336,10 @@ public abstract class SrtxpContextBase {
 		validateSessionAuthKey(sessionKeys.authKey());
 	}
 
-	private static void validateSessionEncKey(@NonNull BufferExt sessionEncKey) throws SrtpSecurityException {
-		if (sessionEncKey.getUsed() != KeySizes.AES_128_KEY_SIZE) {
-			throw new SrtpSecurityException("Invalid RTP Session Encr Key length (expected " +
-					KeySizes.AES_128_KEY_SIZE + " bytes, got " + sessionEncKey.getUsed() + ")");
+	private void validateSessionEncKey(@NonNull BufferExt sessionEncKey) throws SrtxpSecurityException {
+		if (sessionEncKey.getUsed() != ctxKmd.encrKeyLen()) {
+			throw new SrtxpSecurityException("Invalid RTP Session Encr Key length (expected " +
+					ctxKmd.encrKeyLen() + " bytes, got " + sessionEncKey.getUsed() + ")");
 		}
 	}
 
