@@ -3,7 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -19,9 +19,9 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public SrtcpContextOutbound(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	public SrtcpContextOutbound(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		super(kmd);
 	}
 
@@ -33,14 +33,14 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 	 * @param rtcpPacketBuf RTCP packet buffer
 	 * @param ssrcId SSRC ID of the RTP stream
 	 * @param outputEncryptedPacketBuf Encrypted RTCP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	@SuppressWarnings("unused")
 	public void protectRtcpRrCompound(
 				@NonNull BufferExt rtcpPacketBuf,
 				int ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		protectRtcpSrCompound(rtcpPacketBuf, ssrcId, outputEncryptedPacketBuf);
 	}
 
@@ -49,19 +49,19 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 	 * @param rtcpPacketBuf RTCP packet buffer
 	 * @param ssrcId SSRC ID of the RTP stream
 	 * @param outputEncryptedPacketBuf Encrypted RTCP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void protectRtcpSrCompound(
 				@NonNull BufferExt rtcpPacketBuf,
 				int ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtcp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		if (rtcpPacketBuf.getUsed() < RTCP_PLAIN_HEADER_SIZE) {
-			throw new SrtpSecurityException("Invalid RTCP packet length");
+			throw new SrtxpSecurityException("Invalid RTCP packet length");
 		}
 
 		/*

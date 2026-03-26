@@ -148,9 +148,9 @@ public abstract class ThreadRtpSenderBase<
 			try {
 				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
 				this.srtcpCtxOutbound = new SrtcpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
-			} catch (SrtpSecurityException e) {
+			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-						"SrtpSecurityException caught: " + e.getMessage());
+						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
 			this.srtpCtxOutbound = null;
@@ -391,8 +391,8 @@ public abstract class ThreadRtpSenderBase<
 				logWarn(FNC_NAME, String.format("encryptRtpPacketPayload() took %.2f ms", (double)delta / 1000000.0));
 			}
 			return cacheRtpEncrPacket;
-		} catch (SrtpSecurityException e) {
-			final String errMsg = "SrtpSecurityException caught: " + e.getMessage();
+		} catch (SrtxpSecurityException e) {
+			final String errMsg = "SrtxpSecurityException caught: " + e.getMessage();
 			logError(FNC_NAME, errMsg);
 			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
 		}
@@ -758,8 +758,8 @@ public abstract class ThreadRtpSenderBase<
 						paramsCommon.getRtspSsrcId(),
 						encrPacketCompoundBuf
 					);
-			} catch (SrtpSecurityException e) {
-				logError(FNC_NAME, "SrtpSecurityException caught: " + e.getMessage());
+			} catch (SrtxpSecurityException e) {
+				logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
 				return;
 			}
 			outpPacketPtr = encrPacketCompoundBuf;

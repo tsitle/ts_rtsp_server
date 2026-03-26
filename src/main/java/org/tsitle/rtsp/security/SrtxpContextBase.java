@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
 import javax.crypto.*;
@@ -52,9 +52,9 @@ public abstract class SrtxpContextBase {
 	 * Constructor.
 	 * @param isRtp Is this a context for RTP?
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	protected SrtxpContextBase(boolean isRtp, @NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	protected SrtxpContextBase(boolean isRtp, @NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		ctxKmd = kmd.clone();
 
 		//
@@ -81,7 +81,7 @@ public abstract class SrtxpContextBase {
 				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputEncrPacket
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		outputEncrPacket.copyOf(plainPacket, 0, pktHeaderSize);
 		outputEncrPacket.increaseSize(plainPacket.getUsed() + 64);  // reserve some extra memory for the AuthTag etc.
 
@@ -102,7 +102,7 @@ public abstract class SrtxpContextBase {
 			outputEncrPacket.setUsed(plainPacket.getUsed());
 		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
-			throw new SrtpSecurityException(e.getMessage());
+			throw new SrtxpSecurityException(e.getMessage());
 		}
 	}
 
@@ -111,7 +111,7 @@ public abstract class SrtxpContextBase {
 				int pktHeaderSize,
 				@NonNull BufferExt curIvBuf,
 				@NonNull BufferExt outputPlainPacket
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (pktHeaderSize > 0) {
 			outputPlainPacket.copyOf(encrPktView.getInternalBaPtr(), 0, pktHeaderSize);
 		} else {
@@ -137,7 +137,7 @@ public abstract class SrtxpContextBase {
 			outputPlainPacket.setUsed(encrPktView.getLength());
 		} catch (ShortBufferException | IllegalBlockSizeException |
 				InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
-			throw new SrtpSecurityException(e.getMessage());
+			throw new SrtxpSecurityException(e.getMessage());
 		}
 	}
 
@@ -147,9 +147,9 @@ public abstract class SrtxpContextBase {
 				@NonNull BufferView encrPktView,
 				int roc,
 				@NonNull BufferExt curAuthTagBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		try {
@@ -167,16 +167,16 @@ public abstract class SrtxpContextBase {
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
-			throw new SrtpSecurityException(e.getMessage());
+			throw new SrtxpSecurityException(e.getMessage());
 		}
 	}
 
 	protected void computeAuthTagForRtcp(
 				@NonNull BufferView encrPktView,
 				@NonNull BufferExt curAuthTagBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtcp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		try {
@@ -188,13 +188,13 @@ public abstract class SrtxpContextBase {
 			curAuthTagBuf.copyOf(fullTag);
 			curAuthTagBuf.setUsed(KeySizes.AUTH_TAG_SIZE);  // cut off what we don't need
 		} catch (InvalidKeyException e) {
-			throw new SrtpSecurityException(e.getMessage());
+			throw new SrtxpSecurityException(e.getMessage());
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected void buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+	protected void buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
 		if (cam.cipherObj == null) {
 			cam.cipherObj = buildCipherObject();
 		}
@@ -209,7 +209,7 @@ public abstract class SrtxpContextBase {
 		}
 	}
 
-	protected @NonNull SecretKeySpec buildSecretKeySpecObject(@NonNull BufferExt sessionKey, boolean isForEnc) throws SrtpSecurityException {
+	protected @NonNull SecretKeySpec buildSecretKeySpecObject(@NonNull BufferExt sessionKey, boolean isForEnc) throws SrtxpSecurityException {
 		if (isForEnc) {
 			validateSessionEncKey(sessionKey);
 		} else {
@@ -218,15 +218,15 @@ public abstract class SrtxpContextBase {
 		try {
 			return new SecretKeySpec(sessionKey.getBaPtr(), 0, sessionKey.getUsed(), isForEnc ? "AES" : "HmacSHA1");
 		} catch (IllegalArgumentException e) {
-			throw new SrtpSecurityException("Invalid key for SKS: " + e.getMessage());
+			throw new SrtxpSecurityException("Invalid key for SKS: " + e.getMessage());
 		}
 	}
 
-	protected static @NonNull Mac buildMacObject() throws SrtpSecurityException {
+	protected static @NonNull Mac buildMacObject() throws SrtxpSecurityException {
 		try {
 			return Mac.getInstance("HmacSHA1");
 		} catch (NoSuchAlgorithmException e) {
-			throw new SrtpSecurityException("Could not build Mac object: " + e.getMessage());
+			throw new SrtxpSecurityException("Could not build Mac object: " + e.getMessage());
 		}
 	}
 
@@ -236,7 +236,7 @@ public abstract class SrtxpContextBase {
 				@NonNull BufferView bufView,
 				boolean isRtpPkt,
 				int srtpRoc
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		// copy Auth Tag from the received packet
 		bufView.setOffset(bufView.getInternalBeLength() - KeySizes.AUTH_TAG_SIZE);
 		bufView.setLength(KeySizes.AUTH_TAG_SIZE);
@@ -253,17 +253,17 @@ public abstract class SrtxpContextBase {
 
 		// validate Auth Tag
 		if (! cacheAuthTagActualBuf.equals(cacheAuthTagRcvdBuf)) {
-			throw new SrtpSecurityException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
+			throw new SrtxpSecurityException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
 					cacheAuthTagRcvdBuf.toHexString() + ", exp=" + cacheAuthTagActualBuf.toHexString() + ")");
 		}
 	}
 
-	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtpSecurityException {
+	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpSecurityException {
 		final int orgLen = bufView.getLength();
 		bufView.setLength(ctxKmd.mki().getUsed());
 		bufView.copyViewIntoBe(cacheValidateMkiBuf);
 		if (! ctxKmd.mki().equals(cacheValidateMkiBuf)) {
-			throw new SrtpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
+			throw new SrtxpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
 					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toHexString());
 		}
 		bufView.setLength(orgLen);
@@ -273,24 +273,24 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For internal use and Unit Tests */
-	static @NonNull Cipher buildCipherObject() throws SrtpSecurityException {
+	static @NonNull Cipher buildCipherObject() throws SrtxpSecurityException {
 		try {
 			return Cipher.getInstance("AES/CTR/NoPadding");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-			throw new SrtpSecurityException("Could not build Cipher object: " + e.getMessage());
+			throw new SrtxpSecurityException("Could not build Cipher object: " + e.getMessage());
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For internal use and Unit Tests */
-	void setRtpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+	void setRtpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionKeys(sessionKeys);
 		ctxSessionKeysRtp = sessionKeys.clone();
 	}
 
 	/** For internal use and Unit Tests */
-	void setRtcpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+	void setRtcpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionKeys(sessionKeys);
 		ctxSessionKeysRtcp = sessionKeys.clone();
 	}
@@ -311,10 +311,10 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtpSecurityException {
+	private void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionEncKey(sessionKeys.encKey());
 		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
-			throw new SrtpSecurityException("Invalid RTP Session Salt length (expected " +
+			throw new SrtxpSecurityException("Invalid RTP Session Salt length (expected " +
 					KeySizes.SALT_SIZE + " bytes, got " + sessionKeys.salt().getUsed() + ")");
 		}
 		validateSessionAuthKey(sessionKeys.authKey());
@@ -327,12 +327,12 @@ public abstract class SrtxpContextBase {
 		}
 	}
 
-	private void validateSessionAuthKey(@NonNull BufferExt sessionAuthKey) throws SrtpSecurityException {
+	private void validateSessionAuthKey(@NonNull BufferExt sessionAuthKey) throws SrtxpSecurityException {
 		if (ctxKmd.authKeyLen() <= 0) {
-			throw new SrtpSecurityException("Session Auth Key length not set");
+			throw new SrtxpSecurityException("Session Auth Key length not set");
 		}
 		if (sessionAuthKey.getUsed() != ctxKmd.authKeyLen()) {
-			throw new SrtpSecurityException("Invalid RTP Session Auth Key length (expected " +
+			throw new SrtxpSecurityException("Invalid RTP Session Auth Key length (expected " +
 					ctxKmd.authKeyLen() + " bytes, got " + sessionAuthKey.getUsed() + ")");
 		}
 	}

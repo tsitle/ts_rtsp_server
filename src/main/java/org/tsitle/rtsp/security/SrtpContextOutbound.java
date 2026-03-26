@@ -3,7 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 
 /**
  * Context for outbound RTP packet encryption
@@ -16,9 +16,9 @@ public class SrtpContextOutbound extends SrtpContextBase {
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public SrtpContextOutbound(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	public SrtpContextOutbound(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		super(kmd);
 	}
 
@@ -33,7 +33,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputEncryptedPacketBuf Encrypted RTP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void protectRtp(
 				@NonNull BufferExt rtpPacketBuf,
@@ -42,9 +42,9 @@ public class SrtpContextOutbound extends SrtpContextBase {
 				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		/*
@@ -56,7 +56,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		 */
 
 		if (hasCsrcList || hasHeaderExtension) {
-			throw new SrtpSecurityException("Unsupported: RTP packet header contains CSRC list or header extension");
+			throw new SrtxpSecurityException("Unsupported: RTP packet header contains CSRC list or header extension");
 		}
 
 		// SRTP packet index

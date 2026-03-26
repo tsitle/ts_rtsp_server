@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
@@ -21,9 +21,9 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	protected SrtpContextBase(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	protected SrtpContextBase(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		super(true, kmd);
 	}
 
@@ -41,9 +41,9 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected void buildIvForRtp(long packetIndex, int ssrc, @NonNull BufferExt curIvBuf) throws SrtpSecurityException {
+	protected void buildIvForRtp(long packetIndex, int ssrc, @NonNull BufferExt curIvBuf) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		final byte[] tmpIvBytes = new byte[KeySizes.AES_128_KEY_SIZE];

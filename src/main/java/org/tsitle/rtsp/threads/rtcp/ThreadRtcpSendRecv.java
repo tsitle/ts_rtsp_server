@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
@@ -53,9 +53,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (params.getIsRtxpEncryptionEnabled()) {
 			try {
 				this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmd().orElseThrow());
-			} catch (SrtpSecurityException e) {
+			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-						"SrtpSecurityException caught: " + e.getMessage());
+						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
 			this.srtcpCtxInbound = null;
@@ -218,8 +218,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 					//
 					wasDecr = true;
 					tmpWasDecr = true;
-				} catch (SrtpSecurityException e) {
-					logError(FNC_NAME, "SrtpSecurityException caught: " + e.getMessage());
+				} catch (SrtxpSecurityException e) {
+					logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
 					cacheRecvBuf1.clear();
 					return;
 				}

@@ -3,7 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
@@ -20,9 +20,9 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public SrtcpContextInbound(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	public SrtcpContextInbound(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		super(kmd);
 	}
 
@@ -33,18 +33,18 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 	 * Decrypt an SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @param outputDecryptedPacketBuf Decrypted RTCP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void unprotectSrtcpCompound(
 				@NonNull BufferExt srtcpPacketBuf,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtcp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		if (srtcpPacketBuf.getUsed() < RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) {
-			throw new SrtpSecurityException("Invalid SRTCP packet length: " +
+			throw new SrtxpSecurityException("Invalid SRTCP packet length: " +
 					srtcpPacketBuf.getUsed() + " < " + (RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) + " bytes");
 		}
 
@@ -70,10 +70,10 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		int tmpIndexEbit = (tmpIndexField & 0x80000000);
 		int tmpIndexOnly = (tmpIndexField & 0x7FFFFFFF);
 		if (tmpIndexEbit != 0x80000000) {
-			throw new SrtpSecurityException("Invalid E-bit in SRTCP packet");
+			throw new SrtxpSecurityException("Invalid E-bit in SRTCP packet");
 		}
 		if (ctxStateSrtcpLastIndex >= tmpIndexOnly) {
-			throw new SrtpSecurityException("Invalid SRTCP packet index");
+			throw new SrtxpSecurityException("Invalid SRTCP packet index");
 		}
 		ctxStateSrtcpLastIndex = tmpIndexOnly;
 		encrPktView.increaseLength(-1 * SRTCP_INDEX_FIELD_SIZE);
@@ -83,7 +83,7 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		int tmpSenderSsrc = encrPktView.getIntFromBigEndian(false);
 		if (ctxStateSrtcpSsrc != 0 && tmpSenderSsrc != ctxStateSrtcpSsrc) {
 			System.err.println(srtcpPacketBuf.toHexString());
-			throw new SrtpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
+			throw new SrtxpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
 					String.format("is=0x%08X, expected=0x%08X", tmpSenderSsrc, ctxStateSrtcpSsrc));
 		}
 		ctxStateSrtcpSsrc = tmpSenderSsrc;

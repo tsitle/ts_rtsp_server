@@ -546,7 +546,7 @@ public class RtspRequestParser {
 					SrtxpKmd kmd = MikeyParser.parseKeyMgmtData(tmpSub);
 					tmpStreamInfo.srtxpKmd = kmd.clone();
 					haveKeyData = true;
-				} catch (SrtpSecurityException e) {
+				} catch (SrtxpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());
 					throw new RtspMissingEncryptionParamsException();
 				}

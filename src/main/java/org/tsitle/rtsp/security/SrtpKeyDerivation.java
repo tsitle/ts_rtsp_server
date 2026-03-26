@@ -2,7 +2,7 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 import org.tsitle.rtsp.security.constants.PrfDeriveLabel;
 
@@ -26,12 +26,12 @@ public final class SrtpKeyDerivation {
 	 * @param cipher Cipher object
 	 * @param kmd Key Management Data
 	 * @return Session keys
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtp(
 				@NonNull Cipher cipher,
 				@NonNull SrtxpKmd kmd
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		return new SessionKeys(
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, KeySizes.AES_128_KEY_SIZE),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen()),
@@ -44,12 +44,12 @@ public final class SrtpKeyDerivation {
 	 * @param cipher Cipher object
 	 * @param kmd Key Management Data
 	 * @return Session keys
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtcp(
 				@NonNull Cipher cipher,
 				@NonNull SrtxpKmd kmd
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		return new SessionKeys(
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, KeySizes.AES_128_KEY_SIZE),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen()),
@@ -68,12 +68,12 @@ public final class SrtpKeyDerivation {
 				@NonNull SrtxpKmd kmd,
 				@NonNull PrfDeriveLabel label,
 				int outLen
-			) throws SrtpSecurityException {
-		if (kmd.masterKey().getUsed() != KeySizes.AES_128_KEY_SIZE) {
-			throw new SrtpSecurityException("Invalid master key length, expected " + KeySizes.AES_128_KEY_SIZE + " bytes");
+			) throws SrtxpSecurityException {
+		if (kmd.masterKey().getUsed() != kmd.encrKeyLen()) {
+			throw new SrtxpSecurityException("Invalid master key length, expected " + kmd.encrKeyLen() + " bytes");
 		}
 		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
-			throw new SrtpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
+			throw new SrtxpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
 		}
 
 		/*
@@ -104,7 +104,7 @@ public final class SrtpKeyDerivation {
 			outBuf.copyOf(tmpOutBa);
 			return outBuf;
 		} catch (IllegalBlockSizeException | InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
-			throw new SrtpSecurityException(e.getMessage());
+			throw new SrtxpSecurityException(e.getMessage());
 		}
 	}
 

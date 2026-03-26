@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
 
 /**
@@ -21,7 +21,7 @@ public class RtpEncryptedPacket extends RtpPacketContainerBase {
 				@NonNull RtpPacketType payloadType,
 				@NonNull RtpPacketContainerBase plainPacket,
 				@NonNull SrtpContextOutbound srtpCtx
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		super(payloadType, plainPacket.packetBuf, true);
 
 		this.srtpCtx = srtpCtx;
@@ -36,9 +36,9 @@ public class RtpEncryptedPacket extends RtpPacketContainerBase {
 	/**
 	 * Update the entire packet with the contents of the given plain packet.
 	 * @param plainPacket Plain RTP packet
-	 * @throws SrtpSecurityException If any kind of error occurred during the SRTP encryption
+	 * @throws SrtxpSecurityException If any kind of error occurred during the SRTP encryption
 	 */
-	public void updatePacket(@NonNull RtpPacketContainerBase plainPacket) throws SrtpSecurityException {
+	public void updatePacket(@NonNull RtpPacketContainerBase plainPacket) throws SrtxpSecurityException {
 		packetBuf.copyOf(plainPacket.packetBuf, 0, RTP_CONT_HEADER_SIZE);
 
 		srtpCtx.protectRtp(

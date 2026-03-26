@@ -3,7 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtpSecurityException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
@@ -20,9 +20,9 @@ public class SrtpContextInbound extends SrtpContextBase {
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public SrtpContextInbound(@NonNull SrtxpKmd kmd) throws SrtpSecurityException {
+	public SrtpContextInbound(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		super(kmd);
 	}
 
@@ -33,13 +33,13 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * Decrypt an SRTP packet
 	 * @param srtpPacket SRTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	@SuppressWarnings("unused")
 	public void unprotectSrtp(
 				@NonNull RtpEncryptedPacket srtpPacket,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		unprotectSrtp(
 				srtpPacket.getPacketBufferView(),
 				srtpPacket.getSequenceNumber(),
@@ -54,14 +54,14 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void unprotectSrtp(
 				@NonNull BufferExt srtpPacketBuf,
 				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		final BufferView encrPktView = new BufferView(srtpPacketBuf);
 		unprotectSrtp(encrPktView, hdSeqNr, hdSsrcId, outputDecryptedPacketBuf);
 	}
@@ -72,27 +72,27 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
-	 * @throws SrtpSecurityException If any kind of error occurred
+	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void unprotectSrtp(
 				@NonNull BufferView srtpPacketBufView,
 				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtpSecurityException {
+			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
-			throw new SrtpSecurityException("Session Keys not set");
+			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
 		if (srtpPacketBufView.getLength() < RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) {
-			throw new SrtpSecurityException("Invalid SRTP packet length: " +
+			throw new SrtxpSecurityException("Invalid SRTP packet length: " +
 					srtpPacketBufView.getLength() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
 		}
 
 		// SRTP packet index
 		final long srtpPacketIndex = (((long)ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
-			throw new SrtpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
+			throw new SrtxpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
 
