@@ -220,6 +220,11 @@ public final class BufferExt implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + " [used=" + used + ", buf=0x" + toHexString() + "]";
+	}
+
 	/**
 	 * Convert the buffer to a hex string.
 	 * @return Hex string representation
