@@ -53,9 +53,10 @@ public class RtspSessionInfo {
 		public @Nullable SrtxpKmd srtxpKmd = null;
 
 		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-		public boolean isTransportValid() {
+		public boolean isTransportValid(boolean needsEncryption) {
 			return (tpClientDestPortRtp > 0 && tpClientDestPortRtcp > 0 &&
-					tpIsUdp && tpIsUnicast && ! tpIsInterleaved);
+					tpIsUdp && tpIsUnicast && ! tpIsInterleaved &&
+					tpIsEncr == needsEncryption);
 		}
 	}
 

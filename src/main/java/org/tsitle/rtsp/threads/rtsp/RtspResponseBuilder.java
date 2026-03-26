@@ -5,11 +5,13 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -171,7 +173,7 @@ public class RtspResponseBuilder {
 				FNC_NAME,
 				requestUrlInputOrStreamSource.streamSourceId
 			);
-		if (! tmpStreamInfo.isTransportValid()) {
+		if (! tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled)) {
 			throw new IllegalStateException(FNC_NAME + ": Transport unsupported");
 		}
 
@@ -449,7 +451,30 @@ public class RtspResponseBuilder {
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
 
 		//
-		SrtxpKmd srtxpKmd = new SrtxpKmd();
+		SrtxpKmd srtxpKmd;
+		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
+			RtspSessionInfo.StreamInfo streamInfo;
+			if (rtspSessionInfo.streamsMapSetup.containsKey(tmpSsObj.getId())) {
+				// if the DESCRIBE request already created the stream info object
+				streamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsObj.getId());
+			} else {
+				streamInfo = new RtspSessionInfo.StreamInfo();
+			}
+			if (streamInfo.rtspSsrcId == 0) {
+				streamInfo.rtspSsrcId = RandomHelper.getRandomUint32();
+			}
+			rtspSessionInfo.streamsMapSetup.put(tmpSsObj.getId(), streamInfo);
+			//
+			srtxpKmd = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
+			try {
+				String tmpMsg = MikeyGenerator.generate(srtxpKmd);
+				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
+			} catch (SrtxpSecurityException e) {
+				throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
+			}
+		} else {
+			srtxpKmd = new SrtxpKmd();  // empty KMD
+		}
 		rtspSessionInfo.streamsMapSrtxpKmd.put(tmpSsObj.getId(), srtxpKmd);  // always store the KMD
 	}
 

@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp;
 class RtspPrivateConstants {
 
 	/** Maximum length for RTSP Resource URLs */
-	static final int RTSP_MAX_RESOURCE_URL_LENGTH = 256;
+	static final int RTSP_MAX_RESOURCE_URL_LENGTH = 512;
 
 	/** Prefix for Stream IDs as publicized over SDP */
 	static final String STREAM_ID_PREFIX = "streamid";

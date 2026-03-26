@@ -10,6 +10,7 @@ public enum ServerResponseStatusCode {
 	FORBIDDEN(403),
 	NOT_FOUND(404),
 	METHOD_NOT_ALLOWED(405),
+	URI_TOO_LONG(414),
 	SESSION_NOT_FOUND(454),
 	UNSUPPORTED_TRANSPORT(461);
 
@@ -30,6 +31,7 @@ public enum ServerResponseStatusCode {
 				case FORBIDDEN -> "Forbidden";
 				case NOT_FOUND -> "Not Found";
 				case METHOD_NOT_ALLOWED -> "Method Not Allowed";
+				case URI_TOO_LONG -> "URI Too Long";
 				case SESSION_NOT_FOUND -> "Session Not Found";
 				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
 			};

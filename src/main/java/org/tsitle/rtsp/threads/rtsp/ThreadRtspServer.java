@@ -634,7 +634,7 @@ public class ThreadRtspServer extends RunnableBase {
 					return false;
 				}
 				RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsId);
-				if (tmpStreamInfo == null || ! tmpStreamInfo.isTransportValid()) {
+				if (tmpStreamInfo == null || ! tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled)) {
 					// this should never happen
 					logError(FNC_NAME, "SETUP failed");
 					return false;
