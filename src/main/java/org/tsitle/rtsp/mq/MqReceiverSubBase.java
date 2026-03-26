@@ -37,6 +37,8 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static final int TIMEOUT_WAIT_FOR_SOCKET_MS = 2500;
+
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final boolean doValidatePayload;
 	private final boolean doPrintDebugStats;
@@ -190,7 +192,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 					break;
 				}
 			}
-			if (++timeoutCnt > 1000) {
+			if (++timeoutCnt > TIMEOUT_WAIT_FOR_SOCKET_MS) {
 				throw new MqException(fncName + ": Timeout waiting for data");
 			}
 		}
