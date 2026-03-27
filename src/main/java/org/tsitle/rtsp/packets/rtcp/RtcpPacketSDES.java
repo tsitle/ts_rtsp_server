@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 import java.nio.ByteBuffer;
@@ -25,8 +26,8 @@ public class RtcpPacketSDES {
 	 * Constructor.
 	 * @param xsrcBlocks SSRC/CSRC Blocks (can be empty)
 	 */
-	public RtcpPacketSDES(List<RtcpInnerXsrcBlock> xsrcBlocks) {
-		if (xsrcBlocks == null || xsrcBlocks.isEmpty()) {
+	public RtcpPacketSDES(@NonNull List<@NonNull RtcpInnerXsrcBlock> xsrcBlocks) {
+		if (xsrcBlocks.isEmpty()) {
 			throw new IllegalArgumentException("SSRC/CSRC Blocks == null || empty");
 		}
 		for (RtcpInnerXsrcBlock block : xsrcBlocks) {
@@ -61,7 +62,7 @@ public class RtcpPacketSDES {
 	 * @param packet Raw packet bitstream which contains the main RTCP header and may contain zero or more XSRCBs
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketSDES(RtcpPacketHeader mainPacketHeader, BufferExt packet) {
+	public RtcpPacketSDES(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.SDES) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
 		}
@@ -99,7 +100,7 @@ public class RtcpPacketSDES {
 	 * @param packetBuf Buffer to copy the raw packet data into
 	 */
 	@SuppressWarnings("unused")
-	public void copyRawPacketDataInto(BufferExt packetBuf) {
+	public void copyRawPacketDataInto(@NonNull BufferExt packetBuf) {
 		// construct the packet = header + payload
 		mainPktHd.copyRawPacketHeaderDataInto(packetBuf);
 		packetBuf.copyFrom(rawPayload, 0, packetBuf.getUsed(), rawPayload.getUsed());
@@ -119,7 +120,7 @@ public class RtcpPacketSDES {
 	 * @return Main Packet header
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketHeader getMainPacketHeader() {
+	public @NonNull RtcpPacketHeader getMainPacketHeader() {
 		return mainPktHd.clone();
 	}
 
@@ -149,7 +150,7 @@ public class RtcpPacketSDES {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				mainPktHd.toString(true) +
 				", XSRCB Count: " + xsrcBlocks.size() +

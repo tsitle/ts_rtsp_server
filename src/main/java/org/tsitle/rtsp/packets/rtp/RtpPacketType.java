@@ -60,7 +60,7 @@ public enum RtpPacketType {
 		return value;
 	}
 
-	public static RtpPacketType of(byte value) {
+	public static @NonNull RtpPacketType of(byte value) {
 		for (RtpPacketType type : RtpPacketType.values()) {
 			if (type.getValue() == value) {
 				return type;

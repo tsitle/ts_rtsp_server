@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
+
 /**
  * RTCP packet types.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-12.1">RFC-3550 Section 12.1</a>
@@ -35,7 +37,7 @@ public enum RtcpPacketType {
 		return value;
 	}
 
-	public static RtcpPacketType of(byte value) {
+	public static @NonNull RtcpPacketType of(byte value) {
 		for (RtcpPacketType type : RtcpPacketType.values()) {
 			if (type.getValue() == value) {
 				return type;

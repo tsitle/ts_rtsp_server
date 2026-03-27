@@ -85,7 +85,7 @@ public abstract class RtpPacketCodecBase extends RtpPacketContainerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return toString(false);
 	}
 

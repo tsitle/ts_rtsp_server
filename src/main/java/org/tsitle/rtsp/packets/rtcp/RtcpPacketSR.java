@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 import java.nio.ByteBuffer;
@@ -36,12 +38,9 @@ public class RtcpPacketSR {
 	 */
 	public RtcpPacketSR(
 				int ssrcSender,
-				RtcpInnerSenderInfoBlock senderInfoBlock,
-				List<RtcpInnerRecpReportBlock> recpReportBlocks
+				@NonNull RtcpInnerSenderInfoBlock senderInfoBlock,
+				@Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks
 			) {
-		if (senderInfoBlock == null) {
-			throw new IllegalArgumentException("Sender Info Block == null");
-		}
 		if (recpReportBlocks != null && recpReportBlocks.size() > 255) {
 			throw new IllegalArgumentException("Invalid RTCP RR packet: invalid number of RRBs");
 		}
@@ -84,8 +83,7 @@ public class RtcpPacketSR {
 	 * @param mainPacketHeader Packet header
 	 * @param packet Raw packet bitstream which contains the main RTCP header, the SIB and may contain zero or more RRBs
 	 */
-	@SuppressWarnings("unused")
-	public RtcpPacketSR(RtcpPacketHeader mainPacketHeader, BufferExt packet) {
+	public RtcpPacketSR(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.SR) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
 		}
@@ -117,7 +115,7 @@ public class RtcpPacketSR {
 	 * @param packetBuf Buffer to copy the raw packet data into
 	 */
 	@SuppressWarnings("unused")
-	public void copyRawPacketDataInto(BufferExt packetBuf) {
+	public void copyRawPacketDataInto(@NonNull BufferExt packetBuf) {
 		// construct the packet = header + payload
 		mainPktHd.copyRawPacketHeaderDataInto(packetBuf);
 		packetBuf.copyFrom(rawPayload, 0, packetBuf.getUsed(), rawPayload.getUsed());
@@ -156,7 +154,7 @@ public class RtcpPacketSR {
 	 * @return Sender Info Block
 	 */
 	@SuppressWarnings("unused")
-	public RtcpInnerSenderInfoBlock getSenderInfoBlock() {
+	public @NonNull RtcpInnerSenderInfoBlock getSenderInfoBlock() {
 		return senderInfoBlock.clone();
 	}
 
@@ -177,7 +175,7 @@ public class RtcpPacketSR {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				mainPktHd.toString(true) +
 				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +

@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 import java.nio.*;
@@ -32,7 +34,7 @@ public class RtcpPacketRR {
 	 * @param recpReportBlocks Reception Report Blocks (can be empty)
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketRR(int ssrcSender, List<RtcpInnerRecpReportBlock> recpReportBlocks) {
+	public RtcpPacketRR(int ssrcSender, @Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks) {
 		if (recpReportBlocks != null && recpReportBlocks.size() > 255) {
 			throw new IllegalArgumentException("Invalid RTCP RR packet: invalid number of RRBs");
 		}
@@ -70,7 +72,7 @@ public class RtcpPacketRR {
 	 * @param packet Raw packet bitstream which contains the main RTCP header and may contain zero or more RRBs
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketRR(RtcpPacketHeader mainPacketHeader, BufferExt packet) {
+	public RtcpPacketRR(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.RR) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
 		}
@@ -98,7 +100,7 @@ public class RtcpPacketRR {
 	 * @param packetBuf Buffer to copy the raw packet data into
 	 */
 	@SuppressWarnings("unused")
-	public void copyRawPacketDataInto(BufferExt packetBuf) {
+	public void copyRawPacketDataInto(@NonNull BufferExt packetBuf) {
 		// construct the packet = header + payload
 		mainPktHd.copyRawPacketHeaderDataInto(packetBuf);
 		packetBuf.copyFrom(rawPayload, 0, packetBuf.getUsed(), rawPayload.getUsed());
@@ -148,7 +150,7 @@ public class RtcpPacketRR {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				mainPktHd.toString(true) +
 				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +

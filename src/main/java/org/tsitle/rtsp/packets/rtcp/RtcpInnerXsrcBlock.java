@@ -62,7 +62,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 		public byte getTotalLength() { return (byte)(prefixValue.length() + value.length()); }
 
 		@Override
-		public String toString() {
+		public @NonNull String toString() {
 			return getClass().getSimpleName() + " [" +
 					"Type: " + type +
 					(type == BlockType.PRIV ? ", Prefix: '" + prefixValue + "'" : "") +

@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 
 import java.nio.ByteBuffer;
@@ -31,7 +33,7 @@ public class RtcpPacketBYE {
 	 * @param optionalReasonForLeaving Optional reason for leaving the session (UTF-8 encoded string, max. 255 bytes)
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketBYE(List<Integer> xsrcList, String optionalReasonForLeaving) {
+	public RtcpPacketBYE(@Nullable List<@NonNull Integer> xsrcList, @Nullable String optionalReasonForLeaving) {
 		final int lenRfl = (optionalReasonForLeaving == null ? 0 : optionalReasonForLeaving.length());
 		if (optionalReasonForLeaving != null && lenRfl > 255) {
 			throw new IllegalArgumentException("Invalid Reason-for-Leaving: max. 255 bytes");
@@ -81,7 +83,7 @@ public class RtcpPacketBYE {
 	 * @param packet Raw packet bitstream which contains the main RTCP header and may contain zero or more SSRC/CSRC entries
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketBYE(RtcpPacketHeader mainPacketHeader, BufferExt packet) {
+	public RtcpPacketBYE(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.BYE) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
 		}
@@ -122,7 +124,7 @@ public class RtcpPacketBYE {
 	 * @param packetBuf Buffer to copy the raw packet data into
 	 */
 	@SuppressWarnings("unused")
-	public void copyRawPacketDataInto(BufferExt packetBuf) {
+	public void copyRawPacketDataInto(@NonNull BufferExt packetBuf) {
 		// construct the packet = header + payload
 		mainPktHd.copyRawPacketHeaderDataInto(packetBuf);
 		packetBuf.copyFrom(rawPayload, 0, packetBuf.getUsed(), rawPayload.getUsed());
@@ -149,7 +151,7 @@ public class RtcpPacketBYE {
 	 * @return SSRC/CSRCs
 	 */
 	@SuppressWarnings("unused")
-	public List<Integer> getXsrcList() {
+	public @NonNull List<@NonNull Integer> getXsrcList() {
 		return new ArrayList<>(bdXsrcList);
 	}
 
@@ -158,12 +160,12 @@ public class RtcpPacketBYE {
 	 * @return Reason for leaving
 	 */
 	@SuppressWarnings("unused")
-	public String getReasonForLeaving() {
+	public @NonNull String getReasonForLeaving() {
 		return bdReasonForLeaving;
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		String tmpXsrcs = String.join(", ",
 				bdXsrcList.stream()
 						.mapToInt(Integer::intValue)

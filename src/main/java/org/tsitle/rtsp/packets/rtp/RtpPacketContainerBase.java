@@ -227,7 +227,7 @@ public class RtpPacketContainerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return toString(false);
 	}
 
@@ -254,7 +254,7 @@ public class RtpPacketContainerBase {
 	 * @return Information about the RTP packet header
 	 */
 	@SuppressWarnings("unused")
-	public static RtpBaseContainerInfo parsePacketHeader(@NonNull BufferExt packetData) {
+	public static @NonNull RtpBaseContainerInfo parsePacketHeader(@NonNull BufferExt packetData) {
 		RtpPacketContainerBase tmpCb = new RtpPacketContainerBase(packetData, true);
 
 		return new RtpBaseContainerInfo(
@@ -273,7 +273,7 @@ public class RtpPacketContainerBase {
 	 * @param paramsBase RTP packet parameters
 	 * @return RTP packet header
 	 */
-	public static RtpPacketContainerBase createPacketHeader(
+	public static @NonNull RtpPacketContainerBase createPacketHeader(
 				@NonNull RtpPacketType payloadType,
 				@NonNull ParamsContainerBase paramsBase
 			) {

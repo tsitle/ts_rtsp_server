@@ -146,7 +146,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				super.toString(true) +
 				", FirstByte: " + Integer.toUnsignedString(hdInnFirstByte) +

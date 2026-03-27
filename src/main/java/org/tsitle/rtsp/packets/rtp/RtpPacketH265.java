@@ -29,7 +29,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 		public byte getValue() {
 			return value;
 		}
-		public static H265PayloadType of(byte value) {
+		public static @NonNull H265PayloadType of(byte value) {
 			for (H265PayloadType type : H265PayloadType.values()) {
 				if (type.getValue() == value) {
 					return type;
@@ -195,7 +195,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getClass().getSimpleName()).append(" [");
 		sb.append(super.toString(true));
