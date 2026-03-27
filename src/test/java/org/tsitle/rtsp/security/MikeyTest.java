@@ -14,10 +14,10 @@ public class MikeyTest {
 		final String inputMsgB64 = "AQAFALTv+/IBAAAEjxR/AAAAAAsA7W0MlxQSOBEKEIB1A+mz0UfnXMDKIEGhgZwBAAAAGwABAQEBEAIBAQMBFAQBDgcBAQgBAQoBAQsBCgAAACcAIQAeaP9/KzYKBaw4GmfXhK5jKD2ITMQKYOvSyn/gHwZwBAn6QCEA";
 
 		SrtxpKmd kmd = MikeyParser.parseMickeyMsgIntoKmd(inputMsgB64);
-		final BufferExt expMasterEncKey = Common.createBufferFromHex("68FF7F2B360A05AC381A67D784AE6328");
-		final BufferExt expMasterSalt = Common.createBufferFromHex("3D884CC40A60EBD2CA7FE01F0670");
+		final BufferExt expMasterEncKey = BufferExt.decodeHexString("68FF7F2B360A05AC381A67D784AE6328");
+		final BufferExt expMasterSalt = BufferExt.decodeHexString("3D884CC40A60EBD2CA7FE01F0670");
 		final int expAuthKeyLength = KeySizes.AUTH_KEY_SIZE_160;
-		final BufferExt expMasterKeyIdentifier = Common.createBufferFromHex("09FA4021");
+		final BufferExt expMasterKeyIdentifier = BufferExt.decodeHexString("09FA4021");
 		final int expSsrcId = 0x048F147F;
 
 		assertEquals(expMasterEncKey, kmd.masterKey());
@@ -68,7 +68,7 @@ public class MikeyTest {
 	@Test
 	void encodeMsgRoundtrip4() throws Exception {
 		final int expSsrcId = 0x147FAB12;
-		final BufferExt expMasterKeyIdentifier = Common.createBufferFromHex("09FA4021DEADBEEF0123");
+		final BufferExt expMasterKeyIdentifier = BufferExt.decodeHexString("09FA4021DEADBEEF0123");
 
 		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(expSsrcId);
 

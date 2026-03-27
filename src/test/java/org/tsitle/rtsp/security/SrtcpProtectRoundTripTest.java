@@ -59,8 +59,8 @@ class SrtcpProtectRoundTripTest {
 
 		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
 				hdSsrc,
-				Common.createBufferFromBa(masterKey),
-				Common.createBufferFromBa(masterSalt)
+				new BufferExt(masterKey),
+				new BufferExt(masterSalt)
 			);
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
@@ -153,7 +153,7 @@ class SrtcpProtectRoundTripTest {
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
 
-		BufferExt mki = Common.createBufferFromHex("01020304");
+		BufferExt mki = BufferExt.decodeHexString("0x01020304");
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 

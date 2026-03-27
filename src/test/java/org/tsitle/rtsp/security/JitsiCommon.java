@@ -59,11 +59,7 @@ class JitsiCommon {
 		byte[] rtpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 1, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] rtpSalt = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 2, Common.SALT_SIZE_FOR_ALL_TESTS);
 
-		return new SessionKeys(
-				Common.createBufferFromBa(rtpEnc),
-				Common.createBufferFromBa(rtpAuth),
-				Common.createBufferFromBa(rtpSalt)
-			);
+		return new SessionKeys(new BufferExt(rtpEnc), new BufferExt(rtpAuth), new BufferExt(rtpSalt));
 	}
 
 	static @NonNull SessionKeys jitsiCreateSessionKeysDefaultRtcp() throws Exception {
@@ -72,11 +68,7 @@ class JitsiCommon {
 		byte[] rtcpAuth = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 4, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] rtcpSalt = jitsiDerive(Common.DEFAULT_MASTER_KEY, Common.DEFAULT_MASTER_SALT, 5, Common.SALT_SIZE_FOR_ALL_TESTS);
 
-		return new SessionKeys(
-				Common.createBufferFromBa(rtcpEnc),
-				Common.createBufferFromBa(rtcpAuth),
-				Common.createBufferFromBa(rtcpSalt)
-			);
+		return new SessionKeys(new BufferExt(rtcpEnc), new BufferExt(rtcpAuth), new BufferExt(rtcpSalt));
 	}
 
 }
