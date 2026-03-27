@@ -108,10 +108,10 @@ public class RtxpLogger extends ThreadBase {
 				case ERROR -> "ERROR";
 			};
 		ps.format(
-				"%s: |%s|%d| <%s> %s%n",
+				"%s: |%-30s|%14d| <%s> %s%n",
 				prefix,
-				entry.timestampInstant,
-				entry.timestampNanos,
+				entry.timestampInstant,  // 2026-03-27T19:54:50.975917801Z
+				entry.timestampNanos,    // 45032236077403
 				entry.threadId,
 				entry.msg
 			);
