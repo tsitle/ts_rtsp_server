@@ -32,7 +32,8 @@ public class BuilderThreadRtcp {
 		public Builder rtspSsrcId(int v) { this.threadParams.setRtspSsrcId(v); return this; }
 
 		public Builder comIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setIsRtxpEncryptionEnabled(v); return this; }
-		public Builder comSrtxpKmd(@NonNull SrtxpKmd v) { this.threadParams.setSrtxpKmd(v); return this; }
+		public Builder comSrtxpKmdInbound(@NonNull SrtxpKmd v) { this.threadParams.setSrtxpKmdInbound(v); return this; }
+		public Builder comSrtxpKmdOutbound(@NonNull SrtxpKmd v) { this.threadParams.setSrtxpKmdOutbound(v); return this; }
 
 		//
 		public ThreadRtcpSendRecv build() {

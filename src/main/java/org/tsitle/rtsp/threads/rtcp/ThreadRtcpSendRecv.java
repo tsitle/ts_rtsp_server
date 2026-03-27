@@ -6,6 +6,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
+import org.tsitle.rtsp.security.SrtcpContextOutbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -36,6 +37,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
 	private final @Nullable SrtcpContextInbound srtcpCtxInbound;
+	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
 
 	/**
 	 * Constructor.
@@ -52,13 +54,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		if (params.getIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmd().orElseThrow());
+				this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmdInbound().orElseThrow());
+				this.srtcpCtxOutbound = new SrtcpContextOutbound(params.getSrtxpKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
 			this.srtcpCtxInbound = null;
+			this.srtcpCtxOutbound = null;
 		}
 
 		//
@@ -160,20 +164,45 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		return true;
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void sendFromQueque() throws IOException {
-		BufferExt tmpBuf = queueSend.poll();
-		if (tmpBuf == null) {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueque()";
+
+		BufferExt plainPktBuf = queueSend.poll();
+		if (plainPktBuf == null) {
 			return;
 		}
+		BufferExt encrPktBuf = new BufferExt();
+		BufferExt outpPacketPtr = plainPktBuf;
+		if (params.getIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
+			try {
+				if (srtcpCtxOutbound.getSsrcId() != params.getRtspSsrcId()) {
+					throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
+				}
+				srtcpCtxOutbound.protectRtcpSrCompound(
+						plainPktBuf,
+						params.getRtspSsrcId(),
+						encrPktBuf
+					);
+			} catch (SrtxpSecurityException e) {
+				logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
+				return;
+			}
+			outpPacketPtr = encrPktBuf;
+		}
+
 		// send the compound packet as a DatagramPacket over the UDP socket
 		DatagramPacket sendDp = new DatagramPacket(
-				tmpBuf.getBaPtr(),
-				tmpBuf.getUsed(),
+				outpPacketPtr.getBaPtr(),
+				outpPacketPtr.getUsed(),
 				params.getClientIpAddr().orElseThrow(),
 				params.getClientDestPortRtcp()
 			);
 		parRtcpSocketUdp.send(sendDp);
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	private void handleReceived() {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleReceived()";

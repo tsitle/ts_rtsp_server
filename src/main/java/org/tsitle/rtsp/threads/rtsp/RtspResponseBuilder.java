@@ -450,32 +450,30 @@ public class RtspResponseBuilder {
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
 		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
 
+		// ----------------------------------------
+		// create or update the StreamInfo object
+		RtspSessionInfo.StreamInfo streamInfo;
+		if (rtspSessionInfo.streamsMapSetup.containsKey(tmpSsObj.getId())) {
+			// if the DESCRIBE request already created the stream info object
+			streamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsObj.getId());
+		} else {
+			streamInfo = new RtspSessionInfo.StreamInfo();
+		}
 		//
-		SrtxpKmd srtxpKmd;
+		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
 		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
-			RtspSessionInfo.StreamInfo streamInfo;
-			if (rtspSessionInfo.streamsMapSetup.containsKey(tmpSsObj.getId())) {
-				// if the DESCRIBE request already created the stream info object
-				streamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsObj.getId());
-			} else {
-				streamInfo = new RtspSessionInfo.StreamInfo();
-			}
-			if (streamInfo.rtspSsrcId == 0) {
-				streamInfo.rtspSsrcId = RandomHelper.getRandomUint32();
-			}
-			rtspSessionInfo.streamsMapSetup.put(tmpSsObj.getId(), streamInfo);
-			//
-			srtxpKmd = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
+			streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
 			try {
-				String tmpMsg = MikeyGenerator.generate(srtxpKmd);
+				String tmpMsg = MikeyGenerator.generate(streamInfo.streamKmds.kmdOutbound);
 				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 			}
 		} else {
-			srtxpKmd = new SrtxpKmd();  // empty KMD
+			streamInfo.streamKmds.kmdOutbound = new SrtxpKmd();
 		}
-		rtspSessionInfo.streamsMapSrtxpKmd.put(tmpSsObj.getId(), srtxpKmd);  // always store the KMD
+		//
+		rtspSessionInfo.streamsMapSetup.put(tmpSsObj.getId(), streamInfo);
 	}
 
 	/**

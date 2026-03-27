@@ -51,7 +51,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }
 
 	public B comIsRtxpEncryptionEnabled(boolean v) { this.threadParamsCommon.setIsRtxpEncryptionEnabled(v); return self(); }
-	public B comSrtxpKmd(@NonNull SrtxpKmd v) { this.threadParamsCommon.setSrtxpKmd(v); return self(); }
+	public B comSrtxpKmdOutbound(@NonNull SrtxpKmd v) { this.threadParamsCommon.setSrtxpKmdOutbound(v); return self(); }
 
 	//
 	public abstract T build() throws Exception;

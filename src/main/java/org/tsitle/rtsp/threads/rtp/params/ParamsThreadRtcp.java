@@ -41,9 +41,12 @@ public final class ParamsThreadRtcp implements Cloneable {
 	/** Is RTP/RTCP encryption enabled? */
 	private boolean isRtxpEncryptionEnabled;
 	private boolean isSetIsRtxpEncryptionEnabled;
-	/** SRTxP KMD */
-	private SrtxpKmd srtxpKmd;
-	private boolean isSetSrtxpKmd;
+	/** SRTxP KMD for inbound messages */
+	private SrtxpKmd srtxpKmdInbound;
+	private boolean isSetSrtxpKmdInbound;
+	/** SRTxP KMD for outbound messages */
+	private SrtxpKmd srtxpKmdOutbound;
+	private boolean isSetSrtxpKmdOutbound;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -99,10 +102,16 @@ public final class ParamsThreadRtcp implements Cloneable {
 		this.isSetIsRtxpEncryptionEnabled = true;
 	}
 
-	public Optional<SrtxpKmd> getSrtxpKmd() { return Optional.ofNullable(srtxpKmd); }
-	public void setSrtxpKmd(@NonNull SrtxpKmd value) {
-		this.srtxpKmd = value.clone();
-		this.isSetSrtxpKmd = true;
+	public Optional<SrtxpKmd> getSrtxpKmdInbound() { return Optional.ofNullable(srtxpKmdInbound); }
+	public void setSrtxpKmdInbound(@NonNull SrtxpKmd value) {
+		this.srtxpKmdInbound = value.clone();
+		this.isSetSrtxpKmdInbound = true;
+	}
+
+	public Optional<SrtxpKmd> getSrtxpKmdOutbound() { return Optional.ofNullable(srtxpKmdOutbound); }
+	public void setSrtxpKmdOutbound(@NonNull SrtxpKmd value) {
+		this.srtxpKmdOutbound = value.clone();
+		this.isSetSrtxpKmdOutbound = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -126,8 +135,11 @@ public final class ParamsThreadRtcp implements Cloneable {
 				throw new RuntimeException(e);
 			}
 			//
-			if (srtxpKmd != null) {
-				clone.srtxpKmd = srtxpKmd.clone();
+			if (srtxpKmdInbound != null) {
+				clone.srtxpKmdInbound = srtxpKmdInbound.clone();
+			}
+			if (srtxpKmdOutbound != null) {
+				clone.srtxpKmdOutbound = srtxpKmdOutbound.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -148,7 +160,8 @@ public final class ParamsThreadRtcp implements Cloneable {
 		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
 
 		requireIsSet(isSetIsRtxpEncryptionEnabled, "isRtxpEncryptionEnabled");
-		requireIsSet(isSetSrtxpKmd, "srtxpKmd");
+		requireIsSet(isSetSrtxpKmdInbound, "srtxpKmdInbound");
+		requireIsSet(isSetSrtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private void validateParamValues() {
@@ -166,7 +179,8 @@ public final class ParamsThreadRtcp implements Cloneable {
 		}
 		requireNonNull(rtcpSocketUdp, "rtcpSocketUdp");
 
-		requireNonNull(srtxpKmd, "srtxpKmd");
+		requireNonNull(srtxpKmdInbound, "srtxpKmdInbound");
+		requireNonNull(srtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

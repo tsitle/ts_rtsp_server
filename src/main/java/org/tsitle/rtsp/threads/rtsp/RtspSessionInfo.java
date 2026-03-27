@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspStreamSource;
+import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.SrtxpKmd;
 
 import java.net.DatagramSocket;
@@ -12,6 +13,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RtspSessionInfo {
+
+	public static class StreamKmds {
+		public @Nullable SrtxpKmd kmdOutbound = null;
+		public @Nullable SrtxpKmd kmdInbound = null;
+	}
 
 	/**
 	 * One StreamInfo object per SETUP request.
@@ -24,7 +30,7 @@ public class RtspSessionInfo {
 		public @NonNull String inputSourceUrlSetup = "";
 
 		/** RTSP Synchronization Source Identifier (random number. one per session/client and per stream) */
-		public int rtspSsrcId = 0;
+		public int rtspSsrcId;
 		/** Initial RTP Sequence Number within the session (random number, 16 bits unsigned) */
 		public short rtspRtpSeqNrT0 = 0;
 		/** Initial RTP Timestamp within the session (random number) */
@@ -49,14 +55,18 @@ public class RtspSessionInfo {
 		/** Requested transport encryption type */
 		public boolean tpIsEncr = false;
 
-		/** SRTxP KMD */
-		public @Nullable SrtxpKmd srtxpKmd = null;
+		/** SRTxP KMDs */
+		public @NonNull StreamKmds streamKmds = new StreamKmds();
 
 		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 		public boolean isTransportValid(boolean needsEncryption) {
 			return (tpClientDestPortRtp > 0 && tpClientDestPortRtcp > 0 &&
 					tpIsUdp && tpIsUnicast && ! tpIsInterleaved &&
 					tpIsEncr == needsEncryption);
+		}
+
+		public StreamInfo() {
+			rtspSsrcId = RandomHelper.getRandomUint32();
 		}
 	}
 
@@ -112,8 +122,6 @@ public class RtspSessionInfo {
 	public @NonNull Map<@NonNull ServerMessageType, @NonNull String> inputSourceUrlPerSmtMap = new ConcurrentHashMap<>();
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */
 	public @NonNull Map<@NonNull ServerMessageType, @NonNull RtspInputSource> inputSourceObjPerSmtMap = new ConcurrentHashMap<>();
-	/** SRTxP KMD - one per Stream (the map keys are unique Stream Source identifiers) */
-	public @NonNull Map<@NonNull Integer, @NonNull SrtxpKmd> streamsMapSrtxpKmd = new ConcurrentHashMap<>();
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;

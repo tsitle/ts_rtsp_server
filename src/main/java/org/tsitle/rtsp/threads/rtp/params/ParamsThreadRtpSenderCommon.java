@@ -93,9 +93,9 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	/** Is RTP/RTCP encryption enabled? */
 	private boolean isRtxpEncryptionEnabled;
 	private boolean isSetIsRtxpEncryptionEnabled;
-	/** SRTxP KMD */
-	private SrtxpKmd srtxpKmd;
-	private boolean isSetSrtxpKmd;
+	/** SRTxP KMD for outbound messages */
+	private SrtxpKmd srtxpKmdOutbound;
+	private boolean isSetSrtxpKmdOutbound;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -214,10 +214,10 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetIsRtxpEncryptionEnabled = true;
 	}
 
-	public Optional<SrtxpKmd> getSrtxpKmd() { return Optional.ofNullable(srtxpKmd); }
-	public void setSrtxpKmd(@NonNull SrtxpKmd value) {
-		this.srtxpKmd = value.clone();
-		this.isSetSrtxpKmd = true;
+	public Optional<SrtxpKmd> getSrtxpKmdOutbound() { return Optional.ofNullable(srtxpKmdOutbound); }
+	public void setSrtxpKmdOutbound(@NonNull SrtxpKmd value) {
+		this.srtxpKmdOutbound = value.clone();
+		this.isSetSrtxpKmdOutbound = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -249,8 +249,8 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 				throw new RuntimeException(e);
 			}
 			//
-			if (srtxpKmd != null) {
-				clone.srtxpKmd = srtxpKmd.clone();
+			if (srtxpKmdOutbound != null) {
+				clone.srtxpKmdOutbound = srtxpKmdOutbound.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -290,7 +290,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
 
 		requireIsSet(isSetIsRtxpEncryptionEnabled, "isRtxpEncryptionEnabled");
-		requireIsSet(isSetSrtxpKmd, "srtxpKmd");
+		requireIsSet(isSetSrtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private void validateParamValues() {
@@ -327,7 +327,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
 
-		requireNonNull(srtxpKmd, "srtxpKmd");
+		requireNonNull(srtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

@@ -239,7 +239,8 @@ public class ThreadRtspServer extends RunnableBase {
 				.rtcpSocketUdp(Objects.requireNonNull(tmpStreamInfo.tpServerSocketRtcp))
 				.rtspSsrcId(tmpStreamInfo.rtspSsrcId)
 				.comIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
-				.comSrtxpKmd(Objects.requireNonNull(tmpStreamInfo.srtxpKmd))
+				.comSrtxpKmdInbound(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
+				.comSrtxpKmdOutbound(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP#c" + clientConnectionNr +
@@ -282,7 +283,7 @@ public class ThreadRtspServer extends RunnableBase {
 				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback)
 				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri())
 				.comIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
-				.comSrtxpKmd(Objects.requireNonNull(streamInfo.srtxpKmd));
+				.comSrtxpKmdOutbound(Objects.requireNonNull(streamInfo.streamKmds.kmdOutbound));
 	}
 
 	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>

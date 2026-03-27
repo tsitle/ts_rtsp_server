@@ -11,7 +11,6 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
-import org.tsitle.rtsp.security.SrtcpContextOutbound;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
@@ -86,7 +85,6 @@ public abstract class ThreadRtpSenderBase<
 	private long largestFrame = 0L;
 
 	protected final @Nullable SrtpContextOutbound srtpCtxOutbound;
-	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
 	private @Nullable RtpEncryptedPacket cacheRtpEncrPacket = null;
 
 	/**
@@ -146,15 +144,13 @@ public abstract class ThreadRtpSenderBase<
 		//
 		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
-				this.srtcpCtxOutbound = new SrtcpContextOutbound(paramsCommon.getSrtxpKmd().orElseThrow());
+				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
 			this.srtpCtxOutbound = null;
-			this.srtcpCtxOutbound = null;
 		}
 
 		//
@@ -387,7 +383,7 @@ public abstract class ThreadRtpSenderBase<
 			}
 			Instant tmpInstant2 = Instant.now();
 			long delta = Duration.between(tmpInstant1, tmpInstant2).toNanos();
-			if (delta > 1000000L) {
+			if (delta > 2_000_000L) {
 				logWarn(FNC_NAME, String.format("encryptRtpPacketPayload() took %.2f ms", (double)delta / 1000000.0));
 			}
 			return cacheRtpEncrPacket;
@@ -742,30 +738,12 @@ public abstract class ThreadRtpSenderBase<
 	}
 
 	private void sendSenderReport() {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendSenderReport()";
-
-		//
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
 
 		//
-		BufferExt encrPacketCompoundBuf = new BufferExt();
-		BufferExt outpPacketPtr = packetCompoundBuf;
-		if (paramsCommon.getIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
-			try {
-				srtcpCtxOutbound.protectRtcpSrCompound(
-						packetCompoundBuf,
-						paramsCommon.getRtspSsrcId(),
-						encrPacketCompoundBuf
-					);
-			} catch (SrtxpSecurityException e) {
-				logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
-				return;
-			}
-			outpPacketPtr = encrPacketCompoundBuf;
-		}
 		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow()
-				.accept(paramsCommon.getRtspSsrcId(), outpPacketPtr);
+				.accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();
 	}

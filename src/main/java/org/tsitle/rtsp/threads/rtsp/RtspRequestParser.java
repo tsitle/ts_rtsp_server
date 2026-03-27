@@ -322,10 +322,6 @@ public class RtspRequestParser {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
-			if (! rtspSessionInfo.streamsMapSrtxpKmd.containsKey(rscStreamSourceId)) {
-				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Missing SRTxP Context for Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
-			}
 			RtspSessionInfo.StreamInfo streamInfo;
 			if (rtspSessionInfo.streamsMapSetup.containsKey(rscStreamSourceId)) {
 				// if the DESCRIBE request already created the stream info object
@@ -335,13 +331,9 @@ public class RtspRequestParser {
 			}
 			streamInfo.rtspStreamSource = rtspStreamSource;
 			streamInfo.inputSourceUrlSetup = resourceUrl;
-			if (streamInfo.rtspSsrcId == 0) {
-				streamInfo.rtspSsrcId = RandomHelper.getRandomUint32();
-			}
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
-			streamInfo.srtxpKmd = rtspSessionInfo.streamsMapSrtxpKmd.get(rscStreamSourceId).clone();  // always clone the SRTxP Context
 			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
@@ -579,18 +571,10 @@ public class RtspRequestParser {
 				String tmpSub = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA);
 				try {
 					SrtxpKmd kmdRcvd = MikeyParser.parseMickeyMsgIntoKmd(tmpSub);
-					tmpStreamInfo.srtxpKmd = new SrtxpKmd(
-							kmdRcvd.encrKeyLen(),
-							kmdRcvd.masterKey(),
-							kmdRcvd.masterSalt(),
-							kmdRcvd.authKeyLen(),
-							kmdRcvd.authTagLen(),
-							kmdRcvd.mki(),
-							Objects.requireNonNull(tmpStreamInfo.srtxpKmd).ssrcId()  // keep our SSRC
-						);
+					tmpStreamInfo.streamKmds.kmdInbound = kmdRcvd.clone();
 					haveKeyData = true;
 				} catch (SrtxpSecurityException e) {
-					logError(FNC_NAME, "Failed to set client Mikey: " + e.getMessage());
+					logError(FNC_NAME, "Failed to set client MIKEY: " + e.getMessage());
 					throw new RtspMissingEncryptionParamsException();
 				}
 			} else if (! curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_URI)) {
