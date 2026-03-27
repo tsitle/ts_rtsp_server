@@ -114,7 +114,7 @@ public final class SrtxpKeyDerivation {
 				@SuppressWarnings("SameParameterValue") long r48
 			) {
 		// x is 112 bits (14 bytes), IV is always 128 bits (16 bytes) regardless of key size
-		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
+		byte[] iv = new byte[KeySizes.IV_SIZE];
 
 		// IV = x = master_salt
 		System.arraycopy(masterSalt.getBaPtr(), 0, iv, 0, KeySizes.SALT_SIZE);

@@ -12,7 +12,7 @@ import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 public class SrtpContextInbound extends SrtpContextBase {
 
 	/** For SRTP decryption: Rollover counter */
-	private int ctxStateRtpRocInbound = 0;
+	private int ctxStateSrtpRocInbound = 0;
 	/** For SRTP decryption: Last packet index */
 	private long ctxStateSrtpLastIndex = -1;
 
@@ -89,14 +89,14 @@ public class SrtpContextInbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = (((long)ctxStateRtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		final long srtpPacketIndex = (((long) ctxStateSrtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
 			throw new SrtxpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
 
 		// validate Auth Tag
-		validateAuthTag(srtpPacketBufView, true, ctxStateRtpRocInbound);
+		validateAuthTag(srtpPacketBufView, true, ctxStateSrtpRocInbound);
 
 		//
 		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - ctxKmd.authTagLen());
@@ -122,7 +122,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 
 		// update ROC if sequence wrapped
 		if (hdSeqNr == (short)0xFFFF) {
-			ctxStateRtpRocInbound++;
+			ctxStateSrtpRocInbound++;
 		}
 	}
 

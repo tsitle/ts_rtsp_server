@@ -12,10 +12,10 @@ import java.util.Objects;
  */
 public final class SrtxpKmd implements Cloneable {
 
-	public static final int DEFAULT_ENCR_KEY_LEN = KeySizes.AES_KEY_SIZE_128;
-	public static final int DEFAULT_AUTH_KEY_LEN = KeySizes.AUTH_KEY_SIZE_160;
-	public static final int DEFAULT_AUTH_TAG_LEN = 10;
-	public static final int DEFAULT_SALT_LEN = KeySizes.SALT_SIZE;
+	public static final int DEFAULT_ENCR_KEY_LEN = KeySizes.AES_KEY_SIZE_128;  // VLC requires 128-bit encr key
+	public static final int DEFAULT_AUTH_KEY_LEN = KeySizes.AUTH_KEY_SIZE_160;  // VLC requires 160-bit auth key
+	public static final int DEFAULT_AUTH_TAG_LEN = 10;  // VLC requires 10-byte auth tag
+	public static final int DEFAULT_MKI_LEN = 4;  // VLC requires 4-byte MKI
 
 	/** Encryption Key length */
 	private int encrKeyLen;
@@ -88,6 +88,7 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
+				DEFAULT_MKI_LEN,
 				ssrcId
 			);
 	}
@@ -97,6 +98,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
+	 * @param mkiLen Master Key Identifier length (can be zero)
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
@@ -104,6 +106,7 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
+				int mkiLen,
 				int ssrcId
 			) {
 		SrtxpKmd resObj = new SrtxpKmd();
@@ -112,7 +115,9 @@ public final class SrtxpKmd implements Cloneable {
 		resObj.authKeyLen = authKeyLen;
 		resObj.authTagLen = authTagLen;
 		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
-		RandomHelper.getSecureRandomBytes(4, resObj.mki);
+		if (mkiLen > 0) {
+			RandomHelper.getSecureRandomBytes(mkiLen, resObj.mki);
+		}
 		resObj.ssrcId = ssrcId;
 		return resObj;
 	}
@@ -157,6 +162,11 @@ public final class SrtxpKmd implements Cloneable {
 		return mki.clone();
 	}
 
+	@SuppressWarnings("unused")
+	public int mkiLen() {
+		return mki.getUsed();
+	}
+
 	public int ssrcId() {
 		return ssrcId;
 	}
@@ -188,11 +198,11 @@ public final class SrtxpKmd implements Cloneable {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"encrKeyLen=" + encrKeyLen +
-				", masterKey=0x" + masterKey.toHexString() +
-				", masterSalt=0x" + masterSalt.toHexString() +
+				", masterKey=" + masterKey.toHexString(true) +
+				", masterSalt=" + masterSalt.toHexString(true) +
 				", authKeyLen=" + authKeyLen +
 				", authTagLen=" + authTagLen +
-				", mki=" + (mki.isEmpty() ? "empty" : "0x" + mki.toHexString()) +
+				", mki=" + (mki.isEmpty() ? "empty" : mki.toHexString(true)) + " (len=" + mki.getUsed() + ")" +
 				", ssrcId=" + String.format("0x%08X", ssrcId) +
 				"]";
 	}

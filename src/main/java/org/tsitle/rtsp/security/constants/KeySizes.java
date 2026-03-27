@@ -16,4 +16,7 @@ public class KeySizes {
 	/** Size of the SHA1-160 hash in bytes - for HMAC-SHA1-160 */
 	public static final int SHA1_SIZE_160 = 20;
 
+	/** Size of the Initialization Vector in bytes */
+	public static final int IV_SIZE = 16;
+
 }

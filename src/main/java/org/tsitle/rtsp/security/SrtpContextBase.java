@@ -46,7 +46,7 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 			throw new SrtxpSecurityException("Session Keys not set");
 		}
 
-		final byte[] tmpIvBytes = new byte[KeySizes.AES_KEY_SIZE_128];  // IV is always 128 bits (16 bytes) regardless of key size
+		final byte[] tmpIvBytes = new byte[KeySizes.IV_SIZE];  // IV is always 128 bits (16 bytes) regardless of key size
 		Arrays.fill(tmpIvBytes, (byte)0);
 
 		/*
