@@ -239,9 +239,9 @@ public class RtpPacketContainerBase {
 				", CC: " + hdBaseCsrcCount +
 				", Marker: " + hdBaseMarker +
 				", PayloadType: " + hdBasePayloadType + " (o=" + getOrgPayloadType() + ")" +
-				", SequenceNumber: " + hdBaseSequenceNumber +
+				", SequenceNumber: " + Short.toUnsignedInt(hdBaseSequenceNumber) +
 				", TimeStamp: " + Integer.toUnsignedString(hdBaseTimestamp) +
-				", SSRC: " + Integer.toUnsignedString(hdBaseSsrc) +
+				", SSRC: " + String.format("0x%08X", hdBaseSsrc) +
 				(skipClassName ? "" : "]");
 	}
 
