@@ -3,7 +3,6 @@ package org.tsitle.rtsp.threads.rtp.codec_v_mjpeg;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -25,9 +24,6 @@ public final class ThreadRtpSenderMjpeg<
 	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
 	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
-	/** Buffer used to store the current frame from the input stream */
-	private final BufferExt cacheOrgVideoFrameBuf = new BufferExt();
-	private final BufferExt cacheBufForFD = new BufferExt();
 	private @Nullable RtpPacketMjpeg cachePlainPacket = null;
 
 	/**
@@ -101,11 +97,7 @@ public final class ThreadRtpSenderMjpeg<
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		return defaultFrameDataSupplier(
-				cacheOrgVideoFrameBuf,
-				cacheBufForFD,
-				curFrameJpegInfo
-			);
+		return defaultFrameDataSupplier(curFrameJpegInfo);
 	}
 
 	@Override

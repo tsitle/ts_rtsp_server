@@ -4,41 +4,40 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 
-	public int internalId = 0;
+	public long internalId = 0L;
 	public @Nullable I h26xInfo = null;
-	public @Nullable BufferExt rtpPayloadDataPtr;
-	public int fullDataSize = 0;
+	public @NonNull BufferExt rawPayloadData = new BufferExt();
+	public @NonNull BufferView rtpPayloadDataView = new BufferView(rawPayloadData);
 	public long rtpFrameNr = -1L;
+	public boolean isEndOfAu = false;
 
 	public void reset() {
-		internalId = 0;
+		internalId = 0L;
 		h26xInfo = null;
-		rtpPayloadDataPtr = null;
-		fullDataSize = 0;
+		rawPayloadData.clear();
+		rtpPayloadDataView.clear();
 		rtpFrameNr = -1L;
-	}
-
-	public void moveDataFrom(@NonNull H26xNalUnitData<I> src) {
-		internalId = src.internalId;
-		h26xInfo = src.h26xInfo;
-		rtpPayloadDataPtr = src.rtpPayloadDataPtr;
-		fullDataSize = src.fullDataSize;
-		rtpFrameNr = src.rtpFrameNr;
-		//
-		src.reset();
+		isEndOfAu = false;
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
+		return toStringWithNUT("-UNKNOWN-");
+	}
+
+	public @NonNull String toStringWithNUT(@NonNull String nudTypeStr) {
 		return getClass().getSimpleName() + "[" +
-				"internalId=" + internalId +
+				"internalId=" + Long.toUnsignedString(internalId) +
+				", nudType=" + nudTypeStr +
 				", h26xInfo=" + (h26xInfo == null ? "NULL" : h26xInfo.toString(true)) +
-				", rtpPayloadData.sz=" + (rtpPayloadDataPtr == null ? "NULL" : "" + rtpPayloadDataPtr.getUsed()) +
-				", fullDataSize=" + fullDataSize +
+				", rawPayloadData.sz=" + rawPayloadData.getUsed() +
+				", rtpPayloadDataView.sz=" + rtpPayloadDataView.getLength() +
 				", rtpFrameNr=" + rtpFrameNr +
+				", isEndOfAu=" + (isEndOfAu ? "T" : "F") +
 				"]";
 	}
 

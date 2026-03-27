@@ -24,7 +24,7 @@ import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
 public class RtspRequestParser {
 
-	private static final boolean DEBUG_REQUESTS_ENABLED = true;
+	private static final boolean DEBUG_REQUESTS_ENABLED = false;
 
 	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
 

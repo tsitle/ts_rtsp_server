@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -35,9 +34,6 @@ public final class ThreadRtpSenderPcm<
 	private final RtpPacketType rtpPayloadType;
 
 	private final AudioPcmInfo curFramePcmInfo = new AudioPcmInfo();
-	/** Buffer used to store the current frame from the input stream */
-	private final BufferExt cacheOrgAudioFrameBuf = new BufferExt();
-	private final BufferExt cacheBufForFD = new BufferExt();
 	private @Nullable RtpPacketPcm cachePlainPacket = null;
 
 	/**
@@ -124,11 +120,7 @@ public final class ThreadRtpSenderPcm<
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		return defaultFrameDataSupplier(
-				cacheOrgAudioFrameBuf,
-				cacheBufForFD,
-				curFramePcmInfo
-			);
+		return defaultFrameDataSupplier(curFramePcmInfo);
 	}
 
 	@Override

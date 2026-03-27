@@ -7,6 +7,7 @@ import org.tsitle.rtsp.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFactory;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
@@ -289,11 +290,7 @@ public abstract class ThreadRtpSenderBase<
 
 	protected abstract @NonNull FrameData cbFrameDataSupplier();
 
-	protected @NonNull FrameData defaultFrameDataSupplier(
-				@NonNull BufferExt cacheOrgFrameBuf,
-				@NonNull BufferExt cacheBufForFrameData,
-				@NonNull I codecInfoObj
-			) {
+	protected @NonNull FrameData defaultFrameDataSupplier(@NonNull I codecInfoObj) {
 		final String FNC_NAME = getClass().getSimpleName() + ".defaultFrameDataSupplier()";
 
 		cacheFrameData.reset();
@@ -308,24 +305,22 @@ public abstract class ThreadRtpSenderBase<
 		} else {
 			// get the next frame to send over the wire from the input stream
 			try {
-				threadDataProv.getNextFrame(cacheOrgFrameBuf, codecInfoObj);
-				if (cacheOrgFrameBuf.isEmpty()) {
+				threadDataProv.getNextFrame(cacheFrameData.rtpPayloadDataForDefFdSupplier, codecInfoObj);
+				if (cacheFrameData.rtpPayloadDataForDefFdSupplier.isEmpty()) {
 					throw new InputStreamEosException();
 				}
 
 				//
-				cacheFrameData.totalFrameSize = cacheOrgFrameBuf.getUsed();
+				cacheFrameData.totalFrameSize = cacheFrameData.rtpPayloadDataForDefFdSupplier.getUsed();
 				cacheFrameData.rtpFrameNr = getRtpTsFrameNr();
 
-				// extract the actual RTP/XXX payload
-				cacheBufForFrameData.copyOf(
-						cacheOrgFrameBuf,
-						codecInfoObj.getPayloadOffset(),
-						codecInfoObj.getPayloadLength()
-					);
-				cacheFrameData.rtpPayloadDataPtr = cacheBufForFrameData;
+				// 'extract' the actual RTP/XXX payload
+				cacheFrameData.rtpPayloadDataViewPtr = new BufferView(cacheFrameData.rtpPayloadDataForDefFdSupplier);
+				cacheFrameData.rtpPayloadDataViewPtr.setOffset(codecInfoObj.getPayloadOffset());
+				cacheFrameData.rtpPayloadDataViewPtr.setLength(codecInfoObj.getPayloadLength());
+
 				//
-				cacheFrameData.totalAuRtpPayloadSz = cacheFrameData.rtpPayloadDataPtr.getUsed();
+				cacheFrameData.totalAuRtpPayloadSz = cacheFrameData.rtpPayloadDataViewPtr.getLength();
 				cacheFrameData.frameDesc = "Generic Single Frame AU";
 
 				// update frame number
@@ -342,12 +337,13 @@ public abstract class ThreadRtpSenderBase<
 	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment);
 
 	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {
-		if (curFragmentData.frameData().rtpPayloadDataPtr == null) {
-			throw new IllegalStateException("curFragmentData.frameData().rtpPayloadDataPtr == null");
+		if (curFragmentData.frameData().rtpPayloadDataViewPtr == null) {
+			throw new IllegalStateException("curFragmentData.frameData().rtpPayloadDataViewPtr == null");
 		}
+		BufferView tmpBvPtr = curFragmentData.frameData().rtpPayloadDataViewPtr;
 		cacheRtpInnerPayloadBuf.copyOf(
-				curFragmentData.frameData().rtpPayloadDataPtr,
-				curFragmentData.fragmentOffset(),
+				tmpBvPtr.getInternalBaPtr(),
+				tmpBvPtr.getOffset() + curFragmentData.fragmentOffset(),
 				curFragmentData.fragmentSize()
 			);
 
@@ -530,8 +526,8 @@ public abstract class ThreadRtpSenderBase<
 		if (frameData.haveErrorOther) {
 			throw new RtpFrameDataAcquException(frameData.errorMsg);
 		}
-		if (frameData.rtpPayloadDataPtr == null) {
-			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataPtr == null");
+		if (frameData.rtpPayloadDataViewPtr == null) {
+			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataViewPtr == null");
 		}
 		//
 		if (paramsCommon.getIsStreamSourceFromFile()) {
@@ -578,12 +574,12 @@ public abstract class ThreadRtpSenderBase<
 		int curPktIndex = 0;
 		int estTotalPktCnt = Math.max(1, 1 + (int)(frameData.totalAuRtpPayloadSz / (UDP_PACKET_LEN - udpMaxPacketLenDelta)));
 		boolean isLastPktOfFrame = false;
-		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataPtr.getUsed()) {
+		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataViewPtr.getLength()) {
 			final int curPktSize = Math.min(
 					UDP_PACKET_LEN - udpMaxPacketLenDelta,
-					frameData.rtpPayloadDataPtr.getUsed() - sentTotalPktSize
+					frameData.rtpPayloadDataViewPtr.getLength() - sentTotalPktSize
 				);
-			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataPtr.getUsed());
+			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataViewPtr.getLength());
 			isLastPktOfFrame = cbRtpPacketMarkerBitSupplier(sentTotalPktSize, isLastPktOfPayload);
 
 			//

@@ -49,9 +49,6 @@ public final class ThreadRtpSenderH265<
 
 		//
 		paramsH265.validate();
-
-		//
-		this.cacheH26xInfo = new VideoH265Info();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -88,11 +85,8 @@ public final class ThreadRtpSenderH265<
 
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
-		if (globalCurNudPtr == null) {
-			throw new IllegalStateException("globalCurNudPtr == null");
-		}
-		if (globalCurNudPtr.h26xInfo == null) {
-			throw new IllegalStateException("globalCurNudPtr.h26xInfo == null");
+		if (globalAuLastOutputNudH26xInfoPtr == null) {
+			throw new IllegalStateException("globalAuLastOutputNudH26xInfoPtr == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
@@ -103,7 +97,7 @@ public final class ThreadRtpSenderH265<
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
 					curFragmentData.isLastFragment(),
-					globalCurNudPtr.h26xInfo,
+					globalAuLastOutputNudH26xInfoPtr,
 					cacheRtpInnerPayloadBuf
 				);
 		} else {
@@ -111,7 +105,7 @@ public final class ThreadRtpSenderH265<
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
 					curFragmentData.isLastFragment(),
-					globalCurNudPtr.h26xInfo,
+					globalAuLastOutputNudH26xInfoPtr,
 					cacheRtpInnerPayloadBuf
 				);
 		}
@@ -119,6 +113,25 @@ public final class ThreadRtpSenderH265<
 			return cachePlainPacket;
 		}
 		return encryptRtpPacketPayload(cachePlainPacket);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected @NonNull H26xNalUnitData<VideoH265Info> createNud() {
+		H26xNalUnitData<VideoH265Info> resObj = new H26xNalUnitData<>();
+		resObj.h26xInfo = new VideoH265Info();
+		return resObj;
+	}
+
+	@Override
+	protected @NonNull VideoH265Info createCodecInfo() {
+		return new VideoH265Info();
+	}
+
+	@Override
+	protected @NonNull String debugNudTypeToString(byte nudTypeBy) {
+		return VideoH265Info.NalUnitType.of(nudTypeBy).toString();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -151,13 +164,6 @@ public final class ThreadRtpSenderH265<
 				case NVCL_SEI_SUFFIX, NVCL_FD, NVCL_EOS, NVCL_EOB -> true;
 				default -> false;
 			};
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	protected VideoH265Info getCloneOfH26xInfo(@NonNull VideoH265Info src) {
-		return src.clone();
 	}
 
 }

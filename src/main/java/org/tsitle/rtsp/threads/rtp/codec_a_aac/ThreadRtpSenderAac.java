@@ -7,7 +7,6 @@ import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAacFromFile;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
-import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -32,9 +31,6 @@ public final class ThreadRtpSenderAac<
 	private final ParamsThreadRtpSenderAac paramsAac;
 
 	private final AudioAacInfo curFrameAacInfo = new AudioAacInfo();
-	/** Buffer used to store the current frame from the input stream */
-	private final BufferExt cacheOrgAudioFrameBuf = new BufferExt();
-	private final BufferExt cacheBufForFD = new BufferExt();
 	private @Nullable RtpPacketAac cachePlainPacket = null;
 
 	/**
@@ -105,11 +101,7 @@ public final class ThreadRtpSenderAac<
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		return defaultFrameDataSupplier(
-				cacheOrgAudioFrameBuf,
-				cacheBufForFD,
-				curFrameAacInfo
-			);
+		return defaultFrameDataSupplier(curFrameAacInfo);
 	}
 
 	@Override
