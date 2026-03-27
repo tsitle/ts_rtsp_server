@@ -140,6 +140,14 @@ public final class BufferView {
 		return bufPtr.get(offset + index);
 	}
 
+	/**
+	 * Reset the view.
+	 */
+	public void clear() {
+		offset = 0;
+		length = bufPtr.getUsed();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
