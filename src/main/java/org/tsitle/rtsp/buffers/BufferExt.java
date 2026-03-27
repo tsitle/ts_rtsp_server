@@ -2,6 +2,8 @@ package org.tsitle.rtsp.buffers;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.HexFormat;
+
 /**
  * BufferExt provides a resizable byte buffer with methods for copying data and accessing buffer contents.
  */
@@ -172,7 +174,7 @@ public final class BufferExt implements Cloneable {
 	}
 
 	/**
-	 * Increases the internal buffer size to at least {@code newSize}.
+	 * Increase the internal buffer size to at least {@code newSize}.
 	 * @param newSize New internal buffer size
 	 */
 	public void increaseSize(int newSize) {
@@ -216,6 +218,26 @@ public final class BufferExt implements Cloneable {
 		byte[] tmpBuf = new byte[1];
 		tmpBuf[0] = value;
 		copyFrom(tmpBuf, 0, used, 1);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Create a new buffer from a hex-encoded string.
+	 * @param hexString Hex-encoded string
+	 * @return New buffer
+	 */
+	static public @NonNull BufferExt decodeHexString(@NonNull String hexString) {
+		BufferExt resObj = new BufferExt();
+		if (hexString.startsWith("0x")) {
+			hexString = hexString.substring(2);
+		}
+		hexString = hexString.replace(" ", "").replace(":", "").strip();
+		if (! hexString.isBlank()) {
+			byte[] tmpBa = HexFormat.of().parseHex(hexString);
+			resObj.copyOf(tmpBa);
+		}
+		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
