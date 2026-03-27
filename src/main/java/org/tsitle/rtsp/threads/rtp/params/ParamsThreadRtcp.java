@@ -113,7 +113,7 @@ public final class ParamsThreadRtcp implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtcp clone() {
+	public @NonNull ParamsThreadRtcp clone() {
 		try {
 			ParamsThreadRtcp clone = (ParamsThreadRtcp)super.clone();
 			//

@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 
 	// ... common fields for audio ...
@@ -17,7 +19,7 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderAudioCommon clone() {
+	public @NonNull ParamsThreadRtpSenderAudioCommon clone() {
 		try {
 			return (ParamsThreadRtpSenderAudioCommon)super.clone();
 		} catch (CloneNotSupportedException e) {

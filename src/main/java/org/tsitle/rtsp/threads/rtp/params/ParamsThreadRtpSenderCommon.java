@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.security.SrtxpKmd;
@@ -19,7 +20,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 
 	public record RtpTsT0(int rtpTsT0, long rtpGenTsT0Ns) implements Cloneable {
 		@Override
-		public RtpTsT0 clone() {
+		public @NonNull RtpTsT0 clone() {
 			try {
 				return (RtpTsT0)super.clone();
 			} catch (CloneNotSupportedException e) {
@@ -72,7 +73,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	private boolean isSetRtspSsrcId;
 
 	/** XSRC block for SDES RTCP packets (for communicating which streams belong to the same session) */
-	private RtcpInnerXsrcBlock xsrcBlockEntry;
+	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
 	private boolean isSetXsrcBlockEntry;
 	/** Callback for appending RTCP packets to the outgoing queue */
 	private BiConsumer<Integer, BufferExt> cbRtcpAppendToOutgoingQueque;
@@ -172,7 +173,12 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetRtspSsrcId = true;
 	}
 
-	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() { return Optional.ofNullable(xsrcBlockEntry.clone()); }
+	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() {
+		if (xsrcBlockEntry == null) {
+			return Optional.empty();
+		}
+		return Optional.of(xsrcBlockEntry.clone());
+	}
 	public void setXsrcBlockEntry(@NonNull RtcpInnerXsrcBlock xsrcBlockEntry) {
 		this.xsrcBlockEntry = xsrcBlockEntry.clone();
 		this.isSetXsrcBlockEntry = true;
@@ -222,7 +228,7 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderCommon clone() {
+	public @NonNull ParamsThreadRtpSenderCommon clone() {
 		try {
 			ParamsThreadRtpSenderCommon clone = (ParamsThreadRtpSenderCommon)super.clone();
 			//

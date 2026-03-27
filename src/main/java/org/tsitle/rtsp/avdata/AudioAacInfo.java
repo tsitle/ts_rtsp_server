@@ -31,7 +31,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		SampleRate(int index) {
 			this.index = index;
 		}
-		public static SampleRate of(int index) {
+		public static @NonNull SampleRate of(int index) {
 			for (SampleRate rate : SampleRate.values()) {
 				if (rate.index == index) {
 					return rate;
@@ -73,7 +73,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		AudioObjectType(int index) {
 			this.index = index;
 		}
-		public static AudioObjectType of(int index) {
+		public static @NonNull AudioObjectType of(int index) {
 			for (AudioObjectType rate : AudioObjectType.values()) {
 				if (rate.index == index) {
 					return rate;
@@ -141,7 +141,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	}
 
 	@Override
-	public AudioAacInfo clone() {
+	public @NonNull AudioAacInfo clone() {
 		try {
 			AudioAacInfo clone = (AudioAacInfo)super.clone();
 			//noinspection StringOperationCanBeSimplified
@@ -153,7 +153,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() +
 				"[" +
 				"samplesOffset=" + Integer.toUnsignedString(samplesOffset) +
@@ -166,7 +166,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	}
 
 	@Override
-	public String toString(boolean shortOutput) {
+	public @NonNull String toString(boolean shortOutput) {
 		return toString();
 	}
 

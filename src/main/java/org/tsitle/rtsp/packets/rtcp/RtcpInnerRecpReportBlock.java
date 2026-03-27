@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 
 import java.nio.ByteBuffer;
@@ -107,7 +108,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 	 * @return Round-trip time in milliseconds
 	 */
 	@SuppressWarnings("unused")
-	public Optional<Long> getRoundTripTimeMillis(Instant receivedAt) {
+	public Optional<Long> getRoundTripTimeMillis(@NonNull Instant receivedAt) {
 		if (bdLsr == 0L) {
 			return Optional.empty();
 		}
@@ -131,7 +132,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 		return Optional.of(rttMillis);
 	}
 
-	public void appendToBuffer(ByteBuffer bb) {
+	public void appendToBuffer(@NonNull ByteBuffer bb) {
 		bb.putInt(bdSsrcSource);
 		bb.put(bdFractionLostBy);
 		int tmpCumLost = (bdCumLost & 0x00FF_FFFF);  // convert to 24-bit signed
@@ -145,7 +146,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 		bb.putInt(bdDlsr);
 	}
 
-	public static RtcpInnerRecpReportBlock decodeFromBuffer(int itemNr, ByteBuffer bb) {
+	public static @NonNull RtcpInnerRecpReportBlock decodeFromBuffer(int itemNr, @NonNull ByteBuffer bb) {
 		RtcpInnerRecpReportBlock tmpBlock = new RtcpInnerRecpReportBlock(
 				itemNr,
 				bb.getInt(),  // ssrc
@@ -164,7 +165,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"ItemNr: " + itemNr +
 				", SSRC: 0x" + String.format("%08X", bdSsrcSource) +
@@ -179,7 +180,7 @@ public class RtcpInnerRecpReportBlock implements Cloneable {
 	}
 
 	@Override
-	public RtcpInnerRecpReportBlock clone() {
+	public @NonNull RtcpInnerRecpReportBlock clone() {
 		try {
 			return (RtcpInnerRecpReportBlock)super.clone();
 		} catch (CloneNotSupportedException e) {

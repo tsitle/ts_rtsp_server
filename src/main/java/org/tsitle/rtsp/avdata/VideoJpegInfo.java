@@ -37,7 +37,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		}
 
 		@Override
-		public DqtTableBase clone() {
+		public @NonNull DqtTableBase clone() {
 			try {
 				return (DqtTableBase)super.clone();
 			} catch (CloneNotSupportedException e) {
@@ -177,7 +177,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	}
 
 	@Override
-	public VideoJpegInfo clone() {
+	public @NonNull VideoJpegInfo clone() {
 		try {
 			VideoJpegInfo clone = (VideoJpegInfo)super.clone();
 			for (int i = 0; i < dqt_table8bitCount; ++i) {
@@ -207,7 +207,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() +
 				"[" +
 				"channelEncoding=" + sof0_channelEncoding +
@@ -217,7 +217,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	}
 
 	@Override
-	public String toString(boolean shortOutput) {
+	public @NonNull String toString(boolean shortOutput) {
 		return toString();
 	}
 

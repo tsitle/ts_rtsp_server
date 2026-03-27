@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 
 import java.nio.ByteBuffer;
@@ -74,7 +75,7 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 	public int getNtpTsLsw() { return bdNtpTsLsw; }
 	public long getNtpTsFull() { return (((long)bdNtpTsMsw << 32) | (long)bdNtpTsLsw & 0xFFFF_FFFFL); }
 	@SuppressWarnings("unused")
-	public Instant getNtpTsAsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
+	public @NonNull Instant getNtpTsAsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
 	@SuppressWarnings("unused")
 	public int getRtpTs() { return bdRtpTs; }
 	@SuppressWarnings("unused")
@@ -82,7 +83,7 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public int getSendersOctCount() { return bdSendersOctCount; }
 
-	public void appendToBuffer(ByteBuffer bb) {
+	public void appendToBuffer(@NonNull ByteBuffer bb) {
 		bb.putInt(bdNtpTsMsw);
 		bb.putInt(bdNtpTsLsw);
 		bb.putInt(bdRtpTs);
@@ -90,7 +91,7 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 		bb.putInt(bdSendersOctCount);
 	}
 
-	public static RtcpInnerSenderInfoBlock decodeFromBuffer(ByteBuffer bb) {
+	public static @NonNull RtcpInnerSenderInfoBlock decodeFromBuffer(@NonNull ByteBuffer bb) {
 		return new RtcpInnerSenderInfoBlock(
 				bb.getInt(),  // ntpTsMsw
 				bb.getInt(),  // ntpTsLsw
@@ -101,7 +102,7 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"NTPTS: " + NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()) +
 				", RTPTS: " + Integer.toUnsignedString(bdRtpTs) +
@@ -111,7 +112,7 @@ public class RtcpInnerSenderInfoBlock implements Cloneable {
 	}
 
 	@Override
-	public RtcpInnerSenderInfoBlock clone() {
+	public @NonNull RtcpInnerSenderInfoBlock clone() {
 		try {
 			return (RtcpInnerSenderInfoBlock)super.clone();
 		} catch (CloneNotSupportedException e) {

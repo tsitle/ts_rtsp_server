@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 public final class ParamsThreadRtpSenderAac implements Cloneable {
 
 	/** Audio sample rate in Hz */
@@ -23,7 +25,7 @@ public final class ParamsThreadRtpSenderAac implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderAac clone() {
+	public @NonNull ParamsThreadRtpSenderAac clone() {
 		try {
 			return (ParamsThreadRtpSenderAac)super.clone();
 		} catch (CloneNotSupportedException e) {

@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.avdata.subinfo;
 
+import org.jspecify.annotations.NonNull;
+
 public class H264SpsContext implements Cloneable {
 
 	/** seq_parameter_set_id */
@@ -24,7 +26,7 @@ public class H264SpsContext implements Cloneable {
 	}
 
 	@Override
-	public H264SpsContext clone() {
+	public @NonNull H264SpsContext clone() {
 		try {
 			return (H264SpsContext)super.clone();
 		} catch (CloneNotSupportedException e) {

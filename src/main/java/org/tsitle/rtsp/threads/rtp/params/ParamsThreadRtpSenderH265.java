@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 public final class ParamsThreadRtpSenderH265 implements Cloneable {
 
 	// ... fields only for H265 ...
@@ -13,7 +15,7 @@ public final class ParamsThreadRtpSenderH265 implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderVideoCommon clone() {
+	public @NonNull ParamsThreadRtpSenderVideoCommon clone() {
 		try {
 			//noinspection UnnecessaryLocalVariable
 			ParamsThreadRtpSenderVideoCommon clone = (ParamsThreadRtpSenderVideoCommon)super.clone();

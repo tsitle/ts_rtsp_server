@@ -54,7 +54,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 	}
 
 	@Override
-	public AudioPcmInfo clone() {
+	public @NonNull AudioPcmInfo clone() {
 		try {
 			return (AudioPcmInfo)super.clone();
 		} catch (CloneNotSupportedException e) {
@@ -63,7 +63,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() +
 				"[" +
 				"samplesOffset=" + Integer.toUnsignedString(samplesOffset) +
@@ -75,7 +75,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 	}
 
 	@Override
-	public String toString(boolean shortOutput) {
+	public @NonNull String toString(boolean shortOutput) {
 		return toString();
 	}
 

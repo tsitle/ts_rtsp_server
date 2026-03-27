@@ -121,7 +121,7 @@ public final class SrtxpKmd implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public SrtxpKmd clone() {
+	public @NonNull SrtxpKmd clone() {
 		try {
 			SrtxpKmd clone = (SrtxpKmd) super.clone();
 			clone.masterKey = this.masterKey.clone();
@@ -185,7 +185,7 @@ public final class SrtxpKmd implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"encrKeyLen=" + encrKeyLen +
 				", masterKey=0x" + masterKey.toHexString() +

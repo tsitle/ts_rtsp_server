@@ -30,7 +30,7 @@ public final class SessionKeys implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public SessionKeys clone() {
+	public @NonNull SessionKeys clone() {
 		try {
 			SessionKeys clone = (SessionKeys)super.clone();
 			clone.encKey = this.encKey.clone();

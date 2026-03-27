@@ -87,7 +87,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 		public byte getValue() {
 			return value;
 		}
-		public static NalUnitType of(byte value) {
+		public static @NonNull NalUnitType of(byte value) {
 			for (NalUnitType type : NalUnitType.values()) {
 				if (type.getValue() == value) {
 					return type;
@@ -139,7 +139,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 	}
 
 	@Override
-	public VideoH265Info clone() {
+	public @NonNull VideoH265Info clone() {
 		try {
 			return (VideoH265Info)super.clone();
 		} catch (CloneNotSupportedException e) {
@@ -148,7 +148,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() +
 				"[" +
 				super.getToStringFields() +
@@ -159,7 +159,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 	}
 
 	@Override
-	public String toString(boolean shortOutput) {
+	public @NonNull String toString(boolean shortOutput) {
 		if (! shortOutput) {
 			return toString();
 		}

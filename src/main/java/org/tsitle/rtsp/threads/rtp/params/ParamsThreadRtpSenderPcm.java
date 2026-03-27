@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
 public final class ParamsThreadRtpSenderPcm implements Cloneable {
@@ -70,7 +71,7 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderPcm clone() {
+	public @NonNull ParamsThreadRtpSenderPcm clone() {
 		try {
 			return (ParamsThreadRtpSenderPcm)super.clone();
 		} catch (CloneNotSupportedException e) {

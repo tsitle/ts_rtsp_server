@@ -112,7 +112,7 @@ public final class BufferExt implements Cloneable {
 	 * @param len Length of data to copy
 	 */
 	@SuppressWarnings("unused")
-	public void copyFrom(BufferExt srcBuf, int srcOffset, int dstOffset, int len) {
+	public void copyFrom(@NonNull BufferExt srcBuf, int srcOffset, int dstOffset, int len) {
 		copyFrom(srcBuf.getBaPtr(), srcOffset, dstOffset, len);
 	}
 
@@ -140,7 +140,7 @@ public final class BufferExt implements Cloneable {
 	 * Copy data from another buffer into this buffer. Overwrites any existing data.
 	 * @param srcBuf Source buffer
 	 */
-	public void copyOf(BufferExt srcBuf) {
+	public void copyOf(@NonNull BufferExt srcBuf) {
 		clear();
 		copyFrom(srcBuf.getBaPtr(), 0, 0, srcBuf.getUsed());
 	}
@@ -151,7 +151,7 @@ public final class BufferExt implements Cloneable {
 	 * @param srcOffset Source offset
 	 * @param len Length of data to copy
 	 */
-	public void copyOf(BufferExt srcBuf, int srcOffset, int len) {
+	public void copyOf(@NonNull BufferExt srcBuf, int srcOffset, int len) {
 		clear();
 		copyFrom(srcBuf.getBaPtr(), srcOffset, 0, len);
 	}
@@ -196,7 +196,7 @@ public final class BufferExt implements Cloneable {
 	 * Append data from another buffer to this buffer.
 	 * @param srcBuf Source buffer
 	 */
-	public void append(BufferExt srcBuf) {
+	public void append(@NonNull BufferExt srcBuf) {
 		copyFrom(srcBuf.getBaPtr(), 0, used, srcBuf.getUsed());
 	}
 
@@ -221,7 +221,7 @@ public final class BufferExt implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [used=" + used + ", buf=" + toHexString(true) + "]";
 	}
 
@@ -283,7 +283,7 @@ public final class BufferExt implements Cloneable {
 	}
 
 	@Override
-	public BufferExt clone() {
+	public @NonNull BufferExt clone() {
 		try {
 			BufferExt clone = (BufferExt)super.clone();
 			clone.buf = buf.clone();

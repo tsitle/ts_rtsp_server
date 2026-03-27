@@ -34,8 +34,8 @@ public class RtcpPacketHeader implements Cloneable {
 	 * @param itemCount Number of items in the body
 	 * @param payloadSize Size of the body in bytes
 	 */
-	public RtcpPacketHeader(RtcpPacketType type, byte itemCount, int payloadSize) {
-		if (type == null || type == RtcpPacketType.UNKNOWN) {
+	public RtcpPacketHeader(@NonNull RtcpPacketType type, byte itemCount, int payloadSize) {
+		if (type == RtcpPacketType.UNKNOWN) {
 			throw new IllegalArgumentException("Invalid RTCP packet type: " + type);
 		}
 		this.hdVersion = 2;
@@ -63,7 +63,7 @@ public class RtcpPacketHeader implements Cloneable {
 	 * Constructor.
 	 * @param rawPacketHeader Raw packet header bitstream
 	 */
-	public RtcpPacketHeader(BufferExt rawPacketHeader) {
+	public RtcpPacketHeader(@NonNull BufferExt rawPacketHeader) {
 		if (rawPacketHeader.getUsed() < HEADER_SIZE) {
 			throw new IllegalArgumentException("Invalid RTCP header size");
 		}
@@ -86,7 +86,7 @@ public class RtcpPacketHeader implements Cloneable {
 	 * Copies the header of the raw RTCP packet header into the given buffer.
 	 * @param rawPacketHeader Buffer to copy the raw packet header data into
 	 */
-	public void copyRawPacketHeaderDataInto(BufferExt rawPacketHeader) {
+	public void copyRawPacketHeaderDataInto(@NonNull BufferExt rawPacketHeader) {
 		rawPacketHeader.copyOf(rawHeader, 0, HEADER_SIZE);
 	}
 
@@ -102,7 +102,7 @@ public class RtcpPacketHeader implements Cloneable {
 	 * Get the payload type of the RTCP packet.
 	 * @return Payload type
 	 */
-	public RtcpPacketType getPayloadType() {
+	public @NonNull RtcpPacketType getPayloadType() {
 		return hdPayloadType;
 	}
 
@@ -123,7 +123,7 @@ public class RtcpPacketHeader implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return toString(false);
 	}
 
@@ -138,7 +138,7 @@ public class RtcpPacketHeader implements Cloneable {
 	}
 
 	@Override
-	public RtcpPacketHeader clone() {
+	public @NonNull RtcpPacketHeader clone() {
 		try {
 			RtcpPacketHeader clone = (RtcpPacketHeader)super.clone();
 			clone.rawHeader = rawHeader.clone();

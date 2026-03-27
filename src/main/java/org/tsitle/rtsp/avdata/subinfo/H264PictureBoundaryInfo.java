@@ -62,7 +62,7 @@ public final class H264PictureBoundaryInfo implements Cloneable {
 	}
 
 	@Override
-	public H264PictureBoundaryInfo clone() {
+	public @NonNull H264PictureBoundaryInfo clone() {
 		try {
 			return (H264PictureBoundaryInfo)super.clone();
 		} catch (CloneNotSupportedException e) {
@@ -71,7 +71,7 @@ public final class H264PictureBoundaryInfo implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"nalRefIdc=" + nalRefIdc +
 				", nalUnitType=" + nalUnitType +

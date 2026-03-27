@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 public final class ParamsThreadRtpSenderMjpeg implements Cloneable {
 
 	// ... fields only for MJPEG ...
@@ -13,7 +15,7 @@ public final class ParamsThreadRtpSenderMjpeg implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderVideoCommon clone() {
+	public @NonNull ParamsThreadRtpSenderVideoCommon clone() {
 		try {
 			//noinspection UnnecessaryLocalVariable
 			ParamsThreadRtpSenderVideoCommon clone = (ParamsThreadRtpSenderVideoCommon)super.clone();

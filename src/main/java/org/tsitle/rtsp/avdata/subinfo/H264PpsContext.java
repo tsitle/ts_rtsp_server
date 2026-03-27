@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.avdata.subinfo;
 
+import org.jspecify.annotations.NonNull;
+
 public class H264PpsContext implements Cloneable {
 
 	/** pic_parameter_set_id */
@@ -23,7 +25,7 @@ public class H264PpsContext implements Cloneable {
 	}
 
 	@Override
-	public H264PpsContext clone() {
+	public @NonNull H264PpsContext clone() {
 		try {
 			return (H264PpsContext)super.clone();
 		} catch (CloneNotSupportedException e) {

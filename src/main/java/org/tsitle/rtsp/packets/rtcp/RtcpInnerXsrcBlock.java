@@ -1,5 +1,8 @@
 package org.tsitle.rtsp.packets.rtcp;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +28,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 		private final int value;
 		BlockType(int value) { this.value = value; }
 		public byte getValue() { return (byte)value; }
-		public static BlockType of(byte value) {
+		public static @NonNull BlockType of(byte value) {
 			for (BlockType type : BlockType.values()) {
 				if (type.getValue() == value) {
 					return type;
@@ -36,13 +39,13 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 	}
 
 	public static class BlockEntry implements Cloneable {
-		private final BlockType type;
-		private String prefixValue;  // only for PRIV
-		private String value;
-		public BlockEntry(BlockType type, String value) {
+		private final @NonNull BlockType type;
+		private @NonNull String prefixValue;  // only for PRIV
+		private @NonNull String value;
+		public BlockEntry(@NonNull BlockType type, @NonNull String value) {
 			this(type, null, value);
 		}
-		public BlockEntry(BlockType type, String prefix, String value) {
+		public BlockEntry(@NonNull BlockType type, @Nullable String prefix, @Nullable String value) {
 			this.type = type;
 			this.prefixValue = (prefix == null || type != BlockType.PRIV ?
 					"" :
@@ -53,9 +56,9 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 				throw new IllegalArgumentException("Total length of prefix and value must be <= 255");
 			}
 		}
-		public BlockType getType() { return type; }
-		public String getPrefixValue() { return prefixValue; }
-		public String getValue() { return value; }
+		public @NonNull BlockType getType() { return type; }
+		public @NonNull String getPrefixValue() { return prefixValue; }
+		public @NonNull String getValue() { return value; }
 		public byte getTotalLength() { return (byte)(prefixValue.length() + value.length()); }
 
 		@Override
@@ -68,7 +71,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 		}
 
 		@Override
-		public BlockEntry clone() {
+		public @NonNull BlockEntry clone() {
 			try {
 				BlockEntry clonedBlockEntry = (BlockEntry)super.clone();
 				//noinspection StringOperationCanBeSimplified
@@ -105,10 +108,10 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 	public RtcpInnerXsrcBlock(
 				int itemNr,
 				int xsrcId,
-				List<BlockEntry> blockEntries
+				@NonNull List<@NonNull BlockEntry> blockEntries
 			) {
-		if (blockEntries == null || blockEntries.isEmpty()) {
-			throw new IllegalArgumentException("blockEntries == null || blockEntries.isEmpty()");
+		if (blockEntries.isEmpty()) {
+			throw new IllegalArgumentException("blockEntries is empty");
 		}
 		this.itemNr = itemNr;
 		this.bdXsrcId = xsrcId;
@@ -125,7 +128,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public int getXsrcId() { return bdXsrcId; }
 
-	public List<BlockEntry> getBlockEntries() {
+	public @NonNull List<@NonNull BlockEntry> getBlockEntries() {
 		List<BlockEntry> resL = new ArrayList<>();
 		for (BlockEntry entry : bdBlockEntries) {
 			resL.add(entry.clone());
@@ -150,7 +153,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 		return resI;
 	}
 
-	public void appendToBuffer(ByteBuffer bb) {
+	public void appendToBuffer(@NonNull ByteBuffer bb) {
 		int totalBytesWritten = 0;
 		bb.putInt(bdXsrcId);
 		totalBytesWritten += 4;
@@ -179,7 +182,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 		} while (totalBytesWritten % 4 != 0);
 	}
 
-	public static RtcpInnerXsrcBlock decodeFromBuffer(int itemNr, ByteBuffer bb) {
+	public static @NonNull RtcpInnerXsrcBlock decodeFromBuffer(int itemNr, @NonNull ByteBuffer bb) {
 		int totalBytesRead = 0;
 
 		int xsrcId = bb.getInt();
@@ -226,7 +229,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 	}
 
 	@Override
-	public String toString() {
+	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"ItemNr: " + itemNr +
 				", XSRC: 0x" + String.format("%08X", bdXsrcId) +
@@ -235,7 +238,7 @@ public class RtcpInnerXsrcBlock implements Cloneable {
 	}
 
 	@Override
-	public RtcpInnerXsrcBlock clone() {
+	public @NonNull RtcpInnerXsrcBlock clone() {
 		try {
 			RtcpInnerXsrcBlock clone = (RtcpInnerXsrcBlock)super.clone();
 			clone.bdBlockEntries = new ArrayList<>();

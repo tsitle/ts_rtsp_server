@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
+import org.jspecify.annotations.NonNull;
+
 public final class ParamsThreadRtpSenderVideoCommon implements Cloneable {
 
 	// ... common fields for video ...
@@ -17,7 +19,7 @@ public final class ParamsThreadRtpSenderVideoCommon implements Cloneable {
 	}
 
 	@Override
-	public ParamsThreadRtpSenderVideoCommon clone() {
+	public @NonNull ParamsThreadRtpSenderVideoCommon clone() {
 		try {
 			return (ParamsThreadRtpSenderVideoCommon)super.clone();
 		} catch (CloneNotSupportedException e) {
