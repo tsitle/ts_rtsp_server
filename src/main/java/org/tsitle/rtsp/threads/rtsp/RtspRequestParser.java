@@ -24,7 +24,7 @@ import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
 public class RtspRequestParser {
 
-	private static final boolean DEBUG_REQUESTS_ENABLED = false;
+	private static final boolean DEBUG_REQUESTS_ENABLED = true;
 
 	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
 
@@ -460,11 +460,18 @@ public class RtspRequestParser {
 	}
 
 	private void parseHeaderLine_useragent(String headerLine) {
-		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_useragent()";
-
-		@SuppressWarnings("unused")
-		String tmpUa = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
-		//logDebug(FNC_NAME, "User-Agent='" + tmpUa + "'");
+		/*
+		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11 -- SRTP Authentication failure
+		 * GStreamer (KUbuntu 24): GStreamer/1.24.2 -- SRTP Authentication failure
+		 * VLC (Rocky Linux 10): LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05) -- SRTP OK
+		 * VLC (Windows): LibVLC/3.0.21 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
+		 * VLC (macOS x86):
+		 *   LibVLC/3.0.23 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
+		 *   RealMedia Player Version 6.0.9.1235 (linux-2.0-libc6-i386-gcc2.95) -- SRTP not tested
+		 * RTSP Player (Windows): Lavf59.27.100 -- SRTP not tested
+		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20) -- SRTP not tested
+		 */
+		rtspSessionInfo.clientUserAgent = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
 	}
 
 	private void parseHeaderLine_session(String headerLine) throws RtspInvalidSessionIdException {
@@ -573,6 +580,7 @@ public class RtspRequestParser {
 					SrtxpKmd kmdRcvd = MikeyParser.parseMickeyMsgIntoKmd(tmpSub);
 					tmpStreamInfo.streamKmds.kmdInbound = kmdRcvd.clone();
 					haveKeyData = true;
+					//System.out.println("<<<<<<<<<<<<<<<< " + kmdRcvd);
 				} catch (SrtxpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client MIKEY: " + e.getMessage());
 					throw new RtspMissingEncryptionParamsException();

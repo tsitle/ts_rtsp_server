@@ -13,6 +13,7 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.security.constants.KeySizes;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
@@ -462,7 +463,19 @@ public class RtspResponseBuilder {
 		//
 		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
 		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
-			streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
+			if (! rtspSessionInfo.clientUserAgent.isBlank() && rtspSessionInfo.clientUserAgent.startsWith("GStreamer")) {
+				// @TODO Test with a different GStreamer version
+				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
+						KeySizes.AES_KEY_SIZE_128,
+						KeySizes.AUTH_KEY_SIZE_080,
+						10,
+						0,
+						streamInfo.rtspSsrcId
+					);
+			} else {
+				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
+			}
+			//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 			try {
 				String tmpMsg = MikeyGenerator.generate(streamInfo.streamKmds.kmdOutbound);
 				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));

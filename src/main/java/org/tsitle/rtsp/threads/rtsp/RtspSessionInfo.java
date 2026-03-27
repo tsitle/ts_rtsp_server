@@ -116,6 +116,9 @@ public class RtspSessionInfo {
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();
 
+	/** Client's User-Agent */
+	public @NonNull String clientUserAgent = "";
+
 	/** Streams info - one per SETUP request (the map keys are unique Stream Source identifiers) */
 	public @NonNull Map<@NonNull Integer, @NonNull StreamInfo> streamsMapSetup = new ConcurrentHashMap<>();
 	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */

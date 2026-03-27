@@ -32,7 +32,7 @@ public final class MikeyGenerator {
 		final String FNC_NAME = MikeyGenerator.class.getSimpleName() + ".generate()";
 
 		if (kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_080 && kmd.authKeyLen() != KeySizes.AUTH_KEY_SIZE_160) {
-			throw new SrtxpSecurityException(FNC_NAME + ": Unsupported Auth Key length");
+			throw new SrtxpSecurityException(FNC_NAME + ": Unsupported Auth Key length: " + kmd.authKeyLen() + " bytes");
 		}
 
 		//
