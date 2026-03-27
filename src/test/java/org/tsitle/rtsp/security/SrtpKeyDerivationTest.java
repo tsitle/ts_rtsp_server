@@ -75,22 +75,34 @@ class SrtpKeyDerivationTest {
 	@Test
 	void should_match_independent_reference_for_rtp_and_rtcp() throws Exception {
 		byte[] masterKey = new byte[Common.ENCR_KEY_SIZE_FOR_ALL_TESTS];
-		byte[] masterSalt = new byte[Common.SALT_SIZE_FOR_ALL_TESTS];
+		byte[] masterSalt = new byte[KeySizes.SALT_SIZE];
 		new SecureRandom().nextBytes(masterKey);
 		new SecureRandom().nextBytes(masterSalt);
 
 		//
 		final int ssrcId = 0xABCDEF12;
-		SessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(ssrcId, new BufferExt(masterKey), new BufferExt(masterSalt));
-		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(ssrcId, new BufferExt(masterKey), new BufferExt(masterSalt));
+		SessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(
+				new BufferExt(masterKey),
+				new BufferExt(masterSalt),
+				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				Common.AUTH_TAG_SIZE_FOR_ALL_TESTS,
+				ssrcId
+			);
+		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
+				new BufferExt(masterKey),
+				new BufferExt(masterSalt),
+				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
+				Common.AUTH_TAG_SIZE_FOR_ALL_TESTS,
+				ssrcId
+			);
 
 		// Independent reference (RFC 3711, key_derivation_rate=0 => r=0)
 		byte[] refRtpEnc = refDerive(masterKey, masterSalt, (byte) 0x00, Common.ENCR_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] refRtpAuth = refDerive(masterKey, masterSalt, (byte) 0x01, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
-		byte[] refRtpSalt = refDerive(masterKey, masterSalt, (byte) 0x02, Common.SALT_SIZE_FOR_ALL_TESTS);
+		byte[] refRtpSalt = refDerive(masterKey, masterSalt, (byte) 0x02, KeySizes.SALT_SIZE);
 		byte[] refRtcpEnc = refDerive(masterKey, masterSalt, (byte) 0x03, Common.ENCR_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] refRtcpAuth = refDerive(masterKey, masterSalt, (byte) 0x04, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
-		byte[] refRtcpSalt = refDerive(masterKey, masterSalt, (byte) 0x05, Common.SALT_SIZE_FOR_ALL_TESTS);
+		byte[] refRtcpSalt = refDerive(masterKey, masterSalt, (byte) 0x05, KeySizes.SALT_SIZE);
 
 		assertEquals(new BufferExt(refRtpEnc), rtpKeys.encKey(), "RTP enc mismatch");
 		assertEquals(new BufferExt(refRtpAuth), rtpKeys.authKey(), "RTP auth mismatch");
@@ -113,9 +125,8 @@ class SrtpKeyDerivationTest {
 
 	private static byte[] buildIv(byte[] masterSalt, byte label, @SuppressWarnings("SameParameterValue") long r48) {
 		// x is 14 bytes (112 bits), IV is x || 0x0000 (x * 2^16)
-		byte[] iv = new byte[16];  // always 16 bytes, regardless of key size
-		//noinspection DataFlowIssue
-		System.arraycopy(masterSalt, 0, iv, 0, Math.min(Common.SALT_SIZE_FOR_ALL_TESTS, iv.length));
+		byte[] iv = new byte[KeySizes.IV_SIZE];  // always 16 bytes, regardless of key size
+		System.arraycopy(masterSalt, 0, iv, 0, KeySizes.SALT_SIZE);
 
 		// key_id right-aligned in 112 bits: occupies bytes [7..13] as <label || r(48)>
 		iv[7] ^= label;

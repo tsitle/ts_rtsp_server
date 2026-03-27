@@ -31,7 +31,6 @@ class Common {
 	//static final int AUTH_KEY_SIZE_FOR_ALL_TESTS = KeySizes.AUTH_KEY_SIZE_080;
 	static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_AUTH_TAG_LEN;
 	//static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = 17;
-	static final int SALT_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_SALT_LEN;
 
 	// RFC 3711 test vector master material (deterministic, no sensitive runtime secrets)
 	static final BufferExt MASTER_KEY_128 = BufferExt.decodeHexString("E1F97A0D3E018BE0D64FA32C06DE4139");
@@ -50,7 +49,16 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull SrtxpKmd createSrtxpKmdDefault(int ssrcId) {
+	private static @NonNull SrtxpKmd createSrtxpKmdDefault(int ssrcId) {
+		// sanity checks
+		if (KeySizes.AES_KEY_SIZE_128 != 16) { throw new AssertionError("Invalid AES Key size"); }
+		if (KeySizes.AES_KEY_SIZE_256 != 32) { throw new AssertionError("Invalid AES Key size"); }
+		if (KeySizes.AUTH_KEY_SIZE_080 != 10) { throw new AssertionError("Invalid Auth Key size"); }
+		if (KeySizes.AUTH_KEY_SIZE_160 != 20) { throw new AssertionError("Invalid Auth Key size"); }
+		if (KeySizes.SALT_SIZE != 14) { throw new AssertionError("Invalid Salt size"); }
+		if (KeySizes.IV_SIZE != 16) { throw new AssertionError("Invalid IV size"); }
+
+		//
 		return new SrtxpKmd(
 				ENCR_KEY_SIZE_FOR_ALL_TESTS,
 				DEFAULT_MASTER_KEY,
@@ -96,28 +104,45 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull SrtxpKmd createSrtxpKmdNonDef(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) {
-		return new SrtxpKmd(
-				ENCR_KEY_SIZE_FOR_ALL_TESTS,
+	@SuppressWarnings("SameParameterValue")
+	static @NonNull SessionKeys createSessionKeysNonDefRtp(
+				@NonNull BufferExt mk,
+				@NonNull BufferExt ms,
+				int authKeyLen,
+				int authTagLen,
+				int ssrcId
+			) throws SrtxpSecurityException {
+		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
+		SrtxpKmd kmd = new SrtxpKmd(
+				mk.getUsed(),
 				mk,
 				ms,
-				AUTH_KEY_SIZE_FOR_ALL_TESTS,
-				AUTH_TAG_SIZE_FOR_ALL_TESTS,
+				authKeyLen,
+				authTagLen,
 				new BufferExt(),
 				ssrcId
 			);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	static @NonNull SessionKeys createSessionKeysNonDefRtp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtxpSecurityException {
-		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysNonDefRtcp(int ssrcId, @NonNull BufferExt mk, @NonNull BufferExt ms) throws SrtxpSecurityException {
+	@SuppressWarnings("SameParameterValue")
+	static @NonNull SessionKeys createSessionKeysNonDefRtcp(
+				@NonNull BufferExt mk,
+				@NonNull BufferExt ms,
+				int authKeyLen,
+				int authTagLen,
+				int ssrcId
+			) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
-		SrtxpKmd kmd = createSrtxpKmdNonDef(ssrcId, mk, ms);
+		SrtxpKmd kmd = new SrtxpKmd(
+				mk.getUsed(),
+				mk,
+				ms,
+				authKeyLen,
+				authTagLen,
+				new BufferExt(),
+				ssrcId
+			);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
 
@@ -132,64 +157,41 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings({"SameParameterValue", "unused"})
-	static void setPrivateBoolean(Object target, String fieldName, boolean value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.setBoolean(target, value);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	static void setPrivateLong(Object target, String fieldName, long value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.setLong(target, value);
-	}
-
-	@SuppressWarnings("SameParameterValue")
-	static void setPrivateInt(Object target, String fieldName, int value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.setInt(target, value);
-	}
-
-	@SuppressWarnings({"SameParameterValue", "unused"})
-	static void setPrivateBufferExt(Object target, String fieldName, BufferExt value) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		f.set(target, value.clone());
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("SameParameterValue")
-	static int getPrivateInt(Object target, String fieldName) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		return f.getInt(target);
-	}
-
-	@SuppressWarnings("unused")
-	static long getPrivateLong(Object target, String fieldName) throws Exception {
-		Field f = target.getClass().getDeclaredField(fieldName);
-		f.setAccessible(true);
-		return f.getLong(target);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys, int roc) throws Exception {
-		if (ctx instanceof SrtpContextOutbound) {
-			setPrivateInt(ctx, "ctxStateRtpRocOutbound", roc);
-		}
+	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys) throws Exception {
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
-	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SessionKeys sessionKeys, int idx) throws Exception {
-		if (ctx instanceof SrtcpContextOutbound) {
-			setPrivateInt(ctx, "ctxStateRtcpIndex", idx);
-		}
+	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SessionKeys sessionKeys) throws Exception {
 		ctx.setRtcpSessionKeys(sessionKeys);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	static void srtpCtxOutboundInjectStateRtpRocOutbound(SrtpContextOutbound ctx, int value) throws Exception {
+		setPrivateInt(ctx, "ctxStateRtpRocOutbound", value);
+	}
+
+	static int srtpCtxOutboundReadStateRtpRocOutbound(SrtpContextOutbound ctx) throws Exception {
+		return getPrivateInt(ctx, "ctxStateRtpRocOutbound");
+	}
+
+	static int srtpCtxInboundReadStateSrtpRocInbound(SrtpContextInbound ctx) throws Exception {
+		return getPrivateInt(ctx, "ctxStateSrtpRocInbound");
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	static void srtpCtxInboundInjectStateSrtpLastIndex(SrtpContextInbound ctx, long value) throws Exception {
+		setPrivateLong(ctx, "ctxStateSrtpLastIndex", value);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	static void srtcpCtxOutboundInjectStateRtcpIndex(SrtcpContextOutbound ctx, int value) throws Exception {
+		setPrivateInt(ctx, "ctxStateRtcpIndex", value);
+	}
+
+	static int srtcpCtxOutboundReadStateRtcpIndex(SrtcpContextOutbound ctx) throws Exception {
+		return getPrivateInt(ctx, "ctxStateRtcpIndex");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -223,7 +225,7 @@ class Common {
 		int headerLen = 12;
 		long packetIndex = (stateRoc << 16) | ((long)seqNr & 0xFFFFL);
 
-		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
+		byte[] iv = new byte[KeySizes.IV_SIZE];
 		ByteBuffer ivByBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivByBuf.putInt(0);
 		ivByBuf.putInt(ssrc);
@@ -234,7 +236,7 @@ class Common {
 		ivByBuf.put((byte)((packetIndex >>> 8) & 0xFF));
 		ivByBuf.put((byte)(packetIndex & 0xFF));
 		ivByBuf.putShort((short)0);
-		for (int i = 0; i < Common.SALT_SIZE_FOR_ALL_TESTS; i++) {
+		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			iv[i] ^= rtpKeys.salt().get(i);
 		}
 
@@ -269,14 +271,14 @@ class Common {
 				int stateIndexOnly,
 				int rtcpSrRrExtendedHeaderLen
 			) throws Exception {
-		byte[] iv = new byte[KeySizes.AES_KEY_SIZE_128];
+		byte[] iv = new byte[KeySizes.IV_SIZE];
 		ByteBuffer ivBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivBuf.putInt(0);
 		ivBuf.putInt(ssrc);
 		ivBuf.putShort((short)0);
 		ivBuf.putInt(stateIndexOnly);
 		ivBuf.putShort((short)0);
-		for (int i = 0; i < Common.SALT_SIZE_FOR_ALL_TESTS; i++) {
+		for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
 			iv[i] ^= rtcpSessionKeys.salt().get(i);
 		}
 
@@ -308,6 +310,53 @@ class Common {
 		byte[] tag10 = Arrays.copyOf(mac.doFinal(), AUTH_TAG_SIZE_FOR_ALL_TESTS);
 
 		return concat(authInput, tag10);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings({"SameParameterValue", "unused"})
+	private static void setPrivateBoolean(Object target, String fieldName, boolean value) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		f.setBoolean(target, value);
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	private static void setPrivateLong(Object target, String fieldName, long value) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		f.setLong(target, value);
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	private static void setPrivateInt(Object target, String fieldName, int value) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		f.setInt(target, value);
+	}
+
+	@SuppressWarnings({"SameParameterValue", "unused"})
+	private static void setPrivateBufferExt(Object target, String fieldName, BufferExt value) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		f.set(target, value.clone());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("SameParameterValue")
+	private static int getPrivateInt(Object target, String fieldName) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		return f.getInt(target);
+	}
+
+	@SuppressWarnings("unused")
+	private static long getPrivateLong(Object target, String fieldName) throws Exception {
+		Field f = target.getClass().getDeclaredField(fieldName);
+		f.setAccessible(true);
+		return f.getLong(target);
 	}
 
 }

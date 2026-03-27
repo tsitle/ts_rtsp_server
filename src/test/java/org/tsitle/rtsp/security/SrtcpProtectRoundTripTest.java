@@ -3,6 +3,7 @@ package org.tsitle.rtsp.security;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.security.constants.KeySizes;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,8 +22,9 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
-		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
+		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(hdSsrc);
 
@@ -47,58 +49,93 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_randomized_packets_should_restore_original_and_reject_replay() throws Exception {
+		final int rounds = 100;
+
 		final SecureRandom rnd = new SecureRandom();
+
+		for (int i = 0; i < rounds; i++) {
+			int mkeyLen = (rnd.nextInt(1000) > 500 ? KeySizes.AES_KEY_SIZE_128 : KeySizes.AES_KEY_SIZE_256);
+			int authKeyLen = (rnd.nextInt(1000) > 500 ? KeySizes.AUTH_KEY_SIZE_080 : KeySizes.AUTH_KEY_SIZE_160);
+			int authTagLen = (rnd.nextInt(1000) > 500 ? KeySizes.SHA1_SIZE_160 / 2 : KeySizes.SHA1_SIZE_160);
+			int mkiLen = rnd.nextInt(100);
+			subfnc_rtcp_randomized_sub1(rnd, mkeyLen, authKeyLen, authTagLen, mkiLen);
+		}
+	}
+
+	void subfnc_rtcp_randomized_sub1(
+				final SecureRandom rnd,
+				int mkeyLen,
+				int authKeyLen,
+				int authTagLen,
+				int mkiLen
+			) throws Exception {
 		final int rounds = 64;
 
-		byte[] masterKey = new byte[Common.ENCR_KEY_SIZE_FOR_ALL_TESTS];
-		byte[] masterSalt = new byte[Common.SALT_SIZE_FOR_ALL_TESTS];
-		rnd.nextBytes(masterKey);
-		rnd.nextBytes(masterSalt);
+		byte[] masterKeyBa = new byte[mkeyLen];
+		byte[] masterSaltBa = new byte[KeySizes.SALT_SIZE];
+		byte[] mkiBa = new byte[mkiLen];
+		rnd.nextBytes(masterKeyBa);
+		rnd.nextBytes(masterSaltBa);
+		if (mkiLen > 0) {
+			rnd.nextBytes(mkiBa);
+		}
 
 		final int hdSsrc = rnd.nextInt();
 
-		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
-				hdSsrc,
-				new BufferExt(masterKey),
-				new BufferExt(masterSalt)
+		SrtxpKmd rtcpKmd = new SrtxpKmd(
+				mkeyLen,
+				new BufferExt(masterKeyBa),
+				new BufferExt(masterSaltBa),
+				authKeyLen,
+				authTagLen,
+				new BufferExt(mkiBa),
+				hdSsrc
 			);
-
-		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
-		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
-		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
+		SrtcpContextOutbound senderCtx = new SrtcpContextOutbound(rtcpKmd);
+		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
+		SrtcpContextInbound receiverCtx = new SrtcpContextInbound(rtcpKmd);
 
 		for (int i = 0; i < rounds; i++) {
-			long ntpMsw = Integer.toUnsignedLong(rnd.nextInt());
-			long ntpLsw = Integer.toUnsignedLong(rnd.nextInt());
-			long rtpTs = Integer.toUnsignedLong(rnd.nextInt());
-			long pktCount = Integer.toUnsignedLong(rnd.nextInt());
-			long octetCount = Integer.toUnsignedLong(rnd.nextInt());
-
-			byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(
-					hdSsrc, ntpMsw, ntpLsw, rtpTs, pktCount, octetCount
-				);
-
-			BufferExt plainBuf = new BufferExt();
-			plainBuf.copyOf(compoundRtcp);
-
-			BufferExt encryptedBuf = new BufferExt();
-			senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
-
-			BufferExt decryptedBuf = new BufferExt();
-			receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
-
-			byte[] decrypted = new byte[decryptedBuf.getUsed()];
-			decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
-			assertArrayEquals(compoundRtcp, decrypted, "Round " + i + ": decrypted packet mismatch");
-
-			BufferExt replayOut = new BufferExt();
-			assertThrows(
-					SrtxpSecurityException.class,
-					() -> receiverCtx.unprotectSrtcpCompound(encryptedBuf, replayOut),
-					"Round " + i + ": replayed packet must be rejected due to index check"
-				);
+			subfnc_rtcp_randomized_sub2(rnd, senderCtx, receiverCtx, i, hdSsrc);
 		}
+	}
+
+	void subfnc_rtcp_randomized_sub2(
+				final SecureRandom rnd,
+				final SrtcpContextOutbound senderCtx,
+				final SrtcpContextInbound receiverCtx,
+				final int roundNr,
+				final int hdSsrc
+			) throws Exception {
+		long ntpMsw = Integer.toUnsignedLong(rnd.nextInt());
+		long ntpLsw = Integer.toUnsignedLong(rnd.nextInt());
+		long rtpTs = Integer.toUnsignedLong(rnd.nextInt());
+		long pktCount = Integer.toUnsignedLong(rnd.nextInt());
+		long octetCount = Integer.toUnsignedLong(rnd.nextInt());
+
+		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(
+				hdSsrc, ntpMsw, ntpLsw, rtpTs, pktCount, octetCount
+			);
+
+		BufferExt plainBuf = new BufferExt();
+		plainBuf.copyOf(compoundRtcp);
+
+		BufferExt encryptedBuf = new BufferExt();
+		senderCtx.protectRtcpSrCompound(plainBuf, hdSsrc, encryptedBuf);
+
+		BufferExt decryptedBuf = new BufferExt();
+		receiverCtx.unprotectSrtcpCompound(encryptedBuf, decryptedBuf);
+
+		byte[] decrypted = new byte[decryptedBuf.getUsed()];
+		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
+		assertArrayEquals(compoundRtcp, decrypted, "Round " + roundNr + ": decrypted packet mismatch");
+
+		BufferExt replayOut = new BufferExt();
+		assertThrows(
+				SrtxpSecurityException.class,
+				() -> receiverCtx.unprotectSrtcpCompound(encryptedBuf, replayOut),
+				"Round " + roundNr + ": replayed packet must be rejected due to index check"
+			);
 	}
 
 	@Test
@@ -109,8 +146,9 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
-		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
+		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
 		byte[] compoundRtcp = buildCompoundRtcpSrPlusBye(hdSsrc);
 
@@ -150,8 +188,9 @@ class SrtcpProtectRoundTripTest {
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
-		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys, 0);
-		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys, 0);
+		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
+		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
+		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
 		BufferExt mki = BufferExt.decodeHexString("0x01020304");
 		senderCtx.setKmdMasterKeyIdentifier(mki);

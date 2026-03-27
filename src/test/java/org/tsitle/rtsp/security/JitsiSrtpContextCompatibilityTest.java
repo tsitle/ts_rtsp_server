@@ -19,7 +19,8 @@ public class JitsiSrtpContextCompatibilityTest {
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0);
+		Common.srtpCtxOutboundInjectStateRtpRocOutbound(ctx, 0);
+		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys);
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF01445566778899AAEEFF01AB23CD45EF00445566778899AAEEFF01AB23CD45EF02");
 		final byte[] plain = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -46,7 +47,8 @@ public class JitsiSrtpContextCompatibilityTest {
 		SessionKeys jitsiRtcpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtcp();
 
 		SrtcpContextOutbound ctx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
-		Common.srtcpCtxInjectKeys(ctx, jitsiRtcpKeys, packetIndex);
+		Common.srtcpCtxOutboundInjectStateRtcpIndex(ctx, packetIndex);
+		Common.srtcpCtxInjectKeys(ctx, jitsiRtcpKeys);
 
 		int hdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
 
@@ -59,9 +61,9 @@ public class JitsiSrtpContextCompatibilityTest {
 		in.copyOf(plainRtcp);
 		BufferExt out = new BufferExt();
 
-		int before = Common.getPrivateInt(ctx, "ctxStateRtcpIndex");
+		int before = Common.srtcpCtxOutboundReadStateRtcpIndex(ctx);
 		ctx.protectRtcpSrCompound(in, hdSsrc, out);
-		int after = Common.getPrivateInt(ctx, "ctxStateRtcpIndex");
+		int after = Common.srtcpCtxOutboundReadStateRtcpIndex(ctx);
 
 		byte[] actual = new byte[out.getUsed()];
 		out.copyInto(0, actual, 0, actual.length);

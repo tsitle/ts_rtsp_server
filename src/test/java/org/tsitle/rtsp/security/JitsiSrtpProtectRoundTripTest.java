@@ -19,7 +19,8 @@ class JitsiSrtpProtectRoundTripTest {
 		// derive RTP session keys
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
-		Common.srtpCtxInjectKeys(ctx, rtpKeys, 0);
+		Common.srtpCtxOutboundInjectStateRtpRocOutbound(ctx, 0);
+		Common.srtpCtxInjectKeys(ctx, rtpKeys);
 
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
@@ -48,7 +49,8 @@ class JitsiSrtpProtectRoundTripTest {
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
 
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
-		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys, 0);
+		Common.srtpCtxOutboundInjectStateRtpRocOutbound(ctx, 0);
+		Common.srtpCtxInjectKeys(ctx, jitsiRtpKeys);
 
 		final byte[] payload = Common.HEX.parseHex("445566778899AABBCCDDEEFF01AB23CD45EF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);

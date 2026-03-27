@@ -57,6 +57,7 @@ public class MikeyTest {
 				KeySizes.AES_KEY_SIZE_256,
 				KeySizes.AUTH_KEY_SIZE_080,
 				5,
+				SrtxpKmd.DEFAULT_MKI_LEN,
 				expSsrcId
 			);
 		final String outputMsgB64 = MikeyGenerator.generate(kmdExp);
