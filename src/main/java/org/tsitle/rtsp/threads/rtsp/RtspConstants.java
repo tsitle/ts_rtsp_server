@@ -15,9 +15,9 @@ public class RtspConstants {
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
 	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
 	/** Samples per frame for AAC-LC audio -- Default Type 1 */
-	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 960;
+	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
 	/** Samples per frame for AAC-LC audio -- Default Type 2 */
-	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 1024;
+	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 960;
 	/**
 	 * Samples per frame for AAC-LC audio -- Low Delay<br />
 	 * See note in {@link org.tsitle.rtsp.avdata.AudioAacInfo}

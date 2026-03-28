@@ -389,16 +389,24 @@ public class RtspResponseBuilder {
 								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get(),
 						CRLF));
 			}
-			if (tmpSsObj.getIsSourceFromFile()) {
-				/*
-				 * a: Session Attribute: Packetization interval (in milliseconds)
-				 *    Length of time in milliseconds represented by the media in a packet.
-				 *    This is probably only meaningful for audio data. It should not be necessary
-				 *    to know ptime to decode RTP or vat audio, and it is intended
-				 *    as a recommendation for the encoding/packetisation of audio.
-				 */
-				sw.write(String.format("a=ptime:%d%s", RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS, CRLF));
+		}
+		if (tmpSsObj.getCodec().isAudio() && tmpSsObj.getIsSourceFromFile()) {
+			/*
+			 * a: Session Attribute: Packetization interval (in milliseconds)
+			 *    Length of time in milliseconds represented by the media in a packet.
+			 *    This is probably only meaningful for audio data. It should not be necessary
+			 *    to know ptime to decode RTP or vat audio, and it is intended
+			 *    as a recommendation for the encoding/packetisation of audio.
+			 */
+			double tmpTimeMs;
+			if (tmpSsObj.getCodec() == RtpPacketType.A_AAC) {
+				final double tmpFrameDurAacSecs = ((double)tmpSsObj.getAacSamplesPerFrame() /
+						(double)tmpSsObj.getAudioSampleRateHz());
+				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
+			} else {
+				tmpTimeMs = RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 			}
+			sw.write(String.format("a=ptime:%.5f%s", tmpTimeMs, CRLF).replace(",", "."));
 		}
 		//
 		if (useVideo && tmpSsObj.getIsSourceFromFile()) {
@@ -417,13 +425,13 @@ public class RtspResponseBuilder {
 				sw.write(
 						String.format(
 								"a=fmtp:%d " +
-								"streamtype=%d; " +  // required: ISO/IEC 14496-1 'streamType'
+								"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
 								"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
 								"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
 								"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
 								"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
 								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
-								"IndexDeltaLength=%d; " +  // optional: used when multiple AUs are packed in a packet, defaults to 0
+								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
 								"constantDuration=%d" +  // optional: 512/960/1024 samples per frame
 								"%s",
 								tmpSsObj.getCodec().getValue(),
@@ -433,7 +441,7 @@ public class RtspResponseBuilder {
 								RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
-								RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1,
+								tmpSsObj.getAacSamplesPerFrame(),
 								CRLF
 					));
 				break;
@@ -465,7 +473,7 @@ public class RtspResponseBuilder {
 		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
 		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
 			if (! rtspSessionInfo.clientUserAgent.isBlank() && rtspSessionInfo.clientUserAgent.startsWith("GStreamer")) {
-				// @TODO Test with a different GStreamer version
+				// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
 				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
 						KeySizes.AES_KEY_SIZE_128,
 						KeySizes.AUTH_KEY_SIZE_080,
