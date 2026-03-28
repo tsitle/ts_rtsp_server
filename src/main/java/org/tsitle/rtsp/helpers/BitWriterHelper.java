@@ -27,6 +27,9 @@ public final class BitWriterHelper {
 		if (numBits < 0 || numBits > 32) {
 			throw new IllegalArgumentException("numBits must be between 0 and 32");
 		}
+		if (numBits == 0) {
+			return;
+		}
 
 		for (int i = numBits - 1; i >= 0; i--) {
 			int bit = (value >> i) & 1;
