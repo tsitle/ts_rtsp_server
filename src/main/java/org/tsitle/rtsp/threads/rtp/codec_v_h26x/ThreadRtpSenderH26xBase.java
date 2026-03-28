@@ -212,7 +212,11 @@ public abstract class ThreadRtpSenderH26xBase<
 		// store NUD in globalAuQueue
 		H26xNalUnitData<I> tmpLatestNud = globalAuQueue.get(globalAuQuNudIxWrite);
 		tmpLatestNud.reset();
-		tmpLatestNud.h26xInfo = createCodecInfo();
+		if (tmpLatestNud.h26xInfo == null) {
+			tmpLatestNud.h26xInfo = createCodecInfo();
+		} else {
+			tmpLatestNud.h26xInfo.reset();
+		}
 		globalAuQuNudAvail++;
 		tmpLatestNud.internalId = ++globalTotalNudCount;
 		if (++globalAuQuNudIxWrite == AU_QUEUE_SIZE) {

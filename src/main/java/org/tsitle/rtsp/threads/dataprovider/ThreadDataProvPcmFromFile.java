@@ -73,10 +73,8 @@ public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioP
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioPcmInfo curFramePcmInfo = pcmParser.parsePcmData(inputBuf);
-
-		infoQueue.add(curFramePcmInfo);
+	protected AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		return pcmParser.parsePcmData(inputBuf);
 	}
 
 }

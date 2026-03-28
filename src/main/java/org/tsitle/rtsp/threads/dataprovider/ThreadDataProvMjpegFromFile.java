@@ -81,7 +81,7 @@ public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<Vide
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary
@@ -116,7 +116,7 @@ public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<Vide
 			curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 		}
 
-		infoQueue.add(curFrameJpegInfo);
+		return curFrameJpegInfo;
 	}
 
 	/**

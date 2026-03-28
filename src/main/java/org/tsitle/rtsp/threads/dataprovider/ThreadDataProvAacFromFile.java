@@ -63,10 +63,8 @@ public class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioA
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioAacInfo curFrameAacInfo = aacParser.parseAacData(inputBuf);
-
-		infoQueue.add(curFrameAacInfo);
+	protected AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		return aacParser.parseAacData(inputBuf);
 	}
 
 }

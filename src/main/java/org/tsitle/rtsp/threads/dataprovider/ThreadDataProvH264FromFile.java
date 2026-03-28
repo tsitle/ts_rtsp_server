@@ -72,7 +72,7 @@ public class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase<Video
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,
@@ -83,7 +83,7 @@ public class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase<Video
 			cachePictBoundInfoPrev = curFrameH264Info.pictBoundInfo.clone();
 		}
 
-		infoQueue.add(curFrameH264Info);
+		return curFrameH264Info;
 	}
 
 }
