@@ -263,7 +263,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		int loopCnt = 0;
-		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue()) {
+		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue() && ! threadDataProv.haveEos()) {
 			//noinspection BusyWait
 			Thread.sleep(50);
 			if (++loopCnt % 10 == 0) {

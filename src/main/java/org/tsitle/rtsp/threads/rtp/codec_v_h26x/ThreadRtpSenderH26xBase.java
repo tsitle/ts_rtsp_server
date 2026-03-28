@@ -191,21 +191,8 @@ public abstract class ThreadRtpSenderH26xBase<
 	private void frameDataSupplierGrabNalUnit() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".frameDataSupplierGrabNalUnit()";
 
-		// wait for the Data Provider to start
-		int timeoutCnt = 0;
-		while (! doStop.get() && threadDataProv != null && ! threadDataProv.isRunning() && timeoutCnt++ < 250) {
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
-				throw new InputStreamEosException();
-			}
-		}
-		if (threadDataProv == null || doStop.get()) {
-			throw new InputStreamEosException();
-		}
-		if (! threadDataProv.isRunning()) {
-			logError(FNC_NAME, "threadDataProv is not running");
+		if (threadDataProv == null || ! threadDataProv.isRunning()) {
+			logDebug(FNC_NAME, "threadDataProv is not running");
 			throw new InputStreamEosException();
 		}
 
