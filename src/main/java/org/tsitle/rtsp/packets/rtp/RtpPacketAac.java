@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.rtsp.exceptions.BitReaderEosException;
+import org.tsitle.rtsp.helpers.BitReaderHelper;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
 
 /**
@@ -113,16 +115,20 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 
 		/*
 		 *  +-------------------------------------------------------------------+
-		 *  | AU-headers-length (16)                                            |
+		 *  | AU-headers-length (2 bytes)                                       |
 		 *  +-------------------------------------------------------------------+
-		 *  | AU-header (13 bits 'size' + 3 bits 'index' + 0 bits 'indexDelta') |
+		 *  | AU-header ('AU-Size' + 'AU-Index' + 'AU-IndexDelta')              |
 		 *  +-------------------------------------------------------------------+
-		 *  | AAC frame bytes (including the ADTS header which is 7 or 9 bytes  |
+		 *  | AAC frame bytes (excluding the ADTS header which is 7 or 9 bytes  |
 		 *  +-------------------------------------------------------------------+
 		 */
 
 		// set inner main header fields
 		this.hdInnAuSize = (short)aacInfo.getPayloadLength();  // size of the entire AAC Access Unit
+		if (Short.toUnsignedInt(this.hdInnAuSize) != aacInfo.getPayloadLength()) {
+			throw new IllegalArgumentException("Invalid AAC payload size -- exceeds 16 bits");
+		}
+		validatePayloadSize(Short.toUnsignedInt(this.hdInnAuSize));
 		this.hdInnAuIndex = fragmentIndex;
 
 		// build the inner header bitstream
@@ -161,19 +167,37 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 
 		// AU-header (size + index + indexDelta)
 		/*
-		 *                     F    F    F    8
-		 * Size      : 13 bits 1111 1111 1111 1000
-		 *                     0    0    0    7
-		 * Index     :  3 bits 0000 0000 0000 0111
-		 * IndexDelta:  3 bits 1110 0000 0000 0000
+		 * Size      : 13 bits 1111 1111 1111 1
+		 * Index     :  3 bits                  111
+		 * IndexDelta:  3 bits                      1110 0000 0000 0000
 		 */
 		bitWriter.writeBits(hdInnAuSize, HEADER_FLD_SIZE_LENGTH_BITS);
-		bitWriter.writeBits(hdInnAuIndex, HEADER_FLD_INDEX_LENGTH_BITS);
+		if (HEADER_FLD_INDEX_LENGTH_BITS > 0) {
+			bitWriter.writeBits(hdInnAuIndex, HEADER_FLD_INDEX_LENGTH_BITS);
+		}
 		if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
 			bitWriter.writeBits(0, HEADER_FLD_INDEXDELTA_LENGTH_BITS);
 		}
 
 		return bitWriter.toByteArray();
+	}
+
+	private static void validatePayloadSize(int payloadSize) {
+		BitWriterHelper bitWriter = new BitWriterHelper();
+		bitWriter.writeBits(payloadSize, HEADER_FLD_SIZE_LENGTH_BITS);
+		byte[] tmpBa = bitWriter.toByteArray();
+
+		BitReaderHelper bitReader = new BitReaderHelper(new BufferExt(tmpBa), 0);
+		int tmpReadVal;
+		try {
+			tmpReadVal = bitReader.readBits(HEADER_FLD_SIZE_LENGTH_BITS);
+		} catch (BitReaderEosException e) {
+			throw new RuntimeException(e);
+		}
+		if (tmpReadVal != payloadSize) {
+			throw new IllegalArgumentException("Invalid payload size -- exceeds " +
+					HEADER_FLD_SIZE_LENGTH_BITS + "-bit size field");
+		}
 	}
 
 }
