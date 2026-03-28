@@ -8,7 +8,7 @@ import java.nio.ByteOrder;
 /**
  * Read-only view of a BufferExt.
  */
-public final class BufferView {
+public final class BufferView implements Cloneable {
 
 	private final @NonNull BufferExt bufPtr;
 	private int offset;
@@ -184,6 +184,18 @@ public final class BufferView {
 			sb.append(String.format("%02X", getByte(i)));
 		}
 		return sb.toString();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public @NonNull BufferView clone() {
+		try {
+			// we only copy the buffer pointer,
+			return (BufferView)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 }
