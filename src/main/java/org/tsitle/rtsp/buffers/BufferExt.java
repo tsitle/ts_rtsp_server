@@ -232,10 +232,20 @@ public final class BufferExt implements Cloneable {
 		if (hexString.startsWith("0x")) {
 			hexString = hexString.substring(2);
 		}
-		hexString = hexString.replace(" ", "").replace(":", "").strip();
+		hexString = hexString
+				.replace(" ", "")
+				.replace(":", "")
+				.replace("|", "")
+				.replace("\n", "")
+				.replace("\r", "")
+				.strip();
 		if (! hexString.isBlank()) {
-			byte[] tmpBa = HexFormat.of().parseHex(hexString);
-			resObj.copyOf(tmpBa);
+			try {
+				byte[] tmpBa = HexFormat.of().parseHex(hexString);  // throws IllegalArgumentException or NumberFormatException
+				resObj.copyOf(tmpBa);
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("Invalid hex string");
+			}
 		}
 		return resObj;
 	}
