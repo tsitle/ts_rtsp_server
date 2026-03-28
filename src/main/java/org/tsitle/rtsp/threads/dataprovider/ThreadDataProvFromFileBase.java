@@ -12,6 +12,8 @@ import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>>
 		extends ThreadDataProvBase<I, AvStreamOutgoingFromFileBase> {
@@ -19,13 +21,13 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	private final ArrayList<@NonNull BufferExt> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
 
-	private boolean isFirstRun = true;
-	private boolean eosReached = false;
+	private final AtomicBoolean eosReached = new AtomicBoolean(false);
 	private long frameCountInp = 0;
 
-	private int queueIxRead = 0;
-	private int queueIxWrite = 0;
-	private int queueAvail = 0;
+	private final AtomicInteger queueIxRead = new AtomicInteger(0);
+	private final AtomicInteger queueIxWrite = new AtomicInteger(0);
+	private final AtomicInteger queueAvail = new AtomicInteger(0);
+	private final AtomicBoolean queueIsLocked = new AtomicBoolean(false);
 
 	private final boolean doDebugRewindMediaFiles;
 
@@ -65,9 +67,8 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 		//
 		try {
-			while (! doStop.get() && (isFirstRun || queueAvail > 0)) {
+			while (! (doStop.get() || eosReached.get())) {
 				mainLoop();
-				isFirstRun = false;
 			}
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException");
@@ -84,35 +85,49 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	@Override
 	public synchronized boolean haveEos() {
-		return eosReached;
+		return eosReached.get();
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	@Override
 	public synchronized boolean haveFullInputQueue() {
-		return ((queueAvail > 0 && haveEos()) || (queueAvail == dataQueue.size()));
+		return ((queueAvail.get() > 0 && eosReached.get()) || (queueAvail.get() == dataQueue.size()));
 	}
 
 	@Override
 	public synchronized int getInputQueueSize() {
-		return queueAvail;
+		return queueAvail.get();
 	}
 
 	@Override
 	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEosException {
-		if (haveEos()) {
+		if (eosReached.get()) {
 			throw new InputStreamEosException();
 		}
-		buf.copyOf(dataQueue.get(queueIxRead));
-		I tmpInfoObj = infoQueue.get(queueIxRead);
+
+		//
+		if (! waitForQueueUnlocked(true)) {
+			if (doStop.get()) {
+				buf.clear();
+				infoObj.reset();
+			}
+			return;
+		}
+
+		//
+		queueIsLocked.set(true);
+		buf.copyOf(dataQueue.get(queueIxRead.get()));
+		I tmpInfoObj = infoQueue.get(queueIxRead.get());
 		if (tmpInfoObj == null) {
+			queueIsLocked.set(false);
 			throw new IllegalStateException("tmpInfoObj == null");
 		}
 		infoObj.copyOf(tmpInfoObj);
-		if (++queueIxRead >= dataQueue.size()) {
-			queueIxRead = 0;
+		if (queueIxRead.incrementAndGet() >= dataQueue.size()) {
+			queueIxRead.set(0);
 		}
-		--queueAvail;
+		queueAvail.decrementAndGet();
+		queueIsLocked.set(false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -124,8 +139,12 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException {
-		if (isFirstRun || (! haveEos() && queueAvail < dataQueue.size())) {
-			acquireData();
+		if (! (doStop.get() || eosReached.get() || queueIsLocked.get()) && queueAvail.get() < dataQueue.size()) {
+			try {
+				acquireData();
+			} catch (InputStreamEosException e) {
+				// nothing to do
+			}
 		} else {
 			Thread.sleep(1);
 		}
@@ -133,7 +152,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void acquireData() {
+	private void acquireData() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
 		if (mediaOutgoingStream.haveEos()) {
@@ -144,64 +163,105 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 				} catch (AvCannotOpenInputException e) {
 					logError(FNC_NAME, "AvCannotOpenInputException caught while rewinding: " + e.getMessage());
 					// we have reached the end of the input
-					eosReached = true;
+					eosReached.set(true);
 					return;
 				}
 			} else {
-				if (! eosReached) {
+				if (! eosReached.get()) {
 					logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames");
 				}
-				eosReached = true;
+				eosReached.set(true);
 				return;
 			}
 		}
 
+		//
+		if (! waitForQueueUnlocked(false)) {
+			return;
+		}
+
 		// get the next frame from the input, as well as its size
-		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite);
+		queueIsLocked.set(true);
+		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get());
 		try {
 			mediaOutgoingStream.getNextFrame(tmpFrameBufPtr);
+			if (doStop.get()) {
+				queueIsLocked.set(false);
+				return;
+			}
 			if (tmpFrameBufPtr.getUsed() < mediaOutgoingStream.getMagicBytesLengthBits() / 8) {
 				// we have reached the end of the input
+				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- getNextFrame");
+				eosReached.set(true);
+				queueIsLocked.set(false);
 				throw new InputStreamEosException();
 			}
 		} catch (InputStreamIoException | InputStreamEosException e) {
 			if (doStop.get()) {
+				queueIsLocked.set(false);
 				return;
 			}
 			if (e instanceof InputStreamIoException) {
 				logError(FNC_NAME, "InputStreamIoException caught while reading next frame: " + e.getMessage());
+			} else {
+				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- InputStreamEosException");
 			}
 			// we have reached the end of the input
-			eosReached = true;
+			eosReached.set(true);
+			queueIsLocked.set(false);
 			return;
 		} catch (AvInvalidCodecDataException e) {
 			logError(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
 			// we have reached the end of the input
-			eosReached = true;
+			eosReached.set(true);
+			queueIsLocked.set(false);
 			return;
 		}
 		if (tmpFrameBufPtr.getUsed() == 0) {  // sanity check
 			// we have reached the end of the input
-			eosReached = true;
+			logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- empty frame buf");
+			eosReached.set(true);
+			queueIsLocked.set(false);
 			return;
 		}
 
 		//
 		try {
 			I tmpInfoObj = parseAndConvertData(tmpFrameBufPtr);
-			infoQueue.set(queueIxWrite, tmpInfoObj);
+			infoQueue.set(queueIxWrite.get(), tmpInfoObj);
 		} catch (Exception e) {
 			logError(FNC_NAME, "caught: " + e);
-			eosReached = true;
+			eosReached.set(true);
+			queueIsLocked.set(false);
 			return;
 		}
 
-		if (++queueIxWrite >= dataQueue.size()) {
-			queueIxWrite = 0;
+		if (queueIxWrite.incrementAndGet() >= dataQueue.size()) {
+			queueIxWrite.set(0);
 		}
-		++queueAvail;
+		queueAvail.incrementAndGet();
 		debugStreamOffset += tmpFrameBufPtr.getUsed();
 		++frameCountInp;
+		queueIsLocked.set(false);
+	}
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	private boolean waitForQueueUnlocked(boolean needAvailFrame) throws InputStreamEosException {
+		while (! (doStop.get() || eosReached.get()) && (queueIsLocked.get() || (needAvailFrame && queueAvail.get() == 0))) {
+			try {
+				wait(0, 500_000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();  // restore flag
+				break;
+			}
+		}
+		if (doStop.get()) {
+			return false;
+		}
+		if (eosReached.get()) {
+			throw new InputStreamEosException();
+		}
+		return true;
 	}
 
 }
