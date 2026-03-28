@@ -88,7 +88,7 @@ public final class ThreadRtpSenderAac<
 				paramsAudioCommon,
 				paramsAac,
 				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),  // @TODO
+				10,
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 		@SuppressWarnings("unchecked")

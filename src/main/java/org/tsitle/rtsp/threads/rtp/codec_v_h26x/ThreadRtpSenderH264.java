@@ -61,7 +61,7 @@ public final class ThreadRtpSenderH264<
 					paramsCommon.getLogMsgInterface().orElseThrow(),
 					paramsVideoCommon,
 					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-					(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 			@SuppressWarnings("unchecked")

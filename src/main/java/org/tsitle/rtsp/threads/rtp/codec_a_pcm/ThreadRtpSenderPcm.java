@@ -95,7 +95,7 @@ public final class ThreadRtpSenderPcm<
 					paramsAudioCommon,
 					paramsPcm,
 					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-					(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 			@SuppressWarnings("unchecked")
