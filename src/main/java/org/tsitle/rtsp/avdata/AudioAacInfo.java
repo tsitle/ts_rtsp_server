@@ -65,6 +65,23 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 				throw new AssertionError();
 			}
 		}
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(idBit ? 1 : 0);
+			baos.write(layer2Bits);
+			baos.write(crcBit ? 1 : 0);
+			baos.write(privateBit ? 1 : 0);
+			baos.write(originalCopyBit ? 1 : 0);
+			baos.write(homeBit ? 1 : 0);
+			baos.write(copyrightIdBit ? 1 : 0);
+			baos.write(copyrightIdStartBit ? 1 : 0);
+			baos.write(bufferFullness11Bits);
+			baos.write(numRawDataBlocks2Bits);
+			baos.write(crc2Bytes[0]);
+			baos.write(crc2Bytes[1]);
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
 	}
 
 	/** Sampling rates according to ISO/IEC 14496-3:2001(E) Table 1.10 */
@@ -259,6 +276,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		baos.write(channelConfiguration);
 		try {
 			baos.write(sdpFmtpConfigHex.getBytes(StandardCharsets.UTF_8));
+			baos.write(internalInfo.hashSum().getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
