@@ -162,6 +162,7 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 			if (cachedDataLength > 0) {
 				int toReadFromCache = Math.min(bytesToRead, cachedDataLength);
 				frameBuf.copyFrom(cachedDataBuf, 0, dstOffset, toReadFromCache);
+				dstOffset += toReadFromCache;
 				if (toReadFromCache < cachedDataLength) {
 					System.arraycopy(
 							cachedDataBuf,
