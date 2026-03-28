@@ -14,8 +14,6 @@ import org.tsitle.rtsp.helpers.BitWriterHelper;
  */
 public class RtpPacketAac extends RtpPacketCodecBase {
 
-	/** Size of the main payload-specific RTP header */
-	public static final int INNER_HEADER_SIZE = 4;  // without IndexDelta, i.e. HEADER_FLD_INDEXDELTA_LENGTH_BITS=0
 	/**
 	 * AU-header field AU-Size length in bits.<br />
 	 * See RFC-3640 Section 3.3.6
@@ -64,21 +62,41 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	public RtpPacketAac(@NonNull BufferExt packetData) {
 		super(RtpPacketType.A_AAC, packetData);
 
-		if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + INNER_HEADER_SIZE) {
+		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + 5) {
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
 		}
 
+		//
+		BitReaderHelper bitReader = new BitReaderHelper(packetData, RTP_CONT_HEADER_SIZE);
+		int tmpReadBits = 0;
+		try {
+			// AU-headers-length (16 bits)
+			int tmpAuHeadersLengthBits = bitReader.readBits(16);
+			tmpReadBits += 16;
+			// AU-header (size + index + indexDelta)
+			this.hdInnAuSize = (short)bitReader.readBits(HEADER_FLD_SIZE_LENGTH_BITS);
+			tmpReadBits += HEADER_FLD_SIZE_LENGTH_BITS;
+			if (HEADER_FLD_INDEX_LENGTH_BITS > 0) {
+				this.hdInnAuIndex = (byte)bitReader.readBits(HEADER_FLD_INDEX_LENGTH_BITS);
+				tmpReadBits += HEADER_FLD_INDEX_LENGTH_BITS;
+			}
+			if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
+				int tmpAuIdxDelta = bitReader.readBits(HEADER_FLD_INDEXDELTA_LENGTH_BITS);
+				tmpReadBits += HEADER_FLD_INDEXDELTA_LENGTH_BITS;
+			}
+			//noinspection ConstantValue
+			if (tmpReadBits % 8 != 0) {
+				bitReader.readBits(8 - (tmpReadBits % 8));
+			}
+		} catch (BitReaderEosException e) {
+			throw new RuntimeException(e);
+		}
+
 		// determine the length of the inner header bitstream
-		this.payloadSpecHeaderSize = INNER_HEADER_SIZE;
+		this.payloadSpecHeaderSize = (tmpReadBits / 8);
 
-		// parse inner main header fields
-		int offs = RTP_CONT_HEADER_SIZE + 2;
-		short tmpAuHd = (short)(((((short)packetData.get(offs++)) << 8) & 0xFF00) | (packetData.get(offs) & 0x00FF));
-		this.hdInnAuSize = (short)((tmpAuHd >> HEADER_FLD_INDEX_LENGTH_BITS) & 0x1FFF);
-		this.hdInnAuIndex = (byte)(packetData.get(offs) & 0x07);
-
-		if (packetData.getUsed() != RTP_CONT_HEADER_SIZE + INNER_HEADER_SIZE + hdInnAuSize) {
-			int tmpPaySz = packetData.getUsed() - RTP_CONT_HEADER_SIZE - INNER_HEADER_SIZE;
+		if (packetData.getUsed() != RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize + hdInnAuSize) {
+			int tmpPaySz = packetData.getUsed() - RTP_CONT_HEADER_SIZE - this.payloadSpecHeaderSize;
 			throw new IllegalArgumentException("Invalid RTP payload size (is=" +
 					tmpPaySz + ", exp=" + hdInnAuSize + ")");
 		}
