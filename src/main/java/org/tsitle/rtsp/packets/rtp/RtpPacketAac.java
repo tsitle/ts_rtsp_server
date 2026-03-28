@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.rtsp.helpers.BitWriterHelper;
 
 /**
  * RTP Packet Payload for AAC.<br />
@@ -13,11 +14,23 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 
 	/** Size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE = 4;  // without IndexDelta, i.e. HEADER_FLD_INDEXDELTA_LENGTH_BITS=0
+	/**
+	 * AU-header field AU-Size length in bits.<br />
+	 * See RFC-3640 Section 3.3.6
+	 */
 	public static final int HEADER_FLD_SIZE_LENGTH_BITS = 13;
+	/**
+	 * AU-header field AU-Index length in bits.<br />
+	 * See RFC-3640 Section 3.3.6
+	 */
 	public static final int HEADER_FLD_INDEX_LENGTH_BITS = 3;
+	/**
+	 * AU-header field AU-IndexDelta length in bits.<br />
+	 * See RFC-3640 Section 3.3.6
+	 */
 	public static final int HEADER_FLD_INDEXDELTA_LENGTH_BITS = 0;
 
-	/** Size of the AAC frame in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
+	/** Size of the entire AAC Access Unit in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
 	private short hdInnAuSize;
 	/** Access Unit Index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits) */
 	private byte hdInnAuIndex;
@@ -91,7 +104,7 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		if (aacInfo.channelConfiguration == 0) {
 			throw new IllegalArgumentException("Cannot process this kind of AAC");
 		}
-		if (payloadView.getLength() != aacInfo.getPayloadLength()) {
+		if (payloadView.getLength() > aacInfo.getPayloadLength()) {
 			throw new IllegalArgumentException("Invalid AAC payload size");
 		}
 
@@ -109,7 +122,7 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		 */
 
 		// set inner main header fields
-		this.hdInnAuSize = (short)aacInfo.getPayloadLength();
+		this.hdInnAuSize = (short)aacInfo.getPayloadLength();  // size of the entire AAC Access Unit
 		this.hdInnAuIndex = fragmentIndex;
 
 		// build the inner header bitstream
@@ -130,8 +143,6 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private byte[] buildRawInnerHeaderFromFields() {
-		final byte[] resA = new byte[INNER_HEADER_SIZE];
-
 		if (hdInnAuSize >= (1 << HEADER_FLD_SIZE_LENGTH_BITS)) {
 			throw new IllegalArgumentException("AAC frame too large for " + HEADER_FLD_SIZE_LENGTH_BITS + "-bit size field");
 		}
@@ -143,8 +154,10 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		final int auHeadersLengthBits = HEADER_FLD_SIZE_LENGTH_BITS + HEADER_FLD_INDEX_LENGTH_BITS +
 				HEADER_FLD_INDEXDELTA_LENGTH_BITS;
 
-		resA[0] = (byte)((auHeadersLengthBits >> 8) & 0xFF);
-		resA[1] = (byte)(auHeadersLengthBits & 0xFF);
+		BitWriterHelper bitWriter = new BitWriterHelper();
+
+		bitWriter.writeBits((auHeadersLengthBits >> 8) & 0xFF, 8);
+		bitWriter.writeBits(auHeadersLengthBits & 0xFF, 8);
 
 		// AU-header (size + index + indexDelta)
 		/*
@@ -152,15 +165,15 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		 * Size      : 13 bits 1111 1111 1111 1000
 		 *                     0    0    0    7
 		 * Index     :  3 bits 0000 0000 0000 0111
+		 * IndexDelta:  3 bits 1110 0000 0000 0000
 		 */
-		short auHeader = (short)(((hdInnAuSize << HEADER_FLD_INDEX_LENGTH_BITS) & 0xFFF8) | (hdInnAuIndex & 0x07));
+		bitWriter.writeBits(hdInnAuSize, HEADER_FLD_SIZE_LENGTH_BITS);
+		bitWriter.writeBits(hdInnAuIndex, HEADER_FLD_INDEX_LENGTH_BITS);
+		if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
+			bitWriter.writeBits(0, HEADER_FLD_INDEXDELTA_LENGTH_BITS);
+		}
 
-		resA[2] = (byte)((auHeader >> 8) & 0xFF);
-		resA[3] = (byte)(auHeader & 0xFF);
-
-		//resA[4] = 0x00;  we don't use IndexDelta
-
-		return resA;
+		return bitWriter.toByteArray();
 	}
 
 }

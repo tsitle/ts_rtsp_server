@@ -116,14 +116,14 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 
 	@Override
 	public int getPayloadOffset() {
-		// we don't skip the ADTS header for the RTP payload
-		return 0;
+		// we skip the ADTS header for the RTP payload
+		return samplesOffset;
 	}
 
 	@Override
 	public int getPayloadLength() {
-		// since we don't skip the ADTS header for the RTP payload, the payload length equals the frame length
-		return frameLength;
+		// since we skipped the ADTS header for the RTP payload, the payload length is now the length of the audio samples
+		return samplesLength;
 	}
 
 	@Override
