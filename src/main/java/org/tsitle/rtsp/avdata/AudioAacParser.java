@@ -3,6 +3,8 @@ package org.tsitle.rtsp.avdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
+import org.tsitle.rtsp.exceptions.BitReaderEosException;
+import org.tsitle.rtsp.helpers.BitReaderHelper;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
 
 public final class AudioAacParser {
@@ -77,65 +79,89 @@ public final class AudioAacParser {
 		resObj.samplesOffset = AAC_HEADER_SIZE_MIN;
 		resObj.samplesLength = aacBuf.getUsed() - AAC_HEADER_SIZE_MIN;
 
-		// --------------------------------------------------------------------
-		// Fixed Header - identical for every frame: 28 bits (bytes 0..3.5)
-		/// Verify syncword 0xFFF: bits 0-11 (12 bits)
-		if ((aacBuf.get(0) & 0xFF) != 0xFF || (aacBuf.get(1) & 0xF0) != 0xF0) {
-			throw new IllegalArgumentException("Invalid ADTS syncword");
+		/*
+		 * For the AAC header format, see:
+		 *   ISO/IEC 14496-3:2001(E), Section 1.A.2.2 Audio_Data_Transport_Stream frame, ADTS
+		 */
+
+		BitReaderHelper bitReader = new BitReaderHelper(aacBuf, 0);
+		boolean haveCrc;
+
+		try {
+			// --------------------------------------------------------------------
+			// Fixed Header - identical for every frame: 28 bits (bytes 0..3.5)
+			/// Verify syncword 0xFFF: bits 0-11 (12 bits)
+			if (bitReader.readBits(8) != 0xFF || bitReader.readBits(4) != 0x0F) {
+				throw new IllegalArgumentException("Invalid ADTS syncword");
+			}
+
+			/// ID: bit 12 (1 bit)
+			bitReader.readBits(1);
+
+			/// Layer: bits 13-14 (2 bits): Always 00
+			bitReader.readBits(2);
+
+			/// Protection Absent: bit 15 (1 bit): 1 if no CRC, 0 if CRC exists
+			haveCrc = (bitReader.readBits(1) == 0);
+
+			/// MPEG-4 Audio Object Type: bits 16-17 (2 bits)
+			byte tmpAot = (byte)bitReader.readBits(2);
+			resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAot + 1);
+			if (resObj.audioObjectType == AudioAacInfo.AudioObjectType.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid audio object type");
+			}
+
+			/// sampling_frequency_index: bits 18-21 (4 bits)
+			int tmpSamplingFrequIndex = bitReader.readBits(4);
+			resObj.samplerate = AudioAacInfo.SampleRate.of(tmpSamplingFrequIndex);
+			if (resObj.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
+			}
+			if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
+			}
+
+			/// Private Bit: bit 22 (1 bit): Set by user
+			bitReader.readBits(1);
+
+			/// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
+			resObj.channelConfiguration = bitReader.readBits(3);
+			if (resObj.channelConfiguration == 0) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid channel configuration");
+			}
+			if (resObj.channelConfiguration > AAC_CHANNELS_MAX) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Too many channels (is=" + resObj.channelConfiguration +
+						", max=" + AAC_CHANNELS_MAX + ")");
+			}
+
+			/// Original/Copy: bit 26 (1 bit)
+			bitReader.readBits(1);
+
+			/// Home: bit 27 (1 bit)
+			bitReader.readBits(1);
+
+			// --------------------------------------------------------------------
+			// Variable Header - changes per frame: 28 bits (bytes 3.5..7)
+			/// Copyright ID Bit: bit 28 (1 bit)
+			bitReader.readBits(1);
+
+			/// Copyright ID Start: bit 29 (1 bit)
+			bitReader.readBits(1);
+
+			/// Frame Length: bits 30-42 (13 bits): Length of the frame including header, in bytes
+			resObj.frameLength = bitReader.readBits(13);
+
+			/// Buffer Fullness: bits 43-53 (11 bits): 0x7FF for VBR (variable bit rate)
+			bitReader.readBits(11);
+
+			/// Number of RAW Data Blocks: 54-55 (2 bits): Number of AAC frames minus 1
+			byte tmpNumRawDataBlocks = (byte)(bitReader.readBits(2) + 1);
+			if (tmpNumRawDataBlocks > 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": More than one AAC frame");
+			}
+		} catch (BitReaderEosException e) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Could not read all bits from AAC header");
 		}
-
-		/// ID: bit 12 (1 bit)
-
-		/// Layer: bits 13-14 (2 bits): Always 00
-
-		/// Protection Absent: bit 15 (1 bit): 1 if no CRC, 0 if CRC exists
-		boolean haveCrc = ((aacBuf.get(2) & 0x10) == 0);
-
-		/// MPEG-4 Audio Object Type: bits 16-17 (2 bits)
-		byte tmpAot = (byte)((aacBuf.get(2) & 0xC0) >> 6);
-		resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAot + 1);
-		if (resObj.audioObjectType == AudioAacInfo.AudioObjectType.UNKNOWN) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid audio object type");
-		}
-
-		/// sampling_frequency_index: bits 18-21 (4 bits)
-		int tmpSamplingFrequIndex = ((aacBuf.get(2) & 0x3C) >> 2);
-		resObj.samplerate = AudioAacInfo.SampleRate.of(tmpSamplingFrequIndex);
-		if (resObj.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
-		}
-		if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
-		}
-
-		/// Private Bit: bit 22 (1 bit): Set by user
-
-		/// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
-		resObj.channelConfiguration = (((aacBuf.get(2) & 0x01) << 2) | ((aacBuf.get(3) & 0xC0) >> 6));
-		if (resObj.channelConfiguration == 0) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid channel configuration");
-		}
-		if (resObj.channelConfiguration > AAC_CHANNELS_MAX) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Too many channels (is=" + resObj.channelConfiguration +
-					", max=" + AAC_CHANNELS_MAX + ")");
-		}
-
-		/// Original/Copy: bit 26 (1 bit)
-
-		/// Home: bit 27 (1 bit)
-
-		// --------------------------------------------------------------------
-		// Variable Header - changes per frame: 28 bits (bytes 3.5..7)
-		/// Copyright ID Bit: bit 28 (1 bit)
-
-		/// Copyright ID Start: bit 29 (1 bit)
-
-		/// Frame Length: bits 30-42 (13 bits): Length of the frame including header, in bytes
-		resObj.frameLength = (((aacBuf.get(3) & 0x03) << 11) | (aacBuf.get(4) << 3) | ((aacBuf.get(5) & 0xE0) >> 5));
-
-		/// Buffer Fullness: bits 43-53 (11 bits): 0x7FF for VBR (variable bit rate)
-
-		/// Number of RAW Data Blocks: 54-55 (2 bits): Number of AAC frames minus 1
 
 		// --------------------------------------------------------------------
 		// CRC if 'Protection Absent' is set to 0: 2 bytes (bytes 7..8)

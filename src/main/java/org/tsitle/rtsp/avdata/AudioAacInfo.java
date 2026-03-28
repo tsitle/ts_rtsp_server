@@ -102,6 +102,18 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		reset();
 	}
 
+	/*
+	 * MPEG-4 low delay (from ISO/IEC 14496-3:2001(E)):
+	 *   The MPEG-4 low delay coding functionality provides the ability to extend the usage of generic low bitrate audio
+	 *   coding to applications requiring a very low delay in the encoding / decoding chain (e.g. full-duplex real-time
+	 *   communications). [...].
+	 *   Specifically, it is derived from the proven architecture of MPEG-2/4 Advanced Audio Coding (AAC) and all
+	 *   capabilities for coding of two or more sound channels are available within the low-delay coder.
+	 *   It operates at up to 48 kHz sampling rate and uses a frame length of 512 or 480 samples, compared to the
+	 *   1024 or 960 samples used in standard MPEG-2/4 AAC to enable coding of general audio signals with an
+	 *   algorithmic delay not exceeding 20 ms.
+	 */
+
 	@Override
 	public int getPayloadOffset() {
 		// we don't skip the ADTS header for the RTP payload
