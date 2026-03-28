@@ -142,7 +142,7 @@ public enum RtpPacketType {
 	/** Get SDP codec name for the packet type (or codec) */
 	public @NonNull String getSdpCodecName() {
 		return switch (this) {
-				case A_AAC -> "mpeg4-generic";
+				case A_AAC -> "MPEG4-GENERIC";
 				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
 				case A_LINEAR_PCM_U08_VAR -> "L8";
 				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> "L16";

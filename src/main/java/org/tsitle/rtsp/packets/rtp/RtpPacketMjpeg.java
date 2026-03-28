@@ -3,6 +3,7 @@ package org.tsitle.rtsp.packets.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.VideoJpegInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 /**
  * RTP Packet Payload for MJPEG.<br />
@@ -45,18 +46,18 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	 * @param paramsBase Base Container parameters
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits)
 	 * @param jpegInfo JPEG info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public RtpPacketMjpeg(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				@NonNull VideoJpegInfo jpegInfo,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		super(RtpPacketType.V_JPEG, paramsBase);
 
 		//
-		updatePacket(paramsBase, fragmentOffset, jpegInfo, payloadData);
+		updatePacket(paramsBase, fragmentOffset, jpegInfo, payloadView);
 	}
 
 	/**
@@ -98,13 +99,13 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	 * @param paramsBase Base Container parameters
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits)
 	 * @param jpegInfo JPEG info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				@NonNull VideoJpegInfo jpegInfo,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
@@ -140,7 +141,12 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		this.packetBuf.append(tmpRtpXxxHeader);
 
 		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		this.packetBuf.copyFrom(
+				payloadView.getInternalBaPtr(),
+				payloadView.getOffset(),
+				this.packetBuf.getUsed(),
+				payloadView.getLength()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

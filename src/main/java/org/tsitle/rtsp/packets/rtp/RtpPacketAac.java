@@ -3,6 +3,7 @@ package org.tsitle.rtsp.packets.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 /**
  * RTP Packet Payload for AAC.<br />
@@ -26,18 +27,18 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	 * @param paramsBase Base Container parameters
 	 * @param fragmentIndex Fragment index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits)
 	 * @param aacInfo AAC info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public RtpPacketAac(
 				@NonNull ParamsContainerBase paramsBase,
 				byte fragmentIndex,
 				@NonNull AudioAacInfo aacInfo,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		super(RtpPacketType.A_AAC, paramsBase);
 
 		//
-		updatePacket(paramsBase, fragmentIndex, aacInfo, payloadData);
+		updatePacket(paramsBase, fragmentIndex, aacInfo, payloadView);
 	}
 
 	/**
@@ -76,13 +77,13 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	 * @param paramsBase Base Container parameters
 	 * @param fragmentIndex Fragment index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits)
 	 * @param aacInfo AAC info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
 				byte fragmentIndex,
 				@NonNull AudioAacInfo aacInfo,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		if (fragmentIndex < 0 || fragmentIndex > 0x07) {
 			throw new IllegalArgumentException("Invalid fragment index");
@@ -90,7 +91,7 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		if (aacInfo.channelConfiguration == 0) {
 			throw new IllegalArgumentException("Cannot process this kind of AAC");
 		}
-		if (payloadData.getUsed() != aacInfo.getPayloadLength()) {
+		if (payloadView.getLength() != aacInfo.getPayloadLength()) {
 			throw new IllegalArgumentException("Invalid AAC payload size");
 		}
 
@@ -103,7 +104,7 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		 *  +-------------------------------------------------------------------+
 		 *  | AU-header (13 bits 'size' + 3 bits 'index' + 0 bits 'indexDelta') |
 		 *  +-------------------------------------------------------------------+
-		 *  | AAC frame bytes                                                   |
+		 *  | AAC frame bytes (including the ADTS header which is 7 or 9 bytes  |
 		 *  +-------------------------------------------------------------------+
 		 */
 
@@ -117,7 +118,12 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 		this.packetBuf.append(tmpRtpXxxHeader);
 
 		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		this.packetBuf.copyFrom(
+				payloadView.getInternalBaPtr(),
+				payloadView.getOffset(),
+				this.packetBuf.getUsed(),
+				payloadView.getLength()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

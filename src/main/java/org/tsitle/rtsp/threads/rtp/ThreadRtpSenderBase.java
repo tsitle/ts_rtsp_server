@@ -16,7 +16,6 @@ import org.tsitle.rtsp.security.SrtpContextOutbound;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -46,8 +45,8 @@ public abstract class ThreadRtpSenderBase<
 	protected @Nullable TDP threadDataProv;
 	protected final Class<AVSTROG> avStreamOutgoingType;
 
-	/** Buffer used to store the RTP/XXX payload */
-	protected final BufferExt cacheRtpInnerPayloadBuf = new BufferExt();
+	/** Buffer view for reading the RTP/XXX payload */
+	protected @Nullable BufferView cacheRtpInnerPayloadBufView = null;
 	/** Stores the current frame data */
 	protected final FrameData cacheFrameData = new FrameData();
 	protected final ParamsContainerBase cacheParamsBase = new ParamsContainerBase();
@@ -124,10 +123,7 @@ public abstract class ThreadRtpSenderBase<
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
 		///
-		final double sendIntervalNs = (rtpPacketType.isVideo() ?
-				(1_000_000_000.0 / paramsCommon.getAvFramesPerSecond()) :
-				(double)(RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS * 1_000_000L)
-			);
+		final double sendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendIntervalNs is < 1ms");
 		}
@@ -341,11 +337,9 @@ public abstract class ThreadRtpSenderBase<
 			throw new IllegalStateException("curFragmentData.frameData().rtpPayloadDataViewPtr == null");
 		}
 		BufferView tmpBvPtr = curFragmentData.frameData().rtpPayloadDataViewPtr;
-		cacheRtpInnerPayloadBuf.copyOf(
-				tmpBvPtr.getInternalBaPtr(),
-				tmpBvPtr.getOffset() + curFragmentData.fragmentOffset(),
-				curFragmentData.fragmentSize()
-			);
+		cacheRtpInnerPayloadBufView = tmpBvPtr.clone();
+		cacheRtpInnerPayloadBufView.setOffset(tmpBvPtr.getOffset() + curFragmentData.fragmentOffset());
+		cacheRtpInnerPayloadBufView.setLength(curFragmentData.fragmentSize());
 
 		//
 		cacheParamsBase.reset();

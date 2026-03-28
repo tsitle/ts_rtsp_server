@@ -89,6 +89,9 @@ public final class ThreadRtpSenderH264<
 			throw new IllegalStateException("globalAuLastOutputNudH26xInfoPtr == null");
 		}
 		prepareRtpPacketDataForFragment(curFragmentData);
+		if (cacheRtpInnerPayloadBufView == null) {
+			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
+		}
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
 				", isLastFragment=" + curFragmentData.isLastFragment() +
 				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/
@@ -98,7 +101,7 @@ public final class ThreadRtpSenderH264<
 					curFragmentData.fragmentOffset(),
 					curFragmentData.isLastFragment(),
 					globalAuLastOutputNudH26xInfoPtr,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
@@ -106,7 +109,7 @@ public final class ThreadRtpSenderH264<
 					curFragmentData.fragmentOffset(),
 					curFragmentData.isLastFragment(),
 					globalAuLastOutputNudH26xInfoPtr,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		}
 		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {

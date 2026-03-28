@@ -116,19 +116,22 @@ public final class ThreadRtpSenderAac<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
+		if (cacheRtpInnerPayloadBufView == null) {
+			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
+		}
 		if (cachePlainPacket == null) {
 			cachePlainPacket = new RtpPacketAac(
 					cacheParamsBase,
 					(byte)curFragmentData.fragmentIndex(),
 					curFrameAacInfo,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
 					cacheParamsBase,
 					(byte)curFragmentData.fragmentIndex(),
 					curFrameAacInfo,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		}
 		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {

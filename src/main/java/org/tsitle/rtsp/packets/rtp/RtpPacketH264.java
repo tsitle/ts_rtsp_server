@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.VideoH264Info;
 import org.tsitle.rtsp.avdata.VideoH264Parser;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 /**
  * RTP Packet Payload for H264.<br />
@@ -73,20 +74,20 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the H264 frame data) (24 bits)
 	 * @param isLastFragment Is this the last fragment of the frame?
 	 * @param h264Info H264 info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public RtpPacketH264(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				boolean isLastFragment,
 				@NonNull VideoH264Info h264Info,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		super(RtpPacketType.V_H264, paramsBase);
 
 		//
 		this.hdInnPayTypeEn = H264PayloadType.UNKNOWN;
-		updatePacket(paramsBase, fragmentOffset, isLastFragment, h264Info, payloadData);
+		updatePacket(paramsBase, fragmentOffset, isLastFragment, h264Info, payloadView);
 	}
 
 	/**
@@ -136,14 +137,14 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the H264 frame data) (24 bits)
 	 * @param isLastFragment Is this the last fragment of the frame?
 	 * @param h264Info H264 info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
 				boolean isLastFragment,
 				@NonNull VideoH264Info h264Info,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
@@ -184,10 +185,10 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 		 */
 		int skip = (! isFragmented || fragmentOffset == 0 ? VideoH264Parser.NAL_UNIT_HEADER_SIZE : 0);
 		this.packetBuf.copyFrom(
-				payloadData,
-				skip,
+				payloadView.getInternalBaPtr(),
+				payloadView.getOffset() + skip,
 				this.packetBuf.getUsed(),
-				payloadData.getUsed() - skip
+				payloadView.getLength() - skip
 			);
 	}
 

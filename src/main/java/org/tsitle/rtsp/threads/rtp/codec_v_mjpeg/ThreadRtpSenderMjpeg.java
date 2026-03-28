@@ -108,19 +108,22 @@ public final class ThreadRtpSenderMjpeg<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
+		if (cacheRtpInnerPayloadBufView == null) {
+			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
+		}
 		if (cachePlainPacket == null) {
 			cachePlainPacket = new RtpPacketMjpeg(
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
 					curFrameJpegInfo,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
 					curFrameJpegInfo,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		}
 		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {

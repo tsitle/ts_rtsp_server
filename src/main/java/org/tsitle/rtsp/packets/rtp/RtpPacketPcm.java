@@ -3,6 +3,7 @@ package org.tsitle.rtsp.packets.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 
 /**
  * RTP Packet Payload for PCMU/LinearPCM.<br />
@@ -20,14 +21,14 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 	 * @param packetType RTP packet type (since there are several PCM types)
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the PCM frame data) (24 bits)
 	 * @param pcmInfo PCM info
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public RtpPacketPcm(
 				@NonNull ParamsContainerBase paramsBase,
 				@NonNull RtpPacketType packetType,
 				int fragmentOffset,
 				@NonNull AudioPcmInfo pcmInfo,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		super(packetType, paramsBase);
 
@@ -42,7 +43,7 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 		}
 
 		//
-		updatePacket(paramsBase, fragmentOffset, payloadData);
+		updatePacket(paramsBase, fragmentOffset, payloadView);
 	}
 
 	/**
@@ -72,12 +73,12 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 	 * Update the entire packet.
 	 * @param paramsBase Base Container parameters
 	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the PCM frame data) (24 bits)
-	 * @param payloadData Payload data
+	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
-				@NonNull BufferExt payloadData
+				@NonNull BufferView payloadView
 			) {
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
@@ -94,7 +95,12 @@ public class RtpPacketPcm extends RtpPacketCodecBase {
 		/* there is none */
 
 		// copy the inner payload bitstream
-		this.packetBuf.append(payloadData);
+		this.packetBuf.copyFrom(
+				payloadView.getInternalBaPtr(),
+				payloadView.getOffset(),
+				this.packetBuf.getUsed(),
+				payloadView.getLength()
+			);
 	}
 
 }

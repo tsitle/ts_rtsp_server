@@ -135,19 +135,22 @@ public final class ThreadRtpSenderPcm<
 	@Override
 	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
 		prepareRtpPacketDataForFragment(curFragmentData);
+		if (cacheRtpInnerPayloadBufView == null) {
+			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
+		}
 		if (cachePlainPacket == null) {
 			cachePlainPacket = new RtpPacketPcm(
 					cacheParamsBase,
 					rtpPayloadType,
 					curFragmentData.fragmentOffset(),
 					curFramePcmInfo,
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
-					cacheRtpInnerPayloadBuf
+					cacheRtpInnerPayloadBufView
 				);
 		}
 		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
