@@ -11,6 +11,7 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -249,7 +250,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	private boolean waitForQueueUnlocked(boolean needAvailFrame) throws InputStreamEosException {
 		while (! (doStop.get() || eosReached.get()) && (queueIsLocked.get() || (needAvailFrame && queueAvail.get() == 0))) {
 			try {
-				wait(0, 500_000);
+				Thread.sleep(Duration.ofNanos(500_000L));
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();  // restore flag
 				break;
