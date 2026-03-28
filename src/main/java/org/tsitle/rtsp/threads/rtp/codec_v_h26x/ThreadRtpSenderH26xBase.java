@@ -47,10 +47,10 @@ public abstract class ThreadRtpSenderH26xBase<
 
 	protected @Nullable I globalAuLastOutputNudH26xInfoPtr = null;
 
-	/** Estimated total RTP payload size of the entire AU -- current AU*/
-	private long globalAuTotalRtpPayloadSizeEstCur = 0L;
-	/** Estimated total RTP payload size of the entire AU -- next AU */
-	private long globalAuTotalRtpPayloadSizeEstNext = 0L;
+	/** Total RTP payload size of the entire AU -- current AU*/
+	private long globalAuTotalRtpPayloadSizeCur = 0L;
+	/** Total RTP payload size of the entire AU -- next AU */
+	private long globalAuTotalRtpPayloadSizeNext = 0L;
 
 	private long globalTotalNudCount = 0L;
 
@@ -152,14 +152,12 @@ public abstract class ThreadRtpSenderH26xBase<
 		cacheFrameData.rtpFrameNr = outputNud.rtpFrameNr;
 		cacheFrameData.totalFrameSize = outputNud.rawPayloadData.getUsed();
 		cacheFrameData.rtpPayloadDataViewPtr = outputNud.rtpPayloadDataView;
-		cacheFrameData.totalAuRtpPayloadSz = globalAuTotalRtpPayloadSizeEstCur;
+		cacheFrameData.totalAuRtpPayloadSz = globalAuTotalRtpPayloadSizeCur;
 		cacheFrameData.frameDesc = String.format("NAL Unit Type 0x%02X/%s",
 				outputNud.h26xInfo.nalUnitTypeBy, debugNudTypeToString(outputNud.h26xInfo.nalUnitTypeBy));
 
 		//
 		if (outputNud.isEndOfAu) {
-			globalAuTotalRtpPayloadSizeEstCur = globalAuTotalRtpPayloadSizeEstNext;
-			globalAuTotalRtpPayloadSizeEstNext = 0L;
 			globalAuQuHaveOneAu = false;
 		}
 
@@ -306,7 +304,6 @@ public abstract class ThreadRtpSenderH26xBase<
 			incrRtpTsFrameNr();
 		}
 		latestNud.rtpFrameNr = getRtpTsFrameNr();
-		globalAuTotalRtpPayloadSizeEstNext += latestNud.rtpPayloadDataView.getLength();
 		if (closePreviousAu && globalAuQuNudAvail > 1) {
 			int prevNudIx;
 			if (globalAuQuNudIxWrite == 0) {
@@ -318,7 +315,11 @@ public abstract class ThreadRtpSenderH26xBase<
 			}
 			globalAuQueue.get(prevNudIx).isEndOfAu = true;
 			globalAuQuHaveOneAu = true;
+			//
+			globalAuTotalRtpPayloadSizeCur = globalAuTotalRtpPayloadSizeNext;
+			globalAuTotalRtpPayloadSizeNext = 0L;
 		}
+		globalAuTotalRtpPayloadSizeNext += latestNud.rtpPayloadDataView.getLength();
 	}
 
 	private @NonNull H26xNalUnitData<I> getNextNudForOutput() {
