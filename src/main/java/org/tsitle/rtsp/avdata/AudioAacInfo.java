@@ -9,6 +9,64 @@ import java.nio.charset.StandardCharsets;
 
 public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Cloneable {
 
+	public static class InternalInfo implements Cloneable {
+		public boolean idBit;
+		public int layer2Bits;
+		public boolean crcBit;
+		public boolean privateBit;
+		public boolean originalCopyBit;
+		public boolean homeBit;
+		public boolean copyrightIdBit;
+		public boolean copyrightIdStartBit;
+		public int bufferFullness11Bits;
+		public int numRawDataBlocks2Bits;
+		public byte[] crc2Bytes = new byte[2];
+
+		public InternalInfo() {
+			reset();
+		}
+		public void reset() {
+			idBit = false;
+			layer2Bits = 0;
+			crcBit = false;
+			privateBit = false;
+			originalCopyBit = false;
+			homeBit = false;
+			copyrightIdBit = false;
+			copyrightIdStartBit = false;
+			bufferFullness11Bits = 0;
+			numRawDataBlocks2Bits = 0;
+			crc2Bytes[0] = 0;
+			crc2Bytes[1] = 0;
+		}
+		public void copyOf(@NonNull InternalInfo src) {
+			reset();
+
+			idBit = src.idBit;
+			layer2Bits = src.layer2Bits;
+			crcBit = src.crcBit;
+			privateBit = src.privateBit;
+			originalCopyBit = src.originalCopyBit;
+			homeBit = src.homeBit;
+			copyrightIdBit = src.copyrightIdBit;
+			copyrightIdStartBit = src.copyrightIdStartBit;
+			bufferFullness11Bits = src.bufferFullness11Bits;
+			numRawDataBlocks2Bits = src.numRawDataBlocks2Bits;
+			System.arraycopy(src.crc2Bytes, 0, crc2Bytes, 0, 2);
+		}
+		@Override
+		public @NonNull InternalInfo clone() {
+			try {
+				InternalInfo clone = (InternalInfo)super.clone();
+				clone.crc2Bytes = new byte[2];
+				System.arraycopy(crc2Bytes, 0, clone.crc2Bytes, 0, 2);
+				return clone;
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
 	/** Sampling rates according to ISO/IEC 14496-3:2001(E) Table 1.10 */
 	public enum SampleRate {
 		SR96000(0),
@@ -98,6 +156,8 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	/** AudioSpecificConfig for SDP 'fmtp config' as hex string */
 	public @NonNull String sdpFmtpConfigHex;
 
+	public @NonNull InternalInfo internalInfo = new InternalInfo();
+
 	public AudioAacInfo() {
 		reset();
 	}
@@ -135,6 +195,8 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		audioObjectType = AudioObjectType.UNKNOWN;
 		channelConfiguration = 0;
 		sdpFmtpConfigHex = "";
+
+		internalInfo.reset();
 	}
 
 	@Override
@@ -150,6 +212,8 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		channelConfiguration = tmpSrc.channelConfiguration;
 		//noinspection StringOperationCanBeSimplified
 		sdpFmtpConfigHex = new String(tmpSrc.sdpFmtpConfigHex);
+
+		internalInfo.copyOf(tmpSrc.internalInfo);
 	}
 
 	@Override
@@ -158,6 +222,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 			AudioAacInfo clone = (AudioAacInfo)super.clone();
 			//noinspection StringOperationCanBeSimplified
 			clone.sdpFmtpConfigHex = new String(sdpFmtpConfigHex);
+			clone.internalInfo = internalInfo.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();

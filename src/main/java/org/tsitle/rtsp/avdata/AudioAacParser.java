@@ -77,7 +77,7 @@ public final class AudioAacParser {
 		AudioAacInfo resObj = new AudioAacInfo();
 
 		resObj.samplesOffset = AAC_HEADER_SIZE_MIN;
-		resObj.samplesLength = aacBuf.getUsed() - AAC_HEADER_SIZE_MIN;
+		resObj.samplesLength = 0;
 
 		/*
 		 * For the AAC header format, see:
@@ -85,7 +85,6 @@ public final class AudioAacParser {
 		 */
 
 		BitReaderHelper bitReader = new BitReaderHelper(aacBuf, 0);
-		boolean haveCrc;
 
 		try {
 			// --------------------------------------------------------------------
@@ -96,13 +95,13 @@ public final class AudioAacParser {
 			}
 
 			/// ID: bit 12 (1 bit)
-			bitReader.readBits(1);
+			resObj.internalInfo.idBit = (bitReader.readBits(1) == 1);
 
 			/// Layer: bits 13-14 (2 bits): Always 00
-			bitReader.readBits(2);
+			resObj.internalInfo.layer2Bits = bitReader.readBits(2);
 
 			/// Protection Absent: bit 15 (1 bit): 1 if no CRC, 0 if CRC exists
-			haveCrc = (bitReader.readBits(1) == 0);
+			resObj.internalInfo.crcBit = (bitReader.readBits(1) == 0);
 
 			/// MPEG-4 Audio Object Type: bits 16-17 (2 bits)
 			byte tmpAot = (byte)bitReader.readBits(2);
@@ -122,7 +121,7 @@ public final class AudioAacParser {
 			}
 
 			/// Private Bit: bit 22 (1 bit): Set by user
-			bitReader.readBits(1);
+			resObj.internalInfo.privateBit = (bitReader.readBits(1) == 1);
 
 			/// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
 			resObj.channelConfiguration = bitReader.readBits(3);
@@ -135,29 +134,36 @@ public final class AudioAacParser {
 			}
 
 			/// Original/Copy: bit 26 (1 bit)
-			bitReader.readBits(1);
+			resObj.internalInfo.originalCopyBit = (bitReader.readBits(1) == 1);
 
 			/// Home: bit 27 (1 bit)
-			bitReader.readBits(1);
+			resObj.internalInfo.homeBit = (bitReader.readBits(1) == 1);
 
 			// --------------------------------------------------------------------
 			// Variable Header - changes per frame: 28 bits (bytes 3.5..7)
 			/// Copyright ID Bit: bit 28 (1 bit)
-			bitReader.readBits(1);
+			resObj.internalInfo.copyrightIdBit = (bitReader.readBits(1) == 1);
 
 			/// Copyright ID Start: bit 29 (1 bit)
-			bitReader.readBits(1);
+			resObj.internalInfo.copyrightIdStartBit = (bitReader.readBits(1) == 1);
 
 			/// Frame Length: bits 30-42 (13 bits): Length of the frame including header, in bytes
 			resObj.frameLength = bitReader.readBits(13);
 
 			/// Buffer Fullness: bits 43-53 (11 bits): 0x7FF for VBR (variable bit rate)
-			bitReader.readBits(11);
+			resObj.internalInfo.bufferFullness11Bits = bitReader.readBits(11);
 
 			/// Number of RAW Data Blocks: 54-55 (2 bits): Number of AAC frames minus 1
-			byte tmpNumRawDataBlocks = (byte)(bitReader.readBits(2) + 1);
-			if (tmpNumRawDataBlocks > 1) {
+			resObj.internalInfo.numRawDataBlocks2Bits = (byte)(bitReader.readBits(2) + 1);
+			if (resObj.internalInfo.numRawDataBlocks2Bits > 1) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": More than one AAC frame");
+			}
+
+			// --------------------------------------------------------------------
+			// CRC - changes per frame: 16 bits (bytes 8..9)
+			if (resObj.internalInfo.crcBit) {
+				resObj.internalInfo.crc2Bytes[0] = (byte)bitReader.readBits(8);
+				resObj.internalInfo.crc2Bytes[1] = (byte)bitReader.readBits(8);
 			}
 		} catch (BitReaderEosException e) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Could not read all bits from AAC header");
@@ -165,13 +171,16 @@ public final class AudioAacParser {
 
 		// --------------------------------------------------------------------
 		// CRC if 'Protection Absent' is set to 0: 2 bytes (bytes 7..8)
-		if (haveCrc) {
+		if (resObj.internalInfo.crcBit) {
 			if (aacBuf.getUsed() < AAC_HEADER_SIZE_MAX) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size (missing CRC)");
 			}
 			resObj.samplesOffset += 2;
-			resObj.samplesLength -= 2;
 		}
+
+		// --------------------------------------------------------------------
+
+		resObj.samplesLength = resObj.frameLength - resObj.samplesOffset;
 
 		// --------------------------------------------------------------------
 
