@@ -182,7 +182,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 			if (hex.length() % 2 != 0) {
 				throw new IllegalArgumentException("Hex string must have even length");
 			}
-			byte[] bytes = HexFormat.of().parseHex(hex);  // throws IllegalArgumentException
+			byte[] bytes = HexFormat.of().parseHex(hex);  // throws IllegalArgumentException or NumberFormatException
 			return new String(bytes, ZMQ.CHARSET);
 		} catch (IllegalArgumentException e) {
 			throw new MqException(FNC_NAME + ": could not decode hex string: " + e.getMessage());
