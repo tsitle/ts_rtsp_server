@@ -18,7 +18,6 @@ import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAac;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
 import java.util.Objects;
 
@@ -52,12 +51,12 @@ public final class ThreadRtpSenderAac<
 				avStreamIncomingType,
 				avStreamOutgoingType,
 				paramsCommon,
-				Objects.requireNonNull(paramsAac).getAudioSampleRateHz(),
+				Objects.requireNonNull(paramsAudioCommon).getAudioSampleRateHz(),
 				RtpPacketType.A_AAC
 			);
 
 		//
-		this.rtpTicksPerFrame = RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO;
+		this.rtpTicksPerFrame = paramsAudioCommon.getRtpAudioSpf();
 
 		//
 		paramsAudioCommon.validate();
@@ -89,7 +88,7 @@ public final class ThreadRtpSenderAac<
 				paramsAudioCommon,
 				paramsAac,
 				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),
+				(int)((paramsCommon.getAvFramesPerSecond() + 0.5f) * 2.0),  // @TODO
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 		@SuppressWarnings("unchecked")

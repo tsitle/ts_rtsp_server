@@ -14,7 +14,10 @@ public class BuilderThreadRtpSenderAac {
 		private final ParamsThreadRtpSenderAac threadParamsAac = new ParamsThreadRtpSenderAac();
 
 		// Fluent setters
-		public BuilderThreadRtpSenderAac.Builder audAacSampleRateHz(int v) { this.threadParamsAac.setAudioSampleRateHz(v); return self(); }
+		/*
+		 * Future AAC-only fields go here, e.g.,
+		 * public Builder aacQuality(int q) { ...; return self(); }
+		 */
 
 		//
 		@Override

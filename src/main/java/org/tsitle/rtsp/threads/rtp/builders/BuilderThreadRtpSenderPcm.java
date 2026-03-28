@@ -15,8 +15,6 @@ public class BuilderThreadRtpSenderPcm {
 		private final ParamsThreadRtpSenderPcm threadParamsPcm = new ParamsThreadRtpSenderPcm();
 
 		// Fluent setters
-		public Builder audPcmRtpAudioSpf(int v) { this.threadParamsPcm.setRtpAudioSpf(v); return self(); }
-		public Builder audPcmSampleRateHz(int v) { this.threadParamsPcm.setAudioSampleRateHz(v); return self(); }
 		public Builder audPcmChannelCount(int v) { this.threadParamsPcm.setAudioChannelCount(v); return self(); }
 		public Builder audPcmBitsPerSample(int v) { this.threadParamsPcm.setAudioBitsPerSample(v); return self(); }
 		public Builder audPcmInputBigEndian(boolean v) { this.threadParamsPcm.setIsAudioInputBigEndian(v); return self(); }

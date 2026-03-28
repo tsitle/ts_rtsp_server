@@ -4,18 +4,12 @@ import org.jspecify.annotations.NonNull;
 
 public final class ParamsThreadRtpSenderAac implements Cloneable {
 
-	/** Audio sample rate in Hz */
-	private int audioSampleRateHz;
-	private boolean isSetAudioSampleRateHz;
+	// ... fields only for AAC ...
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public int getAudioSampleRateHz() { return audioSampleRateHz; }
-	public void setAudioSampleRateHz(int audioSampleRateHz) {
-		this.audioSampleRateHz = audioSampleRateHz;
-		this.isSetAudioSampleRateHz = true;
-	}
+	// ... getters and setters ...
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -37,23 +31,9 @@ public final class ParamsThreadRtpSenderAac implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
-		requireIsSet(isSetAudioSampleRateHz, "audioSampleRateHz");
 	}
 
 	private void validateParamValues() {
-		final String errPrefix = getClass().getSimpleName() + ": ";
-
-		if (audioSampleRateHz <= 0 || audioSampleRateHz > 96000) {
-			throw new IllegalArgumentException(errPrefix + "audioSampleRateHz must be > 0 and <= 96000");
-		}
-	}
-
-	private static void requireIsSet(boolean v, @SuppressWarnings("SameParameterValue") String name) {
-		final String errPrefix = ParamsThreadRtpSenderPcm.class.getSimpleName() + ": ";
-
-		if (! v) {
-			throw new IllegalStateException(errPrefix + name + " must be set!");
-		}
 	}
 
 }

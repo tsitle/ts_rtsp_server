@@ -125,7 +125,7 @@ public abstract class ThreadRtpSenderBase<
 		///
 		final double sendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
-			throw new IllegalStateException("sendIntervalNs is < 1ms");
+			throw new IllegalStateException("sendInterval is < 1ms");
 		}
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class

@@ -12,10 +12,8 @@ public abstract class BuilderThreadRtpSenderAudioBase<
 	protected final ParamsThreadRtpSenderAudioCommon threadParamsAudio = new ParamsThreadRtpSenderAudioCommon();
 
 	// Fluent setters
-	/*
-	 * Future Audio-only fields go here, e.g.,
-	 * public Builder audioQuality(int q) { ...; return self(); }
-	 */
+	public B audComRtpAudioSpf(int v) { this.threadParamsAudio.setRtpAudioSpf(v); return self(); }
+	public B audComSampleRateHz(int v) { this.threadParamsAudio.setAudioSampleRateHz(v); return self(); }
 
 	//
 	protected void validateAudioCommon() {

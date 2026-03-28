@@ -301,9 +301,13 @@ public class ThreadRtspServer extends RunnableBase {
 					B builder,
 					RtspSessionInfo.StreamInfo streamInfo,
 					@SuppressWarnings("SameParameterValue") double avFps,
-					RtcpInnerXsrcBlock xsrcBlock
+					RtcpInnerXsrcBlock xsrcBlock,
+					int samplesPerFrame
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock);
+		Objects.requireNonNull(streamInfo.rtspStreamSource);
+		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
+				.audComRtpAudioSpf(samplesPerFrame)
+				.audComSampleRateHz(streamInfo.rtspStreamSource.getAudioSampleRateHz());
 	}
 
 	private void startSendRtp_oneStream(ChildThreadsForOneStream ctfos, String cnameHostname) {
@@ -327,18 +331,17 @@ public class ThreadRtspServer extends RunnableBase {
 		Objects.requireNonNull(tmpStreamInfo.rtspStreamSource);
 		switch (tmpStreamInfo.rtspStreamSource.getCodec()) {
 			case A_AAC:
-				final double tmpFrameDurAacSecs = ((double)RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO /
+				final double tmpFrameDurAacSecs = ((double)RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 /
 						(double)tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz());
 				final double tmpVirtualFpsAac = (1.0 / tmpFrameDurAacSecs);
 				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
 						BuilderThreadRtpSenderAac.builder(),
 						tmpStreamInfo,
 						tmpVirtualFpsAac,
-						xsrcBlock
+						xsrcBlock,
+						RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1
 					);
-				ctfos.rtpThreadSender = builderAac
-						.audAacSampleRateHz(tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz())
-						.build();
+				ctfos.rtpThreadSender = builderAac.build();
 				break;
 			case V_JPEG:
 				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
@@ -376,11 +379,10 @@ public class ThreadRtspServer extends RunnableBase {
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpStreamInfo,
 							tmpVirtualFpsPcm,
-							xsrcBlock
+							xsrcBlock,
+							tmpStreamInfo.rtspStreamSource.getRtpAudioSamplesPerFrame(tmpVirtualFpsPcm)
 						);
 					ctfos.rtpThreadSender = builderPcm
-							.audPcmRtpAudioSpf(tmpStreamInfo.rtspStreamSource.getRtpAudioSamplesPerFrame(tmpVirtualFpsPcm))
-							.audPcmSampleRateHz(tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz())
 							.audPcmChannelCount(tmpStreamInfo.rtspStreamSource.getAudioChannelCount())
 							.audPcmBitsPerSample(tmpStreamInfo.rtspStreamSource.getCodec().getPcmAudioBitsPerSample().orElseThrow())
 							.audPcmInputBigEndian(tmpStreamInfo.rtspStreamSource.getIsAudioBigEndian())

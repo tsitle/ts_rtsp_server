@@ -48,7 +48,7 @@ public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioP
 				avStreamIncoming,
 				paramsPcm.getAudioChannelCount(),
 				paramsPcm.getAudioBitsPerSample(),
-				paramsPcm.getRtpAudioSpf(),
+				paramsAudioCommon.getRtpAudioSpf(),
 				paramsPcm.getIsAudioInputBigEndian()
 			);
 		this.pcmParser = new AudioPcmParser(

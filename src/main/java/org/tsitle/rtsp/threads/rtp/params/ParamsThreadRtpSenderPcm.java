@@ -5,12 +5,6 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 
 public final class ParamsThreadRtpSenderPcm implements Cloneable {
 
-	/** Audio samples per frame as required for RTP */
-	private int rtpAudioSpf;
-	private boolean isSetRtpAudioSpf;
-	/** Audio sample rate in Hz */
-	private int audioSampleRateHz;
-	private boolean isSetAudioSampleRateHz;
 	/** Audio channel count */
 	private int audioChannelCount;
 	private boolean isSetAudioChannelCount;
@@ -21,23 +15,11 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	private boolean isAudioInputBigEndian;
 	private boolean isSetAudioInputBigEndian;
 	/** Audio codec */
-	private RtpPacketType audioCodec;
+	private @NonNull RtpPacketType audioCodec = RtpPacketType.UNKNOWN;
 	private boolean isSetAudioCodec;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public int getRtpAudioSpf() { return rtpAudioSpf; }
-	public void setRtpAudioSpf(int rtpAudioSpf) {
-		this.rtpAudioSpf = rtpAudioSpf;
-		this.isSetRtpAudioSpf = true;
-	}
-
-	public int getAudioSampleRateHz() { return audioSampleRateHz; }
-	public void setAudioSampleRateHz(int audioSampleRateHz) {
-		this.audioSampleRateHz = audioSampleRateHz;
-		this.isSetAudioSampleRateHz = true;
-	}
 
 	public int getAudioChannelCount() { return audioChannelCount; }
 	public void setAudioChannelCount(int audioChannelCount) {
@@ -57,8 +39,8 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 		this.isSetAudioInputBigEndian = true;
 	}
 
-	public RtpPacketType getAudioCodec() { return audioCodec; }
-	public void setAudioCodec(RtpPacketType audioCodec) {
+	public @NonNull RtpPacketType getAudioCodec() { return audioCodec; }
+	public void setAudioCodec(@NonNull RtpPacketType audioCodec) {
 		this.audioCodec = audioCodec;
 		this.isSetAudioCodec = true;
 	}
@@ -83,8 +65,6 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
-		requireIsSet(isSetRtpAudioSpf, "rtpAudioSpf");
-		requireIsSet(isSetAudioSampleRateHz, "audioSampleRateHz");
 		requireIsSet(isSetAudioChannelCount, "audioChannelCount");
 		requireIsSet(isSetAudioBitsPerSample, "audioBitsPerSample");
 		requireIsSet(isSetAudioInputBigEndian, "audioInputBigEndian");
@@ -94,12 +74,6 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (rtpAudioSpf <= 0) {
-			throw new IllegalArgumentException(errPrefix + "rtpAudioSpf must be > 0");
-		}
-		if (audioSampleRateHz <= 0 || audioSampleRateHz > 96000) {
-			throw new IllegalArgumentException(errPrefix + "audioSampleRateHz must be > 0 and <= 96000");
-		}
 		if (audioChannelCount < 1 || audioChannelCount > 2) {
 			throw new IllegalArgumentException(errPrefix + "audioChannelCount must be 1 or 2");
 		}

@@ -424,7 +424,7 @@ public class RtspResponseBuilder {
 								"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
 								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
 								"IndexDeltaLength=%d; " +  // optional: used when multiple AUs are packed in a packet, defaults to 0
-								"constantDuration=1024" +  // optional: 1024 samples per frame
+								"constantDuration=%d" +  // optional: 512/960/1024 samples per frame
 								"%s",
 								tmpSsObj.getCodec().getValue(),
 								IsoIec14496_1_StreamType.AUDIOSTREAM.value,
@@ -433,6 +433,7 @@ public class RtspResponseBuilder {
 								RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
+								RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1,
 								CRLF
 					));
 				break;
