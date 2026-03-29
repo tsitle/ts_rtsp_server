@@ -7,6 +7,8 @@ import java.io.PrintStream;
 import java.time.Instant;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class RtxpLogger extends ThreadBase {
 
@@ -22,14 +24,23 @@ public class RtxpLogger extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private final Queue<@NonNull LogEntry> msgQueue = new ConcurrentLinkedQueue<>();
+	private final ReentrantLock lock = new ReentrantLock();
+	/** Condition to signal that a new message has been added to the queue or the thread has been requested to stop */
+	private final Condition stateChanged = lock.newCondition();
 
 	public RtxpLogger() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public synchronized void log(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
-		msgQueue.add(createLogEntry(logLevel, threadId, msg));
+	public void log(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
+		lock.lock();
+		try {
+			msgQueue.add(createLogEntry(logLevel, threadId, msg));
+			stateChanged.signalAll();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -73,17 +84,32 @@ public class RtxpLogger extends ThreadBase {
 
 	@Override
 	protected void stopThreadHook() {
-		// nothing to do
+		lock.lock();
+		try {
+			stateChanged.signalAll();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException {
-		if (! msgQueue.isEmpty()) {
-			outputMsg(msgQueue.poll());
-		} else {
-			Thread.sleep(10);
+		lock.lock();
+		try {
+			if (doStop.get()) {
+				return;
+			}
+			stateChanged.await();
+			if (doStop.get()) {
+				return;
+			}
+			while (! msgQueue.isEmpty()) {
+				outputMsg(msgQueue.poll());
+			}
+		} finally {
+			lock.unlock();
 		}
 	}
 
