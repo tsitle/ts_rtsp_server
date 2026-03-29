@@ -169,6 +169,14 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		closeZmqContextInstance();
 	}
 
+	/**
+	 * Has the Message Queue been closed?
+	 * @return True if the Message Queue has been closed, false otherwise
+	 */
+	public boolean isClosed() {
+		return stateClosed.get();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
