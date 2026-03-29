@@ -13,6 +13,7 @@ import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
+import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -53,7 +54,8 @@ public abstract class ThreadRtpSenderBase<
 
 	/** Thread parameters */
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
-	private final DatagramSocket parComRtpSocketUdp;
+	private final @Nullable DatagramSocket parComRtpSocketUdp;
+	private final @Nullable RtxpTcpReadWrite parComRtpRwIfTcp;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -121,7 +123,8 @@ public abstract class ThreadRtpSenderBase<
 		this.avStreamOutgoingType = avStreamOutgoingType;
 		///
 		this.paramsCommon = paramsCommon.clone();
-		this.parComRtpSocketUdp = paramsCommon.getRtpSocketUdp().orElseThrow();
+		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);
+		this.parComRtpRwIfTcp = paramsCommon.getTpClientDestTcpIf().orElse(null);
 		///
 		final double sendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
@@ -139,9 +142,9 @@ public abstract class ThreadRtpSenderBase<
 			);
 
 		//
-		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getSrtxpKmdOutbound().orElseThrow());
+				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
 						"SrtxpSecurityException caught: " + e.getMessage());
@@ -159,7 +162,10 @@ public abstract class ThreadRtpSenderBase<
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
-		if (paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
+			if (this.srtpCtxOutbound == null) {
+				throw new IllegalStateException("srtpCtxOutbound == null");
+			}
 			udpMaxPacketLenDelta += this.srtpCtxOutbound.getSrtpExtraPacketLength();
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
@@ -223,7 +229,11 @@ public abstract class ThreadRtpSenderBase<
 			sendSenderReport();
 
 			//
-			while (! (doStop.get() || parComRtpSocketUdp.isClosed())) {
+			while (! doStop.get()) {
+				if ((parComRtpSocketUdp != null && parComRtpSocketUdp.isClosed()) ||
+						(parComRtpRwIfTcp != null && parComRtpRwIfTcp.isSocketClosed())) {
+					break;
+				}
 				if (! mainLoop()) {
 					break;
 				}
@@ -234,6 +244,8 @@ public abstract class ThreadRtpSenderBase<
 			logError(FNC_NAME, "InputStreamEosException caught: " + e);
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
+		} catch (TcpSocketIoException e) {
+			// fail silently
 		} catch (RtpFrameDataAcquException e) {
 			logError(FNC_NAME, "RtpFrameDataAcquException caught: " + e.getMessage());
 		} catch (RtpThreadsDidNotStartException e) {
@@ -279,7 +291,9 @@ public abstract class ThreadRtpSenderBase<
 			threadDataProv.stopThread();
 			threadDataProv = null;
 		}
-		parComRtpSocketUdp.close();
+		if (parComRtpSocketUdp != null) {
+			parComRtpSocketUdp.close();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -357,7 +371,7 @@ public abstract class ThreadRtpSenderBase<
 	protected @NonNull RtpPacketContainerBase encryptRtpPacketPayload(@NonNull RtpPacketContainerBase plainPacket) {
 		final String FNC_NAME = getClass().getSimpleName() + ".encryptRtpPacketPayload()";
 
-		if (! paramsCommon.getIsRtxpEncryptionEnabled() || srtpCtxOutbound == null) {
+		if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled() || srtpCtxOutbound == null) {
 			return plainPacket;
 		}
 		try {
@@ -417,15 +431,16 @@ public abstract class ThreadRtpSenderBase<
 	 * This is usually done for NAT/Firewall port testing.
 	 */
 	private void receiveInitialClientPackets() throws UdpSocketIoException {
+		if (parComRtpSocketUdp == null) {
+			return;  // we are using TCP
+		}
 		DatagramPacket recvDp = new DatagramPacket(new byte[UDP_PACKET_LEN], UDP_PACKET_LEN);
 		for (int i = 0; i < 10; ++i) {
 			try {
-				//noinspection resource
-				if (paramsCommon.getRtpSocketUdp().orElseThrow().isClosed()) {
+				if (parComRtpSocketUdp.isClosed()) {
 					break;
 				}
-				//noinspection resource
-				paramsCommon.getRtpSocketUdp().orElseThrow().receive(recvDp);
+				parComRtpSocketUdp.receive(recvDp);
 			} catch (SocketTimeoutException e) {
 				// ignore
 			} catch (IOException e) {
@@ -462,7 +477,7 @@ public abstract class ThreadRtpSenderBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop()
-			throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException {
+			throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException, TcpSocketIoException {
 		if (isPaused.get()) {
 			Thread.sleep(100);
 			return true;
@@ -507,7 +522,8 @@ public abstract class ThreadRtpSenderBase<
 		return paramsCommon.getRtpTimestampT0().orElseThrow().rtpTsT0() + (int)elapsedTicks;
 	}
 
-	private boolean sendFrame() throws InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException {
+	private boolean sendFrame()
+			throws InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
 
 		// acquire the next frame from the video stream
@@ -622,7 +638,7 @@ public abstract class ThreadRtpSenderBase<
 				boolean isLastPktOfPayload,
 				@SuppressWarnings("unused") boolean isFirstPktOfFrameOrAu,
 				boolean isLastPktOfFrameOrAu
-			) throws UdpSocketIoException {
+			) throws UdpSocketIoException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendSinglePacket()";
 
 		FrameFragmentData curFragmentData = new FrameFragmentData(
@@ -641,26 +657,42 @@ public abstract class ThreadRtpSenderBase<
 					(curPacketContainer.getPacketSize() - UDP_PACKET_LEN) + ")");
 		}
 
-		if (parComRtpSocketUdp.isClosed()) {
-			if (! doStop.get()) {
-				logError(FNC_NAME, "socket is closed");
-			}
-			return false;
-		}
-		// send the packet as a DatagramPacket over the UDP socket
-		DatagramPacket sendDp = new DatagramPacket(
-				curPacketContainer.getPacketBufferPtr().getBaPtr(),
-				curPacketContainer.getPacketSize(),
-				paramsCommon.getClientIpAddr().orElseThrow(),
-				paramsCommon.getClientDestPortRtp()
-			);
-		try {
-			parComRtpSocketUdp.send(sendDp);
-		} catch (IOException e) {
-			if (doStop.get()) {
+		if (parComRtpSocketUdp != null) {
+			if (parComRtpSocketUdp.isClosed()) {
+				if (! doStop.get()) {
+					logError(FNC_NAME, "socket is closed");
+				}
 				return false;
 			}
-			throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + e.getMessage());
+			// send the packet as a DatagramPacket over the UDP socket
+			DatagramPacket sendDp = new DatagramPacket(
+					curPacketContainer.getPacketBufferPtr().getBaPtr(),
+					curPacketContainer.getPacketSize(),
+					paramsCommon.getTpClientIpAddr().orElseThrow(),
+					paramsCommon.getTpClientDestUdpPort()
+				);
+			try {
+				parComRtpSocketUdp.send(sendDp);
+			} catch (IOException e) {
+				if (doStop.get()) {
+					return false;
+				}
+				throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + e.getMessage());
+			}
+		} else if (parComRtpRwIfTcp != null) {
+			if (parComRtpRwIfTcp.isSocketClosed()) {
+				if (! doStop.get()) {
+					logError(FNC_NAME, "socket is closed");
+				}
+				return false;
+			}
+			// send the packet over the TCP socket
+			BufferView tmpBv = new BufferView(
+					curPacketContainer.getPacketBufferPtr(),
+					0,
+					curPacketContainer.getPacketSize()
+				);
+			parComRtpRwIfTcp.writeRtpBinary(tmpBv, paramsCommon.getTpClientDestTcpChann());
 		}
 
 		//

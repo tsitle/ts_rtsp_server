@@ -50,10 +50,14 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP = "response=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO = "algorithm=";
 	static final String RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT = "application/sdp";
-	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP = "RTP/AVP";
-	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP = "RTP/SAVP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP1 = "RTP/AVP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2 = "RTP/AVP/UDP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP1 = "RTP/SAVP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2 = "RTP/SAVP/UDP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP = "RTP/AVP/TCP";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP = "RTP/SAVP/TCP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
+	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST = "multicast";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY = "mikey";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";

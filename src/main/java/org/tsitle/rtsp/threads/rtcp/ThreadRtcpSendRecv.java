@@ -3,10 +3,13 @@ package org.tsitle.rtsp.threads.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
+import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
@@ -24,7 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final ParamsThreadRtcp params;
-	private final DatagramSocket parRtcpSocketUdp;
+	private final @Nullable DatagramSocket parRtcpSocketUdp;
+	private final @Nullable RtxpTcpReadWrite parRtcpRwIfTcp;
 
 	private final AtomicInteger targetCongestionLevel = new AtomicInteger(0);
 	private final DatagramPacket cacheDpRecv;
@@ -49,13 +53,14 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		super(params.getLogMsgInterface().orElseThrow());
 
 		this.params = params.clone();
-		this.parRtcpSocketUdp = params.getRtcpSocketUdp().orElseThrow();
+		this.parRtcpSocketUdp = params.getTpSocketUdp().orElse(null);
+		this.parRtcpRwIfTcp = params.getTpClientDestTcpIf().orElse(null);
 
 		//
-		if (params.getIsRtxpEncryptionEnabled()) {
+		if (params.getCryptoIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtcpCtxInbound = new SrtcpContextInbound(params.getSrtxpKmdInbound().orElseThrow());
-				this.srtcpCtxOutbound = new SrtcpContextOutbound(params.getSrtxpKmdOutbound().orElseThrow());
+				this.srtcpCtxInbound = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
+				this.srtcpCtxOutbound = new SrtcpContextOutbound(params.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
 						"SrtxpSecurityException caught: " + e.getMessage());
@@ -91,25 +96,37 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		isRunning.set(true);
 
 		try {
-			while (! (doStop.get() || parRtcpSocketUdp.isClosed())) {
+			while (! doStop.get()) {
+				if ((parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) ||
+						(parRtcpRwIfTcp != null && parRtcpRwIfTcp.isSocketClosed())) {
+					break;
+				}
 				if (! mainLoop()) {
 					break;
 				}
 			}
 			// keep running for another 5s
 			if (! doStop.get()) {
-				logInfo(FNC_NAME, "Receiving RTCP packets stopped, waiting for 5s for more packets");
+				logInfo(FNC_NAME, "Receiving RTCP packets stopped, waiting for up to 5s for more packets");
 				Instant tmpStart = Instant.now();
-				while (! parRtcpSocketUdp.isClosed() && Duration.between(tmpStart, Instant.now()).toMillis() < 5000) {
-					if (!mainLoop()) {
+				while (Duration.between(tmpStart, Instant.now()).toMillis() < 5000) {
+					if ((parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) ||
+							(parRtcpRwIfTcp != null && parRtcpRwIfTcp.isSocketClosed())) {
+						break;
+					}
+					if (! mainLoop()) {
 						break;
 					}
 				}
 			}
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
+		} catch (TcpSocketIoException e) {
+			// fail silently
 		} finally {
-			parRtcpSocketUdp.close();
+			if (parRtcpSocketUdp != null) {
+				parRtcpSocketUdp.close();
+			}
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
@@ -127,7 +144,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean mainLoop() throws UdpSocketIoException {
+	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		//
@@ -136,7 +153,20 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				sendFromQueque();
 			}
 			//
-			parRtcpSocketUdp.receive(cacheDpRecv);  // blocks for setSoTimeout() value
+			if (parRtcpSocketUdp != null) {
+				parRtcpSocketUdp.receive(cacheDpRecv);  // blocks for setSoTimeout() value
+				/*logDebug(FNC_NAME, "Received RTCP packet on port " +
+						parRtcpSocketUdp.getLocalPort() + " from port " + cacheDpRecv.getPort());*/
+				cacheRecvBuf1.copyOf(cacheDpRecv.getData(), cacheDpRecv.getOffset(), cacheDpRecv.getLength());
+			} else if (parRtcpRwIfTcp != null) {
+				if (! parRtcpRwIfTcp.canReadRtcp(params.getTpClientDestTcpChann())) {
+					return true;
+				}
+				boolean tmResB = parRtcpRwIfTcp.readRtcpBinary(cacheRecvBuf1, params.getTpClientDestTcpChann());
+				if (! tmResB) {
+					return false;
+				}
+			}
 			lastRtcpPacketReceived = Instant.now();
 		} catch (SocketTimeoutException ex1) {
 			return true;
@@ -145,6 +175,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				return false;
 			}
 			throw new UdpSocketIoException(FNC_NAME + ": receive failed: " + e.getMessage());
+		} catch (TcpSocketIoException e) {
+			// fail silently
+			return false;
 		}
 
 		//
@@ -156,9 +189,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (lastRtcpPacketReceived == null) {
 			throw new IllegalStateException("lastRtcpPacketReceived cannot be null");
 		}
-		/*logDebug(FNC_NAME, "Received RTCP packet on port " +
-				parRtcpSocketUdp.getLocalPort() + " from port " + cacheDpRecv.getPort());*/
-		cacheRecvBuf1.copyOf(cacheDpRecv.getData(), cacheDpRecv.getOffset(), cacheDpRecv.getLength());
 		handleReceived();
 
 		return true;
@@ -166,7 +196,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendFromQueque() throws IOException {
+	private void sendFromQueque() throws TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueque()";
 
 		BufferExt plainPktBuf = queueSend.poll();
@@ -175,7 +205,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		BufferExt encrPktBuf = new BufferExt();
 		BufferExt outpPacketPtr = plainPktBuf;
-		if (params.getIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
+		if (params.getCryptoIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
 			try {
 				if (srtcpCtxOutbound.getSsrcId() != params.getRtspSsrcId()) {
 					throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
@@ -193,13 +223,22 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 
 		// send the compound packet as a DatagramPacket over the UDP socket
-		DatagramPacket sendDp = new DatagramPacket(
-				outpPacketPtr.getBaPtr(),
-				outpPacketPtr.getUsed(),
-				params.getClientIpAddr().orElseThrow(),
-				params.getClientDestPortRtcp()
-			);
-		parRtcpSocketUdp.send(sendDp);
+		if (parRtcpSocketUdp != null) {
+			DatagramPacket sendDp = new DatagramPacket(
+					outpPacketPtr.getBaPtr(),
+					outpPacketPtr.getUsed(),
+					params.getTpClientIpAddr().orElseThrow(),
+					params.getTpClientDestUdpPort()
+				);
+			try {
+				parRtcpSocketUdp.send(sendDp);
+			} catch (IOException e) {
+				throw new UdpSocketIoException(FNC_NAME + ": IOException caught: " + e.getMessage());
+			}
+		} else if (parRtcpRwIfTcp != null) {
+			BufferView tmpBv = new BufferView(outpPacketPtr);
+			parRtcpRwIfTcp.writeRtcpBinary(tmpBv, params.getTpClientDestTcpChann());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -238,7 +277,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 
 			boolean tmpWasDecr = false;
-			if (! wasDecr && params.getIsRtxpEncryptionEnabled() && srtcpCtxInbound != null) {
+			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled() && srtcpCtxInbound != null) {
 				try {
 					srtcpCtxInbound.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
 					cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet

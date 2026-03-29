@@ -38,14 +38,18 @@ public class RtspSessionInfo {
 		/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
 		public long rtspRtpGenTsT0Ns = 0L;
 
-		/** Client's incoming port for RTP packets (audio and video), provided by the RTSP Client */
-		public int tpClientDestPortRtp = 0;
-		/** Client's outgoing port for RTCP packets (meta information), provided by the RTSP Client */
-		public int tpClientDestPortRtcp = 0;
+		/** Client's incoming UDP port for RTP packets (audio and video), provided by the RTSP Client */
+		public int tpClientDestUdpPortRtp = 0;
+		/** Client's outgoing UDP port for RTCP packets (meta information), provided by the RTSP Client */
+		public int tpClientDestUdpPortRtcp = 0;
 		/** Server's outgoing UDP socket for RTP packets */
-		public @Nullable DatagramSocket tpServerSrcSocketRtp = null;
+		public @Nullable DatagramSocket tpServerSrcUdpSocketRtp = null;
 		/** Server's outgoing/incoming UDP socket for RTCP packets */
-		public @Nullable DatagramSocket tpServerSocketRtcp = null;
+		public @Nullable DatagramSocket tpServerUdpSocketRtcp = null;
+		/** Client's incoming TCP channel for RTP packets (audio and video), provided by the RTSP Client */
+		public int tpClientDestTcpChannRtp = -1;
+		/** Client's outgoing TCP channel for RTCP packets (meta information), provided by the RTSP Client */
+		public int tpClientDestTcpChannRtcp = -1;
 		/** Requested transport type protocol */
 		public boolean tpIsUdp = false;
 		/** Requested transport casting type */
@@ -58,11 +62,37 @@ public class RtspSessionInfo {
 		/** SRTxP KMDs */
 		public @NonNull StreamKmds streamKmds = new StreamKmds();
 
-		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-		public boolean isTransportValid(boolean needsEncryption) {
-			return (tpClientDestPortRtp > 0 && tpClientDestPortRtcp > 0 &&
-					tpIsUdp && tpIsUnicast && ! tpIsInterleaved &&
-					tpIsEncr == needsEncryption);
+		public void isTransportValid(boolean needsEncryption, boolean isTransportUdpEnabled) throws Exception {
+			if (! tpIsEncr && needsEncryption) {
+				throw new Exception("Client requested unencrypted transport, but encryption is required");
+			}
+			if (tpIsEncr && ! needsEncryption) {
+				throw new Exception("Client requested encrypted transport, but encryption is disabled");
+			}
+			if (! tpIsUnicast) {
+				throw new Exception("Multicast is not supported");
+			}
+			if (tpIsUdp) {
+				if (tpIsInterleaved) {
+					throw new Exception("Interleaved mode is not supported for UDP");
+				}
+				if (tpClientDestUdpPortRtp <= 0 || tpClientDestUdpPortRtcp <= 0) {
+					throw new Exception("Client UDP ports not set");
+				}
+				if (! isTransportUdpEnabled) {
+					throw new Exception("UDP is not supported");
+				}
+				return;
+			}
+			if (! tpIsInterleaved) {
+				throw new Exception("Interleaved mode must be used for TCP");
+			}
+			if (tpClientDestTcpChannRtp < 0 || tpClientDestTcpChannRtcp < 0) {
+				throw new Exception("Client TCP channel IDs not set");
+			}
+			if (tpClientDestTcpChannRtp == tpClientDestTcpChannRtcp) {
+				throw new Exception("Client TCP channel IDs for RTP and RTCP cannot be the same");
+			}
 		}
 
 		public StreamInfo() {
@@ -95,6 +125,9 @@ public class RtspSessionInfo {
 
 	/** Client IP address */
 	public @Nullable InetAddress clientIpAddr = null;
+	/** Has the client requested UDP transport? */
+	public boolean isTransportUdp = false;
+
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
 	/** Last received Sequence Number of RTSP messages within the session from the client */
@@ -112,6 +145,8 @@ public class RtspSessionInfo {
 
 	/** Is RTP/RTCP encryption enabled? */
 	public boolean isRtxpEncryptionEnabled = false;  // @TODO
+	/** Allow UDP transport? */
+	public boolean isTransportUdpEnabled = true;
 
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();

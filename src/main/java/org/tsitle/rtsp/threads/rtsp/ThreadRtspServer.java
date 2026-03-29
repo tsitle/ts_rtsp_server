@@ -6,10 +6,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.exceptions.InputStreamNotReadyException;
-import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
-import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
-import org.tsitle.rtsp.exceptions.UdpSocketIoException;
+import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
@@ -24,7 +21,6 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,10 +55,7 @@ public class ThreadRtspServer extends RunnableBase {
 	private final InetAddress clientIpAddr;
 
 	private final RtspConfig rtspConfig;
-	/** TCP socket used to send/receive RTSP messages */
-	private final Socket rtspSocketTcp;
-	private final BufferedReader rtspBufferedReader;
-	private final BufferedWriter rtspBufferedWriter;
+	private final RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final RtspSessionInfo rtspSessionInfo = new RtspSessionInfo();
 	private final RtspRequestParser rtspRequestParser;
 	private final RtspResponseBuilder rtspResponseBuilder;
@@ -95,26 +88,14 @@ public class ThreadRtspServer extends RunnableBase {
 		this.clientIpAddr = rtspSocketTcp.getInetAddress();
 
 		this.rtspConfig = rtspConfig;
-		this.rtspSocketTcp = rtspSocketTcp;
+		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
 
 		//
 		this.rtspSessionInfo.clientIpAddr = clientIpAddr;
 
 		//
-		this.rtspRequestParser = new RtspRequestParser(logMsgInterface, rtspConfig, rtspSessionInfo);
-		this.rtspResponseBuilder = new RtspResponseBuilder(logMsgInterface, rtspConfig, rtspSessionInfo);
-
-		// create input/output stream reader/writer
-		try {
-			this.rtspBufferedReader = new BufferedReader(new InputStreamReader(rtspSocketTcp.getInputStream()));
-			this.rtspBufferedWriter = new BufferedWriter(new OutputStreamWriter(rtspSocketTcp.getOutputStream()));
-		} catch (IOException e) {
-			logError(getClass().getSimpleName(), "IOException: Error creating RTSP socket reader/writer: " +
-					e.getMessage());
-			throw new RuntimeException(e);
-		}
-		//
-		initRtspRequestCallbacks();
+		this.rtspRequestParser = new RtspRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspResponseBuilder = new RtspResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -129,7 +110,7 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		isRunning.set(true);
 		logInfo(FNC_NAME, String.format("Entering RTSP loop - %s:%d%n",
-				clientIpAddr.getHostAddress(), rtspSocketTcp.getPort()));
+				clientIpAddr.getHostAddress(), rtxpTcpReadWrite.getSocketRemotePort()));
 
 		//
 		rtspTimeoutLastRequ = Instant.now();
@@ -137,17 +118,18 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		try {
 			int loopCounter = 0;
-			while (! (hasBeenRequestedToStop() || rtspSocketTcp.isClosed())) {
+			while (! (hasBeenRequestedToStop() || rtxpTcpReadWrite.isSocketClosed())) {
 				if (! mainLoop(++loopCounter)) {
 					break;
 				}
 			}
 		} catch (TcpSocketClosedException e) {
 			logError(FNC_NAME, "TcpSocketClosedException: " + e.getMessage());
+		} catch (TcpSocketIoException e) {
+			//logError(FNC_NAME, "TcpSocketIoException: " + e.getMessage());
+			// fail silently
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, "UdpSocketIoException: " + e.getMessage());
-		} catch (SocketException e) {
-			logError(FNC_NAME, "SocketException: " + e.getMessage());
 		} catch (InterruptedException e2) {
 			logError(FNC_NAME, "InterruptedException");
 			Thread.currentThread().interrupt();  // restore flag
@@ -158,7 +140,7 @@ public class ThreadRtspServer extends RunnableBase {
 			// stop sending/receiving RTP/RTCP packets
 			pauseOrStopChildThreads(false);
 			// close RTSP client socket and stream reader/writer
-			closeRtspClientSocket();
+			rtxpTcpReadWrite.closeSocket();
 			//
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
@@ -166,51 +148,6 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void initRtspRequestCallbacks() {
-		final String FNC_NAME = getClass().getSimpleName() + ".initRtspRequestCallbacks()";
-
-		rtspRequestParser.setCbCanReadData(() -> {
-				try {
-					if (rtspBufferedReader == null) {
-						return false;
-					}
-					return rtspBufferedReader.ready();
-				} catch (IOException e) {
-					logError(FNC_NAME, "IOException: Error reading from RTSP socket: " + e.getMessage());
-					throw new RuntimeException(e);
-				}
-			});
-		rtspRequestParser.setCbReadDataLine(() -> {
-				try {
-					if (rtspBufferedReader == null) {
-						return Optional.empty();
-					}
-					return Optional.ofNullable(rtspBufferedReader.readLine());
-				} catch (IOException e) {
-					logError(FNC_NAME, "IOException: Error reading from RTSP socket: " + e.getMessage());
-					throw new RuntimeException(e);
-				}
-			});
-
-		rtspResponseBuilder.setCbWriteDataLines(x -> {
-				try {
-					if (rtspBufferedWriter == null) {
-						return;
-					}
-					for (String line : x) {
-						//logDebug(FNC_NAME, "**: " + line.strip());
-						rtspBufferedWriter.write(line);
-					}
-					rtspBufferedWriter.flush();
-				} catch (IOException e) {
-					logError(FNC_NAME, "IOException: Error writing to RTSP socket: " + e.getMessage());
-					throw new RuntimeException(e);
-				}
-			});
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void unpauseOrStopThread(ThreadPausableBase thread) {
@@ -230,17 +167,25 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.streamSourceId);
 		//
-		ctfos.rtcpThreadSendRecv = BuilderThreadRtcp.builder()
+		BuilderThreadRtcp.Builder tmpBuilder = BuilderThreadRtcp.builder()
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
 				.debugSessionId(rtspSessionInfo.rtspSessionId)
 				.streamSourceId(Objects.requireNonNull(tmpStreamInfo.rtspStreamSource).getId())
-				.clientIpAddr(clientIpAddr)
-				.clientDestPortRtcp(tmpStreamInfo.tpClientDestPortRtcp)
-				.rtcpSocketUdp(Objects.requireNonNull(tmpStreamInfo.tpServerSocketRtcp))
 				.rtspSsrcId(tmpStreamInfo.rtspSsrcId)
-				.comIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
-				.comSrtxpKmdInbound(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
-				.comSrtxpKmdOutbound(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
+				.tpClientIpAddr(clientIpAddr);
+		if (tmpStreamInfo.tpIsUdp) {
+			tmpBuilder
+					.tpClientDestUdpPortRtcp(tmpStreamInfo.tpClientDestUdpPortRtcp)
+					.tpSocketUdpRtcp(Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp));
+		} else {
+			tmpBuilder
+					.tpClientDestTcpIf(this.rtxpTcpReadWrite)
+					.tpClientDestTcpChannRtcp(tmpStreamInfo.tpClientDestTcpChannRtcp);
+		}
+		ctfos.rtcpThreadSendRecv = tmpBuilder
+				.cryptoIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
+				.cryptoKmdInboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
+				.cryptoKmdOutboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP#c" + clientConnectionNr +
@@ -252,7 +197,7 @@ public class ThreadRtspServer extends RunnableBase {
 		ctfos.rtcpThreadSendRecv.start();
 
 		// delete pointer to RTCP socket
-		tmpStreamInfo.tpServerSocketRtcp = null;
+		tmpStreamInfo.tpServerUdpSocketRtcp = null;
 	}
 
 	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
@@ -262,28 +207,35 @@ public class ThreadRtspServer extends RunnableBase {
 					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
+		if (streamInfo.tpIsUdp) {
+			builder
+					.comTpClientDestUdpPortRtp(streamInfo.tpClientDestUdpPortRtp)
+					.comTpSocketUdpRtp(Objects.requireNonNull(streamInfo.tpServerSrcUdpSocketRtp));
+		} else {
+			builder
+					.comTpClientDestTcpIf(this.rtxpTcpReadWrite)
+					.comTpClientDestTcpChannRtp(streamInfo.tpClientDestTcpChannRtp);
+		}
 		return builder
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
 				.comDebugSessionId(rtspSessionInfo.rtspSessionId)
-				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comStreamSourceId(Objects.requireNonNull(streamInfo.rtspStreamSource).getId())
+				.comRtspSsrcId(streamInfo.rtspSsrcId)
+				.comTpClientIpAddr(clientIpAddr)
+				.comCryptoIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
+				.comCryptoKmdOutboundRtp(Objects.requireNonNull(streamInfo.streamKmds.kmdOutbound))
+				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comIsStreamSourceFromFile(streamInfo.rtspStreamSource.getIsSourceFromFile())
-				.comClientIpAddr(clientIpAddr)
-				.comClientDestPortRtp(streamInfo.tpClientDestPortRtp)
-				.comRtpSocketUdp(Objects.requireNonNull(streamInfo.tpServerSrcSocketRtp))
 				.comAvFps(avFps)
 				.comRtpSeqNrT0(streamInfo.rtspRtpSeqNrT0)
 				.comRtpTimestampT0(
 						new ParamsThreadRtpSenderCommon.RtpTsT0(streamInfo.rtspRtpTimestampT0, streamInfo.rtspRtpGenTsT0Ns)
 					)
-				.comRtspSsrcId(streamInfo.rtspSsrcId)
 				.comXsrcBlockEntry(xsrcBlock)
 				.comCbRtcpAppendToOutgoingQueque(this::cbSendRtcpPackets)
 				.comCbNotifyThreadReady(this::cbNotifyThreadReady)
 				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback)
-				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri())
-				.comIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
-				.comSrtxpKmdOutbound(Objects.requireNonNull(streamInfo.streamKmds.kmdOutbound));
+				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri());
 	}
 
 	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
@@ -402,7 +354,7 @@ public class ThreadRtspServer extends RunnableBase {
 		ctfos.rtpThreadSender.start();
 
 		// delete pointer to RTP socket
-		tmpStreamInfo.tpServerSrcSocketRtp = null;
+		tmpStreamInfo.tpServerSrcUdpSocketRtp = null;
 	}
 
 	private void startChildThreads(String inputSourceId) {
@@ -470,16 +422,6 @@ public class ThreadRtspServer extends RunnableBase {
 					ctfos.rtpThreadSender.stopThread();  // blocks until the thread has actually stopped
 				}
 			}
-		}
-	}
-
-	private void closeRtspClientSocket() {
-		try {
-			rtspBufferedReader.close();
-			rtspBufferedWriter.close();
-			rtspSocketTcp.close();
-		} catch (IOException e) {
-			// ignore
 		}
 	}
 
@@ -577,10 +519,10 @@ public class ThreadRtspServer extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private Optional<RequestBasicInfo> getNextRequest()
-			throws TcpSocketClosedException, InputStreamNotReadyException, SocketException {
+			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextRequest()";
 
-		if (rtspSocketTcp.isClosed()) {
+		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
@@ -598,10 +540,10 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	private boolean handleSuccessfulRequest(@NonNull RequestBasicInfo requestBasicInfo)
-			throws TcpSocketClosedException, SocketException {
+			throws TcpSocketClosedException, TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleSuccessfulRequest()";
 
-		if (rtspSocketTcp.isClosed()) {
+		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
@@ -637,7 +579,12 @@ public class ThreadRtspServer extends RunnableBase {
 					return false;
 				}
 				RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsId);
-				if (tmpStreamInfo == null || ! tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled)) {
+				try {
+					if (tmpStreamInfo == null) {
+						throw new IllegalStateException(FNC_NAME + ": tmpStreamInfo is null");
+					}
+					tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+				} catch (Exception e) {
 					// this should never happen
 					logError(FNC_NAME, "SETUP failed");
 					return false;
@@ -789,10 +736,10 @@ public class ThreadRtspServer extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop(final int loopCounter)
-			throws TcpSocketClosedException, SocketException, UdpSocketIoException, InterruptedException {
+			throws TcpSocketClosedException, TcpSocketIoException, UdpSocketIoException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
-		if (rtspTimeoutLastRequ != null) {
+		if (rtspSessionInfo.isTransportUdp && rtspTimeoutLastRequ != null) {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspConstants.RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
 				logError(FNC_NAME, "RTSP session timeout after " + tmpTimeDiff + " seconds");

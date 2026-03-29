@@ -4,19 +4,14 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
-import org.tsitle.rtsp.security.SrtxpKmd;
-import org.tsitle.rtsp.threads.LogMsgInterface;
 
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public final class ParamsThreadRtpSenderCommon implements Cloneable {
+public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implements Cloneable {
 
 	public record RtpTsT0(int rtpTsT0, long rtpGenTsT0Ns) implements Cloneable {
 		@Override
@@ -29,34 +24,13 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		}
 	}
 
-	/** Logging interface */
-	private LogMsgInterface logMsgInterface;
-	private boolean isSetLogMsgInterface;
-
-	/** Debugging: Session ID */
-	private String debugSessionId;
-	private boolean isSetDebugSessionId;
 	/** Debugging: Rewind media files? */
 	private boolean debugRewindMediaFiles;
 	private boolean isSetDebugRewindMediaFiles;
 
-	/** Stream Source ID (not the SSRC) */
-	private int streamSourceId;
-	private boolean isSetStreamSourceId;
 	/** Is Stream Source read from a file? */
 	private boolean isStreamSourceFromFile;
 	private boolean isSetIsStreamSourceFromFile;
-
-	/** Client IP address */
-	private InetAddress clientIpAddr;
-	private boolean isSetClientIpAddr;
-	/** Destination port for RTP packets (audio and video), provided by the RTSP Client */
-	private int clientDestPortRtp;
-	private boolean isSetClientDestPortRtp;
-
-	/** UDP socket for outgoing RTP packets */
-	private DatagramSocket rtpSocketUdp;
-	private boolean isSetRtpSocketUdp;
 
 	/** Video or audio frames per second */
 	private double avFramesPerSecond;
@@ -68,9 +42,6 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	/** Initial RTP Timestamp within the session */
 	private RtpTsT0 rtpTimestampT0;
 	private boolean isSetRtpTimestampT0;
-	/** RTSP Synchronization Source Identifier of the stream */
-	private int rtspSsrcId;
-	private boolean isSetRtspSsrcId;
 
 	/** XSRC block for SDES RTCP packets (for communicating which streams belong to the same session) */
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
@@ -90,28 +61,12 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	private URI avStreamIncomingUri;
 	private boolean isSetAvStreamIncomingUri;
 
-	/** Is RTP/RTCP encryption enabled? */
-	private boolean isRtxpEncryptionEnabled;
-	private boolean isSetIsRtxpEncryptionEnabled;
-	/** SRTxP KMD for outbound messages */
-	private SrtxpKmd srtxpKmdOutbound;
-	private boolean isSetSrtxpKmdOutbound;
+	public ParamsThreadRtpSenderCommon() {
+		super(false, true);
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public Optional<LogMsgInterface> getLogMsgInterface() { return Optional.ofNullable(logMsgInterface); }
-	public void setLogMsgInterface(@NonNull LogMsgInterface logMsgInterface) {
-		this.logMsgInterface = logMsgInterface;
-		this.isSetLogMsgInterface = true;
-	}
-
-	@SuppressWarnings("unused")
-	public Optional<String> getDebugSessionId() { return Optional.ofNullable(debugSessionId); }
-	public void setDebugSessionId(@NonNull String debugSessionId) {
-		this.debugSessionId = debugSessionId;
-		this.isSetDebugSessionId = true;
-	}
 
 	public boolean getDebugRewindMediaFiles() { return debugRewindMediaFiles; }
 	public void setDebugRewindMediaFiles(boolean debugRewindMediaFiles) {
@@ -119,34 +74,10 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetDebugRewindMediaFiles = true;
 	}
 
-	public int getStreamSourceId() { return streamSourceId; }
-	public void setStreamSourceId(int streamSourceId) {
-		this.streamSourceId = streamSourceId;
-		this.isSetStreamSourceId = true;
-	}
-
 	public boolean getIsStreamSourceFromFile() { return isStreamSourceFromFile; }
 	public void setIsStreamSourceFromFile(boolean value) {
 		this.isStreamSourceFromFile = value;
 		this.isSetIsStreamSourceFromFile = true;
-	}
-
-	public Optional<InetAddress> getClientIpAddr() { return Optional.ofNullable(clientIpAddr); }
-	public void setClientIpAddr(@NonNull InetAddress clientIpAddr) {
-		this.clientIpAddr = clientIpAddr;
-		this.isSetClientIpAddr = true;
-	}
-
-	public int getClientDestPortRtp() { return clientDestPortRtp; }
-	public void setClientDestPortRtp(int clientDestPortRtp) {
-		this.clientDestPortRtp = clientDestPortRtp;
-		this.isSetClientDestPortRtp = true;
-	}
-
-	public Optional<DatagramSocket> getRtpSocketUdp() { return Optional.ofNullable(rtpSocketUdp); }
-	public void setRtpSocketUdp(@NonNull DatagramSocket rtpSocketUdp) {
-		this.rtpSocketUdp = rtpSocketUdp;
-		this.isSetRtpSocketUdp = true;
 	}
 
 	public double getAvFramesPerSecond() { return avFramesPerSecond; }
@@ -165,12 +96,6 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 	public void setRtpTimestampT0(@NonNull RtpTsT0 value) {
 		this.rtpTimestampT0 = value;
 		this.isSetRtpTimestampT0 = true;
-	}
-
-	public int getRtspSsrcId() { return rtspSsrcId; }
-	public void setRtspSsrcId(int rtspSsrcId) {
-		this.rtspSsrcId = rtspSsrcId;
-		this.isSetRtspSsrcId = true;
 	}
 
 	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() {
@@ -208,78 +133,40 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		this.isSetAvStreamIncomingUri = true;
 	}
 
-	public boolean getIsRtxpEncryptionEnabled() { return isRtxpEncryptionEnabled; }
-	public void setIsRtxpEncryptionEnabled(boolean value) {
-		this.isRtxpEncryptionEnabled = value;
-		this.isSetIsRtxpEncryptionEnabled = true;
-	}
-
-	public Optional<SrtxpKmd> getSrtxpKmdOutbound() { return Optional.ofNullable(srtxpKmdOutbound); }
-	public void setSrtxpKmdOutbound(@NonNull SrtxpKmd value) {
-		this.srtxpKmdOutbound = value.clone();
-		this.isSetSrtxpKmdOutbound = true;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void validate() {
+		super.validate();
 		checkAllParamsSet();
 		validateParamValues();
 	}
 
 	@Override
 	public @NonNull ParamsThreadRtpSenderCommon clone() {
-		try {
-			ParamsThreadRtpSenderCommon clone = (ParamsThreadRtpSenderCommon)super.clone();
-			//
-			if (rtpTimestampT0 != null) {
-				clone.rtpTimestampT0 = rtpTimestampT0.clone();
-			}
-			//
-			if (xsrcBlockEntry != null) {
-				clone.xsrcBlockEntry = xsrcBlockEntry.clone();
-			}
-			//
-			try {
-				if (clientIpAddr != null) {
-					clone.clientIpAddr = InetAddress.getByAddress(clientIpAddr.getAddress());
-				}
-			} catch (UnknownHostException e) {
-				// this should never happen
-				throw new RuntimeException(e);
-			}
-			//
-			if (srtxpKmdOutbound != null) {
-				clone.srtxpKmdOutbound = srtxpKmdOutbound.clone();
-			}
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
+		ParamsThreadRtpSenderCommon clone = (ParamsThreadRtpSenderCommon)super.clone();
+		//
+		if (rtpTimestampT0 != null) {
+			clone.rtpTimestampT0 = rtpTimestampT0.clone();
 		}
+		//
+		if (xsrcBlockEntry != null) {
+			clone.xsrcBlockEntry = xsrcBlockEntry.clone();
+		}
+		return clone;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
-		requireIsSet(isSetLogMsgInterface, "logMsgInterface");
-
-		requireIsSet(isSetDebugSessionId, "debugSessionId");
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
 
-		requireIsSet(isSetStreamSourceId, "isSetStreamSourceId");
 		requireIsSet(isSetIsStreamSourceFromFile, "isSetIsStreamSourceFromFile");
-
-		requireIsSet(isSetClientIpAddr, "clientIpAddr");
-		requireIsSet(isSetClientDestPortRtp, "clientDestPortRtp");
-
-		requireIsSet(isSetRtpSocketUdp, "rtpSocketUdp");
 
 		requireIsSet(isSetAvFramesPerSecond, "avFramesPerSecond");
 
 		requireIsSet(isSetRtpSeqNrT0, "rtpSeqNrT0");
 		requireIsSet(isSetRtpTimestampT0, "rtpTimestampT0");
-		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
 
 		requireIsSet(isSetXsrcBlockEntry, "xsrcBlockEntries");
 		requireIsSet(isSetCbRtcpAppendToOutgoingQueque, "cbRtcpAppendToOutgoingQueque");
@@ -288,31 +175,11 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
-
-		requireIsSet(isSetIsRtxpEncryptionEnabled, "isRtxpEncryptionEnabled");
-		requireIsSet(isSetSrtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		requireNonNull(logMsgInterface, "logMsgInterface");
-
-		requireNonNull(debugSessionId, "debugSessionId");
-		if (debugSessionId.isEmpty()) {
-			throw new IllegalArgumentException(errPrefix + "debugSessionId must not be empty");
-		}
-
-		if (streamSourceId < 0) {
-			throw new IllegalArgumentException(errPrefix + "streamSourceId must be >= 0");
-		}
-
-		requireNonNull(clientIpAddr, "clientIpAddr");
-		if (clientDestPortRtp <= 0 || clientDestPortRtp > 65535) {
-			throw new IllegalArgumentException(errPrefix + "clientDestPortRtp must be > 0 and <= 65535");
-		}
-
-		requireNonNull(rtpSocketUdp, "rtpSocketUdp");
 		if (avFramesPerSecond <= 0.1f || avFramesPerSecond > 100.0f) {
 			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be > 0.1 and <= 100.0");
 		}
@@ -326,8 +193,6 @@ public final class ParamsThreadRtpSenderCommon implements Cloneable {
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
-
-		requireNonNull(srtxpKmdOutbound, "srtxpKmdOutbound");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

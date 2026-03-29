@@ -10,13 +10,12 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.MikeyParser;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.net.*;
 import java.util.*;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,23 +23,23 @@ import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
 public class RtspRequestParser {
 
-	private static final boolean DEBUG_REQUESTS_ENABLED = false;
+	private static final boolean DEBUG_REQUESTS_ENABLED = true;  // @TODO disable for production
 
 	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
 	private final RtspConfig rtspConfig;
 	private final RtspSessionInfo rtspSessionInfo;
 
-	private BooleanSupplier cbCanReadData = null;
-	private Supplier<Optional<String>> cbReadDataLine = null;
-
 	public RtspRequestParser(
 				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
@@ -48,22 +47,9 @@ public class RtspRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void setCbCanReadData(BooleanSupplier cbCanReadData) {
-		this.cbCanReadData = cbCanReadData;
-	}
-
-	public void setCbReadDataLine(Supplier<Optional<String>> cbReadDataLine) {
-		this.cbReadDataLine = cbReadDataLine;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public RequestBasicInfo parseRequest() throws InputStreamNotReadyException {
+	public RequestBasicInfo parseRequest() throws InputStreamNotReadyException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseRequest()";
 
-		checkCallbackFncs();
-
-		//
 		rtspSessionInfo.authInfo.resetPerRequest();
 
 		// parse request lines and extract the requestType:
@@ -131,9 +117,7 @@ public class RtspRequestParser {
 				if (DEBUG_REQUESTS_ENABLED) {
 					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine);
 				}
-				if (respStatusCode == ServerResponseStatusCode.OK) {
-					parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
-				}
+				parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				if (timeoutCnt++ > 10) {
 					break;
@@ -176,11 +160,12 @@ public class RtspRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private String readOneLine(boolean isFirst) throws InputStreamNotReadyException, InputStreamEosException {
-		if (! cbCanReadData.getAsBoolean()) {
+	private String readOneLine(boolean isFirst)
+			throws InputStreamNotReadyException, InputStreamEosException, TcpSocketIoException {
+		if (! rtxpTcpReadWriteInterface.canReadRtsp()) {
 			throw new InputStreamNotReadyException();
 		}
-		Optional<String> optLine = cbReadDataLine.get();
+		Optional<String> optLine = rtxpTcpReadWriteInterface.readRtspLine();
 		if (optLine.isEmpty()) {
 			throw new InputStreamEosException();
 		}
@@ -464,6 +449,7 @@ public class RtspRequestParser {
 		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11 -- SRTP Authentication failure
 		 * GStreamer (KUbuntu 24): GStreamer/1.24.2 -- SRTP Authentication failure
 		 * VLC (Rocky Linux 10): LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05) -- SRTP OK
+		 * FFplay (Rocky Linux 10): Lavf61.7.100
 		 * VLC (Windows): LibVLC/3.0.21 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
 		 * VLC (macOS x86):
 		 *   LibVLC/3.0.23 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
@@ -507,8 +493,11 @@ public class RtspRequestParser {
 
 		tmpStreamInfo.tpIsUdp = false;
 		tmpStreamInfo.tpIsUnicast = false;
-		tmpStreamInfo.tpClientDestPortRtp = 0;
-		tmpStreamInfo.tpClientDestPortRtcp = 0;
+		tmpStreamInfo.tpClientDestUdpPortRtp = 0;
+		tmpStreamInfo.tpClientDestUdpPortRtcp = 0;
+		tmpStreamInfo.tpClientDestTcpChannRtp = -1;
+		tmpStreamInfo.tpClientDestTcpChannRtcp = -1;
+		tmpStreamInfo.tpIsInterleaved = false;
 		tmpStreamInfo.tpIsEncr = false;
 		//
 		String tmpTransp = headerLine.substring(RTSP_RR_HEADER_TOKEN_SET_TRANSPORT.length()).strip();
@@ -517,38 +506,50 @@ public class RtspRequestParser {
 		StringTokenizer tokens = new StringTokenizer(tmpTransp, ";");
 		while (tokens.hasMoreTokens()) {
 			String curToken = tokens.nextToken();
-			if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP.equals(curToken)) {
-				//logDebug(FNC_NAME, "type=" + curToken);
+			if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP1.equals(curToken) ||
+					RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2.equals(curToken)) {
 				tmpStreamInfo.tpIsUdp = true;
 				tmpStreamInfo.tpIsEncr = false;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP.equals(curToken)) {
-				//logDebug(FNC_NAME, "type=" + curToken);
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP1.equals(curToken) ||
+					RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2.equals(curToken)) {
 				tmpStreamInfo.tpIsUdp = true;
 				tmpStreamInfo.tpIsEncr = true;
 			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP.equals(curToken)) {
-				logWarn(FNC_NAME, "type=" + curToken);  // @TODO implement RTP over TCP
 				tmpStreamInfo.tpIsUdp = false;
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP.equals(curToken)) {
+				tmpStreamInfo.tpIsUdp = false;
+				tmpStreamInfo.tpIsEncr = true;
 			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST.equals(curToken)) {
-				//logDebug(FNC_NAME, "uni/multi=" + curToken);
 				tmpStreamInfo.tpIsUnicast = true;
+			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST.equals(curToken)) {
+				tmpStreamInfo.tpIsUnicast = false;
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				String[] tmpPorts = tmpSub.split("-");
-				tmpStreamInfo.tpClientDestPortRtp = Integer.parseInt(tmpPorts[0]);
-				tmpStreamInfo.tpClientDestPortRtcp = Integer.parseInt(tmpPorts[1]);
+				tmpStreamInfo.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
+				tmpStreamInfo.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
 				tmpStreamInfo.tpIsInterleaved = false;
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
-				logWarn(FNC_NAME, "interleaved=" + tmpSub);  // @TODO implement RTP over TCP
+				String[] tmpPorts = tmpSub.split("-");
+				tmpStreamInfo.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
+				tmpStreamInfo.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
 				tmpStreamInfo.tpIsInterleaved = true;
+				/*logDebug(FNC_NAME, "interleaved RTP=" + tmpStreamInfo.tpClientDestTcpChannRtp +
+						", RTCP=" + tmpStreamInfo.tpClientDestTcpChannRtcp);*/
 			} else {
 				logWarn(FNC_NAME, "Unknown Transport parameter: '" + curToken + "'");
 			}
 		}
 
-		if (! tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled)) {
+		try {
+			tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+		} catch (Exception e) {
+			logError(FNC_NAME, "Invalid Transport: " + e.getMessage());
 			throw new RtspUnsupportedTransportException();
 		}
+
+		rtspSessionInfo.isTransportUdp = tmpStreamInfo.tpIsUdp;
 	}
 
 	private void parseHeaderLine_setup_keymgmt(
@@ -650,6 +651,12 @@ public class RtspRequestParser {
 				rtspSessionInfo.authInfo.authResp = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP);
 				rtspSessionInfo.authInfo.authResp = rtspSessionInfo.authInfo.authResp.toLowerCase();
 				haveResp = true;  // tolerate empty challenge-response now and reject it later
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO)) {
+				String tmpAlgo = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
+				if (! tmpAlgo.equalsIgnoreCase(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5)) {
+					logWarn(FNC_NAME, "Unsupported Auth Algorithm: '" + tmpAlgo + "'");
+					throw new RtspMissingAuthParamsException();
+				}
 			} else {
 				logWarn(FNC_NAME, "Unknown Auth parameter: '" + curToken + "'");
 			}
@@ -665,16 +672,6 @@ public class RtspRequestParser {
 	private @NonNull String extractKeyValue(@NonNull String inputStr, @NonNull String key) {
 		return inputStr.substring(key.length())
 				.replace("\"", "").replace("'", "").strip();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void checkCallbackFncs() {
-		final String FNC_NAME = getClass().getSimpleName() + ".checkCallbackFncs()";
-
-		if (cbCanReadData == null || cbReadDataLine == null) {
-			throw new IllegalStateException(FNC_NAME + ": Callback functions not set");
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

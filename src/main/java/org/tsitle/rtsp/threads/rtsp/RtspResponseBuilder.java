@@ -6,6 +6,8 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.exceptions.TcpSocketIoException;
+import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
@@ -14,13 +16,13 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.StringWriter;
 import java.net.*;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
@@ -36,17 +38,18 @@ public class RtspResponseBuilder {
 	private static final String SESSION_NAME = "Just A Session";
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
 	private final RtspConfig rtspConfig;
 	private final RtspSessionInfo rtspSessionInfo;
 
-	private Consumer<List<String>> cbWriteDataLines = null;
-
 	public RtspResponseBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
@@ -54,13 +57,7 @@ public class RtspResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void setCbWriteDataLines(Consumer<List<String>> cbWriteDataLines) {
-		this.cbWriteDataLines = cbWriteDataLines;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public void sendResponse(@NonNull RequestBasicInfo requestBasicInfo) throws SocketException {
+	public void sendResponse(@NonNull RequestBasicInfo requestBasicInfo) throws TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
 		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
@@ -81,7 +78,12 @@ public class RtspResponseBuilder {
 				sendResponsePlay();
 				break;
 			case PAUSE, TEARDOWN:
-				sendResponseAck();
+				try {
+					sendResponseAck();
+				} catch (TcpSocketIoException e) {
+					//logWarn(FNC_NAME, ": Failed to send response ack: " + e.getMessage());
+					// fail silently
+				}
 				break;
 			default:
 				throw new IllegalStateException(FNC_NAME + ": Unsupported server message type: " +
@@ -92,7 +94,7 @@ public class RtspResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendResponseNack(@NonNull ServerResponseStatusCode statusCode) {
+	private void sendResponseNack(@NonNull ServerResponseStatusCode statusCode) throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseNack()";
 
 		List<String> contents = new ArrayList<>();
@@ -103,7 +105,7 @@ public class RtspResponseBuilder {
 			contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
 					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
 					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
-					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5);
+					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 + "\"");
 		}
 		contents.add("");
 		internalSendResponse(statusCode, contents);
@@ -111,7 +113,7 @@ public class RtspResponseBuilder {
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
-	private void sendResponseAck() {
+	private void sendResponseAck() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseAck()";
 
 		List<String> contents = new ArrayList<>();
@@ -122,7 +124,7 @@ public class RtspResponseBuilder {
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
-	private void sendResponseOptions() {
+	private void sendResponseOptions() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseOptions()";
 
 		List<String> contents = new ArrayList<>();
@@ -140,7 +142,7 @@ public class RtspResponseBuilder {
 				">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
-	private void sendResponseDescribe() {
+	private void sendResponseDescribe() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseDescribe()";
 
 		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.DESCRIBE)) {
@@ -167,14 +169,16 @@ public class RtspResponseBuilder {
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
 	 */
 	private void sendResponseSetup(RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
-			throws SocketException {
+			throws TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseSetup()";
 
 		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(
 				FNC_NAME,
 				requestUrlInputOrStreamSource.streamSourceId
 			);
-		if (! tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled)) {
+		try {
+			tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+		} catch (Exception e) {
 			throw new IllegalStateException(FNC_NAME + ": Transport unsupported");
 		}
 
@@ -198,24 +202,33 @@ public class RtspResponseBuilder {
 		 * See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
 		 */
 		Objects.requireNonNull(rtspSessionInfo.clientIpAddr);
-		Objects.requireNonNull(tmpStreamInfo.tpServerSrcSocketRtp);
-		Objects.requireNonNull(tmpStreamInfo.tpServerSocketRtcp);
+		Objects.requireNonNull(tmpStreamInfo.tpServerSrcUdpSocketRtp);
+		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
 		String tmpRtspHostIp = findRtspHostIp(ServerMessageType.SETUP);
-		String tmpLine = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT + " " +
-				(tmpStreamInfo.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP) + ";" +
+		String tmpLine = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT + " ";
+		if (tmpStreamInfo.tpIsUdp) {
+			tmpLine += (tmpStreamInfo.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2 : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
+		} else {
+			tmpLine += (tmpStreamInfo.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP);
+		}
+		tmpLine += ";" +
 				RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST + ";" +
 				RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP + rtspSessionInfo.clientIpAddr.getHostAddress() + ";" +
-				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP + tmpRtspHostIp + ";" +
-				RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT +
-					Integer.toUnsignedString(tmpStreamInfo.tpClientDestPortRtp) + "-" +
-					Integer.toUnsignedString(tmpStreamInfo.tpClientDestPortRtcp) + ";" +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP + tmpRtspHostIp + ";";
+		if (tmpStreamInfo.tpIsUdp) {
+			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT +
+					Integer.toUnsignedString(tmpStreamInfo.tpClientDestUdpPortRtp) + "-" +
+					Integer.toUnsignedString(tmpStreamInfo.tpClientDestUdpPortRtcp) + ";" +
 				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT +
-					Integer.toUnsignedString(tmpStreamInfo.tpServerSrcSocketRtp.getLocalPort()) + "-" +
-					Integer.toUnsignedString(tmpStreamInfo.tpServerSocketRtcp.getLocalPort()) +
-				(rtspSessionInfo.lastRequestRtspProtoVersion.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2) ?
-							";" + RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId)  // only valid for unicast transmission
-							: ""
-						);
+					Integer.toUnsignedString(tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort()) + "-" +
+					Integer.toUnsignedString(tmpStreamInfo.tpServerUdpSocketRtcp.getLocalPort());
+		} else {
+			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED + tmpStreamInfo.tpClientDestTcpChannRtp + "-" +
+					tmpStreamInfo.tpClientDestTcpChannRtcp;
+		}
+		if (rtspSessionInfo.lastRequestRtspProtoVersion.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
+			tmpLine += ";" + RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId);  // only valid for unicast transmission
+		}
 		contents.add(tmpLine);
 		contents.add("");
 		internalSendResponse(contents);
@@ -223,7 +236,7 @@ public class RtspResponseBuilder {
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
 	}
 
-	private void sendResponsePlay() {
+	private void sendResponsePlay() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponsePlay()";
 
 		List<String> contents = new ArrayList<>();
@@ -289,24 +302,24 @@ public class RtspResponseBuilder {
 	/**
 	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC3551 Section 8
 	 */
-	private void findAndOpenUdpSocketPorts(RtspSessionInfo.StreamInfo tmpStreamInfo) throws SocketException {
+	private void findAndOpenUdpSocketPorts(RtspSessionInfo.StreamInfo tmpStreamInfo) throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
 
 		int loopCnt = 0;
 		boolean isOk = false;
 		while (++loopCnt <= 1000) {
-			if (tmpStreamInfo.tpServerSrcSocketRtp != null) {
-				tmpStreamInfo.tpServerSrcSocketRtp.close();
+			if (tmpStreamInfo.tpServerSrcUdpSocketRtp != null) {
+				tmpStreamInfo.tpServerSrcUdpSocketRtp.close();
 			}
-			if (tmpStreamInfo.tpServerSocketRtcp != null) {
-				tmpStreamInfo.tpServerSocketRtcp.close();
+			if (tmpStreamInfo.tpServerUdpSocketRtcp != null) {
+				tmpStreamInfo.tpServerUdpSocketRtcp.close();
 			}
 			try {
-				tmpStreamInfo.tpServerSrcSocketRtp = new DatagramSocket();
-				if (tmpStreamInfo.tpServerSrcSocketRtp.getLocalPort() % 2 != 0) {
+				tmpStreamInfo.tpServerSrcUdpSocketRtp = new DatagramSocket();
+				if (tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort() % 2 != 0) {
 					continue;
 				}
-				tmpStreamInfo.tpServerSocketRtcp = new DatagramSocket(tmpStreamInfo.tpServerSrcSocketRtp.getLocalPort() + 1);
+				tmpStreamInfo.tpServerUdpSocketRtcp = new DatagramSocket(tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort() + 1);
 				isOk = true;
 				break;
 			} catch (SocketException e) {
@@ -316,21 +329,17 @@ public class RtspResponseBuilder {
 		if (! isOk) {
 			throw new IllegalStateException(FNC_NAME + ": Could not find proper UDP sockets");
 		}
-		tmpStreamInfo.tpServerSrcSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
-		tmpStreamInfo.tpServerSrcSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
-		tmpStreamInfo.tpServerSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
-		tmpStreamInfo.tpServerSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
+		try {
+			tmpStreamInfo.tpServerSrcUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+			tmpStreamInfo.tpServerSrcUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
+			tmpStreamInfo.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
+			tmpStreamInfo.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
+		} catch (SocketException e) {
+			throw new UdpSocketIoException(FNC_NAME + ": Could not configure UDP sockets: " + e.getMessage());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	private void checkCallbackFncs() {
-		final String FNC_NAME = getClass().getSimpleName() + ".checkCallbackFncs()";
-
-		if (cbWriteDataLines == null) {
-			throw new IllegalStateException(FNC_NAME + ": Callback functions not set");
-		}
-	}
 
 	private boolean checkStreamsForInputSource(String fncName, RtspInputSource rtspInputSource) {
 		Optional<RtspStreamSource> optSsObjVideo =
@@ -469,7 +478,7 @@ public class RtspResponseBuilder {
 		} else {
 			streamInfo = new RtspSessionInfo.StreamInfo();
 		}
-		//
+		// send crypto parameters
 		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
 		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
 			if (! rtspSessionInfo.clientUserAgent.isBlank() && rtspSessionInfo.clientUserAgent.startsWith("GStreamer")) {
@@ -570,13 +579,12 @@ public class RtspResponseBuilder {
 		return sw.toString();
 	}
 
-	private void internalSendResponse(final List<String> contents) {
+	private void internalSendResponse(final List<String> contents) throws TcpSocketIoException {
 		internalSendResponse(ServerResponseStatusCode.OK, contents);
 	}
 
-	private void internalSendResponse(ServerResponseStatusCode errorCode, final List<String> contents) {
-		checkCallbackFncs();
-		//
+	private void internalSendResponse(ServerResponseStatusCode errorCode, final List<String> contents)
+			throws TcpSocketIoException {
 		List<String> outputLines = new ArrayList<>();
 		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
 				errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
@@ -584,7 +592,7 @@ public class RtspResponseBuilder {
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);
 		}
-		cbWriteDataLines.accept(outputLines);
+		rtxpTcpReadWriteInterface.writeRtspLines(outputLines);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

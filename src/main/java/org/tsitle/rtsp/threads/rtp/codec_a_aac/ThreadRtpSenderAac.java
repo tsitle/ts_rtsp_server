@@ -133,7 +133,7 @@ public final class ThreadRtpSenderAac<
 					cacheRtpInnerPayloadBufView
 				);
 		}
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			return cachePlainPacket;
 		}
 		return encryptRtpPacketPayload(cachePlainPacket);

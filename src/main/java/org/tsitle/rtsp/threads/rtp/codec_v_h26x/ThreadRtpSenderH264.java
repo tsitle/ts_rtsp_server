@@ -112,7 +112,7 @@ public final class ThreadRtpSenderH264<
 					cacheRtpInnerPayloadBufView
 				);
 		}
-		if (! paramsCommon.getIsRtxpEncryptionEnabled()) {
+		if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			return cachePlainPacket;
 		}
 		return encryptRtpPacketPayload(cachePlainPacket);
