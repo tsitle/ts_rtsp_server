@@ -91,7 +91,7 @@ public class ThreadMqE2I extends RunnableBase {
 			mqInternalPub.connectToMq();
 
 			//
-			while (! hasBeenRequestedToStop()) {
+			while (! (hasBeenRequestedToStop() || mqExternalSub.isClosed())) {
 				mainLoop();
 			}
 		} catch (MqException e) {
@@ -114,8 +114,6 @@ public class ThreadMqE2I extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException, MqException {
-		Thread.sleep(1);
-
 		Optional<MqPacketAv> optPacket = mqExternalSub.receiveMessageAv(cachePayloadData);
 		if (optPacket.isEmpty()) {
 			return;
