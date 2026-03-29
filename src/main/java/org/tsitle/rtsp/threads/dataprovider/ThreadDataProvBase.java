@@ -8,11 +8,18 @@ import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.ThreadBase;
 
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
 public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, AVSTROG extends AvStreamOutgoingBase<?>> extends ThreadBase {
 
 	protected long debugStreamOffset = 0;
 
 	protected AVSTROG mediaOutgoingStream;
+
+	protected final ReentrantLock lock = new ReentrantLock();
+	/** Condition to signal that a frame has been removed from the queue or the thread has been requested to stop */
+	protected final Condition stateChanged = lock.newCondition();
 
 	/**
 	 * Constructor.
@@ -48,7 +55,12 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, AVSTRO
 
 	@Override
 	protected void stopThreadHook() {
-		// nothing to do
+		lock.lock();
+		try {
+			stateChanged.signalAll();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 }
