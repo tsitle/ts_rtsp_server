@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -305,6 +304,8 @@ public class RtxpTcpReadWrite {
 	}
 
 	private void internalReadSocket_binary() throws IOException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_binary()";
+
 		int channId = -1;
 		int packetLen = 4;  // we need at least 3 more bytes
 		int packetRd = 1;
@@ -313,28 +314,25 @@ public class RtxpTcpReadWrite {
 		int payloadOffset = 0;
 		while (! doStop.get() && packetRd < packetLen) {
 			if (packetRd == 1) {
-				channId = (socketIs.available() > 0 ? socketIs.read() : -1);
-				if (channId == -1) {
-					try {
-						Thread.sleep(Duration.ofNanos(100_000L));
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();  // restore flag
-						break;
+				try {
+					channId = socketIs.read();  // blocks for setSoTimeout() value
+					if (channId == -1) {
+						continue;
 					}
+				} catch (SocketTimeoutException e) {
 					continue;
 				}
 				if (! mapQueueRtpRtcpDataRcvd.containsKey(channId)) {
 					mapQueueRtpRtcpDataRcvd.put(channId, new ConcurrentLinkedDeque<>());
 				}
 			} else if (packetRd == 2 || packetRd == 3) {
-				int tmpVal = (socketIs.available() > 0 ? socketIs.read() : -1);
-				if (tmpVal == -1) {
-					try {
-						Thread.sleep(Duration.ofNanos(100_000L));
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();  // restore flag
-						break;
+				int tmpVal;
+				try {
+					tmpVal = socketIs.read();  // blocks for setSoTimeout() value
+					if (tmpVal == -1) {
+						continue;
 					}
+				} catch (SocketTimeoutException e) {
 					continue;
 				}
 				if (packetRd == 2) {
@@ -342,12 +340,17 @@ public class RtxpTcpReadWrite {
 				} else {
 					payloadLen |= (tmpVal & 0x00FF);
 					packetLen += payloadLen;
+					payloadBe.increaseSize(payloadLen);
 				}
-			} else if (socketIs.available() > 0) {
-				payloadBe.setUsed(packetLen - packetRd);
-				int tmpDidRead = socketIs.read(payloadBe.getBaPtr(), payloadOffset, packetLen - packetRd);
-				if (tmpDidRead == -1) {
-					throw new IOException("internalReadSocket_binary(): " + "Could not read from socket");
+			} else {
+				int tmpDidRead;
+				try {
+					tmpDidRead = socketIs.read(payloadBe.getBaPtr(), payloadOffset, packetLen - packetRd);  // blocks for setSoTimeout() value
+					if (tmpDidRead == -1) {
+						throw new IOException(FNC_NAME + ": " + "Could not read from socket");
+					}
+				} catch (SocketTimeoutException e) {
+					continue;
 				}
 				if (tmpDidRead > 0) {
 					payloadOffset += tmpDidRead;
@@ -356,6 +359,7 @@ public class RtxpTcpReadWrite {
 			}
 			++packetRd;
 		}
+		payloadBe.setUsed(payloadLen);
 		mapQueueRtpRtcpDataRcvd.get(channId).add(payloadBe);
 	}
 
@@ -372,15 +376,14 @@ public class RtxpTcpReadWrite {
 		tmpList.add(firstChar);
 
 		boolean haveCr = (firstChar == CRLF.charAt(0));
+		int tmpInt;
 		while (! doStop.get()) {
-			int tmpInt = (socketIs.available() > 0 ? socketIs.read() : -1);
-			if (tmpInt == -1) {
-				try {
-					Thread.sleep(Duration.ofNanos(1_000_000L));
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
-					break;
+			try {
+				tmpInt = socketIs.read();  // blocks for setSoTimeout() value
+				if (tmpInt == -1) {
+					continue;
 				}
+			} catch (SocketTimeoutException e) {
 				continue;
 			}
 			tmpList.add((char)tmpInt);
