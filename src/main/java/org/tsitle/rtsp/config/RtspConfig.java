@@ -2,6 +2,7 @@ package org.tsitle.rtsp.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
@@ -15,12 +16,33 @@ import java.util.*;
  */
 public class RtspConfig {
 
+	private static class RtspsSslServerKey {
+		/** Certificate */
+		@Expose
+		private final @NonNull String certificate;
+		/** Private Key (PKCS#8 PEM) */
+		@Expose
+		private final @NonNull String key;
+		/** Certificate Authority -- optional */
+		@Expose
+		private final @NonNull String ca;
+
+		public RtspsSslServerKey() {
+			this.certificate = "";
+			this.key = "";
+			this.ca = "";
+		}
+	}
+
 	/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
 	@Expose
 	private final int serverTcpPortRtsp;
 	/** RTSPS Server TCP port (with SSL/TLS) -- use -1 to disable */
 	@Expose
 	private final int serverTcpPortRtsps;
+	/** RTSPS Server SSL certificate and key */
+	@Expose
+	private final @NonNull RtspsSslServerKey rtspsServerSslKey;
 	/** Map of Users (the map keys are unique usernames) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> users;
@@ -71,6 +93,7 @@ public class RtspConfig {
 	public RtspConfig() {
 		this.serverTcpPortRtsp = RtspConstants.SERVER_RTSP_TCP_PORT;
 		this.serverTcpPortRtsps = RtspConstants.SERVER_RTSPS_TCP_PORT;
+		this.rtspsServerSslKey = new RtspsSslServerKey();
 		this.users = new HashMap<>();
 		this.mqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
@@ -109,6 +132,33 @@ public class RtspConfig {
 		return serverTcpPortRtsps;
 	}
 
+	/**
+	 * Get the path to the RTSPS SSL Certificate file.
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 */
+	public Optional<String> getRtspsSslCertPath() throws ConfigInvalidException {
+		return getAbsoluteFilePath("RPSPS Server SSL Certificate file not found", rtspsServerSslKey.certificate);
+	}
+
+	/**
+	 * Get the path to the RTSPS SSL Private Key file.
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 */
+	public Optional<String> getRtspsSslKeyPath() throws ConfigInvalidException {
+		return getAbsoluteFilePath("RPSPS Server SSL Private Key file not found", rtspsServerSslKey.key);
+	}
+
+	/**
+	 * Get the path to the RTSPS SSL CA file.
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the SSL CA file is set in the config but the file could not be found
+	 */
+	public Optional<String> getRtspsSslCaPath() throws ConfigInvalidException {
+		return getAbsoluteFilePath("RPSPS Server SSL CA file not found", rtspsServerSslKey.ca);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -124,20 +174,20 @@ public class RtspConfig {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Get the path to the SSL certificate file for the given host and port.
+	 * Get the path to the SSL Certificate file for the given host and port.
 	 * @param mqServerUri URI of the MQ server
-	 * @return Path to the SSL certificate file
-	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
 	 */
 	public Optional<String> getMqServerSslCertificatePath(@NonNull URI mqServerUri) throws ConfigInvalidException {
 		return getMqServerSslCertificatePath(mqServerUri.getHost() + ":" + mqServerUri.getPort());
 	}
 
 	/**
-	 * Get the path to the SSL certificate file for the given host and port.
+	 * Get the path to the SSL Certificate file for the given host and port.
 	 * @param hostAndPort Host and port (e.g. 'example.com:443' or '192.168.3.4:8976')
-	 * @return Path to the SSL certificate file
-	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
 	 */
 	public Optional<String> getMqServerSslCertificatePath(@NonNull String hostAndPort) throws ConfigInvalidException {
 		checkPostProcessed();
@@ -155,15 +205,7 @@ public class RtspConfig {
 		if (tmpPathStr == null && mqServerSslCertificates.containsKey(tmpHost)) {
 			tmpPathStr = mqServerSslCertificates.get(tmpHost);
 		}
-		if (tmpPathStr == null || tmpPathStr.isBlank()) {
-			return Optional.empty();
-		}
-		String resStr = RtspStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), tmpPathStr);
-		Path tmpPathObj = Paths.get(resStr);
-		if (! tmpPathObj.toFile().exists()) {
-			throw new ConfigInvalidException("SSL certificate file '" + resStr + "' for host '" + tmpSearch1 + "' not found");
-		}
-		return Optional.of(resStr);
+		return getAbsoluteFilePath("MQ SSL Certificate file for host '" + tmpSearch1 + "' not found", tmpPathStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -398,6 +440,23 @@ public class RtspConfig {
 			throw new ConfigInvalidException(FNC_NAME + ": Data directory is not a valid directory: '" +
 					getDataDirAsString() + "'");
 		}
+
+		//
+		if (serverTcpPortRtsps > 0) {
+			//noinspection ConstantValue
+			if (rtspsServerSslKey == null) {
+				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey");
+			}
+			//noinspection ConstantValue
+			if (rtspsServerSslKey.certificate == null || rtspsServerSslKey.certificate.isBlank()) {
+				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey.certificate");
+			}
+			//noinspection ConstantValue
+			if (rtspsServerSslKey.key == null || rtspsServerSslKey.key.isBlank()) {
+				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey.key");
+			}
+		}
+
 		//
 		for (Map.Entry<@NonNull String, @NonNull String> entry : mqServerSslCertificates.entrySet()) {
 			//noinspection ConstantValue
@@ -437,6 +496,28 @@ public class RtspConfig {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Get the absolute path to the file.
+	 * @param errMsg Error message to use if the file is not found
+	 * @param filename Filename to get the absolute path for
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
+	 */
+	private Optional<String> getAbsoluteFilePath(@NonNull String errMsg, @Nullable String filename) throws ConfigInvalidException {
+		checkPostProcessed();
+		if (filename == null || filename.isBlank()) {
+			return Optional.empty();
+		}
+		String resStr = RtspStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), filename);
+		Path tmpPathObj = Paths.get(resStr);
+		if (! tmpPathObj.toFile().exists()) {
+			throw new ConfigInvalidException(errMsg + ": '" + resStr + "'");
+		}
+		return Optional.of(resStr);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkPostProcessed() {

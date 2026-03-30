@@ -80,13 +80,18 @@ public class RtspRequestParser {
 		// read resource URL from the requestLine
 		Optional<String> optResourceUrl = parseServerMessageResourceUrl(requestLine);
 		if (optResourceUrl.isEmpty()) {
-			return RequestBasicInfo.createKnownWithError(requestType, ServerResponseStatusCode.BAD_REQUEST);
+			respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
 		}
-		final String resourceUrl = optResourceUrl.get();
-		if (resourceUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
-			logError(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
-					resourceUrl.length(), RTSP_MAX_RESOURCE_URL_LENGTH));
-			respStatusCode = ServerResponseStatusCode.URI_TOO_LONG;
+		final String resourceUrl;
+		if (respStatusCode == ServerResponseStatusCode.OK) {
+			resourceUrl = optResourceUrl.get();
+			if (resourceUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
+				logError(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
+						resourceUrl.length(), RTSP_MAX_RESOURCE_URL_LENGTH));
+				respStatusCode = ServerResponseStatusCode.URI_TOO_LONG;
+			}
+		} else {
+			resourceUrl = "-none-";
 		}
 
 		// handle resource URL
@@ -232,14 +237,19 @@ public class RtspRequestParser {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			tokens.nextToken();  // requestType
 			String resS = tokens.nextToken();
-			if (! resS.startsWith(RtspConstants.RTSP_URL_PROTOCOL + "://")) {
-				logError(FNC_NAME, "invalid URL '" + resS + "'");
+			if (rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RtspConstants.RTSPS_URL_PROTOCOL + "://")) {
+				logError(FNC_NAME, "invalid URL for RTSPS '" + resS + "'");
+				return Optional.empty();
+			}
+			if (! rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RtspConstants.RTSP_URL_PROTOCOL + "://")) {
+				logError(FNC_NAME, "invalid URL for RTSP '" + resS + "'");
 				return Optional.empty();
 			}
 			//
 			URI tmpUri = URI.create(resS);
 			int tmpPort = tmpUri.getPort();
-			resS = RtspConstants.RTSP_URL_PROTOCOL + "://" + tmpUri.getHost() +
+			resS = (rtspSessionInfo.isRtspsConnection ? RtspConstants.RTSPS_URL_PROTOCOL : RtspConstants.RTSP_URL_PROTOCOL) +
+					"://" + tmpUri.getHost() +
 					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
 			return Optional.of(resS);
 		} catch (NoSuchElementException e) {

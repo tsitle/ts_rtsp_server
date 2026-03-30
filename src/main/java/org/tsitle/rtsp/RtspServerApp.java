@@ -5,15 +5,20 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.exceptions.SslException;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
+import org.tsitle.rtsp.security.RtspsSslServerSocketFactory;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import java.io.*;
 import java.net.*;
+import java.nio.file.Path;
 import java.security.Provider;
 import java.security.Security;
 import java.util.*;
@@ -22,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RtspServerApp {
 
-	private static final int RTSP_THREADS_CORE = 4;
-	private static final int RTSP_THREADS_MAX = 10;  // one thread per client connection
+	private static final int RTSP_THREADS_CORE = 10;
+	private static final int RTSP_THREADS_MAX = 20;  // one thread per client connection
 
 	private static RtspConfig rtspConfig = null;
 
@@ -222,41 +227,106 @@ public class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static @NonNull ServerSocket openRtspsSocket(int port) throws SslException {
+		try {
+			Optional<String> optSslCaPath = rtspConfig.getRtspsSslCaPath();
+			SSLServerSocketFactory tmpFact = RtspsSslServerSocketFactory.createServerSocketFactory(
+					Path.of(rtspConfig.getRtspsSslCertPath().orElseThrow()),
+					Path.of(rtspConfig.getRtspsSslKeyPath().orElseThrow()),
+					optSslCaPath.isEmpty() || optSslCaPath.get().isEmpty() ? null : Path.of(optSslCaPath.get())
+				);
+			SSLServerSocket resObj = (SSLServerSocket)tmpFact.createServerSocket(port);
+			resObj.setEnabledProtocols(new String[] {"TLSv1.3", "TLSv1.2"});
+			resObj.setEnabledCipherSuites(new String[] {
+					// TLS 1.3
+					"TLS_AES_256_GCM_SHA384",
+					"TLS_AES_128_GCM_SHA256",
+					"TLS_CHACHA20_POLY1305_SHA256",
+
+					// TLS 1.2
+					"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+					"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+				});
+			return resObj;
+		} catch (SslException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new SslException("Failed to open RTSPS socket on port " + port + ": " + e.getMessage());
+		}
+	}
+
 	private static boolean runServerLoop() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".runServerLoop()";
 
-		// initiate TCP connection with the client for the RTSP session
-		try (ServerSocket listenSocket = new ServerSocket(rtspConfig.getServerTcpPortRtsp())) {
-			logInfo(FNC_NAME, "Waiting for connections on port " + rtspConfig.getServerTcpPortRtsp());
+		final int rtspsTcpPort = rtspConfig.getServerTcpPortRtsps();
+		final int rtspTcpPort = rtspConfig.getServerTcpPortRtsp();
 
-			listenSocket.setSoTimeout(50);  // only for accept()
-			Socket socketRtspTcp;
-
-			while (! doStop.get()) {
-				try {
-					socketRtspTcp = listenSocket.accept();  // blocks for setSoTimeout() value
-				} catch (SocketTimeoutException e) {
-					continue;
+		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
+			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspConfig.getServerTcpPortRtsp()) : null)) {
+				if (listenSocketRtsps != null) {
+					logInfo(FNC_NAME, "Waiting for RTSPS connections on port " + rtspsTcpPort);
+					listenSocketRtsps.setSoTimeout(50);  // only for accept()
 				}
-				socketRtspTcp.setSoTimeout(50);  // only for read()
+				if (listenSocketRtsp != null) {
+					logInfo(FNC_NAME, "Waiting for RTSP connections on port " + rtspTcpPort);
+					listenSocketRtsp.setSoTimeout(50);  // only for accept()
+				}
 
-				//
-				ThreadRtspServer thread = new ThreadRtspServer(
-						RtspServerApp::addMsgForLogThread,
-						cancelToken,
-						rtspConfig,
-						++clientConnectionCount,
-						socketRtspTcp,
-						false
-					);
+				Socket socketRtspTcp = null;
+				boolean haveConn = false;
+				boolean isRtspsConn = false;
+				while (! doStop.get()) {
+					if (listenSocketRtsps != null) {
+						try {
+							socketRtspTcp = listenSocketRtsps.accept();  // blocks for setSoTimeout() value
+							haveConn = true;
+							isRtspsConn = true;
+						} catch (SocketTimeoutException ignored) {
+							// nothing to do
+						}
+					}
+					if (! haveConn && listenSocketRtsp != null) {
+						try {
+							socketRtspTcp = listenSocketRtsp.accept();  // blocks for setSoTimeout() value
+							haveConn = true;
+							isRtspsConn = false;
+						} catch (SocketTimeoutException ignored) {
+							// nothing to do
+						}
+					}
+					if (! haveConn || socketRtspTcp == null) {
+						continue;
+					}
+					haveConn = false;
+					socketRtspTcp.setSoTimeout(50);  // only for read()
 
-				poolRtsp.submit(thread);
+					//
+					ThreadRtspServer thread = new ThreadRtspServer(
+							RtspServerApp::addMsgForLogThread,
+							cancelToken,
+							rtspConfig,
+							++clientConnectionCount,
+							socketRtspTcp,
+							isRtspsConn
+						);
+
+					try {
+						poolRtsp.submit(thread);
+					} catch (RejectedExecutionException e) {
+						logWarn(FNC_NAME, "RejectedExecutionException caught: " + e.getMessage());
+						try { socketRtspTcp.close(); } catch (IOException ignored) { }
+					}
+				}
 			}
 		} catch (BindException e) {
 			logError(FNC_NAME, "BindException caught: " + e.getMessage());
 			return false;
 		} catch (IOException e) {
 			logError(FNC_NAME, "IOException caught: " + e.getMessage());
+			return false;
+		} catch (SslException e) {
+			logError(FNC_NAME, "SslException caught: " + e.getMessage());
 			return false;
 		}
 		return true;
@@ -311,6 +381,9 @@ public class RtspServerApp {
 	}
 	private static void logInfo(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.INFO, fncName, msg);
+	}
+	private static void logWarn(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.WARN, fncName, msg);
 	}
 	private static void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);

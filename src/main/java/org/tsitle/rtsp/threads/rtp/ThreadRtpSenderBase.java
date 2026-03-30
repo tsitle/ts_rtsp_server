@@ -375,7 +375,6 @@ public abstract class ThreadRtpSenderBase<
 			return plainPacket;
 		}
 		try {
-			Instant tmpInstant1 = Instant.now();
 			if (cacheRtpEncrPacket == null) {
 				cacheRtpEncrPacket = new RtpEncryptedPacket(
 					plainPacket.getPayloadType(),
@@ -384,11 +383,6 @@ public abstract class ThreadRtpSenderBase<
 				);
 			} else {
 				cacheRtpEncrPacket.updatePacket(plainPacket);
-			}
-			Instant tmpInstant2 = Instant.now();
-			long delta = Duration.between(tmpInstant1, tmpInstant2).toNanos();
-			if (delta > 2_000_000L) {
-				logWarn(FNC_NAME, String.format("encryptRtpPacketPayload() took %.2f ms", (double)delta / 1000000.0));
 			}
 			return cacheRtpEncrPacket;
 		} catch (SrtxpSecurityException e) {
@@ -681,9 +675,7 @@ public abstract class ThreadRtpSenderBase<
 			}
 		} else if (parComRtpRwIfTcp != null) {
 			if (parComRtpRwIfTcp.isSocketClosed()) {
-				if (! doStop.get()) {
-					logError(FNC_NAME, "socket is closed");
-				}
+				// fail silently
 				return false;
 			}
 			// send the packet over the TCP socket

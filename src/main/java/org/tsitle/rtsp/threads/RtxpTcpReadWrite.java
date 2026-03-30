@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -107,6 +108,7 @@ public class RtxpTcpReadWrite {
 	private static final String CRLF = "\r\n";
 	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
 	private static final int QUEUES_MAX_SIZE = 50;
+	private static final long TCP_ACTIVITY_TIMEOUT_SECS = 60L;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	/** TCP socket used to send/receive RTxP messages */
@@ -122,6 +124,8 @@ public class RtxpTcpReadWrite {
 	private final Map<@NonNull Integer, @NonNull Queue<@NonNull BufferExt>> mapQueueRtpRtcpDataRcvd = new ConcurrentHashMap<>();
 
 	private final BlockedState blockedState = new BlockedState();
+
+	private Instant lastActivityTime = Instant.now();
 
 	/**
 	 * Constructor.
@@ -282,6 +286,8 @@ public class RtxpTcpReadWrite {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void internalReadSocket() throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket()";
+
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.SOCKET_READ);
 		} catch (InterruptedException e) {
@@ -291,9 +297,11 @@ public class RtxpTcpReadWrite {
 			if (socketTcp.isClosed()) {
 				return;
 			}
+			boolean haveAnythingAtAll = false;
+			int tmpQueueSize = 0;
 			while (! doStop.get()) {
+				checkTimeout(FNC_NAME);
 				boolean haveSomething = false;
-				int tmpQueueSize = 0;
 				while (! doStop.get()) {
 					int tmpInt;
 					try {
@@ -304,6 +312,7 @@ public class RtxpTcpReadWrite {
 					if (tmpInt == -1) {
 						break;
 					}
+					haveAnythingAtAll = true;
 					if (tmpInt == '$') {
 						tmpQueueSize = internalReadSocket_binary();
 					} else {
@@ -316,8 +325,12 @@ public class RtxpTcpReadWrite {
 					break;
 				}
 			}
+			//
+			if (haveAnythingAtAll) {
+				lastActivityTime = Instant.now();
+			}
 		} catch (IOException e) {
-			throw new TcpSocketIoException(e.getMessage());
+			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
 		} finally {
 			blockedState.unblock(Flag.SOCKET_READ);
 		}
@@ -471,6 +484,8 @@ public class RtxpTcpReadWrite {
 				}
 				socketOs.write(line.getBytes(StandardCharsets.UTF_8));
 			}
+			//
+			lastActivityTime = Instant.now();
 		} catch (IOException e) {
 			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
 		} finally {
@@ -497,10 +512,20 @@ public class RtxpTcpReadWrite {
 			tmpBa[3] = (byte)(bufView.getLength() & 0xFF);
 			socketOs.write(tmpBa, 0, 4);
 			socketOs.write(bufView.getInternalBaPtr(), bufView.getOffset(), bufView.getLength());
+			//
+			lastActivityTime = Instant.now();
 		} catch (IOException e) {
 			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
 		} finally {
 			blockedState.unblock(Flag.SOCKET_WRITE);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkTimeout(@NonNull String fncName) throws TcpSocketIoException {
+		if (Instant.now().minusSeconds(TCP_ACTIVITY_TIMEOUT_SECS).isAfter(lastActivityTime)) {
+			throw new TcpSocketIoException(fncName + ": TCP activity timeout");
 		}
 	}
 

@@ -388,7 +388,7 @@ public class RtspResponseBuilder {
 		}
 
 		// m: Media Description with available codec(s)
-		boolean isEncrRequ = rtspSessionInfo.isRtpRtcpEncryptionRequired;
+		boolean isEncrRequ = (! rtspSessionInfo.isRtspsConnection && rtspSessionInfo.isRtpRtcpEncryptionRequired);
 		final int tmpM_port = 0;
 		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
 				(useVideo ? "video" : "audio"), tmpM_port, isEncrRequ ? "S" : "",

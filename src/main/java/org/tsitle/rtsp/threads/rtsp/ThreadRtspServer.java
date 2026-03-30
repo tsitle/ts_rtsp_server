@@ -112,7 +112,8 @@ public class ThreadRtspServer extends RunnableBase {
 
 		//
 		isRunning.set(true);
-		logInfo(FNC_NAME, String.format("Entering RTSP loop - %s:%d%n",
+		logInfo(FNC_NAME, String.format("Entering RTSP%s loop - %s:%d%n",
+				rtspSessionInfo.isRtspsConnection ? "S" : "",
 				clientIpAddr.getHostAddress(), rtxpTcpReadWrite.getSocketRemotePort()));
 
 		//
@@ -127,7 +128,8 @@ public class ThreadRtspServer extends RunnableBase {
 				}
 			}
 		} catch (TcpSocketClosedException e) {
-			logError(FNC_NAME, "TcpSocketClosedException: " + e.getMessage());
+			//logError(FNC_NAME, "TcpSocketClosedException: " + e.getMessage());
+			// fail silently
 		} catch (TcpSocketIoException e) {
 			//logError(FNC_NAME, "TcpSocketIoException: " + e.getMessage());
 			// fail silently
