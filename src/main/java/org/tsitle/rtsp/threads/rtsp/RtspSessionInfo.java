@@ -62,8 +62,12 @@ public class RtspSessionInfo {
 		/** SRTxP KMDs */
 		public @NonNull StreamKmds streamKmds = new StreamKmds();
 
-		public void isTransportValid(boolean needsEncryption, boolean isTransportUdpEnabled) throws Exception {
-			if (! tpIsEncr && needsEncryption) {
+		public void isTransportValid(
+					boolean needsEncryption,
+					boolean isRtspsConnection,
+					boolean isTransportUdpDisabled
+				) throws Exception {
+			if (! tpIsEncr && needsEncryption && ! isRtspsConnection) {
 				throw new Exception("Client requested unencrypted transport, but encryption is required");
 			}
 			if (tpIsEncr && ! needsEncryption) {
@@ -79,8 +83,8 @@ public class RtspSessionInfo {
 				if (tpClientDestUdpPortRtp <= 0 || tpClientDestUdpPortRtcp <= 0) {
 					throw new Exception("Client UDP ports not set");
 				}
-				if (! isTransportUdpEnabled) {
-					throw new Exception("UDP is not supported");
+				if (isTransportUdpDisabled) {
+					throw new Exception("UDP is disabled");
 				}
 				return;
 			}
@@ -143,10 +147,10 @@ public class RtspSessionInfo {
 	/** RTSP protocol version used by the client in the last request (e.g. 'RTSP/1.0') */
 	public @NonNull String lastRequestRtspProtoVersion = "-";
 
-	/** Is RTP/RTCP encryption enabled? */
-	public boolean isRtxpEncryptionEnabled = false;  // @TODO
-	/** Allow UDP transport? */
-	public boolean isTransportUdpEnabled = true;
+	/** Are we using an RTSPS connection (with SSL/TLS)? */
+	public boolean isRtspsConnection = false;
+	/** Is RTP/RTCP encryption required? */
+	public boolean isRtpRtcpEncryptionRequired = false;
 
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();

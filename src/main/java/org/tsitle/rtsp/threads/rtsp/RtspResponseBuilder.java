@@ -177,9 +177,14 @@ public class RtspResponseBuilder {
 				requestUrlInputOrStreamSource.streamSourceId
 			);
 		try {
-			tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+			tmpStreamInfo.isTransportValid(
+					rtspSessionInfo.isRtpRtcpEncryptionRequired,
+					rtspSessionInfo.isRtspsConnection,
+					rtspConfig.getIsDebugDisableTransportUdp()
+				);
 		} catch (Exception e) {
-			throw new IllegalStateException(FNC_NAME + ": Transport unsupported");
+			// this should never happen
+			throw new IllegalStateException(FNC_NAME + ": Transport unsupported: " + e.getMessage());
 		}
 
 		// generate RTSP Session ID
@@ -383,9 +388,10 @@ public class RtspResponseBuilder {
 		}
 
 		// m: Media Description with available codec(s)
+		boolean isEncrRequ = rtspSessionInfo.isRtpRtcpEncryptionRequired;
 		final int tmpM_port = 0;
 		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
-				(useVideo ? "video" : "audio"), tmpM_port, rtspSessionInfo.isRtxpEncryptionEnabled ? "S" : "",
+				(useVideo ? "video" : "audio"), tmpM_port, isEncrRequ ? "S" : "",
 				tmpSsObj.getCodec().getValue(), CRLF));
 		// c: Connection Information (can be an IP address or a hostname)
 		//sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
@@ -480,7 +486,7 @@ public class RtspResponseBuilder {
 		}
 		// send crypto parameters
 		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
-		if (rtspSessionInfo.isRtxpEncryptionEnabled) {
+		if (rtspSessionInfo.isRtpRtcpEncryptionRequired) {
 			if (! rtspSessionInfo.clientUserAgent.isBlank() && rtspSessionInfo.clientUserAgent.startsWith("GStreamer")) {
 				// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
 				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
@@ -563,7 +569,7 @@ public class RtspResponseBuilder {
 
 		final String body = buildResponseDescribe_sdp(rtspInputSource);
 
-		if (rtspConfig.getIsDebugPrintSDP()) {
+		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
 			logDebug(FNC_NAME, "SDP: '" + body + "'");
 		}
 

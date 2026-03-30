@@ -15,9 +15,12 @@ import java.util.*;
  */
 public class RtspConfig {
 
-	/** RTSP Server TCP port */
+	/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
 	@Expose
-	private final int serverTcpPort;
+	private final int serverTcpPortRtsp;
+	/** RTSPS Server TCP port (with SSL/TLS) -- use -1 to disable */
+	@Expose
+	private final int serverTcpPortRtsps;
 	/** Map of Users (the map keys are unique usernames) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> users;
@@ -33,12 +36,21 @@ public class RtspConfig {
 	/** Directory where the media files are stored */
 	@Expose
 	private @NonNull String dataDir;
-	/** Debugging: print the SDP description? */
+	/** Debugging: print the RTSP messages that have been received from the client? */
 	@Expose
-	private final boolean debugPrintSDP;
+	private final boolean debugPrintRtspRcvd;
+	/** Debugging: print the RTSP messages that have been sent to the client? */
+	@Expose
+	private final boolean debugPrintRtspSent;
+	/** Debugging: print the RTSP SDP description that has been sent to the client? */
+	@Expose
+	private final boolean debugPrintRtspSdpSent;
 	/** Debugging: rewind the media files? */
 	@Expose
 	private final boolean debugRewindMediaFiles;
+	/** Debugging: disable UDP transport? */
+	@Expose
+	private boolean debugDisableTransportUdp;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
@@ -57,14 +69,18 @@ public class RtspConfig {
 	 * Constructor.
 	 */
 	public RtspConfig() {
-		this.serverTcpPort = RtspConstants.SERVER_RTSP_TCP_PORT;
+		this.serverTcpPortRtsp = RtspConstants.SERVER_RTSP_TCP_PORT;
+		this.serverTcpPortRtsps = RtspConstants.SERVER_RTSPS_TCP_PORT;
 		this.users = new HashMap<>();
 		this.mqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
 		this.dataDir = "";
-		this.debugPrintSDP = false;
+		this.debugPrintRtspRcvd = false;
+		this.debugPrintRtspSent = false;
+		this.debugPrintRtspSdpSent = false;
 		this.debugRewindMediaFiles = false;
+		this.debugDisableTransportUdp = false;
 
 		//noinspection DataFlowIssue
 		this.internalStreamSources = null;
@@ -76,12 +92,21 @@ public class RtspConfig {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Get the RTSP Server TCP port.
+	 * Get the RTSP Server TCP port (without SSL/TLS).
 	 * @return RTSP Server TCP port
 	 */
-	public int getServerTcpPort() {
+	public int getServerTcpPortRtsp() {
 		checkPostProcessed();
-		return serverTcpPort;
+		return serverTcpPortRtsp;
+	}
+
+	/**
+	 * Get the RTSPS Server TCP port (with SSL/TLS).
+	 * @return RTSPS Server TCP port
+	 */
+	public int getServerTcpPortRtsps() {
+		checkPostProcessed();
+		return serverTcpPortRtsps;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -273,12 +298,30 @@ public class RtspConfig {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
+	 * Get if printing the incoming RTSP messages is enabled for debugging.
+	 * @return True if printing the incoming RTSP messages is enabled, false otherwise
+	 */
+	public boolean getIsDebugPrintRtspRcvd() {
+		checkPostProcessed();
+		return debugPrintRtspRcvd;
+	}
+
+	/**
+	 * Get if printing the outgoing RTSP messages is enabled for debugging.
+	 * @return True if printing the outgoing RTSP messages is enabled, false otherwise
+	 */
+	public boolean getIsDebugPrintRtspSent() {
+		checkPostProcessed();
+		return debugPrintRtspSent;
+	}
+
+	/**
 	 * Get if printing the SDP description is enabled for debugging.
 	 * @return True if printing the SDP description is enabled, false otherwise
 	 */
-	public boolean getIsDebugPrintSDP() {
+	public boolean getIsDebugPrintRtspSdpSent() {
 		checkPostProcessed();
-		return debugPrintSDP;
+		return debugPrintRtspSdpSent;
 	}
 
 	/**
@@ -288,6 +331,15 @@ public class RtspConfig {
 	public boolean getIsDebugRewindMediaFiles() {
 		checkPostProcessed();
 		return debugRewindMediaFiles;
+	}
+
+	/**
+	 * Get if UDP transport is disabled for debugging.
+	 * @return True if UDP transport is disabled, false otherwise
+	 */
+	public boolean getIsDebugDisableTransportUdp() {
+		checkPostProcessed();
+		return debugDisableTransportUdp;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -328,8 +380,14 @@ public class RtspConfig {
 		checkPostProcessed();
 
 		//
-		if (serverTcpPort <= 0 || serverTcpPort > 65535) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + serverTcpPort);
+		if (serverTcpPortRtsp == 0 || serverTcpPortRtsp > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + serverTcpPortRtsp);
+		}
+		if (serverTcpPortRtsps == 0 || serverTcpPortRtsps > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSPS Server TCP port: " + serverTcpPortRtsps);
+		}
+		if (serverTcpPortRtsp < 0 && serverTcpPortRtsps < 0) {
+			throw new ConfigInvalidException(FNC_NAME + ": Neither RTSP nor RTSPS Server TCP port set");
 		}
 		//
 		//noinspection ConstantValue

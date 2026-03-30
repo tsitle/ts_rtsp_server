@@ -23,8 +23,6 @@ import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
 public class RtspRequestParser {
 
-	private static final boolean DEBUG_REQUESTS_ENABLED = true;  // @TODO disable for production
-
 	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -56,7 +54,7 @@ public class RtspRequestParser {
 		String requestLine;
 		try {
 			requestLine = readOneLine(true);
-			if (DEBUG_REQUESTS_ENABLED) {
+			if (rtspConfig.getIsDebugPrintRtspRcvd()) {
 				logDebug(FNC_NAME, "-- BEG --------------------------------------------------------------------------");
 				logDebug(FNC_NAME, "-------- requestLine: " + requestLine);
 			}
@@ -114,7 +112,7 @@ public class RtspRequestParser {
 			try {
 				headerLine = readOneLine(false);
 				timeoutCnt = 0;
-				if (DEBUG_REQUESTS_ENABLED) {
+				if (rtspConfig.getIsDebugPrintRtspRcvd()) {
 					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine);
 				}
 				parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
@@ -325,6 +323,10 @@ public class RtspRequestParser {
 
 			resObj.inputSourceId = rtspConfig.getInputSourceIdForStreamSourceId(rscStreamSourceId).orElse(null);
 			resObj.streamSourceId = rscStreamSourceId;
+
+			// preliminary setting
+			rtspSessionInfo.isRtpRtcpEncryptionRequired =
+					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
 			return resObj;
 		}
 
@@ -343,6 +345,8 @@ public class RtspRequestParser {
 		}
 		rtspSessionInfo.inputSourceUrlPerSmtMap.put(requestType, resourceUrl);
 		rtspSessionInfo.inputSourceObjPerSmtMap.put(requestType, optInputSource.get());
+		// preliminary setting
+		rtspSessionInfo.isRtpRtcpEncryptionRequired = optInputSource.get().getNeedsEncryption();
 
 		resObj.inputSourceId = optInputSource.get().getId();
 		return resObj;
@@ -543,7 +547,11 @@ public class RtspRequestParser {
 		}
 
 		try {
-			tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+			tmpStreamInfo.isTransportValid(
+					rtspSessionInfo.isRtpRtcpEncryptionRequired,
+					rtspSessionInfo.isRtspsConnection,
+					rtspConfig.getIsDebugDisableTransportUdp()
+				);
 		} catch (Exception e) {
 			logError(FNC_NAME, "Invalid Transport: " + e.getMessage());
 			throw new RtspUnsupportedTransportException();

@@ -24,32 +24,32 @@ public class RtspStreamSource {
 	/** Stream Source ID */
 	@GsonAnnoExclude
 	private @NonNull Integer id;
-	/** Is this Stream Source enabled? */
+	/** Is this Stream Source enabled? (default: true) */
 	@Expose
 	private @NonNull Boolean enabled;
-	/** Path to the media file */
+	/** Path to the media file -- either {@code filePath} or {@code mqUrl} must be set, but not both. */
 	@Expose
 	private @NonNull String filePath;
-	/** URL of the Message Queue for the media stream */
+	/** URL of the Message Queue for the media stream -- either {@code filePath} or {@code mqUrl} must be set, but not both. */
 	@Expose
 	private @NonNull String mqUrl;
-	/** Codec used for the stream */
+	/** Codec used for the stream -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull ConfigSsCodec codec;
-	/** Video frames per second */
+	/** Video frames per second -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Double videoFps;
-	/** Audio sample rate in Hz */
+	/** Audio sample rate in Hz -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Integer audioSampleRateHz;
-	/** Audio channel count */
+	/** Audio channel count -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Integer audioChannelCount;
-	/** Is audio input big-endian? */
+	/** Is audio input big-endian? -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Boolean isAudioBigEndian;
 
-	/** Only for AAC: Audio samples per frame */
+	/** Only for AAC: Audio samples per frame -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Integer aacSamplesPerFrame;
 	/** Only for AAC: AudioSpecificConfig as hex string */

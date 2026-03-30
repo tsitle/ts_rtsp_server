@@ -18,6 +18,7 @@ public abstract class RunnableBase implements Runnable {
 	 * Constructor.
 	 * @param cancelToken Cancel token
 	 */
+	@SuppressWarnings("unused")
 	public RunnableBase(@NonNull CancelToken cancelToken) {
 		this.logMsgInterface = null;
 		this.cancelToken = cancelToken;

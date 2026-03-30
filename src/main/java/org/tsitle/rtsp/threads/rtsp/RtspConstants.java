@@ -2,12 +2,17 @@ package org.tsitle.rtsp.threads.rtsp;
 
 public class RtspConstants {
 
-	/** Default TCP port for a RTSP server */
+	/** Default TCP port for a RTSP server (without SSL/TLS) */
 	@SuppressWarnings("unused")
 	public static final int SERVER_RTSP_TCP_PORT = 554;
+	/** Default TCP port for a RTSPS server (with SSL/TLS) */
+	@SuppressWarnings("unused")
+	public static final int SERVER_RTSPS_TCP_PORT = 332;
 
 	/** RTSP URL Protocol */
 	public static final String RTSP_URL_PROTOCOL = "rtsp";
+	/** RTSPS URL Protocol */
+	public static final String RTSPS_URL_PROTOCOL = "rtsps";
 
 	/** RTSP Session Timeout */
 	public static final int RTSP_SESSION_TIMEOUT = 20;

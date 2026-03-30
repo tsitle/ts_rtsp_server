@@ -210,8 +210,8 @@ public class RtspServerApp {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".runServerLoop()";
 
 		// initiate TCP connection with the client for the RTSP session
-		try (ServerSocket listenSocket = new ServerSocket(rtspConfig.getServerTcpPort())) {
-			logInfo(FNC_NAME, "Waiting for connections on port " + rtspConfig.getServerTcpPort());
+		try (ServerSocket listenSocket = new ServerSocket(rtspConfig.getServerTcpPortRtsp())) {
+			logInfo(FNC_NAME, "Waiting for connections on port " + rtspConfig.getServerTcpPortRtsp());
 
 			listenSocket.setSoTimeout(50);  // only for accept()
 			Socket socketRtspTcp;
@@ -230,7 +230,8 @@ public class RtspServerApp {
 						cancelToken,
 						rtspConfig,
 						++clientConnectionCount,
-						socketRtspTcp
+						socketRtspTcp,
+						false
 					);
 
 				poolRtsp.submit(thread);

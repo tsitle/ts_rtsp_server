@@ -72,13 +72,15 @@ public class ThreadRtspServer extends RunnableBase {
 	 * @param rtspConfig RTSP configuration
 	 * @param clientConnectionNr Client connection number
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
+	 * @param isRtspsConnection True if the RTSP connection is over TLS/SSL
 	 */
 	public ThreadRtspServer(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
 				int clientConnectionNr,
-				@NonNull Socket rtspSocketTcp
+				@NonNull Socket rtspSocketTcp,
+				boolean isRtspsConnection
 			) {
 		super(logMsgInterface, cancelToken);
 
@@ -88,10 +90,11 @@ public class ThreadRtspServer extends RunnableBase {
 		this.clientIpAddr = rtspSocketTcp.getInetAddress();
 
 		this.rtspConfig = rtspConfig;
-		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
+		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(logMsgInterface, rtspSocketTcp, rtspConfig.getIsDebugPrintRtspSent());
 
 		//
 		this.rtspSessionInfo.clientIpAddr = clientIpAddr;
+		this.rtspSessionInfo.isRtspsConnection = isRtspsConnection;
 
 		//
 		this.rtspRequestParser = new RtspRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
@@ -183,7 +186,7 @@ public class ThreadRtspServer extends RunnableBase {
 					.tpClientDestTcpChannRtcp(tmpStreamInfo.tpClientDestTcpChannRtcp);
 		}
 		ctfos.rtcpThreadSendRecv = tmpBuilder
-				.cryptoIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
+				.cryptoIsRtxpEncryptionEnabled(tmpStreamInfo.tpIsEncr)
 				.cryptoKmdInboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
 				.cryptoKmdOutboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
 				.build();
@@ -222,7 +225,7 @@ public class ThreadRtspServer extends RunnableBase {
 				.comStreamSourceId(Objects.requireNonNull(streamInfo.rtspStreamSource).getId())
 				.comRtspSsrcId(streamInfo.rtspSsrcId)
 				.comTpClientIpAddr(clientIpAddr)
-				.comCryptoIsRtxpEncryptionEnabled(rtspSessionInfo.isRtxpEncryptionEnabled)
+				.comCryptoIsRtxpEncryptionEnabled(streamInfo.tpIsEncr)
 				.comCryptoKmdOutboundRtp(Objects.requireNonNull(streamInfo.streamKmds.kmdOutbound))
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comIsStreamSourceFromFile(streamInfo.rtspStreamSource.getIsSourceFromFile())
@@ -583,10 +586,14 @@ public class ThreadRtspServer extends RunnableBase {
 					if (tmpStreamInfo == null) {
 						throw new IllegalStateException(FNC_NAME + ": tmpStreamInfo is null");
 					}
-					tmpStreamInfo.isTransportValid(rtspSessionInfo.isRtxpEncryptionEnabled, rtspSessionInfo.isTransportUdpEnabled);
+					tmpStreamInfo.isTransportValid(
+							rtspSessionInfo.isRtpRtcpEncryptionRequired,
+							rtspSessionInfo.isRtspsConnection,
+							rtspConfig.getIsDebugDisableTransportUdp()
+						);
 				} catch (Exception e) {
 					// this should never happen
-					logError(FNC_NAME, "SETUP failed");
+					logError(FNC_NAME, "SETUP failed: " + e.getMessage());
 					return false;
 				}
 				nextState = SessionState.READY;

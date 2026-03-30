@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,8 +106,10 @@ public class RtxpTcpReadWrite {
 
 	private static final String CRLF = "\r\n";
 
+	private final @NonNull LogMsgInterface logMsgInterface;
 	/** TCP socket used to send/receive RTxP messages */
 	private final Socket socketTcp;
+	private final boolean debugPrintRtspSend;
 
 	private final InputStream socketIs;
 	private final OutputStream socketOs;
@@ -118,8 +121,21 @@ public class RtxpTcpReadWrite {
 
 	private final BlockedState blockedState = new BlockedState();
 
-	public RtxpTcpReadWrite(@NonNull Socket socketTcp) {
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Functional interface for logging messages
+	 * @param socketTcp TCP socket used to send/receive RTxP messages
+	 * @param debugPrintRtspSend If true, then outgoing RTSP messages are logged
+	 */
+	public RtxpTcpReadWrite(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull Socket socketTcp,
+				boolean debugPrintRtspSend
+			) {
+		this.logMsgInterface = logMsgInterface;
 		this.socketTcp = socketTcp;
+		this.debugPrintRtspSend = debugPrintRtspSend;
+
 		try {
 			this.socketIs = socketTcp.getInputStream();
 			this.socketOs = socketTcp.getOutputStream();
@@ -440,6 +456,9 @@ public class RtxpTcpReadWrite {
 				if (doStop.get() || socketTcp.isClosed()) {
 					return;
 				}
+				if (debugPrintRtspSend) {
+					logDebug(FNC_NAME, "-------- " + line.replace(CRLF, "<CRLF>"));
+				}
 				socketOs.write(line.getBytes(StandardCharsets.UTF_8));
 			}
 		} catch (IOException e) {
@@ -473,6 +492,13 @@ public class RtxpTcpReadWrite {
 		} finally {
 			blockedState.unblock(Flag.SOCKET_WRITE);
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		logMsgInterface.addMsgForLogThread(RtxpLogLevel.DEBUG, Thread.currentThread().getName(),
+				fncName + ": " + msg);
 	}
 
 }
