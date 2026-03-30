@@ -33,6 +33,15 @@ public class RtxpLogger extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public boolean havePendingMessages() {
+		lock.lock();
+		try {
+			return (! msgQueue.isEmpty());
+		} finally {
+			lock.unlock();
+		}
+	}
+
 	public void log(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
 		lock.lock();
 		try {

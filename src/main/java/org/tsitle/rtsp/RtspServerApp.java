@@ -116,6 +116,8 @@ public class RtspServerApp {
 		//
 		boolean resB = runServerLoop();
 		if (! resB) {
+			waitUntilLogQueueIsEmpty();
+			//
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		}
@@ -142,6 +144,20 @@ public class RtspServerApp {
 					"TLS/ECDHE handshakes may fail. " +
 					"Rebuild runtime image with jlink module: --add-modules jdk.crypto.ec"
 				);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void waitUntilLogQueueIsEmpty() {
+		while (rtxpLoggerThread.havePendingMessages()) {
+			try {
+				//noinspection BusyWait
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;
+			}
 		}
 	}
 
@@ -261,6 +277,9 @@ public class RtspServerApp {
 			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
 		}
 
+		//
+		waitUntilLogQueueIsEmpty();
+		//
 		rtxpLoggerThread.stopThread();
 		try {
 			rtxpLoggerThread.join();
