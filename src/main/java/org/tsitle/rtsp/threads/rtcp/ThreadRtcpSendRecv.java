@@ -305,6 +305,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 
 			// handle the payload
+			//logDebug(FNC_NAME, "Handling RTCP packet: " + rtcpPktHd);
 			switch (rtcpPktHd.getPayloadType()) {
 				case RR:
 					handleRtcpPacketRR(rtcpPktHd);
