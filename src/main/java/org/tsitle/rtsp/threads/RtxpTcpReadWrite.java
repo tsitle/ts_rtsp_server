@@ -105,6 +105,8 @@ public class RtxpTcpReadWrite {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static final String CRLF = "\r\n";
+	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
+	private static final int QUEUES_MAX_SIZE = 50;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	/** TCP socket used to send/receive RTxP messages */
@@ -291,6 +293,7 @@ public class RtxpTcpReadWrite {
 			}
 			while (! doStop.get()) {
 				boolean haveSomething = false;
+				int tmpQueueSize = 0;
 				while (! doStop.get()) {
 					int tmpInt;
 					try {
@@ -302,13 +305,14 @@ public class RtxpTcpReadWrite {
 						break;
 					}
 					if (tmpInt == '$') {
-						internalReadSocket_binary();
+						tmpQueueSize = internalReadSocket_binary();
 					} else {
 						internalReadSocket_string((char)tmpInt);
+						tmpQueueSize = queueRtspLinesRcvd.size();
 					}
 					haveSomething = true;
 				}
-				if (! haveSomething) {
+				if (! haveSomething || tmpQueueSize >= QUEUES_MAX_SIZE) {
 					break;
 				}
 			}
@@ -319,7 +323,7 @@ public class RtxpTcpReadWrite {
 		}
 	}
 
-	private void internalReadSocket_binary() throws IOException {
+	private int internalReadSocket_binary() throws IOException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_binary()";
 
 		int channId = -1;
@@ -333,7 +337,7 @@ public class RtxpTcpReadWrite {
 				try {
 					channId = socketIs.read();  // blocks for setSoTimeout() value
 					if (channId == -1) {
-						continue;
+						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
 				} catch (SocketTimeoutException e) {
 					continue;
@@ -346,7 +350,7 @@ public class RtxpTcpReadWrite {
 				try {
 					tmpVal = socketIs.read();  // blocks for setSoTimeout() value
 					if (tmpVal == -1) {
-						continue;
+						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
 				} catch (SocketTimeoutException e) {
 					continue;
@@ -377,6 +381,7 @@ public class RtxpTcpReadWrite {
 		}
 		payloadBe.setUsed(payloadLen);
 		mapQueueRtpRtcpDataRcvd.get(channId).add(payloadBe);
+		return mapQueueRtpRtcpDataRcvd.get(channId).size();
 	}
 
 	private static String listToString(ArrayList<Character> list) {
@@ -388,6 +393,8 @@ public class RtxpTcpReadWrite {
 	}
 
 	private void internalReadSocket_string(char firstChar) throws IOException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_string()";
+
 		ArrayList<Character> tmpList = new ArrayList<>();
 		tmpList.add(firstChar);
 
@@ -397,12 +404,15 @@ public class RtxpTcpReadWrite {
 			try {
 				tmpInt = socketIs.read();  // blocks for setSoTimeout() value
 				if (tmpInt == -1) {
-					continue;
+					throw new IOException(FNC_NAME + ": Could not read from socket");
 				}
 			} catch (SocketTimeoutException e) {
 				continue;
 			}
 			tmpList.add((char)tmpInt);
+			if (tmpList.size() >= RTSP_INPUT_LINE_MAX_LENGTH) {
+				break;
+			}
 			if (tmpInt == CRLF.charAt(0)) {
 				haveCr = true;
 			} else if (tmpInt == CRLF.charAt(1)) {
