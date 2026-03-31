@@ -82,7 +82,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		return targetCongestionLevel.get();
 	}
 
-	public synchronized void appendToSendQueque(BufferExt rtcpPacketsBuf) {
+	public synchronized void appendToSendQueue(BufferExt rtcpPacketsBuf) {
 		BufferExt tmpBuf = new BufferExt();
 		tmpBuf.copyOf(rtcpPacketsBuf);
 		queueSend.add(tmpBuf);
@@ -150,7 +150,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		try {
 			if (! isPaused.get() && ! queueSend.isEmpty()) {
-				sendFromQueque();
+				sendFromQueue();
 			}
 			//
 			if (parRtcpSocketUdp != null) {
@@ -196,8 +196,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendFromQueque() throws TcpSocketIoException, UdpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueque()";
+	private void sendFromQueue() throws TcpSocketIoException, UdpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueue()";
 
 		BufferExt plainPktBuf = queueSend.poll();
 		if (plainPktBuf == null) {

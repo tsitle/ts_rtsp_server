@@ -756,7 +756,7 @@ public abstract class ThreadRtpSenderBase<
 		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
 
 		//
-		paramsCommon.getCbRtcpAppendToOutgoingQueque().orElseThrow()
+		paramsCommon.getCbRtcpAppendToOutgoingQueue().orElseThrow()
 				.accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();

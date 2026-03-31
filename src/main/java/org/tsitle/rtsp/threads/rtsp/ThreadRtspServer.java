@@ -237,7 +237,7 @@ public class ThreadRtspServer extends RunnableBase {
 						new ParamsThreadRtpSenderCommon.RtpTsT0(streamInfo.rtspRtpTimestampT0, streamInfo.rtspRtpGenTsT0Ns)
 					)
 				.comXsrcBlockEntry(xsrcBlock)
-				.comCbRtcpAppendToOutgoingQueque(this::cbSendRtcpPackets)
+				.comCbRtcpAppendToOutgoingQueue(this::cbSendRtcpPackets)
 				.comCbNotifyThreadReady(this::cbNotifyThreadReady)
 				.comCbThreadMayStartPlayback(this::cbThreadMayStartPlayback)
 				.comAvStreamIncomingUri(streamInfo.rtspStreamSource.getInputUri());
@@ -463,7 +463,7 @@ public class ThreadRtspServer extends RunnableBase {
 		if (ctfosToUse.rtcpThreadSendRecv != null &&
 				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
 				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
-			ctfosToUse.rtcpThreadSendRecv.appendToSendQueque(rtcpPacketsBuf);
+			ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
 		}
 	}
 

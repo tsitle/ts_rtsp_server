@@ -53,7 +53,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comRtpTimestampT0(ParamsThreadRtpSenderCommon.@NonNull RtpTsT0 v) { this.threadParamsCommon.setRtpTimestampT0(v); return self(); }
 
 	public B comXsrcBlockEntry(@NonNull RtcpInnerXsrcBlock v) { this.threadParamsCommon.setXsrcBlockEntry(v); return self(); }
-	public B comCbRtcpAppendToOutgoingQueque(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> v) { this.threadParamsCommon.setCbRtcpAppendToOutgoingQueque(v); return self(); }
+	public B comCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> v) { this.threadParamsCommon.setCbRtcpAppendToOutgoingQueue(v); return self(); }
 
 	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull Integer> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }

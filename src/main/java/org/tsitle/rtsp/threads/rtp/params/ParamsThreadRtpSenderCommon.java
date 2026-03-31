@@ -47,8 +47,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
 	private boolean isSetXsrcBlockEntry;
 	/** Callback for appending RTCP packets to the outgoing queue */
-	private BiConsumer<Integer, BufferExt> cbRtcpAppendToOutgoingQueque;
-	private boolean isSetCbRtcpAppendToOutgoingQueque;
+	private BiConsumer<Integer, BufferExt> cbRtcpAppendToOutgoingQueue;
+	private boolean isSetCbRtcpAppendToOutgoingQueue;
 
 	/** Callback for notifying the parent thread that the child thread is ready to start */
 	private Consumer<Integer> cbNotifyThreadReady;
@@ -109,10 +109,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetXsrcBlockEntry = true;
 	}
 
-	public Optional<BiConsumer<@NonNull Integer, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueque() { return Optional.ofNullable(cbRtcpAppendToOutgoingQueque); }
-	public void setCbRtcpAppendToOutgoingQueque(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> cbRtcpAppendToOutgoingQueque) {
-		this.cbRtcpAppendToOutgoingQueque = cbRtcpAppendToOutgoingQueque;
-		this.isSetCbRtcpAppendToOutgoingQueque = true;
+	public Optional<BiConsumer<@NonNull Integer, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueue() { return Optional.ofNullable(cbRtcpAppendToOutgoingQueue); }
+	public void setCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue) {
+		this.cbRtcpAppendToOutgoingQueue = cbRtcpAppendToOutgoingQueue;
+		this.isSetCbRtcpAppendToOutgoingQueue = true;
 	}
 
 	public Optional<Consumer<Integer>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
@@ -169,7 +169,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetRtpTimestampT0, "rtpTimestampT0");
 
 		requireIsSet(isSetXsrcBlockEntry, "xsrcBlockEntries");
-		requireIsSet(isSetCbRtcpAppendToOutgoingQueque, "cbRtcpAppendToOutgoingQueque");
+		requireIsSet(isSetCbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");
 
 		requireIsSet(isSetCbNotifyThreadReady, "cbNotifyThreadReady");
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
@@ -187,7 +187,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireNonNull(rtpTimestampT0, "rtpTimestampT0");
 
 		requireNonNull(xsrcBlockEntry, "xsrcBlockEntry");
-		requireNonNull(cbRtcpAppendToOutgoingQueque, "cbRtcpAppendToOutgoingQueque");
+		requireNonNull(cbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");
 
 		requireNonNull(cbNotifyThreadReady, "cbNotifyThreadReady");
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
