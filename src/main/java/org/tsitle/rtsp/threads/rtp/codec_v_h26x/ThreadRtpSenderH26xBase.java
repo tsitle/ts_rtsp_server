@@ -110,7 +110,7 @@ public abstract class ThreadRtpSenderH26xBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected void beforeRunHook() throws InterruptedException {
+	protected void beforeRunHook() throws InterruptedException, InputStreamEosException {
 		super.beforeRunHook();
 	}
 

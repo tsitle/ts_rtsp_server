@@ -268,7 +268,9 @@ public abstract class ThreadRtpSenderBase<
 
 	protected abstract @NonNull TDP newThreadDataProv();
 
-	protected void beforeRunHook() throws InterruptedException {
+	protected void beforeRunHook() throws InterruptedException, InputStreamEosException {
+		final String FNC_NAME = getClass().getSimpleName() + ".beforeRunHook()";
+
 		threadDataProv = newThreadDataProv();
 		threadDataProv.setName(Thread.currentThread().getName() + "-dataProv");
 		threadDataProv.setDaemon(false);
@@ -276,13 +278,36 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		int loopCnt = 0;
-		while (! doStop.get() && threadDataProv != null && ! threadDataProv.haveFullInputQueue() && ! threadDataProv.haveEos()) {
+		while (! doStop.get() && threadDataProv != null &&
+				(! (threadDataProv.isRunning() && threadDataProv.haveFullInputQueue())) &&
+				! threadDataProv.haveEos()) {
 			//noinspection BusyWait
 			Thread.sleep(50);
 			if (++loopCnt % 10 == 0) {
-				logDebug(getClass().getSimpleName() + ".beforeRunHook()",
-						"Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
+				logDebug(FNC_NAME, "Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
 			}
+			if (loopCnt >= 10 * 10) {  // 5 seconds
+				break;
+			}
+		}
+		if (! doStop.get() && threadDataProv != null && threadDataProv.isRunning() &&
+				threadDataProv.haveFullInputQueue() && ! threadDataProv.haveEos()) {
+			logDebug(FNC_NAME, "DataProv ready");
+		} else {
+			if (doStop.get()) {
+				logError(FNC_NAME, "DataProv start-up failed: doStop==true");
+			} else if (threadDataProv == null) {
+				logError(FNC_NAME, "DataProv start-up failed: threadDataProv==null");
+			} else if (! threadDataProv.isRunning()) {
+				logError(FNC_NAME, "DataProv start-up failed: !isRunning");
+			} else if (! threadDataProv.haveFullInputQueue()) {
+				logError(FNC_NAME, "DataProv start-up failed: !haveFullInputQueue");
+			} else if (threadDataProv.haveEos()) {
+				logError(FNC_NAME, "DataProv start-up failed: haveEos");
+			} else {
+				logError(FNC_NAME, "DataProv start-up failed");
+			}
+			throw new InputStreamEosException();
 		}
 	}
 
