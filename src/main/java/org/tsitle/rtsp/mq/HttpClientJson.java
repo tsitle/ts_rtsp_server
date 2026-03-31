@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.SslException;
-import org.tsitle.rtsp.security.RtspsSslServerSocketFactory;
+import org.tsitle.rtsp.security.SslContextFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -14,7 +14,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.*;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
@@ -46,9 +45,9 @@ public class HttpClientJson {
 		HttpClient.Builder builder = HttpClient.newBuilder();
 		builder.connectTimeout(Duration.ofSeconds(10));
 		if (useCompletelyInsecureSsl) {
-			builder.sslContext(RtspsSslServerSocketFactory.createClientInsecureSslContext());
+			builder.sslContext(SslContextFactory.createClientInsecureSslContext());
 		} else if (useRemoteCertForSsl) {
-			builder.sslContext(RtspsSslServerSocketFactory.createClientSslContextFromPem(remoteCertPath));
+			builder.sslContext(SslContextFactory.createClientSslContextFromPem(remoteCertPath));
 		}
 		this.httpClient = builder.build();
 		this.gson = new Gson();

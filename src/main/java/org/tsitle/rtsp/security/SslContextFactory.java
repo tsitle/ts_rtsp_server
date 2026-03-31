@@ -18,31 +18,31 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 /**
- * SSL server socket factory for RTSPS
+ * SSL Context factory
  */
-public final class RtspsSslServerSocketFactory {
+public final class SslContextFactory {
 
 	@SuppressWarnings("unused")
-	public RtspsSslServerSocketFactory() { }
+	public SslContextFactory() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * SSL server socket factory for RTSPS.
+	 * Create an SSLContext for server-side SSL/TLS connections.
 	 * @param rtspsCertPath Path to the server certificate
 	 * @param rtspsKeyPath Path to the private key
 	 * @param rtspsCaPath Path to the CA certificate (optional)
 	 * @return SSL server socket factory
 	 * @throws SslException If any kind of error occurred
 	 */
-	public static @NonNull SSLServerSocketFactory createServerSocketFactory(
+	public static @NonNull SSLContext createServerSocketFactory(
 				@NonNull Path rtspsCertPath,
 				@NonNull Path rtspsKeyPath,
 				@Nullable Path rtspsCaPath
 			) throws SslException {
 		try {
-			SSLContext ctx = buildServerContext(
+			return buildServerContext(
 					buildServerKeyStore(
 							loadKey(rtspsKeyPath),
 							loadCert(rtspsCertPath),
@@ -50,7 +50,6 @@ public final class RtspsSslServerSocketFactory {
 						),
 					rtspsCaPath != null ? loadCert(rtspsCaPath) : null
 				);
-			return ctx.getServerSocketFactory();
 		} catch (Exception e) {
 			throw new SslException("Failed to create SSL server socket factory: " + e.getMessage());
 		}

@@ -8,12 +8,13 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.exceptions.SslException;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
-import org.tsitle.rtsp.security.RtspsSslServerSocketFactory;
+import org.tsitle.rtsp.security.SslContextFactory;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import java.io.*;
@@ -227,15 +228,20 @@ public class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static @NonNull SSLServerSocketFactory createSslServerSocketFactory() throws Exception {
+		Optional<String> optSslCaPath = rtspConfig.getRtspsSslCaPath();
+		SSLContext sslCtx = SslContextFactory.createServerSocketFactory(
+				Path.of(rtspConfig.getRtspsSslCertPath().orElseThrow()),
+				Path.of(rtspConfig.getRtspsSslKeyPath().orElseThrow()),
+				optSslCaPath.isEmpty() || optSslCaPath.get().isEmpty() ? null : Path.of(optSslCaPath.get())
+			);
+		return sslCtx.getServerSocketFactory();
+	}
+
 	private static @NonNull ServerSocket openRtspsSocket(int port) throws SslException {
 		try {
-			Optional<String> optSslCaPath = rtspConfig.getRtspsSslCaPath();
-			SSLServerSocketFactory tmpFact = RtspsSslServerSocketFactory.createServerSocketFactory(
-					Path.of(rtspConfig.getRtspsSslCertPath().orElseThrow()),
-					Path.of(rtspConfig.getRtspsSslKeyPath().orElseThrow()),
-					optSslCaPath.isEmpty() || optSslCaPath.get().isEmpty() ? null : Path.of(optSslCaPath.get())
-				);
-			SSLServerSocket resObj = (SSLServerSocket)tmpFact.createServerSocket(port);
+			SSLServerSocketFactory sslFact = createSslServerSocketFactory();
+			SSLServerSocket resObj = (SSLServerSocket)sslFact.createServerSocket(port);
 			resObj.setEnabledProtocols(new String[] {"TLSv1.3", "TLSv1.2"});
 			resObj.setEnabledCipherSuites(new String[] {
 					// TLS 1.3
