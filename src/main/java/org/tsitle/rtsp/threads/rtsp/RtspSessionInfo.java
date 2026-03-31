@@ -169,6 +169,8 @@ public class RtspSessionInfo {
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;
+	/** Has the client requested PAUSE? */
+	public boolean isPlaybackPaused = false;
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();

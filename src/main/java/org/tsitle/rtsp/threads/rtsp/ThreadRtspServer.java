@@ -159,12 +159,11 @@ public class ThreadRtspServer extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void unpauseOrStopThread(ThreadPausableBase thread) {
-		if (thread != null && thread.isPaused()) {
-			thread.unpauseThread();
-			return;
-		}
+	private static void stopChildThread(ThreadPausableBase thread) {
 		if (thread != null) {
+			if (thread.isPaused()) {
+				thread.unpauseThread();
+			}
 			thread.stopThread();  // blocks until the thread has actually stopped
 		}
 	}
@@ -172,7 +171,7 @@ public class ThreadRtspServer extends RunnableBase {
 	private void startRtcp_oneStream(ChildThreadsForOneStream ctfos) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startRtcp_oneStream()";
 
-		unpauseOrStopThread(ctfos.rtcpThreadSendRecv);
+		stopChildThread(ctfos.rtcpThreadSendRecv);
 		//
 		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.streamSourceId);
 		//
@@ -274,7 +273,7 @@ public class ThreadRtspServer extends RunnableBase {
 	private void startSendRtp_oneStream(ChildThreadsForOneStream ctfos, String cnameHostname) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startSendRtp_oneStream()";
 
-		unpauseOrStopThread(ctfos.rtpThreadSender);
+		stopChildThread(ctfos.rtpThreadSender);
 		//
 		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.streamSourceId);
 		//
@@ -434,6 +433,26 @@ public class ThreadRtspServer extends RunnableBase {
 		}
 	}
 
+	private void unpauseChildThreads() {
+		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+			return;
+		}
+		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
+		for (int tmpSsId : is.getStreamSourceIds()) {
+			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
+			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
+				continue;
+			}
+			ChildThreadsForOneStream ctfos = childThreadsForOneStreamMap.get(tmpSsObj.getId());
+			if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
+				ctfos.rtcpThreadSendRecv.unpauseThread();
+			}
+			if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isPaused()) {
+				ctfos.rtpThreadSender.unpauseThread();
+			}
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private synchronized void cbSendRtcpPackets(int ssrcId, BufferExt rtcpPacketsBuf) {
@@ -580,6 +599,8 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		switch (requestBasicInfo.serverMessageType) {
 			case ServerMessageType.SETUP:
+				rtspSessionInfo.isPlaybackPaused = false;
+				//
 				final int tmpSsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).streamSourceId;
 				// sanity check
 				if (! rtspSessionInfo.streamsMapSetup.containsKey(tmpSsId)) {
@@ -605,29 +626,41 @@ public class ThreadRtspServer extends RunnableBase {
 				nextState = SessionState.READY;
 				break;
 			case ServerMessageType.PLAY:
-				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+				final String tmpIsIdPlay = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
 				logInfo(FNC_NAME, String.format(
-						"Starting playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
-						tmpIsId,
+						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
+						rtspSessionInfo.isPlaybackPaused ? "Resuming" : "Starting",
+						tmpIsIdPlay,
 						rtspSessionInfo.isTransportSrtpSrtcp ? "" : "o",
 						rtspSessionInfo.isTransportUdp ? "UDP" : "TCP",
 						rtspSessionInfo.isRtspsConnection ? "" : "o"));
+				//
 				rtxpTcpReadWrite.setIsRtpRtcpAllowed(! rtspSessionInfo.isTransportUdp);
 				if (rtspSessionInfo.isTransportUdp) {
 					rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				} else {
 					rtxpTcpReadWrite.setTcpActivityTimeoutForRtxp();
 				}
-				startChildThreads(tmpIsId);
+				if (rtspSessionInfo.isPlaybackPaused) {
+					rtspSessionInfo.isPlaybackPaused = false;
+					unpauseChildThreads();
+				} else {
+					startChildThreads(tmpIsIdPlay);
+				}
 				nextState = SessionState.PLAYING;
 				break;
 			case ServerMessageType.PAUSE:
+				final String tmpIsIdPause = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIsIdPause));
+				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				pauseOrStopChildThreads(true);
 				nextState = SessionState.READY;
+				rtspSessionInfo.isPlaybackPaused = true;
 				break;
 			case ServerMessageType.TEARDOWN:
 				nextState = SessionState.INIT;
+				rtspSessionInfo.isPlaybackPaused = false;
 				break;
 		}
 
