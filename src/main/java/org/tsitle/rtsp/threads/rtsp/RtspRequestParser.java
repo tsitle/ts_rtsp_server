@@ -568,6 +568,7 @@ public class RtspRequestParser {
 		}
 
 		rtspSessionInfo.isTransportUdp = tmpStreamInfo.tpIsUdp;
+		rtspSessionInfo.isTransportSrtpSrtcp = tmpStreamInfo.tpIsEncr;
 	}
 
 	private void parseHeaderLine_setup_keymgmt(

@@ -112,7 +112,7 @@ public class ThreadRtspServer extends RunnableBase {
 
 		//
 		isRunning.set(true);
-		logInfo(FNC_NAME, String.format("Entering RTSP%s loop - %s:%d%n",
+		logInfo(FNC_NAME, String.format("Serving RTSP%s to %s:%d%n",
 				rtspSessionInfo.isRtspsConnection ? "S" : "",
 				clientIpAddr.getHostAddress(), rtxpTcpReadWrite.getSocketRemotePort()));
 
@@ -602,7 +602,12 @@ public class ThreadRtspServer extends RunnableBase {
 				break;
 			case ServerMessageType.PLAY:
 				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
-				logInfo(FNC_NAME, "Starting playback for is='" + tmpIsId + "'");
+				logInfo(FNC_NAME, String.format(
+						"Starting playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
+						tmpIsId,
+						rtspSessionInfo.isTransportSrtpSrtcp ? "" : "o",
+						rtspSessionInfo.isTransportUdp ? "UDP" : "TCP",
+						rtspSessionInfo.isRtspsConnection ? "" : "o"));
 				rtxpTcpReadWrite.setIsRtpRtcpAllowed(! rtspSessionInfo.isTransportUdp);
 				if (rtspSessionInfo.isTransportUdp) {
 					rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();

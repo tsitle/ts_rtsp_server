@@ -131,6 +131,13 @@ public class RtspSessionInfo {
 	public @Nullable InetAddress clientIpAddr = null;
 	/** Has the client requested UDP transport? */
 	public boolean isTransportUdp = false;
+	/** Has the client requested RTP/RTCP encryption transport? */
+	public boolean isTransportSrtpSrtcp = false;
+
+	/** Are we using an RTSPS connection (with SSL/TLS)? */
+	public boolean isRtspsConnection = false;
+	/** Is RTP/RTCP encryption required? */
+	public boolean isRtpRtcpEncryptionRequired = false;
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
@@ -146,11 +153,6 @@ public class RtspSessionInfo {
 
 	/** RTSP protocol version used by the client in the last request (e.g. 'RTSP/1.0') */
 	public @NonNull String lastRequestRtspProtoVersion = "-";
-
-	/** Are we using an RTSPS connection (with SSL/TLS)? */
-	public boolean isRtspsConnection = false;
-	/** Is RTP/RTCP encryption required? */
-	public boolean isRtpRtcpEncryptionRequired = false;
 
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();
