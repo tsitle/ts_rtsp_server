@@ -603,10 +603,17 @@ public class ThreadRtspServer extends RunnableBase {
 			case ServerMessageType.PLAY:
 				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
 				logInfo(FNC_NAME, "Starting playback for is='" + tmpIsId + "'");
+				rtxpTcpReadWrite.setIsRtpRtcpAllowed(! rtspSessionInfo.isTransportUdp);
+				if (rtspSessionInfo.isTransportUdp) {
+					rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
+				} else {
+					rtxpTcpReadWrite.setTcpActivityTimeoutForRtxp();
+				}
 				startChildThreads(tmpIsId);
 				nextState = SessionState.PLAYING;
 				break;
 			case ServerMessageType.PAUSE:
+				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				pauseOrStopChildThreads(true);
 				nextState = SessionState.READY;
 				break;

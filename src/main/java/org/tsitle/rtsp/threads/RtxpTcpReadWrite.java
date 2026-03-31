@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -108,7 +109,9 @@ public class RtxpTcpReadWrite {
 	private static final String CRLF = "\r\n";
 	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
 	private static final int QUEUES_MAX_SIZE = 50;
-	private static final long TCP_ACTIVITY_TIMEOUT_SECS = 60L;
+
+	private static final long TCP_ACTIVITY_TIMEOUT_SECS_DEF = 2L;
+	private static final long TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY = 60L;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	/** TCP socket used to send/receive RTxP messages */
@@ -119,6 +122,9 @@ public class RtxpTcpReadWrite {
 	private final OutputStream socketOs;
 
 	private final AtomicBoolean doStop = new AtomicBoolean(false);
+
+	private final AtomicBoolean isRtpRtcpAllowed = new AtomicBoolean(false);
+	private final AtomicInteger tcpActivityTimeout = new AtomicInteger((int)TCP_ACTIVITY_TIMEOUT_SECS_DEF);
 
 	private final Queue<String> queueRtspLinesRcvd = new ConcurrentLinkedDeque<>();
 	private final Map<@NonNull Integer, @NonNull Queue<@NonNull BufferExt>> mapQueueRtpRtcpDataRcvd = new ConcurrentHashMap<>();
@@ -199,6 +205,20 @@ public class RtxpTcpReadWrite {
 			return -1;
 		}
 		return socketTcp.getPort();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public synchronized void setIsRtpRtcpAllowed(boolean value) {
+		isRtpRtcpAllowed.set(value);
+	}
+
+	public synchronized void setTcpActivityTimeoutForRtspOnly() {
+		tcpActivityTimeout.set((int)TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY);
+	}
+
+	public synchronized void setTcpActivityTimeoutForRtxp() {
+		tcpActivityTimeout.set((int)TCP_ACTIVITY_TIMEOUT_SECS_DEF);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -299,8 +319,9 @@ public class RtxpTcpReadWrite {
 			}
 			boolean haveAnythingAtAll = false;
 			int tmpQueueSize = 0;
+			boolean localIsRtpRtcpAllowed = isRtpRtcpAllowed.get();
 			while (! doStop.get()) {
-				checkTimeout(FNC_NAME);
+				checkTcpActivityTimeout(FNC_NAME);
 				boolean haveSomething = false;
 				while (! doStop.get()) {
 					int tmpInt;
@@ -313,7 +334,7 @@ public class RtxpTcpReadWrite {
 						break;
 					}
 					haveAnythingAtAll = true;
-					if (tmpInt == '$') {
+					if (localIsRtpRtcpAllowed && tmpInt == '$') {
 						tmpQueueSize = internalReadSocket_binary();
 					} else {
 						internalReadSocket_string((char)tmpInt);
@@ -523,8 +544,8 @@ public class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void checkTimeout(@NonNull String fncName) throws TcpSocketIoException {
-		if (Instant.now().minusSeconds(TCP_ACTIVITY_TIMEOUT_SECS).isAfter(lastActivityTime)) {
+	private void checkTcpActivityTimeout(@NonNull String fncName) throws TcpSocketIoException {
+		if (Instant.now().minusSeconds(tcpActivityTimeout.get()).isAfter(lastActivityTime)) {
 			throw new TcpSocketIoException(fncName + ": TCP activity timeout");
 		}
 	}
