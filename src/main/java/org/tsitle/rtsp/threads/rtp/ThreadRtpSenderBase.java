@@ -536,7 +536,7 @@ public abstract class ThreadRtpSenderBase<
 		//
 		if (paramsCommon.getIsStreamSourceFromFile()) {
 			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
-			if (tmpDeltaFdsNs > 1_000_000L) {
+			if (tmpDeltaFdsNs > 5_000_000L) {
 				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
 			}
 		}
