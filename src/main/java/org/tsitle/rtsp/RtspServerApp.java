@@ -402,9 +402,12 @@ public class RtspServerApp {
 				@NonNull String threadId,
 				@NonNull String msg
 			) {
-		if (rtxpLoggerThread != null) {
-			rtxpLoggerThread.log(logLevel, threadId, msg);
-		}
+		if (rtxpLoggerThread == null) { return; }
+		RtxpLogLevel minLevel = rtspConfig.getLogLevel();
+		if (minLevel == RtxpLogLevel.INFO && logLevel == RtxpLogLevel.DEBUG) { return; }
+		if (minLevel == RtxpLogLevel.WARN && (logLevel == RtxpLogLevel.DEBUG || logLevel == RtxpLogLevel.INFO)) { return; }
+		if (minLevel == RtxpLogLevel.ERROR && logLevel != RtxpLogLevel.ERROR) { return; }
+		rtxpLoggerThread.log(logLevel, threadId, msg);
 	}
 
 }

@@ -38,6 +38,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
 		isRunning.set(true);
+		logDebug(FNC_NAME, "Thread started");
 
 		//
 		try {

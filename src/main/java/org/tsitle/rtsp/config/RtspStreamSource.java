@@ -326,8 +326,8 @@ public class RtspStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ URL found for Stream Source ID '" + tmpExtSsId + "'");
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid ile path '" + filePath +
-					"' for Stream Source ID '" + tmpExtSsId + "' does not exist");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
+					"' for Stream Source ID '" + tmpExtSsId + "' - file not found");
 		}
 		if (! mqUrl.isBlank()) {
 			validateMqUrl(FNC_NAME, tmpExtSsId, mqUrl);

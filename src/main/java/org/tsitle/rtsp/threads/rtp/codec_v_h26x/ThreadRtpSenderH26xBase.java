@@ -122,7 +122,7 @@ public abstract class ThreadRtpSenderH26xBase<
 
 		cacheFrameData.reset();
 
-		while (!globalAuQuHaveOneAu && ! doStop.get()) {
+		while (! globalAuQuHaveOneAu && ! doStop.get()) {
 			try {
 				frameDataSupplierGrabNalUnit();
 			} catch (InputStreamEosException e) {

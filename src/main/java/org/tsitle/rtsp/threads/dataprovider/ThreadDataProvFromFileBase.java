@@ -67,6 +67,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
 		isRunning.set(true);
+		logDebug(FNC_NAME, "Thread started");
 
 		//
 		try {

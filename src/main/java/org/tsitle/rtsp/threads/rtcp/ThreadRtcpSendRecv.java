@@ -105,6 +105,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		//
 		isRunning.set(true);
+		logDebug(FNC_NAME, "Thread started");
 
 		try {
 			while (! doStop.get()) {
@@ -375,7 +376,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		for (int itemNr = 1; itemNr <= rtcpPktHd.getItemsCount(); itemNr++) {
 			RtcpInnerRecpReportBlock innerRb = rtcpPktInner.getRecpReportBlock(itemNr).orElseThrow();
-			/*logInfo(FNC_NAME, String.format("RTT: %dms, FLost: %.3f%%",
+			/*logDebug(FNC_NAME, String.format("RTT: %dms, FLost: %.3f%%",
 					innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L),
 					innerRb.getFractionLostPercent() * 100.0f));*/
 			if (itemNr != 1) {
@@ -427,7 +428,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			return;  // only for the linter
 		}
-		logInfo(FNC_NAME, "received BYE");
+		logDebug(FNC_NAME, "received BYE");
 	}
 
 }

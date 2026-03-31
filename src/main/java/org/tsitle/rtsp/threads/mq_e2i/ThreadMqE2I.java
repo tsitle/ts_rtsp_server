@@ -82,6 +82,7 @@ public class ThreadMqE2I extends RunnableBase {
 
 		//
 		isRunning.set(true);
+		logDebug(FNC_NAME, "Thread started");
 
 		//
 		try {

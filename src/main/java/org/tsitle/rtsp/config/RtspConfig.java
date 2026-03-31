@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 
 import java.net.URI;
@@ -73,6 +74,9 @@ public class RtspConfig {
 	/** Debugging: disable UDP transport? */
 	@Expose
 	private boolean debugDisableTransportUdp;
+	/** Log level (INFO, DEBUG, WARN, ERROR) */
+	@Expose
+	private @NonNull String logLevel;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
@@ -86,6 +90,8 @@ public class RtspConfig {
 	@SuppressWarnings("FieldMayBeFinal")
 	@GsonAnnoExclude
 	private @NonNull Map<@NonNull String, @NonNull Integer> internalMapStreamSourceIdExtToInt;
+	@GsonAnnoExclude
+	private @Nullable RtxpLogLevel internalLogLevel;
 
 	/**
 	 * Constructor.
@@ -104,11 +110,13 @@ public class RtspConfig {
 		this.debugPrintRtspSdpSent = false;
 		this.debugRewindMediaFiles = false;
 		this.debugDisableTransportUdp = false;
+		this.logLevel = RtxpLogLevel.INFO.name();
 
 		//noinspection DataFlowIssue
 		this.internalStreamSources = null;
 		this.internalMapStreamSourceIdIntToExt = new HashMap<>();
 		this.internalMapStreamSourceIdExtToInt = new HashMap<>();
+		this.internalLogLevel = null;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -138,7 +146,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslCertPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("RPSPS Server SSL Certificate file not found", rtspsServerSslKey.certificate);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL Certificate file path", rtspsServerSslKey.certificate);
 	}
 
 	/**
@@ -147,7 +155,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslKeyPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("RPSPS Server SSL Private Key file not found", rtspsServerSslKey.key);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL Private Key file path", rtspsServerSslKey.key);
 	}
 
 	/**
@@ -156,7 +164,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL CA file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslCaPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("RPSPS Server SSL CA file not found", rtspsServerSslKey.ca);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL CA file path", rtspsServerSslKey.ca);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -205,7 +213,7 @@ public class RtspConfig {
 		if (tmpPathStr == null && mqServerSslCertificates.containsKey(tmpHost)) {
 			tmpPathStr = mqServerSslCertificates.get(tmpHost);
 		}
-		return getAbsoluteFilePath("MQ SSL Certificate file for host '" + tmpSearch1 + "' not found", tmpPathStr);
+		return getAbsoluteFilePath("Invalid MQ SSL Certificate file path for host '" + tmpSearch1 + "'", tmpPathStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -386,6 +394,14 @@ public class RtspConfig {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public @NonNull RtxpLogLevel getLogLevel() {
+		checkPostProcessed();
+		//noinspection DataFlowIssue
+		return internalLogLevel;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Post-process the configuration by setting record IDs
 	 */
@@ -422,6 +438,14 @@ public class RtspConfig {
 		checkPostProcessed();
 
 		//
+		//noinspection ConstantValue
+		if (logLevel == null || logLevel.isBlank()) {
+			logLevel = RtxpLogLevel.INFO.name();
+		} else if (! RtxpLogLevel.isValid(logLevel)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logLevel + "'");
+		}
+		internalLogLevel = RtxpLogLevel.of(logLevel);
+		//
 		if (serverTcpPortRtsp == 0 || serverTcpPortRtsp > 65535) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + serverTcpPortRtsp);
 		}
@@ -445,16 +469,11 @@ public class RtspConfig {
 		if (serverTcpPortRtsps > 0) {
 			//noinspection ConstantValue
 			if (rtspsServerSslKey == null) {
-				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey");
+				throw new ConfigInvalidException(FNC_NAME + ": Empty value for rtspsServerSslKey");
 			}
-			//noinspection ConstantValue
-			if (rtspsServerSslKey.certificate == null || rtspsServerSslKey.certificate.isBlank()) {
-				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey.certificate");
-			}
-			//noinspection ConstantValue
-			if (rtspsServerSslKey.key == null || rtspsServerSslKey.key.isBlank()) {
-				throw new ConfigInvalidException(FNC_NAME + ": Empty value for RtspsServerSslKey.key");
-			}
+			checkFileExists("rtspsServerSslKey.certificate", false, rtspsServerSslKey.certificate);
+			checkFileExists("rtspsServerSslKey.key", false, rtspsServerSslKey.key);
+			checkFileExists("rtspsServerSslKey.ca", true, rtspsServerSslKey.ca);
 		}
 
 		//
@@ -513,9 +532,25 @@ public class RtspConfig {
 		String resStr = RtspStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), filename);
 		Path tmpPathObj = Paths.get(resStr);
 		if (! tmpPathObj.toFile().exists()) {
-			throw new ConfigInvalidException(errMsg + ": '" + resStr + "'");
+			throw new ConfigInvalidException(errMsg + ": file '" + resStr + "' not found");
 		}
 		return Optional.of(resStr);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkFileExists(
+				@NonNull String desc,
+				boolean canBeEmpty,
+				@Nullable String filename
+			) throws ConfigInvalidException {
+		if (canBeEmpty && (filename == null || filename.isBlank())) {
+			return;
+		}
+		if (filename == null || filename.isBlank()) {
+			throw new ConfigInvalidException("Empty value for '" + desc + "'");
+		}
+		getAbsoluteFilePath("Invalid file path for '" + desc + "'", filename).orElseThrow();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -112,7 +112,7 @@ public class ThreadRtspServer extends RunnableBase {
 
 		//
 		isRunning.set(true);
-		logInfo(FNC_NAME, String.format("Serving RTSP%s to %s:%d%n",
+		logInfo(FNC_NAME, String.format("Serving RTSP%s to %s:%d",
 				rtspSessionInfo.isRtspsConnection ? "S" : "",
 				clientIpAddr.getHostAddress(), rtxpTcpReadWrite.getSocketRemotePort()));
 
@@ -141,6 +141,10 @@ public class ThreadRtspServer extends RunnableBase {
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
+			logInfo(FNC_NAME, String.format("Closing RTSP%s for %s:%d",
+					rtspSessionInfo.isRtspsConnection ? "S" : "",
+					clientIpAddr.getHostAddress(), rtxpTcpReadWrite.getSocketRemotePort()));
+			//
 			logDebug(FNC_NAME, "stopping thread");
 			// stop sending/receiving RTP/RTCP packets
 			pauseOrStopChildThreads(false);

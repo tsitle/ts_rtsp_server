@@ -192,6 +192,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		isRunning.set(true);
+		logDebug(FNC_NAME, "Thread started");
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
@@ -241,7 +242,7 @@ public abstract class ThreadRtpSenderBase<
 		} catch (AvCannotOpenInputException e) {
 			logError(FNC_NAME, "AvCannotOpenInputException caught: " + e.getMessage());
 		} catch (InputStreamEosException e) {
-			logError(FNC_NAME, "InputStreamEosException caught: " + e);
+			logError(FNC_NAME, "InputStreamEosException caught");
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
 		} catch (TcpSocketIoException e) {
