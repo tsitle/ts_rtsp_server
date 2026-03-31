@@ -20,6 +20,7 @@ import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,6 +87,16 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		BufferExt tmpBuf = new BufferExt();
 		tmpBuf.copyOf(rtcpPacketsBuf);
 		queueSend.add(tmpBuf);
+	}
+
+	public synchronized void appendByePacketToSendQueue() {
+		final String FNC_NAME = getClass().getSimpleName() + ".appendByePacketToSendQueue()";
+
+		logDebug(FNC_NAME, "Sending BYE packet");
+		BufferExt packetCompoundBuf = new BufferExt();
+		sendBye_buildRtcpCompound(packetCompoundBuf);
+		//
+		queueSend.add(packetCompoundBuf);
 	}
 
 	@Override
@@ -239,6 +250,33 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			BufferView tmpBv = new BufferView(outpPacketPtr);
 			parRtcpRwIfTcp.writeRtcpBinary(tmpBv, params.getTpClientDestTcpChann());
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void sendBye_buildEmptyRtcpSr(BufferExt packetSrBuf) {
+		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(0L, 0, 0, 0);
+		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getRtspSsrcId(), siBlock, List.of());
+		packetSrObj.copyRawPacketDataInto(packetSrBuf);
+	}
+
+	private void sendBye_buildRtcpCompound(BufferExt packetCompoundBuf) {
+		/*
+		 * We need to send a compound RTCP packet that contains two RTCP packets:
+		 *   1. Sender Report (SR) packet
+		 *   2. BYE packet
+		 * See https://datatracker.ietf.org/doc/html/rfc3550#section-6.1
+		 */
+
+		packetCompoundBuf.clear();
+		// SR packet
+		sendBye_buildEmptyRtcpSr(packetCompoundBuf);
+		// BYE packet
+		RtcpPacketBYE packetByeObj = new RtcpPacketBYE(List.of(params.getRtspSsrcId()), null);
+		BufferExt packetByeBuf = new BufferExt();
+		packetByeObj.copyRawPacketDataInto(packetByeBuf);
+		// Compound packet
+		packetCompoundBuf.append(packetByeBuf);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

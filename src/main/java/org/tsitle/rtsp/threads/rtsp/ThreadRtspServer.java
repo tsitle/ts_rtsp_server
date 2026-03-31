@@ -18,7 +18,6 @@ import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
-import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -46,6 +45,7 @@ public class ThreadRtspServer extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** RTSP session timeout tolerance in seconds. Sometimes even compliant clients fail to send a keep-alive message in time. */
 	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 15;
 
 	private final String threadName;
@@ -764,7 +764,13 @@ public class ThreadRtspServer extends RunnableBase {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspConstants.RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
 				logError(FNC_NAME, "RTSP session timeout after " + tmpTimeDiff + " seconds");
-				// @TODO send BYE packet
+				// send a BYE packet per stream
+				for (ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
+					if (ctfos.rtcpThreadSendRecv == null || ! ctfos.rtcpThreadSendRecv.isRunning()) {
+						continue;
+					}
+					ctfos.rtcpThreadSendRecv.appendByePacketToSendQueue();
+				}
 				return false;
 			}
 		}

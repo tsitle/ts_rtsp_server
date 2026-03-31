@@ -14,12 +14,16 @@ public class RtspConstants {
 	/** RTSPS URL Protocol */
 	public static final String RTSPS_URL_PROTOCOL = "rtsps";
 
-	/** RTSP Session Timeout */
+	/**
+	 * RTSP Session Timeout in seconds -- this value will be announced to the client.<br />
+	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link org.tsitle.rtsp.threads.RtxpTcpReadWrite}
+	 * instance will check for a timeout.
+	 */
 	public static final int RTSP_SESSION_TIMEOUT = 20;
 
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
 	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
-	/** Samples per frame for AAC-LC audio -- Default Type 1 */
+	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
 	/** Samples per frame for AAC-LC audio -- Default Type 2 */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 960;
