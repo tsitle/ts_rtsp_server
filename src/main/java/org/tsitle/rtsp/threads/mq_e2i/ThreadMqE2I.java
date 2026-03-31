@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.mq_e2i;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.mq.MqExternalSub;
 import org.tsitle.rtsp.mq.MqInternalPub;
 import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
@@ -19,10 +20,12 @@ public class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
 	private final int streamSourceId;
+	private final @NonNull URI mqUri;
+	private final @NonNull String mqSslCertPath;
 
 	private final String threadName;
 
-	private final @NonNull MqExternalSub mqExternalSub;
+	private @Nullable MqExternalSub mqExternalSub = null;
 	private final @NonNull MqInternalPub mqInternalPub;
 
 	private final @NonNull BufferExt cachePayloadData = new BufferExt();
@@ -59,17 +62,12 @@ public class ThreadMqE2I extends RunnableBase {
 		if (mqUri.getUserInfo() == null || mqUri.getUserInfo().isEmpty()) {
 			throw new IllegalArgumentException("Missing authentification in input URI: " + mqUri);
 		}
+		this.mqUri = mqUri;
+		this.mqSslCertPath = mqSslCertPath;
 
-		this.threadName = "MQE2I#" + streamSourceId;
+		this.threadName = "MQE2I#ss" + streamSourceId;
 
 		//
-		mqExternalSub = new MqExternalSub(
-				logMsgInterface,
-				mqUri.getHost() + ":" + mqUri.getPort(),
-				mqUri.getPath(),
-				mqUri.getUserInfo(),
-				mqSslCertPath.strip()
-			);
 		mqInternalPub = new MqInternalPub(logMsgInterface, streamSourceId);
 	}
 
@@ -87,12 +85,29 @@ public class ThreadMqE2I extends RunnableBase {
 
 		//
 		try {
-			mqExternalSub.connectToMq();
 			mqInternalPub.connectToMq();
 
-			//
-			while (! (hasBeenRequestedToStop() || mqExternalSub.isClosed())) {
-				mainLoop();
+			while (! hasBeenRequestedToStop()) {
+				mqExternalSub = new MqExternalSub(
+						logMsgInterface,
+						mqUri.getHost() + ":" + mqUri.getPort(),
+						mqUri.getPath(),
+						mqUri.getUserInfo(),
+						mqSslCertPath.strip()
+					);
+				try {
+					mqExternalSub.connectToMq();
+					//
+					while (! (hasBeenRequestedToStop() || mqExternalSub.isClosed())) {
+						mainLoop();
+					}
+				} catch (MqException e) {
+					logError(FNC_NAME, "MqException caught: " + e.getMessage());
+					//noinspection BusyWait
+					Thread.sleep(1000);
+				} finally {
+					mqExternalSub.close();
+				}
 			}
 		} catch (MqException e) {
 			logError(FNC_NAME, "MqException caught: " + e.getMessage());
@@ -103,7 +118,6 @@ public class ThreadMqE2I extends RunnableBase {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			mqInternalPub.close();
-			mqExternalSub.close();
 			//
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
@@ -114,6 +128,9 @@ public class ThreadMqE2I extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void mainLoop() throws InterruptedException, MqException {
+		if (mqExternalSub == null) {
+			throw new IllegalStateException("mqExternalSub is null");
+		}
 		Optional<MqPacketAv> optPacket = mqExternalSub.receiveMessageAv(cachePayloadData);
 		if (optPacket.isEmpty()) {
 			return;
