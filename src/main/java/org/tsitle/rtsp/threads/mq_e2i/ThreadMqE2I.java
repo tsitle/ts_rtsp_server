@@ -88,6 +88,7 @@ public class ThreadMqE2I extends RunnableBase {
 		try {
 			mqInternalPub.connectToMq();
 
+			int failCount = 0;
 			while (! hasBeenRequestedToStop()) {
 				mqExternalSub = new MqExternalSub(
 						logMsgInterface,
@@ -101,11 +102,15 @@ public class ThreadMqE2I extends RunnableBase {
 					//
 					while (! (hasBeenRequestedToStop() || mqExternalSub.isClosed())) {
 						mainLoop();
+						failCount = 0;
 					}
 				} catch (MqException e) {
+					if (++failCount >= 30) {
+						failCount = 30;
+					}
 					logError(FNC_NAME, "MqException caught: " + e.getMessage());
 					//noinspection BusyWait
-					Thread.sleep(1000);
+					Thread.sleep((long)failCount * 1000L);
 				} finally {
 					mqExternalSub.close();
 				}
