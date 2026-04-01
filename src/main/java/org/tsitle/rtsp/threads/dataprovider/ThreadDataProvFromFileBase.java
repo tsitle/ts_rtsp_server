@@ -225,11 +225,12 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 			}
 			if (e instanceof InputStreamIoException) {
 				logError(fncName, "InputStreamIoException caught while reading next frame: " + e.getMessage());
+				// we have reached the end of the input
+				eosReached.set(true);
 			} else {
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- InputStreamEosException");
+				// try to rewind in the next iteration
 			}
-			// we have reached the end of the input
-			eosReached.set(true);
 			return;
 		} catch (AvInvalidCodecDataException e) {
 			logError(fncName, "AvInvalidCodecDataException caught: " + e.getMessage());
