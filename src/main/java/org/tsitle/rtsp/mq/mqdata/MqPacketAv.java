@@ -7,13 +7,15 @@ import org.tsitle.rtsp.buffers.BufferExt;
  * Audio/video packet.
  * @param codec The codec used for the payload
  * @param isCodecGuessed Whether the codec was guessed or explicitly set
- * @param mdTimestamp Metadata: timestamp of the payload (sample time)
+ * @param mdTimestamp Metadata: sample time timestamp of the payload
  * @param mdCounter Metadata: packet counter
  * @param mdVideoIsKeyframe Metadata: is this a keyframe? (video only)
  * @param mdVideoResoWidth Metadata: resolution width (video only)
  * @param mdVideoResoHeight Metadata: resolution height (video only)
  * @param mdVideoFps Metadata: frames per second (video only)
  * @param mdVideoBitrate Metadata: bitrate (video only)
+ * @param mdAudioSamplerate Metadata: audio samplerate (audio only)
+ * @param mdAudioChannelCount Metadata: audio channel count (audio only)
  * @param mdPayloadCRC8 Metadata: CRC8 checksum of the payload
  * @param payloadDataPtr Pointer to the payload data buffer
  */
@@ -25,8 +27,10 @@ public record MqPacketAv(
 			boolean mdVideoIsKeyframe,
 			int mdVideoResoWidth,
 			int mdVideoResoHeight,
-			int mdVideoFps,
+			double mdVideoFps,
 			int mdVideoBitrate,
+			int mdAudioSamplerate,
+			byte mdAudioChannelCount,
 			byte mdPayloadCRC8,
 			@NonNull BufferExt payloadDataPtr
 		) {
@@ -40,8 +44,10 @@ public record MqPacketAv(
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
 				(codec.isVideo() ? ", mdVideoResoWidth=" + Integer.toUnsignedString(mdVideoResoWidth) : "") +
 				(codec.isVideo() ? ", mdVideoResoHeight=" + Integer.toUnsignedString(mdVideoResoHeight) : "") +
-				(codec.isVideo() ? ", mdVideoFps=" + Integer.toUnsignedString(mdVideoFps) : "") +
+				(codec.isVideo() ? ", mdVideoFps=" + String.format("%.2f", mdVideoFps).replace(",", ".") : "") +
 				(codec.isVideo() ? ", mdVideoBitrate=" + Integer.toUnsignedString(mdVideoBitrate) : "") +
+				(! codec.isVideo() ? ", mdAudioSamplerate=" + Integer.toUnsignedString(mdAudioSamplerate) : "") +
+				(! codec.isVideo() ? ", mdAudioChannelCount=" + Integer.toUnsignedString(mdAudioChannelCount) : "") +
 				", mdPayloadCRC8=" + String.format("0x%02X", mdPayloadCRC8) +
 				", payload.sz=" + payloadDataPtr.getUsed() +
 				"]";

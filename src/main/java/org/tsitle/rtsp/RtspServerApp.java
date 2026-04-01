@@ -205,13 +205,13 @@ public class RtspServerApp {
 					(int cbArgStreamSourceId, @NonNull MqCodecSettings cbArgCodecSettings) -> {
 							RtspStreamSource tmpCbSs = rtspConfig.getStreamSourceObj(cbArgStreamSourceId).orElseThrow();
 							if (cbArgCodecSettings.codec != null) {
-								tmpCbSs.setMqDynamicCodec(cbArgCodecSettings.codec.getRtpPacketType());
+								tmpCbSs.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
 							}
 							if (cbArgCodecSettings.videoFps != null) {
 								tmpCbSs.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
 							}
 							if (cbArgCodecSettings.audioSamplerate != null) {
-								tmpCbSs.setMqDynamicAudioSampleRateHz(cbArgCodecSettings.audioSamplerate);
+								tmpCbSs.setMqDynamicAudioSamplerateHz(cbArgCodecSettings.audioSamplerate);
 							}
 							if (cbArgCodecSettings.audioChannels != null) {
 								tmpCbSs.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);

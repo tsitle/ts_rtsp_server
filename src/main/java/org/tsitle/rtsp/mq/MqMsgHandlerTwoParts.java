@@ -86,9 +86,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		}
 
 		cacheBufferData.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
-		byte[] tmpStrBytes = packet.codec().getCodecName().getBytes(ZMQ.CHARSET);
-		cacheBufferData.putInt(tmpStrBytes.length);
-		cacheBufferData.put(tmpStrBytes);
+		writeStringToMqBuf(packet.codec().getCodecName());
 		if (packet.codec().isVideo()) {
 			cacheBufferData.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
 		}
@@ -98,8 +96,11 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			cacheBufferData.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
 			cacheBufferData.putInt(packet.mdVideoResoWidth());
 			cacheBufferData.putInt(packet.mdVideoResoHeight());
-			cacheBufferData.putInt(packet.mdVideoFps());
+			writeStringToMqBuf(String.format("%.2f", packet.mdVideoFps()).replace(',', '.'));
 			cacheBufferData.putInt(packet.mdVideoBitrate());
+		} else {
+			cacheBufferData.putInt(packet.mdAudioSamplerate());
+			cacheBufferData.put(packet.mdAudioChannelCount());
 		}
 		cacheBufferData.put(packet.mdPayloadCRC8());
 		cacheBufferData.putInt(packet.payloadDataPtr().getUsed());
@@ -127,11 +128,13 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		try {
 			boolean tmpIsVideo = (cacheBufferData.get() != 0);
 			// read codec
-			int tmpStrLen = cacheBufferData.getInt();
-			byte[] tmpStrBytes = new byte[tmpStrLen];
-			cacheBufferData.get(tmpStrBytes);
-			String tmpCodecStr = new String(tmpStrBytes, ZMQ.CHARSET);
-			MqPacketCodec tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
+			String tmpCodecStr = readStringFromMqBuf();
+			MqPacketCodec tmpCodecEn;
+			try {
+				tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
+			} catch (IllegalArgumentException e) {
+				throw new MqException(FNC_NAME + ": Invalid codec name: '" + tmpCodecStr + "'");
+			}
 			if (tmpIsVideo != tmpCodecEn.isVideo()) {
 				throw new MqException(FNC_NAME + ": Invalid codec in " + (tmpIsVideo ? "VID" : "AUD") +
 						" packet: '" + tmpCodecStr + "'");
@@ -143,8 +146,20 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			boolean tmpMdVideoIsKeyframe = (tmpIsVideo && cacheBufferData.get() != 0);
 			int tmpMdVideoResoWidth = (tmpIsVideo ? cacheBufferData.getInt() : 0);
 			int tmpMdVideoResoHeight = (tmpIsVideo ? cacheBufferData.getInt() : 0);
-			int tmpMdVideoFps = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			double tmpMdVideoFpsDbl;
+			if (tmpIsVideo) {
+				String tmpMdVideoFpsStr = readStringFromMqBuf();
+				try {
+					tmpMdVideoFpsDbl = Double.parseDouble(tmpMdVideoFpsStr);
+				} catch (NumberFormatException e) {
+					throw new MqException(FNC_NAME + ": Invalid video FPS format in packet: '" + tmpMdVideoFpsStr + "'");
+				}
+			} else {
+				tmpMdVideoFpsDbl = 0.0;
+			}
 			int tmpMdVideoBitrate = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			int tmpMdAudioSamplerate = (! tmpIsVideo ? cacheBufferData.getInt() : 0);
+			byte tmpMdAudioChannelCount = (! tmpIsVideo ? cacheBufferData.get() : 0);
 			byte tmpMdPayloadCRC8 = cacheBufferData.get();
 			payloadDataSize = cacheBufferData.getInt();
 
@@ -156,14 +171,31 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 					tmpMdVideoIsKeyframe,
 					tmpMdVideoResoWidth,
 					tmpMdVideoResoHeight,
-					tmpMdVideoFps,
+					tmpMdVideoFpsDbl,
 					tmpMdVideoBitrate,
+					tmpMdAudioSamplerate,
+					tmpMdAudioChannelCount,
 					tmpMdPayloadCRC8,
 					payloadDataPtr
 				);
 		} catch (BufferUnderflowException e) {
 			throw new MqException(FNC_NAME + ": received too few bytes");
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull String readStringFromMqBuf() {
+		int tmpStrLen = cacheBufferData.getInt();
+		byte[] tmpStrBytes = new byte[tmpStrLen];
+		cacheBufferData.get(tmpStrBytes);
+		return new String(tmpStrBytes, ZMQ.CHARSET);
+	}
+
+	private void writeStringToMqBuf(@NonNull String str) {
+		byte[] tmpStrBytes = str.getBytes(ZMQ.CHARSET);
+		cacheBufferData.putInt(tmpStrBytes.length);
+		cacheBufferData.put(tmpStrBytes);
 	}
 
 }

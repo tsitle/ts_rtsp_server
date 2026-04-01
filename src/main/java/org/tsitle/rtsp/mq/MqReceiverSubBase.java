@@ -119,7 +119,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 			return Optional.empty();
 		}
 		final MqPacketAv packet = optPacket.get();
-		//logDebug(FNC_NAME, "Received MQ " + packet);
+		//if (! packet.codec().isVideo()) { logDebug(FNC_NAME, "Received MQ " + packet); }
 		//logDebug(FNC_NAME, "Received MQ Packet " + (packet.codec().isVideo() ? "VID" : "AUD"));
 
 		// validate the payload data (if the checksum is 0x00, we assume that the sender did not compute it)

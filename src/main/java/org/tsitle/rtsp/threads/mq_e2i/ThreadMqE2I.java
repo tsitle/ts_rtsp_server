@@ -9,7 +9,6 @@ import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.helpers.CancelToken;
-import org.tsitle.rtsp.mq.mqdata.MqPacketCodec;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
 
@@ -148,9 +147,9 @@ public class ThreadMqE2I extends RunnableBase {
 			// the codec should never actually change during a session - but we need to read it once
 			cacheCodecSettings.codec = packet.codec();
 			if (! packet.codec().isVideo()) {
-				// samplerate and channel count should never actually change during a session - but we need to read it once
-				cacheCodecSettings.audioSamplerate = (cacheCodecSettings.codec == MqPacketCodec.LPCM16_8K_MONO ? 8000 : null);
-				cacheCodecSettings.audioChannels = (cacheCodecSettings.codec == MqPacketCodec.LPCM16_8K_MONO ? 1 : null);
+				// samplerate and channel count should never actually change during a session - but we need to read them once
+				cacheCodecSettings.audioSamplerate = packet.mdAudioSamplerate();
+				cacheCodecSettings.audioChannels = packet.mdAudioChannelCount();
 			}
 			haveChanges = true;
 		}

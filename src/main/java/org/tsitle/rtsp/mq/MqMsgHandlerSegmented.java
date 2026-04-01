@@ -68,8 +68,11 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			writeFieldToMqBool(packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
 			writeFieldToMqUint32(packet.mdVideoResoWidth(), ZMQ.SNDMORE);
 			writeFieldToMqUint32(packet.mdVideoResoHeight(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packet.mdVideoFps(), ZMQ.SNDMORE);
+			writeFieldToMqStr(String.format("%.2f", packet.mdVideoFps()).replace(',', '.'), ZMQ.SNDMORE);
 			writeFieldToMqUint32(packet.mdVideoBitrate(), ZMQ.SNDMORE);
+		} else {
+			writeFieldToMqUint32(packet.mdAudioSamplerate(), ZMQ.SNDMORE);
+			writeFieldToMqUint08(packet.mdAudioChannelCount(), ZMQ.SNDMORE);
 		}
 		writeFieldToMqUint08(packet.mdPayloadCRC8(), ZMQ.SNDMORE);
 		writeFieldToMqUint32(packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
@@ -116,8 +119,20 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		final boolean tmpMdVideoIsKeyframe = (tmpIsVideo && decodeFieldBool(FNC_NAME, frames, frameIx++));
 		final int tmpMdVideoResoWidth = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
 		final int tmpMdVideoResoHeight = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdVideoFps = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final double tmpMdVideoFpsDbl;
+		if (tmpIsVideo) {
+			String tmpMdVideoFpsStr = decodeFieldString(FNC_NAME, frames, frameIx++);
+			try {
+				tmpMdVideoFpsDbl = Double.parseDouble(tmpMdVideoFpsStr);
+			} catch (NumberFormatException e) {
+				throw new MqException(FNC_NAME + ": Invalid video FPS format in packet: '" + tmpMdVideoFpsStr + "'");
+			}
+		} else {
+			tmpMdVideoFpsDbl = 0.0;
+		}
 		final int tmpMdVideoBitrate = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final int tmpMdAudioSamplerate = (! tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final byte tmpMdAudioChannelCount = (! tmpIsVideo ? decodeFieldUint08(FNC_NAME, frames, frameIx++) : 0);
 		final byte tmpMdPayloadCRC8 = decodeFieldUint08(FNC_NAME, frames, frameIx++);
 		final int tmpBinDataLen = decodeFieldUint32(FNC_NAME, frames, frameIx++);
 
@@ -131,8 +146,10 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				tmpMdVideoIsKeyframe,
 				tmpMdVideoResoWidth,
 				tmpMdVideoResoHeight,
-				tmpMdVideoFps,
+				tmpMdVideoFpsDbl,
 				tmpMdVideoBitrate,
+				tmpMdAudioSamplerate,
+				tmpMdAudioChannelCount,
 				tmpMdPayloadCRC8,
 				payloadDataPtr
 			);

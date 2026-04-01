@@ -14,7 +14,6 @@ import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Stream Source within an Input Source for RTSP streams.
@@ -64,16 +63,16 @@ public class RtspStreamSource {
 
 	/** for MQs: Codec */
 	@GsonAnnoExclude
-	private final AtomicInteger mqDynamicCodec = new AtomicInteger(RtpPacketType.UNKNOWN.getValue());
+	private RtpPacketType mqDynamicCodec = RtpPacketType.UNKNOWN;
 	/** for MQs: Video frames per second */
 	@GsonAnnoExclude
-	private final AtomicInteger mqDynamicVideoFps = new AtomicInteger(-1);
-	/** for MQs: Audio sample rate in Hz */
+	private double mqDynamicVideoFps = -1.0;
+	/** for MQs: Audio samplerate in Hz */
 	@GsonAnnoExclude
-	private final AtomicInteger mqDynamicAudioSampleRateHz = new AtomicInteger(-1);
+	private int mqDynamicAudioSamplerateHz = -1;
 	/** for MQs: Audio channel count */
 	@GsonAnnoExclude
-	private final AtomicInteger mqDynamicAudioChannelCount = new AtomicInteger(-1);
+	private byte mqDynamicAudioChannelCount = -1;
 
 	public RtspStreamSource() {
 		this.id = -1;
@@ -130,7 +129,7 @@ public class RtspStreamSource {
 		checkPostProcessed();
 		if (getIsSourceFromMq()) {
 			// the actual codec will be determined dynamically when reading from a MQ
-			return RtpPacketType.of((byte)mqDynamicCodec.get());
+			return mqDynamicCodec;
 		}
 		//noinspection ConstantValue
 		return (internalCodec == null ? RtpPacketType.UNKNOWN : internalCodec);
@@ -140,30 +139,30 @@ public class RtspStreamSource {
 		checkPostProcessed();
 		if (getIsSourceFromMq()) {
 			// the actual FPS doesn't matter when reading from a MQ, but it will be determined dynamically when reading from a MQ
-			return mqDynamicVideoFps.doubleValue();
+			return mqDynamicVideoFps;
 		}
 		//noinspection ConstantValue
 		return (videoFps == null ? -1.0 : videoFps);
 	}
 
-	public synchronized int getAudioSampleRateHz() {
+	public synchronized int getAudioSamplerateHz() {
 		checkPostProcessed();
 		if (getIsSourceFromMq()) {
 			// the actual samplerate will be determined dynamically when reading from a MQ
-			return mqDynamicAudioSampleRateHz.get();
+			return mqDynamicAudioSamplerateHz;
 		}
 		//noinspection ConstantValue
-		return (audioSampleRateHz == null ? -1 : audioSampleRateHz);
+		return (audioSamplerateHz == null ? -1 : audioSamplerateHz);
 	}
 
-	public synchronized int getAudioChannelCount() {
+	public synchronized byte getAudioChannelCount() {
 		checkPostProcessed();
 		if (getIsSourceFromMq()) {
 			// the actual channel count will be determined dynamically when reading from a MQ
-			return mqDynamicAudioChannelCount.get();
+			return mqDynamicAudioChannelCount;
 		}
 		//noinspection ConstantValue
-		return (audioChannelCount == null ? -1 : audioChannelCount);
+		return (byte)(audioChannelCount == null ? -1 : audioChannelCount);
 	}
 
 	/** Get audio samples per frame as required for RTP. */
@@ -220,13 +219,13 @@ public class RtspStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public synchronized void setMqDynamicCodec(@NonNull RtpPacketType value) { this.mqDynamicCodec.set(value.getValue()); }
+	public synchronized void setMqDynamicCodec(@NonNull RtpPacketType value) { this.mqDynamicCodec = value; }
 
-	public synchronized void setMqDynamicVideoFps(int value) { this.mqDynamicVideoFps.set(value); }
+	public synchronized void setMqDynamicVideoFps(double value) { this.mqDynamicVideoFps = value; }
 
-	public synchronized void setMqDynamicAudioSampleRateHz(int value) { this.mqDynamicAudioSampleRateHz.set(value); }
+	public synchronized void setMqDynamicAudioSamplerateHz(int value) { this.mqDynamicAudioSamplerateHz = value; }
 
-	public synchronized void setMqDynamicAudioChannelCount(int value) { this.mqDynamicAudioChannelCount.set(value); }
+	public synchronized void setMqDynamicAudioChannelCount(byte value) { this.mqDynamicAudioChannelCount = value; }
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -265,41 +264,7 @@ public class RtspStreamSource {
 			internalCodec = RtpPacketType.UNKNOWN;
 			return;
 		}
-		switch (codec) {
-			case AACLC:
-				internalCodec = RtpPacketType.A_AAC;
-				break;
-			case PCMU:
-				if (getAudioChannelCount() == 1 && getAudioSampleRateHz() == 8000) {
-					internalCodec = RtpPacketType.A_PCMU_8KHZ_MONO;
-				} else {
-					internalCodec = RtpPacketType.A_PCMU_VAR;
-				}
-				break;
-			case LPCM08:
-				internalCodec = RtpPacketType.A_LINEAR_PCM_U08_VAR;
-				break;
-			case LPCM16:
-				if (getAudioChannelCount() == 1 && getAudioSampleRateHz() == 44100) {
-					internalCodec = RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
-				} else if (getAudioChannelCount() == 2 && getAudioSampleRateHz() == 44100) {
-					internalCodec = RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
-				} else {
-					internalCodec = RtpPacketType.A_LINEAR_PCM_S16_VAR;
-				}
-				break;
-			case MJPEG:
-				internalCodec = RtpPacketType.V_JPEG;
-				break;
-			case H264:
-				internalCodec = RtpPacketType.V_H264;
-				break;
-			case H265:
-				internalCodec = RtpPacketType.V_H265;
-				break;
-			default:
-				internalCodec = RtpPacketType.UNKNOWN;
-		}
+		internalCodec = codec.convertToRtpPacketType(getAudioSamplerateHz(), getAudioChannelCount());
 	}
 
 	/**
