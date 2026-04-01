@@ -404,9 +404,9 @@ public class RtspServerApp {
 			) {
 		if (rtxpLoggerThread == null) { return; }
 		RtxpLogLevel minLevel = rtspConfig.getLogLevel();
-		if (minLevel == RtxpLogLevel.INFO && logLevel == RtxpLogLevel.DEBUG) { return; }
-		if (minLevel == RtxpLogLevel.WARN && (logLevel == RtxpLogLevel.DEBUG || logLevel == RtxpLogLevel.INFO)) { return; }
-		if (minLevel == RtxpLogLevel.ERROR && logLevel != RtxpLogLevel.ERROR) { return; }
+		if (logLevel == RtxpLogLevel.DEBUG && minLevel != RtxpLogLevel.DEBUG) { return; }
+		if (logLevel == RtxpLogLevel.INFO && (minLevel == RtxpLogLevel.WARN || minLevel == RtxpLogLevel.ERROR)) { return; }
+		if (logLevel == RtxpLogLevel.WARN && minLevel == RtxpLogLevel.ERROR) { return; }
 		rtxpLoggerThread.log(logLevel, threadId, msg);
 	}
 
