@@ -400,7 +400,7 @@ public class RtspResponseBuilder {
 			if (tmpSsObj.getCodec().getPcmAudioBitsPerSample().isPresent()) {
 				// b: Bandwidth Information
 				sw.write(String.format("b=AS:%d%s",
-						tmpSsObj.getAudioChannelCount() * tmpSsObj.getAudioSampleRateHz() *
+						tmpSsObj.getAudioChannelCount() * tmpSsObj.getAudioSamplerateHz() *
 								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get(),
 						CRLF));
 			}
@@ -416,7 +416,7 @@ public class RtspResponseBuilder {
 			double tmpTimeMs;
 			if (tmpSsObj.getCodec() == RtpPacketType.A_AAC) {
 				final double tmpFrameDurAacSecs = ((double)tmpSsObj.getAacSamplesPerFrame() /
-						(double)tmpSsObj.getAudioSampleRateHz());
+						(double)tmpSsObj.getAudioSamplerateHz());
 				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
 			} else {
 				tmpTimeMs = RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
@@ -431,7 +431,7 @@ public class RtspResponseBuilder {
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
 		final String tmpA_Map = sdpCodecName +
 				"/" +
-				(useVideo ? videoRtpClockRate : tmpSsObj.getAudioSampleRateHz()) +
+				(useVideo ? videoRtpClockRate : tmpSsObj.getAudioSamplerateHz()) +
 				(useVideo ? "" : "/" + tmpSsObj.getAudioChannelCount());
 		sw.write(String.format("a=rtpmap:%d %s%s", tmpSsObj.getCodec().getValue(), tmpA_Map, CRLF));
 		//

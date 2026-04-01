@@ -13,7 +13,7 @@ public abstract class BuilderThreadRtpSenderAudioBase<
 
 	// Fluent setters
 	public B audComRtpAudioSpf(int v) { this.threadParamsAudio.setRtpAudioSpf(v); return self(); }
-	public B audComSampleRateHz(int v) { this.threadParamsAudio.setAudioSampleRateHz(v); return self(); }
+	public B audComSamplerateHz(int v) { this.threadParamsAudio.setAudioSamplerateHz(v); return self(); }
 
 	//
 	protected void validateAudioCommon() {

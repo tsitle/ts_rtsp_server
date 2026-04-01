@@ -51,7 +51,7 @@ public final class ThreadRtpSenderAac<
 				avStreamIncomingType,
 				avStreamOutgoingType,
 				paramsCommon,
-				Objects.requireNonNull(paramsAudioCommon).getAudioSampleRateHz(),
+				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerateHz(),
 				RtpPacketType.A_AAC
 			);
 

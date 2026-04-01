@@ -267,7 +267,7 @@ public class ThreadRtspServer extends RunnableBase {
 		Objects.requireNonNull(streamInfo.rtspStreamSource);
 		return buildThreadRtpSender(builder, streamInfo, avFps, xsrcBlock)
 				.audComRtpAudioSpf(samplesPerFrame)
-				.audComSampleRateHz(streamInfo.rtspStreamSource.getAudioSampleRateHz());
+				.audComSamplerateHz(streamInfo.rtspStreamSource.getAudioSamplerateHz());
 	}
 
 	private void startSendRtp_oneStream(ChildThreadsForOneStream ctfos, String cnameHostname) {
@@ -292,7 +292,7 @@ public class ThreadRtspServer extends RunnableBase {
 		switch (tmpStreamInfo.rtspStreamSource.getCodec()) {
 			case A_AAC:
 				final double tmpFrameDurAacSecs = ((double)tmpStreamInfo.rtspStreamSource.getAacSamplesPerFrame() /
-						(double)tmpStreamInfo.rtspStreamSource.getAudioSampleRateHz());
+						(double)tmpStreamInfo.rtspStreamSource.getAudioSamplerateHz());
 				final double tmpVirtualFpsAac = (1.0 / tmpFrameDurAacSecs);
 				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
 						BuilderThreadRtpSenderAac.builder(),

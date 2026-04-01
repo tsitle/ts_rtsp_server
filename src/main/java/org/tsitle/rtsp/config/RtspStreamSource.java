@@ -39,9 +39,9 @@ public class RtspStreamSource {
 	/** Video frames per second -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Double videoFps;
-	/** Audio sample rate in Hz -- only when {@code filePath} is set. */
+	/** Audio samplerate in Hz -- only when {@code filePath} is set. */
 	@Expose
-	private final @NonNull Integer audioSampleRateHz;
+	private final @NonNull Integer audioSamplerateHz;
 	/** Audio channel count -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Integer audioChannelCount;
@@ -83,7 +83,7 @@ public class RtspStreamSource {
 		//noinspection DataFlowIssue
 		this.codec = null;
 		this.videoFps = -1.0;
-		this.audioSampleRateHz = -1;
+		this.audioSamplerateHz = -1;
 		this.audioChannelCount = -1;
 		this.isAudioBigEndian = false;
 
@@ -177,8 +177,8 @@ public class RtspStreamSource {
 			throw new IllegalArgumentException("videoFps must be positive");
 		}
 		//noinspection ConstantValue
-		if (audioSampleRateHz == null || audioSampleRateHz <= 0) {
-			throw new IllegalArgumentException("audioSampleRateHz must be positive");
+		if (audioSamplerateHz == null || audioSamplerateHz <= 0) {
+			throw new IllegalArgumentException("audioSamplerateHz must be positive");
 		}
 		/*
 		 * 25 fps ^= 1 frame each 40 ms
@@ -190,7 +190,7 @@ public class RtspStreamSource {
 		 * 66.7 ms / 0.125 ms == 533 samples per frame
 		 */
 		double videoFrameIntervalMs = 1000.0 / videoFps;
-		double audioSampleIntervalMs = 1000.0 / audioSampleRateHz;
+		double audioSampleIntervalMs = 1000.0 / audioSamplerateHz;
 		int resI = (int)(videoFrameIntervalMs / audioSampleIntervalMs);
 		return Math.max(1, resI);
 	}
@@ -351,8 +351,8 @@ public class RtspStreamSource {
 			if (internalCodec.isVideo() && getVideoFps() < 1.0) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Stream Source ID '" + tmpExtSsId + "'");
 			}
-			if (internalCodec.isAudio() && getAudioSampleRateHz() < 1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Stream Source ID '" + tmpExtSsId + "'");
+			if (internalCodec.isAudio() && getAudioSamplerateHz() < 1) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samplerate for Stream Source ID '" + tmpExtSsId + "'");
 			}
 			if (internalCodec.isAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
@@ -432,12 +432,12 @@ public class RtspStreamSource {
 				throw new ConfigInvalidException("Unsupported AAC AudioObjectType " + aacInfo.audioObjectType +
 						" for Stream Source ID '" + extSsId + "'");
 			}
-			if (aacInfo.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
-				throw new ConfigInvalidException("Could not parse AAC SampleRate for Stream Source ID '" + extSsId + "'");
+			if (aacInfo.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
+				throw new ConfigInvalidException("Could not parse AAC Samplerate for Stream Source ID '" + extSsId + "'");
 			}
-			if (aacInfo.samplerate.getHz() != getAudioSampleRateHz()) {
-				throw new ConfigInvalidException("AAC SampleRate mismatch for Stream Source ID '" + extSsId + "' (" +
-						"config=" + getAudioSampleRateHz() + ", fileHeader=" + aacInfo.samplerate.getHz() + ")");
+			if (aacInfo.samplerate.getHz() != getAudioSamplerateHz()) {
+				throw new ConfigInvalidException("AAC Samplerate mismatch for Stream Source ID '" + extSsId + "' (" +
+						"config=" + getAudioSamplerateHz() + ", fileHeader=" + aacInfo.samplerate.getHz() + ")");
 			}
 			if (aacInfo.channelConfiguration != getAudioChannelCount()) {
 				throw new ConfigInvalidException("AAC ChannelCount mismatch for Stream Source ID '" + extSsId + "' (" +

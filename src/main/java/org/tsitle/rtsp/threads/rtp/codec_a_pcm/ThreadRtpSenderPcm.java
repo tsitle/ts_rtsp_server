@@ -55,7 +55,7 @@ public final class ThreadRtpSenderPcm<
 				avStreamIncomingType,
 				avStreamOutgoingType,
 				paramsCommon,
-				Objects.requireNonNull(paramsAudioCommon).getAudioSampleRateHz(),
+				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerateHz(),
 				Objects.requireNonNull(paramsPcm).getAudioCodec()
 			);
 

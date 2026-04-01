@@ -85,7 +85,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	}
 
 	/** Sampling rates according to ISO/IEC 14496-3:2001(E) Table 1.10 */
-	public enum SampleRate {
+	public enum Samplerate {
 		SR96000(0),
 		SR88200(1),
 		SR64000(2),
@@ -103,11 +103,11 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		UNKNOWN(255);
 
 		public final int index;
-		SampleRate(int index) {
+		Samplerate(int index) {
 			this.index = index;
 		}
-		public static @NonNull SampleRate of(int index) {
-			for (SampleRate rate : SampleRate.values()) {
+		public static @NonNull Samplerate of(int index) {
+			for (Samplerate rate : Samplerate.values()) {
 				if (rate.index == index) {
 					return rate;
 				}
@@ -165,7 +165,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	/** Length of the complete AAC frame (including header) */
 	public int frameLength;
 	/** Samplerate of the audio data (4 bits) */
-	public @NonNull SampleRate samplerate;
+	public @NonNull Samplerate samplerate;
 	/** MPEG-4 Audio Object Type (2 bits) */
 	public @NonNull AudioObjectType audioObjectType;
 	/** Channel configuration (3 bits) */
@@ -208,7 +208,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		samplesOffset = 0;
 		samplesLength = 0;
 		frameLength = 0;
-		samplerate = SampleRate.UNKNOWN;
+		samplerate = Samplerate.UNKNOWN;
 		audioObjectType = AudioObjectType.UNKNOWN;
 		channelConfiguration = 0;
 		sdpFmtpConfigHex = "";

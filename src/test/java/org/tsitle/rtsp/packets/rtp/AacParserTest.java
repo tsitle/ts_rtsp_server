@@ -46,7 +46,7 @@ public class AacParserTest {
 		assertEquals(365, aacInfoOrg.frameLength);
 		assertEquals(358, aacInfoOrg.samplesLength);
 		assertEquals(7, aacInfoOrg.samplesOffset);
-		assertEquals(AudioAacInfo.SampleRate.SR48000, aacInfoOrg.samplerate);
+		assertEquals(AudioAacInfo.Samplerate.SR48000, aacInfoOrg.samplerate);
 		assertEquals(AudioAacInfo.AudioObjectType.AAC_LC, aacInfoOrg.audioObjectType);
 		assertEquals(2, aacInfoOrg.channelConfiguration);
 

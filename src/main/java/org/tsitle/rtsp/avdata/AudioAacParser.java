@@ -112,12 +112,12 @@ public final class AudioAacParser {
 
 			/// sampling_frequency_index: bits 18-21 (4 bits)
 			int tmpSamplingFrequIndex = bitReader.readBits(4);
-			resObj.samplerate = AudioAacInfo.SampleRate.of(tmpSamplingFrequIndex);
-			if (resObj.samplerate == AudioAacInfo.SampleRate.UNKNOWN) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sample rate (index=" + tmpSamplingFrequIndex + ")");
+			resObj.samplerate = AudioAacInfo.Samplerate.of(tmpSamplingFrequIndex);
+			if (resObj.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid samplerate (index=" + tmpSamplingFrequIndex + ")");
 			}
 			if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Sample rate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Samplerate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
 			}
 
 			/// Private Bit: bit 22 (1 bit): Set by user
@@ -199,13 +199,13 @@ public final class AudioAacParser {
 	/**
 	 * Builds AudioSpecificConfig as a hex string for SDP.
 	 * @param audioObjectType AudioObjectType
-	 * @param samplingFrequency SampleRate
+	 * @param samplingFrequency Samplerate
 	 * @param channelConfig ChannelConfiguration
 	 * @return AudioSpecificConfig as hex string
 	 */
 	private static @NonNull String buildAacAudioSpecificConfig(
 				AudioAacInfo.AudioObjectType audioObjectType,
-				AudioAacInfo.SampleRate samplingFrequency,
+				AudioAacInfo.Samplerate samplingFrequency,
 				int channelConfig
 			) {
 		BitWriterHelper bitWriter = new BitWriterHelper();

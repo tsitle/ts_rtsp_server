@@ -7,23 +7,23 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 	/** Audio samples per frame as required for RTP */
 	private int rtpAudioSpf;
 	private boolean isSetRtpAudioSpf;
-	/** Audio sample rate in Hz */
-	private int audioSampleRateHz;
-	private boolean isSetAudioSampleRateHz;
+	/** Audio samplerate in Hz */
+	private int audioSamplerateHz;
+	private boolean isSetAudioSamplerateHz;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public int getRtpAudioSpf() { return rtpAudioSpf; }
-	public void setRtpAudioSpf(int rtpAudioSpf) {
-		this.rtpAudioSpf = rtpAudioSpf;
+	public void setRtpAudioSpf(int value) {
+		this.rtpAudioSpf = value;
 		this.isSetRtpAudioSpf = true;
 	}
 
-	public int getAudioSampleRateHz() { return audioSampleRateHz; }
-	public void setAudioSampleRateHz(int audioSampleRateHz) {
-		this.audioSampleRateHz = audioSampleRateHz;
-		this.isSetAudioSampleRateHz = true;
+	public int getAudioSamplerateHz() { return audioSamplerateHz; }
+	public void setAudioSamplerateHz(int value) {
+		this.audioSamplerateHz = value;
+		this.isSetAudioSamplerateHz = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 
 	private void checkAllParamsSet() {
 		requireIsSet(isSetRtpAudioSpf, "rtpAudioSpf");
-		requireIsSet(isSetAudioSampleRateHz, "audioSampleRateHz");
+		requireIsSet(isSetAudioSamplerateHz, "audioSamplerateHz");
 	}
 
 	private void validateParamValues() {
@@ -56,8 +56,8 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 		if (rtpAudioSpf <= 0) {
 			throw new IllegalArgumentException(errPrefix + "rtpAudioSpf must be > 0");
 		}
-		if (audioSampleRateHz <= 0 || audioSampleRateHz > 96000) {
-			throw new IllegalArgumentException(errPrefix + "audioSampleRateHz must be > 0 and <= 96000");
+		if (audioSamplerateHz <= 0 || audioSamplerateHz > 96000) {
+			throw new IllegalArgumentException(errPrefix + "audioSamplerateHz must be > 0 and <= 96000");
 		}
 	}
 
