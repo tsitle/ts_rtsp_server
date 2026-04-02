@@ -157,6 +157,11 @@ public class RtspRequestParser {
 		if (respStatusCode != ServerResponseStatusCode.OK) {
 			return RequestBasicInfo.createKnownWithError(requestType, respStatusCode);
 		}
+		//
+		if (requestType == ServerMessageType.SETUP) {
+			rtspSessionInfo.streamSourceIdsSetup.add(requestUrlInputOrStreamSource.streamSourceId);
+		}
+		//
 		return RequestBasicInfo.createOk(requestType, requestUrlInputOrStreamSource);
 	}
 

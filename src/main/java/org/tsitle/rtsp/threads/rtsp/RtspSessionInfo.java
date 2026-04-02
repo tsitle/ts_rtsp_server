@@ -9,6 +9,8 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -162,6 +164,8 @@ public class RtspSessionInfo {
 
 	/** Streams info - one per SETUP request (the map keys are unique Stream Source identifiers) */
 	public @NonNull Map<@NonNull Integer, @NonNull StreamInfo> streamsMapSetup = new ConcurrentHashMap<>();
+	/** Stream Source identifiers that a successful SETUP request has been received for */
+	public @NonNull List<@NonNull Integer> streamSourceIdsSetup = new ArrayList<>();
 	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */
 	public @NonNull Map<@NonNull ServerMessageType, @NonNull String> inputSourceUrlPerSmtMap = new ConcurrentHashMap<>();
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */

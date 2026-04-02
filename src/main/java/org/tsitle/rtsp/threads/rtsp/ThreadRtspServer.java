@@ -288,8 +288,9 @@ public class ThreadRtspServer extends RunnableBase {
 							)
 					)
 			);
+		// sanity check
+		Objects.requireNonNull(tmpStreamInfo.rtspStreamSource, "rtspStreamSource is null");
 		//
-		Objects.requireNonNull(tmpStreamInfo.rtspStreamSource);
 		switch (tmpStreamInfo.rtspStreamSource.getCodec()) {
 			case A_AAC:
 				final double tmpFrameDurAacSecs = ((double)tmpStreamInfo.rtspStreamSource.getAacSamplesPerFrame() /
@@ -375,7 +376,6 @@ public class ThreadRtspServer extends RunnableBase {
 		if (! rtspSessionInfo.inputSourceUrlPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 			throw new IllegalStateException(FNC_NAME + ": No input source found (URL)");
 		}
-		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
 		//
 		String cnameHostname;
 		try {
@@ -387,7 +387,7 @@ public class ThreadRtspServer extends RunnableBase {
 			throw new RuntimeException(e);
 		}
 		//
-		for (int tmpSsId : is.getStreamSourceIds()) {
+		for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
 			if (childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				throw new IllegalStateException(FNC_NAME + ": Child threads already exist");
@@ -410,8 +410,7 @@ public class ThreadRtspServer extends RunnableBase {
 		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 			return;
 		}
-		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
-		for (int tmpSsId : is.getStreamSourceIds()) {
+		for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
 			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				continue;
@@ -438,8 +437,7 @@ public class ThreadRtspServer extends RunnableBase {
 		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 			return;
 		}
-		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
-		for (int tmpSsId : is.getStreamSourceIds()) {
+		for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
 			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				continue;
@@ -466,8 +464,7 @@ public class ThreadRtspServer extends RunnableBase {
 			if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 				throw new IllegalStateException(FNC_NAME + ": No input source found");
 			}
-			RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
-			for (int tmpSsId : is.getStreamSourceIds()) {
+			for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 				RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
 				if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 					continue;
@@ -504,9 +501,8 @@ public class ThreadRtspServer extends RunnableBase {
 		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 			return false;
 		}
-		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
 		boolean areAllReady = true;
-		for (int tmpSsId : is.getStreamSourceIds()) {
+		for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 			if (! rtspSessionInfo.threadReadyStates.getOrDefault(tmpSsId, false)) {
 				areAllReady = false;
 				break;
@@ -539,8 +535,7 @@ public class ThreadRtspServer extends RunnableBase {
 		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
 			return;
 		}
-		RtspInputSource is = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.PLAY);
-		for (int tmpSsId : is.getStreamSourceIds()) {
+		for (int tmpSsId : rtspSessionInfo.streamSourceIdsSetup) {
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
 			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				continue;
