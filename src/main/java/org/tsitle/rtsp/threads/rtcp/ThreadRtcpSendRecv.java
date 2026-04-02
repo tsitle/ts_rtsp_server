@@ -398,6 +398,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				targetCongestionLevel.set(4);
 			}
 		}
+		//
+		params.getCbNotifyRrPacketReceived().orElseThrow().accept(Instant.now());
 	}
 
 	private void handleRtcpPacketSR(RtcpPacketHeader rtcpPktHd) {

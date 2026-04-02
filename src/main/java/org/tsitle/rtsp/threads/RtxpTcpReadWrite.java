@@ -221,6 +221,10 @@ public class RtxpTcpReadWrite {
 		tcpActivityTimeout.set((int)TCP_ACTIVITY_TIMEOUT_SECS_DEF);
 	}
 
+	public synchronized void resetTcpActivityTimeoutTimer() {
+		lastActivityTime = Instant.now();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean canReadRtsp() throws TcpSocketIoException {
@@ -348,7 +352,7 @@ public class RtxpTcpReadWrite {
 			}
 			//
 			if (haveAnythingAtAll) {
-				lastActivityTime = Instant.now();
+				resetTcpActivityTimeoutTimer();
 			}
 		} catch (IOException e) {
 			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
@@ -506,7 +510,7 @@ public class RtxpTcpReadWrite {
 				socketOs.write(line.getBytes(StandardCharsets.UTF_8));
 			}
 			//
-			lastActivityTime = Instant.now();
+			resetTcpActivityTimeoutTimer();
 		} catch (IOException e) {
 			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
 		} finally {
@@ -534,7 +538,7 @@ public class RtxpTcpReadWrite {
 			socketOs.write(tmpBa, 0, 4);
 			socketOs.write(bufView.getInternalBaPtr(), bufView.getOffset(), bufView.getLength());
 			//
-			lastActivityTime = Instant.now();
+			resetTcpActivityTimeoutTimer();
 		} catch (IOException e) {
 			throw new TcpSocketIoException(FNC_NAME + ": " + e.getMessage());
 		} finally {
@@ -544,7 +548,7 @@ public class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void checkTcpActivityTimeout(@NonNull String fncName) throws TcpSocketIoException {
+	private synchronized void checkTcpActivityTimeout(@NonNull String fncName) throws TcpSocketIoException {
 		if (Instant.now().minusSeconds(tcpActivityTimeout.get()).isAfter(lastActivityTime)) {
 			throw new TcpSocketIoException(fncName + ": TCP activity timeout");
 		}

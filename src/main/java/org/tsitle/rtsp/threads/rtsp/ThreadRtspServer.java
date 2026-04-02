@@ -194,6 +194,7 @@ public class ThreadRtspServer extends RunnableBase {
 				.cryptoIsRtxpEncryptionEnabled(tmpStreamInfo.tpIsEncr)
 				.cryptoKmdInboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
 				.cryptoKmdOutboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
+				.cbNotifyRrPacketReceived(this::cbRcvdRtcpRrPacket)
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP#c" + clientConnectionNr +
@@ -488,6 +489,11 @@ public class ThreadRtspServer extends RunnableBase {
 				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
 			ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
 		}
+	}
+
+	private synchronized void cbRcvdRtcpRrPacket(@NonNull Instant time) {
+		rtxpTcpReadWrite.resetTcpActivityTimeoutTimer();
+		rtspTimeoutLastRequ = Instant.now();
 	}
 
 	private synchronized void cbNotifyThreadReady(Integer streamSourceId) {

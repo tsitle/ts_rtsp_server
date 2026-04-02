@@ -9,6 +9,8 @@ import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.time.Instant;
+import java.util.function.Consumer;
 
 public class BuilderThreadRtcp {
 
@@ -38,6 +40,8 @@ public class BuilderThreadRtcp {
 		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
 		public Builder cryptoKmdInboundRtcp(@NonNull SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
 		public Builder cryptoKmdOutboundRtcp(@NonNull SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
+
+		public Builder cbNotifyRrPacketReceived(@NonNull Consumer<@NonNull Instant> v) { this.threadParams.setCbNotifyRrPacketReceived(v); return this; }
 
 		//
 		public ThreadRtcpSendRecv build() {
