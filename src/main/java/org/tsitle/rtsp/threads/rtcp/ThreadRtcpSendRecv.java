@@ -92,7 +92,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	public synchronized void appendByePacketToSendQueue() {
 		final String FNC_NAME = getClass().getSimpleName() + ".appendByePacketToSendQueue()";
 
-		logDebug(FNC_NAME, "Sending BYE packet");
+		logDebug(FNC_NAME, String.format(
+				"Sending BYE packet (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendBye_buildRtcpCompound(packetCompoundBuf);
 		//
@@ -368,7 +369,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, "RTCP packet without items");
+			logDebug(FNC_NAME, String.format(
+					"RTCP packet without items (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
 			return;
 		}
 		// read and validate the packet
@@ -410,7 +412,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketSDES()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, "RTCP packet without items");
+			logDebug(FNC_NAME, String.format(
+					"RTCP packet without items (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
 			return;
 		}
 		// read and validate the packet
@@ -428,7 +431,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			return;  // only for the linter
 		}
-		logDebug(FNC_NAME, "received BYE");
+		logDebug(FNC_NAME, String.format(
+				"received BYE (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
 	}
 
 }
