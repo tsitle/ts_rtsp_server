@@ -22,6 +22,9 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 
 import java.io.StringWriter;
 import java.net.*;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
@@ -603,9 +606,17 @@ public class RtspResponseBuilder {
 	private void internalSendResponse(ServerResponseStatusCode errorCode, final List<String> contents)
 			throws TcpSocketIoException {
 		List<String> outputLines = new ArrayList<>();
+		//
 		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
 				errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
+		//
 		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspSeqNrResponse + CRLF);
+		// Date: Fri, 03 Apr 2026 10:54:06 GMT
+		String tmpHttpDate = DateTimeFormatter.RFC_1123_DATE_TIME
+				.withLocale(Locale.ENGLISH)
+				.format(ZonedDateTime.now(ZoneOffset.UTC));
+		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_DATE + " " + tmpHttpDate + CRLF);
+		//
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);
 		}
