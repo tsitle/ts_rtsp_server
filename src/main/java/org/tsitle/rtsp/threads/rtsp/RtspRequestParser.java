@@ -137,19 +137,19 @@ public class RtspRequestParser {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
 				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
 			} catch (RtspInvalidSessionIdException e) {
-				logError(FNC_NAME, "Invalid Session ID, rejecting request");
+				logError(FNC_NAME, "Invalid Session ID, rejecting request (URL='" + resourceUrl + "')");
 				respStatusCode = ServerResponseStatusCode.SESSION_NOT_FOUND;
 			} catch (RtspUnsupportedAcceptTypeException e) {
-				logError(FNC_NAME, "Unsupported Accept Type, rejecting request");
+				logError(FNC_NAME, "Unsupported Accept Type, rejecting request (URL='" + resourceUrl + "')");
 				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
 			} catch (RtspUnsupportedTransportException e) {
-				logError(FNC_NAME, "Unsupported Transport, rejecting request");
+				logError(FNC_NAME, "Unsupported Transport, rejecting request (URL='" + resourceUrl + "')");
 				respStatusCode = ServerResponseStatusCode.UNSUPPORTED_TRANSPORT;
 			} catch (RtspMissingEncryptionParamsException e) {
-				logError(FNC_NAME, "Missing encryption parameters, rejecting request");
+				logError(FNC_NAME, "Missing encryption parameters, rejecting request (URL='" + resourceUrl + "')");
 				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
 			} catch (RtspMissingAuthParamsException e) {
-				logError(FNC_NAME, "Missing authentication parameters, rejecting request");
+				logError(FNC_NAME, "Missing authentication parameters, rejecting request (URL='" + resourceUrl + "')");
 				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
 			}
 		} while (! headerLine.isBlank());
@@ -292,22 +292,25 @@ public class RtspRequestParser {
 		} else {
 			tmpRscStreamIdStr = "";
 		}
-		int rscStreamSourceId = -1;
+		String rscSubStreamId = "";
 		RtspStreamSource rtspStreamSource = null;
 		if (! tmpRscStreamIdStr.isEmpty()) {
-			try {
-				rscStreamSourceId = Integer.parseInt(tmpRscStreamIdStr);
-			} catch (NumberFormatException e) {
-				// ignore
-			}
-			if (rscStreamSourceId == -1) {
+			rscSubStreamId = tmpRscStreamIdStr;
+			if (rscSubStreamId.isBlank()) {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Invalid Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
-			rtspStreamSource = rtspConfig.getStreamSourceObj(rscStreamSourceId).orElse(null);
+			//
+			if (! rtspSessionInfo.describeMapSubStreamId.containsKey(rscSubStreamId)) {
+				throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
+						"Non-existing Sub-Stream ID '" + rscSubStreamId + "'");
+			}
+			RtspSessionInfo.DescribeIsSs tmpDescribeIsSs = rtspSessionInfo.describeMapSubStreamId.get(rscSubStreamId);
+			//
+			rtspStreamSource = rtspConfig.getStreamSourceObj(tmpDescribeIsSs.streamSourceId).orElse(null);
 			if (rtspStreamSource == null) {
 				throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Non-existing Stream Source ID #" + rscStreamSourceId);
+						"Non-existing Stream Source ID Sub-Stream ID '" + rscSubStreamId + "'");
 			}
 		}
 
@@ -316,14 +319,16 @@ public class RtspRequestParser {
 
 		//
 		if (requestType == ServerMessageType.SETUP) {
-			if (rscStreamSourceId == -1) {
+			if (rscSubStreamId.isBlank()) {  // sanity check
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Missing Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
+						"Missing Sub-Stream ID in URL path: '" + rscUrlPathOrg + "'");
 			}
+			RtspSessionInfo.DescribeIsSs tmpDescribeIsSs = rtspSessionInfo.describeMapSubStreamId.get(rscSubStreamId);
+			//
 			RtspSessionInfo.StreamInfo streamInfo;
-			if (rtspSessionInfo.streamsMapSetup.containsKey(rscStreamSourceId)) {
+			if (rtspSessionInfo.streamsMapSetup.containsKey(rtspStreamSource.getId())) {
 				// if the DESCRIBE request already created the stream info object
-				streamInfo = rtspSessionInfo.streamsMapSetup.get(rscStreamSourceId);
+				streamInfo = rtspSessionInfo.streamsMapSetup.get(rtspStreamSource.getId());
 			} else {
 				streamInfo = new RtspSessionInfo.StreamInfo();
 			}
@@ -332,12 +337,12 @@ public class RtspRequestParser {
 			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
 			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
-			rtspSessionInfo.streamsMapSetup.put(rscStreamSourceId, streamInfo);
+			rtspSessionInfo.streamsMapSetup.put(rtspStreamSource.getId(), streamInfo);
 
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
 
-			resObj.inputSourceId = rtspConfig.getInputSourceIdForStreamSourceId(rscStreamSourceId).orElse(null);
-			resObj.streamSourceId = rscStreamSourceId;
+			resObj.inputSourceId = tmpDescribeIsSs.inputSourceId;
+			resObj.streamSourceId = tmpDescribeIsSs.streamSourceId;
 
 			// preliminary setting
 			rtspSessionInfo.isRtpRtcpEncryptionRequired =

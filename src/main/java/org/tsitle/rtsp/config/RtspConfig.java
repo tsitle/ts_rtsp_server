@@ -265,19 +265,6 @@ public class RtspConfig {
 	}
 
 	/**
-	 * Get Input Source ID for a given Stream Source ID.
-	 * @param streamSourceId Stream Source ID
-	 * @return Input Source ID
-	 */
-	public Optional<String> getInputSourceIdForStreamSourceId(int streamSourceId) {
-		checkPostProcessed();
-		return inputSources.entrySet().stream()
-				.filter(e -> e.getValue().getStreamSourceIds().contains(streamSourceId))
-				.findFirst()
-				.map(Map.Entry::getKey);
-	}
-
-	/**
 	 * Get the first video Stream Source for the Input Source.
 	 * @param inputSourceId Input Source ID
 	 * @return Stream Source

@@ -129,6 +129,11 @@ public class RtspSessionInfo {
 		}
 	}
 
+	public static class DescribeIsSs {
+		@NonNull String inputSourceId = "";
+		int streamSourceId = -1;
+	}
+
 	/** Client IP address */
 	public @Nullable InetAddress clientIpAddr = null;
 	/** Has the client requested UDP transport? */
@@ -162,6 +167,8 @@ public class RtspSessionInfo {
 	/** Client's User-Agent */
 	public @NonNull String clientUserAgent = "";
 
+	/** Store for Sub-Stream IDs ('Input Stream and Stream Source' combinations) as announced per DESCRIBE (the map keys are hash sums) */
+	public @NonNull Map<@NonNull String, @NonNull DescribeIsSs> describeMapSubStreamId = new ConcurrentHashMap<>();
 	/** Streams info - one per SETUP request (the map keys are unique Stream Source identifiers) */
 	public @NonNull Map<@NonNull Integer, @NonNull StreamInfo> streamsMapSetup = new ConcurrentHashMap<>();
 	/** Stream Source identifiers that a successful SETUP request has been received for */

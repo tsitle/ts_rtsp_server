@@ -372,6 +372,10 @@ public class RtspResponseBuilder {
 		}
 		RtspStreamSource tmpSsObj = optSsObj.get();
 
+		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
+		final String outputSubStreamId = HashMd5Helper.hashOfString(
+				String.format("%s : %05d", rtspInputSource.getId(), tmpSsObj.getId()), false);
+
 		//
 		final String sdpCodecName;
 		try {
@@ -473,7 +477,7 @@ public class RtspResponseBuilder {
 				break;
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
-		sw.write(String.format("a=control:%s%02d%s", STREAM_ID_PREFIX, tmpSsObj.getId(), CRLF));
+		sw.write(String.format("a=control:%s%s%s", STREAM_ID_PREFIX, outputSubStreamId, CRLF));
 
 		// ----------------------------------------
 		// create or update the StreamInfo object
@@ -511,6 +515,13 @@ public class RtspResponseBuilder {
 		}
 		//
 		rtspSessionInfo.streamsMapSetup.put(tmpSsObj.getId(), streamInfo);
+
+		// ----------------------------------------
+		// store the Sub-Stream ID ('Input Stream and Stream Source' combination)
+		rtspSessionInfo.describeMapSubStreamId.put(outputSubStreamId, new RtspSessionInfo.DescribeIsSs() {{
+				inputSourceId = rtspInputSource.getId();
+				streamSourceId = tmpSsObj.getId();
+			}});
 	}
 
 	/**
