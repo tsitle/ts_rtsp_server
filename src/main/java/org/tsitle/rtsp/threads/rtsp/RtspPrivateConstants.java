@@ -21,6 +21,7 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_TOKEN_PLA_RANGE = "Range:";
 	static final String RTSP_RR_HEADER_TOKEN_PLA_RTPINFO = "RTP-Info:";
 	static final String RTSP_RR_HEADER_TOKEN_OPT_PUBLIC = "Public:";
+	static final String RTSP_RR_HEADER_TOKEN_OPT_REQUIRE = "Require:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_CSEQ = "CSeq:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_SESSION = "Session:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_USERAGENT = "User-Agent:";

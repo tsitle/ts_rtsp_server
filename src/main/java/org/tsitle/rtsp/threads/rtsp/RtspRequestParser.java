@@ -424,6 +424,11 @@ public class RtspRequestParser {
 			parseHeaderLine_date(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_AUTH)) {
 			parseHeaderLine_auth(headerLine);
+		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_OPT_REQUIRE)) {
+			if (requestType != ServerMessageType.OPTIONS) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": Received REQUIRE header in non-OPTIONS request");
+			}
+			parseHeaderLine_options_require(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
 			if (requestType != ServerMessageType.DESCRIBE) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received ACCEPT header in non-DESCRIBE request");
@@ -492,6 +497,11 @@ public class RtspRequestParser {
 		if (! rtspSessionInfo.rtspSessionId.equals(tmpSessId)) {
 			throw new RtspInvalidSessionIdException();
 		}
+	}
+
+	@SuppressWarnings("unused")
+	private void parseHeaderLine_options_require(String headerLine) {
+		// ignore
 	}
 
 	private void parseHeaderLine_describe_accept(String headerLine) throws RtspUnsupportedAcceptTypeException {
