@@ -37,6 +37,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 		final List<byte[]> frames = new ArrayList<>();
 
+		// blocks until one message is successfully retrieved, or stops when timeout set by setReceiveTimeOut(int) expires
 		byte[] frame = zmqSocket.recv(0);
 		if (frame == null) {
 			return Optional.empty();

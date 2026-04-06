@@ -53,7 +53,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 				throw new MqException(FNC_NAME + ": Socket closed or interrupted");
 			}
 			if (tmpRecvRes == FIRST_PART_BUFFER_SIZE) {
-				throw new MqException(FNC_NAME + ": truncated message");
+				// truncated message - probably because of a previous message that was spurious ZeroMQ internal data
+				return Optional.empty();
 			}
 			if (tmpRecvRes == 0) {
 				return Optional.empty();
@@ -64,8 +65,13 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			 * 0x07 4D 45 53 53 41 47 45 000000000000
 			 *      M  E  S  S  A  G  E  000000000000
 			 */
-			if (tmpRecvRes > 7 && cacheBufferDataR.get(0) == 7 && cacheBufferDataR.get(1) == 'M') {
-				System.out.println("Spurious ZeroMQ internal data received: " + cacheBufferDataR.toHexString(true));  // @TODO
+			if (tmpRecvRes > 7 && cacheBufferDataR.get(0) == 7 && cacheBufferDataR.get(1) == 'M' &&
+					cacheBufferDataR.get(2) == 'E' && cacheBufferDataR.get(3) == 'S') {
+				// receive any remaining messages to drain the Message Queue
+				int maxPkts = 6;
+				while (zmqSocket.hasReceiveMore() && maxPkts-- > 0) {
+					zmqSocket.recv(ZMQ.DONTWAIT);
+				}
 				return Optional.empty();
 			}
 		} catch (MqException e) {
@@ -99,8 +105,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 		// receive any remaining messages to drain the Message Queue
 		while (zmqSocket.hasReceiveMore()) {
-			byte[] tmpBa = zmqSocket.recv(0);
-			System.out.println("Received spurious message from Message Queue: " + (tmpBa == null ? "null" : tmpBa.length + " bytes"));  // @TODO
+			zmqSocket.recv(0);
 		}
 
 		return Optional.of(packet);
