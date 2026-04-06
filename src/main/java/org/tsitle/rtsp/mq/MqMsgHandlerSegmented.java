@@ -52,13 +52,15 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 	}
 
 	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
+		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
+
 		if (zmqSocket == null) {
-			throw new IllegalStateException("MQ socket not initialized");
+			throw new IllegalStateException(FNC_NAME + ": MQ socket not initialized");
 		}
 
 		// write the header to the Message Queue
 		writeFieldToMqBool(packet.codec().isVideo(), ZMQ.SNDMORE);
-		writeFieldToMqStr(packet.codec().getCodecName(), ZMQ.SNDMORE);
+		writeFieldToMqString127(FNC_NAME, packet.codec().getCodecName(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(packet.isCodecGuessed(), ZMQ.SNDMORE);
 		}
@@ -68,7 +70,11 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			writeFieldToMqBool(packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
 			writeFieldToMqUint32(packet.mdVideoResoWidth(), ZMQ.SNDMORE);
 			writeFieldToMqUint32(packet.mdVideoResoHeight(), ZMQ.SNDMORE);
-			writeFieldToMqStr(String.format("%.2f", packet.mdVideoFps()).replace(',', '.'), ZMQ.SNDMORE);
+			writeFieldToMqString127(
+					FNC_NAME,
+					String.format("%.2f", packet.mdVideoFps()).replace(',', '.'),
+					ZMQ.SNDMORE
+				);
 			writeFieldToMqUint32(packet.mdVideoBitrate(), ZMQ.SNDMORE);
 		} else {
 			writeFieldToMqUint32(packet.mdAudioSamplerate(), ZMQ.SNDMORE);
@@ -102,7 +108,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		final boolean tmpIsVideo = decodeFieldBool(FNC_NAME, frames, frameIx++);
 
 		final MqPacketCodec tmpCodecEn;
-		final String tmpCodecStr = decodeFieldString(FNC_NAME, frames, frameIx++);
+		final String tmpCodecStr = decodeFieldString127(FNC_NAME, frames, frameIx++);
 		try {
 			tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
 		} catch (IllegalArgumentException e) {
@@ -114,14 +120,14 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 
 		final boolean tmpIsCodecGuessed = (tmpIsVideo && decodeFieldBool(FNC_NAME, frames, frameIx++));
-		final long tmpMdTimestamp = decodeFieldUint64(FNC_NAME, frames, frameIx++);
-		final int tmpMdCounter = decodeFieldUint32(FNC_NAME, frames, frameIx++);
+		final long tmpMdTimestamp = decodeFieldUint64(FNC_NAME, frames, frameIx++);  // UI64
+		final int tmpMdCounter = decodeFieldUint32(FNC_NAME, frames, frameIx++);  // UI32
 		final boolean tmpMdVideoIsKeyframe = (tmpIsVideo && decodeFieldBool(FNC_NAME, frames, frameIx++));
-		final int tmpMdVideoResoWidth = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdVideoResoHeight = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
+		final int tmpMdVideoResoWidth = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
+		final int tmpMdVideoResoHeight = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
 		final double tmpMdVideoFpsDbl;
 		if (tmpIsVideo) {
-			String tmpMdVideoFpsStr = decodeFieldString(FNC_NAME, frames, frameIx++);
+			String tmpMdVideoFpsStr = decodeFieldString127(FNC_NAME, frames, frameIx++);
 			try {
 				tmpMdVideoFpsDbl = Double.parseDouble(tmpMdVideoFpsStr);
 			} catch (NumberFormatException e) {
@@ -130,11 +136,11 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		} else {
 			tmpMdVideoFpsDbl = 0.0;
 		}
-		final int tmpMdVideoBitrate = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final int tmpMdAudioSamplerate = (! tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);
-		final byte tmpMdAudioChannelCount = (! tmpIsVideo ? decodeFieldUint08(FNC_NAME, frames, frameIx++) : 0);
-		final byte tmpMdPayloadCRC8 = decodeFieldUint08(FNC_NAME, frames, frameIx++);
-		final int tmpBinDataLen = decodeFieldUint32(FNC_NAME, frames, frameIx++);
+		final int tmpMdVideoBitrate = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
+		final int tmpMdAudioSamplerate = (! tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
+		final byte tmpMdAudioChannelCount = (! tmpIsVideo ? decodeFieldUint08(FNC_NAME, frames, frameIx++) : 0);  // UI08
+		final byte tmpMdPayloadCRC8 = decodeFieldUint08(FNC_NAME, frames, frameIx++);  // UI08
+		final int tmpBinDataLen = decodeFieldUint32(FNC_NAME, frames, frameIx++);  // UI32
 
 		decodeFieldBinData(FNC_NAME, frames, frameIx, tmpBinDataLen, payloadDataPtr);
 
@@ -158,13 +164,17 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull String decodeFieldString(
+	private @NonNull String decodeFieldString127(
 				@NonNull String fncName,
 				final @NonNull List<byte[]> frames,
 				final int frameIx
 			) throws MqException {
 		validateFrameSize(fncName, frames, frameIx, 0);
-		return new String(frames.get(frameIx), ZMQ.CHARSET);
+		byte[] tmpStrBytes = frames.get(frameIx);
+		if (tmpStrBytes.length > Byte.MAX_VALUE) {
+			throw new MqException(fncName + ": Invalid string length (is=" + tmpStrBytes.length + ", max=" + Byte.MAX_VALUE + ")");
+		}
+		return new String(tmpStrBytes, ZMQ.CHARSET);
 	}
 
 	private byte decodeFieldUint08(@NonNull String fncName, final @NonNull List<byte[]> frames, final int frameIx) throws MqException {
@@ -226,7 +236,10 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void writeFieldToMqStr(String value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqString127(@NonNull String fncName, @NonNull String value, @SuppressWarnings("SameParameterValue") int flags) {
+		if (value.length() > Byte.MAX_VALUE) {
+			throw new IllegalArgumentException(fncName + ": String too long (is: " + value.length() + ", max=" + Byte.MAX_VALUE + ")");
+		}
 		//noinspection DataFlowIssue
 		zmqSocket.send(value, flags);
 	}

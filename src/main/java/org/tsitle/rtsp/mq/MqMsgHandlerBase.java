@@ -8,8 +8,6 @@ import org.tsitle.rtsp.helpers.HashCrc8Helper;
 import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.zeromq.ZMQ;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Optional;
 
 /**
@@ -19,8 +17,6 @@ public abstract class MqMsgHandlerBase {
 
 	protected ZMQ.@Nullable Socket zmqSocket;
 
-	protected final @NonNull ByteBuffer cacheBufferData;
-
 	private final HashCrc8Helper hashCrc8Helper = new HashCrc8Helper();
 
 	/**
@@ -29,9 +25,6 @@ public abstract class MqMsgHandlerBase {
 	 */
 	protected MqMsgHandlerBase(ZMQ.@Nullable Socket zmqSocket) {
 		this.zmqSocket = zmqSocket;
-
-		this.cacheBufferData = ByteBuffer.allocate(1024);
-		this.cacheBufferData.order(ByteOrder.BIG_ENDIAN);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

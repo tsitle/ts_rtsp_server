@@ -9,6 +9,8 @@ import org.tsitle.rtsp.mq.mqdata.MqPacketCodec;
 import org.zeromq.ZMQ;
 
 import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Optional;
 
 /**
@@ -16,7 +18,11 @@ import java.util.Optional;
  */
 public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
+	private static final int FIRST_PART_BUFFER_SIZE = 1024;
+
 	private int payloadDataSize = 0;
+	private final @NonNull BufferExt cacheBufferDataR = new BufferExt();
+	private final @NonNull BufferExt cacheBufferDataS = new BufferExt();
 
 	/**
 	 * Constructor.
@@ -24,6 +30,9 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 	 */
 	public MqMsgHandlerTwoParts(ZMQ.@Nullable Socket zmqSocket) {
 		super(zmqSocket);
+
+		cacheBufferDataR.increaseSize(FIRST_PART_BUFFER_SIZE);
+		cacheBufferDataS.increaseSize(FIRST_PART_BUFFER_SIZE);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -38,16 +47,29 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 		// receive the first part of the message
 		try {
-			cacheBufferData.clear();
 			// blocks until one message is successfully retrieved, or stops when timeout set by setReceiveTimeOut(int) expires
-			int tmpRecvRes = zmqSocket.recvByteBuffer(cacheBufferData, 0);
+			int tmpRecvRes = zmqSocket.recv(cacheBufferDataR.getBaPtr(), 0, FIRST_PART_BUFFER_SIZE, 0);
 			if (tmpRecvRes == -1) {
 				throw new MqException(FNC_NAME + ": Socket closed or interrupted");
+			}
+			if (tmpRecvRes == FIRST_PART_BUFFER_SIZE) {
+				throw new MqException(FNC_NAME + ": truncated message");
 			}
 			if (tmpRecvRes == 0) {
 				return Optional.empty();
 			}
-			cacheBufferData.flip();
+			cacheBufferDataR.setUsed(tmpRecvRes);
+			// check for spurious ZeroMQ internal data
+			/*
+			 * 0x07 4D 45 53 53 41 47 45 000000000000
+			 *      M  E  S  S  A  G  E  000000000000
+			 */
+			if (tmpRecvRes > 7 && cacheBufferDataR.get(0) == 7 && cacheBufferDataR.get(1) == 'M') {
+				System.out.println("Spurious ZeroMQ internal data received: " + cacheBufferDataR.toHexString(true));  // @TODO
+				return Optional.empty();
+			}
+		} catch (MqException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new MqException(FNC_NAME + ": Exception caught: " + e.getMessage());
 		}
@@ -75,40 +97,51 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			throw new MqException(FNC_NAME + ": Exception caught: " + e.getMessage());
 		}
 
+		// receive any remaining messages to drain the Message Queue
+		while (zmqSocket.hasReceiveMore()) {
+			byte[] tmpBa = zmqSocket.recv(0);
+			System.out.println("Received spurious message from Message Queue: " + (tmpBa == null ? "null" : tmpBa.length + " bytes"));  // @TODO
+		}
+
 		return Optional.of(packet);
 	}
 
 	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
-		cacheBufferData.clear();
-
 		if (zmqSocket == null) {
 			throw new IllegalStateException("MQ socket not initialized");
 		}
 
-		cacheBufferData.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
-		writeStringToMqBuf(packet.codec().getCodecName());
-		if (packet.codec().isVideo()) {
-			cacheBufferData.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
-		}
-		cacheBufferData.putLong(packet.mdTimestamp());
-		cacheBufferData.putInt(packet.mdCounter());
-		if (packet.codec().isVideo()) {
-			cacheBufferData.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
-			cacheBufferData.putInt(packet.mdVideoResoWidth());
-			cacheBufferData.putInt(packet.mdVideoResoHeight());
-			writeStringToMqBuf(String.format("%.2f", packet.mdVideoFps()).replace(',', '.'));
-			cacheBufferData.putInt(packet.mdVideoBitrate());
-		} else {
-			cacheBufferData.putInt(packet.mdAudioSamplerate());
-			cacheBufferData.put(packet.mdAudioChannelCount());
-		}
-		cacheBufferData.put(packet.mdPayloadCRC8());
-		cacheBufferData.putInt(packet.payloadDataPtr().getUsed());
+		ByteBuffer tempBb = ByteBuffer
+				.wrap(cacheBufferDataS.getBaPtr(), 0, FIRST_PART_BUFFER_SIZE)
+				.order(ByteOrder.BIG_ENDIAN);
 
-		cacheBufferData.flip();
+		tempBb.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
+		writeString127ToMqBuf(packet.codec().getCodecName(), tempBb);
+		if (packet.codec().isVideo()) {
+			tempBb.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
+		}
+		tempBb.putLong(packet.mdTimestamp());
+		tempBb.putInt(packet.mdCounter());
+		if (packet.codec().isVideo()) {
+			tempBb.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
+			tempBb.putInt(packet.mdVideoResoWidth());
+			tempBb.putInt(packet.mdVideoResoHeight());
+			writeString127ToMqBuf(
+					String.format("%.2f", packet.mdVideoFps()).replace(',', '.'),
+					tempBb
+				);
+			tempBb.putInt(packet.mdVideoBitrate());
+		} else {
+			tempBb.putInt(packet.mdAudioSamplerate());
+			tempBb.put(packet.mdAudioChannelCount());
+		}
+		tempBb.put(packet.mdPayloadCRC8());
+		tempBb.putInt(packet.payloadDataPtr().getUsed());
+
+		tempBb.flip();
 
 		// write the header to the Message Queue
-		zmqSocket.send(cacheBufferData.array(), 0, cacheBufferData.limit(), ZMQ.SNDMORE);
+		zmqSocket.send(cacheBufferDataS.getBaPtr(), 0, tempBb.limit(), ZMQ.SNDMORE);
 		// write the payload data to the Message Queue
 		zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
 	}
@@ -125,10 +158,14 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 	private @NonNull MqPacketAv decodePacketAv(final @NonNull BufferExt payloadDataPtr) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".decodePacketAv()";
 
+		ByteBuffer tempBb = ByteBuffer
+				.wrap(cacheBufferDataR.getBaPtr(), 0, cacheBufferDataR.getUsed())
+				.order(ByteOrder.BIG_ENDIAN);
+
 		try {
-			boolean tmpIsVideo = (cacheBufferData.get() != 0);
+			boolean tmpIsVideo = (tempBb.get() != 0);
 			// read codec
-			String tmpCodecStr = readStringFromMqBuf();
+			String tmpCodecStr = readString127FromMqBuf(FNC_NAME, tempBb);
 			MqPacketCodec tmpCodecEn;
 			try {
 				tmpCodecEn = MqPacketCodec.of(tmpCodecStr);
@@ -140,15 +177,15 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 						" packet: '" + tmpCodecStr + "'");
 			}
 			//
-			boolean tmpIsCodecGuessed = (tmpIsVideo && cacheBufferData.get() != 0);
-			long tmpMdTimestamp = cacheBufferData.getLong();
-			int tmpMdCounter = cacheBufferData.getInt();
-			boolean tmpMdVideoIsKeyframe = (tmpIsVideo && cacheBufferData.get() != 0);
-			int tmpMdVideoResoWidth = (tmpIsVideo ? cacheBufferData.getInt() : 0);
-			int tmpMdVideoResoHeight = (tmpIsVideo ? cacheBufferData.getInt() : 0);
+			boolean tmpIsCodecGuessed = (tmpIsVideo && tempBb.get() != 0);
+			long tmpMdTimestamp = tempBb.getLong();  // UI64
+			int tmpMdCounter = tempBb.getInt();  // UI32
+			boolean tmpMdVideoIsKeyframe = (tmpIsVideo && tempBb.get() != 0);
+			int tmpMdVideoResoWidth = (tmpIsVideo ? tempBb.getInt() : 0);  // UI32
+			int tmpMdVideoResoHeight = (tmpIsVideo ? tempBb.getInt() : 0);  // UI32
 			double tmpMdVideoFpsDbl;
 			if (tmpIsVideo) {
-				String tmpMdVideoFpsStr = readStringFromMqBuf();
+				String tmpMdVideoFpsStr = readString127FromMqBuf(FNC_NAME, tempBb);
 				try {
 					tmpMdVideoFpsDbl = Double.parseDouble(tmpMdVideoFpsStr);
 				} catch (NumberFormatException e) {
@@ -157,11 +194,11 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			} else {
 				tmpMdVideoFpsDbl = 0.0;
 			}
-			int tmpMdVideoBitrate = (tmpIsVideo ? cacheBufferData.getInt() : 0);
-			int tmpMdAudioSamplerate = (! tmpIsVideo ? cacheBufferData.getInt() : 0);
-			byte tmpMdAudioChannelCount = (! tmpIsVideo ? cacheBufferData.get() : 0);
-			byte tmpMdPayloadCRC8 = cacheBufferData.get();
-			payloadDataSize = cacheBufferData.getInt();
+			int tmpMdVideoBitrate = (tmpIsVideo ? tempBb.getInt() : 0);  // UI32
+			int tmpMdAudioSamplerate = (! tmpIsVideo ? tempBb.getInt() : 0);  // UI32
+			byte tmpMdAudioChannelCount = (! tmpIsVideo ? tempBb.get() : 0);  // UI08
+			byte tmpMdPayloadCRC8 = tempBb.get();  // UI08
+			payloadDataSize = tempBb.getInt();  // UI32
 
 			return new MqPacketAv(
 					tmpCodecEn,
@@ -179,23 +216,35 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 					payloadDataPtr
 				);
 		} catch (BufferUnderflowException e) {
-			throw new MqException(FNC_NAME + ": received too few bytes");
+			throw new MqException(FNC_NAME + ": received too few bytes (have " + cacheBufferDataR.getUsed() + ")");
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull String readStringFromMqBuf() {
-		int tmpStrLen = cacheBufferData.getInt();
+	private @NonNull String readString127FromMqBuf(@NonNull String fncName, @NonNull ByteBuffer inpBb) throws MqException {
+		byte tmpStrLen = inpBb.get();  // SI08
+		if (tmpStrLen < 0) {
+			throw new MqException(fncName + ": Invalid string length (is < 0)");
+		}
+		if (tmpStrLen == 0) {
+			return "";
+		}
+		if (tmpStrLen > inpBb.remaining()) {
+			throw new MqException(fncName + ": Invalid string length (is=" + tmpStrLen + ", max=" + inpBb.remaining() + ")");
+		}
 		byte[] tmpStrBytes = new byte[tmpStrLen];
-		cacheBufferData.get(tmpStrBytes);
+		inpBb.get(tmpStrBytes);
 		return new String(tmpStrBytes, ZMQ.CHARSET);
 	}
 
-	private void writeStringToMqBuf(@NonNull String str) {
+	private void writeString127ToMqBuf(@NonNull String str, @NonNull ByteBuffer outpBb) {
+		if (str.length() > Byte.MAX_VALUE) {
+			throw new IllegalArgumentException("String too long");
+		}
 		byte[] tmpStrBytes = str.getBytes(ZMQ.CHARSET);
-		cacheBufferData.putInt(tmpStrBytes.length);
-		cacheBufferData.put(tmpStrBytes);
+		outpBb.put((byte)tmpStrBytes.length);
+		outpBb.put(tmpStrBytes);
 	}
 
 }
