@@ -250,8 +250,12 @@ public class RtspRequestParser {
 				logError(FNC_NAME, "invalid URL for RTSP '" + resS + "'");
 				return Optional.empty();
 			}
-			//
+			// rewrite the URL to get rid of any query parameters or fragments or userinfo (username + password)
 			URI tmpUri = URI.create(resS);
+			if (tmpUri.getUserInfo() != null) {
+				rtspSessionInfo.authInfo.authUser = tmpUri.getUserInfo().split(":")[0];
+				rtspSessionInfo.authInfo.authPlainPassword = tmpUri.getUserInfo().split(":")[1];
+			}
 			int tmpPort = tmpUri.getPort();
 			resS = (rtspSessionInfo.isRtspsConnection ? RtspConstants.RTSPS_URL_PROTOCOL : RtspConstants.RTSP_URL_PROTOCOL) +
 					"://" + tmpUri.getHost() +

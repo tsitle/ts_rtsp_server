@@ -749,16 +749,23 @@ public class ThreadRtspServer extends RunnableBase {
 	private boolean checkAuthentification_sub(@NonNull ServerMessageType serverMessageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthentification_sub()";
 
-		if (rtspSessionInfo.authInfo.authUser.isBlank() || rtspSessionInfo.authInfo.authRealmClient.isBlank() ||
-				rtspSessionInfo.authInfo.authNonceClient.isBlank() || rtspSessionInfo.authInfo.authResp.isBlank()) {
+		if (rtspSessionInfo.authInfo.authUser.isBlank()) {
 			// fail silently since missing at least the username is normal for the first unauthorized request
 			return false;
 		}
-		if (! rtspSessionInfo.authInfo.authRealmClient.equals(RtspConstants.RTSP_AUTH_REALM)) {
+		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
+				(rtspSessionInfo.authInfo.authRealmClient.isBlank() ||
+					rtspSessionInfo.authInfo.authNonceClient.isBlank() || rtspSessionInfo.authInfo.authResp.isBlank())) {
+			// fail silently
+			return false;
+		}
+		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
+				! rtspSessionInfo.authInfo.authRealmClient.equals(RtspConstants.RTSP_AUTH_REALM)) {
 			logError(FNC_NAME, "Invalid realm");
 			return false;
 		}
-		if (! rtspSessionInfo.authInfo.authNonceClient.equals(rtspSessionInfo.authInfo.authNonceServer)) {
+		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
+				! rtspSessionInfo.authInfo.authNonceClient.equals(rtspSessionInfo.authInfo.authNonceServer)) {
 			logError(FNC_NAME, "Invalid nonce");
 			return false;
 		}
@@ -768,9 +775,14 @@ public class ThreadRtspServer extends RunnableBase {
 			return false;
 		}
 		//
-		final String expectedResponse = computeExpectedAuthResponse(serverMessageType.name(), tmpOptUserPw.get());
-		if (! rtspSessionInfo.authInfo.authResp.equals(expectedResponse)) {
-			logError(FNC_NAME, "Invalid challenge-response");
+		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank()) {
+			final String expectedResponse = computeExpectedAuthResponse(serverMessageType.name(), tmpOptUserPw.get());
+			if (! rtspSessionInfo.authInfo.authResp.equalsIgnoreCase(expectedResponse)) {
+				logError(FNC_NAME, "Invalid challenge-response");
+				return false;
+			}
+		} else if (! rtspSessionInfo.authInfo.authPlainPassword.equals(tmpOptUserPw.get())) {
+			logError(FNC_NAME, "Invalid plain password");
 			return false;
 		}
 		//

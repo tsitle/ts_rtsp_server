@@ -107,8 +107,10 @@ public class RtspSessionInfo {
 	}
 
 	public static class AuthInfo {
-		/** Authentication credentials: username */
+		/** Authentication credentials: username (from URL or WWW-Authenticate header) */
 		public @NonNull String authUser = "";
+		/** Authentication credentials: password (from URL - not WWW-Authenticate header) */
+		public @NonNull String authPlainPassword = "";
 		/** Authentication credentials: realm from the client */
 		public @NonNull String authRealmClient = "";
 		/** Authentication credentials: nonce from the server */
