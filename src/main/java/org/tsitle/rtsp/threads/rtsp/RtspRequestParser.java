@@ -96,7 +96,7 @@ public class RtspRequestParser {
 
 		// handle resource URL
 		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
-		if (respStatusCode == ServerResponseStatusCode.OK && requestType != ServerMessageType.OPTIONS) {
+		if (respStatusCode == ServerResponseStatusCode.OK) {
 			try {
 				requestUrlInputOrStreamSource = handleResourceUrl(requestType, resourceUrl);
 			} catch (RtspInvalidUriException e) {

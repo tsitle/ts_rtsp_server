@@ -102,13 +102,7 @@ public class RtspResponseBuilder {
 
 		List<String> contents = new ArrayList<>();
 		if (statusCode == ServerResponseStatusCode.UNAUTHORIZED) {
-			if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
-				rtspSessionInfo.authInfo.authNonceServer = buildNonceServer();
-			}
-			contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
-					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
-					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
-					RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 + "\"");
+			addAuthInfoToResponse(contents);
 		}
 		contents.add("");
 		internalSendResponse(statusCode, contents);
@@ -137,6 +131,12 @@ public class RtspResponseBuilder {
 				.map(Enum::name)
 				.toList();
 		contents.add(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC + " " + String.join(", ", tmpList));
+		if (rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.OPTIONS)) {
+			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.OPTIONS).getNeedsAuthentication();
+			if (tmpNeedAuth) {
+				addAuthInfoToResponse(contents);
+			}
+		}
 		contents.add("");
 		internalSendResponse(contents);
 		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
@@ -167,7 +167,7 @@ public class RtspResponseBuilder {
 	}
 
 	/**
-	 * The client makes one SETUP request per stream.<br />
+	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
 	 */
@@ -377,7 +377,9 @@ public class RtspResponseBuilder {
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
 		final String outputSubStreamId = HashMd5Helper.hashOfString(
-				String.format("%s : %05d", rtspInputSource.getId(), tmpSsObj.getId()), false);
+				String.format("%s : %05d : %08X", rtspInputSource.getId(), tmpSsObj.getId(), RandomHelper.getRandomUint32()),
+				false
+			);
 
 		//
 		final String sdpCodecName;
@@ -623,10 +625,17 @@ public class RtspResponseBuilder {
 		rtxpTcpReadWriteInterface.writeRtspLines(outputLines);
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static @NonNull String buildNonceServer() {
-		return HashMd5Helper.hashOfString(UUID.randomUUID().toString(), false);
+	private void addAuthInfoToResponse(@NonNull List<@NonNull String> contents) {
+		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
+			rtspSessionInfo.authInfo.authNonceServer = HashMd5Helper.hashOfString(
+					UUID.randomUUID().toString(),
+					false
+				);
+		}
+		contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
+				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
+				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
+				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 + "\"");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
