@@ -104,14 +104,16 @@ public class ThreadMqE2I extends RunnableBase {
 						failCount = 0;
 					}
 				} catch (MqException e) {
-					if (++failCount >= 30) {
-						failCount = 30;
+					if (++failCount > 60) {
+						failCount = 60;
 					}
 					logError(FNC_NAME, "MqException caught: " + e.getMessage());
-					//noinspection BusyWait
-					Thread.sleep((long)failCount * 1000L);
 				} finally {
 					mqExternalSub.close();
+				}
+				//
+				if (failCount > 0) {
+					sleepLongAndProsper(failCount);
 				}
 			}
 		} catch (MqException e) {
@@ -164,6 +166,19 @@ public class ThreadMqE2I extends RunnableBase {
 		}
 		//
 		mqInternalPub.sendMessageAv(packet);
+	}
+
+	private void sleepLongAndProsper(int secs) {
+		try {
+			int ms = secs * 1000;
+			while (ms > 0 && ! hasBeenRequestedToStop()) {
+				//noinspection BusyWait
+				Thread.sleep(100L);
+				ms -= 100;
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+		}
 	}
 
 }
