@@ -355,7 +355,7 @@ public class ThreadRtspServer extends RunnableBase {
 				}
 		}
 		ctfos.rtpThreadSender.setName(
-				"RTP_#" + clientConnectionNr +
+				"RTP_#c" + clientConnectionNr +
 				"#sid" + rtspSessionInfo.rtspSessionId +
 				"#ss" + tmpStreamInfo.rtspStreamSource.getId() +
 				"#" + tmpStreamInfo.rtspStreamSource.getCodec().getValue()
