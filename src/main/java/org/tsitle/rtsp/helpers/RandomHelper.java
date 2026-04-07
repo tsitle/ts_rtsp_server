@@ -27,8 +27,12 @@ public final class RandomHelper {
 		return (int) (Math.random() * (max - min + 1) + min);
 	}
 
-	public static int getRandomUint32() {
-		return (int)(Math.random() * Integer.MAX_VALUE);
+	public static int getRandomUint32(boolean allowZero) {
+		int resI;
+		do {
+			resI = (int)(Math.random() * Integer.MAX_VALUE);
+		} while (! allowZero && resI == 0);
+		return resI;
 	}
 
 	public static void getSecureRandomBytes(int length, @NonNull BufferExt buffer) {
