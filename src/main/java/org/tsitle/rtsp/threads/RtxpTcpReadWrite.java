@@ -110,7 +110,7 @@ public class RtxpTcpReadWrite {
 	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
 	private static final int QUEUES_MAX_SIZE = 50;
 
-	private static final long TCP_ACTIVITY_TIMEOUT_SECS_DEF = 2L;
+	private static final long TCP_ACTIVITY_TIMEOUT_SECS_DEF = 10L;  // VLC sometimes takes quite a while to complete an RTSP setup right after being started
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY = 60L;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
