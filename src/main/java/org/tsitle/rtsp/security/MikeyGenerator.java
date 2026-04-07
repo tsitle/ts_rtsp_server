@@ -77,7 +77,7 @@ public final class MikeyGenerator {
 				| MikeyOtherConstants.MOC_CHD_PRF_FUNC_MIKEY1
 			));
 		// CSB_ID
-		msgBb.putInt(RandomHelper.getRandomUint32());
+		msgBb.putInt(RandomHelper.getRandomUint32(false));
 		// #CS (indicates the number of Crypto Sessions that will be handled within the CBS)
 		msgBb.put((byte)0x01);
 		// CS_ID_map_type
