@@ -104,7 +104,11 @@ public class RtspRequestParser {
 						"), rejecting request");
 				respStatusCode = ServerResponseStatusCode.FORBIDDEN;
 			} catch (RtspInputSourceIdNotFoundException e) {
-				logError(FNC_NAME, "Invalid Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+				logError(FNC_NAME, "Invalid Input Source ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
+						"), rejecting request");
+				respStatusCode = ServerResponseStatusCode.NOT_FOUND;
+			} catch (RtspSubStreamIdNotFoundException e) {
+				logError(FNC_NAME, "Invalid Sub-Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
 				respStatusCode = ServerResponseStatusCode.NOT_FOUND;
 			}
@@ -159,7 +163,11 @@ public class RtspRequestParser {
 		}
 		//
 		if (requestType == ServerMessageType.SETUP) {
-			rtspSessionInfo.streamSourceIdsSetup.add(requestUrlInputOrStreamSource.streamSourceId);
+			Objects.requireNonNull(
+					requestUrlInputOrStreamSource.subStreamId,
+					FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
+				);
+			rtspSessionInfo.subStreamIdsSetup.add(requestUrlInputOrStreamSource.subStreamId);
 		}
 		//
 		return RequestBasicInfo.createOk(requestType, requestUrlInputOrStreamSource);
@@ -270,7 +278,7 @@ public class RtspRequestParser {
 	private RequestBasicInfo.RequestUrlInputOrStreamSource handleResourceUrl(
 				ServerMessageType requestType,
 				String resourceUrl
-			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException {
+			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleResourceUrl()";
 
 		final String rscUrlPathOrg = extractResourceUrlPath(resourceUrl);
@@ -305,16 +313,18 @@ public class RtspRequestParser {
 						"Invalid Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
 			//
-			if (! rtspSessionInfo.describeMapSubStreamId.containsKey(rscSubStreamId)) {
-				throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Non-existing Sub-Stream ID '" + rscSubStreamId + "'");
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
+			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+			if (tmpSubStreamInfo.isEmpty()) {
+				throw new RtspSubStreamIdNotFoundException("rt=" + requestType + ", " +
+						"Sub-Stream ID='" + rscSubStreamId + "'");
 			}
-			RtspSessionInfo.DescribeIsSs tmpDescribeIsSs = rtspSessionInfo.describeMapSubStreamId.get(rscSubStreamId);
 			//
-			rtspStreamSource = rtspConfig.getStreamSourceObj(tmpDescribeIsSs.streamSourceId).orElse(null);
-			if (rtspStreamSource == null) {
-				throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
-						"Non-existing Stream Source ID Sub-Stream ID '" + rscSubStreamId + "'");
+			rtspStreamSource = rtspConfig.getStreamSourceObj(tmpSubStreamInfo.get().streamSourceId()).orElse(null);
+			if (rtspStreamSource == null) {  // sanity check
+				throw new RtspSubStreamIdNotFoundException("rt=" + requestType + ", " +
+						"Non-existing Stream Source ID in Sub-Stream ID '" + rscSubStreamId + "'");
 			}
 		}
 
@@ -327,26 +337,30 @@ public class RtspRequestParser {
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Sub-Stream ID in URL path: '" + rscUrlPathOrg + "'");
 			}
-			RtspSessionInfo.DescribeIsSs tmpDescribeIsSs = rtspSessionInfo.describeMapSubStreamId.get(rscSubStreamId);
 			//
-			RtspSessionInfo.StreamInfo streamInfo;
-			if (rtspSessionInfo.streamsMapSetup.containsKey(rtspStreamSource.getId())) {
-				// if the DESCRIBE request already created the stream info object
-				streamInfo = rtspSessionInfo.streamsMapSetup.get(rtspStreamSource.getId());
-			} else {
-				streamInfo = new RtspSessionInfo.StreamInfo();
-			}
-			streamInfo.rtspStreamSource = rtspStreamSource;
-			streamInfo.inputSourceUrlSetup = resourceUrl;
-			streamInfo.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
-			streamInfo.rtspRtpTimestampT0 = RandomHelper.getRandomUint32();
-			streamInfo.rtspRtpGenTsT0Ns = System.nanoTime();
-			rtspSessionInfo.streamsMapSetup.put(rtspStreamSource.getId(), streamInfo);
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
+			final String tmpErrMsgSsid = rscSubStreamId;
+			RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getStreamKmds(
+					rtspSessionInfo.clientIpAddr,
+					rscSubStreamId
+				).orElseThrow(() -> new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
+						"No StreamKmds for Sub-Stream ID '" + tmpErrMsgSsid + "'"));
+			RtspStaticSessionInfo.addStreamInfo(
+					rscSubStreamId,
+					tmpStreamKmds,
+					rtspStreamSource,
+					resourceUrl
+				);
 
+			//
 			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
 
-			resObj.inputSourceId = tmpDescribeIsSs.inputSourceId;
-			resObj.streamSourceId = tmpDescribeIsSs.streamSourceId;
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
+			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+			resObj.subStreamId = rscSubStreamId;
+			resObj.inputSourceId = tmpSubStreamInfo.orElseThrow().inputSourceId();
+			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
 
 			// preliminary setting
 			rtspSessionInfo.isRtpRtcpEncryptionRequired =
@@ -360,11 +374,11 @@ public class RtspRequestParser {
 		}
 		Optional<RtspInputSource> optInputSource = rtspConfig.getInputSourceObj(rscUrlPathMod);
 		if (optInputSource.isEmpty()) {
-			throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
-					"Non-existing Input Source ID in URL path: '" + rscUrlPathMod + "'");
+			throw new RtspInputSourceIdNotFoundException("rt=" + requestType + ", " +
+					"URL path: '" + rscUrlPathMod + "'");
 		}
 		if (! optInputSource.get().getEnabled()) {
-			throw new RtspInputSourceIdNotFoundException(FNC_NAME + ": (rt=" + requestType + ") " +
+			throw new RtspInputSourceIdNotFoundException("rt=" + requestType + ", " +
 					"Disabled Input Source used in URL path: '" + rscUrlPathMod + "'");
 		}
 		rtspSessionInfo.inputSourceUrlPerSmtMap.put(requestType, resourceUrl);
@@ -524,9 +538,13 @@ public class RtspRequestParser {
 			) throws RtspUnsupportedTransportException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_setup_transport()";
 
-		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(
+		Objects.requireNonNull(
+				requestUrlInputOrStreamSource.subStreamId,
+				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
+			);
+		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(
 				FNC_NAME,
-				requestUrlInputOrStreamSource.streamSourceId
+				requestUrlInputOrStreamSource.subStreamId
 			);
 
 		tmpStreamInfo.tpIsUdp = false;
@@ -601,9 +619,18 @@ public class RtspRequestParser {
 			) throws RtspMissingEncryptionParamsException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_setup_keymgmt()";
 
-		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(
-				FNC_NAME,
-				requestUrlInputOrStreamSource.streamSourceId
+		Objects.requireNonNull(
+				rtspSessionInfo.clientIpAddr,
+				FNC_NAME + ": rtspSessionInfo.clientIpAddr is null"
+			);
+		Objects.requireNonNull(
+				requestUrlInputOrStreamSource.subStreamId,
+				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
+			);
+		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
+				rtspSessionInfo.clientIpAddr,
+				requestUrlInputOrStreamSource.subStreamId,
+				RandomHelper.getRandomUint32(false)
 			);
 
 		boolean haveKeyData = false;
@@ -622,7 +649,7 @@ public class RtspRequestParser {
 				String tmpSub = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA);
 				try {
 					SrtxpKmd kmdRcvd = MikeyParser.parseMickeyMsgIntoKmd(tmpSub);
-					tmpStreamInfo.streamKmds.kmdInbound = kmdRcvd.clone();
+					tmpStreamKmds.kmdInbound = kmdRcvd.clone();
 					haveKeyData = true;
 					//System.out.println("<<<<<<<<<<<<<<<< " + kmdRcvd);
 				} catch (SrtxpSecurityException e) {

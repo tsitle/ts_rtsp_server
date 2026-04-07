@@ -8,7 +8,6 @@ import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
-import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
@@ -175,9 +174,13 @@ public class RtspResponseBuilder {
 			throws TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseSetup()";
 
-		RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(
+		Objects.requireNonNull(
+				requestUrlInputOrStreamSource.subStreamId,
+				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
+			);
+		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(
 				FNC_NAME,
-				requestUrlInputOrStreamSource.streamSourceId
+				requestUrlInputOrStreamSource.subStreamId
 			);
 		try {
 			tmpStreamInfo.isTransportValid(
@@ -192,7 +195,7 @@ public class RtspResponseBuilder {
 
 		// generate RTSP Session ID
 		if (rtspSessionInfo.rtspSessionId.isBlank()) {
-			rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32());
+			rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32(false));
 			logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
 		}
 
@@ -252,11 +255,8 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RANGE + " " + rtspSessionInfo.clientPlaybackRangeValue);
 
 		StringBuilder tmpRtpInfoSb = new StringBuilder();
-		Set<Integer> tmpSsIds =
-				rtspSessionInfo.getInputSourceForSmtOrThrow(FNC_NAME, ServerMessageType.PLAY).getStreamSourceIds();
-		for (int tmpSsId : tmpSsIds) {
-			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsId).orElseThrow();
-			RtspSessionInfo.StreamInfo tmpStreamInfo = rtspSessionInfo.getStreamInfoOrThrow(FNC_NAME, tmpSsObj.getId());
+		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
+			RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, tmpSubStreamId);
 			if (! tmpRtpInfoSb.isEmpty()) {
 				tmpRtpInfoSb.append(",");
 			}
@@ -310,7 +310,7 @@ public class RtspResponseBuilder {
 	/**
 	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC3551 Section 8
 	 */
-	private void findAndOpenUdpSocketPorts(RtspSessionInfo.StreamInfo tmpStreamInfo) throws UdpSocketIoException {
+	private void findAndOpenUdpSocketPorts(RtspStaticSessionInfo.StreamInfo tmpStreamInfo) throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
 
 		int loopCnt = 0;
@@ -376,9 +376,11 @@ public class RtspResponseBuilder {
 		RtspStreamSource tmpSsObj = optSsObj.get();
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
-		final String outputSubStreamId = HashMd5Helper.hashOfString(
-				String.format("%s : %05d : %08X", rtspInputSource.getId(), tmpSsObj.getId(), RandomHelper.getRandomUint32()),
-				false
+		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
+		final String outputSubStreamId = RtspStaticSessionInfo.getOrAddSubStream(
+				rtspSessionInfo.clientIpAddr,
+				rtspInputSource.getId(),
+				tmpSsObj.getId()
 			);
 
 		//
@@ -486,47 +488,35 @@ public class RtspResponseBuilder {
 
 		// ----------------------------------------
 		// create or update the StreamInfo object
-		RtspSessionInfo.StreamInfo streamInfo;
-		if (rtspSessionInfo.streamsMapSetup.containsKey(tmpSsObj.getId())) {
-			// if the DESCRIBE request already created the stream info object
-			streamInfo = rtspSessionInfo.streamsMapSetup.get(tmpSsObj.getId());
-		} else {
-			streamInfo = new RtspSessionInfo.StreamInfo();
-		}
-		// send crypto parameters
-		streamInfo.streamKmds.kmdInbound = new SrtxpKmd();
+		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
+				rtspSessionInfo.clientIpAddr,
+				outputSubStreamId,
+				RandomHelper.getRandomUint32(false)
+			);
+		// create and send crypto parameters
 		if (rtspSessionInfo.isRtpRtcpEncryptionRequired) {
 			if (! rtspSessionInfo.clientUserAgent.isBlank() && rtspSessionInfo.clientUserAgent.startsWith("GStreamer")) {
 				// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
-				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
+				tmpStreamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
 						KeySizes.AES_KEY_SIZE_128,
 						KeySizes.AUTH_KEY_SIZE_080,
 						10,
 						0,
-						streamInfo.rtspSsrcId
+						tmpStreamKmds.rtspSsrcId
 					);
 			} else {
-				streamInfo.streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamInfo.rtspSsrcId);
+				tmpStreamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(tmpStreamKmds.rtspSsrcId);
 			}
 			//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 			try {
-				String tmpMsg = MikeyGenerator.generate(streamInfo.streamKmds.kmdOutbound);
+				String tmpMsg = MikeyGenerator.generate(tmpStreamKmds.kmdOutbound);
 				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 			}
 		} else {
-			streamInfo.streamKmds.kmdOutbound = new SrtxpKmd();
+			tmpStreamKmds.kmdOutbound = new SrtxpKmd();
 		}
-		//
-		rtspSessionInfo.streamsMapSetup.put(tmpSsObj.getId(), streamInfo);
-
-		// ----------------------------------------
-		// store the Sub-Stream ID ('Input Stream and Stream Source' combination)
-		rtspSessionInfo.describeMapSubStreamId.put(outputSubStreamId, new RtspSessionInfo.DescribeIsSs() {{
-				inputSourceId = rtspInputSource.getId();
-				streamSourceId = tmpSsObj.getId();
-			}});
 	}
 
 	/**
@@ -627,10 +617,8 @@ public class RtspResponseBuilder {
 
 	private void addAuthInfoToResponse(@NonNull List<@NonNull String> contents) {
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
-			rtspSessionInfo.authInfo.authNonceServer = HashMd5Helper.hashOfString(
-					UUID.randomUUID().toString(),
-					false
-				);
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
+			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.clientIpAddr);
 		}
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +

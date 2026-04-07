@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 public class RequestBasicInfo {
 
 	public static class RequestUrlInputOrStreamSource {
+		@Nullable String subStreamId = null;
 		@Nullable String inputSourceId = null;
 		int streamSourceId = -1;
 	}
