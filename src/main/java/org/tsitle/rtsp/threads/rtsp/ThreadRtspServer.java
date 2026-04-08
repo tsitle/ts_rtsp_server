@@ -762,8 +762,9 @@ public class ThreadRtspServer extends RunnableBase {
 		} else if (! wasAuthOk) {
 			requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
 			logInfo(FNC_NAME, String.format(
-					"Rejecting %s request with code %s",
-					requestBasicInfo.serverMessageType, requestBasicInfo.statusCode));
+					"Rejecting %s request with code %s (client IP=%s)",
+					requestBasicInfo.serverMessageType, requestBasicInfo.statusCode,
+					rtspSessionInfo.clientIpAddr == null ? "NULL" : rtspSessionInfo.clientIpAddr.getHostAddress()));
 		}
 	}
 
