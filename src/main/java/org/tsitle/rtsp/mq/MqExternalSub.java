@@ -140,7 +140,8 @@ public class MqExternalSub extends MqReceiverSubBase {
 			throw new IllegalStateException("MQ settings have not been requested yet");
 		}
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setReceiveTimeOut(10);
+		zmqSocket.setReceiveTimeOut(250);  // milliseconds
+		zmqSocket.setSendTimeOut(250);  // milliseconds
 		zmqSocket.setReconnectIVL(1000);
 		zmqSocket.setReconnectIVLMax(10000);
 		zmqSocket.setRcvHWM(5);
