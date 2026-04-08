@@ -30,7 +30,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<MqPacketAv> readMsgAvFromMq(final @NonNull BufferExt payloadDataPtr) throws MqException {
+	public Optional<MqPacketAv> readMsgAvFromMq(final @NonNull BufferExt payloadDataPtr) {
 		if (zmqSocket == null) {
 			return Optional.empty();
 		}
@@ -38,18 +38,37 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		final List<byte[]> frames = new ArrayList<>();
 
 		// blocks until one message is successfully retrieved, or stops when timeout set by setReceiveTimeOut(int) expires
-		byte[] frame = zmqSocket.recv(0);
-		if (frame == null) {
-			return Optional.empty();
-		}
-		frames.add(frame);
+		byte[] frameBa;
+		boolean isGarbage;
+		do {
+			frameBa = zmqSocket.recv(0);
+			if (frameBa == null) {
+				return Optional.empty();
+			}
+			isGarbage = isJeroMqInternalMsg(frameBa, frameBa.length);
+			/*if (! isGarbage) {
+				break;
+			}
+			System.out.println("garbage -- " + zmqSocket.getLastEndpoint());*/
+		} while (isGarbage);
+		frames.add(frameBa);
 		while (zmqSocket.hasReceiveMore()) {
 			frames.add(zmqSocket.recv(0));
 		}
+		if (frames.size() < 4) {
+			// truncated message
+			/*BufferExt tmpBe = new BufferExt(frames.getFirst());
+			System.out.println("missing msg frames -- " + zmqSocket.getLastEndpoint() + " -- " + tmpBe.toHexString(true));*/
+			return Optional.empty();
+		}
 
-		return Optional.of(
-				decodePacketAv(frames, payloadDataPtr)
-			);
+		try {
+			return Optional.of(
+					decodePacketAv(frames, payloadDataPtr)
+				);
+		} catch (MqException e) {
+			return Optional.empty();
+		}
 	}
 
 	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
