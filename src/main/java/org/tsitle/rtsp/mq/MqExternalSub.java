@@ -144,7 +144,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		zmqSocket.setSendTimeOut(250);  // milliseconds
 		zmqSocket.setReconnectIVL(1000);
 		zmqSocket.setReconnectIVLMax(10000);
-		zmqSocket.setRcvHWM(5);
+		zmqSocket.setRcvHWM(20);  // important! if too low, a JeroMQ bug causes packet loss
 		// adjust the OS's receive buffer size
 		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
