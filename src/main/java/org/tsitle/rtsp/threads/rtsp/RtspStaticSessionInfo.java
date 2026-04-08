@@ -92,6 +92,9 @@ public class RtspStaticSessionInfo {
 				if (tpClientDestUdpPortRtp <= 0 || tpClientDestUdpPortRtcp <= 0) {
 					throw new Exception("Client UDP ports not set");
 				}
+				if (isRtspsConnection && ! tpIsEncr) {
+					throw new Exception("UDP cannot be used with RTSPS w/o SRTP");
+				}
 				if (isTransportUdpDisabled) {
 					throw new Exception("UDP is disabled");
 				}
