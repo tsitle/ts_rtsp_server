@@ -167,7 +167,9 @@ public class RtspRequestParser {
 					requestUrlInputOrStreamSource.subStreamId,
 					FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
 				);
-			rtspSessionInfo.subStreamIdsSetup.add(requestUrlInputOrStreamSource.subStreamId);
+			if (! rtspSessionInfo.subStreamIdsSetup.contains(requestUrlInputOrStreamSource.subStreamId)) {
+				rtspSessionInfo.subStreamIdsSetup.add(requestUrlInputOrStreamSource.subStreamId);
+			}
 		}
 		//
 		return RequestBasicInfo.createOk(requestType, requestUrlInputOrStreamSource);

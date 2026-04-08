@@ -393,7 +393,7 @@ public class ThreadRtspServer extends RunnableBase {
 			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 			if (childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
-				throw new IllegalStateException(FNC_NAME + ": Child threads already exist");
+				throw new IllegalStateException(FNC_NAME + ": Child thread for ss=" + tmpSsObj.getId() + " already exists");
 			}
 			//
 			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getCodec() == RtpPacketType.UNKNOWN) {
