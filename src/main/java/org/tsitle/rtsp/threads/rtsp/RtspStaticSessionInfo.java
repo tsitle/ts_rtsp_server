@@ -203,7 +203,7 @@ public class RtspStaticSessionInfo {
 		final String nonce = HashMd5Helper.hashOfString(
 				String.format("%s : %08X", UUID.randomUUID(), RandomHelper.getRandomUint32(false)),
 				false
-			).substring(0, HASH_LEN);
+			);
 
 		authServerNonceWriteLock.lock();
 		try {
