@@ -58,7 +58,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		while (zmqSocket.hasReceiveMore()) {
 			frames.add(zmqSocket.recv(0));
 		}
-		if (frames.size() < 4) {
+		if (frames.size() < 4 || frames.getFirst().length < PKT_HEADER_MARKER_LEN) {
 			// truncated message
 			/*BufferExt tmpBe = new BufferExt(frames.getFirst());
 			System.out.println("missing msg frames -- " + zmqSocket.getLastEndpoint() + " -- " + tmpBe.toHexString(true));*/
