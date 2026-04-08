@@ -19,6 +19,9 @@ import java.util.Optional;
  */
 public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
+	private final BufferExt cacheHeaderMarkerRd = new BufferExt();
+	private final BufferExt cacheHeaderMarkerWr = new BufferExt(PKT_HEADER_MARKER_BA);
+
 	/**
 	 * Constructor.
 	 * @param zmqSocket ZMQ socket
@@ -79,6 +82,9 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 
 		// write the header to the Message Queue
+		/// Header Marker
+		writeFieldToMqBinData(cacheHeaderMarkerWr, ZMQ.SNDMORE);
+		///
 		writeFieldToMqBool(packet.codec().isVideo(), ZMQ.SNDMORE);
 		writeFieldToMqString127(FNC_NAME, packet.codec().getCodecName(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
@@ -125,6 +131,13 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 		int frameIx = 0;
 
+		// Header Marker
+		decodeFieldBinData(FNC_NAME, frames, frameIx++, PKT_HEADER_MARKER_LEN, cacheHeaderMarkerRd);
+		if (! hasValidPacketHeaderMarker(cacheHeaderMarkerRd.getBaPtr(), cacheHeaderMarkerRd.getUsed())) {
+			throw new MqException(FNC_NAME + ": Invalid packet header marker");
+		}
+
+		//
 		final boolean tmpIsVideo = decodeFieldBool(FNC_NAME, frames, frameIx++);
 
 		final MqPacketCodec tmpCodecEn;

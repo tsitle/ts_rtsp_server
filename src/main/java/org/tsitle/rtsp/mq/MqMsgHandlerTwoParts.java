@@ -126,6 +126,9 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 				.wrap(cacheBufferDataS.getBaPtr(), 0, FIRST_PART_BUFFER_SIZE)
 				.order(ByteOrder.BIG_ENDIAN);
 
+		// Header Marker
+		tempBb.put(PKT_HEADER_MARKER_BA);
+		//
 		tempBb.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
 		writeString127ToMqBuf(packet.codec().getCodecName(), tempBb);
 		if (packet.codec().isVideo()) {
@@ -169,8 +172,17 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 	private @NonNull MqPacketAv decodePacketAv(final @NonNull BufferExt payloadDataPtr) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".decodePacketAv()";
 
+		// Header Marker
+		if (cacheBufferDataR.getUsed() <= PKT_HEADER_MARKER_LEN) {
+			throw new MqException(FNC_NAME + ": Received too few bytes (have " + cacheBufferDataR.getUsed() + ")");
+		}
+		if (! hasValidPacketHeaderMarker(cacheBufferDataR.getBaPtr(), PKT_HEADER_MARKER_LEN)) {
+			throw new MqException(FNC_NAME + ": Invalid packet header marker");
+		}
+
+		//
 		ByteBuffer tempBb = ByteBuffer
-				.wrap(cacheBufferDataR.getBaPtr(), 0, cacheBufferDataR.getUsed())
+				.wrap(cacheBufferDataR.getBaPtr(), PKT_HEADER_MARKER_LEN, cacheBufferDataR.getUsed() + PKT_HEADER_MARKER_LEN)
 				.order(ByteOrder.BIG_ENDIAN);
 
 		try {

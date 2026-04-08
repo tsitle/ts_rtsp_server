@@ -15,6 +15,9 @@ import java.util.Optional;
  */
 public abstract class MqMsgHandlerBase {
 
+	static final byte[] PKT_HEADER_MARKER_BA = new byte[] {0x01, 0x02, 0x03, 0x04};
+	static final int PKT_HEADER_MARKER_LEN = PKT_HEADER_MARKER_BA.length;
+
 	protected ZMQ.@Nullable Socket zmqSocket;
 
 	private final HashCrc8Helper hashCrc8Helper = new HashCrc8Helper();
@@ -68,6 +71,13 @@ public abstract class MqMsgHandlerBase {
 	protected boolean isJeroMqInternalMsg(byte[] buffer, int length) {
 		return (length > 7 && buffer[0] == 7 && buffer[1] == 'M' &&
 				buffer[2] == 'E' && buffer[3] == 'S');
+	}
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	protected boolean hasValidPacketHeaderMarker(byte[] buffer, int length) {
+		return (length >= PKT_HEADER_MARKER_LEN &&
+				buffer[0] == PKT_HEADER_MARKER_BA[0] && buffer[1] == PKT_HEADER_MARKER_BA[1] &&
+				buffer[2] == PKT_HEADER_MARKER_BA[2] && buffer[3] == PKT_HEADER_MARKER_BA[3]);
 	}
 
 }
