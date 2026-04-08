@@ -80,10 +80,12 @@ public class MqChannelBus {
 		// adjust the OS's send buffer size
 		zmqSocket.setSendBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
+		zmqSocket.setReceiveTimeOut(100);  // milliseconds
+		zmqSocket.setSendTimeOut(100);  // milliseconds
 		// detect dead subscribers
 		zmqSocket.setTCPKeepAlive(1);
-		zmqSocket.setTCPKeepAliveIdle(60);
-		zmqSocket.setTCPKeepAliveInterval(60);
+		zmqSocket.setTCPKeepAliveIdle(60);  // seconds
+		zmqSocket.setTCPKeepAliveInterval(60);  // seconds
 		zmqSocket.setTCPKeepAliveCount(3);
 		// prevents messages being queued for connections that are not yet fully established. Helps to avoid message buildup if a subscriber disappears
 		zmqSocket.setImmediate(true);
@@ -105,6 +107,8 @@ public class MqChannelBus {
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
 		zmqSocket.setRcvHWM(10);
+		zmqSocket.setReceiveTimeOut(50);  // milliseconds
+		zmqSocket.setSendTimeOut(50);  // milliseconds
 		zmqSocket.setLinger(0);
 		// adjust the OS's receive buffer size
 		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
