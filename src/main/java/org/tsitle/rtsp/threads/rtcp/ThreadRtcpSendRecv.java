@@ -120,7 +120,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 			// keep running for another 5s
 			if (! doStop.get()) {
-				logInfo(FNC_NAME, "Receiving RTCP packets stopped, waiting for up to 5s for more packets");
+				logDebug(FNC_NAME, "Receiving RTCP packets stopped, waiting for up to 5s for more packets");
 				Instant tmpStart = Instant.now();
 				while (Duration.between(tmpStart, Instant.now()).toMillis() < 5000) {
 					if ((parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) ||
