@@ -2,6 +2,7 @@ package org.tsitle.rtsp.mq;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspSsMq;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.mq.httpdata.HttpResponseOpenMq;
 import org.tsitle.rtsp.threads.LogMsgInterface;
@@ -18,13 +19,18 @@ import java.util.Map;
  */
 public class MqExternalSub extends MqReceiverSubBase {
 
-	private static class MqSettings {
+	private static class MqSettingsExtended {
 		boolean haveSettings = false;
 
+		final @NonNull RtspSsMq settsBasic;
 		@NonNull String serverEndpoint = "";
 		@NonNull String serverPublicKeyZ85 = "";
 		boolean isEncrypted = true;
 		boolean areMsgsSegmented = false;
+
+		MqSettingsExtended(@NonNull RtspSsMq mqSettingsBasic) {
+			this.settsBasic = mqSettingsBasic.clone();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,49 +39,29 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private static final boolean DO_VALIDATE_PAYLOAD = true;
 	private static final int SEND_RECV_HWM = 100;
 
-	private final @NonNull String mqAddrHostAndPort;
-	private final @NonNull String mqAddrPath;
-	private final @NonNull String mqAddrAuth;
 	private final @NonNull String mqSslCertPath;
 
 	private final ZMQ.Curve.@NonNull KeyPair mqKeyPair;
-	private final MqSettings mqSettings = new MqSettings();
+	private final MqSettingsExtended mqSettingsExtended;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param mqAddressHostAndPort Message queue host address (IP/hostname and port)
-	 * @param mqAddressPath Message queue path
-	 * @param mqAddressAuth Message queue authentication (User:Password)
+	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
 	public MqExternalSub(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull String mqAddressHostAndPort,
-				@NonNull String mqAddressPath,
-				@NonNull String mqAddressAuth,
+				@NonNull RtspSsMq mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, DO_VALIDATE_PAYLOAD, false);
 
 		//
 		this.mqSslCertPath = mqSslCertPath.strip();
-		//
-		if (mqAddressHostAndPort.isBlank() || mqAddressPath.isBlank() || mqAddressAuth.isBlank()) {
-			throw new IllegalArgumentException("MQ host/path/auth must not be empty");
-		}
-		if (! mqAddressAuth.contains(":")) {
-			throw new IllegalArgumentException("MQ auth must contain user and password separated by colon");
-		}
-		if (! mqAddressHostAndPort.contains(":")) {
-			this.mqAddrHostAndPort = mqAddressHostAndPort + ":443";  // default HTTPS port
-		} else {
-			this.mqAddrHostAndPort = mqAddressHostAndPort;
-		}
-		this.mqAddrPath = mqAddressPath;
-		this.mqAddrAuth = mqAddressAuth;
 
 		//
+		this.mqSettingsExtended = new MqSettingsExtended(mqSettings);
 		this.mqKeyPair = ZMQ.Curve.generateKeyPair();
 	}
 
@@ -93,7 +79,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 		requestMqInfo();
 		internalConnectToMq();
 
-		msgHandler = MqMsgHandlerFactory.createHandlerExternalMq(zmqSocket, mqSettings.areMsgsSegmented);
+		msgHandler = MqMsgHandlerFactory.createHandlerExternalMq(zmqSocket, mqSettingsExtended.areMsgsSegmented);
 
 		stateOpened.set(true);
 	}
@@ -102,11 +88,11 @@ public class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void requestMqInfo() throws MqException {
-		final String mqHttpUrl = "https://" + mqAddrHostAndPort + mqAddrPath;
+		final String mqHttpUrl = mqSettingsExtended.settsBasic.getInputUri().toString();
 		HttpResponseOpenMq responseOpenMq;
 		try {
-			final String tmpAuthUser = mqAddrAuth.split(":")[0];
-			final String tmpAuthPw = mqAddrAuth.split(":")[1];
+			final String tmpAuthUser = mqSettingsExtended.settsBasic.getUsername();
+			final String tmpAuthPw = mqSettingsExtended.settsBasic.getPassword();
 			HttpClientJson client;
 			if (mqSslCertPath.isBlank()) {
 				client = HttpClientJson.createClientWithCompletelyInsecureSsl(tmpAuthUser, tmpAuthPw);
@@ -128,16 +114,16 @@ public class MqExternalSub extends MqReceiverSubBase {
 					"MQ HTTP server '" + mqHttpUrl + "': " + e.getMessage());
 		}
 
-		final String tmpMqHostOnly = mqAddrHostAndPort.split(":")[0];
-		mqSettings.serverEndpoint = "tcp://" + tmpMqHostOnly + ":" + responseOpenMq.mqPort();
-		mqSettings.serverPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
-		mqSettings.isEncrypted = responseOpenMq.mqEncrypted();
-		mqSettings.areMsgsSegmented = responseOpenMq.mqMsgSegmented();
-		mqSettings.haveSettings = true;
+		final String tmpMqHostOnly = mqSettingsExtended.settsBasic.getHost();
+		mqSettingsExtended.serverEndpoint = "tcp://" + tmpMqHostOnly + ":" + responseOpenMq.mqPort();
+		mqSettingsExtended.serverPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
+		mqSettingsExtended.isEncrypted = responseOpenMq.mqEncrypted();
+		mqSettingsExtended.areMsgsSegmented = responseOpenMq.mqMsgSegmented();
+		mqSettingsExtended.haveSettings = true;
 	}
 
 	private void internalConnectToMq() {
-		if (! mqSettings.haveSettings) {
+		if (! mqSettingsExtended.haveSettings) {
 			throw new IllegalStateException("MQ settings have not been requested yet");
 		}
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
@@ -153,21 +139,21 @@ public class MqExternalSub extends MqReceiverSubBase {
 		zmqSocket.subscribe("".getBytes());
 
 		//
-		if (mqSettings.isEncrypted) {
-			if (mqSettings.serverPublicKeyZ85.isBlank()) {
+		if (mqSettingsExtended.isEncrypted) {
+			if (mqSettingsExtended.serverPublicKeyZ85.isBlank()) {
 				throw new IllegalStateException("MQ encryption is enabled, but ServerPublicKey is not set");
 			}
-			zmqSocket.setCurveServerKey(mqSettings.serverPublicKeyZ85.getBytes(ZMQ.CHARSET));
+			zmqSocket.setCurveServerKey(mqSettingsExtended.serverPublicKeyZ85.getBytes(ZMQ.CHARSET));
 
 			zmqSocket.setCurvePublicKey(mqKeyPair.publicKey.getBytes(ZMQ.CHARSET));
 			zmqSocket.setCurveSecretKey(mqKeyPair.secretKey.getBytes(ZMQ.CHARSET));
 		}
 
 		// connect to publisher
-		if (mqSettings.serverEndpoint.isBlank()) {
+		if (mqSettingsExtended.serverEndpoint.isBlank()) {
 			throw new IllegalStateException("ServerEndpoint is not set");
 		}
-		zmqSocket.connect(mqSettings.serverEndpoint);
+		zmqSocket.connect(mqSettingsExtended.serverEndpoint);
 
 		//
 		zmqPollerObj = zmqContext.createPoller(1);

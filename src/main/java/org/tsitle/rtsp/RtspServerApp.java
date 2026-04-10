@@ -2,6 +2,7 @@ package org.tsitle.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspSsMq;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
@@ -197,8 +198,10 @@ public class RtspServerApp {
 				// should never happen
 				throw new IllegalStateException(e);
 			}
+			RtspSsMq mqSetts = ss.getInputMqSettings().orElseThrow();
 			logDebug(FNC_NAME, "Starting MqE2I for '" +
-					ss.getInputUri().getHost() + ":" + ss.getInputUri().getPort() + ss.getInputUri().getPath() + "'");
+					mqSetts.getHost() + ":" + mqSetts.getPort() + ":" +
+					mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,
 					cancelToken,
@@ -218,7 +221,7 @@ public class RtspServerApp {
 							}
 						},
 					streamSourceId,
-					ss.getInputUri(),
+					mqSetts,
 					tmpSslCertPath.orElse("")
 				);
 

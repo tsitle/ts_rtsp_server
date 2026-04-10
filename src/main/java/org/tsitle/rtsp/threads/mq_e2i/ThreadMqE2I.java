@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.mq_e2i;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspStreamSource;
+import org.tsitle.rtsp.config.RtspSsMq;
 import org.tsitle.rtsp.mq.MqExternalSub;
 import org.tsitle.rtsp.mq.MqInternalPub;
 import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
@@ -13,14 +13,13 @@ import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
 
-import java.net.URI;
 import java.util.Optional;
 
 public class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
 	private final int streamSourceId;
-	private final @NonNull URI mqUri;
+	private final @NonNull RtspSsMq mqSettings;
 	private final @NonNull String mqSslCertPath;
 
 	private final String threadName;
@@ -36,7 +35,7 @@ public class ThreadMqE2I extends RunnableBase {
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
 	 * @param streamSourceId Stream source identifier
-	 * @param mqUri URI of the Message queue (User:Password + IP/hostname + port + path)
+	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
 	public ThreadMqE2I(
@@ -44,7 +43,7 @@ public class ThreadMqE2I extends RunnableBase {
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
 				int streamSourceId,
-				@NonNull URI mqUri,
+				@NonNull RtspSsMq mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, cancelToken);
@@ -53,24 +52,11 @@ public class ThreadMqE2I extends RunnableBase {
 		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
 		this.streamSourceId = streamSourceId;
 		//
-		if (mqUri.getScheme() == null) {
-			throw new IllegalArgumentException("Input URI scheme cannot be null (mqUri='" + mqUri + "')");
-		}
-		if (! mqUri.getScheme().equals("https")) {
-			throw new IllegalArgumentException("Unsupported input URI scheme: " + mqUri.getScheme());
-		}
-		if (mqUri.getUserInfo() == null || mqUri.getUserInfo().isEmpty()) {
-			throw new IllegalArgumentException("Missing authentification in input URI: " + mqUri);
-		}
-		this.mqUri = mqUri;
+		this.mqSettings = mqSettings.clone();
 		this.mqSslCertPath = mqSslCertPath;
 
-		String tmpPath = mqUri.getPath().substring(0, mqUri.getPath().length() - RtspStreamSource.SS_MQ_SUFFIX.length());
-		tmpPath = tmpPath
-				.replace("openMq/", "").replace('/', ':')
-				.replace("r_video", "RV")
-				.replace("r_audio", "RA");
-		this.threadName = String.format("MQE2I#ss%d#%s%s", streamSourceId, mqUri.getHost(), tmpPath);
+		this.threadName = String.format("MQE2I#ss%d#%s:%s:%s",
+				streamSourceId, mqSettings.getHost(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
 
 		//
 		mqInternalPub = new MqInternalPub(logMsgInterface, streamSourceId);
@@ -97,9 +83,7 @@ public class ThreadMqE2I extends RunnableBase {
 			while (! hasBeenRequestedToStop()) {
 				mqExternalSub = new MqExternalSub(
 						logMsgInterface,
-						mqUri.getHost() + ":" + mqUri.getPort(),
-						mqUri.getPath(),
-						mqUri.getUserInfo(),
+						mqSettings,
 						mqSslCertPath.strip()
 					);
 				try {

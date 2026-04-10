@@ -2,6 +2,7 @@ package org.tsitle.rtsp.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avdata.AudioAacInfo;
 import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingAacFromFile;
@@ -14,13 +15,12 @@ import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Stream Source within an Input Source for RTSP streams.
  */
 public class RtspStreamSource {
-
-	public static final String SS_MQ_SUFFIX = ".mq";
 
 	/** Stream Source ID */
 	@GsonAnnoExclude
@@ -28,12 +28,12 @@ public class RtspStreamSource {
 	/** Is this Stream Source enabled? (default: true) */
 	@Expose
 	private @NonNull Boolean enabled;
-	/** Path to the media file -- either {@code filePath} or {@code mqUrl} must be set, but not both. */
+	/** Path to the media file -- either {@code filePath} or {@code mq} must be set, but not both. */
 	@Expose
 	private @NonNull String filePath;
-	/** URL of the Message Queue for the media stream -- either {@code filePath} or {@code mqUrl} must be set, but not both. */
+	/** Message Queue settings for the media stream -- either {@code filePath} or {@code mq} must be set, but not both. */
 	@Expose
-	private @NonNull String mqUrl;
+	private @Nullable RtspSsMq mq;
 	/** Codec used for the stream -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull ConfigSsCodec codec;
@@ -80,7 +80,7 @@ public class RtspStreamSource {
 		this.id = -1;
 		this.enabled = true;
 		this.filePath = "";
-		this.mqUrl = "";
+		this.mq = null;
 		//noinspection DataFlowIssue
 		this.codec = null;
 		this.videoFps = -1.0;
@@ -114,7 +114,21 @@ public class RtspStreamSource {
 		if (! filePath.isBlank()) {
 			return URI.create("file:" + filePath);
 		}
-		return URI.create("https://" + mqUrl);
+		if (mq == null) {
+			throw new IllegalStateException("MQ is null");
+		}
+		return mq.getInputUri();
+	}
+
+	public Optional<RtspSsMq> getInputMqSettings() {
+		checkPostProcessed();
+		if (! filePath.isBlank()) {
+			return Optional.empty();
+		}
+		if (mq == null) {
+			throw new IllegalStateException("MQ is null");
+		}
+		return Optional.of(mq);
 	}
 
 	public boolean getIsSourceFromFile() {
@@ -250,15 +264,12 @@ public class RtspStreamSource {
 		//noinspection ConstantValue
 		if (filePath != null && ! filePath.isBlank()) {
 			filePath = dataFilenameToAbsolutePath(dataDir, filePath);
-			mqUrl = "";
+			mq = null;
 		} else {
 			filePath = "";
 		}
-		if (filePath.isBlank()) {
-			//noinspection ConstantValue
-			if (mqUrl == null || mqUrl.isBlank()) {
-				mqUrl = "";
-			}
+		if (mq != null) {
+			mq.postProcess();
 		}
 		//
 		//noinspection ConstantValue
@@ -289,21 +300,15 @@ public class RtspStreamSource {
 		}
 
 		//
-		if (filePath.isBlank() && mqUrl.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ URL found for Stream Source ID '" + tmpExtSsId + "'");
+		if (filePath.isBlank() && mq == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found for Stream Source ID '" + tmpExtSsId + "'");
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
 					"' for Stream Source ID '" + tmpExtSsId + "' - file not found");
 		}
-		if (! mqUrl.isBlank()) {
-			validateMqUrl(FNC_NAME, tmpExtSsId, mqUrl);
-			//
-			final String tmpUriAuth = getInputUri().getUserInfo();
-			final String tmpUriHost = getInputUri().getHost();
-			final int tmpUriPort = getInputUri().getPort();
-			final String tmpUriPath = getInputUri().getPath();
-			mqUrl = tmpUriAuth + "@" + tmpUriHost + ":" + (tmpUriPort != -1 ? tmpUriPort : 443) + tmpUriPath;
+		if (mq != null) {
+			mq.validate(tmpExtSsId);
 		}
 
 		//
@@ -357,31 +362,6 @@ public class RtspStreamSource {
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
 			throw new IllegalStateException("Stream Source has not been post-processed yet");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void validateMqUrl(@NonNull String fncName, @NonNull String extSsId, @NonNull String mqUrl) throws ConfigInvalidException {
-		final String errMsgPrefix = fncName + ": Invalid MQ URL '" + mqUrl + "' for Stream Source ID '" + extSsId + "' - ";
-
-		if (! mqUrl.endsWith(SS_MQ_SUFFIX)) {
-			throw new ConfigInvalidException(errMsgPrefix + "must end with '" + SS_MQ_SUFFIX + "'");
-		}
-		final URI tmpUri = getInputUri();
-		if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {
-			throw new ConfigInvalidException(errMsgPrefix + "must contain user info");
-		}
-		if (! tmpUri.getUserInfo().contains(":")) {
-			throw new ConfigInvalidException(errMsgPrefix + "must contain username and password separated by colon");
-		}
-		final String tmpAuthUser = tmpUri.getUserInfo().split(":")[0];
-		if (tmpAuthUser.isBlank()) {
-			throw new ConfigInvalidException(errMsgPrefix + "must contain username");
-		}
-		final String tmpAuthPw = tmpUri.getUserInfo().split(":")[1];
-		if (tmpAuthPw.isBlank()) {
-			throw new ConfigInvalidException(errMsgPrefix + "must contain password");
 		}
 	}
 
