@@ -90,6 +90,8 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		// write the header to the Message Queue
 		/// Header Marker
 		writeFieldToMqBinData(FNC_NAME, cacheHeaderMarkerWr, ZMQ.SNDMORE);
+		/// Header Message Nr
+		writeFieldToMqUint64(FNC_NAME, packet.msgNr(), ZMQ.SNDMORE);
 		///
 		writeFieldToMqBool(FNC_NAME, packet.codec().isVideo(), ZMQ.SNDMORE);
 		writeFieldToMqString127(FNC_NAME, packet.codec().getCodecName(), ZMQ.SNDMORE);
@@ -116,7 +118,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		writeFieldToMqUint32(FNC_NAME, packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
 
 		// write the payload data to the Message Queue
-		writeFieldToMqBinData(FNC_NAME, packet.payloadDataPtr(), 0);
+		writeFieldToMqBinData(FNC_NAME, packet.payloadDataPtr(), ZMQ.DONTWAIT);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -142,6 +144,9 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		if (! hasValidPacketHeaderMarker(cacheHeaderMarkerRd.getBaPtr(), cacheHeaderMarkerRd.getUsed())) {
 			throw new MqException(FNC_NAME + ": Invalid packet header marker");
 		}
+
+		// Header Message Nr
+		final long tmpMsgNr = decodeFieldUint64(FNC_NAME, frames, frameIx++);  // UI64
 
 		//
 		final boolean tmpIsVideo = decodeFieldBool(FNC_NAME, frames, frameIx++);
@@ -184,6 +189,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		decodeFieldBinData(FNC_NAME, frames, frameIx, tmpBinDataLen, payloadDataPtr);
 
 		return new MqPacketAv(
+				tmpMsgNr,
 				tmpCodecEn,
 				tmpIsCodecGuessed,
 				tmpMdTimestamp,

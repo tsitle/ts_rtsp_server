@@ -136,6 +136,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 		// Header Marker
 		tempBb.put(PKT_HEADER_MARKER_BA);
+		// Header Message Nr
+		tempBb.putLong(packet.msgNr());
 		//
 		tempBb.put(packet.codec().isVideo() ? (byte)1 : (byte)0);
 		writeString127ToMqBuf(packet.codec().getCodecName(), tempBb);
@@ -173,7 +175,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		if (! waitForSocketReadyToWrite(FNC_NAME)) {
 			return;
 		}
-		if (! zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), 0)) {
+		if (! zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), ZMQ.DONTWAIT)) {
 			throw new MqException("Failed to send data to MQ (payload)");
 		}
 	}
@@ -204,6 +206,9 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 				.order(ByteOrder.BIG_ENDIAN);
 
 		try {
+			// Header Message Nr
+			long tmpMsgNr = tempBb.getLong();  // UI64
+
 			boolean tmpIsVideo = (tempBb.get() != 0);
 			// read codec
 			String tmpCodecStr = readString127FromMqBuf(FNC_NAME, tempBb);
@@ -242,6 +247,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			payloadDataSize = tempBb.getInt();  // UI32
 
 			return new MqPacketAv(
+					tmpMsgNr,
 					tmpCodecEn,
 					tmpIsCodecGuessed,
 					tmpMdTimestamp,

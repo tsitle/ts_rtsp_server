@@ -120,12 +120,12 @@ public class MqExternalSub extends MqReceiverSubBase {
 
 			responseOpenMq = client.postJson(mqHttpUrl, payload, HttpResponseOpenMq.class);
 		} catch (java.net.ConnectException e) {
-			throw new MqException("Could not connect to Message Queue HTTP server '" + mqHttpUrl + "'");
+			throw new MqException("Connecting to MQ HTTP server failed");
 		} catch (IOException | InterruptedException e) {
-			throw new MqException("Connecting to Message Queue HTTP server '" + mqHttpUrl + "' failed: " + e.getMessage());
+			throw new MqException("Connecting to MQ HTTP server failed (IOE/IE): " + e.getMessage());
 		} catch (Exception e) {
 			throw new MqException("Exception caught while connecting to " +
-					"Message Queue HTTP server '" + mqHttpUrl + "': " + e.getMessage());
+					"MQ HTTP server '" + mqHttpUrl + "': " + e.getMessage());
 		}
 
 		final String tmpMqHostOnly = mqAddrHostAndPort.split(":")[0];

@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 
 /**
  * Audio/video packet.
+ * @param msgNr Message number
  * @param codec The codec used for the payload
  * @param isCodecGuessed Whether the codec was guessed or explicitly set
  * @param mdTimestamp Metadata: sample time timestamp of the payload
@@ -20,6 +21,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
  * @param payloadDataPtr Pointer to the payload data buffer
  */
 public record MqPacketAv(
+			long msgNr,
 			@NonNull MqPacketCodec codec,
 			boolean isCodecGuessed,
 			long mdTimestamp,
@@ -37,7 +39,8 @@ public record MqPacketAv(
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"codec=" + codec +
+				"msgNr=" + Long.toUnsignedString(msgNr) +
+				", codec=" + codec +
 				(codec.isVideo() ? ", isCodecGuessed=" + (isCodecGuessed ? "T" : "F") : "") +
 				", mdTimestamp=" + Long.toUnsignedString(mdTimestamp) +
 				", mdCounter=" + Integer.toUnsignedString(mdCounter) +

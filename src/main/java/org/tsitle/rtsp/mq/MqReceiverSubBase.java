@@ -23,7 +23,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	private static class Stats {
 		@Nullable Long lastTimestampMs = null;
 		long lastRecvTimeNs = 0L;
-		@Nullable Integer lastCounter = null;
+		@Nullable Long lastMsgNr = null;
 		long avgTsDeltaSum = 0L;
 		int avgTsDeltaCnt = 0;
 		long avgRecvDeltaSum = 0L;
@@ -135,13 +135,13 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		stats.lastRecvTimeNs = System.nanoTime();
 
 		//
-		if (stats.lastCounter != null) {
-			final int tmpCounterDelta = packet.mdCounter() - stats.lastCounter;
-			if (tmpCounterDelta != 1) {
-				logWarn(FNC_NAME, "MQ counter delta " + tmpCounterDelta);
+		if (stats.lastMsgNr != null) {
+			final long tmpDelta = packet.msgNr() - stats.lastMsgNr;
+			if (tmpDelta != 1L) {
+				logWarn(FNC_NAME, "MQ packet.msgNr delta " + Long.toUnsignedString(tmpDelta));
 			}
 		}
-		stats.lastCounter = packet.mdCounter();
+		stats.lastMsgNr = packet.msgNr();
 
 		return optPacket;
 	}
