@@ -13,8 +13,10 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class MqChannelBus {
 
-	private final static ConcurrentMap<@NonNull Integer, @NonNull String> mapIdToEndpoint = new ConcurrentHashMap<>();
-	private final static ConcurrentMap<@NonNull String, @NonNull Integer> mapNameToId = new ConcurrentHashMap<>();
+	private static final int SEND_RECV_HWM = 10;
+
+	private static final ConcurrentMap<@NonNull Integer, @NonNull String> mapIdToEndpoint = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<@NonNull String, @NonNull Integer> mapNameToId = new ConcurrentHashMap<>();
 
 	/**
 	 * Build a channel name for a stream source identifier.
@@ -76,7 +78,7 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
-		zmqSocket.setSndHWM(10);
+		zmqSocket.setSndHWM(SEND_RECV_HWM);
 		// adjust the OS's send buffer size
 		zmqSocket.setSendBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
@@ -106,9 +108,9 @@ public class MqChannelBus {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setRcvHWM(10);
-		zmqSocket.setReceiveTimeOut(50);  // milliseconds
-		zmqSocket.setSendTimeOut(50);  // milliseconds
+		zmqSocket.setRcvHWM(SEND_RECV_HWM);
+		zmqSocket.setReceiveTimeOut(100);  // milliseconds
+		zmqSocket.setSendTimeOut(100);  // milliseconds
 		zmqSocket.setLinger(0);
 		// adjust the OS's receive buffer size
 		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
