@@ -20,6 +20,8 @@ import java.util.Map;
  */
 public class RtspStreamSource {
 
+	public static final String SS_MQ_SUFFIX = ".mq";
+
 	/** Stream Source ID */
 	@GsonAnnoExclude
 	private @NonNull Integer id;
@@ -363,8 +365,8 @@ public class RtspStreamSource {
 	private void validateMqUrl(@NonNull String fncName, @NonNull String extSsId, @NonNull String mqUrl) throws ConfigInvalidException {
 		final String errMsgPrefix = fncName + ": Invalid MQ URL '" + mqUrl + "' for Stream Source ID '" + extSsId + "' - ";
 
-		if (! mqUrl.endsWith(".mq")) {
-			throw new ConfigInvalidException(errMsgPrefix + "must end with '.mq'");
+		if (! mqUrl.endsWith(SS_MQ_SUFFIX)) {
+			throw new ConfigInvalidException(errMsgPrefix + "must end with '" + SS_MQ_SUFFIX + "'");
 		}
 		final URI tmpUri = getInputUri();
 		if (tmpUri.getUserInfo() == null || tmpUri.getUserInfo().isBlank()) {

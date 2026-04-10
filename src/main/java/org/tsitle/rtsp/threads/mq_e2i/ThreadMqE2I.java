@@ -2,6 +2,7 @@ package org.tsitle.rtsp.threads.mq_e2i;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.mq.MqExternalSub;
 import org.tsitle.rtsp.mq.MqInternalPub;
 import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
@@ -64,7 +65,12 @@ public class ThreadMqE2I extends RunnableBase {
 		this.mqUri = mqUri;
 		this.mqSslCertPath = mqSslCertPath;
 
-		this.threadName = "MQE2I#ss" + streamSourceId;
+		String tmpPath = mqUri.getPath().substring(0, mqUri.getPath().length() - RtspStreamSource.SS_MQ_SUFFIX.length());
+		tmpPath = tmpPath
+				.replace("openMq/", "").replace('/', ':')
+				.replace("r_video", "RV")
+				.replace("r_audio", "RA");
+		this.threadName = String.format("MQE2I#ss%d#%s%s", streamSourceId, mqUri.getHost(), tmpPath);
 
 		//
 		mqInternalPub = new MqInternalPub(logMsgInterface, streamSourceId);
