@@ -31,6 +31,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static final boolean DO_VALIDATE_PAYLOAD = true;
+	private static final int SEND_RECV_HWM = 100;
 
 	private final @NonNull String mqAddrHostAndPort;
 	private final @NonNull String mqAddrPath;
@@ -140,11 +141,11 @@ public class MqExternalSub extends MqReceiverSubBase {
 			throw new IllegalStateException("MQ settings have not been requested yet");
 		}
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setReceiveTimeOut(250);  // milliseconds
-		zmqSocket.setSendTimeOut(250);  // milliseconds
+		zmqSocket.setReceiveTimeOut(100);  // milliseconds
+		zmqSocket.setSendTimeOut(100);  // milliseconds
 		zmqSocket.setReconnectIVL(1000);
 		zmqSocket.setReconnectIVLMax(10000);
-		zmqSocket.setRcvHWM(20);  // important! if too low, a JeroMQ bug causes packet loss
+		zmqSocket.setRcvHWM(SEND_RECV_HWM);  // important! if too low, a JeroMQ bug causes packet loss
 		// adjust the OS's receive buffer size
 		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
 		zmqSocket.setLinger(0);
@@ -170,7 +171,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 
 		//
 		zmqPollerObj = zmqContext.createPoller(1);
-		zmqPollerIx = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
+		zmqPollerIxRead = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
 	}
 
 	private @NonNull String decodeHexString(@NonNull String hex) throws MqException {
