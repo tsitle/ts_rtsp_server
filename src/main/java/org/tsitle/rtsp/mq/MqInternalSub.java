@@ -44,9 +44,9 @@ public class MqInternalSub extends MqReceiverSubBase {
 		zmqSocket = MqChannelBus.createSubscriber(chanId, zmqContext);
 		//
 		zmqPollerObj = zmqContext.createPoller(1);
-		zmqPollerIx = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
+		zmqPollerIxRead = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLIN);
 
-		msgHandler = MqMsgHandlerFactory.createHandlerInternalMq(zmqSocket);
+		msgHandler = MqMsgHandlerFactory.createHandlerInternalMq(zmqSocket, null, -1);
 
 		stateOpened.set(true);
 		logDebug(FNC_NAME, "Connected to MQ channel: " + chanName);

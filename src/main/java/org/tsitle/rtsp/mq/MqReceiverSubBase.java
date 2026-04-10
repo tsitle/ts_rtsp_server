@@ -37,7 +37,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int TIMEOUT_WAIT_FOR_SOCKET_MS = 2500;
+	private static final int TIMEOUT_WAIT_FOR_SOCKET_READABLE_MS = 2500;
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final boolean doValidatePayload;
@@ -46,7 +46,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	protected final @NonNull ZContext zmqContext;
 	protected ZMQ.@Nullable Socket zmqSocket;
 	protected ZMQ.@Nullable Poller zmqPollerObj;
-	protected int zmqPollerIx = 0;
+	protected int zmqPollerIxRead = 0;
 	private boolean zmqContextOpened;
 
 	protected final AtomicBoolean stateClosed = new AtomicBoolean(false);
@@ -109,7 +109,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		}
 
 		// wait until we're ready to receive data
-		if (! waitForSocketReady(FNC_NAME)) {
+		if (! waitForSocketReadyToRead(FNC_NAME)) {
 			return Optional.empty();
 		}
 
@@ -189,22 +189,21 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean waitForSocketReady(@NonNull String fncName) throws MqException {
+	private boolean waitForSocketReadyToRead(@NonNull String fncName) throws MqException {
 		int timeoutCnt = 0;
-		while (zmqPollerObj != null) {
-			if (stateClosed.get()) {
-				return false;
-			}
-			if (zmqPollerObj != null && zmqPollerObj.poll(1) != 0) {
-				if (zmqPollerObj != null && zmqPollerObj.pollin(zmqPollerIx)) {
-					break;
+		while (! Thread.currentThread().isInterrupted() && ! stateClosed.get() && zmqPollerObj != null) {
+			int tmpResI = zmqPollerObj.poll(5);
+			if (tmpResI > 0) {
+				// check that the zmqPollerObj hasn't been deleted since poll() was called
+				if (zmqPollerObj != null && zmqPollerObj.pollin(zmqPollerIxRead)) {
+					return true;
 				}
 			}
-			if (++timeoutCnt > TIMEOUT_WAIT_FOR_SOCKET_MS) {
-				throw new MqException(fncName + ": Timeout waiting for data");
+			if (++timeoutCnt > TIMEOUT_WAIT_FOR_SOCKET_READABLE_MS / 5) {
+				throw new MqException(fncName + ": Timeout waiting for socket (rd)");
 			}
 		}
-		return (! Thread.currentThread().isInterrupted() && ! stateClosed.get() && zmqPollerObj != null);
+		return false;
 	}
 
 	private void printDebugStats(@NonNull String fncName, long curMdTimestampMs) {

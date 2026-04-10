@@ -25,9 +25,15 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 	/**
 	 * Constructor.
 	 * @param zmqSocket ZMQ socket
+	 * @param zmqPollerObj ZMQ poller object
+	 * @param zmqPollerIxWrite ZMQ poller index for write events
 	 */
-	public MqMsgHandlerSegmented(ZMQ.@Nullable Socket zmqSocket) {
-		super(zmqSocket);
+	public MqMsgHandlerSegmented(
+				ZMQ.@Nullable Socket zmqSocket,
+				ZMQ.@Nullable Poller zmqPollerObj,
+				int zmqPollerIxWrite
+			) {
+		super(zmqSocket, zmqPollerObj, zmqPollerIxWrite);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -74,7 +80,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 	}
 
-	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
+	public void writeMsgAvToMq(@NonNull MqPacketAv packet) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
 
 		if (zmqSocket == null) {
@@ -83,34 +89,34 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 		// write the header to the Message Queue
 		/// Header Marker
-		writeFieldToMqBinData(cacheHeaderMarkerWr, ZMQ.SNDMORE);
+		writeFieldToMqBinData(FNC_NAME, cacheHeaderMarkerWr, ZMQ.SNDMORE);
 		///
-		writeFieldToMqBool(packet.codec().isVideo(), ZMQ.SNDMORE);
+		writeFieldToMqBool(FNC_NAME, packet.codec().isVideo(), ZMQ.SNDMORE);
 		writeFieldToMqString127(FNC_NAME, packet.codec().getCodecName(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
-			writeFieldToMqBool(packet.isCodecGuessed(), ZMQ.SNDMORE);
+			writeFieldToMqBool(FNC_NAME, packet.isCodecGuessed(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint64(packet.mdTimestamp(), ZMQ.SNDMORE);
-		writeFieldToMqUint32(packet.mdCounter(), ZMQ.SNDMORE);
+		writeFieldToMqUint64(FNC_NAME, packet.mdTimestamp(), ZMQ.SNDMORE);
+		writeFieldToMqUint32(FNC_NAME, packet.mdCounter(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
-			writeFieldToMqBool(packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packet.mdVideoResoWidth(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(packet.mdVideoResoHeight(), ZMQ.SNDMORE);
+			writeFieldToMqBool(FNC_NAME, packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoWidth(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoHeight(), ZMQ.SNDMORE);
 			writeFieldToMqString127(
 					FNC_NAME,
 					String.format("%.2f", packet.mdVideoFps()).replace(',', '.'),
 					ZMQ.SNDMORE
 				);
-			writeFieldToMqUint32(packet.mdVideoBitrate(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdVideoBitrate(), ZMQ.SNDMORE);
 		} else {
-			writeFieldToMqUint32(packet.mdAudioSamplerate(), ZMQ.SNDMORE);
-			writeFieldToMqUint08(packet.mdAudioChannelCount(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdAudioSamplerate(), ZMQ.SNDMORE);
+			writeFieldToMqUint08(FNC_NAME, packet.mdAudioChannelCount(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint08(packet.mdPayloadCRC8(), ZMQ.SNDMORE);
-		writeFieldToMqUint32(packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
+		writeFieldToMqUint08(FNC_NAME, packet.mdPayloadCRC8(), ZMQ.SNDMORE);
+		writeFieldToMqUint32(FNC_NAME, packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
 
 		// write the payload data to the Message Queue
-		writeFieldToMqBinData(packet.payloadDataPtr(), 0);
+		writeFieldToMqBinData(FNC_NAME, packet.payloadDataPtr(), 0);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -269,45 +275,99 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void writeFieldToMqString127(@NonNull String fncName, @NonNull String value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqString127(
+				@NonNull String fncName,
+				@NonNull String value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
 		if (value.length() > Byte.MAX_VALUE) {
 			throw new IllegalArgumentException(fncName + ": String too long (is: " + value.length() + ", max=" + Byte.MAX_VALUE + ")");
 		}
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(value, flags);
+		if (! zmqSocket.send(value, flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (String127)");
+		}
 	}
 
-	private void writeFieldToMqUint08(byte value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqUint08(
+				@NonNull String fncName,
+				byte value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(new byte[]{value}, flags);
+		if (! zmqSocket.send(new byte[]{value}, flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (Uint08)");
+		}
 	}
 
-	private void writeFieldToMqUint32(int value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqUint32(
+				@NonNull String fncName,
+				int value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
 		ByteBuffer tmpBuf = ByteBuffer
 				.allocate(4)
 				.order(ByteOrder.BIG_ENDIAN)
 				.putInt(value);
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(tmpBuf.array(), flags);
+		if (! zmqSocket.send(tmpBuf.array(), flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (Uint32)");
+		}
 	}
 
-	private void writeFieldToMqUint64(long value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqUint64(
+				@NonNull String fncName,
+				long value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
 		ByteBuffer tmpBuf = ByteBuffer
 				.allocate(8)
 				.order(ByteOrder.BIG_ENDIAN)
 				.putLong(value);
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(tmpBuf.array(), flags);
+		if (! zmqSocket.send(tmpBuf.array(), flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (Uint64)");
+		}
 	}
 
-	private void writeFieldToMqBool(boolean value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqBool(
+				@NonNull String fncName,
+				boolean value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(new byte[]{value ? (byte)1 : (byte)0}, flags);
+		if (! zmqSocket.send(new byte[]{value ? (byte)1 : (byte)0}, flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (Bool)");
+		}
 	}
 
-	private void writeFieldToMqBinData(final @NonNull BufferExt value, @SuppressWarnings("SameParameterValue") int flags) {
+	private void writeFieldToMqBinData(
+				@NonNull String fncName,
+				final @NonNull BufferExt value,
+				@SuppressWarnings("SameParameterValue") int flags
+			) throws MqException {
+		if (! waitForSocketReadyToWrite(fncName)) {
+			return;
+		}
 		//noinspection DataFlowIssue
-		zmqSocket.send(value.getBaPtr(), 0, value.getUsed(), flags);
+		if (! zmqSocket.send(value.getBaPtr(), 0, value.getUsed(), flags)) {
+			throw new MqException(fncName + ": Failed to send data to MQ (BinData)");
+		}
 	}
 
 }

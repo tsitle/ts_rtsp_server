@@ -15,19 +15,31 @@ import java.util.Optional;
  */
 public abstract class MqMsgHandlerBase {
 
-	static final byte[] PKT_HEADER_MARKER_BA = new byte[] {0x01, 0x02, 0x03, 0x04};
-	static final int PKT_HEADER_MARKER_LEN = PKT_HEADER_MARKER_BA.length;
+	protected static final byte[] PKT_HEADER_MARKER_BA = new byte[] {0x01, 0x02, 0x03, 0x04};
+	protected static final int PKT_HEADER_MARKER_LEN = PKT_HEADER_MARKER_BA.length;
+
+	private static final int TIMEOUT_WAIT_FOR_SOCKET_WRITABLE_MS = 1000;
 
 	protected ZMQ.@Nullable Socket zmqSocket;
+	protected final ZMQ.@Nullable Poller zmqPollerObj;
+	protected final int zmqPollerIxWrite;
 
 	private final HashCrc8Helper hashCrc8Helper = new HashCrc8Helper();
 
 	/**
 	 * Constructor.
 	 * @param zmqSocket ZMQ socket
+	 * @param zmqPollerObj ZMQ poller object
+	 * @param zmqPollerIxWrite ZMQ poller index for write events
 	 */
-	protected MqMsgHandlerBase(ZMQ.@Nullable Socket zmqSocket) {
+	protected MqMsgHandlerBase(
+				ZMQ.@Nullable Socket zmqSocket,
+				ZMQ.@Nullable Poller zmqPollerObj,
+				int zmqPollerIxWrite
+			) {
 		this.zmqSocket = zmqSocket;
+		this.zmqPollerObj = zmqPollerObj;
+		this.zmqPollerIxWrite = zmqPollerIxWrite;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -44,8 +56,9 @@ public abstract class MqMsgHandlerBase {
 	/**
 	 * Send a message containing audio/video data to the Message Queue.
 	 * @param packet A/V packet
+	 * @throws MqException If an error has occurred
 	 */
-	public abstract void writeMsgAvToMq(@NonNull MqPacketAv packet);
+	public abstract void writeMsgAvToMq(@NonNull MqPacketAv packet) throws MqException;
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -78,6 +91,26 @@ public abstract class MqMsgHandlerBase {
 		return (length >= PKT_HEADER_MARKER_LEN &&
 				buffer[0] == PKT_HEADER_MARKER_BA[0] && buffer[1] == PKT_HEADER_MARKER_BA[1] &&
 				buffer[2] == PKT_HEADER_MARKER_BA[2] && buffer[3] == PKT_HEADER_MARKER_BA[3]);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	protected boolean waitForSocketReadyToWrite(@NonNull String fncName) throws MqException {
+		int timeoutCnt = 0;
+		while (! Thread.currentThread().isInterrupted() && zmqPollerObj != null) {
+			if (zmqPollerObj.poll(5) > 0) {
+				// check that the zmqPollerObj hasn't been deleted since poll() was called
+				//noinspection ConstantValue
+				if (zmqPollerObj != null && zmqPollerObj.pollout(zmqPollerIxWrite)) {
+					return true;
+				}
+			}
+			if (++timeoutCnt > TIMEOUT_WAIT_FOR_SOCKET_WRITABLE_MS / 5) {
+				throw new MqException(fncName + ": Timeout waiting for socket (wr)");
+			}
+		}
+		return false;
 	}
 
 }

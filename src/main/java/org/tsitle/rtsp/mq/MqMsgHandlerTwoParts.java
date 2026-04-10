@@ -27,9 +27,15 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 	/**
 	 * Constructor.
 	 * @param zmqSocket ZMQ socket
+	 * @param zmqPollerObj ZMQ poller object
+	 * @param zmqPollerIxWrite ZMQ poller index for write events
 	 */
-	public MqMsgHandlerTwoParts(ZMQ.@Nullable Socket zmqSocket) {
-		super(zmqSocket);
+	public MqMsgHandlerTwoParts(
+				ZMQ.@Nullable Socket zmqSocket,
+				ZMQ.@Nullable Poller zmqPollerObj,
+				int zmqPollerIxWrite
+			) {
+		super(zmqSocket, zmqPollerObj, zmqPollerIxWrite);
 
 		cacheBufferDataR.increaseSize(FIRST_PART_BUFFER_SIZE);
 		cacheBufferDataS.increaseSize(FIRST_PART_BUFFER_SIZE);
@@ -117,7 +123,9 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		return Optional.of(packet);
 	}
 
-	public void writeMsgAvToMq(@NonNull MqPacketAv packet) {
+	public void writeMsgAvToMq(@NonNull MqPacketAv packet) throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
+
 		if (zmqSocket == null) {
 			throw new IllegalStateException("MQ socket not initialized");
 		}
@@ -155,9 +163,19 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		tempBb.flip();
 
 		// write the header to the Message Queue
-		zmqSocket.send(cacheBufferDataS.getBaPtr(), 0, tempBb.limit(), ZMQ.SNDMORE);
+		if (! waitForSocketReadyToWrite(FNC_NAME)) {
+			return;
+		}
+		if (! zmqSocket.send(cacheBufferDataS.getBaPtr(), 0, tempBb.limit(), ZMQ.SNDMORE)) {
+			throw new MqException("Failed to send data to MQ (header)");
+		}
 		// write the payload data to the Message Queue
-		zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), 0);
+		if (! waitForSocketReadyToWrite(FNC_NAME)) {
+			return;
+		}
+		if (! zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), 0)) {
+			throw new MqException("Failed to send data to MQ (payload)");
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

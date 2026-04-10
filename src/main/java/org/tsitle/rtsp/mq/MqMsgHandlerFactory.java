@@ -20,18 +20,24 @@ public final class MqMsgHandlerFactory {
 				boolean useSegmentedMessages
 			) {
 		if (useSegmentedMessages) {
-			return new MqMsgHandlerSegmented(zmqSocket);
+			return new MqMsgHandlerSegmented(zmqSocket, null, -1);
 		}
-		return new MqMsgHandlerTwoParts(zmqSocket);
+		return new MqMsgHandlerTwoParts(zmqSocket, null, -1);
 	}
 
 	/**
 	 * Create a new MqMsgHandler instance for internal MQs.
 	 * @param zmqSocket ZMQ socket
+	 * @param zmqPollerObj ZMQ poller object
+	 * @param zmqPollerIxWrite ZMQ poller index for write events
 	 * @return MqMsgHandler instance
 	 */
-	public static @NonNull MqMsgHandlerBase createHandlerInternalMq(ZMQ.@Nullable Socket zmqSocket) {
-		return new MqMsgHandlerTwoParts(zmqSocket);
+	public static @NonNull MqMsgHandlerBase createHandlerInternalMq(
+				ZMQ.@Nullable Socket zmqSocket,
+				ZMQ.@Nullable Poller zmqPollerObj,
+				int zmqPollerIxWrite
+			) {
+		return new MqMsgHandlerTwoParts(zmqSocket, zmqPollerObj, zmqPollerIxWrite);
 	}
 
 }

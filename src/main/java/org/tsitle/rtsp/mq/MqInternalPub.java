@@ -61,8 +61,10 @@ public class MqInternalPub implements AutoCloseable {
 		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(streamSourceId);
 		int chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
+		final ZMQ.Poller zmqPollerObj = zmqContext.createPoller(1);
+		final int zmqPollerIxWrite = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLOUT);
 
-		msgHandler = MqMsgHandlerFactory.createHandlerInternalMq(zmqSocket);
+		msgHandler = MqMsgHandlerFactory.createHandlerInternalMq(zmqSocket, zmqPollerObj, zmqPollerIxWrite);
 
 		stateOpened.set(true);
 	}
