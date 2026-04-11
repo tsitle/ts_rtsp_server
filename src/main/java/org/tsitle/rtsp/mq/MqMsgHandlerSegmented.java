@@ -55,10 +55,9 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				return Optional.empty();
 			}
 			isGarbage = isJeroMqInternalMsg(frameBa, frameBa.length);
-			/*if (! isGarbage) {
-				break;
-			}
-			System.out.println("garbage -- " + zmqSocket.getLastEndpoint());*/
+			/*if (isGarbage) {
+				System.out.println("garbage -- " + zmqSocket.getLastEndpoint());
+			}*/
 		} while (isGarbage);
 		frames.add(frameBa);
 		while (zmqSocket.hasReceiveMore()) {
@@ -76,6 +75,8 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 					decodePacketAv(frames, payloadDataPtr)
 				);
 		} catch (MqException e) {
+			/*System.out.println("Caught -- " + e.getMessage() + " -- " +
+					(new BufferExt(frames.getFirst()).toHexString(true)));*/
 			return Optional.empty();
 		}
 	}

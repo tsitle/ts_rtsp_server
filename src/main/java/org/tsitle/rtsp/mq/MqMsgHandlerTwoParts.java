@@ -73,7 +73,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			 */
 			if (isJeroMqInternalMsg(cacheBufferDataR.getBaPtr(), cacheBufferDataR.getUsed())) {
 				// receive any remaining messages to drain the Message Queue
-				//System.out.println("garbage, pkt #" + rcvdPacketCount + " -- " + zmqSocket.getLastEndpoint());
+				/*System.out.println("garbage -- " + zmqSocket.getLastEndpoint() + " -- " +
+						cacheBufferDataR.toHexString(true));*/
 				int maxPkts = 6;
 				while (zmqSocket.hasReceiveMore() && maxPkts-- > 0) {
 					zmqSocket.recv(ZMQ.DONTWAIT);
@@ -93,6 +94,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		try {
 			packet = decodePacketAv(payloadDataPtr);
 		} catch (MqException ignored) {
+			/*System.out.println("Caught -- " + e.getMessage() + " -- " +
+					cacheBufferDataR.toHexString(true));*/
 			return Optional.empty();
 		}
 
