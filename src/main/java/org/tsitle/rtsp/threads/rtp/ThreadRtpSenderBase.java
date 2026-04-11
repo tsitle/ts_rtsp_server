@@ -550,7 +550,7 @@ public abstract class ThreadRtpSenderBase<
 		long tmpTsNs = System.nanoTime();
 		final FrameData frameData = cbFrameDataSupplier();
 		if (frameData.haveErrorEos) {
-			logError(FNC_NAME, "haveErrorEos: " + frameData.errorMsg);
+			logDebug(FNC_NAME, "haveErrorEos: " + frameData.errorMsg);
 			throw new InputStreamEosException();
 		}
 		if (frameData.haveErrorOther) {

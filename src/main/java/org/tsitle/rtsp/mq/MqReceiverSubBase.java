@@ -23,15 +23,19 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 	private static class Stats {
 		@Nullable Long lastTimestampMs = null;
 		long lastRecvTimeNs = 0L;
+
 		@Nullable Long lastMsgNr = null;
+		long msgsRcvdCount = 0L;
+
 		long avgTsDeltaSum = 0L;
 		int avgTsDeltaCnt = 0;
 		long avgRecvDeltaSum = 0L;
 		int avgRecvDeltaCnt = 0;
 		long avgTsVsRecvDeltaSum = 0L;
 		int avgTsVsRecvDeltaCnt = 0;
+
 		@Nullable Instant lastFpsMeasureTime;
-		int framesOutputtedCount = 0;
+		long framesOutputtedCount = 0L;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -78,6 +82,14 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Is the Message Queue open?
+	 * @return True if the Message Queue is open, false otherwise
+	 */
+	public boolean isOpen() {
+		return stateOpened.get();
+	}
 
 	/**
 	 * Connect to the Message Queue.
@@ -135,7 +147,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		stats.lastRecvTimeNs = System.nanoTime();
 
 		//
-		if (stats.lastMsgNr != null) {
+		if (stats.msgsRcvdCount++ > 100 && stats.lastMsgNr != null) {
 			final long tmpDelta = packet.msgNr() - stats.lastMsgNr;
 			if (tmpDelta != 1L) {
 				logWarn(FNC_NAME, "MQ packet.msgNr delta " + Long.toUnsignedString(tmpDelta));
@@ -167,14 +179,8 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		}
 		closeZmqContextInstance();
-	}
 
-	/**
-	 * Has the Message Queue been closed?
-	 * @return True if the Message Queue has been closed, false otherwise
-	 */
-	public boolean isClosed() {
-		return stateClosed.get();
+		stateOpened.set(false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -242,7 +248,7 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 			if (tmpMs >= 5_000L) {
 				logDebug(fncName, String.format(
 						"MQ fps: %.1f", (((double)stats.framesOutputtedCount / (double)tmpMs) * 1_000.0)));
-				stats.framesOutputtedCount = 0;
+				stats.framesOutputtedCount = 0L;
 				stats.lastFpsMeasureTime = Instant.now();
 			}
 		} else {

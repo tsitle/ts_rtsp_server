@@ -70,7 +70,7 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 			}
 		} catch (MqException e) {
 			haveEos = true;
-			logError(FNC_NAME, "MqException caught: " + e.getMessage());
+			logDebug(FNC_NAME, "MqException caught: " + e.getMessage());
 			throw new InputStreamIoException(e.getMessage());
 		}
 	}

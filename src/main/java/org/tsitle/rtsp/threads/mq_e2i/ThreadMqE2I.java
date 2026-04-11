@@ -88,16 +88,27 @@ public class ThreadMqE2I extends RunnableBase {
 					);
 				try {
 					mqExternalSub.connectToMq();
-					//
-					while (! (hasBeenRequestedToStop() || mqExternalSub.isClosed())) {
+					logInfo(FNC_NAME, "Connected to MQ");
+				} catch (MqException e) {
+					failCount += 2;
+					if (failCount > 120) {
+						failCount = 120;
+					}
+					logDebug(FNC_NAME, "MqException caught: " + e.getMessage());
+					logError(FNC_NAME, "Connection to MQ failed");
+				}
+				try {
+					while (! hasBeenRequestedToStop() && mqExternalSub.isOpen()) {
 						mainLoop();
 						failCount = 0;
 					}
 				} catch (MqException e) {
-					if (++failCount > 60) {
-						failCount = 60;
+					failCount += 2;
+					if (failCount > 120) {
+						failCount = 120;
 					}
-					logError(FNC_NAME, "MqException caught: " + e.getMessage());
+					logDebug(FNC_NAME, "MqException caught: " + e.getMessage());
+					logError(FNC_NAME, "Connection to MQ lost");
 				} finally {
 					mqExternalSub.close();
 				}
@@ -106,7 +117,7 @@ public class ThreadMqE2I extends RunnableBase {
 					sleepLongAndProsper(failCount);
 				}
 			}
-		} catch (MqException e) {
+		} catch (MqException e) {  // from mqInternalPub.connectToMq()
 			logError(FNC_NAME, "MqException caught: " + e.getMessage());
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException");

@@ -47,12 +47,22 @@ public abstract class AvStreamIncomingBase implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	protected void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+
 	protected void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void internalLog(@NonNull RtxpLogLevel level, @NonNull String fncName, @NonNull String msg) {
 		if (logMsgInterface == null) {
 			return;
 		}
-		logMsgInterface.addMsgForLogThread(RtxpLogLevel.ERROR, Thread.currentThread().getName(),
-				fncName + ": " + msg);
+		logMsgInterface.addMsgForLogThread(level, Thread.currentThread().getName(), fncName + ": " + msg);
 	}
 
 }
