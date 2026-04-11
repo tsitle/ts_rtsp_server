@@ -377,7 +377,7 @@ public class RtspResponseBuilder {
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
 		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
-		final String outputSubStreamId = RtspStaticSessionInfo.getOrAddSubStream(
+		final String outputSubStreamId = RtspStaticSessionInfo.addSubStream(
 				rtspSessionInfo.clientIpAddr,
 				rtspInputSource.getId(),
 				tmpSsObj.getId()

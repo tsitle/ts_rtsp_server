@@ -124,66 +124,75 @@ public class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int MAX_AUTH_SERVER_NONCES = 100;
+	private static final int MAX_SUB_STREAM_INFOS = 10_000;
+	private static final int MAX_AUTH_SERVER_NONCES = 10_000;
 	private static final int MAX_STREAM_INFOS_AND_KMDS = MAX_AUTH_SERVER_NONCES * 2;
+	private static final int MAX_UNAUTHORIZED_ENTRIES = 1_000_000;
 	private static final int HASH_LEN = 8;
 
-	private static final ReadWriteLock subStreamInfoLock = new ReentrantReadWriteLock();
-	private static final Lock subStreamInfoReadLock = subStreamInfoLock.readLock();
-	private static final Lock subStreamInfoWriteLock = subStreamInfoLock.writeLock();
+	private static final ReadWriteLock theLock = new ReentrantReadWriteLock();
+	private static final Lock theReadLock = theLock.readLock();
+	private static final Lock theWriteLock = theLock.writeLock();
+
+	private static final List<@NonNull String> subStreamInfoIds = new ArrayList<>();
 	private static final Map<@NonNull String, @NonNull SubStreamInfo> subStreamInfoMap = new HashMap<>();
 
-	private static final ReadWriteLock authServerNonceLock = new ReentrantReadWriteLock();
-	private static final Lock authServerNonceReadLock = authServerNonceLock.readLock();
-	private static final Lock authServerNonceWriteLock = authServerNonceLock.writeLock();
 	private static final List<@NonNull String> authServerNonceList = new ArrayList<>();
 
-	private static final ReadWriteLock streamKmdsLock = new ReentrantReadWriteLock();
-	private static final Lock streamKmdsReadLock = streamKmdsLock.readLock();
-	private static final Lock streamKmdsWriteLock = streamKmdsLock.writeLock();
 	private static final List<@NonNull String> streamKmdsIds = new ArrayList<>();
 	private static final Map<@NonNull String, @NonNull StreamKmds> streamKmdsMap = new HashMap<>();
 
-	private static final ReadWriteLock streamsSetupLock = new ReentrantReadWriteLock();
-	private static final Lock streamsSetupReadLock = streamsSetupLock.readLock();
-	private static final Lock streamsSetupWriteLock = streamsSetupLock.writeLock();
 	private static final List<@NonNull String> streamsSetupIds = new ArrayList<>();
 	private static final @NonNull Map<@NonNull String, @NonNull StreamInfo> streamsSetupMap = new HashMap<>();
 
+	private static final List<@NonNull String> unauthorizedIds = new ArrayList<>();
+	private static final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull String getOrAddSubStream(
+	/**
+	 * Adds a new Sub-Stream ID.<br />
+	 * A Sub-Stream ID is unique per DESCRIBE request per Stream Source. Even if the same client makes multiple DESCRIBE
+	 * requests for the same Input and Stream Source, the Sub-Stream ID will change every time.
+	 * @param clientIpAddr Client's IP address
+	 * @param inputSourceId Input Source ID as requested from the client per DESCRIBE request
+	 * @param streamSourceId Stream Source ID as requested from the client per DESCRIBE request
+	 * @return Unique Sub-Stream ID
+	 */
+	public static @NonNull String addSubStream(
 				@NonNull InetAddress clientIpAddr,
 				@NonNull String inputSourceId,
 				int streamSourceId
 			) {
 		final String ipStr = getIpStr(clientIpAddr);
+		final String ipHash = getIpHash(clientIpAddr);
 
-		subStreamInfoWriteLock.lock();
+		theWriteLock.lock();
 		try {
-			Optional<String> optSubStreamId = subStreamInfoMap.keySet().stream()
-					.filter(x -> subStreamInfoMap.get(x).clientIpAddrStr.equals(ipStr) &&
-							subStreamInfoMap.get(x).inputSourceId.equals(inputSourceId) &&
-							subStreamInfoMap.get(x).streamSourceId == streamSourceId)
-					.findFirst();
-			if (optSubStreamId.isPresent()) {
-				return optSubStreamId.get();
-			}
-			final String ipHash = getIpHash(clientIpAddr);
-			final String subStreamId = ipHash + "_" + HashMd5Helper.hashOfString(
-					String.format("%s : %05d : %08X", inputSourceId, streamSourceId, RandomHelper.getRandomUint32(false)),
-					false
-				).substring(0, HASH_LEN);
+			String subStreamId;
+			do {
+				subStreamId = ipHash + "_" + HashMd5Helper.hashOfString(
+						String.format("%s : %05d : %08X", inputSourceId, streamSourceId, RandomHelper.getRandomUint32(false)),
+						false
+					).substring(0, HASH_LEN);
+			} while (subStreamInfoIds.contains(subStreamId));
+			subStreamInfoIds.add(subStreamId);
 			subStreamInfoMap.put(subStreamId, new SubStreamInfo(ipStr, inputSourceId, streamSourceId));
+			//
+			if (subStreamInfoMap.size() > MAX_SUB_STREAM_INFOS) {
+				// we simply remove the first one. Maybe it is still in use, but we don't care
+				subStreamInfoMap.remove(subStreamInfoIds.getFirst());
+				subStreamInfoIds.removeFirst();
+			}
 			return subStreamId;
 		} finally {
-			subStreamInfoWriteLock.unlock();
+			theWriteLock.unlock();
 		}
 	}
 
 	public static Optional<SubStreamInfo> getSubStreamInfo(@NonNull InetAddress clientIpAddr, @NonNull String subStreamId) {
-		subStreamInfoReadLock.lock();
+		theReadLock.lock();
 		try {
 			Optional<SubStreamInfo> optRes = Optional.ofNullable(subStreamInfoMap.get(subStreamId));
 			if (optRes.isEmpty()) {
@@ -195,7 +204,7 @@ public class RtspStaticSessionInfo {
 			}
 			return optRes;
 		} finally {
-			subStreamInfoReadLock.unlock();
+			theReadLock.unlock();
 		}
 	}
 
@@ -208,27 +217,28 @@ public class RtspStaticSessionInfo {
 				false
 			);
 
-		authServerNonceWriteLock.lock();
+		theWriteLock.lock();
 		try {
 			authServerNonceList.add(ipHash + "_" + nonce);
+			//
 			if (authServerNonceList.size() > MAX_AUTH_SERVER_NONCES) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
 				authServerNonceList.removeFirst();
 			}
 			return nonce;
 		} finally {
-			authServerNonceWriteLock.unlock();
+			theWriteLock.unlock();
 		}
 	}
 
 	public static boolean existsAuthServerNonce(@NonNull InetAddress clientIpAddr, @NonNull String nonce) {
 		final String ipHash = getIpHash(clientIpAddr);
 
-		authServerNonceReadLock.lock();
+		theReadLock.lock();
 		try {
 			return authServerNonceList.contains(ipHash + "_" + nonce);
 		} finally {
-			authServerNonceReadLock.unlock();
+			theReadLock.unlock();
 		}
 	}
 
@@ -250,10 +260,11 @@ public class RtspStaticSessionInfo {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String skId = String.format("%s : %s", ipHash, subStreamId);
 
-		streamKmdsWriteLock.lock();
+		theWriteLock.lock();
 		try {
 			streamKmdsIds.add(skId);
 			streamKmdsMap.put(skId, new StreamKmds(rtspSsrcId));
+			//
 			if (streamKmdsMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
 				streamKmdsMap.remove(streamKmdsIds.getFirst());
@@ -261,7 +272,7 @@ public class RtspStaticSessionInfo {
 			}
 			return streamKmdsMap.get(skId);
 		} finally {
-			streamKmdsWriteLock.unlock();
+			theWriteLock.unlock();
 		}
 	}
 
@@ -272,14 +283,14 @@ public class RtspStaticSessionInfo {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String skId = String.format("%s : %s", ipHash, subStreamId);
 
-		streamKmdsReadLock.lock();
+		theReadLock.lock();
 		try {
 			if (! streamKmdsMap.containsKey(skId)) {
 				return Optional.empty();
 			}
 			return Optional.of(streamKmdsMap.get(skId));
 		} finally {
-			streamKmdsReadLock.unlock();
+			theReadLock.unlock();
 		}
 	}
 
@@ -295,7 +306,7 @@ public class RtspStaticSessionInfo {
 		if (streamKmds.rtspSsrcId == 0) {
 			throw new IllegalArgumentException("streamKmds.rtspSsrcId must not be 0");
 		}
-		streamsSetupWriteLock.lock();
+		theWriteLock.lock();
 		try {
 			StreamInfo resObj = new StreamInfo(streamKmds);
 			resObj.rtspSsrcId = streamKmds.rtspSsrcId;
@@ -306,6 +317,7 @@ public class RtspStaticSessionInfo {
 			resObj.rtspRtpGenTsT0Ns = System.nanoTime();
 			streamsSetupIds.add(subStreamId);
 			streamsSetupMap.put(subStreamId, resObj);
+			//
 			if (streamsSetupMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
 				streamsSetupMap.remove(streamsSetupIds.getFirst());
@@ -313,28 +325,89 @@ public class RtspStaticSessionInfo {
 			}
 			return resObj;
 		} finally {
-			streamsSetupWriteLock.unlock();
+			theWriteLock.unlock();
 		}
 	}
 
 	public static @NonNull StreamInfo getStreamInfoOrThrow(@NonNull String fncName, @NonNull String subStreamId) {
-		streamsSetupReadLock.lock();
+		theReadLock.lock();
 		try {
 			if (! streamsSetupMap.containsKey(subStreamId)) {
 				throw new IllegalStateException(fncName + ": Stream info not found for Sub-Stream ID: " + subStreamId);
 			}
 			return streamsSetupMap.get(subStreamId);
 		} finally {
-			streamsSetupReadLock.unlock();
+			theReadLock.unlock();
 		}
 	}
 
 	public static boolean existsStreamInfo(@NonNull String subStreamId) {
-		streamsSetupReadLock.lock();
+		theReadLock.lock();
 		try {
 			return streamsSetupMap.containsKey(subStreamId);
 		} finally {
-			streamsSetupReadLock.unlock();
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static int addUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
+		final String ipHash = getIpHash(clientIpAddr);
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+				.substring(0, HASH_LEN);
+
+		theWriteLock.lock();
+		try {
+			int resI = 1;
+			if (! unauthorizedIds.contains(uaId)) {
+				unauthorizedIds.add(uaId);
+				unauthorizedMap.put(uaId, resI);
+				//
+				if (unauthorizedMap.size() > MAX_UNAUTHORIZED_ENTRIES) {
+					// we simply remove the first one. Maybe it is still in use, but we don't care
+					unauthorizedMap.remove(unauthorizedIds.getFirst());
+					unauthorizedIds.removeFirst();
+				}
+			} else {
+				resI = unauthorizedMap.get(uaId) + 1;
+				unauthorizedMap.replace(uaId, resI);
+			}
+			return resI;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	public static void resetUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
+		final String ipHash = getIpHash(clientIpAddr);
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+				.substring(0, HASH_LEN);
+
+		theWriteLock.lock();
+		try {
+			if (unauthorizedIds.contains(uaId)) {
+				unauthorizedMap.remove(uaId);
+				unauthorizedIds.remove(uaId);
+			}
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	public static int getUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
+		final String ipHash = getIpHash(clientIpAddr);
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+				.substring(0, HASH_LEN);
+
+		theReadLock.lock();
+		try {
+			if (unauthorizedIds.contains(uaId)) {
+				return unauthorizedMap.get(uaId);
+			}
+			return 0;
+		} finally {
+			theReadLock.unlock();
 		}
 	}
 

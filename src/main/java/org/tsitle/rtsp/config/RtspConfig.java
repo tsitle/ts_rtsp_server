@@ -258,7 +258,7 @@ public class RtspConfig {
 	 * @param inputSourceId Input Source ID
 	 * @return Input Source
 	 */
-	public Optional<RtspInputSource> getInputSourceObj(String inputSourceId) {
+	public Optional<RtspInputSource> getInputSourceObj(@NonNull String inputSourceId) {
 		checkPostProcessed();
 		//noinspection OptionalOfNullableMisuse,DataFlowIssue
 		return Optional.ofNullable(inputSources.getOrDefault(inputSourceId, null));
@@ -270,7 +270,7 @@ public class RtspConfig {
 	 * @return Stream Source
 	 */
 	@SuppressWarnings("unused")
-	public Optional<RtspStreamSource> getInputSourcesFirstVideoStreamSourceObj(String inputSourceId) {
+	public Optional<RtspStreamSource> getInputSourcesFirstVideoStreamSourceObj(@NonNull String inputSourceId) {
 		checkPostProcessed();
 		return getInputSourcesFirstOfKindStreamSourceObj(inputSourceId, true);
 	}
@@ -281,7 +281,7 @@ public class RtspConfig {
 	 * @return Stream Source
 	 */
 	@SuppressWarnings("unused")
-	public Optional<RtspStreamSource> getInputSourcesFirstAudioStreamSourceObj(String inputSourceId) {
+	public Optional<RtspStreamSource> getInputSourcesFirstAudioStreamSourceObj(@NonNull String inputSourceId) {
 		checkPostProcessed();
 		return getInputSourcesFirstOfKindStreamSourceObj(inputSourceId, false);
 	}
@@ -292,7 +292,7 @@ public class RtspConfig {
 	 * @param isVideo Get video Stream Source if true, audio Stream Source otherwise
 	 * @return Stream Source
 	 */
-	public Optional<RtspStreamSource> getInputSourcesFirstOfKindStreamSourceObj(String inputSourceId, boolean isVideo) {
+	public Optional<RtspStreamSource> getInputSourcesFirstOfKindStreamSourceObj(@NonNull String inputSourceId, boolean isVideo) {
 		checkPostProcessed();
 		//
 		Optional<RtspInputSource> optInputSource = getInputSourceObj(inputSourceId);

@@ -13,6 +13,7 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.*;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.builders.*;
@@ -49,6 +50,8 @@ public class ThreadRtspServer extends RunnableBase {
 
 	/** RTSP session timeout tolerance in seconds. Sometimes even compliant clients fail to send a keep-alive message in time. */
 	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 15;
+	/** Maximum number of unauthorized requests per client per Input Source. */
+	private static final int MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS = 50;
 
 	private final String threadName;
 	private final int clientConnectionNr;
@@ -746,6 +749,7 @@ public class ThreadRtspServer extends RunnableBase {
 			case ServerMessageType.PAUSE:
 			case ServerMessageType.TEARDOWN:
 				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+				Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
 				final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
 				if (tmpOptInputSource.isEmpty()) {
 					wasOk = false;
@@ -759,12 +763,47 @@ public class ThreadRtspServer extends RunnableBase {
 			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
 			logError(FNC_NAME, String.format(
 					"Could not find InputSource, rejecting request with code %s", requestBasicInfo.statusCode));
-		} else if (! wasAuthOk) {
-			requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
-			logInfo(FNC_NAME, String.format(
-					"Rejecting %s request with code %s (client IP=%s)",
-					requestBasicInfo.serverMessageType, requestBasicInfo.statusCode,
-					rtspSessionInfo.clientIpAddr == null ? "NULL" : rtspSessionInfo.clientIpAddr.getHostAddress()));
+		} else {
+			final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+			Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
+
+			if (wasAuthOk) {
+				int tmpUnauthCnt = RtspStaticSessionInfo.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+				if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
+					wasAuthOk = false;
+				}
+			}
+
+			if (wasAuthOk) {
+				RtspStaticSessionInfo.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+			} else {
+				final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+				//
+				requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
+				//
+				final String logMsg = String.format(
+						"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
+						requestBasicInfo.serverMessageType, tmpIsId,
+						requestBasicInfo.statusCode, unauthCnt,
+						rtspSessionInfo.clientIpAddr == null ? "NULL" : rtspSessionInfo.clientIpAddr.getHostAddress());
+				if (unauthCnt > 1) {
+					logInfo(FNC_NAME, logMsg);
+				} else if (rtspConfig.getLogLevel() == RtxpLogLevel.DEBUG) {
+					logDebug(FNC_NAME, logMsg);
+				}
+				//
+				if (unauthCnt > 1) {
+					for (int i = 0; i < unauthCnt; i++) {
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException ignored) {
+							Thread.currentThread().interrupt();  // restore flag
+							break;
+						}
+					}
+				}
+			}
 		}
 	}
 
