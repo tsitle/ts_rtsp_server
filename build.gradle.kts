@@ -68,7 +68,7 @@ dependencies {
 	testImplementation(platform("org.junit:junit-bom:5.10.0"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	testImplementation("org.jitsi:jitsi-srtp:1.1-21-g66f32c3")  // for SRTP/SRTCP Unit Tests
+	testImplementation("org.jitsi:jitsi-srtp:1.1-24-g1d0d4c7")  // for SRTP/SRTCP Unit Tests
 	implementation("org.jspecify:jspecify:1.0.0")
 	implementation("com.google.code.gson:gson:2.13.2")  // for JSON deserialization
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
@@ -87,6 +87,8 @@ application {
 	mainClass = "org.tsitle.rtsp.RtspServerApp"
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
+	applicationDefaultJvmArgs += "-XX:+UseZGC"
+	//applicationDefaultJvmArgs += "-XX:+ZGenerational"  // this flag was removed in JDK 24
 }
 
 tasks.jar {
