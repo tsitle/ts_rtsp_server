@@ -8,7 +8,7 @@ plugins {
 group = "org.tsitle.rtsp"
 version = "1.0"
 
-val propProjName = "rtsp_server"
+val propProjName = rootProject.name  // from 'settings.gradle.kts'
 
 // output directory for distribution files (launchers and installers)
 val confDistPreOutputDir = "distPre"

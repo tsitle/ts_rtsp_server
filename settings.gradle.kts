@@ -1,1 +1,1 @@
-rootProject.name = "app_rtsp_server"
+rootProject.name = "ts_rtsp_server"
