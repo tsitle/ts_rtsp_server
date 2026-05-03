@@ -34,6 +34,6 @@ public class RtspConstants {
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
 
 	/** RTSP Authorization Realm */
-	public static final String RTSP_AUTH_REALM = "RTSP Server A1B2C3D4";
+	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4";
 
 }

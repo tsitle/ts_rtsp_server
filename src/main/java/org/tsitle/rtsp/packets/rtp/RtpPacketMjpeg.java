@@ -174,6 +174,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("DanglingJavadoc")
 	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull VideoJpegInfo jpegInfo) {
 		int qtHdLength = 0;
 		if (withQtHeader) {

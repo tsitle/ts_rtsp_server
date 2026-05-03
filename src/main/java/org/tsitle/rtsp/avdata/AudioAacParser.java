@@ -66,6 +66,7 @@ public final class AudioAacParser {
 	 * @param aacBuf AAC data
 	 * @return Parsed AAC information
 	 */
+	@SuppressWarnings("DanglingJavadoc")
 	public AudioAacInfo parseAacData(BufferExt aacBuf) throws AvInvalidCodecDataException {
 		final String FNC_NAME = AudioAacParser.class.getSimpleName() + ".parseAacData()";
 

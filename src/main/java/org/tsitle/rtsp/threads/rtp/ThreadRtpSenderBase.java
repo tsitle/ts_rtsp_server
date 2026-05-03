@@ -118,14 +118,13 @@ public abstract class ThreadRtpSenderBase<
 		}
 
 		//
- 		///
 		this.avStreamIncomingType = avStreamIncomingType;
 		this.avStreamOutgoingType = avStreamOutgoingType;
-		///
+		//
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);
 		this.parComRtpRwIfTcp = paramsCommon.getTpClientDestTcpIf().orElse(null);
-		///
+		//
 		final double sendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
 		if (sendIntervalNs < 1_000_000.0) {  // sanity check
 			throw new IllegalStateException("sendInterval is < 1ms");

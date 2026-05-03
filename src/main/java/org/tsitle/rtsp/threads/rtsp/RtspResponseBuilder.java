@@ -35,8 +35,7 @@ public class RtspResponseBuilder {
 
 	private static final String CRLF = "\r\n";
 
-	private static final String SERVER_NAME = "TSITLE_RTSP Server";
-	private static final String SDP_ENCODER_NAME = "TSITLE_RTSP 1.0";  // @TODO make at least version dynamic?
+	private static final String SERVER_NAME = "TS RTSP Server";
 	private static final String SESSION_NAME = "Just A Session";
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -276,13 +275,13 @@ public class RtspResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static String buildHexString(int value) {
+	private static @NonNull String buildHexString(int value) {
 		return String.format("%08X", value);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private String findRtspHostIp(ServerMessageType serverMessageType) {
+	private @NonNull String findRtspHostIp(ServerMessageType serverMessageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
 
 		String tmpRtspHostname;
@@ -359,6 +358,14 @@ public class RtspResponseBuilder {
 			return false;
 		}
 		return true;
+	}
+
+	private static @NonNull String buildResponseDescribe_sdp_getEncoderName() {
+		String tmpAppVersion = System.getProperty(RtspPrivateConstants.SYSPROP_CSTM_APP_VERSION);
+		if (tmpAppVersion == null) {
+			tmpAppVersion = "0.0";
+		}
+		return SERVER_NAME + " " + tmpAppVersion;
 	}
 
 	private void buildResponseDescribe_sdp_stream(
@@ -526,7 +533,8 @@ public class RtspResponseBuilder {
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC4317: SDP Offer/Answer Examples</a>)
 	 * @return SDP formatted string
 	 */
-	private String buildResponseDescribe_sdp(RtspInputSource rtspInputSource) {
+	@SuppressWarnings("DanglingJavadoc")
+	private @NonNull String buildResponseDescribe_sdp(RtspInputSource rtspInputSource) {
 		StringWriter sw = new StringWriter();
 
 		// SDP Specification (RFC2327 Section 6)
@@ -548,7 +556,8 @@ public class RtspResponseBuilder {
 		/// t: Time Active
 		sw.write(String.format("t=0 0%s", CRLF));
 		/// a: Session Attribute: Name and version number of the tool used to create the session description
-		sw.write(String.format("a=tool:%s%s", SDP_ENCODER_NAME, CRLF));
+		String tmpSdpEnc = buildResponseDescribe_sdp_getEncoderName();
+		sw.write(String.format("a=tool:%s%s", tmpSdpEnc, CRLF));
 		/// a: Session Attribute: Type of the conference
 		sw.write(String.format("a=type:broadcast%s", CRLF));
 		/// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
@@ -570,7 +579,7 @@ public class RtspResponseBuilder {
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
 	 * @return Response string
 	 */
-	private String buildResponseDescribe(RtspInputSource rtspInputSource) {
+	private @NonNull String buildResponseDescribe(RtspInputSource rtspInputSource) {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponseDescribe()";
 
 		final String body = buildResponseDescribe_sdp(rtspInputSource);

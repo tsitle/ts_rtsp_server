@@ -81,6 +81,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 	}
 
+	@SuppressWarnings("DanglingJavadoc")
 	public void writeMsgAvToMq(@NonNull MqPacketAv packet) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
 

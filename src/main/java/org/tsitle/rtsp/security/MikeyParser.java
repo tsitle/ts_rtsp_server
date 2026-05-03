@@ -445,9 +445,8 @@ public final class MikeyParser {
 		}
 
 		//
- 		///
 		tmpBy = buf.get();  // type and KV (key validity period)
-		///
+		//
 		byte tmpSubPt = (byte)((tmpBy & 0xF0) >> 4);
 		mikeyData.kemacPt = MikeyMsgKemacPayloadType.of(tmpSubPt);
 		if (mikeyData.kemacPt == MikeyMsgKemacPayloadType.MMKEMPT_UNKNOWN) {
@@ -456,7 +455,7 @@ public final class MikeyParser {
 		if (mikeyData.kemacPt != MikeyMsgKemacPayloadType.MMKEMPT_TEK_ONLY) {
 			mikeyData.kemacHaveNonTekOnlyPayload = true;
 		}
-		///
+		//
 		byte tmpKv = (byte)(tmpBy & 0x0F);
 		mikeyData.kemacKvType = MikeyMsgKemacKv.of(tmpKv);
 		if (mikeyData.kemacKvType == MikeyMsgKemacKv.MMKEMKV_UNKNOWN) {

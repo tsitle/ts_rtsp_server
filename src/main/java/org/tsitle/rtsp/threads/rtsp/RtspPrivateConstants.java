@@ -2,6 +2,9 @@ package org.tsitle.rtsp.threads.rtsp;
 
 class RtspPrivateConstants {
 
+	/** Name of the system property that holds the application version */
+	static final String SYSPROP_CSTM_APP_VERSION = "appVersion";
+
 	/** Maximum length for RTSP Resource URLs */
 	static final int RTSP_MAX_RESOURCE_URL_LENGTH = 512;
 

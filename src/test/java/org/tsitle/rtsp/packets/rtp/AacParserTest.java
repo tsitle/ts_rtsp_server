@@ -86,6 +86,7 @@ public class AacParserTest {
 		assertNotEquals(aacInfoOrg.hashSum(), aacInfoTwo.hashSum());
 	}
 
+	@SuppressWarnings("DanglingJavadoc")
 	private static void rewriteAdtsHeader(AudioAacInfo aacInfo, BufferExt outputAacFrame) {
 		BitWriterHelper bitWriter = new BitWriterHelper();
 
