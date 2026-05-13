@@ -80,10 +80,28 @@ public final class BufferExt implements Cloneable {
 	 * @return Byte at the given index
 	 */
 	public byte get(int index) {
+		if (index < 0) {
+			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds");
+		}
 		if (index >= used) {
 			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds for used buffer size " + used);
 		}
 		return buf[index];
+	}
+
+	/**
+	 * Set a byte in the buffer.
+	 * @param index Byte index
+	 * @param value Byte value to set
+	 */
+	public void set(int index, byte value) {
+		if (index < 0) {
+			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds");
+		}
+		if (index >= used) {
+			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds for used buffer size " + used);
+		}
+		buf[index] = value;
 	}
 
 	/**
