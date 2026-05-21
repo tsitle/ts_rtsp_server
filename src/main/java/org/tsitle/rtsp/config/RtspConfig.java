@@ -13,70 +13,107 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * RTSP configuration.
+ * RTSP server configuration.
  */
 public class RtspConfig {
 
-	private static class RtspsSslServerKey {
-		/** Certificate */
+	private static class SectionServer {
+		/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
 		@Expose
-		private final @NonNull String certificate;
-		/** Private Key (PKCS#8 PEM) */
+		private final int tcpPortRtsp;
+		/** RTSPS Server TCP port (with SSL/TLS) -- use -1 to disable */
 		@Expose
-		private final @NonNull String key;
-		/** Certificate Authority -- optional */
+		private final int tcpPortRtsps;
+		/** Directory where the media files are stored */
 		@Expose
-		private final @NonNull String ca;
+		private @NonNull String dataDir;
+		/** SSL Certificate */
+		@Expose
+		private final @NonNull String sslCertificate;
+		/** SSL Private Key (PKCS#8 PEM) */
+		@Expose
+		private final @NonNull String sslKey;
+		/** SSL Certificate Authority -- optional */
+		@Expose
+		private final @NonNull String sslCa;
 
-		public RtspsSslServerKey() {
-			this.certificate = "";
-			this.key = "";
-			this.ca = "";
+		public SectionServer() {
+			this.tcpPortRtsp = RtspConstants.SERVER_RTSP_TCP_PORT;
+			this.tcpPortRtsps = RtspConstants.SERVER_RTSPS_TCP_PORT;
+			this.dataDir = "";
+			this.sslCertificate = "";
+			this.sslKey = "";
+			this.sslCa = "";
 		}
 	}
 
-	/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
+	private static class SectionLogging {
+		/** Debugging: print the RTSP messages that have been received from the client? */
+		@Expose
+		private final boolean debugPrintRtspRcvd;
+		/** Debugging: print the RTSP messages that have been sent to the client? */
+		@Expose
+		private final boolean debugPrintRtspSent;
+		/** Debugging: print the RTSP SDP description that has been sent to the client? */
+		@Expose
+		private final boolean debugPrintRtspSdpSent;
+		/** Debugging: rewind the media files? */
+		@Expose
+		private final boolean debugRewindMediaFiles;
+		/** Debugging: disable UDP transport? */
+		@Expose
+		private boolean debugDisableTransportUdp;
+		/** Log level (INFO, DEBUG, WARN, ERROR) */
+		@Expose
+		private @NonNull String logLevel;
+
+		@GsonAnnoExclude
+		private @Nullable RtxpLogLevel internalLogLevel;
+
+		public SectionLogging() {
+			this.debugPrintRtspRcvd = false;
+			this.debugPrintRtspSent = false;
+			this.debugPrintRtspSdpSent = false;
+			this.debugRewindMediaFiles = false;
+			this.debugDisableTransportUdp = false;
+			this.logLevel = RtxpLogLevel.INFO.name();
+
+			this.internalLogLevel = null;
+		}
+
+		void setLogLevelString(@NonNull String logLevel) {
+			this.logLevel = logLevel;
+		}
+
+		@SuppressWarnings("NullableProblems")
+		@NonNull RtxpLogLevel getInternalLogLevel() {
+			//noinspection DataFlowIssue
+			return internalLogLevel;
+		}
+
+		void setInternalLogLevel(@NonNull RtxpLogLevel internalLogLevel) {
+			this.internalLogLevel = internalLogLevel;
+		}
+	}
+
+	/** Main configuration */
 	@Expose
-	private final int serverTcpPortRtsp;
-	/** RTSPS Server TCP port (with SSL/TLS) -- use -1 to disable */
+	private final @NonNull SectionServer server;
+	/** Logging configuration */
 	@Expose
-	private final int serverTcpPortRtsps;
-	/** RTSPS Server SSL certificate and key */
+	private final @NonNull SectionLogging logging;
+	/** Map of User Accounts (the map keys are unique usernames) */
 	@Expose
-	private final @NonNull RtspsSslServerKey rtspsServerSslKey;
-	/** Map of Users (the map keys are unique usernames) */
+	private @NonNull Map<@NonNull String, @NonNull String> userAccounts;
+	/** Map of Remote MQ Server SSL Certificates (the map keys are unique host-port combinations) */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull String> users;
-	/** Map of MQ Server SSL Certificates (the map keys are unique host-port combinations) */
-	@Expose
-	private @NonNull Map<@NonNull String, @NonNull String> mqServerSslCertificates;
+	private @NonNull Map<@NonNull String, @NonNull String> remoteMqServerSslCertificates;
 	/** Map of Stream Sources (the map keys are unique Stream Source identifiers) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull RtspStreamSource> streamSources;
 	/** Map of Input Sources (the map keys are unique Input Source identifiers) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull RtspInputSource> inputSources;
-	/** Directory where the media files are stored */
-	@Expose
-	private @NonNull String dataDir;
-	/** Debugging: print the RTSP messages that have been received from the client? */
-	@Expose
-	private final boolean debugPrintRtspRcvd;
-	/** Debugging: print the RTSP messages that have been sent to the client? */
-	@Expose
-	private final boolean debugPrintRtspSent;
-	/** Debugging: print the RTSP SDP description that has been sent to the client? */
-	@Expose
-	private final boolean debugPrintRtspSdpSent;
-	/** Debugging: rewind the media files? */
-	@Expose
-	private final boolean debugRewindMediaFiles;
-	/** Debugging: disable UDP transport? */
-	@Expose
-	private boolean debugDisableTransportUdp;
-	/** Log level (INFO, DEBUG, WARN, ERROR) */
-	@Expose
-	private @NonNull String logLevel;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
@@ -90,33 +127,22 @@ public class RtspConfig {
 	@SuppressWarnings("FieldMayBeFinal")
 	@GsonAnnoExclude
 	private @NonNull Map<@NonNull String, @NonNull Integer> internalMapStreamSourceIdExtToInt;
-	@GsonAnnoExclude
-	private @Nullable RtxpLogLevel internalLogLevel;
 
 	/**
 	 * Constructor.
 	 */
 	public RtspConfig() {
-		this.serverTcpPortRtsp = RtspConstants.SERVER_RTSP_TCP_PORT;
-		this.serverTcpPortRtsps = RtspConstants.SERVER_RTSPS_TCP_PORT;
-		this.rtspsServerSslKey = new RtspsSslServerKey();
-		this.users = new HashMap<>();
-		this.mqServerSslCertificates = new HashMap<>();
+		this.server = new SectionServer();
+		this.logging = new SectionLogging();
+		this.userAccounts = new HashMap<>();
+		this.remoteMqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
-		this.dataDir = "";
-		this.debugPrintRtspRcvd = false;
-		this.debugPrintRtspSent = false;
-		this.debugPrintRtspSdpSent = false;
-		this.debugRewindMediaFiles = false;
-		this.debugDisableTransportUdp = false;
-		this.logLevel = RtxpLogLevel.INFO.name();
 
 		//noinspection DataFlowIssue
 		this.internalStreamSources = null;
 		this.internalMapStreamSourceIdIntToExt = new HashMap<>();
 		this.internalMapStreamSourceIdExtToInt = new HashMap<>();
-		this.internalLogLevel = null;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -128,7 +154,7 @@ public class RtspConfig {
 	 */
 	public int getServerTcpPortRtsp() {
 		checkPostProcessed();
-		return serverTcpPortRtsp;
+		return server.tcpPortRtsp;
 	}
 
 	/**
@@ -137,7 +163,7 @@ public class RtspConfig {
 	 */
 	public int getServerTcpPortRtsps() {
 		checkPostProcessed();
-		return serverTcpPortRtsps;
+		return server.tcpPortRtsps;
 	}
 
 	/**
@@ -146,7 +172,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslCertPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("Invalid RTSPS Server SSL Certificate file path", rtspsServerSslKey.certificate);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL Certificate file path", server.sslCertificate);
 	}
 
 	/**
@@ -155,7 +181,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL certificate file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslKeyPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("Invalid RTSPS Server SSL Private Key file path", rtspsServerSslKey.key);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL Private Key file path", server.sslKey);
 	}
 
 	/**
@@ -164,7 +190,7 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the SSL CA file is set in the config but the file could not be found
 	 */
 	public Optional<String> getRtspsSslCaPath() throws ConfigInvalidException {
-		return getAbsoluteFilePath("Invalid RTSPS Server SSL CA file path", rtspsServerSslKey.ca);
+		return getAbsoluteFilePath("Invalid RTSPS Server SSL CA file path", server.sslCa);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -176,7 +202,7 @@ public class RtspConfig {
 	 */
 	public Optional<String> getUserPassword(@NonNull String username) {
 		checkPostProcessed();
-		return Optional.ofNullable(users.get(username));
+		return Optional.ofNullable(userAccounts.get(username));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -207,11 +233,11 @@ public class RtspConfig {
 		int tmpPort = (tmpUri.getPort() == -1 ? 443 : tmpUri.getPort());
 		String tmpSearch1 = tmpHost + ":" + tmpPort;
 		String tmpPathStr = null;
-		if (mqServerSslCertificates.containsKey(tmpSearch1)) {
-			tmpPathStr = mqServerSslCertificates.get(tmpSearch1);
+		if (remoteMqServerSslCertificates.containsKey(tmpSearch1)) {
+			tmpPathStr = remoteMqServerSslCertificates.get(tmpSearch1);
 		}
-		if (tmpPathStr == null && mqServerSslCertificates.containsKey(tmpHost)) {
-			tmpPathStr = mqServerSslCertificates.get(tmpHost);
+		if (tmpPathStr == null && remoteMqServerSslCertificates.containsKey(tmpHost)) {
+			tmpPathStr = remoteMqServerSslCertificates.get(tmpHost);
 		}
 		return getAbsoluteFilePath("Invalid MQ SSL Certificate file path for host '" + tmpSearch1 + "'", tmpPathStr);
 	}
@@ -320,7 +346,7 @@ public class RtspConfig {
 	 */
 	public @NonNull String getDataDirAsString() {
 		checkPostProcessed();
-		return dataDir;
+		return server.dataDir;
 	}
 
 	/**
@@ -329,7 +355,7 @@ public class RtspConfig {
 	 */
 	public @NonNull Path getDataDirAsPath() {
 		checkPostProcessed();
-		return Path.of(dataDir).toAbsolutePath();
+		return Path.of(server.dataDir).toAbsolutePath();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -340,7 +366,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspRcvd() {
 		checkPostProcessed();
-		return debugPrintRtspRcvd;
+		return logging.debugPrintRtspRcvd;
 	}
 
 	/**
@@ -349,7 +375,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspSent() {
 		checkPostProcessed();
-		return debugPrintRtspSent;
+		return logging.debugPrintRtspSent;
 	}
 
 	/**
@@ -358,7 +384,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspSdpSent() {
 		checkPostProcessed();
-		return debugPrintRtspSdpSent;
+		return logging.debugPrintRtspSdpSent;
 	}
 
 	/**
@@ -367,7 +393,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugRewindMediaFiles() {
 		checkPostProcessed();
-		return debugRewindMediaFiles;
+		return logging.debugRewindMediaFiles;
 	}
 
 	/**
@@ -376,15 +402,14 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugDisableTransportUdp() {
 		checkPostProcessed();
-		return debugDisableTransportUdp;
+		return logging.debugDisableTransportUdp;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtxpLogLevel getLogLevel() {
 		checkPostProcessed();
-		//noinspection DataFlowIssue
-		return internalLogLevel;
+		return logging.getInternalLogLevel();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -425,46 +450,43 @@ public class RtspConfig {
 		checkPostProcessed();
 
 		//
-		//noinspection ConstantValue
-		if (logLevel == null || logLevel.isBlank()) {
-			logLevel = RtxpLogLevel.INFO.name();
-		} else if (! RtxpLogLevel.isValid(logLevel)) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logLevel + "'");
+		if (server.tcpPortRtsp == 0 || server.tcpPortRtsp > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + server.tcpPortRtsp);
 		}
-		internalLogLevel = RtxpLogLevel.of(logLevel);
-		//
-		if (serverTcpPortRtsp == 0 || serverTcpPortRtsp > 65535) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + serverTcpPortRtsp);
+		if (server.tcpPortRtsps == 0 || server.tcpPortRtsps > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSPS Server TCP port: " + server.tcpPortRtsps);
 		}
-		if (serverTcpPortRtsps == 0 || serverTcpPortRtsps > 65535) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSPS Server TCP port: " + serverTcpPortRtsps);
-		}
-		if (serverTcpPortRtsp < 0 && serverTcpPortRtsps < 0) {
+		if (server.tcpPortRtsp < 0 && server.tcpPortRtsps < 0) {
 			throw new ConfigInvalidException(FNC_NAME + ": Neither RTSP nor RTSPS Server TCP port set");
 		}
 		//
 		//noinspection ConstantValue
-		if (dataDir == null || dataDir.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for Data directory");
+		if (server.dataDir == null || server.dataDir.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'dataDir' directory");
 		}
 		if (! getDataDirAsPath().toFile().isDirectory()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Data directory is not a valid directory: '" +
+			throw new ConfigInvalidException(FNC_NAME + ": 'dataDir' is not a valid directory: '" +
 					getDataDirAsString() + "'");
 		}
 
 		//
-		if (serverTcpPortRtsps > 0) {
-			//noinspection ConstantValue
-			if (rtspsServerSslKey == null) {
-				throw new ConfigInvalidException(FNC_NAME + ": Empty value for rtspsServerSslKey");
-			}
-			checkFileExists("rtspsServerSslKey.certificate", false, rtspsServerSslKey.certificate);
-			checkFileExists("rtspsServerSslKey.key", false, rtspsServerSslKey.key);
-			checkFileExists("rtspsServerSslKey.ca", true, rtspsServerSslKey.ca);
+		if (server.tcpPortRtsps > 0) {
+			checkFileExists("server.sslCertificate", false, server.sslCertificate);
+			checkFileExists("server.sslKey", false, server.sslKey);
+			checkFileExists("server.sslCa", true, server.sslCa);
 		}
 
 		//
-		for (Map.Entry<@NonNull String, @NonNull String> entry : mqServerSslCertificates.entrySet()) {
+		//noinspection ConstantValue
+		if (logging.logLevel == null || logging.logLevel.isBlank()) {
+			logging.setLogLevelString(RtxpLogLevel.INFO.name());
+		} else if (! RtxpLogLevel.isValid(logging.logLevel)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logging.logLevel + "'");
+		}
+		logging.setInternalLogLevel(RtxpLogLevel.of(logging.logLevel));
+
+		//
+		for (Map.Entry<@NonNull String, @NonNull String> entry : remoteMqServerSslCertificates.entrySet()) {
 			//noinspection ConstantValue
 			if (entry.getKey() == null || entry.getValue() == null) {
 				continue;
