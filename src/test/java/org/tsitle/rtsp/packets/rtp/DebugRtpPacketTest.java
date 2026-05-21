@@ -32,6 +32,48 @@ public class DebugRtpPacketTest {
 		 * The MIKEY message that the Gstreamer RTSP server sends contains an incorrect Auth Key length of 10 bytes.
 		 * The actual Auth Key length that is being used is 20 bytes.
 		 * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		 *
+		 * Code from libSRTP (srtp/srtp.c:3163):
+		 *
+		 * void srtp_crypto_policy_set_rtp_default(srtp_crypto_policy_t *p)
+		 * {
+		 *     p->cipher_type = SRTP_AES_ICM_128;
+		 *     p->cipher_key_len = SRTP_AES_ICM_128_KEY_LEN_WSALT;  // default 128 bits per RFC 3711
+		 *     p->auth_type = SRTP_HMAC_SHA1;
+		 *     p->auth_key_len = 20;  // default 160 bits per RFC 3711
+		 *     p->auth_tag_len = 10;  // default 80 bits per RFC 3711
+		 *     p->sec_serv = sec_serv_conf_and_auth;
+		 * }
+		 *
+		 * In fact, in that library the Auth Key length is always 20 bytes. The Auth Tag length can be 10 bytes (default)
+		 * or 4 bytes.
+		 *
+		 * Then in the Gstreamer code (subprojects/gst-plugins-base/gst-libs/gst/sdp/gstmikey.c:2476):
+		 *
+		 * static gboolean
+		 * auth_key_length_from_auth_cipher_name (const gchar * auth, const gchar * cipher, guint8 * length)
+		 * {
+		 *   if (g_strcmp0 (cipher, "aes-128-gcm") == 0
+		 *       || g_strcmp0 (cipher, "aes-256-gcm") == 0) {
+		 *     *length = 0;
+		 *   } else {
+		 *     if (g_strcmp0 (auth, "hmac-sha1-32") == 0) {
+		 *       *length = HMAC_32_KEY_LEN;  // 4 bytes
+		 *     } else if (g_strcmp0 (auth, "hmac-sha1-80") == 0) {
+		 *       *length = HMAC_80_KEY_LEN;  // 10 bytes
+		 *     } else {
+		 *       GST_ERROR ("authentication algorithm '%s' not supported", auth);
+		 *       return FALSE;
+		 *     }
+		 *   }
+		 *   return TRUE;
+		 * }
+		 *
+		 * We can see that the Auth Key length is set to 4 bytes for HMAC-SHA1-32 and 10 bytes for HMAC-SHA1-80.
+		 * The Auth Tag length does not get encoded in the MIKEY Policy Parameters.
+		 *
+		 * See my Merge Request
+		 *   https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/11629
 		 */
 		SrtxpKmd kmdMod = new SrtxpKmd(
 				kmdOrg.encrKeyLen(),
