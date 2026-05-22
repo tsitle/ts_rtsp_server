@@ -296,7 +296,7 @@ public class RtspResponseBuilder {
 			throw new IllegalStateException(FNC_NAME + ": Could not determine RTSP hostname");
 		}
 		try {
-			Optional<InetAddress> optRtspHostIp = HostnameHelper.firstAvailableLocalIpv4AddressForHostname(tmpRtspHostname);
+			Optional<InetAddress> optRtspHostIp = HostnameHelper.firstAvailableLocalIpv4AddressForHostname(tmpRtspHostname, true);
 			if (optRtspHostIp.isEmpty()) {
 				throw new IllegalStateException(FNC_NAME + ": Could not determine IPv4 address for RTSP hostname '" + tmpRtspHostname + "'");
 			}

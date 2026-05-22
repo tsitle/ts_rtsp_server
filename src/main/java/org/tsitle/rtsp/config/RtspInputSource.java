@@ -22,16 +22,19 @@ public class RtspInputSource {
 	/** Does this Input Source need authentication? (default: true) */
 	@Expose
 	private @NonNull Boolean needsAuthentication;
+	/** Allowed User Account Groups for this input source */
+	@Expose
+	private @NonNull Set<@NonNull String> allowedUserAccountGroups;
 	/** Does this Input Source need encryption? (default: true) */
 	@Expose
 	private boolean needsEncryption;
-	/** Stream Source IDs within the input source */
+	/** Stream Source IDs to be used by this input source */
 	@Expose
 	private @NonNull Set<@NonNull String> streamSourceIds;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
-	/** Internal use: Stream Source IDs within the input source */
+	/** Internal use: Stream Source IDs to be used by this input source */
 	@SuppressWarnings("FieldMayBeFinal")
 	@GsonAnnoExclude
 	private @NonNull Set<@NonNull Integer> internalStreamSourceIds;
@@ -40,6 +43,7 @@ public class RtspInputSource {
 		this.id = "";
 		this.enabled = true;
 		this.needsAuthentication = true;
+		this.allowedUserAccountGroups = new HashSet<>();
 		this.needsEncryption = true;
 		this.streamSourceIds = new HashSet<>();
 
@@ -69,6 +73,11 @@ public class RtspInputSource {
 	public boolean getNeedsAuthentication() {
 		checkPostProcessed();
 		return needsAuthentication;
+	}
+
+	public @NonNull Set<@NonNull String> getAllowedUserAccountGroups() {
+		checkPostProcessed();
+		return Set.copyOf(allowedUserAccountGroups);
 	}
 
 	public boolean getNeedsEncryption() {
@@ -103,17 +112,30 @@ public class RtspInputSource {
 		if (internalStreamSourceIds == null) {
 			createInternalStreamSourcesMap(mapStreamSourceIdExtToInt);
 		}
+
+		//
+		Set<@NonNull String> tmpNewUags = new HashSet<>();
+		for (String allowedUag : allowedUserAccountGroups) {
+			//noinspection ConstantValue
+			if (allowedUag == null) {
+				continue;
+			}
+			tmpNewUags.add(allowedUag.toLowerCase());
+		}
+		allowedUserAccountGroups = tmpNewUags;
 	}
 
 	/**
 	 * Validate the Input Source.
 	 * @param streamSources Map of all Stream Sources
 	 * @param mapStreamSourceIdIntToExt Map of Stream Source IDs (internal) to their external representation
+	 * @param userAccountGroups Existing User Account Groups
 	 * @throws ConfigInvalidException If the Input Source is invalid
 	 */
 	public void validate(
 				@NonNull Map<@NonNull Integer, @NonNull RtspStreamSource> streamSources,
-				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt
+				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt,
+				@NonNull Set<@NonNull String> userAccountGroups
 			) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
 
@@ -144,6 +166,14 @@ public class RtspInputSource {
 				String tmpExtSsId = mapStreamSourceIdIntToExt.get(tmpSsId);
 				throw new ConfigInvalidException(FNC_NAME + ": Disabled Stream Source ID '" + tmpExtSsId + "'" +
 						" used for Input Source ID '" + id + "'");
+			}
+		}
+
+		//
+		for (String allowedUag : allowedUserAccountGroups) {
+			if (! userAccountGroups.contains(allowedUag)) {
+				throw new ConfigInvalidException(FNC_NAME + ": Non-existing User Account Group '" + allowedUag + "'" +
+						" used in Input Source ID '" + id + "'");
 			}
 		}
 	}

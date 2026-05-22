@@ -17,6 +17,10 @@ import java.util.*;
  */
 public class RtspConfig {
 
+	final int SERVER_USERNAME_LENGTH_MAX = 64;
+	final int SERVER_USERPASS_LENGTH_MIN = 8;
+	final int SERVER_USERPASS_LENGTH_MAX = 64;
+
 	private static class SectionServer {
 		/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
 		@Expose
@@ -105,6 +109,9 @@ public class RtspConfig {
 	/** Map of User Accounts (the map keys are unique usernames) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> userAccounts;
+	/** Map of User Account Groups (the map keys are unique group names) */
+	@Expose
+	private @NonNull Map<@NonNull String, @NonNull Set<@NonNull String>> userAccountGroups;
 	/** Map of Remote MQ Server SSL Certificates (the map keys are unique host-port combinations) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> remoteMqServerSslCertificates;
@@ -135,6 +142,7 @@ public class RtspConfig {
 		this.server = new SectionServer();
 		this.logging = new SectionLogging();
 		this.userAccounts = new HashMap<>();
+		this.userAccountGroups = new HashMap<>();
 		this.remoteMqServerSslCertificates = new HashMap<>();
 		this.streamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
@@ -202,7 +210,24 @@ public class RtspConfig {
 	 */
 	public Optional<String> getUserPassword(@NonNull String username) {
 		checkPostProcessed();
-		return Optional.ofNullable(userAccounts.get(username));
+		return Optional.ofNullable(userAccounts.get(username.toLowerCase()));
+	}
+
+	/**
+	 * Get usernames that are allowed to access the given RTSP Input Source.
+	 * @param inputSource RTSP Input Source
+	 * @return Usernames that are allowed to access the RTSP Input Source
+	 */
+	public @NonNull Set<String> getUsersAllowedToAccessInputSource(@NonNull RtspInputSource inputSource) {
+		checkPostProcessed();
+		Set<String> resSet = new HashSet<>();
+		for (String tmpUag : inputSource.getAllowedUserAccountGroups()) {
+			if (! userAccountGroups.containsKey(tmpUag)) {
+				continue;
+			}
+			resSet.addAll(userAccountGroups.get(tmpUag));
+		}
+		return resSet;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -418,6 +443,59 @@ public class RtspConfig {
 	 * Post-process the configuration by setting record IDs
 	 */
 	public void postProcess() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".postProcess()";
+
+		//noinspection ConstantValue
+		if (server == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'server'");
+		}
+		//noinspection ConstantValue
+		if (streamSources == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'");
+		}
+		//noinspection ConstantValue
+		if (inputSources == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'");
+		}
+		//noinspection ConstantValue
+		if (userAccounts == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccounts'");
+		}
+		//noinspection ConstantValue
+		if (userAccountGroups == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccountGroups'");
+		}
+
+		//
+		Map<@NonNull String, @NonNull String> tmpNewUserAccs = new HashMap<>();
+		for (Map.Entry<@NonNull String, @NonNull String> entry : userAccounts.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			tmpNewUserAccs.put(entry.getKey().toLowerCase(), entry.getValue());
+		}
+		userAccounts = tmpNewUserAccs;
+
+		//
+		Map<@NonNull String, @NonNull Set<@NonNull String>> tmpNewUags = new HashMap<>();
+		for (Map.Entry<@NonNull String, @NonNull Set<@NonNull String>> entry : userAccountGroups.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			Set<@NonNull String> tmpNewUagMembers = new HashSet<>();
+			for (@NonNull String tmpMember : entry.getValue()) {
+				//noinspection ConstantValue
+				if (tmpMember == null) {
+					continue;
+				}
+				tmpNewUagMembers.add(tmpMember.toLowerCase());
+			}
+			tmpNewUags.put(entry.getKey().toLowerCase(), tmpNewUagMembers);
+		}
+		userAccountGroups = tmpNewUags;
+
 		//noinspection ConstantValue
 		if (internalStreamSources == null) {
 			createInternalStreamSourcesMap();
@@ -445,82 +523,16 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the configuration is invalid
 	 */
 	public void validate() throws ConfigInvalidException {
-		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
-
 		checkPostProcessed();
 
 		//
-		if (server.tcpPortRtsp == 0 || server.tcpPortRtsp > 65535) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + server.tcpPortRtsp);
-		}
-		if (server.tcpPortRtsps == 0 || server.tcpPortRtsps > 65535) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSPS Server TCP port: " + server.tcpPortRtsps);
-		}
-		if (server.tcpPortRtsp < 0 && server.tcpPortRtsps < 0) {
-			throw new ConfigInvalidException(FNC_NAME + ": Neither RTSP nor RTSPS Server TCP port set");
-		}
-		//
-		//noinspection ConstantValue
-		if (server.dataDir == null || server.dataDir.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'dataDir' directory");
-		}
-		if (! getDataDirAsPath().toFile().isDirectory()) {
-			throw new ConfigInvalidException(FNC_NAME + ": 'dataDir' is not a valid directory: '" +
-					getDataDirAsString() + "'");
-		}
-
-		//
-		if (server.tcpPortRtsps > 0) {
-			checkFileExists("server.sslCertificate", false, server.sslCertificate);
-			checkFileExists("server.sslKey", false, server.sslKey);
-			checkFileExists("server.sslCa", true, server.sslCa);
-		}
-
-		//
-		//noinspection ConstantValue
-		if (logging.logLevel == null || logging.logLevel.isBlank()) {
-			logging.setLogLevelString(RtxpLogLevel.INFO.name());
-		} else if (! RtxpLogLevel.isValid(logging.logLevel)) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logging.logLevel + "'");
-		}
-		logging.setInternalLogLevel(RtxpLogLevel.of(logging.logLevel));
-
-		//
-		for (Map.Entry<@NonNull String, @NonNull String> entry : remoteMqServerSslCertificates.entrySet()) {
-			//noinspection ConstantValue
-			if (entry.getKey() == null || entry.getValue() == null) {
-				continue;
-			}
-			getMqServerSslCertificatePath(entry.getKey());
-		}
-		//
-		List<Integer> tmpSsIdList = getStreamSourceIds();
-		if (tmpSsIdList.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found in configuration");
-		}
-		for (int tmpSsId : tmpSsIdList) {
-			RtspStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
-			tmpSsObj.validate(internalMapStreamSourceIdIntToExt);
-			//
-			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getEnabled()) {
-				Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());
-				if (tmpCert.isEmpty()) {
-					String tmpExtSsId = internalMapStreamSourceIdIntToExt.get(tmpSsId);
-					System.err.println(FNC_NAME + ": Warning: Stream Source '" + tmpExtSsId + "' has no SSL certificate");
-				}
-			}
-		}
-		//
-		List<String> tmpIsIdList = getInputSourceIds();
-		if (tmpIsIdList.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No Input Sources found in configuration");
-		}
-		for (String tmpIsId : tmpIsIdList) {
-			RtspInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
-			if (tmpIsObj.getEnabled()) {
-				tmpIsObj.validate(internalStreamSources, internalMapStreamSourceIdIntToExt);
-			}
-		}
+		validateSectionServer();
+		validateSectionLogging();
+		validateSectionsUserAcc();
+		validateSectionUag();
+		validateSectionMqSslCerts();
+		validateSectionStreamSources();
+		validateSectionInputSources();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -546,8 +558,6 @@ public class RtspConfig {
 		return Optional.of(resStr);
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-
 	private void checkFileExists(
 				@NonNull String desc,
 				boolean canBeEmpty,
@@ -560,6 +570,207 @@ public class RtspConfig {
 			throw new ConfigInvalidException("Empty value for '" + desc + "'");
 		}
 		getAbsoluteFilePath("Invalid file path for '" + desc + "'", filename).orElseThrow();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void validateSectionServer() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionServer()";
+
+		//noinspection ConstantValue
+		if (server == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'server'");
+		}
+		if (server.tcpPortRtsp == 0 || server.tcpPortRtsp > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + server.tcpPortRtsp);
+		}
+		if (server.tcpPortRtsps == 0 || server.tcpPortRtsps > 65535) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSPS Server TCP port: " + server.tcpPortRtsps);
+		}
+		if (server.tcpPortRtsp < 0 && server.tcpPortRtsps < 0) {
+			throw new ConfigInvalidException(FNC_NAME + ": Neither RTSP nor RTSPS Server TCP port set");
+		}
+		//
+		//noinspection ConstantValue
+		if (server.dataDir == null || server.dataDir.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'dataDir' directory");
+		}
+		if (! getDataDirAsPath().toFile().isDirectory()) {
+			throw new ConfigInvalidException(FNC_NAME + ": 'dataDir' is not a valid directory: '" +
+					getDataDirAsString() + "'");
+		}
+
+		//
+		if (server.tcpPortRtsps > 0) {
+			checkFileExists("server.sslCertificate", false, server.sslCertificate);
+			checkFileExists("server.sslKey", false, server.sslKey);
+			checkFileExists("server.sslCa", true, server.sslCa);
+		}
+	}
+
+	private void validateSectionLogging() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionLogging()";
+
+		//noinspection ConstantValue
+		if (logging == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'logging'");
+		}
+		//noinspection ConstantValue
+		if (logging.logLevel == null || logging.logLevel.isBlank()) {
+			logging.setLogLevelString(RtxpLogLevel.INFO.name());
+		} else if (! RtxpLogLevel.isValid(logging.logLevel)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logging.logLevel + "'");
+		}
+		logging.setInternalLogLevel(RtxpLogLevel.of(logging.logLevel));
+	}
+
+	private void validateSectionsUserAcc() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionsUserAcc()";
+
+		//noinspection ConstantValue
+		if (userAccounts == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccounts'");
+		}
+		for (Map.Entry<@NonNull String, @NonNull String> entry : userAccounts.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null) {
+				continue;
+			}
+			validateUserOrGroupName(entry.getKey(), true);
+			validateUserPassword(entry.getKey(), entry.getValue());
+		}
+	}
+
+	private void validateSectionUag() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionUag()";
+
+		//noinspection ConstantValue
+		if (userAccountGroups == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccountGroups'");
+		}
+		for (Map.Entry<@NonNull String, @NonNull Set<@NonNull String>> entry : userAccountGroups.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null) {
+				continue;
+			}
+			validateUserOrGroupName(entry.getKey(), false);
+			//
+			//noinspection ConstantValue
+			if (entry.getValue() == null) {
+				continue;
+			}
+			for (@NonNull String tmpMember : entry.getValue()) {
+				//noinspection ConstantValue
+				if (tmpMember == null) {
+					continue;
+				}
+				if (! userAccounts.containsKey(tmpMember)) {
+					throw new ConfigInvalidException(FNC_NAME + ": User account '" + tmpMember + "' in group '" +
+							entry.getKey() + "' does not exist");
+				}
+			}
+		}
+	}
+
+	private void validateSectionMqSslCerts() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionMqSslCerts()";
+
+		//noinspection ConstantValue
+		if (remoteMqServerSslCertificates == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'remoteMqServerSslCertificates'");
+		}
+		for (Map.Entry<@NonNull String, @NonNull String> entry : remoteMqServerSslCertificates.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			getMqServerSslCertificatePath(entry.getKey());
+		}
+	}
+
+	private void validateSectionStreamSources() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionStreamSources()";
+
+		//noinspection ConstantValue
+		if (streamSources == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'");
+		}
+		List<Integer> tmpSsIdList = getStreamSourceIds();
+		if (tmpSsIdList.isEmpty()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found in configuration");
+		}
+		for (int tmpSsId : tmpSsIdList) {
+			RtspStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
+			tmpSsObj.validate(internalMapStreamSourceIdIntToExt);
+			//
+			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getEnabled()) {
+				Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());
+				if (tmpCert.isEmpty()) {
+					String tmpExtSsId = internalMapStreamSourceIdIntToExt.get(tmpSsId);
+					System.err.println(FNC_NAME + ": Warning: Stream Source '" + tmpExtSsId + "' has no SSL certificate");
+				}
+			}
+		}
+	}
+
+	private void validateSectionInputSources() throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionInputSources()";
+
+		//noinspection ConstantValue
+		if (inputSources == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'");
+		}
+		List<String> tmpIsIdList = getInputSourceIds();
+		if (tmpIsIdList.isEmpty()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No Input Sources found in configuration");
+		}
+		for (String tmpIsId : tmpIsIdList) {
+			RtspInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
+			if (tmpIsObj.getEnabled()) {
+				tmpIsObj.validate(
+						internalStreamSources,
+						internalMapStreamSourceIdIntToExt,
+						userAccountGroups.keySet()
+					);
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void validateUserOrGroupName(@NonNull String username, boolean isUser) throws ConfigInvalidException {
+		//noinspection ConstantValue
+		if (username != null) {
+			for (char c : username.toCharArray()) {
+				if (! Character.isLetterOrDigit(c) && c != '_' && c != '-') {
+					throw new ConfigInvalidException("Invalid " + (isUser ? "user" : "group") + " name '" + username + "': " +
+							"contains invalid character '" + c + "'");
+				}
+			}
+		}
+		//noinspection ConstantValue
+		if (username == null || username.isBlank() || username.length() > SERVER_USERNAME_LENGTH_MAX) {
+			throw new ConfigInvalidException("Invalid " + (isUser ? "user" : "group") + " name '" + username + "': must have between 1 and " +
+					SERVER_USERNAME_LENGTH_MAX + " characters");
+		}
+	}
+
+	private void validateUserPassword(@NonNull String username, @NonNull String password) throws ConfigInvalidException {
+		//noinspection ConstantValue
+		if (password != null) {
+			for (char c : password.toCharArray()) {
+				if (! Character.isLetterOrDigit(c) && c != '!' && c != '*' && c != '+' && c != '-' && c != '_' && c != '.') {
+					throw new ConfigInvalidException("Invalid user password for '" + username + "': " +
+							"contains invalid character '" + c + "'");
+				}
+			}
+		}
+		//noinspection ConstantValue
+		if (password == null ||
+				password.length() < SERVER_USERPASS_LENGTH_MIN || password.length() > SERVER_USERPASS_LENGTH_MAX) {
+			throw new ConfigInvalidException("Invalid user password for '" + username + "': must have between " +
+					SERVER_USERPASS_LENGTH_MIN + " and " + SERVER_USERPASS_LENGTH_MAX + " characters");
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -24,16 +24,17 @@ public final class HostnameHelper {
 	 * Returns the first IPv4 address that the given hostname resolves to
 	 * which is also assigned to a local network interface.
 	 * @param hostname Hostname
+	 * @param allowLoopback Whether to include loopback addresses in the search
 	 * @return IP address
 	 */
-	@SuppressWarnings("unused")
-	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(String hostname)
+	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
-
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
-		if (resolved.length == 0) return Optional.empty();
+		if (resolved.length == 0) {
+			return Optional.empty();
+		}
 
-		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses();
+		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses(allowLoopback);
 
 		return Arrays.stream(resolved)
 				.filter(localInterfaceAddrs::contains)
@@ -43,13 +44,14 @@ public final class HostnameHelper {
 	/**
 	 * Get all IPv4 addresses that the given hostname resolves to.
 	 * @param hostname Hostname
+	 * @param allowLoopback Whether to include loopback addresses in the search
 	 * @return IP addresses
 	 */
 	@SuppressWarnings("unused")
-	public static Set<InetAddress> allLocalIpv4AddressesForHostname(String hostname)
+	public static Set<InetAddress> allLocalIpv4AddressesForHostname(String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
-		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses();
+		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses(allowLoopback);
 		Set<InetAddress> matches = new HashSet<>();
 		for (InetAddress addr : resolved) {
 			if (localInterfaceAddrs.contains(addr)) {
@@ -89,12 +91,12 @@ public final class HostnameHelper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static Set<InetAddress> getAllLocalIpv4InterfaceAddresses() throws SocketException {
+	private static Set<InetAddress> getAllLocalIpv4InterfaceAddresses(boolean allowLoopback) throws SocketException {
 		Set<InetAddress> resSet = new HashSet<>();
 		Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
 		while (ifaces.hasMoreElements()) {
 			NetworkInterface ni = ifaces.nextElement();
-			if (! ni.isUp() || ni.isLoopback()) {
+			if (! ni.isUp() || (! allowLoopback && ni.isLoopback())) {
 				continue;
 			}
 			Enumeration<InetAddress> addrs = ni.getInetAddresses();

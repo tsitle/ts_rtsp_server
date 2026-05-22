@@ -8,7 +8,6 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.CancelToken;
-import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -70,6 +69,8 @@ public class ThreadRtspServer extends RunnableBase {
 	private final Map<Integer, ChildThreadsForOneStream> childThreadsForOneStreamMap = new HashMap<>();
 	private final Map<Integer, ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
 
+	private final RtspUserAuthSvc rtspUserAuthSvc;
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
@@ -104,6 +105,9 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		this.rtspRequestParser = new RtspRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
 		this.rtspResponseBuilder = new RtspResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+
+		//
+		this.rtspUserAuthSvc = new RtspUserAuthSvc(logMsgInterface, rtspConfig, rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -141,8 +145,8 @@ public class ThreadRtspServer extends RunnableBase {
 		} catch (InterruptedException e2) {
 			logError(FNC_NAME, "InterruptedException");
 			Thread.currentThread().interrupt();  // restore flag
-		} catch (Exception e) {
-			logError(FNC_NAME, "Exception: " + e.getMessage());
+		/*} catch (Exception e) {  // @TODO enable catching generic exceptions again
+			logError(FNC_NAME, "Exception: " + e.getMessage());*/
 		} finally {
 			logInfo(FNC_NAME, String.format("Closing RTSP%s for %s:%d",
 					rtspSessionInfo.isRtspsConnection ? "S" : "",
@@ -740,134 +744,104 @@ public class ThreadRtspServer extends RunnableBase {
 	private void checkAuthentification(@NonNull RequestBasicInfo requestBasicInfo) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthentification()";
 
-		boolean wasOk = true;
-		boolean wasAuthOk = true;
-		switch (requestBasicInfo.serverMessageType) {
-			case ServerMessageType.DESCRIBE:
-			case ServerMessageType.SETUP:
-			case ServerMessageType.PLAY:
-			case ServerMessageType.PAUSE:
-			case ServerMessageType.TEARDOWN:
-				final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
-				Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
-				final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
-				if (tmpOptInputSource.isEmpty()) {
-					wasOk = false;
-				} else if (tmpOptInputSource.get().getNeedsAuthentication()) {
-					wasAuthOk = checkAuthentification_sub(requestBasicInfo.serverMessageType);
+		final boolean doCheckAuth = switch (requestBasicInfo.serverMessageType) {
+				case ServerMessageType.DESCRIBE, ServerMessageType.SETUP,
+						ServerMessageType.PLAY, ServerMessageType.PAUSE,
+						ServerMessageType.TEARDOWN -> true;
+				default -> false;
+			};
+		boolean wasInpSrcOk = true;
+		boolean wasAuthOk = (! doCheckAuth);
+
+		if (doCheckAuth) {
+			final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+			Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
+			final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
+			if (tmpOptInputSource.isEmpty()) {
+				wasInpSrcOk = false;
+			} else if (tmpOptInputSource.get().getNeedsAuthentication()) {
+				wasAuthOk = rtspUserAuthSvc.authenticate(requestBasicInfo.serverMessageType);
+			} else {
+				wasAuthOk = true;
+			}
+
+			//
+			if (wasInpSrcOk && wasAuthOk) {
+				wasAuthOk = rtspUserAuthSvc.checkAccessToInputSource(tmpOptInputSource.get());
+				if (! wasAuthOk) {
+					logError(FNC_NAME, String.format(
+							"User '%s' is not allowed to access IS='%s', rejecting request",
+							rtspSessionInfo.authInfo.authUser,
+							tmpIsId));
 				}
-				break;
+			}
 		}
 
-		if (! wasOk) {
+		if (! wasInpSrcOk) {
 			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
 			logError(FNC_NAME, String.format(
 					"Could not find InputSource, rejecting request with code %s", requestBasicInfo.statusCode));
-		} else {
-			final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
-			Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
+			return;
+		}
 
-			if (wasAuthOk) {
-				int tmpUnauthCnt = RtspStaticSessionInfo.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
-				if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
-					wasAuthOk = false;
-				}
-			}
+		final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
+		Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
+		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
 
-			if (wasAuthOk) {
-				RtspStaticSessionInfo.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
-			} else {
-				final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
-				//
-				requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
-				//
-				final String logMsg = String.format(
-						"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
-						requestBasicInfo.serverMessageType, tmpIsId,
-						requestBasicInfo.statusCode, unauthCnt,
-						rtspSessionInfo.clientIpAddr == null ? "NULL" : rtspSessionInfo.clientIpAddr.getHostAddress());
-				if (unauthCnt > 1) {
-					logInfo(FNC_NAME, logMsg);
-				} else if (rtspConfig.getLogLevel() == RtxpLogLevel.DEBUG) {
-					logDebug(FNC_NAME, logMsg);
-				}
-				//
-				if (unauthCnt > 1) {
-					for (int i = 0; i < unauthCnt; i++) {
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException ignored) {
-							Thread.currentThread().interrupt();  // restore flag
-							break;
-						}
-					}
-				}
+		if (wasAuthOk) {
+			// check if Client IP Address is blocked
+			int tmpUnauthCnt = RtspStaticSessionInfo.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+			if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
+				// reject Client IP Address even if user credentials are OK
+				wasAuthOk = false;
 			}
 		}
-	}
 
-	private boolean checkAuthentification_sub(@NonNull ServerMessageType serverMessageType) {
-		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthentification_sub()";
+		if (! doCheckAuth && wasAuthOk) {
+			// prevent OPTIONS request from resetting the unauthorized counter
+			return;
+		}
+		if (wasAuthOk) {
+			final String logMsg = String.format(
+					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
+					requestBasicInfo.serverMessageType, tmpIsId,
+					rtspSessionInfo.authInfo.authUser,
+					rtspSessionInfo.clientIpAddr.getHostAddress());
+			logDebug(FNC_NAME, logMsg);
+			RtspStaticSessionInfo.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+			return;
+		}
 
-		if (rtspSessionInfo.authInfo.authUser.isBlank()) {
-			// fail silently since missing at least the username is normal for the first unauthorized request
-			return false;
-		}
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				(rtspSessionInfo.authInfo.authRealmClient.isBlank() ||
-					rtspSessionInfo.authInfo.authNonceClient.isBlank() || rtspSessionInfo.authInfo.authResp.isBlank())) {
-			// fail silently
-			return false;
-		}
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				! rtspSessionInfo.authInfo.authRealmClient.equals(RtspConstants.RTSP_AUTH_REALM)) {
-			logError(FNC_NAME, "Invalid realm");
-			return false;
-		}
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				! (rtspSessionInfo.authInfo.authNonceClient.equalsIgnoreCase(rtspSessionInfo.authInfo.authNonceServer) ||
-						RtspStaticSessionInfo.existsAuthServerNonce(
-								rtspSessionInfo.clientIpAddr, rtspSessionInfo.authInfo.authNonceClient
-							))) {
-			logError(FNC_NAME, "Invalid nonce");
-			return false;
-		}
-		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(rtspSessionInfo.authInfo.authUser);
-		if (tmpOptUserPw.isEmpty()) {
-			logError(FNC_NAME, "Invalid username");
-			return false;
+		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+		//
+		requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
+		//
+		final String logMsg = String.format(
+				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
+				requestBasicInfo.serverMessageType, tmpIsId,
+				requestBasicInfo.statusCode, unauthCnt,
+				rtspSessionInfo.clientIpAddr.getHostAddress());
+		if (unauthCnt > 1) {
+			/*
+			 * One rejection is normal due to the way RTSP clients detect the necessity of authentication.
+			 * They send a request without credentials, receive a 401 Unauthorized response, and then retry with credentials.
+			 * This behavior is expected and should not be logged as an error.
+			 */
+			logInfo(FNC_NAME, logMsg);
+		} else if (rtspConfig.getLogLevel() == RtxpLogLevel.DEBUG) {
+			logDebug(FNC_NAME, logMsg);
 		}
 		//
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank()) {
-			final String expectedResponse = computeExpectedAuthResponse(serverMessageType.name(), tmpOptUserPw.get());
-			if (! rtspSessionInfo.authInfo.authResp.equalsIgnoreCase(expectedResponse)) {
-				logError(FNC_NAME, "Invalid challenge-response");
-				return false;
+		if (unauthCnt > 1) {
+			for (int i = 0; i < unauthCnt; i++) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException ignored) {
+					Thread.currentThread().interrupt();  // restore flag
+					break;
+				}
 			}
-		} else if (! rtspSessionInfo.authInfo.authPlainPassword.equals(tmpOptUserPw.get())) {
-			logError(FNC_NAME, "Invalid plain password");
-			return false;
 		}
-		//
-		return true;
-	}
-
-	private @NonNull String computeExpectedAuthResponse(@NonNull String method, @NonNull String userPwPlain) {
-		String tmpHa1 = HashMd5Helper.hashOfString(
-				rtspSessionInfo.authInfo.authUser + ":" + RtspConstants.RTSP_AUTH_REALM + ":" + userPwPlain,
-				false
-			);
-		String tmpHa2 = HashMd5Helper.hashOfString(
-				method + ":" + rtspSessionInfo.authInfo.authUri,
-				false
-			);
-		// we have already verified that the Nonce the client has sent is valid
-		return HashMd5Helper.hashOfString(
-				tmpHa1 + ":" + rtspSessionInfo.authInfo.authNonceClient + ":" + tmpHa2,
-				false
-			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
