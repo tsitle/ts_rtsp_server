@@ -240,9 +240,19 @@ public class SdpBuilder {
 			tmpStreamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(tmpStreamKmds.rtspSsrcId);
 			//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 			try {
+				// modern MIKEY key management
 				String tmpMsg = MikeyGenerator.generate(tmpStreamKmds.kmdOutbound);
 				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
-				//sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:KSO+hOFs1q5SkEnx8bvp67Om2zyHDD6ZJF4NHAa3%s", CRLF));
+
+				// legacy SDES key management (SDP Security Descriptions RFC-4568)
+				/*org.tsitle.rtsp.buffers.BufferExt tmpKmdMkMsBe = new org.tsitle.rtsp.buffers.BufferExt();
+				tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterKey());
+				tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterSalt());
+				byte[] tmpBa = new byte[tmpKmdMkMsBe.getUsed()];
+				tmpKmdMkMsBe.copyInto(0, tmpBa, 0, tmpKmdMkMsBe.getUsed());
+				String tmpSdesB64 = java.util.Base64.getEncoder().encodeToString(tmpBa);
+
+				sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s%s", tmpSdesB64, CRLF));*/
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 			}
