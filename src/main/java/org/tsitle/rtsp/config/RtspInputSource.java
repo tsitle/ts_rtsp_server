@@ -115,12 +115,15 @@ public class RtspInputSource {
 
 		//
 		Set<@NonNull String> tmpNewUags = new HashSet<>();
-		for (String allowedUag : allowedUserAccountGroups) {
-			//noinspection ConstantValue
-			if (allowedUag == null) {
-				continue;
+		//noinspection ConstantValue
+		if (allowedUserAccountGroups != null) {
+			for (String allowedUag : allowedUserAccountGroups) {
+				//noinspection ConstantValue
+				if (allowedUag == null || allowedUag.isBlank()) {
+					continue;
+				}
+				tmpNewUags.add(allowedUag.toLowerCase());
 			}
-			tmpNewUags.add(allowedUag.toLowerCase());
 		}
 		allowedUserAccountGroups = tmpNewUags;
 	}
@@ -170,6 +173,10 @@ public class RtspInputSource {
 		}
 
 		//
+		if (needsAuthentication && allowedUserAccountGroups.isEmpty()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty allowed User Account Groups" +
+					" used in Input Source ID '" + id + "'");
+		}
 		for (String allowedUag : allowedUserAccountGroups) {
 			if (! userAccountGroups.contains(allowedUag)) {
 				throw new ConfigInvalidException(FNC_NAME + ": Non-existing User Account Group '" + allowedUag + "'" +

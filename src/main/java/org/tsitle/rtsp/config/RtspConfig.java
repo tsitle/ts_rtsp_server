@@ -487,7 +487,7 @@ public class RtspConfig {
 			Set<@NonNull String> tmpNewUagMembers = new HashSet<>();
 			for (@NonNull String tmpMember : entry.getValue()) {
 				//noinspection ConstantValue
-				if (tmpMember == null) {
+				if (tmpMember == null || tmpMember.isBlank()) {
 					continue;
 				}
 				tmpNewUagMembers.add(tmpMember.toLowerCase());
