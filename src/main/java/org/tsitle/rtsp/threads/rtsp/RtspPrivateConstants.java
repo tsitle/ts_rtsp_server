@@ -11,6 +11,8 @@ class RtspPrivateConstants {
 	/** Prefix for Stream IDs as publicized over SDP */
 	static final String STREAM_ID_PREFIX = "streamid";
 
+	static final String SERVER_NAME = "TS RTSP Server";
+
 	// RTSP Requests/Responses
 	///
 	static final String RTSP_RR_CMD_PROTOCOL_VERSION_1 = "RTSP/1.0";
