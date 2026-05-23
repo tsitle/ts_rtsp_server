@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * RTSP User Authentication Service
+ * RTSP User Authentication and Authorization Service
  */
 public class RtspUserAuthSvc {
 
