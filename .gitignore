@@ -5,6 +5,8 @@ build/
 !**/src/test/**/build/
 .kotlin
 
+*.log
+
 x-*.sh
 x-*.cmd
 

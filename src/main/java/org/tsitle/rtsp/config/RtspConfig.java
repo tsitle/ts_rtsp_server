@@ -51,6 +51,37 @@ public class RtspConfig {
 		}
 	}
 
+	private static class SectionLogOutputs {
+		/** Enable log output to a file? */
+		@Expose
+		private final boolean enableFile;
+		/** Enable log output to the console? */
+		@Expose
+		private final boolean enableConsole;
+		/** Filename for logging to a file */
+		@Expose
+		private @NonNull String filename;
+
+		public SectionLogOutputs() {
+			this.enableFile = false;
+			this.enableConsole = false;
+			this.filename = "";
+		}
+
+		public boolean isEnableFile() {
+			return enableFile;
+		}
+
+		public boolean isEnableConsole() {
+			return enableConsole;
+		}
+
+		public @NonNull String getFilename() {
+			//noinspection ConstantValue
+			return (filename != null ? filename : "");
+		}
+	}
+
 	private static class SectionLogging {
 		/** Debugging: print the RTSP messages that have been received from the client? */
 		@Expose
@@ -70,6 +101,9 @@ public class RtspConfig {
 		/** Log level (INFO, DEBUG, WARN, ERROR) */
 		@Expose
 		private @NonNull String logLevel;
+		/** Log outputs */
+		@Expose
+		private @NonNull SectionLogOutputs outputs;
 
 		@GsonAnnoExclude
 		private @Nullable RtxpLogLevel internalLogLevel;
@@ -81,6 +115,7 @@ public class RtspConfig {
 			this.debugRewindMediaFiles = false;
 			this.debugDisableTransportUdp = false;
 			this.logLevel = RtxpLogLevel.INFO.name();
+			this.outputs = new SectionLogOutputs();
 
 			this.internalLogLevel = null;
 		}
@@ -437,6 +472,21 @@ public class RtspConfig {
 		return logging.getInternalLogLevel();
 	}
 
+	public boolean getLoggingEnabledOutputFile() {
+		checkPostProcessed();
+		return logging.outputs.isEnableFile();
+	}
+
+	public boolean getLoggingEnabledOutputConsole() {
+		checkPostProcessed();
+		return logging.outputs.isEnableConsole();
+	}
+
+	public @NonNull String getLoggingOutputFilename() {
+		checkPostProcessed();
+		return logging.outputs.getFilename();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -446,25 +496,23 @@ public class RtspConfig {
 		final String FNC_NAME = getClass().getSimpleName() + ".postProcess()";
 
 		//noinspection ConstantValue
-		if (server == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'server'");
+		if (server == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'server'"); }
+		//noinspection ConstantValue
+		if (logging == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'logging'"); }
+		//noinspection ConstantValue
+		if (logging.outputs == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'logging.outputs'"); }
+		//noinspection ConstantValue
+		if (userAccounts == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccounts'"); }
+		//noinspection ConstantValue
+		if (userAccountGroups == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccountGroups'"); }
+		//noinspection ConstantValue
+		if (remoteMqServerSslCertificates == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'remoteMqServerSslCertificates'");
 		}
 		//noinspection ConstantValue
-		if (streamSources == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'");
-		}
+		if (streamSources == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'"); }
 		//noinspection ConstantValue
-		if (inputSources == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'");
-		}
-		//noinspection ConstantValue
-		if (userAccounts == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccounts'");
-		}
-		//noinspection ConstantValue
-		if (userAccountGroups == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccountGroups'");
-		}
+		if (inputSources == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'"); }
 
 		//
 		Map<@NonNull String, @NonNull String> tmpNewUserAccs = new HashMap<>();
@@ -577,10 +625,6 @@ public class RtspConfig {
 	private void validateSectionServer() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionServer()";
 
-		//noinspection ConstantValue
-		if (server == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'server'");
-		}
 		if (server.tcpPortRtsp == 0 || server.tcpPortRtsp > 65535) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP Server TCP port: " + server.tcpPortRtsp);
 		}
@@ -612,25 +656,19 @@ public class RtspConfig {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionLogging()";
 
 		//noinspection ConstantValue
-		if (logging == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'logging'");
-		}
-		//noinspection ConstantValue
 		if (logging.logLevel == null || logging.logLevel.isBlank()) {
 			logging.setLogLevelString(RtxpLogLevel.INFO.name());
 		} else if (! RtxpLogLevel.isValid(logging.logLevel)) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'logLevel': '" + logging.logLevel + "'");
 		}
 		logging.setInternalLogLevel(RtxpLogLevel.of(logging.logLevel));
+
+		if (getLoggingEnabledOutputFile() && getLoggingOutputFilename().isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Logging to file is enabled but 'logging.outputs.filename' is empty");
+		}
 	}
 
 	private void validateSectionsUserAcc() throws ConfigInvalidException {
-		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionsUserAcc()";
-
-		//noinspection ConstantValue
-		if (userAccounts == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccounts'");
-		}
 		for (Map.Entry<@NonNull String, @NonNull String> entry : userAccounts.entrySet()) {
 			//noinspection ConstantValue
 			if (entry.getKey() == null) {
@@ -644,10 +682,6 @@ public class RtspConfig {
 	private void validateSectionUag() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionUag()";
 
-		//noinspection ConstantValue
-		if (userAccountGroups == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'userAccountGroups'");
-		}
 		for (Map.Entry<@NonNull String, @NonNull Set<@NonNull String>> entry : userAccountGroups.entrySet()) {
 			//noinspection ConstantValue
 			if (entry.getKey() == null) {
@@ -673,12 +707,6 @@ public class RtspConfig {
 	}
 
 	private void validateSectionMqSslCerts() throws ConfigInvalidException {
-		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionMqSslCerts()";
-
-		//noinspection ConstantValue
-		if (remoteMqServerSslCertificates == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'remoteMqServerSslCertificates'");
-		}
 		for (Map.Entry<@NonNull String, @NonNull String> entry : remoteMqServerSslCertificates.entrySet()) {
 			//noinspection ConstantValue
 			if (entry.getKey() == null || entry.getValue() == null) {
@@ -691,10 +719,6 @@ public class RtspConfig {
 	private void validateSectionStreamSources() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionStreamSources()";
 
-		//noinspection ConstantValue
-		if (streamSources == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'");
-		}
 		List<Integer> tmpSsIdList = getStreamSourceIds();
 		if (tmpSsIdList.isEmpty()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found in configuration");
@@ -716,10 +740,6 @@ public class RtspConfig {
 	private void validateSectionInputSources() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionInputSources()";
 
-		//noinspection ConstantValue
-		if (inputSources == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'");
-		}
 		List<String> tmpIsIdList = getInputSourceIds();
 		if (tmpIsIdList.isEmpty()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Input Sources found in configuration");

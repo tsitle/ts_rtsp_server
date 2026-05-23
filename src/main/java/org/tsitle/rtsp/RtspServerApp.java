@@ -116,6 +116,11 @@ public class RtspServerApp {
 		startMqs(mqStreamSources);
 
 		// start the logger thread
+		rtxpLoggerThread.setEnableOutputConsole(rtspConfig.getLoggingEnabledOutputConsole());
+		rtxpLoggerThread.setEnableOutputFile(
+				rtspConfig.getLoggingEnabledOutputFile(),
+				rtspConfig.getLoggingOutputFilename()
+			);
 		rtxpLoggerThread.setName("RTXPLOGGER");
 		rtxpLoggerThread.setDaemon(false);
 		rtxpLoggerThread.start();

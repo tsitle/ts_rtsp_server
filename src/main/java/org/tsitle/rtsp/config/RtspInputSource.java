@@ -174,7 +174,7 @@ public class RtspInputSource {
 
 		//
 		if (needsAuthentication && allowedUserAccountGroups.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty allowed User Account Groups" +
+			throw new ConfigInvalidException(FNC_NAME + ": Empty allowed User Account Groups list" +
 					" used in Input Source ID '" + id + "'");
 		}
 		for (String allowedUag : allowedUserAccountGroups) {

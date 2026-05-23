@@ -1,10 +1,16 @@
 package org.tsitle.rtsp.threads.logging;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.ThreadBase;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
@@ -23,15 +29,40 @@ public class RtxpLogger extends ThreadBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static final String OUTPUT_FN_DATETIME = "%DATETIME%";
+	private static final String OUTPUT_FN_EXT = ".log";
+
+	private boolean enableOutputFile = false;
+	private boolean enableOutputConsole = false;
+	private String outputFilename = "rtxp-" + OUTPUT_FN_DATETIME + OUTPUT_FN_EXT;
+
 	private final Queue<@NonNull LogEntry> msgQueue = new ConcurrentLinkedQueue<>();
 	private final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a new message has been added to the queue or the thread has been requested to stop */
 	private final Condition stateChanged = lock.newCondition();
 
+	private @Nullable FileOutputStream outpFileFos;
+	private @Nullable PrintStream outpFilePs;
+
 	public RtxpLogger() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public void setEnableOutputFile(boolean enable, @NonNull String filename) {
+		if (enableOutputFile && filename.isBlank()) {
+			throw new IllegalArgumentException("Output filename cannot be blank when enabling output file");
+		}
+		this.enableOutputFile = enable;
+		this.outputFilename = filename;
+		if (! this.outputFilename.endsWith(OUTPUT_FN_EXT)) {
+			this.outputFilename += OUTPUT_FN_EXT;
+		}
+	}
+
+	public void setEnableOutputConsole(boolean enable) {
+		this.enableOutputConsole = enable;
+	}
 
 	public boolean havePendingMessages() {
 		lock.lock();
@@ -57,6 +88,17 @@ public class RtxpLogger extends ThreadBase {
 	@Override
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
+
+		if (enableOutputFile) {
+			try {
+				String tmpOutpFn = buildOutputFilename();
+				outpFileFos = new FileOutputStream(tmpOutpFn, true);
+				outpFilePs = new PrintStream(outpFileFos);
+			} catch (FileNotFoundException e) {
+				System.err.println(FNC_NAME + ": Failed to open log file for writing: " + e.getMessage());
+				return;
+			}
+		}
 
 		isRunning.set(true);
 
@@ -85,6 +127,17 @@ public class RtxpLogger extends ThreadBase {
 					Thread.currentThread().getName(),
 					FNC_NAME + ": Thread ended"
 				));
+			//
+			if (outpFilePs != null) {
+				outpFilePs.close();
+			}
+			if (outpFileFos != null) {
+				try {
+					outpFileFos.close();
+				} catch (IOException ignore) {
+					// ignore
+				}
+			}
 		}
 	}
 
@@ -124,6 +177,14 @@ public class RtxpLogger extends ThreadBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private @NonNull String buildOutputFilename() {
+		if (! outputFilename.contains(OUTPUT_FN_DATETIME)) {
+			return outputFilename;
+		}
+		String tmpTs = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm"));
+		return outputFilename.replace(OUTPUT_FN_DATETIME, tmpTs);
+	}
+
 	private @NonNull LogEntry createLogEntry(@NonNull RtxpLogLevel level, @NonNull String threadId, @NonNull String msg) {
 		return new LogEntry(
 				Instant.now(),
@@ -135,14 +196,16 @@ public class RtxpLogger extends ThreadBase {
 	}
 
 	private void outputMsg(@NonNull LogEntry entry) {
-		PrintStream ps = (entry.level == RtxpLogLevel.DEBUG || entry.level == RtxpLogLevel.INFO ? System.out : System.err);
+		if (! (enableOutputConsole || enableOutputFile)) {
+			return;
+		}
 		String prefix = switch (entry.level) {
 				case DEBUG -> "DEBUG";
 				case INFO  -> "INFO_";
 				case WARN  -> "WARN_";
 				case ERROR -> "ERROR";
 			};
-		ps.format(
+		final String outpStr = String.format(
 				"%s: |%-30s|%14d| <%s> %s%n",
 				prefix,
 				entry.timestampInstant,  // 2026-03-27T19:54:50.975917801Z
@@ -150,6 +213,14 @@ public class RtxpLogger extends ThreadBase {
 				entry.threadId,
 				entry.msg
 			);
+		if (enableOutputConsole) {
+			PrintStream ps = (entry.level == RtxpLogLevel.DEBUG || entry.level == RtxpLogLevel.INFO ? System.out : System.err);
+			ps.print(outpStr);
+		}
+		if (enableOutputFile && outpFilePs != null) {
+			outpFilePs.print(outpStr);
+			outpFilePs.flush();
+		}
 	}
 
 }
