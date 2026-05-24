@@ -60,13 +60,13 @@ public class RtspStaticSessionInfo {
 		public int tpClientDestTcpChannRtp = -1;
 		/** Client's outgoing TCP channel for RTCP packets (meta information), provided by the RTSP Client */
 		public int tpClientDestTcpChannRtcp = -1;
-		/** Requested transport type protocol */
+		/** Requested transport type protocol (true: UDP, false: TCP) */
 		public boolean tpIsUdp = false;
-		/** Requested transport casting type */
+		/** Requested transport casting type (true: unicast, false: multicast) */
 		public boolean tpIsUnicast = false;
-		/** Requested transport interleaved mode */
+		/** Requested transport interleaved mode (true: interleaved (requires TCP), false: separate (requires UDP)) */
 		public boolean tpIsInterleaved = true;
-		/** Requested transport encryption type */
+		/** Requested transport encryption type (true: SRTP/SRTCP, false: plain RTP/RTCP) */
 		public boolean tpIsEncr = false;
 
 		public RtspStaticSessionInfo.@NonNull StreamKmds streamKmds;
