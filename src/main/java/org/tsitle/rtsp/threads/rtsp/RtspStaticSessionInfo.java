@@ -73,13 +73,14 @@ public class RtspStaticSessionInfo {
 
 		public void isTransportValid(
 					boolean needsEncryption,
+					boolean forceEncryption,
 					boolean isRtspsConnection,
 					boolean isTransportUdpDisabled
 				) throws Exception {
-			if (! tpIsEncr && needsEncryption && ! isRtspsConnection) {
+			if (! tpIsEncr && ((needsEncryption && ! isRtspsConnection) || forceEncryption)) {
 				throw new Exception("Client requested unencrypted transport, but encryption is required");
 			}
-			if (tpIsEncr && ! needsEncryption) {
+			if (tpIsEncr && ! (needsEncryption || forceEncryption)) {
 				throw new Exception("Client requested encrypted transport, but encryption is disabled");
 			}
 			if (! tpIsUnicast) {

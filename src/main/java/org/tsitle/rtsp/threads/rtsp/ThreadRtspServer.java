@@ -640,6 +640,7 @@ public class ThreadRtspServer extends RunnableBase {
 				try {
 					tmpStreamInfo.isTransportValid(
 							rtspSessionInfo.isRtpRtcpEncryptionRequired,
+							rtspSessionInfo.forceRtpRtcpEncryption,
 							rtspSessionInfo.isRtspsConnection,
 							rtspConfig.getIsDebugDisableTransportUdp()
 						);

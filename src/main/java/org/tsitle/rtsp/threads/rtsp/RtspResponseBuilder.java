@@ -175,6 +175,7 @@ public class RtspResponseBuilder {
 		try {
 			tmpStreamInfo.isTransportValid(
 					rtspSessionInfo.isRtpRtcpEncryptionRequired,
+					rtspSessionInfo.forceRtpRtcpEncryption,
 					rtspSessionInfo.isRtspsConnection,
 					rtspConfig.getIsDebugDisableTransportUdp()
 				);

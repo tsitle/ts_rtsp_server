@@ -23,7 +23,8 @@ import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
 
 public class RtspRequestParser {
 
-	private static final Pattern patternIllegalChars = Pattern.compile("[\\P{Print}$]");
+	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
+	private static final String URL_QUERY_PARAM_SRTP = "srtp";
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
@@ -189,7 +190,7 @@ public class RtspRequestParser {
 		}
 		String resS = optLine.get();
 		// remove forbidden characters from the line
-		Matcher matcher = patternIllegalChars.matcher(resS);
+		Matcher matcher = PATTERN_ILLEGAL_CHARS.matcher(resS);
 		resS = matcher.replaceAll("");
 		if (isFirst) {
 			// strip occasionally occurring nonsense from the beginning of the line
@@ -270,6 +271,9 @@ public class RtspRequestParser {
 			resS = (rtspSessionInfo.isRtspsConnection ? RtspConstants.RTSPS_URL_PROTOCOL : RtspConstants.RTSP_URL_PROTOCOL) +
 					"://" + tmpUri.getHost() +
 					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
+			if (tmpUri.getQuery() != null) {
+				resS += "?" + tmpUri.getQuery();
+			}
 			return Optional.of(resS);
 		} catch (NoSuchElementException e) {
 			logError(FNC_NAME, "NoSuchElementException caught: " + e);
@@ -278,10 +282,26 @@ public class RtspRequestParser {
 	}
 
 	private RequestBasicInfo.RequestUrlInputOrStreamSource handleResourceUrl(
-				ServerMessageType requestType,
-				String resourceUrl
+				@NonNull ServerMessageType requestType,
+				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleResourceUrl()";
+
+		boolean haveUrlParamSrtp = (
+				rtspSessionInfo.forceRtpRtcpEncryption ||
+				hasResourceUrlQueryParam(resourceUrl, URL_QUERY_PARAM_SRTP, "1")
+			);
+		if (haveUrlParamSrtp) {
+			/*
+			 * Convert an URL like
+			 *   rtsps://192.168.1.1:1332/encr.stream?srtp=1/streamid97720232_003bda0f
+			 * into
+			 *   rtsps://192.168.1.1:1332/encr.stream/streamid97720232_003bda0f?srtp=1
+			 */
+			final String tmpUrlParamSrtp = "?" + URL_QUERY_PARAM_SRTP + "=1";
+			resourceUrl = resourceUrl.replace(tmpUrlParamSrtp, "");
+			resourceUrl += tmpUrlParamSrtp;
+		}
 
 		final String rscUrlPathOrg = extractResourceUrlPath(resourceUrl);
 		String rscUrlPathMod = rscUrlPathOrg;
@@ -367,6 +387,7 @@ public class RtspRequestParser {
 			// preliminary setting
 			rtspSessionInfo.isRtpRtcpEncryptionRequired =
 					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
+			rtspSessionInfo.forceRtpRtcpEncryption = haveUrlParamSrtp;
 			return resObj;
 		}
 
@@ -387,6 +408,7 @@ public class RtspRequestParser {
 		rtspSessionInfo.inputSourceObjPerSmtMap.put(requestType, optInputSource.get());
 		// preliminary setting
 		rtspSessionInfo.isRtpRtcpEncryptionRequired = optInputSource.get().getNeedsEncryption();
+		rtspSessionInfo.forceRtpRtcpEncryption = haveUrlParamSrtp;
 
 		resObj.inputSourceId = optInputSource.get().getId();
 		return resObj;
@@ -398,7 +420,7 @@ public class RtspRequestParser {
 	 * @return The resource URL path (e.g. 'movie.sdp/streamid0')
 	 * @throws RtspInvalidUriException If the resource URL is invalid
 	 */
-	private static String extractResourceUrlPath(String resourceUrlStr) throws RtspInvalidUriException {
+	private static @NonNull String extractResourceUrlPath(@NonNull String resourceUrlStr) throws RtspInvalidUriException {
 		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
 		String tmpPath = rscUriObj.getPath();
 		tmpPath = tmpPath.strip();
@@ -412,6 +434,41 @@ public class RtspRequestParser {
 			throw new RtspInvalidUriException("Empty path");
 		}
 		return tmpPath;
+	}
+
+	/**
+	 * Checks if the resource URL query from the given resource URL string contains the given parameter with the
+	 * given value.
+	 * @param resourceUrlStr Full resource URL string (e.g. 'rtsp://localhost:1051/movie.sdp/streamid0?srtp=1')
+	 * @param param Parameter to check for
+	 * @param value Value to check for - can be null to check for presence of parameter only
+	 * @return True if the parameter is present with the given value, false otherwise
+	 * @throws RtspInvalidUriException If the resource URL is invalid
+	 */
+	@SuppressWarnings("SameParameterValue")
+	private static boolean hasResourceUrlQueryParam(
+				@NonNull String resourceUrlStr,
+				@NonNull String param,
+				@Nullable String value
+			) throws RtspInvalidUriException {
+		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
+		String tmpQuery = rscUriObj.getQuery();
+		if (tmpQuery == null) {
+			return false;
+		}
+		for (String tmpParam : tmpQuery.split("&")) {
+			String[] tmpKv = tmpParam.split("=");
+			if (! tmpKv[0].equalsIgnoreCase(param)) {
+				continue;
+			}
+			if (tmpKv.length == 1 && value == null) {
+				return true;
+			}
+			if (tmpKv.length == 2 && tmpKv[1].equalsIgnoreCase(value)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -608,9 +665,19 @@ public class RtspRequestParser {
 			}
 		}
 
+		//
+		if (rtspSessionInfo.forceRtpRtcpEncryption) {
+			if (! tmpStreamInfo.tpIsEncr) {
+				logWarn(FNC_NAME, "Client requested unencrypted Transport but server will force encryption");
+			}
+			tmpStreamInfo.tpIsEncr = true;
+		}
+
+		//
 		try {
 			tmpStreamInfo.isTransportValid(
 					rtspSessionInfo.isRtpRtcpEncryptionRequired,
+					rtspSessionInfo.forceRtpRtcpEncryption,
 					rtspSessionInfo.isRtspsConnection,
 					rtspConfig.getIsDebugDisableTransportUdp()
 				);

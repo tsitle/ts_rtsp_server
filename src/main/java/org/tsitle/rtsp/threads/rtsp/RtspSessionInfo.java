@@ -51,6 +51,8 @@ public class RtspSessionInfo {
 	public boolean isRtspsConnection = false;
 	/** Is RTP/RTCP encryption required? */
 	public boolean isRtpRtcpEncryptionRequired = false;
+	/** Force RTP/RTCP encryption? */
+	public boolean forceRtpRtcpEncryption = false;
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
