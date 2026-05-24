@@ -4,8 +4,8 @@
 |----------------------------------------------------------|---------------------------------------------|----------------|----------------|-----------------|------------------|----------------------|
 | VLC 3.0.23 (LIVE555 v2020.11.05)                         | Linux x86 (Rocky Linux)                     | Yes            | Yes            | No              | all              | TCP, UDP             |
 | VLC 3.0.23 (LIVE555 v2016.11.28)                         | macOS x86 (Sonoma), Win x86                 | Yes            | No             | No              | all              | TCP, UDP             |
-| GStreamer 1.24.2, 1.24.11                                | Linux x86 (Rocky Linux, KUbuntu)            | Yes            | No             | Yes             | all              | TCP, UDP             |
-| FFplay (7.1.2 with Lavf61.7.100, 8.1 with Lavf62.12.100) | Linux x86 (Rocky Linux), macOS x86 (Sonoma) | Yes            | No             | Yes             | all              | TCP, UDP             |
+| GStreamer 1.24.2, 1.24.11                                | Linux x86 (Rocky Linux, KUbuntu)            | Yes            | (broken)       | Yes             | all              | TCP, UDP             |
+| FFplay (7.1.2 with Lavf61.7.100, 8.1 with Lavf62.12.100) | Linux x86 (Rocky Linux), macOS x86 (Sonoma) | Yes            | (broken)       | Yes             | all              | TCP, UDP             |
 | Win RTSP Player (LIVE555 v2016.05.20)                    | Win x86                                     | Yes            | No             | No              | all but LPCM16   | TCP, UDP             |
 | Another RTSP (LIVE555 v2016.05.20)                       | Win x86                                     | Yes            | No             | No              | all but LPCM16   | TCP, UDP             |
 | RTSP Player (Lavf59.27.100)                              | macOS x86 (Sonoma), Win x86                 | Yes            | No             | Yes             | all              | TCP                  |
