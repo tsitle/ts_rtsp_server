@@ -141,8 +141,8 @@ public class ThreadRtspServer extends RunnableBase {
 		} catch (InterruptedException e2) {
 			logError(FNC_NAME, "InterruptedException");
 			Thread.currentThread().interrupt();  // restore flag
-		/*} catch (Exception e) {  // @TODO enable catching generic exceptions again
-			logError(FNC_NAME, "Exception: " + e.getMessage());*/
+		} catch (Exception e) {
+			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
 			logInfo(FNC_NAME, String.format("Closing RTSP%s for %s:%d",
 					rtspSessionInfo.isRtspsConnection ? "S" : "",
