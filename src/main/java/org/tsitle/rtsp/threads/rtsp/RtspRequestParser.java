@@ -272,7 +272,12 @@ public class RtspRequestParser {
 					"://" + tmpUri.getHost() +
 					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
 			if (tmpUri.getQuery() != null) {
-				resS += "?" + tmpUri.getQuery();
+				try {
+					rtspSessionInfo.forceRtpRtcpEncryption =
+							hasResourceUrlQueryParam(resS + "?" + tmpUri.getQuery(), URL_QUERY_PARAM_SRTP, "1");
+				} catch (RtspInvalidUriException e) {
+					return Optional.empty();
+				}
 			}
 			return Optional.of(resS);
 		} catch (NoSuchElementException e) {
@@ -286,22 +291,6 @@ public class RtspRequestParser {
 				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleResourceUrl()";
-
-		boolean haveUrlParamSrtp = (
-				rtspSessionInfo.forceRtpRtcpEncryption ||
-				hasResourceUrlQueryParam(resourceUrl, URL_QUERY_PARAM_SRTP, "1")
-			);
-		if (haveUrlParamSrtp) {
-			/*
-			 * Convert an URL like
-			 *   rtsps://192.168.1.1:1332/encr.stream?srtp=1/streamid97720232_003bda0f
-			 * into
-			 *   rtsps://192.168.1.1:1332/encr.stream/streamid97720232_003bda0f?srtp=1
-			 */
-			final String tmpUrlParamSrtp = "?" + URL_QUERY_PARAM_SRTP + "=1";
-			resourceUrl = resourceUrl.replace(tmpUrlParamSrtp, "");
-			resourceUrl += tmpUrlParamSrtp;
-		}
 
 		final String rscUrlPathOrg = extractResourceUrlPath(resourceUrl);
 		String rscUrlPathMod = rscUrlPathOrg;
@@ -387,7 +376,6 @@ public class RtspRequestParser {
 			// preliminary setting
 			rtspSessionInfo.isRtpRtcpEncryptionRequired =
 					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
-			rtspSessionInfo.forceRtpRtcpEncryption = haveUrlParamSrtp;
 			return resObj;
 		}
 
@@ -408,7 +396,6 @@ public class RtspRequestParser {
 		rtspSessionInfo.inputSourceObjPerSmtMap.put(requestType, optInputSource.get());
 		// preliminary setting
 		rtspSessionInfo.isRtpRtcpEncryptionRequired = optInputSource.get().getNeedsEncryption();
-		rtspSessionInfo.forceRtpRtcpEncryption = haveUrlParamSrtp;
 
 		resObj.inputSourceId = optInputSource.get().getId();
 		return resObj;
