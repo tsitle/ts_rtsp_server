@@ -9,13 +9,17 @@
 | Win RTSP Player (LIVE555 v2016.05.20)                    | Win x86                                     | Yes            | No             | No              | all but LPCM16   | TCP, UDP             |
 | Another RTSP (LIVE555 v2016.05.20)                       | Win x86                                     | Yes            | No             | No              | all but LPCM16   | TCP, UDP             |
 | RTSP Player (Lavf59.27.100)                              | macOS x86 (Sonoma), Win x86                 | Yes            | Yes (*1)       | Yes             | all              | TCP                  |
-| OpenRTSP (LIVE555 v2026.04.01)                           | Linux x86 (Debian)                          | Yes            | Yes            | Yes             | all              | TCP, UDP             |
+| OpenRTSP (LIVE555 v2026.04.01)                           | Linux x86 (Debian)                          | Yes            | Yes (*2)       | Yes             | all              | TCP, UDP             |
 
 All Codecs: H264, H265, MJPEG, AAC, PCMU (G711U), LPCM16
 
 Note 1) FFplay's (Lavf) support for SRTP is somewhat broken. It doesn't support MIKEY key management - only the legacy SDES key management.  
         To force SRTP, use the URL query parameter `?srtp=1`.  
         Also, FFplay will always use TCP for RTP/RTCP when accessing a stream over RTSPS.
+
+Note 2) OpenRTSP's support for SRTP is excellent. When using the URL query parameter `?srtp=1` it even supports
+        SRTP over UDP when accessing a stream over RTSPS.
+
 
 RTSP Clients:
 
