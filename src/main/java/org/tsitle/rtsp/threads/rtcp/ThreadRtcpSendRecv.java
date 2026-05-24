@@ -60,10 +60,22 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		if (params.getCryptoIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtcpCtxInbound = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
+				if (params.getCryptoKmdInbound().orElseThrow().encrKeyLen() > 0) {
+					this.srtcpCtxInbound = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
+				} else {
+					// we cannot decrypt incoming RTCP packets
+					this.srtcpCtxInbound = null;
+					logWarn(getClass().getSimpleName() + ".ctor()",
+							"missing KmdInbound, cannot decrypt SRTCP packets");
+				}
+			} catch (SrtxpSecurityException e) {
+				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): KmdInbound: " +
+						"SrtxpSecurityException caught: " + e.getMessage());
+			}
+			try {
 				this.srtcpCtxOutbound = new SrtcpContextOutbound(params.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
-				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): KmdOutbound: " +
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {

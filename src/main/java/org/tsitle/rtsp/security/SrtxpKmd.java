@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
+import java.nio.ByteOrder;
 import java.util.Objects;
 
 /**
@@ -94,6 +95,22 @@ public final class SrtxpKmd implements Cloneable {
 	}
 
 	/**
+	 * Create a new KMD object with default key sizes and random values for usage with the legacy SDES key management.<br />
+	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.
+	 * @param ssrcId SSRC ID
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createForLegacySdes(int ssrcId) {
+		return createWithCustomKeySizes(
+				DEFAULT_ENCR_KEY_LEN,
+				DEFAULT_AUTH_KEY_LEN,
+				DEFAULT_AUTH_TAG_LEN,
+				0,
+				ssrcId
+			);
+	}
+
+	/**
 	 * Create a new KMD object with custom key sizes and random values
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
@@ -163,6 +180,16 @@ public final class SrtxpKmd implements Cloneable {
 	}
 
 	@SuppressWarnings("unused")
+	public long mkiAsLong() {
+		long resI = 0;
+		if (mkiLen() > 0 && mkiLen() <= Long.BYTES) {
+			byte[] tmpBa = new byte[mkiLen()];
+			mki.copyInto(0, tmpBa, 0, mkiLen());
+			resI = bytesToLongNative(tmpBa);
+		}
+		return resI;
+	}
+
 	public int mkiLen() {
 		return mki.getUsed();
 	}
@@ -205,6 +232,27 @@ public final class SrtxpKmd implements Cloneable {
 				", mki=" + (mki.isEmpty() ? "empty" : mki.toHexString(true)) + " (len=" + mki.getUsed() + ")" +
 				", ssrcId=" + String.format("0x%08X", ssrcId) +
 				"]";
+	}
+
+	private static long bytesToLongNative(byte[] src) {
+		if (src == null) {
+			throw new IllegalArgumentException("src must not be null");
+		}
+		if (src.length < 1 || src.length > Long.BYTES) {
+			throw new IllegalArgumentException("src length must be in range 1..8");
+		}
+
+		long value = 0L;
+		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+			for (int i = 0; i < src.length; i++) {
+				value |= ((long)src[i] & 0xFFL) << (i * 8);
+			}
+		} else {
+			for (byte b : src) {
+				value = (value << 8) | ((long)b & 0xFFL);
+			}
+		}
+		return value;
 	}
 
 }

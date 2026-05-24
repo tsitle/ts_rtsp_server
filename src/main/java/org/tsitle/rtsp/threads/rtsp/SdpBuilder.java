@@ -139,7 +139,10 @@ public class SdpBuilder {
 		}
 
 		// m: Media Description with available codec(s)
-		boolean isEncrRequ = (! rtspSessionInfo.isRtspsConnection && rtspSessionInfo.isRtpRtcpEncryptionRequired);
+		boolean isEncrRequ = (
+				(! rtspSessionInfo.isRtspsConnection && rtspSessionInfo.isRtpRtcpEncryptionRequired) ||
+				rtspSessionInfo.forceRtpRtcpEncryption
+			);
 		final int tmpM_port = 0;
 		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
 				(useVideo ? "video" : "audio"), tmpM_port, isEncrRequ ? "S" : "",
@@ -234,25 +237,45 @@ public class SdpBuilder {
 				RandomHelper.getRandomUint32(false)
 			);
 		// create and send crypto parameters
-		if (rtspSessionInfo.isRtpRtcpEncryptionRequired) {
+		if (isEncrRequ) {
 			// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
-			// @TODO I did submit a Merge Request (#11629) to GStreamer to fix this issue
-			tmpStreamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(tmpStreamKmds.rtspSsrcId);
+			// @TODO I did submit a Merge Request (#11629) to GStreamer to fix the issue with MIKEY
+			boolean useLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
+					rtspSessionInfo.clientUserAgent.startsWith("Lavf"));
+			if (useLegacySdes) {
+				/*
+				 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
+				 * Similarly, it will always request RTP/AVP transport in the SETUP request.
+				 */
+				tmpStreamKmds.kmdOutbound = SrtxpKmd.createForLegacySdes(tmpStreamKmds.rtspSsrcId);
+			} else {
+				tmpStreamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(tmpStreamKmds.rtspSsrcId);
+			}
 			//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 			try {
-				// modern MIKEY key management
-				String tmpMsg = MikeyGenerator.generate(tmpStreamKmds.kmdOutbound);
-				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
+				if (! useLegacySdes) {
+					// modern MIKEY key management
+					String tmpMsg = MikeyGenerator.generate(tmpStreamKmds.kmdOutbound);
+					sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
+				} else {
+					// legacy SDES key management (SDP Security Descriptions RFC-4568)
+					org.tsitle.rtsp.buffers.BufferExt tmpKmdMkMsBe = new org.tsitle.rtsp.buffers.BufferExt();
+					tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterKey());
+					tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterSalt());
+					byte[] tmpBa = new byte[tmpKmdMkMsBe.getUsed()];
+					tmpKmdMkMsBe.copyInto(0, tmpBa, 0, tmpKmdMkMsBe.getUsed());
+					String tmpSdesB64 = java.util.Base64.getEncoder().encodeToString(tmpBa);
+					sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
+							tmpSdesB64));
 
-				// legacy SDES key management (SDP Security Descriptions RFC-4568)
-				/*org.tsitle.rtsp.buffers.BufferExt tmpKmdMkMsBe = new org.tsitle.rtsp.buffers.BufferExt();
-				tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterKey());
-				tmpKmdMkMsBe.append(tmpStreamKmds.kmdOutbound.masterSalt());
-				byte[] tmpBa = new byte[tmpKmdMkMsBe.getUsed()];
-				tmpKmdMkMsBe.copyInto(0, tmpBa, 0, tmpKmdMkMsBe.getUsed());
-				String tmpSdesB64 = java.util.Base64.getEncoder().encodeToString(tmpBa);
+					//sw.write("|2^20");  // key lifetime
 
-				sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s%s", tmpSdesB64, CRLF));*/
+					//long tmpMkiVal = tmpStreamKmds.kmdOutbound.mkiAsLong();
+					//int tmpMkiLen = tmpStreamKmds.kmdOutbound.mkiLen();
+					//sw.write(String.format("|%d:%d", tmpMkiVal, tmpMkiLen)); // MKI
+
+					sw.write(CRLF);
+				}
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 			}
