@@ -262,7 +262,7 @@ public class RtspRequestParser {
 			}
 			// rewrite the URL to get rid of any query parameters or fragments or userinfo (username + password)
 			URI tmpUri = URI.create(resS);
-			if (tmpUri.getUserInfo() != null) {
+			if (tmpUri.getUserInfo() != null && tmpUri.getUserInfo().split(":").length == 2) {
 				rtspSessionInfo.authInfo.authUser = tmpUri.getUserInfo().split(":")[0];
 				rtspSessionInfo.authInfo.authPlainPassword = tmpUri.getUserInfo().split(":")[1];
 			}
@@ -584,17 +584,25 @@ public class RtspRequestParser {
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				String[] tmpPorts = tmpSub.split("-");
-				tmpStreamInfo.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
-				tmpStreamInfo.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
-				tmpStreamInfo.tpIsInterleaved = false;
+				if (tmpPorts.length == 2) {
+					tmpStreamInfo.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
+					tmpStreamInfo.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
+					tmpStreamInfo.tpIsInterleaved = false;
+				} else {
+					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - cannot parse ports");
+				}
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
 				String[] tmpPorts = tmpSub.split("-");
-				tmpStreamInfo.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
-				tmpStreamInfo.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
-				tmpStreamInfo.tpIsInterleaved = true;
-				/*logDebug(FNC_NAME, "interleaved RTP=" + tmpStreamInfo.tpClientDestTcpChannRtp +
-						", RTCP=" + tmpStreamInfo.tpClientDestTcpChannRtcp);*/
+				if (tmpPorts.length == 2) {
+					tmpStreamInfo.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
+					tmpStreamInfo.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
+					tmpStreamInfo.tpIsInterleaved = true;
+					/*logDebug(FNC_NAME, "interleaved RTP=" + tmpStreamInfo.tpClientDestTcpChannRtp +
+							", RTCP=" + tmpStreamInfo.tpClientDestTcpChannRtcp);*/
+				} else {
+					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - cannot parse ports");
+				}
 			} else {
 				logWarn(FNC_NAME, "Unknown Transport parameter: '" + curToken + "'");
 			}
