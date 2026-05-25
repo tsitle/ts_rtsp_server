@@ -31,6 +31,7 @@ public class MikeyData {
 	boolean spEnabledEncrRtp = false;
 	boolean spEnabledEncrRtcp = false;
 	boolean spEnabledAuthRtxp = false;
+	long spKdr = 0;
 
 	final BufferExt kemacMasterKey = new BufferExt();
 	final BufferExt kemacMasterSalt = new BufferExt();
@@ -84,6 +85,7 @@ public class MikeyData {
 				.append(String.format(", spEnabledEncrRtp=%s", spEnabledEncrRtp ? "T" : "F"))
 				.append(String.format(", spEnabledEncrRtcp=%s", spEnabledEncrRtcp ? "T" : "F"))
 				.append(String.format(", spEnabledAuthRtxp=%s", spEnabledAuthRtxp ? "T" : "F"))
+				.append(String.format(", spKdr=%s", Long.toUnsignedString(spKdr)))
 				.append(", kemacMasterKey=").append(kemacMasterKey.toHexString(true))
 				.append(", kemacMasterSalt=").append(kemacMasterSalt.toHexString(true))
 				.append(", kemacPt=").append(kemacPt);

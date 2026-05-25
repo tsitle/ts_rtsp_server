@@ -89,7 +89,8 @@ class SrtcpProtectRoundTripTest {
 				authKeyLen,
 				authTagLen,
 				new BufferExt(mkiBa),
-				hdSsrc
+				hdSsrc,
+				0L
 			);
 		SrtcpContextOutbound senderCtx = new SrtcpContextOutbound(rtcpKmd);
 		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);

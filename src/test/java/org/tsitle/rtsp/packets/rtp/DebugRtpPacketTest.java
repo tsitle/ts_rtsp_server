@@ -82,7 +82,8 @@ public class DebugRtpPacketTest {
 				20,  // <-- workaround for Gstreamer/SRTPENC bug
 				kmdOrg.authTagLen(),
 				kmdOrg.mki(),
-				kmdOrg.ssrcId()
+				kmdOrg.ssrcId(),
+				kmdOrg.kdr()
 			);
 		System.out.println("KMD Modified: " + kmdMod);
 		final SrtpContextInbound receiverCtx = new SrtpContextInbound(kmdMod);

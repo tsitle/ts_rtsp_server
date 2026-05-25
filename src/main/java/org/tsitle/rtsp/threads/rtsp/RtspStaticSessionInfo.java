@@ -21,7 +21,7 @@ public class RtspStaticSessionInfo {
 
 	public static class StreamKmds {
 		public final int rtspSsrcId;
-		public @Nullable SrtxpKmd kmdInbound = new SrtxpKmd();
+		public @Nullable SrtxpKmd kmdInbound = null;
 		public @Nullable SrtxpKmd kmdOutbound = null;
 
 		public StreamKmds(int rtspSsrcId) {

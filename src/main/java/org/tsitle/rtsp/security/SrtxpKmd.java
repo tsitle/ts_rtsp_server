@@ -17,36 +17,28 @@ public final class SrtxpKmd implements Cloneable {
 	public static final int DEFAULT_AUTH_KEY_LEN = KeySizes.AUTH_KEY_SIZE_160;  // VLC requires 160-bit auth key
 	public static final int DEFAULT_AUTH_TAG_LEN = 10;  // VLC requires 10-byte auth tag
 	public static final int DEFAULT_MKI_LEN = 4;  // VLC requires 4-byte MKI
+	public static final long DEFAULT_KDR_PACKETS = 0;  // VLC requires a KDR of 0
 
 	/** Encryption Key length */
-	private int encrKeyLen;
+	private final int encrKeyLen;
 	/** Master AES-128 key (16 bytes) */
 	private @NonNull BufferExt masterKey;
 	/** Master Salt (14 bytes) */
 	private @NonNull BufferExt masterSalt;
 	/** Auth Key length */
-	private int authKeyLen;
+	private final int authKeyLen;
 	/** Auth Tag length */
-	private int authTagLen;
+	private final int authTagLen;
 	/** Master Key Identifier */
 	private @NonNull BufferExt mki;
 	/** SSRC ID */
-	private int ssrcId;
-
+	private final int ssrcId;
 	/**
-	 * Constructor - initializes all fields to empty values.
+	 * Key Derivation Rate (in packets).<br />
+	 * 0^=derive once from master key/salt; >0^=derive new session keys every N packets.<br />
+	 * Note that the tested RTSP clients (VLC, FFplay, OpenRTSP) do not support KDR.
 	 */
-	public SrtxpKmd() {
-		this(
-				0,
-				new BufferExt(),
-				new BufferExt(),
-				0,
-				0,
-				new BufferExt(),
-				0
-			);
-	}
+	private final long kdr;
 
 	/**
 	 * Constructor.
@@ -57,6 +49,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param authTagLen Authentication Tag length
 	 * @param mki Master Key Identifier (can be empty)
 	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
 	 */
 	public SrtxpKmd(
 				int encrKeyLen,
@@ -65,7 +58,8 @@ public final class SrtxpKmd implements Cloneable {
 				int authKeyLen,
 				int authTagLen,
 				@NonNull BufferExt mki,
-				int ssrcId
+				int ssrcId,
+				long kdr
 			) {
 		this.encrKeyLen = encrKeyLen;
 		this.masterKey = masterKey.clone();
@@ -74,6 +68,7 @@ public final class SrtxpKmd implements Cloneable {
 		this.authTagLen = authTagLen;
 		this.mki = mki.clone();
 		this.ssrcId = ssrcId;
+		this.kdr = kdr;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -85,12 +80,23 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createWithDefaults(int ssrcId) {
+		return createWithDefaults(ssrcId, DEFAULT_KDR_PACKETS);
+	}
+
+	/**
+	 * Create a new KMD object with default key sizes and random values
+	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createWithDefaults(int ssrcId, long kdr) {
 		return createWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
 				DEFAULT_MKI_LEN,
-				ssrcId
+				ssrcId,
+				kdr
 			);
 	}
 
@@ -101,12 +107,24 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createForLegacySdes(int ssrcId) {
+		return createForLegacySdes(ssrcId, DEFAULT_KDR_PACKETS);
+	}
+
+	/**
+	 * Create a new KMD object with default key sizes and random values for usage with the legacy SDES key management.<br />
+	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.
+	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createForLegacySdes(int ssrcId, long kdr) {
 		return createWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
 				0,
-				ssrcId
+				ssrcId,
+				kdr
 			);
 	}
 
@@ -126,16 +144,49 @@ public final class SrtxpKmd implements Cloneable {
 				int mkiLen,
 				int ssrcId
 			) {
-		SrtxpKmd resObj = new SrtxpKmd();
-		resObj.encrKeyLen = encrKeyLen;
+		return createWithCustomKeySizes(
+				encrKeyLen,
+				authKeyLen,
+				authTagLen,
+				mkiLen,
+				ssrcId,
+				DEFAULT_KDR_PACKETS
+			);
+	}
+
+	/**
+	 * Create a new KMD object with custom key sizes and random values
+	 * @param encrKeyLen Encryption Key length
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
+	 * @param mkiLen Master Key Identifier length (can be zero)
+	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createWithCustomKeySizes(
+				int encrKeyLen,
+				int authKeyLen,
+				int authTagLen,
+				int mkiLen,
+				int ssrcId,
+				long kdr
+			) {
+		SrtxpKmd resObj = new SrtxpKmd(
+				encrKeyLen,
+				new BufferExt(),
+				new BufferExt(),
+				authKeyLen,
+				authTagLen,
+				new BufferExt(),
+				ssrcId,
+				kdr
+			);
 		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
-		resObj.authKeyLen = authKeyLen;
-		resObj.authTagLen = authTagLen;
 		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
 		if (mkiLen > 0) {
 			RandomHelper.getSecureRandomBytes(mkiLen, resObj.mki);
 		}
-		resObj.ssrcId = ssrcId;
 		return resObj;
 	}
 
@@ -198,6 +249,10 @@ public final class SrtxpKmd implements Cloneable {
 		return ssrcId;
 	}
 
+	public long kdr() {
+		return kdr;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) {
@@ -213,12 +268,13 @@ public final class SrtxpKmd implements Cloneable {
 				this.authKeyLen == that.authKeyLen &&
 				this.authTagLen == that.authTagLen &&
 				Objects.equals(this.mki, that.mki) &&
-				this.ssrcId == that.ssrcId);
+				this.ssrcId == that.ssrcId &&
+				this.kdr == that.kdr);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId);
+		return Objects.hash(encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId, kdr);
 	}
 
 	@Override
@@ -231,6 +287,7 @@ public final class SrtxpKmd implements Cloneable {
 				", authTagLen=" + authTagLen +
 				", mki=" + (mki.isEmpty() ? "empty" : mki.toHexString(true)) + " (len=" + mki.getUsed() + ")" +
 				", ssrcId=" + String.format("0x%08X", ssrcId) +
+				", kdr=" + kdr +
 				"]";
 	}
 

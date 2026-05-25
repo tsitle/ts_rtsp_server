@@ -331,7 +331,8 @@ public abstract class SrtxpContextBase {
 				ctxKmd.authKeyLen(),
 				ctxKmd.authTagLen(),
 				mki,
-				ctxKmd.ssrcId()
+				ctxKmd.ssrcId(),
+				ctxKmd.kdr()
 			);
 	}
 

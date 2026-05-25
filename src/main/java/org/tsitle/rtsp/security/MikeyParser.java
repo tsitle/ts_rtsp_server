@@ -73,7 +73,8 @@ public final class MikeyParser {
 				mikeyData.spAuthKeyLen,
 				mikeyData.spAuthTagLen,
 				mikeyData.kemacKvDataSpiOrMki,
-				mikeyData.hdCsIdMapInfoSsrcArr[0]
+				mikeyData.hdCsIdMapInfoSsrcArr[0],
+				mikeyData.spKdr
 			);
 	}
 
@@ -363,8 +364,19 @@ public final class MikeyParser {
 					break;
 				case MMSPPT_SFECO:
 				case MMSPPT_SRTPREFIXLEN:
-				case MMSPPT_KDR:
 					// nothing to check for the time being
+					break;
+				case MMSPPT_KDR:
+					ByteBuffer tmpKdrBuf = ByteBuffer.wrap(tmpPolParamData).order(ByteOrder.BIG_ENDIAN);
+					switch (tmpBy) {
+						case 1: mikeyData.spKdr = Byte.toUnsignedLong(tmpKdrBuf.get()); break;
+						case 2: mikeyData.spKdr = Short.toUnsignedLong(tmpKdrBuf.getShort()); break;
+						case 4: mikeyData.spKdr = Integer.toUnsignedLong(tmpKdrBuf.getInt()); break;
+						case 8: mikeyData.spKdr = tmpKdrBuf.getLong(); break;
+						default:
+							errMsg = String.format("Unsupported MIKEY SP KDR length %d, expected 0/1/2/4/8", tmpBy);
+							break;
+					}
 					break;
 				default:
 					errMsg = "Unhandled MIKEY SP Parameter " + mmspType;

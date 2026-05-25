@@ -66,7 +66,8 @@ class Common {
 				AUTH_KEY_SIZE_FOR_ALL_TESTS,
 				AUTH_TAG_SIZE_FOR_ALL_TESTS,
 				new BufferExt(),
-				ssrcId
+				ssrcId,
+				0L
 			);
 	}
 
@@ -120,7 +121,8 @@ class Common {
 				authKeyLen,
 				authTagLen,
 				new BufferExt(),
-				ssrcId
+				ssrcId,
+				0L
 			);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
 	}
@@ -141,7 +143,8 @@ class Common {
 				authKeyLen,
 				authTagLen,
 				new BufferExt(),
-				ssrcId
+				ssrcId,
+				0L
 			);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
 	}
