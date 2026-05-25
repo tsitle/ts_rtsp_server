@@ -94,13 +94,13 @@ class Common {
 	static @NonNull SessionKeys createSessionKeysDefaultRtp(int ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
-		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
 
 	static @NonNull SessionKeys createSessionKeysDefaultRtcp(int ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
-		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -124,7 +124,7 @@ class Common {
 				ssrcId,
 				0L
 			);
-		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -146,7 +146,7 @@ class Common {
 				ssrcId,
 				0L
 			);
-		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd);
+		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

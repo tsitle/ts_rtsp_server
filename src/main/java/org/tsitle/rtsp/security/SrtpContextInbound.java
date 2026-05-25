@@ -89,11 +89,14 @@ public class SrtpContextInbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = (((long) ctxStateSrtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		final long srtpPacketIndex = (((long)ctxStateSrtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
 			throw new SrtxpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
 		ctxStateSrtpLastIndex = srtpPacketIndex;
+
+		// Session keys re-derivation
+		sessionKeysRederivation(true, srtpPacketIndex);
 
 		// validate Auth Tag
 		validateAuthTag(srtpPacketBufView, true, ctxStateSrtpRocInbound);

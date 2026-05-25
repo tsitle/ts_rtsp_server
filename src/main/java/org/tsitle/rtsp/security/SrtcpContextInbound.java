@@ -50,20 +50,8 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		//
 		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
 
-		// validate Auth Tag
-		validateAuthTag(encrPktView, false, 0);
-
-		//
-		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen());
-
-		// validate MKI
-		if (! ctxKmd.mki().isEmpty()) {
-			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.mki().getUsed());
-			validateMki(encrPktView, "SRTCP");
-			encrPktView.increaseLength(-1 * ctxKmd.mki().getUsed());
-		}
-
 		// SRTCP index is 31 bits + 1 E-bit (encryption flag) in the MSB
+		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getUsed());
 		encrPktView.setOffset(encrPktView.getLength() - SRTCP_INDEX_FIELD_SIZE);
 		int tmpIndexField = encrPktView.getIntFromBigEndian(false);
 		int tmpIndexEbit = (tmpIndexField & 0x80000000);
@@ -71,6 +59,25 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		if (tmpIndexEbit != 0x80000000) {
 			throw new SrtxpSecurityException("Invalid E-bit in SRTCP packet");
 		}
+		encrPktView.setLength(encrPktView.getInternalBeLength());
+
+		// Session keys re-derivation
+		sessionKeysRederivation(false, tmpIndexOnly);
+
+		// validate Auth Tag
+		validateAuthTag(encrPktView, false, 0);
+
+		// remove Auth Tag
+		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen());
+
+		// validate and remove MKI
+		if (! ctxKmd.mki().isEmpty()) {
+			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.mki().getUsed());
+			validateMki(encrPktView, "SRTCP");
+			encrPktView.increaseLength(-1 * ctxKmd.mki().getUsed());
+		}
+
+		// validate and remove SRTCP index
 		if (ctxStateSrtcpLastIndex >= tmpIndexOnly) {
 			throw new SrtxpSecurityException("Invalid SRTCP packet index");
 		}
@@ -81,7 +88,6 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		encrPktView.setOffset(RtcpPacketHeader.HEADER_SIZE);
 		int tmpSenderSsrc = encrPktView.getIntFromBigEndian(false);
 		if (ctxStateSrtcpSsrc != 0 && tmpSenderSsrc != ctxStateSrtcpSsrc) {
-			System.err.println(srtcpPacketBuf.toHexString());
 			throw new SrtxpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
 					String.format("is=0x%08X, expected=0x%08X", tmpSenderSsrc, ctxStateSrtcpSsrc));
 		}

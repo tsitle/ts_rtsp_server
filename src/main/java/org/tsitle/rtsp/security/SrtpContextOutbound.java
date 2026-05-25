@@ -62,6 +62,9 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		// SRTP packet index
 		final long srtpPacketIndex = (((long)ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
 
+		// Session keys re-derivation
+		sessionKeysRederivation(true, srtpPacketIndex);
+
 		// build IV
 		buildIvForRtp(srtpPacketIndex, hdSsrcId, cacheIvBuf);
 

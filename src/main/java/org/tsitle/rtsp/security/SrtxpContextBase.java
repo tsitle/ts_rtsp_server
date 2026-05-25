@@ -38,6 +38,10 @@ public abstract class SrtxpContextBase {
 	protected @Nullable SessionKeys ctxSessionKeysRtp = null;
 	/** Session keys for RTCP/SRTCP */
 	protected @Nullable SessionKeys ctxSessionKeysRtcp = null;
+	/** Session keys re-derivation marker for RTP/SRTP */
+	private long ctxSessionKeysRederivationRtp = -1L;
+	/** Session keys re-derivation marker for RTCP/SRTCP */
+	private long ctxSessionKeysRederivationRtcp = -1L;
 
 	/** Cipher/CipherSks/Mac/MacSks objects */
 	protected @NonNull CtxCipherAndMac ctxCam = new CtxCipherAndMac();
@@ -72,16 +76,7 @@ public abstract class SrtxpContextBase {
 		}
 
 		//
-		final Cipher cipherAesCtr = buildCipherObject();
-
-		//
-		if (isRtp) {
-			SessionKeys tmpSessionKeys = SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, ctxKmd);
-			setRtpSessionKeys(tmpSessionKeys);
-		} else {
-			SessionKeys tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd);
-			setRtcpSessionKeys(tmpSessionKeys);
-		}
+		sessionKeysRederivation(isRtp, 0L);
 
 		//
 		buildCamObject(ctxCam, isRtp ? ctxSessionKeysRtp : ctxSessionKeysRtcp);
@@ -99,6 +94,44 @@ public abstract class SrtxpContextBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected void sessionKeysRederivation(boolean isRtp, long packetIndex) throws SrtxpSecurityException {
+		long markerLast = (isRtp ? ctxSessionKeysRederivationRtp : ctxSessionKeysRederivationRtcp);
+		long markerNew;
+		SessionKeys tmpSessionKeys;
+		if (markerLast == -1L) {
+			final Cipher cipherAesCtr = buildCipherObject();
+			if (isRtp) {
+				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, ctxKmd, 0L);
+			} else {
+				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd, 0L);
+			}
+			markerNew = 0L;
+		} else if (ctxKmd.kdr() > 0L) {
+			markerNew = packetIndex / ctxKmd.kdr();
+			if (markerNew == markerLast) {
+				return;
+			}
+			final Cipher cipherAesCtr = buildCipherObject();
+			if (isRtp) {
+				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, ctxKmd, packetIndex);
+			} else {
+				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd, packetIndex);
+			}
+		} else {
+			return;
+		}
+		//
+		if (isRtp) {
+			setRtpSessionKeys(tmpSessionKeys);
+			ctxSessionKeysRederivationRtp = markerNew;
+		} else {
+			setRtcpSessionKeys(tmpSessionKeys);
+			ctxSessionKeysRederivationRtcp = markerNew;
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void encryptPayload(

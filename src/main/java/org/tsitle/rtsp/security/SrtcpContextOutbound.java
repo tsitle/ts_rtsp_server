@@ -76,6 +76,9 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 		final int srtcpIndexEbit = 0x80000000;
 		final int srtcpIndexField = (srtcpIndexEbit | srtcpIndexOnly);
 
+		// Session keys re-derivation
+		sessionKeysRederivation(false, srtcpIndexOnly);
+
 		// build IV
 		buildIvForRtcp(srtcpIndexOnly, ssrcId, cacheIvBuf);
 

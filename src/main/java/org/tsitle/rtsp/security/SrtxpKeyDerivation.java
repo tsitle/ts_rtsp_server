@@ -25,17 +25,19 @@ public final class SrtxpKeyDerivation {
 	 * Derive session keys for RTP/SRTP according to RFC-3711 Section 4.3.1
 	 * @param cipher Cipher object
 	 * @param kmd Key Management Data
+	 * @param packetIndex RTP packet index
 	 * @return Session keys
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtp(
 				@NonNull Cipher cipher,
-				@NonNull SrtxpKmd kmd
+				@NonNull SrtxpKmd kmd,
+				long packetIndex
 			) throws SrtxpSecurityException {
 		return new SessionKeys(
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, kmd.encrKeyLen()),
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen()),
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE)
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, kmd.encrKeyLen(), packetIndex),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen(), packetIndex),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE, packetIndex)
 			);
 	}
 
@@ -43,17 +45,19 @@ public final class SrtxpKeyDerivation {
 	 * Derive session keys for RTCP/SRTCP according to RFC-3711 Section 4.3.1
 	 * @param cipher Cipher object
 	 * @param kmd Key Management Data
+	 * @param packetIndex RTCP packet index
 	 * @return Session keys
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public static @NonNull SessionKeys deriveForRtcp(
 				@NonNull Cipher cipher,
-				@NonNull SrtxpKmd kmd
+				@NonNull SrtxpKmd kmd,
+				long packetIndex
 			) throws SrtxpSecurityException {
 		return new SessionKeys(
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, kmd.encrKeyLen()),
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen()),
-				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE)
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, kmd.encrKeyLen(), packetIndex),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen(), packetIndex),
+				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE, packetIndex)
 			);
 	}
 
@@ -67,7 +71,8 @@ public final class SrtxpKeyDerivation {
 				@NonNull Cipher cipher,
 				@NonNull SrtxpKmd kmd,
 				@NonNull PrfDeriveLabel label,
-				int outLen
+				int outLen,
+				long packetIndex
 			) throws SrtxpSecurityException {
 		if (kmd.masterKey().getUsed() != kmd.encrKeyLen()) {
 			throw new SrtxpSecurityException("Invalid master key length, expected " + kmd.encrKeyLen() + " bytes");
@@ -75,13 +80,14 @@ public final class SrtxpKeyDerivation {
 		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtxpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
 		}
+		if (kmd.kdr() < 0L) {
+			throw new SrtxpSecurityException("Invalid KDR, must be >= 0");
+		}
+		if (packetIndex < 0L) {
+			throw new SrtxpSecurityException("Invalid packet index, must be >= 0");
+		}
 
 		/*
-		 * Let r = index DIV key_derivation_rate -- (key_derivation_rate = 0 => r = 0) -- 'r' is 48-bit
-		 * Let key_id = <label> || r -- 'key_id' is 48-bit
-		 * Let x = key_id XOR master_salt, where key_id and master_salt are
-		 *   aligned so that their least significant bits agree (right-alignment).
-		 *
 		 * Note that for a key_derivation_rate of 0, the application of the key derivation SHALL take place exactly once.
 		 *
 		 * PRF_n(k_master,x) SHALL be AES in Counter Mode as described in Section 4.1.1,
@@ -89,7 +95,7 @@ public final class SrtxpKeyDerivation {
 		 * and with the output keystream truncated to the n first (left-most) bits.
 		 */
 
-		byte[] iv = buildKeyDerivationIv(kmd.masterSalt(), label.getValue(), 0L);
+		byte[] iv = buildKeyDerivationIv(kmd.masterSalt(), label.getValue(), kmd.kdr(), packetIndex);
 
 		try {
 			cipher.init(
@@ -111,8 +117,18 @@ public final class SrtxpKeyDerivation {
 	private static byte[] buildKeyDerivationIv(
 				@NonNull BufferExt masterSalt,
 				byte label,
-				@SuppressWarnings("SameParameterValue") long r48
+				long kdr,
+				long packetIndex
 			) {
+		/*
+		 * Let r = index DIV key_derivation_rate -- (key_derivation_rate = 0 => r = 0) -- 'r' is 48-bit
+		 * Let key_id = <label> || r -- 'key_id' is 48-bit
+		 * Let x = key_id XOR master_salt, where key_id and master_salt are
+		 *   aligned so that their least significant bits agree (right-alignment).
+		 */
+
+		long r48 = (kdr == 0L ? 0L : packetIndex / kdr) & 0xFFFFFFFFFFFFL;
+
 		// x is 112 bits (14 bytes), IV is always 128 bits (16 bytes) regardless of key size
 		byte[] iv = new byte[KeySizes.IV_SIZE];
 
