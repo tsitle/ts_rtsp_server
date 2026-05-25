@@ -14,12 +14,13 @@
 All Codecs: H264, H265, MJPEG, AAC, PCMU (G711U), LPCM16
 
 Note 1) FFplay's (Lavf) support for SRTP is somewhat broken. It doesn't support MIKEY key management - only the legacy SDES key management.  
-        To force SRTP, use the URL query parameter `?srtp=1`.  
-        Also, FFplay will always use TCP for RTP/RTCP when accessing a stream over RTSPS.
+        To enable SRTP the URL query parameter `?srtp=1` must be used.  
+        Also, FFplay will always use TCP transport for RTP/RTCP when accessing a stream over RTSPS.
 
 Note 2) OpenRTSP's support for SRTP is excellent. When using the URL query parameter `?srtp=1` it even supports
         SRTP over UDP when accessing a stream over RTSPS.
 
+Note 3) None of the tested RTSP clients support a Key Derivation Rate (KDR) parameter in the MIKEY message other than 0.
 
 RTSP Clients:
 
