@@ -59,8 +59,8 @@ public class RtspRequAuthSvc {
 
 		final boolean couldNeedAuthentification = switch (requestBasicInfo.messageType) {
 				case RtspProtoMessageType.DESCRIBE, RtspProtoMessageType.SETUP,
-				     RtspProtoMessageType.PLAY, RtspProtoMessageType.PAUSE,
-				     RtspProtoMessageType.TEARDOWN -> true;
+						RtspProtoMessageType.PLAY, RtspProtoMessageType.PAUSE,
+						RtspProtoMessageType.TEARDOWN, RtspProtoMessageType.GET_PARAMETER -> true;
 				default -> false;
 			};
 		boolean wasAuthentificationOk;

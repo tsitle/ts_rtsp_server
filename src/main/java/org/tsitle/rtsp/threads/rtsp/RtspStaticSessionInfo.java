@@ -24,6 +24,8 @@ public class RtspStaticSessionInfo {
 		public boolean isForLegacySdes = false;
 		public @Nullable SrtxpKmd kmdInbound = null;
 		public @Nullable SrtxpKmd kmdOutbound = null;
+		//public @Nullable SrtxpKmd nextKmdInbound = null;
+		public @Nullable SrtxpKmd nextKmdOutbound = null;
 
 		public StreamKmds(int rtspSsrcId) {
 			this.rtspSsrcId = rtspSsrcId;

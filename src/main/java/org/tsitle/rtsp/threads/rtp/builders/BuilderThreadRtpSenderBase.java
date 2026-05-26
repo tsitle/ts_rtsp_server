@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.security.SrtxpKmd;
@@ -41,7 +42,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comTpClientDestTcpChannRtp(int v) { this.threadParamsCommon.setTpClientDestTcpChann(v); return self(); }
 
 	public B comCryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParamsCommon.setCryptoIsRtxpEncryptionEnabled(v); return self(); }
-	public B comCryptoKmdOutboundRtp(@NonNull SrtxpKmd v) { this.threadParamsCommon.setCryptoKmdOutbound(v); return self(); }
+	public B comCryptoKmdOutboundRtp(@Nullable SrtxpKmd v) { this.threadParamsCommon.setCryptoKmdOutbound(v); return self(); }
 
 	public B comDebugRewindMediaFiles(boolean v) { this.threadParamsCommon.setDebugRewindMediaFiles(v); return self(); }
 

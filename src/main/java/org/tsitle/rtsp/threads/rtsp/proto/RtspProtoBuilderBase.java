@@ -44,6 +44,9 @@ public class RtspProtoBuilderBase {
 	protected void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
+	protected void logWarn(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.WARN, fncName, msg);
+	}
 	protected void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}

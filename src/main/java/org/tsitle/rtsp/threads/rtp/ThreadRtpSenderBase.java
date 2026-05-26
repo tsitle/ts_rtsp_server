@@ -13,6 +13,7 @@ import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
@@ -185,6 +186,21 @@ public abstract class ThreadRtpSenderBase<
 
 	public int getPacketCountOutbound() {
 		return packetCntOutbound.get();
+	}
+
+	public void setNextSrtxpKmdOutbound(@NonNull SrtxpKmd kmd) {
+		if (srtpCtxOutbound == null) {
+			return;  // if we didn't have a KMD up until now, we don't need to set a new one
+		}
+		// @TODO enqueue the new KMD in the srtpCtxOutbound
+	}
+
+	public boolean hasSrtxpRekeyingBeenCompleted() {
+		if (srtpCtxOutbound == null) {
+			packetCntOutbound.set(0);
+			return true;
+		}
+		return false;  // @TODO once the srtpCtxOutbound started using the new KMD we need to reset the packetCntOutbound and return true
 	}
 
 	@Override

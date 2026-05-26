@@ -48,6 +48,9 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			return;
 		}
 		switch (requestBasicInfo.messageType) {
+			case GET_PARAMETER:
+				sendResponseGetParameter();
+				break;
 			case OPTIONS:
 				sendResponseOptions();
 				break;
@@ -69,7 +72,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 				}
 				break;
 			default:
-				throw new IllegalStateException(FNC_NAME + ": Unsupported server message type: " +
+				throw new IllegalStateException(FNC_NAME + ": Unsupported message type: " +
 						requestBasicInfo.messageType);
 		}
 	}
@@ -101,12 +104,24 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
+	private void sendResponseGetParameter() throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseGetParameter()";
+
+		List<String> contents = new ArrayList<>();
+		contents.add("");
+		internalSendResponse(contents);
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (<" +
+				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
+				">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
+	}
+
 	private void sendResponseOptions() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseOptions()";
 
 		List<String> contents = new ArrayList<>();
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_SERVER + " " + SERVER_NAME);
-		List<String> tmpList = Arrays.stream(RtspProtoMessageType.values())
+		List<String> tmpList = SUPPORTED_MESSAGE_TYPES_SERVER.stream()
 				.filter(tmpType -> tmpType != RtspProtoMessageType.UNKNOWN)
 				.map(Enum::name)
 				.toList();

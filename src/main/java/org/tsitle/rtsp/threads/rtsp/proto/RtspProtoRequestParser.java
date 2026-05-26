@@ -179,7 +179,7 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
-			RtspProtoMessageType resEn = Arrays.stream(RtspProtoMessageType.values())
+			RtspProtoMessageType resEn = SUPPORTED_MESSAGE_TYPES_SERVER.stream()
 					.filter(tmpType -> tmpType != RtspProtoMessageType.UNKNOWN)
 					.filter(tmpType -> tmpType.name().equals(requestTypeStr))
 					.findFirst()

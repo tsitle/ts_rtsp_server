@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
+import java.util.Set;
+
 class RtspProtoConstants {
 
 	/** Maximum length for RTSP Resource URLs */
@@ -9,6 +11,16 @@ class RtspProtoConstants {
 	static final String STREAM_ID_PREFIX = "streamid";
 
 	static final String SERVER_NAME = "TS RTSP Server";
+
+	static final Set<RtspProtoMessageType> SUPPORTED_MESSAGE_TYPES_SERVER = Set.of(
+			RtspProtoMessageType.SETUP,
+			RtspProtoMessageType.PLAY,
+			RtspProtoMessageType.PAUSE,
+			RtspProtoMessageType.TEARDOWN,
+			RtspProtoMessageType.DESCRIBE,
+			RtspProtoMessageType.OPTIONS,
+			RtspProtoMessageType.GET_PARAMETER
+		);
 
 	// RTSP Requests/Responses
 	///

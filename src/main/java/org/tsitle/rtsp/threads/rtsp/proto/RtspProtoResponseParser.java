@@ -13,6 +13,14 @@ import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
 
 public final class RtspProtoResponseParser extends RtspProtoParserBase {
 
+	public static class ResponseInfo {
+		public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+		public @NonNull Set<@NonNull RtspProtoMessageType> supportedMessageTypes = new HashSet<>();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private final RtspConfig rtspConfig;
 
 	public RtspProtoResponseParser(
@@ -29,28 +37,34 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoStatusCode parseResponse() throws InputStreamNotReadyException, TcpSocketIoException {
+	public @NonNull ResponseInfo parseResponse() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseResponse()";
 
 		// parse response lines and extract the responseStatus:
 		String responseLine;
 		try {
-			responseLine = readOneLine(true);
+			Optional<String> tmpOptLine = receiveFirstLine();
+			if (tmpOptLine.isEmpty()) {
+				logError(FNC_NAME, "failed to receive first line");
+				return new ResponseInfo();
+			}
+			responseLine = tmpOptLine.get();
 			if (rtspConfig.getIsDebugPrintRtspRcvd()) {
 				logDebug(FNC_NAME, "-- BEG --------------------------------------------------------------------------");
 				logDebug(FNC_NAME, "-------- responseLine: " + responseLine);
 			}
 		} catch (InputStreamEosException e) {
 			logError(FNC_NAME, "EOS reached");
-			return RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+			return new ResponseInfo();
 		}
 		if (responseLine.isBlank()) {
 			logError(FNC_NAME, "received empty line");
-			return RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+			return new ResponseInfo();
 		}
 
 		// read responseStatus from the responseLine
-		RtspProtoStatusCode respStatusCode = parseResponseStatusCode(responseLine);
+		ResponseInfo resObj = new ResponseInfo();
+		resObj.statusCode = parseResponseStatusCode(responseLine);
 
 		// parse header lines
 		String headerLine = "";
@@ -62,7 +76,7 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 				if (rtspConfig.getIsDebugPrintRtspRcvd()) {
 					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine);
 				}
-				parseHeaderLineResponse(headerLine);
+				parseHeaderLineResponse(headerLine, resObj);
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				if (timeoutCnt++ > 10) {
 					break;
@@ -77,20 +91,40 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 				headerLine = "xxx";  // keep the loop going
 			} catch (RtspInvalidRequestException e) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
-				respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
+				resObj.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting response");
-				respStatusCode = RtspProtoStatusCode.SESSION_NOT_FOUND;
+				resObj.statusCode = RtspProtoStatusCode.SESSION_NOT_FOUND;
 			}
 		} while (! headerLine.isBlank());
 
-		return respStatusCode;
+		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private RtspProtoStatusCode parseResponseStatusCode(String requestLine) {
+	private Optional<String> receiveFirstLine() throws TcpSocketIoException, InputStreamEosException {
+		int maxTries = 50;
+		while (maxTries-- > 0) {
+			try {
+				String tmpStr = readOneLine(true);
+				return Optional.of(tmpStr);
+			} catch (InputStreamNotReadyException e) {
+				try {
+					Thread.sleep(15);
+				} catch (InterruptedException ignore) {
+					Thread.currentThread().interrupt();  // restore flag
+					break;
+				}
+			}
+		}
+		return Optional.empty();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull RtspProtoStatusCode parseResponseStatusCode(String requestLine) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseResponseStatusCode()";
 
 		/*
@@ -123,7 +157,7 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseHeaderLineResponse(@NonNull String headerLine)
+	private void parseHeaderLineResponse(@NonNull String headerLine, @NonNull ResponseInfo responseInfo)
 			throws RtspInvalidSessionIdException, RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLineResponse()";
 
@@ -133,6 +167,8 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 
 		if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_CSEQ)) {
 			parseHeaderLine_cseq(headerLine);
+		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC)) {
+			parseHeaderLine_options_public(headerLine, responseInfo);
 		} else {
 			logWarn(FNC_NAME, "Received unknown header: '" + headerLine + "'");
 		}
@@ -141,6 +177,10 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 	private void parseHeaderLine_cseq(@NonNull String headerLine) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_cseq()";
 
+		/*
+		 * Example:
+		 *   "CSeq: 6"
+		 */
 		String tmpCseqStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
 		int tmpCseqInt;
 		try {
@@ -152,6 +192,25 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 		}
 		if (tmpCseqInt != rtspSessionInfo.rtspServerSeqNrExpected) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq");
+		}
+	}
+
+	private void parseHeaderLine_options_public(@NonNull String headerLine, @NonNull ResponseInfo responseInfo) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_options_public()";
+
+		/*
+		 * Example:
+		 *   "Public: SETUP, PLAY, PAUSE, TEARDOWN, DESCRIBE, OPTIONS, SET_PARAMETER"
+		 */
+		String tmpOptionsStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC.length()).strip();
+		for (String tmpOption : tmpOptionsStr.split(",")) {
+			tmpOption = tmpOption.strip();
+			try {
+				RtspProtoMessageType tmpEn = RtspProtoMessageType.valueOf(tmpOption);
+				responseInfo.supportedMessageTypes.add(tmpEn);
+			} catch (IllegalArgumentException e) {
+				logWarn(FNC_NAME, "Invalid option: '" + tmpOption + "'");
+			}
 		}
 	}
 

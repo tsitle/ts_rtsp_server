@@ -9,6 +9,7 @@ import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Queue;
@@ -44,7 +44,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private final @Nullable SrtcpContextInbound srtcpCtxInbound;
 	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
 
-	private final AtomicInteger packetCntInbound = new AtomicInteger(0);
 	private final AtomicInteger packetCntOutbound = new AtomicInteger(0);
 
 	/**
@@ -116,13 +115,23 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		queueSend.add(packetCompoundBuf);
 	}
 
-	@SuppressWarnings("unused")
-	public int getPacketCountInbound() {
-		return packetCntInbound.get();
-	}
-
 	public int getPacketCountOutbound() {
 		return packetCntOutbound.get();
+	}
+
+	public void setNextSrtxpKmdOutbound(@NonNull SrtxpKmd kmd) {
+		if (srtcpCtxOutbound == null) {
+			return;  // if we didn't have a KMD up until now, we don't need to set a new one
+		}
+		// @TODO enqueue the new KMD in the srtcpCtxOutbound
+	}
+
+	public boolean hasSrtxpRekeyingBeenCompleted() {
+		if (srtcpCtxOutbound == null) {
+			packetCntOutbound.set(0);
+			return true;
+		}
+		return false;  // @TODO once the srtcpCtxOutbound started using the new KMD we need to reset the packetCntOutbound and return true
 	}
 
 	@Override
@@ -143,16 +152,13 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 					break;
 				}
 			}
-			// keep running for another 5s
-			if (! doStop.get()) {
-				logDebug(FNC_NAME, "Receiving RTCP packets stopped, waiting for up to 5s for more packets");
-				Instant tmpStart = Instant.now();
-				while (Duration.between(tmpStart, Instant.now()).toMillis() < 5000) {
-					if ((parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) ||
-							(parRtcpRwIfTcp != null && parRtcpRwIfTcp.isSocketClosed())) {
-						break;
-					}
-					if (! mainLoop()) {
+			// send outstanding packets
+			if (! queueSend.isEmpty()) {
+				logDebug(FNC_NAME, "Sending outstanding RTCP packets");
+				while (! queueSend.isEmpty()) {
+					try {
+						sendFromQueue();
+					} catch (Exception ignored) {
 						break;
 					}
 				}
@@ -228,8 +234,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			throw new IllegalStateException("lastRtcpPacketReceived cannot be null");
 		}
 		handleReceived();
-		//
-		packetCntInbound.incrementAndGet();
 
 		return true;
 	}
@@ -279,6 +283,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			BufferView tmpBv = new BufferView(outpPacketPtr);
 			parRtcpRwIfTcp.writeRtcpBinary(tmpBv, params.getTpClientDestTcpChann());
 		}
+		//logDebug(FNC_NAME, "sent RTCP packet");
 
 		//
 		packetCntOutbound.incrementAndGet();

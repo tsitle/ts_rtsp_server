@@ -42,6 +42,6 @@ public class RtspConstants {
 	/**
 	 * Interval for re-keying the SRTxP master key and salt (in packets)
 	 */
-	public static final int SRTXP_REKEYING_INTERVAL_PACKETS = 100;  // @TODO
+	public static final int SRTXP_REKEYING_INTERVAL_PACKETS = 1048576;  // ^=2^20
 
 }
