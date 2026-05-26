@@ -34,9 +34,10 @@ public final class SrtxpKmd implements Cloneable {
 	/** SSRC ID */
 	private final int ssrcId;
 	/**
-	 * Key Derivation Rate (in packets).<br />
-	 * 0^=derive once from master key/salt; >0^=derive new session keys every N packets.<br />
-	 * Note that the tested RTSP clients (VLC, FFplay, OpenRTSP) do not support KDR.
+	 * Key Derivation Rate for Session Keys (in packets).<br />
+	 * 0^=derive once from master key/salt; >0^=derive every N packets.<br />
+	 * The recommended value is 2^20 (= 1048576).<br />
+	 * Note that the tested RTSP clients (VLC, FFplay/Lavf, OpenRTSP) do not support KDR.
 	 */
 	private final long kdr;
 
@@ -102,29 +103,19 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Create a new KMD object with default key sizes and random values for usage with the legacy SDES key management.<br />
-	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.
+	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.<br />
+	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createForLegacySdes(int ssrcId) {
-		return createForLegacySdes(ssrcId, DEFAULT_KDR_PACKETS);
-	}
-
-	/**
-	 * Create a new KMD object with default key sizes and random values for usage with the legacy SDES key management.<br />
-	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.
-	 * @param ssrcId SSRC ID
-	 * @param kdr Key Derivation Rate
-	 * @return New KMD object
-	 */
-	public static SrtxpKmd createForLegacySdes(int ssrcId, long kdr) {
 		return createWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
 				0,
 				ssrcId,
-				kdr
+				0L
 			);
 	}
 
@@ -218,6 +209,14 @@ public final class SrtxpKmd implements Cloneable {
 		return masterSalt.clone();
 	}
 
+	public @NonNull String getMasterKeyAndSaltAsBase64() {
+		BufferExt tmpKmdMkMsBe = new BufferExt();
+		tmpKmdMkMsBe.append(masterKey);
+		tmpKmdMkMsBe.append(masterSalt);
+
+		return tmpKmdMkMsBe.toBase64String();
+	}
+
 	public int authKeyLen() {
 		return authKeyLen;
 	}
@@ -290,6 +289,9 @@ public final class SrtxpKmd implements Cloneable {
 				", kdr=" + kdr +
 				"]";
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	private static long bytesToLongNative(byte[] src) {
 		if (src == null) {
