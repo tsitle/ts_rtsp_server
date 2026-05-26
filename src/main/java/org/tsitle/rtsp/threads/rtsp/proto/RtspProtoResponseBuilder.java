@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspInputSource;
@@ -10,40 +10,31 @@ import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.rtsp.*;
 
 import java.io.StringWriter;
 import java.net.*;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
 
-public class RtspResponseBuilder {
+public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 50;
 	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
 
-	private static final String CRLF = "\r\n";
-
-	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
 	private final RtspConfig rtspConfig;
-	private final RtspSessionInfo rtspSessionInfo;
 
-	public RtspResponseBuilder(
+	public RtspProtoResponseBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+
 		this.rtspConfig = rtspConfig;
-		this.rtspSessionInfo = rtspSessionInfo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -52,11 +43,11 @@ public class RtspResponseBuilder {
 	public void sendResponse(@NonNull RequestBasicInfo requestBasicInfo) throws TcpSocketIoException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
-		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
+		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
 			sendResponseNack(requestBasicInfo.statusCode);
 			return;
 		}
-		switch (requestBasicInfo.serverMessageType) {
+		switch (requestBasicInfo.messageType) {
 			case OPTIONS:
 				sendResponseOptions();
 				break;
@@ -79,24 +70,24 @@ public class RtspResponseBuilder {
 				break;
 			default:
 				throw new IllegalStateException(FNC_NAME + ": Unsupported server message type: " +
-						requestBasicInfo.serverMessageType);
+						requestBasicInfo.messageType);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendResponseNack(@NonNull ServerResponseStatusCode statusCode) throws TcpSocketIoException {
+	private void sendResponseNack(@NonNull RtspProtoStatusCode statusCode) throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseNack()";
 
 		List<String> contents = new ArrayList<>();
-		if (statusCode == ServerResponseStatusCode.UNAUTHORIZED) {
+		if (statusCode == RtspProtoStatusCode.UNAUTHORIZED) {
 			addAuthInfoToResponse(contents);
 		}
 		contents.add("");
 		internalSendResponse(statusCode, contents);
 		logDebug(FNC_NAME, "Sent response '" + statusCode +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseAck() throws TcpSocketIoException {
@@ -106,8 +97,8 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_SESSION + " " + rtspSessionInfo.rtspSessionId);
 		contents.add("");
 		internalSendResponse(contents);
-		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseOptions() throws TcpSocketIoException {
@@ -115,35 +106,35 @@ public class RtspResponseBuilder {
 
 		List<String> contents = new ArrayList<>();
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_SERVER + " " + SERVER_NAME);
-		List<String> tmpList = Arrays.stream(ServerMessageType.values())
-				.filter(tmpType -> tmpType != ServerMessageType.UNKNOWN)
+		List<String> tmpList = Arrays.stream(RtspProtoMessageType.values())
+				.filter(tmpType -> tmpType != RtspProtoMessageType.UNKNOWN)
 				.map(Enum::name)
 				.toList();
 		contents.add(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC + " " + String.join(", ", tmpList));
-		if (rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.OPTIONS)) {
-			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.OPTIONS).getNeedsAuthentication();
+		if (rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.OPTIONS)) {
+			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.OPTIONS).getNeedsAuthentication();
 			if (tmpNeedAuth) {
 				addAuthInfoToResponse(contents);
 			}
 		}
 		contents.add("");
 		internalSendResponse(contents);
-		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
 				"' to Client (<" +
 				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
-				">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+				">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	private void sendResponseDescribe() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseDescribe()";
 
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.DESCRIBE)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.DESCRIBE)) {
 			throw new IllegalStateException(FNC_NAME + ": Input Source not found");
 		}
-		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerSmtMap.get(ServerMessageType.DESCRIBE);
+		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.DESCRIBE);
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			sendResponseNack(ServerResponseStatusCode.BAD_REQUEST);
+			sendResponseNack(RtspProtoStatusCode.BAD_REQUEST);
 			return;
 		}
 
@@ -151,8 +142,8 @@ public class RtspResponseBuilder {
 		String des = buildResponseDescribe(rtspInputSource);
 		contents.add(des);
 		internalSendResponse(contents);
-		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	/**
@@ -206,7 +197,7 @@ public class RtspResponseBuilder {
 		Objects.requireNonNull(rtspSessionInfo.clientIpAddr);
 		Objects.requireNonNull(tmpStreamInfo.tpServerSrcUdpSocketRtp);
 		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
-		String tmpRtspHostIp = findRtspHostIp(ServerMessageType.SETUP);
+		String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
 		String tmpLine = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT + " ";
 		if (tmpStreamInfo.tpIsUdp) {
 			tmpLine += (tmpStreamInfo.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2 : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
@@ -234,8 +225,8 @@ public class RtspResponseBuilder {
 		contents.add(tmpLine);
 		contents.add("");
 		internalSendResponse(contents);
-		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	private void sendResponsePlay() throws TcpSocketIoException {
@@ -261,8 +252,8 @@ public class RtspResponseBuilder {
 		contents.add(RTSP_RR_HEADER_TOKEN_PLA_RTPINFO + " " + tmpRtpInfoSb);
 		contents.add("");
 		internalSendResponse(contents);
-		logDebug(FNC_NAME, "Sent response '" + ServerResponseStatusCode.OK +
-				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspSeqNrResponse + ")\n");
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (<" + rtspSessionInfo.rtspSessionId + ">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -273,12 +264,12 @@ public class RtspResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull String findRtspHostIp(ServerMessageType serverMessageType) {
+	private @NonNull String findRtspHostIp(RtspProtoMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
 
 		String tmpRtspHostname;
 		try {
-			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(rtspSessionInfo.inputSourceUrlPerSmtMap.get(serverMessageType));
+			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(rtspSessionInfo.inputSourceUrlPerMtMap.get(messageType));
 			tmpRtspHostname = rscUriObj.getHost();
 		} catch (RtspInvalidUriException e) {
 			// this should never happen
@@ -364,7 +355,7 @@ public class RtspResponseBuilder {
 		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, rtspSessionInfo);
 		final String body = sdpBuilder.buildSdp(
 				rtspInputSource,
-				findRtspHostIp(ServerMessageType.DESCRIBE)
+				findRtspHostIp(RtspProtoMessageType.DESCRIBE)
 			);
 
 		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
@@ -373,9 +364,9 @@ public class RtspResponseBuilder {
 
 		//
 		StringWriter sw = new StringWriter();
-		String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerSmtMap.get(ServerMessageType.DESCRIBE);
+		String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.DESCRIBE);
 		sw.write(String.format("%s %s/%s", RTSP_RR_HEADER_TOKEN_DES_CONTBASE, tmpUrlBase, CRLF));
-		sw.write(String.format("%s %s%s", RTSP_RR_HEADER_TOKEN_DES_CONTTYPE, RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT, CRLF));
+		sw.write(String.format("%s %s%s", RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE, RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP, CRLF));
 		sw.write(String.format("%s %d%s", RTSP_RR_HEADER_TOKEN_XXX_CONTLEN, (body.length() + CRLF.length()), CRLF));
 		sw.write(CRLF);
 		sw.write(body);
@@ -384,22 +375,18 @@ public class RtspResponseBuilder {
 	}
 
 	private void internalSendResponse(final List<String> contents) throws TcpSocketIoException {
-		internalSendResponse(ServerResponseStatusCode.OK, contents);
+		internalSendResponse(RtspProtoStatusCode.OK, contents);
 	}
 
-	private void internalSendResponse(ServerResponseStatusCode errorCode, final List<String> contents)
+	private void internalSendResponse(RtspProtoStatusCode errorCode, final List<String> contents)
 			throws TcpSocketIoException {
 		List<String> outputLines = new ArrayList<>();
-		//
+
 		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
 				errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
 		//
-		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspSeqNrResponse + CRLF);
-		// Date: Fri, 03 Apr 2026 10:54:06 GMT
-		String tmpHttpDate = DateTimeFormatter.RFC_1123_DATE_TIME
-				.withLocale(Locale.ENGLISH)
-				.format(ZonedDateTime.now(ZoneOffset.UTC));
-		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_DATE + " " + tmpHttpDate + CRLF);
+		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspClientSeqNrResponse + CRLF);
+		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_DATE + " " + buildDateString() + CRLF);
 		//
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);
@@ -416,23 +403,6 @@ public class RtspResponseBuilder {
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 + "\"");
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void logDebug(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
-	}
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
-	private void internalLog(
-				@SuppressWarnings("SameParameterValue") @NonNull RtxpLogLevel logLevel,
-				@NonNull String fncName,
-				@NonNull String msg
-			) {
-		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
-				fncName + ": " + msg);
 	}
 
 }

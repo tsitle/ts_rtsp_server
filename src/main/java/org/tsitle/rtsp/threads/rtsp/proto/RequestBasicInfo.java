@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -6,16 +6,16 @@ import org.jspecify.annotations.Nullable;
 public class RequestBasicInfo {
 
 	public static class RequestUrlInputOrStreamSource {
-		@Nullable String subStreamId = null;
-		@Nullable String inputSourceId = null;
-		int streamSourceId = -1;
+		public @Nullable String subStreamId = null;
+		public @Nullable String inputSourceId = null;
+		public int streamSourceId = -1;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull ServerMessageType serverMessageType = ServerMessageType.UNKNOWN;
-	public @NonNull ServerResponseStatusCode statusCode = ServerResponseStatusCode.OK;
+	public @NonNull RtspProtoMessageType messageType = RtspProtoMessageType.UNKNOWN;
+	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.OK;
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
 
 	private RequestBasicInfo() { }
@@ -24,40 +24,40 @@ public class RequestBasicInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean isValid() { return (serverMessageType != ServerMessageType.UNKNOWN && statusCode == ServerResponseStatusCode.OK); }
+	public boolean isValid() { return (messageType != RtspProtoMessageType.UNKNOWN && statusCode == RtspProtoStatusCode.OK); }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull RequestBasicInfo createUnknown() {
 		RequestBasicInfo res = new RequestBasicInfo();
-		res.serverMessageType = ServerMessageType.UNKNOWN;
+		res.messageType = RtspProtoMessageType.UNKNOWN;
 		return res;
 	}
 
 	public static @NonNull RequestBasicInfo createUnsupportedMethod() {
 		RequestBasicInfo res = new RequestBasicInfo();
-		res.serverMessageType = ServerMessageType.UNKNOWN;
-		res.statusCode = ServerResponseStatusCode.METHOD_NOT_ALLOWED;
+		res.messageType = RtspProtoMessageType.UNKNOWN;
+		res.statusCode = RtspProtoStatusCode.METHOD_NOT_ALLOWED;
 		return res;
 	}
 
 	public static @NonNull RequestBasicInfo createKnownWithError(
-				@NonNull ServerMessageType serverMessageType,
-				@NonNull ServerResponseStatusCode statusCode
+				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspProtoStatusCode statusCode
 			) {
 		RequestBasicInfo res = new RequestBasicInfo();
-		res.serverMessageType = serverMessageType;
+		res.messageType = messageType;
 		res.statusCode = statusCode;
 		return res;
 	}
 
 	public static @NonNull RequestBasicInfo createOk(
-				@NonNull ServerMessageType serverMessageType,
+				@NonNull RtspProtoMessageType messageType,
 				@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) {
 		RequestBasicInfo res = new RequestBasicInfo();
-		res.serverMessageType = serverMessageType;
+		res.messageType = messageType;
 		res.requestUrlInputOrStreamSource = requestUrlInputOrStreamSource;
 		return res;
 	}

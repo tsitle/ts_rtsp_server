@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
@@ -181,14 +182,14 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	}
 
 	public Optional<SrtxpKmd> getCryptoKmdInbound() { return Optional.ofNullable(crypto.srtxpKmdInbound); }
-	public void setCryptoKmdInbound(@NonNull SrtxpKmd value) {
-		this.crypto.srtxpKmdInbound = value.clone();
+	public void setCryptoKmdInbound(@Nullable SrtxpKmd value) {
+		this.crypto.srtxpKmdInbound = (value == null ? null : value.clone());
 		this.crypto.isSetSrtxpKmdInbound = true;
 	}
 
 	public Optional<SrtxpKmd> getCryptoKmdOutbound() { return Optional.ofNullable(crypto.srtxpKmdOutbound); }
-	public void setCryptoKmdOutbound(@NonNull SrtxpKmd value) {
-		this.crypto.srtxpKmdOutbound = value.clone();
+	public void setCryptoKmdOutbound(@Nullable SrtxpKmd value) {
+		this.crypto.srtxpKmdOutbound = (value == null ? null : value.clone());
 		this.crypto.isSetSrtxpKmdOutbound = true;
 	}
 

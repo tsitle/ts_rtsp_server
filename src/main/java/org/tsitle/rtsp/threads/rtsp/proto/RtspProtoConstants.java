@@ -1,9 +1,6 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
-class RtspPrivateConstants {
-
-	/** Name of the system property that holds the application version */
-	static final String SYSPROP_CSTM_APP_VERSION = "appVersion";
+class RtspProtoConstants {
 
 	/** Maximum length for RTSP Resource URLs */
 	static final int RTSP_MAX_RESOURCE_URL_LENGTH = 512;
@@ -20,7 +17,6 @@ class RtspPrivateConstants {
 	///
 	static final String RTSP_RR_HEADER_TOKEN_DES_ACCEPT = "Accept:";
 	static final String RTSP_RR_HEADER_TOKEN_DES_CONTBASE = "Content-Base:";
-	static final String RTSP_RR_HEADER_TOKEN_DES_CONTTYPE = "Content-Type:";
 	static final String RTSP_RR_HEADER_TOKEN_SET_TRANSPORT = "Transport:";
 	static final String RTSP_RR_HEADER_TOKEN_SET_KEYMGMT = "KeyMgmt:";
 	static final String RTSP_RR_HEADER_TOKEN_PLA_RANGE = "Range:";
@@ -31,6 +27,7 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_TOKEN_XXX_SESSION = "Session:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_USERAGENT = "User-Agent:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_SERVER = "Server:";
+	static final String RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE = "Content-Type:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date:";
 	static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH = "Authorization:";
@@ -55,7 +52,6 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI = "uri=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP = "response=";
 	static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO = "algorithm=";
-	static final String RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT = "application/sdp";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP1 = "RTP/AVP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2 = "RTP/AVP/UDP";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP1 = "RTP/SAVP";
@@ -65,6 +61,8 @@ class RtspPrivateConstants {
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST = "multicast";
 	static final String RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY = "mikey";
+	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP = "application/sdp";
+	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_MIKEY = "application/x-rtsp-mikey";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
 	static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";
 

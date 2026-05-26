@@ -44,6 +44,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private final @Nullable SrtcpContextInbound srtcpCtxInbound;
 	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
 
+	private final AtomicInteger packetCntInbound = new AtomicInteger(0);
+	private final AtomicInteger packetCntOutbound = new AtomicInteger(0);
+
 	/**
 	 * Constructor.
 	 * @param params Thread parameters
@@ -60,7 +63,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		if (params.getCryptoIsRtxpEncryptionEnabled()) {
 			try {
-				if (params.getCryptoKmdInbound().orElseThrow().encrKeyLen() > 0) {
+				if (params.getCryptoKmdInbound().isPresent() &&
+						params.getCryptoKmdInbound().orElseThrow().encrKeyLen() > 0) {
 					this.srtcpCtxInbound = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
 				} else {
 					// we cannot decrypt incoming RTCP packets
@@ -110,6 +114,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		sendBye_buildRtcpCompound(packetCompoundBuf);
 		//
 		queueSend.add(packetCompoundBuf);
+	}
+
+	@SuppressWarnings("unused")
+	public int getPacketCountInbound() {
+		return packetCntInbound.get();
+	}
+
+	public int getPacketCountOutbound() {
+		return packetCntOutbound.get();
 	}
 
 	@Override
@@ -215,6 +228,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			throw new IllegalStateException("lastRtcpPacketReceived cannot be null");
 		}
 		handleReceived();
+		//
+		packetCntInbound.incrementAndGet();
 
 		return true;
 	}
@@ -264,6 +279,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			BufferView tmpBv = new BufferView(outpPacketPtr);
 			parRtcpRwIfTcp.writeRtcpBinary(tmpBv, params.getTpClientDestTcpChann());
 		}
+
+		//
+		packetCntOutbound.incrementAndGet();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

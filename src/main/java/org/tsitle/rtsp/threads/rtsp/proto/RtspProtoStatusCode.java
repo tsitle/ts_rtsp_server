@@ -1,8 +1,8 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 
-public enum ServerResponseStatusCode {
+public enum RtspProtoStatusCode {
 
 	OK(200),
 	BAD_REQUEST(400),
@@ -12,11 +12,13 @@ public enum ServerResponseStatusCode {
 	METHOD_NOT_ALLOWED(405),
 	URI_TOO_LONG(414),
 	SESSION_NOT_FOUND(454),
-	UNSUPPORTED_TRANSPORT(461);
+	UNSUPPORTED_TRANSPORT(461),
+	INTERNAL_SERVER_ERROR(500),
+	NOT_IMPLEMENTED(501);
 
 	private final int value;
 
-	ServerResponseStatusCode(int value) {
+	RtspProtoStatusCode(int value) {
 		this.value = value;
 	}
 	public int getValue() {
@@ -34,6 +36,8 @@ public enum ServerResponseStatusCode {
 				case URI_TOO_LONG -> "URI Too Long";
 				case SESSION_NOT_FOUND -> "Session Not Found";
 				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
+				case INTERNAL_SERVER_ERROR -> "Internal Server Error";
+				case NOT_IMPLEMENTED -> "Not Implemented";
 			};
 	}
 

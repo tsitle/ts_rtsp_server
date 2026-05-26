@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
@@ -38,8 +39,8 @@ public class BuilderThreadRtcp {
 		public Builder tpClientDestTcpChannRtcp(int v) { this.threadParams.setTpClientDestTcpChann(v); return this; }
 
 		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
-		public Builder cryptoKmdInboundRtcp(@NonNull SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
-		public Builder cryptoKmdOutboundRtcp(@NonNull SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
+		public Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
+		public Builder cryptoKmdOutboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
 
 		public Builder cbNotifyRrPacketReceived(@NonNull Consumer<@NonNull Instant> v) { this.threadParams.setCbNotifyRrPacketReceived(v); return this; }
 

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -11,36 +11,29 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.MikeyParser;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.rtsp.*;
 
 import java.net.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
 
-public class RtspRequestParser {
+public final class RtspProtoRequestParser extends RtspProtoParserBase {
 
-	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
 	private static final String URL_QUERY_PARAM_SRTP = "srtp";
 
-	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
 	private final RtspConfig rtspConfig;
-	private final RtspSessionInfo rtspSessionInfo;
 
-	public RtspRequestParser(
+	public RtspProtoRequestParser(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+
 		this.rtspConfig = rtspConfig;
-		this.rtspSessionInfo = rtspSessionInfo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -69,27 +62,27 @@ public class RtspRequestParser {
 		}
 
 		// read requestType from the requestLine
-		final ServerMessageType requestType = parseServerMessageType(requestLine);
-		if (requestType == ServerMessageType.UNKNOWN) {
+		final RtspProtoMessageType requestType = parseMessageType(requestLine);
+		if (requestType == RtspProtoMessageType.UNKNOWN) {
 			logError(FNC_NAME, "Unknown request type in requestLine '" + requestLine + "'");
 			return RequestBasicInfo.createUnsupportedMethod();
 		}
 
 		//
-		ServerResponseStatusCode respStatusCode = ServerResponseStatusCode.OK;
+		RtspProtoStatusCode respStatusCode = RtspProtoStatusCode.OK;
 
 		// read resource URL from the requestLine
 		Optional<String> optResourceUrl = parseServerMessageResourceUrl(requestLine);
 		if (optResourceUrl.isEmpty()) {
-			respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
+			respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
 		}
 		final String resourceUrl;
-		if (respStatusCode == ServerResponseStatusCode.OK) {
+		if (respStatusCode == RtspProtoStatusCode.OK) {
 			resourceUrl = optResourceUrl.get();
 			if (resourceUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
 				logError(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
 						resourceUrl.length(), RTSP_MAX_RESOURCE_URL_LENGTH));
-				respStatusCode = ServerResponseStatusCode.URI_TOO_LONG;
+				respStatusCode = RtspProtoStatusCode.URI_TOO_LONG;
 			}
 		} else {
 			resourceUrl = "-none-";
@@ -97,21 +90,21 @@ public class RtspRequestParser {
 
 		// handle resource URL
 		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
-		if (respStatusCode == ServerResponseStatusCode.OK) {
+		if (respStatusCode == RtspProtoStatusCode.OK) {
 			try {
 				requestUrlInputOrStreamSource = handleResourceUrl(requestType, resourceUrl);
 			} catch (RtspInvalidUriException e) {
 				logError(FNC_NAME, "Invalid Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
-				respStatusCode = ServerResponseStatusCode.FORBIDDEN;
+				respStatusCode = RtspProtoStatusCode.FORBIDDEN;
 			} catch (RtspInputSourceIdNotFoundException e) {
 				logError(FNC_NAME, "Invalid Input Source ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
-				respStatusCode = ServerResponseStatusCode.NOT_FOUND;
+				respStatusCode = RtspProtoStatusCode.NOT_FOUND;
 			} catch (RtspSubStreamIdNotFoundException e) {
 				logError(FNC_NAME, "Invalid Sub-Stream ID in Resource URL '" + resourceUrl + "' (" + e.getMessage() +
 						"), rejecting request");
-				respStatusCode = ServerResponseStatusCode.NOT_FOUND;
+				respStatusCode = RtspProtoStatusCode.NOT_FOUND;
 			}
 		}
 
@@ -125,7 +118,7 @@ public class RtspRequestParser {
 				if (rtspConfig.getIsDebugPrintRtspRcvd()) {
 					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine);
 				}
-				parseHeaderLine(requestType, requestUrlInputOrStreamSource, headerLine);
+				parseHeaderLineRequest(requestType, requestUrlInputOrStreamSource, headerLine);
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				if (timeoutCnt++ > 10) {
 					break;
@@ -140,30 +133,30 @@ public class RtspRequestParser {
 				headerLine = "xxx";  // keep the loop going
 			} catch (RtspInvalidRequestException e) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
-				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
+				respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
 			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting request (URL='" + resourceUrl + "')");
-				respStatusCode = ServerResponseStatusCode.SESSION_NOT_FOUND;
+				respStatusCode = RtspProtoStatusCode.SESSION_NOT_FOUND;
 			} catch (RtspUnsupportedAcceptTypeException e) {
 				logError(FNC_NAME, "Unsupported Accept Type, rejecting request (URL='" + resourceUrl + "')");
-				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
+				respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
 			} catch (RtspUnsupportedTransportException e) {
 				logError(FNC_NAME, "Unsupported Transport, rejecting request (URL='" + resourceUrl + "')");
-				respStatusCode = ServerResponseStatusCode.UNSUPPORTED_TRANSPORT;
+				respStatusCode = RtspProtoStatusCode.UNSUPPORTED_TRANSPORT;
 			} catch (RtspMissingEncryptionParamsException e) {
 				logError(FNC_NAME, "Missing encryption parameters, rejecting request (URL='" + resourceUrl + "')");
-				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
+				respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
 			} catch (RtspMissingAuthParamsException e) {
 				logError(FNC_NAME, "Missing authentication parameters, rejecting request (URL='" + resourceUrl + "')");
-				respStatusCode = ServerResponseStatusCode.BAD_REQUEST;
+				respStatusCode = RtspProtoStatusCode.BAD_REQUEST;
 			}
 		} while (! headerLine.isBlank());
 
-		if (respStatusCode != ServerResponseStatusCode.OK) {
+		if (respStatusCode != RtspProtoStatusCode.OK) {
 			return RequestBasicInfo.createKnownWithError(requestType, respStatusCode);
 		}
 		//
-		if (requestType == ServerMessageType.SETUP) {
+		if (requestType == RtspProtoMessageType.SETUP) {
 			Objects.requireNonNull(
 					requestUrlInputOrStreamSource.subStreamId,
 					FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
@@ -179,58 +172,26 @@ public class RtspRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private String readOneLine(boolean isFirst)
-			throws InputStreamNotReadyException, InputStreamEosException, TcpSocketIoException {
-		if (! rtxpTcpReadWriteInterface.canReadRtsp()) {
-			throw new InputStreamNotReadyException();
-		}
-		Optional<String> optLine = rtxpTcpReadWriteInterface.readRtspLine();
-		if (optLine.isEmpty()) {
-			throw new InputStreamEosException();
-		}
-		String resS = optLine.get();
-		// remove forbidden characters from the line
-		Matcher matcher = PATTERN_ILLEGAL_CHARS.matcher(resS);
-		resS = matcher.replaceAll("");
-		if (isFirst) {
-			// strip occasionally occurring nonsense from the beginning of the line
-			for (ServerMessageType tmpType : ServerMessageType.values()) {
-				int tmpIx = resS.indexOf(tmpType.name());
-				if (tmpIx < 0) {
-					continue;
-				}
-				if (tmpIx == 0) {
-					break;
-				}
-				resS = resS.substring(tmpIx).strip();
-				break;
-			}
-		}
-		return resS;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private ServerMessageType parseServerMessageType(String requestLine) {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseServerMessageType()";
+	private RtspProtoMessageType parseMessageType(String requestLine) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseMessageType()";
 
 		try {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
-			ServerMessageType resEn = Arrays.stream(ServerMessageType.values())
-					.filter(tmpType -> tmpType != ServerMessageType.UNKNOWN)
+			RtspProtoMessageType resEn = Arrays.stream(RtspProtoMessageType.values())
+					.filter(tmpType -> tmpType != RtspProtoMessageType.UNKNOWN)
 					.filter(tmpType -> tmpType.name().equals(requestTypeStr))
 					.findFirst()
-					.orElse(ServerMessageType.UNKNOWN);
-			if (resEn != ServerMessageType.UNKNOWN) {
+					.orElse(RtspProtoMessageType.UNKNOWN);
+			if (resEn != RtspProtoMessageType.UNKNOWN) {
 				tokens.nextToken();  // URL
 				// we shall be tolerant here and ignore a missing PROTOCOL/VERSION token
 				if (tokens.hasMoreTokens()) {
 					String proto = tokens.nextToken();
 					if (! (proto.equals(RTSP_RR_CMD_PROTOCOL_VERSION_1) || proto.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2))) {
 						rtspSessionInfo.lastRequestRtspProtoVersion = "-";
-						resEn = ServerMessageType.UNKNOWN;
+						resEn = RtspProtoMessageType.UNKNOWN;
 						logError(FNC_NAME, "invalid protocol/version '" + proto + "'");
 					} else {
 						rtspSessionInfo.lastRequestRtspProtoVersion = proto;
@@ -240,7 +201,7 @@ public class RtspRequestParser {
 			return resEn;
 		} catch (NoSuchElementException e) {
 			logError(FNC_NAME, "NoSuchElementException caught: " + e);
-			return ServerMessageType.UNKNOWN;
+			return RtspProtoMessageType.UNKNOWN;
 		}
 	}
 
@@ -287,7 +248,7 @@ public class RtspRequestParser {
 	}
 
 	private RequestBasicInfo.RequestUrlInputOrStreamSource handleResourceUrl(
-				@NonNull ServerMessageType requestType,
+				@NonNull RtspProtoMessageType requestType,
 				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleResourceUrl()";
@@ -343,7 +304,7 @@ public class RtspRequestParser {
 		RequestBasicInfo.RequestUrlInputOrStreamSource resObj = new RequestBasicInfo.RequestUrlInputOrStreamSource();
 
 		//
-		if (requestType == ServerMessageType.SETUP) {
+		if (requestType == RtspProtoMessageType.SETUP) {
 			if (rscSubStreamId.isBlank()) {  // sanity check
 				throw new RtspInvalidUriException(FNC_NAME + ": (rt=" + requestType + ") " +
 						"Missing Sub-Stream ID in URL path: '" + rscUrlPathOrg + "'");
@@ -364,7 +325,7 @@ public class RtspRequestParser {
 				);
 
 			//
-			rtspSessionInfo.inputSourceUrlPerSmtMap.put(ServerMessageType.SETUP, resourceUrl);
+			rtspSessionInfo.inputSourceUrlPerMtMap.put(RtspProtoMessageType.SETUP, resourceUrl);
 
 			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
@@ -392,8 +353,8 @@ public class RtspRequestParser {
 			throw new RtspInputSourceIdNotFoundException("rt=" + requestType + ", " +
 					"Disabled Input Source used in URL path: '" + rscUrlPathMod + "'");
 		}
-		rtspSessionInfo.inputSourceUrlPerSmtMap.put(requestType, resourceUrl);
-		rtspSessionInfo.inputSourceObjPerSmtMap.put(requestType, optInputSource.get());
+		rtspSessionInfo.inputSourceUrlPerMtMap.put(requestType, resourceUrl);
+		rtspSessionInfo.inputSourceObjPerMtMap.put(requestType, optInputSource.get());
 		// preliminary setting
 		rtspSessionInfo.isRtpRtcpEncryptionRequired = optInputSource.get().getNeedsEncryption();
 
@@ -460,46 +421,35 @@ public class RtspRequestParser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseHeaderLine(
-				@NonNull ServerMessageType requestType,
+	private void parseHeaderLineRequest(
+				@NonNull RtspProtoMessageType requestType,
 				RequestBasicInfo.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull String headerLine
 			) throws RtspInvalidSessionIdException, RtspUnsupportedAcceptTypeException,
 				RtspInvalidRequestException, RtspUnsupportedTransportException,
 				RtspMissingEncryptionParamsException, RtspMissingAuthParamsException {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLineRequest()";
 
-		if (headerLine.isBlank()) {
+		if (parseHeaderLineCommon(headerLine)) {
 			return;
 		}
 
-		if (headerLine.equals(" " + RTSP_RR_CMD_PROTOCOL_VERSION_1) ||
-				headerLine.equals(" " + RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
-			// ignore this non-standard header line
-			return;
-		}
 		if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_CSEQ)) {
 			parseHeaderLine_cseq(headerLine);
-		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT)) {
-			parseHeaderLine_useragent(headerLine);
-		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_SESSION)) {
-			parseHeaderLine_session(headerLine);
-		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_DATE)) {
-			parseHeaderLine_date(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_AUTH)) {
 			parseHeaderLine_auth(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_OPT_REQUIRE)) {
-			if (requestType != ServerMessageType.OPTIONS) {
+			if (requestType != RtspProtoMessageType.OPTIONS) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received REQUIRE header in non-OPTIONS request");
 			}
 			parseHeaderLine_options_require(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
-			if (requestType != ServerMessageType.DESCRIBE) {
+			if (requestType != RtspProtoMessageType.DESCRIBE) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received ACCEPT header in non-DESCRIBE request");
 			}
 			parseHeaderLine_describe_accept(headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_SET_TRANSPORT)) {
-			if (requestType != ServerMessageType.SETUP) {
+			if (requestType != RtspProtoMessageType.SETUP) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received TRANSPORT header in non-SETUP request");
 			}
 			if (requestUrlInputOrStreamSource == null) {
@@ -507,7 +457,7 @@ public class RtspRequestParser {
 			}
 			parseHeaderLine_setup_transport(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT)) {
-			if (requestType != ServerMessageType.SETUP) {
+			if (requestType != RtspProtoMessageType.SETUP) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP request");
 			}
 			if (requestUrlInputOrStreamSource == null) {
@@ -515,7 +465,7 @@ public class RtspRequestParser {
 			}
 			parseHeaderLine_setup_keymgmt(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {
-			if (requestType != ServerMessageType.PLAY) {
+			if (requestType != RtspProtoMessageType.PLAY) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received RANGE header in non-PLAY request");
 			}
 			parseHeaderLine_range(headerLine);
@@ -524,43 +474,21 @@ public class RtspRequestParser {
 		}
 	}
 
-	private void parseHeaderLine_cseq(String headerLine) throws RtspInvalidRequestException {
+	private void parseHeaderLine_cseq(@NonNull String headerLine) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_cseq()";
 
 		String tmpCseqStr = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_CSEQ.length()).strip();
-		rtspSessionInfo.rtspSeqNrLastRcvd = Integer.parseInt(tmpCseqStr);
-		if (rtspSessionInfo.rtspSeqNrLastRcvd > rtspSessionInfo.rtspSeqNrExpected) {
-			rtspSessionInfo.rtspSeqNrExpected = rtspSessionInfo.rtspSeqNrLastRcvd;
-		} else if (rtspSessionInfo.rtspSeqNrLastRcvd < rtspSessionInfo.rtspSeqNrExpected) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq");
+		try {
+			rtspSessionInfo.rtspClientSeqNrLastRcvd = Integer.parseInt(tmpCseqStr);
+		} catch (NumberFormatException e) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq format: '" + tmpCseqStr + "'");
 		}
-		rtspSessionInfo.rtspSeqNrResponse = rtspSessionInfo.rtspSeqNrExpected++;
-	}
-
-	private void parseHeaderLine_useragent(String headerLine) {
-		/*
-		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11 -- SRTP Authentication failure
-		 * GStreamer (KUbuntu 24): GStreamer/1.24.2 -- SRTP Authentication failure
-		 * VLC (Rocky Linux 10): LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05) -- SRTP OK
-		 * FFplay (Rocky Linux 10): Lavf61.7.100
-		 * VLC (Windows): LibVLC/3.0.21 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
-		 * VLC (macOS x86):
-		 *   LibVLC/3.0.23 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
-		 *   RealMedia Player Version 6.0.9.1235 (linux-2.0-libc6-i386-gcc2.95) -- SRTP not tested
-		 * RTSP Player (Windows): Lavf59.27.100 -- SRTP not tested
-		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20) -- SRTP not tested
-		 */
-		rtspSessionInfo.clientUserAgent = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
-	}
-
-	private void parseHeaderLine_session(String headerLine) throws RtspInvalidSessionIdException {
-		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_session()";
-
-		String tmpSessId = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_SESSION.length()).strip();
-		//logDebug(FNC_NAME, "Session='" + tmpSessId + "'");
-		if (! rtspSessionInfo.rtspSessionId.equals(tmpSessId)) {
-			throw new RtspInvalidSessionIdException();
+		if (rtspSessionInfo.rtspClientSeqNrLastRcvd > rtspSessionInfo.rtspClientSeqNrExpected) {
+			rtspSessionInfo.rtspClientSeqNrExpected = rtspSessionInfo.rtspClientSeqNrLastRcvd;
+		} else if (rtspSessionInfo.rtspClientSeqNrLastRcvd < rtspSessionInfo.rtspClientSeqNrExpected) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Invalid CSeq value");
 		}
+		rtspSessionInfo.rtspClientSeqNrResponse = rtspSessionInfo.rtspClientSeqNrExpected++;
 	}
 
 	@SuppressWarnings("unused")
@@ -572,7 +500,7 @@ public class RtspRequestParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_describe_accept()";
 
 		String tmpDataType = headerLine.substring(RTSP_RR_HEADER_TOKEN_DES_ACCEPT.length()).strip();
-		if (! RTSP_RR_HEADER_PARAM_VAL_DES_ACCEPT.equals(tmpDataType)) {
+		if (! RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP.equals(tmpDataType)) {
 			logError(FNC_NAME, "Invalid Accept header value: '" + tmpDataType + "'");
 			throw new RtspUnsupportedAcceptTypeException();
 		}
@@ -629,23 +557,35 @@ public class RtspRequestParser {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				String[] tmpPorts = tmpSub.split("-");
 				if (tmpPorts.length == 2) {
-					tmpStreamInfo.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
-					tmpStreamInfo.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
+					try {
+						tmpStreamInfo.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
+						tmpStreamInfo.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
+					} catch (NumberFormatException e) {
+						logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - " +
+								"cannot parse ports, invalid format");
+					}
 					tmpStreamInfo.tpIsInterleaved = false;
 				} else {
-					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - cannot parse ports");
+					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - " +
+							"cannot parse ports, expected two ports");
 				}
 			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)) {
 				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
 				String[] tmpPorts = tmpSub.split("-");
 				if (tmpPorts.length == 2) {
-					tmpStreamInfo.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
-					tmpStreamInfo.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
+					try {
+						tmpStreamInfo.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
+						tmpStreamInfo.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
+					} catch (NumberFormatException e) {
+						logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - " +
+								"cannot parse ports, invalid format");
+					}
 					tmpStreamInfo.tpIsInterleaved = true;
 					/*logDebug(FNC_NAME, "interleaved RTP=" + tmpStreamInfo.tpClientDestTcpChannRtp +
 							", RTCP=" + tmpStreamInfo.tpClientDestTcpChannRtcp);*/
 				} else {
-					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - cannot parse ports");
+					logWarn(FNC_NAME, "Invalid Transport parameter: '" + curToken + "' - " +
+							"cannot parse ports, expected two ports");
 				}
 			} else {
 				logWarn(FNC_NAME, "Unknown Transport parameter: '" + curToken + "'");
@@ -737,16 +677,6 @@ public class RtspRequestParser {
 		//logDebug(FNC_NAME, "Range='" + rtspVariables.clientPlaybackRangeValue + "'");
 	}
 
-	private void parseHeaderLine_date(String headerLine) {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_date()";
-
-		String tmp = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_DATE.length()).strip();
-		//logDebug(FNC_NAME, "Date='" + tmp + "'");
-		if (tmp.isBlank()) {
-			logError(FNC_NAME, "Invalid empty Date header value - ignoring");
-		}
-	}
-
 	private void parseHeaderLine_auth(String headerLine) throws RtspMissingAuthParamsException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_auth()";
 
@@ -806,23 +736,6 @@ public class RtspRequestParser {
 	private @NonNull String extractKeyValue(@NonNull String inputStr, @NonNull String key) {
 		return inputStr.substring(key.length())
 				.replace("\"", "").replace("'", "").strip();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("unused")
-	private void logDebug(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
-	}
-	private void logWarn(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.WARN, fncName, msg);
-	}
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
-	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
-		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
-				fncName + ": " + msg);
 	}
 
 }

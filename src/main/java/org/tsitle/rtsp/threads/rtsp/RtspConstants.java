@@ -2,6 +2,9 @@ package org.tsitle.rtsp.threads.rtsp;
 
 public class RtspConstants {
 
+	/** Name of the system property that holds the application version */
+	public static final String SYSPROP_CSTM_APP_VERSION = "appVersion";
+
 	/** Default TCP port for a RTSP server (without SSL/TLS) */
 	@SuppressWarnings("unused")
 	public static final int SERVER_RTSP_TCP_PORT = 554;
@@ -34,6 +37,11 @@ public class RtspConstants {
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
 
 	/** RTSP Authorization Realm */
-	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4";
+	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
+
+	/**
+	 * Interval for re-keying the SRTxP master key and salt (in packets)
+	 */
+	public static final int SRTXP_REKEYING_INTERVAL_PACKETS = 100;  // @TODO
 
 }

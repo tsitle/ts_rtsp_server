@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
@@ -10,12 +10,15 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.rtsp.RtspConstants;
+import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
 
 import java.io.StringWriter;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.tsitle.rtsp.threads.rtsp.RtspPrivateConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
 
 public class SdpBuilder {
 
@@ -94,7 +97,7 @@ public class SdpBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String getSdpEncoderName() {
-		String tmpAppVersion = System.getProperty(RtspPrivateConstants.SYSPROP_CSTM_APP_VERSION);
+		String tmpAppVersion = System.getProperty(RtspConstants.SYSPROP_CSTM_APP_VERSION);
 		if (tmpAppVersion == null) {
 			tmpAppVersion = "0.0";
 		}
@@ -230,7 +233,7 @@ public class SdpBuilder {
 		sw.write(String.format("a=control:%s%s%s", STREAM_ID_PREFIX, outputSubStreamId, CRLF));
 
 		// ----------------------------------------
-		// create or update the StreamInfo object
+		// create or update the StreamKmds object
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
 				rtspSessionInfo.clientIpAddr,
 				outputSubStreamId,
@@ -247,39 +250,33 @@ public class SdpBuilder {
 
 		// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
 		// @TODO I did submit a Merge Request (#11629) to GStreamer to fix the issue with MIKEY
-		boolean useLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
+		streamKmds.isForLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
 				rtspSessionInfo.clientUserAgent.startsWith("Lavf"));
-		if (useLegacySdes) {
+		if (! streamKmds.isForLegacySdes) {
+			streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamKmds.rtspSsrcId);
+		} else {
 			/*
 			 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
 			 * Similarly, it will always request RTP/AVP transport in the SETUP request.
 			 */
 			streamKmds.kmdOutbound = SrtxpKmd.createForLegacySdes(streamKmds.rtspSsrcId);
-		} else {
-			streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamKmds.rtspSsrcId);
 		}
 		//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 		try {
-			if (! useLegacySdes) {
+			if (! streamKmds.isForLegacySdes) {
 				// modern MIKEY key management
 				String tmpMsg = MikeyGenerator.generate(streamKmds.kmdOutbound);
 				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, CRLF));
 			} else {
 				// legacy SDES key management (SDP Security Descriptions RFC-4568)
-				org.tsitle.rtsp.buffers.BufferExt tmpKmdMkMsBe = new org.tsitle.rtsp.buffers.BufferExt();
-				tmpKmdMkMsBe.append(streamKmds.kmdOutbound.masterKey());
-				tmpKmdMkMsBe.append(streamKmds.kmdOutbound.masterSalt());
-				byte[] tmpBa = new byte[tmpKmdMkMsBe.getUsed()];
-				tmpKmdMkMsBe.copyInto(0, tmpBa, 0, tmpKmdMkMsBe.getUsed());
-				String tmpSdesB64 = java.util.Base64.getEncoder().encodeToString(tmpBa);
+				String tmpSdesB64 = streamKmds.kmdOutbound.getMasterKeyAndSaltAsBase64();
 				sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
 						tmpSdesB64));
 
-				//sw.write("|2^20");  // key lifetime
+				//sw.write("|2^20");  // key lifetime (not supported by Lavf)
 
-				//long tmpMkiVal = streamKmds.kmdOutbound.mkiAsLong();
-				//int tmpMkiLen = streamKmds.kmdOutbound.mkiLen();
-				//sw.write(String.format("|%d:%d", tmpMkiVal, tmpMkiLen)); // MKI
+				//sw.write(String.format("|%d:%d",
+						//streamKmds.kmdOutbound.mkiAsLong(), streamKmds.kmdOutbound.mkiLen()));  // MKI (not supported by Lavf)
 
 				sw.write(CRLF);
 			}

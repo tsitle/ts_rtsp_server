@@ -6,6 +6,7 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -33,7 +34,7 @@ public class RtspUserAuthSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean authenticate(@NonNull ServerMessageType serverMessageType) {
+	public boolean authenticate(@NonNull RtspProtoMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".authenticate()";
 
 		if (rtspSessionInfo.authInfo.authUser.isBlank()) {
@@ -67,7 +68,7 @@ public class RtspUserAuthSvc {
 		}
 		//
 		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank()) {
-			final String expectedResponse = computeExpectedAuthResponse(serverMessageType.name(), tmpOptUserPw.get());
+			final String expectedResponse = computeExpectedAuthResponse(messageType.name(), tmpOptUserPw.get());
 			if (! rtspSessionInfo.authInfo.authResp.equalsIgnoreCase(expectedResponse)) {
 				logDebug(FNC_NAME, "Invalid challenge-response");
 				return false;

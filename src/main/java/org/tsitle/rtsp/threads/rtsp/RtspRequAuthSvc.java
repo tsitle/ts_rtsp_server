@@ -5,6 +5,9 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.RequestBasicInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -48,16 +51,16 @@ public class RtspRequAuthSvc {
 		Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
 		final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
 		if (tmpOptInputSource.isEmpty()) {
-			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
+			requestBasicInfo.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			logError(FNC_NAME, String.format(
 					"Could not find InputSource, rejecting request with code %s", requestBasicInfo.statusCode));
 			return;
 		}
 
-		final boolean couldNeedAuthentification = switch (requestBasicInfo.serverMessageType) {
-				case ServerMessageType.DESCRIBE, ServerMessageType.SETUP,
-						ServerMessageType.PLAY, ServerMessageType.PAUSE,
-						ServerMessageType.TEARDOWN -> true;
+		final boolean couldNeedAuthentification = switch (requestBasicInfo.messageType) {
+				case RtspProtoMessageType.DESCRIBE, RtspProtoMessageType.SETUP,
+				     RtspProtoMessageType.PLAY, RtspProtoMessageType.PAUSE,
+				     RtspProtoMessageType.TEARDOWN -> true;
 				default -> false;
 			};
 		boolean wasAuthentificationOk;
@@ -67,7 +70,7 @@ public class RtspRequAuthSvc {
 
 		//
 		if (doCheckAuthorization) {
-			wasAuthentificationOk = rtspUserAuthSvc.authenticate(requestBasicInfo.serverMessageType);
+			wasAuthentificationOk = rtspUserAuthSvc.authenticate(requestBasicInfo.messageType);
 			//
 			if (wasAuthentificationOk) {
 				wasAuthorizationOk = rtspUserAuthSvc.checkAccessToInputSource(tmpOptInputSource.get());
@@ -99,7 +102,7 @@ public class RtspRequAuthSvc {
 		if (wasAuthentificationOk && wasAuthorizationOk) {
 			final String logMsg = String.format(
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
-					requestBasicInfo.serverMessageType, tmpIsId,
+					requestBasicInfo.messageType, tmpIsId,
 					rtspSessionInfo.authInfo.authUser,
 					rtspSessionInfo.clientIpAddr.getHostAddress());
 			logDebug(FNC_NAME, logMsg);
@@ -120,11 +123,11 @@ public class RtspRequAuthSvc {
 		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
 		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.clientIpAddr, inpSrcId);
 		//
-		requestBasicInfo.statusCode = ServerResponseStatusCode.UNAUTHORIZED;
+		requestBasicInfo.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
 		//
 		final String logMsg = String.format(
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
-				requestBasicInfo.serverMessageType, inpSrcId,
+				requestBasicInfo.messageType, inpSrcId,
 				requestBasicInfo.statusCode, unauthCnt,
 				rtspSessionInfo.clientIpAddr.getHostAddress());
 		if (unauthCnt > 1) {

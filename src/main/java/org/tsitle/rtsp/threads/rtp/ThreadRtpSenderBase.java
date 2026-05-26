@@ -26,6 +26,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ThreadRtpSenderBase<
@@ -88,6 +89,8 @@ public abstract class ThreadRtpSenderBase<
 
 	protected final @Nullable SrtpContextOutbound srtpCtxOutbound;
 	private @Nullable RtpEncryptedPacket cacheRtpEncrPacket = null;
+
+	private final AtomicInteger packetCntOutbound = new AtomicInteger(0);
 
 	/**
 	 * Constructor.
@@ -179,6 +182,10 @@ public abstract class ThreadRtpSenderBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public abstract void notifyCongestionLevelChange(int congestionLevel);
+
+	public int getPacketCountOutbound() {
+		return packetCntOutbound.get();
+	}
 
 	@Override
 	public void run() {
@@ -711,6 +718,9 @@ public abstract class ThreadRtpSenderBase<
 				);
 			parComRtpRwIfTcp.writeRtpBinary(tmpBv, paramsCommon.getTpClientDestTcpChann());
 		}
+
+		//
+		packetCntOutbound.incrementAndGet();
 
 		//
 		if (! isLastPktOfFrameOrAu && estTotalPktCnt > 1) {

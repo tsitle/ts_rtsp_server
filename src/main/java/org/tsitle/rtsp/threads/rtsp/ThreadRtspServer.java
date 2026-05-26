@@ -15,6 +15,7 @@ import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp.threads.rtsp.proto.*;
 
 import java.net.InetAddress;
 import java.net.Socket;
@@ -34,6 +35,8 @@ public class ThreadRtspServer extends RunnableBase {
 
 		ThreadRtcpSendRecv rtcpThreadSendRecv;
 		int rtcpLastTargetCongestionLevel = -1;
+
+		boolean srtxpRekeyingPossible = true;
 
 		ChildThreadsForOneStream(@NonNull String subStreamId, @NonNull String inputSourceId, int streamSourceId) {
 			this.subStreamId = subStreamId;
@@ -57,8 +60,10 @@ public class ThreadRtspServer extends RunnableBase {
 	private final RtspConfig rtspConfig;
 	private final RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final RtspSessionInfo rtspSessionInfo = new RtspSessionInfo();
-	private final RtspRequestParser rtspRequestParser;
-	private final RtspResponseBuilder rtspResponseBuilder;
+	private final RtspProtoRequestParser rtspProtoRequestParser;
+	private final RtspProtoRequestBuilder rtspProtoRequestBuilder;
+	private final RtspProtoResponseBuilder rtspProtoResponseBuilder;
+	private final RtspProtoResponseParser rtspProtoResponseParser;
 
 	private @Nullable Instant rtspTimeoutLastRequ = null;
 
@@ -99,8 +104,10 @@ public class ThreadRtspServer extends RunnableBase {
 		this.rtspSessionInfo.isRtspsConnection = isRtspsConnection;
 
 		//
-		this.rtspRequestParser = new RtspRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
-		this.rtspResponseBuilder = new RtspResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspProtoRequestParser = new RtspProtoRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
+		this.rtspProtoResponseBuilder = new RtspProtoResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspProtoResponseParser = new RtspProtoResponseParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
 
 		//
 		this.rtspRequAuthSvc = new RtspRequAuthSvc(logMsgInterface, rtspConfig, rtspSessionInfo);
@@ -196,8 +203,8 @@ public class ThreadRtspServer extends RunnableBase {
 		}
 		ctfos.rtcpThreadSendRecv = tmpBuilder
 				.cryptoIsRtxpEncryptionEnabled(tmpStreamInfo.tpIsEncr)
-				.cryptoKmdInboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdInbound))
-				.cryptoKmdOutboundRtcp(Objects.requireNonNull(tmpStreamInfo.streamKmds.kmdOutbound))
+				.cryptoKmdInboundRtcp(tmpStreamInfo.streamKmds.kmdInbound)
+				.cryptoKmdOutboundRtcp(tmpStreamInfo.streamKmds.kmdOutbound)
 				.cbNotifyRrPacketReceived(this::cbRcvdRtcpRrPacket)
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
@@ -375,16 +382,16 @@ public class ThreadRtspServer extends RunnableBase {
 	private void startChildThreads(String inputSourceId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startChildThreads()";
 
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			throw new IllegalStateException(FNC_NAME + ": No input source found (OBJ)");
 		}
-		if (! rtspSessionInfo.inputSourceUrlPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceUrlPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			throw new IllegalStateException(FNC_NAME + ": No input source found (URL)");
 		}
 		//
 		String cnameHostname;
 		try {
-			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerSmtMap.get(ServerMessageType.PLAY);
+			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.PLAY);
 			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(tmpIsUrl);
 			cnameHostname = tmpIsUri.getHost();
 		} catch (RtspInvalidUriException e) {
@@ -417,7 +424,7 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	private void pauseOrStopChildThreads(boolean doPause) {
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -445,7 +452,7 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	private void unpauseChildThreads() {
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -469,11 +476,15 @@ public class ThreadRtspServer extends RunnableBase {
 	private synchronized void cbSendRtcpPackets(int ssrcId, BufferExt rtcpPacketsBuf) {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpPackets()";
 
+		if (rtcpPacketsBuf == null) {
+			return;
+		}
+
 		ChildThreadsForOneStream ctfosToUse = null;
 		if (childThreadsPerSsrcMap.containsKey(ssrcId)) {
 			ctfosToUse = childThreadsPerSsrcMap.get(ssrcId);
 		} else {
-			if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+			if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 				throw new IllegalStateException(FNC_NAME + ": No input source found");
 			}
 			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -508,11 +519,14 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	private synchronized void cbNotifyThreadReady(Integer streamSourceId) {
+		if (streamSourceId == null) {
+			return;
+		}
 		rtspSessionInfo.threadReadyStates.put(streamSourceId, true);
 	}
 
 	private synchronized Boolean cbThreadMayStartPlayback() {
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			return false;
 		}
 		boolean areAllReady = true;
@@ -547,7 +561,7 @@ public class ThreadRtspServer extends RunnableBase {
 	}
 
 	private void updateCongestionLevel() {
-		if (! rtspSessionInfo.inputSourceObjPerSmtMap.containsKey(ServerMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -571,16 +585,16 @@ public class ThreadRtspServer extends RunnableBase {
 			throw new TcpSocketClosedException();
 		}
 
-		RequestBasicInfo requestBasicInfo = rtspRequestParser.parseRequest();  // blocks for setSoTimeout() value
+		RequestBasicInfo requestBasicInfo = rtspProtoRequestParser.parseRequest();  // blocks for setSoTimeout() value
 		if (! requestBasicInfo.isValid()) {
 			logError(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
-					requestBasicInfo.serverMessageType,
-					requestBasicInfo.statusCode, rtspSessionInfo.rtspSeqNrLastRcvd));
-			rtspResponseBuilder.sendResponse(requestBasicInfo);
+					requestBasicInfo.messageType,
+					requestBasicInfo.statusCode, rtspSessionInfo.rtspClientSeqNrLastRcvd));
+			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
 			return Optional.empty();
 		}
 		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%d)",
-				requestBasicInfo.serverMessageType, rtspSessionInfo.rtspSeqNrLastRcvd));
+				requestBasicInfo.messageType, rtspSessionInfo.rtspClientSeqNrLastRcvd));
 		return Optional.of(requestBasicInfo);
 	}
 
@@ -597,21 +611,21 @@ public class ThreadRtspServer extends RunnableBase {
 
 		// check whether the request is allowed in the current RTSP state
 		checkRequestTypeVsState(requestBasicInfo);
-		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
-			rtspResponseBuilder.sendResponse(requestBasicInfo);
+		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
+			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
 			return false;
 		}
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
 		rtspRequAuthSvc.checkAuthorization(requestBasicInfo);
-		if (requestBasicInfo.statusCode != ServerResponseStatusCode.OK) {
-			rtspResponseBuilder.sendResponse(requestBasicInfo);
+		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
+			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
 			// keep the connection open if only the authentication failed
-			return (requestBasicInfo.statusCode == ServerResponseStatusCode.UNAUTHORIZED);
+			return (requestBasicInfo.statusCode == RtspProtoStatusCode.UNAUTHORIZED);
 		}
 
 		//
-		rtspResponseBuilder.sendResponse(requestBasicInfo);
+		rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
 
 		//
 		Objects.requireNonNull(
@@ -620,8 +634,8 @@ public class ThreadRtspServer extends RunnableBase {
 			);
 
 		//
-		switch (requestBasicInfo.serverMessageType) {
-			case ServerMessageType.SETUP:
+		switch (requestBasicInfo.messageType) {
+			case RtspProtoMessageType.SETUP:
 				rtspSessionInfo.isPlaybackPaused = false;
 				//
 				Objects.requireNonNull(
@@ -651,7 +665,7 @@ public class ThreadRtspServer extends RunnableBase {
 				}
 				nextState = SessionState.READY;
 				break;
-			case ServerMessageType.PLAY:
+			case RtspProtoMessageType.PLAY:
 				final String tmpIsIdPlay = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
 				logInfo(FNC_NAME, String.format(
 						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
@@ -675,7 +689,7 @@ public class ThreadRtspServer extends RunnableBase {
 				}
 				nextState = SessionState.PLAYING;
 				break;
-			case ServerMessageType.PAUSE:
+			case RtspProtoMessageType.PAUSE:
 				final String tmpIsIdPause = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
 				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIsIdPause));
 				//
@@ -684,7 +698,7 @@ public class ThreadRtspServer extends RunnableBase {
 				nextState = SessionState.READY;
 				rtspSessionInfo.isPlaybackPaused = true;
 				break;
-			case ServerMessageType.TEARDOWN:
+			case RtspProtoMessageType.TEARDOWN:
 				nextState = SessionState.INIT;
 				rtspSessionInfo.isPlaybackPaused = false;
 				break;
@@ -706,32 +720,32 @@ public class ThreadRtspServer extends RunnableBase {
 	private void checkRequestTypeVsState(@NonNull RequestBasicInfo requestBasicInfo) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkRequestTypeVsState()";
 
-		if (requestBasicInfo.serverMessageType == ServerMessageType.OPTIONS ||
-				requestBasicInfo.serverMessageType == ServerMessageType.DESCRIBE ||
-				requestBasicInfo.serverMessageType == ServerMessageType.SETUP) {
+		if (requestBasicInfo.messageType == RtspProtoMessageType.OPTIONS ||
+				requestBasicInfo.messageType == RtspProtoMessageType.DESCRIBE ||
+				requestBasicInfo.messageType == RtspProtoMessageType.SETUP) {
 			return;
 		}
 
 		boolean wasOk = false;
 		switch (rtspSessionInfo.sessionState) {
 			case READY:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.PLAY ||
-						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
+				if (requestBasicInfo.messageType == RtspProtoMessageType.PLAY ||
+						requestBasicInfo.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
 					wasOk = true;
 				}
 				break;
 			case PLAYING:
-				if (requestBasicInfo.serverMessageType == ServerMessageType.PAUSE ||
-						requestBasicInfo.serverMessageType == ServerMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
+				if (requestBasicInfo.messageType == RtspProtoMessageType.PAUSE ||
+						requestBasicInfo.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
 					wasOk = true;
 				}
 				break;
 		}
 
 		if (! wasOk) {
-			requestBasicInfo.statusCode = ServerResponseStatusCode.BAD_REQUEST;
+			requestBasicInfo.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			logWarn(FNC_NAME, String.format("Request %s not valid for current RTSP state %s, rejecting it with code %s",
-					requestBasicInfo.serverMessageType,
+					requestBasicInfo.messageType,
 					rtspSessionInfo.sessionState, requestBasicInfo.statusCode));
 		}
 	}
@@ -742,6 +756,85 @@ public class ThreadRtspServer extends RunnableBase {
 		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
 
 		return RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, subStreamId).orElseThrow();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull RtspProtoStatusCode receiveRtspResponse() throws TcpSocketIoException {
+		RtspProtoStatusCode resEn = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+		int maxTries = 50;
+		while (maxTries-- > 0) {
+			try {
+				resEn = rtspProtoResponseParser.parseResponse();
+				break;
+			} catch (InputStreamNotReadyException e) {
+				try {
+					Thread.sleep(15);
+				} catch (InterruptedException ignore) {
+					Thread.currentThread().interrupt();  // restore flag
+					break;
+				}
+			}
+		}
+		return resEn;
+	}
+
+	private boolean srtxpRekey_oneStream(@NonNull ChildThreadsForOneStream ctfos) throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekey_oneStream()";
+
+		RequestBasicInfo.RequestUrlInputOrStreamSource ruioss = new RequestBasicInfo.RequestUrlInputOrStreamSource();
+		ruioss.subStreamId = ctfos.subStreamId;
+		ruioss.streamSourceId = ctfos.streamSourceId;
+		ruioss.inputSourceId = ctfos.inputSourceId;
+
+		//
+		rtspProtoRequestBuilder.sendRequestOptions(ruioss);
+		RtspProtoStatusCode tmpSc = receiveRtspResponse();
+		if (tmpSc != RtspProtoStatusCode.OK) {
+			logWarn(FNC_NAME, "failed to receive client OPTIONS (" + tmpSc + ")");
+			ctfos.srtxpRekeyingPossible = false;
+			return false;
+		}
+
+		//
+		rtspProtoRequestBuilder.sendRequestSrtxpRekey(ruioss);
+		/*ServerResponseStatusCode*/ tmpSc = receiveRtspResponse();
+		if (tmpSc != RtspProtoStatusCode.OK) {
+			logError(FNC_NAME, "failed to re-key SRTxP (" + tmpSc + ")");
+			ctfos.srtxpRekeyingPossible = false;
+			return false;
+		}
+		return true;
+	}
+
+	private void srtxpRekey() throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekey()";
+
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
+			return;
+		}
+		for (ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
+			if (! ctfos.srtxpRekeyingPossible) {
+				continue;
+			}
+			//
+			int tmpPktCount = 0;
+			if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
+				tmpPktCount = ctfos.rtcpThreadSendRecv.getPacketCountOutbound();
+			}
+			if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isRunning()) {
+				tmpPktCount = Math.max(tmpPktCount, ctfos.rtpThreadSender.getPacketCountOutbound());
+			}
+			if ((int)((double)tmpPktCount * 0.9) < RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS) {
+				continue;
+			}
+			logInfo(FNC_NAME, "packet count maximum 90% reached: " + tmpPktCount + ", sSI=" + ctfos.subStreamId);  // @TODO
+
+			//
+			if (! srtxpRekey_oneStream(ctfos)) {
+				break;
+			}
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -768,6 +861,8 @@ public class ThreadRtspServer extends RunnableBase {
 		//
 		if (loopCounter % 50 == 0) {
 			updateCongestionLevel();
+		} else if (loopCounter % 225 == 0 && rtspSessionInfo.isTransportSrtpSrtcp) {  // 1125^=roughly once per minute
+			srtxpRekey();
 		}
 
 		//

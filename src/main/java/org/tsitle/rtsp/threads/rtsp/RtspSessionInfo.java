@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -56,12 +57,16 @@ public class RtspSessionInfo {
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
-	/** Last received Sequence Number of RTSP messages within the session from the client */
-	public int rtspSeqNrLastRcvd = -1;
-	/** Expected Sequence Number of RTSP messages within the session to receive from the client */
-	public int rtspSeqNrExpected = 0;
+	/** Last received Sequence Number of RTSP messages within the session from the client for requests */
+	public int rtspClientSeqNrLastRcvd = -1;
+	/** Expected Sequence Number of RTSP messages within the session to receive from the client for requests */
+	public int rtspClientSeqNrExpected = 0;
 	/** Sequence Number of RTSP messages within the session in responses from the server */
-	public int rtspSeqNrResponse = 0;
+	public int rtspClientSeqNrResponse = 0;
+	/** Expected Sequence Number of RTSP messages within the session to receive from the client for responses */
+	public int rtspServerSeqNrExpected = 0;
+	/** Sequence Number of RTSP messages within the session in requests from the server */
+	public int rtspServerSeqNrRequest = 0;
 
 	/** Playback range request value from client */
 	public @NonNull String clientPlaybackRangeValue = "";
@@ -77,10 +82,10 @@ public class RtspSessionInfo {
 
 	/** Sub-Stream IDs that a successful SETUP request has been received for */
 	public final @NonNull List<@NonNull String> subStreamIdsSetup = new ArrayList<>();
-	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */
-	public final @NonNull Map<@NonNull ServerMessageType, @NonNull String> inputSourceUrlPerSmtMap = new ConcurrentHashMap<>();
-	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN request */
-	public final @NonNull Map<@NonNull ServerMessageType, @NonNull RtspInputSource> inputSourceObjPerSmtMap = new ConcurrentHashMap<>();
+	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
+	public final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull String> inputSourceUrlPerMtMap = new ConcurrentHashMap<>();
+	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
+	public final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap = new ConcurrentHashMap<>();
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;
