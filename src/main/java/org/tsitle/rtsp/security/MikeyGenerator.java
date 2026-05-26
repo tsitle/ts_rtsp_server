@@ -10,7 +10,6 @@ import org.tsitle.rtsp.security.constants.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
-import java.util.Base64;
 
 /**
  * Generator for MIKEY messages.<br />
@@ -26,7 +25,7 @@ public final class MikeyGenerator {
 	/**
 	 * Generate a MIKEY message.
 	 * @param kmd SRTxP Key Management Data
-	 * @return Base64 encoded MIKEY message
+	 * @return Base64-encoded MIKEY message
 	 */
 	public static @NonNull String generate(@NonNull SrtxpKmd kmd) throws SrtxpSecurityException {
 		final String FNC_NAME = MikeyGenerator.class.getSimpleName() + ".generate()";
@@ -52,9 +51,7 @@ public final class MikeyGenerator {
 		//
 		msgBb.flip();
 		tmpBe.setUsed(msgBb.limit());
-		byte[] tmpBa = new byte[tmpBe.getUsed()];
-		tmpBe.copyInto(0, tmpBa, 0, tmpBe.getUsed());
-		return Base64.getEncoder().encodeToString(tmpBa);
+		return tmpBe.toBase64String();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
