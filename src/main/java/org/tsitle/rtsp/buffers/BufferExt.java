@@ -2,6 +2,7 @@ package org.tsitle.rtsp.buffers;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.Base64;
 import java.util.HexFormat;
 
 /**
@@ -268,6 +269,29 @@ public final class BufferExt implements Cloneable {
 		return resObj;
 	}
 
+	/**
+	 * Create a new buffer from a Base64-encoded string.
+	 * @param base64String Base64-encoded string
+	 * @return New buffer
+	 */
+	@SuppressWarnings("unused")
+	static public @NonNull BufferExt decodeBase64String(@NonNull String base64String) {
+		if (base64String.startsWith("b64:")) {
+			base64String = base64String.substring(4);
+		}
+		BufferExt resObj = new BufferExt();
+		if (! base64String.isBlank()) {
+			byte[] tmpBa;
+			try {
+				tmpBa = Base64.getDecoder().decode(base64String);  // throws IllegalArgumentException
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("Invalid base64 encoding");
+			}
+			resObj.copyOf(tmpBa);
+		}
+		return resObj;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
@@ -300,6 +324,29 @@ public final class BufferExt implements Cloneable {
 			sb.append(String.format("%02X", buf[i]));
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Convert the buffer to a Base64-encoded string.
+	 * @return Base64-encoded string
+	 */
+	public @NonNull String toBase64String() {
+		return toBase64String(false);
+	}
+
+	/**
+	 * Convert the buffer to a Base64-encoded string.
+	 * @param withPrefix If true, the string will start with "b64:"
+	 * @return Base64-encoded string
+	 */
+	public @NonNull String toBase64String(boolean withPrefix) {
+		if (used == 0) {
+			return "";
+		}
+		byte[] tmpBa = new byte[used];
+		copyInto(0, tmpBa, 0, used);
+
+		return (withPrefix ? "b64:" : "") + Base64.getEncoder().encodeToString(tmpBa);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
