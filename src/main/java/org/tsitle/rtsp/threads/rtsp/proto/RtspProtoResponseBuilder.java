@@ -163,8 +163,8 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	/**
 	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
-	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC7826: Real Time Streaming Protocol 2.0</a>
-	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
+	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
+	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */
 	private void sendResponseSetup(RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
 			throws TcpSocketIoException, UdpSocketIoException {
@@ -305,7 +305,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 	}
 
 	/**
-	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC3551 Section 8
+	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC-3551 Section 8
 	 */
 	private void findAndOpenUdpSocketPorts(RtspStaticSessionInfo.StreamInfo tmpStreamInfo) throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
@@ -360,8 +360,8 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	/**
 	 * Builds a DESCRIBE response string for the current media<br />
-	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC7826: Real Time Streaming Protocol 2.0</a>
-	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC2326: Real Time Streaming Protocol 1.0</a>
+	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
+	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 * @return Response string
 	 */
 	private @NonNull String buildResponseDescribe(RtspInputSource rtspInputSource) {

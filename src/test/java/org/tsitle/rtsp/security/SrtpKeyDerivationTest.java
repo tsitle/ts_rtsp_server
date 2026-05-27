@@ -96,7 +96,7 @@ class SrtpKeyDerivationTest {
 				ssrcId
 			);
 
-		// Independent reference (RFC 3711, key_derivation_rate=0 => r=0)
+		// Independent reference (RFC-3711, key_derivation_rate=0 => r=0)
 		byte[] refRtpEnc = refDerive(masterKey, masterSalt, (byte) 0x00, Common.ENCR_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] refRtpAuth = refDerive(masterKey, masterSalt, (byte) 0x01, Common.AUTH_KEY_SIZE_FOR_ALL_TESTS);
 		byte[] refRtpSalt = refDerive(masterKey, masterSalt, (byte) 0x02, KeySizes.SALT_SIZE);

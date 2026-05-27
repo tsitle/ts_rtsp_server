@@ -38,10 +38,10 @@ public class DebugRtpPacketTest {
 		 * void srtp_crypto_policy_set_rtp_default(srtp_crypto_policy_t *p)
 		 * {
 		 *     p->cipher_type = SRTP_AES_ICM_128;
-		 *     p->cipher_key_len = SRTP_AES_ICM_128_KEY_LEN_WSALT;  // default 128 bits per RFC 3711
+		 *     p->cipher_key_len = SRTP_AES_ICM_128_KEY_LEN_WSALT;  // default 128 bits per RFC-3711
 		 *     p->auth_type = SRTP_HMAC_SHA1;
-		 *     p->auth_key_len = 20;  // default 160 bits per RFC 3711
-		 *     p->auth_tag_len = 10;  // default 80 bits per RFC 3711
+		 *     p->auth_key_len = 20;  // default 160 bits per RFC-3711
+		 *     p->auth_tag_len = 10;  // default 80 bits per RFC-3711
 		 *     p->sec_serv = sec_serv_conf_and_auth;
 		 * }
 		 *

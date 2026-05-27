@@ -54,7 +54,7 @@ public class SrtcpContextBase extends SrtxpContextBase {
 		Arrays.fill(tmpIvBytes, (byte)0);
 
 		/*
-		 * RFC 3711 AES-CM counter-block layout (big-endian):
+		 * RFC-3711 AES-CM counter-block layout (big-endian):
 		 * IV = (0x00000000 || SSRC || (packetIndex << 16)) XOR (sessionSalt || 0x0000)
 		 *
 		 * Byte layout before XOR:

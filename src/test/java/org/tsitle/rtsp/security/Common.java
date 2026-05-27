@@ -32,7 +32,7 @@ class Common {
 	static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = SrtxpKmd.DEFAULT_AUTH_TAG_LEN;
 	//static final int AUTH_TAG_SIZE_FOR_ALL_TESTS = 17;
 
-	// RFC 3711 test vector master material (deterministic, no sensitive runtime secrets)
+	// RFC-3711 test vector master material (deterministic, no sensitive runtime secrets)
 	static final BufferExt MASTER_KEY_128 = BufferExt.decodeHexString("E1F97A0D3E018BE0D64FA32C06DE4139");
 	static final BufferExt MASTER_KEY_256 = BufferExt.decodeHexString("AAF97A0D3E018BE0D64FA32C06DE4139E1F97A0D3E018BE0D64FA32C06DE41FF");
 	static final BufferExt DEFAULT_MASTER_KEY = (ENCR_KEY_SIZE_FOR_ALL_TESTS == 16 ? MASTER_KEY_128 : MASTER_KEY_256);

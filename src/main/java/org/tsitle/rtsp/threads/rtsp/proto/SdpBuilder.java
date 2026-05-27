@@ -42,8 +42,8 @@ public class SdpBuilder {
 	/**
 	 * Builds an SDP response string<br />
 	 * SDP: Session Description Protocol (for some examples see
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC2327: Session Description Protocol</a> and
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC4317: SDP Offer/Answer Examples</a>)
+	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
+	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param rtspInputSource Input Source
 	 * @param rtspHostIpOrName Server's host IP address or hostname
 	 * @return SDP formatted string
@@ -54,7 +54,7 @@ public class SdpBuilder {
 			) {
 		StringWriter sw = new StringWriter();
 
-		// SDP Specification (RFC2327 Section 6)
+		// SDP Specification (RFC-2327 Section 6)
 		// -------------------------------------
 		// v: Protocol Version
 		sw.write(String.format("v=0%s", CRLF));
@@ -79,9 +79,9 @@ public class SdpBuilder {
 		sw.write(String.format("a=tool:%s%s", tmpSdpEnc, CRLF));
 		// a: Session Attribute: Type of the conference
 		sw.write(String.format("a=type:broadcast%s", CRLF));
-		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
+		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		sw.write(String.format("a=control:*%s", CRLF));
-		// a: Session Attribute: Range of presentation (RFC7826 Section D.1.6)
+		// a: Session Attribute: Range of presentation (RFC-7826 Section D.1.6)
 		sw.write(String.format("a=range:npt=0-%s", CRLF));
 
 		// -------------------------------------
@@ -229,7 +229,7 @@ public class SdpBuilder {
 					));
 				break;
 		}
-		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC7826 Section D.1.1)
+		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		sw.write(String.format("a=control:%s%s%s", STREAM_ID_PREFIX, outputSubStreamId, CRLF));
 
 		// ----------------------------------------
