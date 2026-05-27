@@ -273,10 +273,11 @@ public class SdpBuilder {
 				sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
 						tmpSdesB64));
 
-				//sw.write("|2^20");  // key lifetime (not supported by Lavf)
+				//sw.write(String.format("|%s",  // key lifetime, format "2^DIGITS" (not supported by Lavf)
+						//RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR));
 
-				//sw.write(String.format("|%d:%d",
-						//streamKmds.kmdOutbound.mkiAsLong(), streamKmds.kmdOutbound.mkiLen()));  // MKI (not supported by Lavf)
+				//sw.write(String.format("|%s:%d",  // MKI, format "MKI_value:MKI_length_bytes" (not supported by Lavf)
+						//Long.toUnsignedString(streamKmds.kmdOutbound.mkiAsLong()), streamKmds.kmdOutbound.mkiLen()));
 
 				sw.write(CRLF);
 			}

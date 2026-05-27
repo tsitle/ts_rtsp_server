@@ -39,9 +39,10 @@ public class RtspConstants {
 	/** RTSP Authorization Realm */
 	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
 
-	/**
-	 * Interval for re-keying the SRTxP master key and salt (in packets)
-	 */
-	public static final int SRTXP_REKEYING_INTERVAL_PACKETS = 1048576;  // ^=2^20
+	/** Interval for re-keying the SRTxP master key and salt (in packets) as integer */
+	public static final int SRTXP_REKEYING_INTERVAL_PACKETS_INT = 1048576;  // ^=2^20
+	/** Interval for re-keying the SRTxP master key and salt (in packets) as exponent of 2 */
+	@SuppressWarnings("unused")
+	public static final String SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR = "2^20";  // ^=1048576
 
 }

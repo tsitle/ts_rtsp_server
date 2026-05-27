@@ -141,6 +141,14 @@ public class ThreadRtspServer extends RunnableBase {
 					break;
 				}
 			}
+
+			// send a BYE packet per stream to let the client know we are terminating the session
+			for (ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
+				if (ctfos.rtcpThreadSendRecv == null || ! ctfos.rtcpThreadSendRecv.isRunning()) {
+					continue;
+				}
+				ctfos.rtcpThreadSendRecv.appendByePacketToSendQueue();
+			}
 		} catch (TcpSocketClosedException e) {
 			logDebug(FNC_NAME, "TcpSocketClosedException: " + e.getMessage());
 		} catch (TcpSocketIoException e) {
@@ -770,7 +778,7 @@ public class ThreadRtspServer extends RunnableBase {
 		rtspProtoRequestBuilder.sendRequestOptions(ctfos.subStreamId);
 		RtspProtoResponseParser.ResponseInfo tmpRi = rtspProtoResponseParser.parseResponse();
 		if (tmpRi.statusCode != RtspProtoStatusCode.OK) {
-			logWarn(FNC_NAME, "failed to receive client OPTIONS (" + tmpRi.statusCode + ")");
+			logWarn(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
 			return false;
 		}
 
@@ -782,7 +790,7 @@ public class ThreadRtspServer extends RunnableBase {
 					tmpRi.supportedMessageTypes
 				);
 		} catch (RtspInvalidRequestException e) {
-			logWarn(FNC_NAME, "SRTxP re-keying failed - client does not support SRTxP re-keying");
+			logWarn(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");
 			return false;
 		}
 		tmpRi = rtspProtoResponseParser.parseResponse();
@@ -836,10 +844,10 @@ public class ThreadRtspServer extends RunnableBase {
 			if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isRunning()) {
 				tmpPktCount = Math.max(tmpPktCount, ctfos.rtpThreadSender.getPacketCountOutbound());
 			}
-			if ((int)((double)tmpPktCount * 0.9) < RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS) {
+			if ((int)((double)tmpPktCount * 0.9) < RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_INT) {
 				continue;
 			}
-			logWarn(FNC_NAME, "90% of packet count maximum reached: " + tmpPktCount + ", sSI=" + ctfos.subStreamId);
+			logWarn(FNC_NAME, "90% of packet count maximum reached: " + tmpPktCount + ", ss=" + ctfos.streamSourceId);
 
 			//
 			if (! srtxpRekey_oneStream(ctfos)) {
@@ -856,12 +864,11 @@ public class ThreadRtspServer extends RunnableBase {
 			throws TcpSocketClosedException, TcpSocketIoException, UdpSocketIoException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
-		boolean sendByePackets = false;
 		if (rtspSessionInfo.isTransportUdp && rtspTimeoutLastRequ != null) {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspConstants.RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
 				logError(FNC_NAME, "RTSP session timeout after " + tmpTimeDiff + " seconds");
-				sendByePackets = true;
+				return false;  // terminate session
 			}
 		}
 
@@ -870,20 +877,8 @@ public class ThreadRtspServer extends RunnableBase {
 			updateCongestionLevel();
 		} else if (loopCounter % 1125 == 0 && rtspSessionInfo.isTransportSrtpSrtcp) {  // 1125^=roughly once per minute
 			if (! srtxpRekey()) {
-				sendByePackets = true;
+				return false;  // terminate session
 			}
-		}
-
-		//
-		if (sendByePackets) {
-			// send a BYE packet per stream
-			for (ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
-				if (ctfos.rtcpThreadSendRecv == null || ! ctfos.rtcpThreadSendRecv.isRunning()) {
-					continue;
-				}
-				ctfos.rtcpThreadSendRecv.appendByePacketToSendQueue();
-			}
-			return false;  // terminate session
 		}
 
 		//
