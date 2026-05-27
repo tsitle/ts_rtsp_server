@@ -415,7 +415,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.clientIpAddr);
 		}
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
-				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RtspConstants.RTSP_AUTH_REALM + "\", " +
+				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RTSP_AUTH_REALM + "\", " +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + rtspSessionInfo.authInfo.authNonceServer + "\", " +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 + "\"");
 	}

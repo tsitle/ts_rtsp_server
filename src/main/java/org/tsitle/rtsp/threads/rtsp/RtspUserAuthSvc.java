@@ -6,6 +6,7 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 
 import java.util.Objects;
@@ -48,7 +49,7 @@ public class RtspUserAuthSvc {
 			return false;
 		}
 		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				! rtspSessionInfo.authInfo.authRealmClient.equals(RtspConstants.RTSP_AUTH_REALM)) {
+				! rtspSessionInfo.authInfo.authRealmClient.equals(RtspProtoConstants.RTSP_AUTH_REALM)) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
@@ -101,7 +102,7 @@ public class RtspUserAuthSvc {
 
 	private @NonNull String computeExpectedAuthResponse(@NonNull String method, @NonNull String userPwPlain) {
 		String tmpHa1 = HashMd5Helper.hashOfString(
-				rtspSessionInfo.authInfo.authUser + ":" + RtspConstants.RTSP_AUTH_REALM + ":" + userPwPlain,
+				rtspSessionInfo.authInfo.authUser + ":" + RtspProtoConstants.RTSP_AUTH_REALM + ":" + userPwPlain,
 				false
 			);
 		String tmpHa2 = HashMd5Helper.hashOfString(

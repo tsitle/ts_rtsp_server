@@ -214,11 +214,11 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			tokens.nextToken();  // requestType
 			String resS = tokens.nextToken();
-			if (rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RtspConstants.RTSPS_URL_PROTOCOL + "://")) {
+			if (rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RTSPS_URL_PROTOCOL + "://")) {
 				logError(FNC_NAME, "invalid URL for RTSPS '" + resS + "'");
 				return Optional.empty();
 			}
-			if (! rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RtspConstants.RTSP_URL_PROTOCOL + "://")) {
+			if (! rtspSessionInfo.isRtspsConnection && ! resS.startsWith(RTSP_URL_PROTOCOL + "://")) {
 				logError(FNC_NAME, "invalid URL for RTSP '" + resS + "'");
 				return Optional.empty();
 			}
@@ -229,7 +229,7 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 				rtspSessionInfo.authInfo.authPlainPassword = tmpUri.getUserInfo().split(":")[1];
 			}
 			int tmpPort = tmpUri.getPort();
-			resS = (rtspSessionInfo.isRtspsConnection ? RtspConstants.RTSPS_URL_PROTOCOL : RtspConstants.RTSP_URL_PROTOCOL) +
+			resS = (rtspSessionInfo.isRtspsConnection ? RTSPS_URL_PROTOCOL : RTSP_URL_PROTOCOL) +
 					"://" + tmpUri.getHost() +
 					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
 			if (tmpUri.getQuery() != null) {
