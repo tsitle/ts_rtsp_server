@@ -82,7 +82,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 
 		// append MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			outputEncryptedPacketBuf.append(ctxKmd.mki());
+			outputEncryptedPacketBuf.append(ctxKmd.mki().toBufferExtBigEndian());
 		}
 
 		// append Auth Tag

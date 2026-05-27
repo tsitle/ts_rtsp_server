@@ -367,15 +367,11 @@ public final class MikeyParser {
 					// nothing to check for the time being
 					break;
 				case MMSPPT_KDR:
-					ByteBuffer tmpKdrBuf = ByteBuffer.wrap(tmpPolParamData).order(ByteOrder.BIG_ENDIAN);
-					switch (tmpBy) {
-						case 1: mikeyData.spKdr = Byte.toUnsignedLong(tmpKdrBuf.get()); break;
-						case 2: mikeyData.spKdr = Short.toUnsignedLong(tmpKdrBuf.getShort()); break;
-						case 4: mikeyData.spKdr = Integer.toUnsignedLong(tmpKdrBuf.getInt()); break;
-						case 8: mikeyData.spKdr = tmpKdrBuf.getLong(); break;
-						default:
-							errMsg = String.format("Unsupported MIKEY SP KDR length %d, expected 0/1/2/4/8", tmpBy);
-							break;
+					try {
+						BufferExt tmpKdrBe = new BufferExt(tmpPolParamData);
+						mikeyData.spKdr = DynInteger.createFromBufferBigEndian(tmpKdrBe);
+					} catch (IllegalArgumentException e) {
+						errMsg = String.format("Unsupported MIKEY SP KDR length %d, expected 0/1/2/4/8", tmpBy);
 					}
 					break;
 				default:
@@ -500,7 +496,13 @@ public final class MikeyParser {
 		// KV data
 		if (mikeyData.kemacKvType == MikeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
 			byte tmpKvLen = buf.get();
-			extractBytes(FNC_NAME, "KEMAC KV SPI/MKI", buf, tmpKvLen, mikeyData.kemacKvDataSpiOrMki);
+			BufferExt tmpKvBe = new BufferExt();
+			extractBytes(FNC_NAME, "KEMAC KV SPI/MKI", buf, tmpKvLen, tmpKvBe);
+			try {
+				mikeyData.kemacKvDataSpiOrMki = DynInteger.createFromBufferBigEndian(tmpKvBe);
+			} catch (IllegalArgumentException e) {
+				throw new SrtxpSecurityException("Unsupported KEMAC KV SPI/MKI length " + tmpKvLen + ", expected 0/1/2/4/8");
+			}
 		} else if (mikeyData.kemacKvType == MikeyMsgKemacKv.MMKEMKV_INTV) {
 			byte tmpVfLen = buf.get();
 			extractBytes(FNC_NAME, "KEMAC KV INTV F", buf, tmpVfLen, mikeyData.kemacKvDataIntvF);
@@ -514,11 +516,11 @@ public final class MikeyParser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void extractBytes(
-				String fncName,
-				String desc,
-				ByteBuffer buf,
+				@NonNull String fncName,
+				@NonNull String desc,
+				@NonNull ByteBuffer buf,
 				int length,
-				BufferExt output
+				@NonNull BufferExt output
 			) throws SrtxpSecurityException {
 		if (buf.remaining() < length) {
 			throw new SrtxpSecurityException(fncName + ": Invalid MIKEY " + desc + " length (needed " +

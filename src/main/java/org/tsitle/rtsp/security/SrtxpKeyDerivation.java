@@ -80,7 +80,7 @@ public final class SrtxpKeyDerivation {
 		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtxpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
 		}
-		if (kmd.kdr() < 0L) {
+		if (! kmd.kdr().isEmpty() && kmd.kdr().value() < 0L) {
 			throw new SrtxpSecurityException("Invalid KDR, must be >= 0");
 		}
 		if (packetIndex < 0L) {
@@ -95,7 +95,12 @@ public final class SrtxpKeyDerivation {
 		 * and with the output keystream truncated to the n first (left-most) bits.
 		 */
 
-		byte[] iv = buildKeyDerivationIv(kmd.masterSalt(), label.getValue(), kmd.kdr(), packetIndex);
+		byte[] iv = buildKeyDerivationIv(
+				kmd.masterSalt(),
+				label.getValue(),
+				kmd.kdr().isEmpty() ? 0L : kmd.kdr().value(),
+				packetIndex
+			);
 
 		try {
 			cipher.init(

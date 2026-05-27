@@ -203,14 +203,14 @@ public final class MikeyGenerator {
 		msgBb.put((byte)kmd.authTagLen());
 
 		// -- KDR --
-		if (kmd.kdr() > 0) {
+		if (! kmd.kdr().isEmpty() && kmd.kdr().value() > 0) {
 			msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_KDR.getValue());  // Parameter Type
-			if (kmd.kdr() <= Integer.MAX_VALUE) {
+			if (kmd.kdr().sizeBytes() <= 4) {
 				msgBb.put((byte)0x04);  // Parameter Length
-				msgBb.putInt((int)kmd.kdr());
+				msgBb.putInt((int)kmd.kdr().value());
 			} else {
 				msgBb.put((byte)0x08);  // Parameter Length
-				msgBb.putLong(kmd.kdr());
+				msgBb.putLong(kmd.kdr().value());
 			}
 		}
 
@@ -278,12 +278,13 @@ public final class MikeyGenerator {
 		//
 		if (tmpKvType == MikeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
 			// KV data length
-			if (kmd.mki().getUsed() > 255) { throw new SrtxpSecurityException(FNC_NAME + ": Invalid KV SPI/MKI length"); }
-			msgBb.put((byte)kmd.mki().getUsed());
-			// KV data
-			if (! kmd.mki().isEmpty()) {
-				msgBb.put(kmd.mki().getBaPtr(), 0, kmd.mki().getUsed());
+			int tmpMkiSz = kmd.mki().sizeBytes();
+			if (tmpMkiSz != 0 && tmpMkiSz != 1 && tmpMkiSz != 2 && tmpMkiSz != 4 && tmpMkiSz != 8) {
+				throw new SrtxpSecurityException(FNC_NAME + ": Invalid KV SPI/MKI length - must be 0/1/2/4/8");
 			}
+			msgBb.put((byte)tmpMkiSz);
+			// KV data
+			kmd.mki().writeToByteBuffer(msgBb);
 		}
 
 		//

@@ -65,9 +65,9 @@ class Common {
 				DEFAULT_MASTER_SALT,
 				AUTH_KEY_SIZE_FOR_ALL_TESTS,
 				AUTH_TAG_SIZE_FOR_ALL_TESTS,
-				new BufferExt(),
+				DynInteger.createEmpty(),
 				ssrcId,
-				0L
+				DynInteger.createEmpty()
 			);
 	}
 
@@ -120,9 +120,9 @@ class Common {
 				ms,
 				authKeyLen,
 				authTagLen,
-				new BufferExt(),
+				DynInteger.createEmpty(),
 				ssrcId,
-				0L
+				DynInteger.createEmpty()
 			);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
@@ -142,9 +142,9 @@ class Common {
 				ms,
 				authKeyLen,
 				authTagLen,
-				new BufferExt(),
+				DynInteger.createEmpty(),
 				ssrcId,
-				0L
+				DynInteger.createEmpty()
 			);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
 	}

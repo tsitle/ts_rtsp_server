@@ -57,7 +57,13 @@ class SrtcpProtectRoundTripTest {
 			int mkeyLen = (rnd.nextInt(1000) > 500 ? KeySizes.AES_KEY_SIZE_128 : KeySizes.AES_KEY_SIZE_256);
 			int authKeyLen = (rnd.nextInt(1000) > 500 ? KeySizes.AUTH_KEY_SIZE_080 : KeySizes.AUTH_KEY_SIZE_160);
 			int authTagLen = (rnd.nextInt(1000) > 500 ? KeySizes.SHA1_SIZE_160 / 2 : KeySizes.SHA1_SIZE_160);
-			int mkiLen = rnd.nextInt(100);
+			int mkiLen = switch (rnd.nextInt(5)) {
+					case 0 -> 0;
+					case 1 -> 1;
+					case 2 -> 2;
+					case 3 -> 4;
+					default -> 8;
+				};
 			subfnc_rtcp_randomized_sub1(rnd, mkeyLen, authKeyLen, authTagLen, mkiLen);
 		}
 	}
@@ -88,9 +94,9 @@ class SrtcpProtectRoundTripTest {
 				new BufferExt(masterSaltBa),
 				authKeyLen,
 				authTagLen,
-				new BufferExt(mkiBa),
+				DynInteger.createFromBufferBigEndian(new BufferExt(mkiBa)),
 				hdSsrc,
-				0L
+				DynInteger.createEmpty()
 			);
 		SrtcpContextOutbound senderCtx = new SrtcpContextOutbound(rtcpKmd);
 		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
@@ -193,7 +199,7 @@ class SrtcpProtectRoundTripTest {
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
-		BufferExt mki = BufferExt.decodeHexString("0x01020304");
+		DynInteger mki = new DynInteger(16909060L, 4);
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
@@ -215,7 +221,7 @@ class SrtcpProtectRoundTripTest {
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
 
-		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.getUsed();
+		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.sizeBytes();
 		tampered[mkiStart] ^= 0x01;
 
 		BufferExt tamperedBuf = new BufferExt();

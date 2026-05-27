@@ -5,7 +5,6 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
-import java.nio.ByteOrder;
 import java.util.Objects;
 
 /**
@@ -30,7 +29,7 @@ public final class SrtxpKmd implements Cloneable {
 	/** Auth Tag length */
 	private final int authTagLen;
 	/** Master Key Identifier */
-	private @NonNull BufferExt mki;
+	private @NonNull DynInteger mki;
 	/** SSRC ID */
 	private final int ssrcId;
 	/**
@@ -39,7 +38,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * The recommended value is 2^20 (= 1048576).<br />
 	 * Note that the tested RTSP clients (VLC, FFplay/Lavf, OpenRTSP) do not support KDR.
 	 */
-	private final long kdr;
+	private @NonNull DynInteger kdr;
 
 	/**
 	 * Constructor.
@@ -48,7 +47,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param masterSalt Master Salt
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
-	 * @param mki Master Key Identifier (can be empty)
+	 * @param mki Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 */
@@ -58,9 +57,9 @@ public final class SrtxpKmd implements Cloneable {
 				@NonNull BufferExt masterSalt,
 				int authKeyLen,
 				int authTagLen,
-				@NonNull BufferExt mki,
+				@NonNull DynInteger mki,
 				int ssrcId,
-				long kdr
+				@NonNull DynInteger kdr
 			) {
 		this.encrKeyLen = encrKeyLen;
 		this.masterKey = masterKey.clone();
@@ -69,40 +68,46 @@ public final class SrtxpKmd implements Cloneable {
 		this.authTagLen = authTagLen;
 		this.mki = mki.clone();
 		this.ssrcId = ssrcId;
-		this.kdr = kdr;
+		this.kdr = (kdr.isEmpty() || kdr.value() == 0L ? DynInteger.createEmpty() : kdr.clone());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Create a new KMD object with default key sizes and random values
+	 * Create a new KMD object with default key sizes and random key/salt
+	 * @param mkiValue Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(int ssrcId) {
-		return createWithDefaults(ssrcId, DEFAULT_KDR_PACKETS);
+	public static SrtxpKmd createWithDefaults(long mkiValue, int ssrcId) {
+		return createWithDefaults(
+				mkiValue,
+				ssrcId,
+				DynInteger.createWithAutoSize(DEFAULT_KDR_PACKETS)
+			);
 	}
 
 	/**
-	 * Create a new KMD object with default key sizes and random values
+	 * Create a new KMD object with default key sizes and random key/salt
+	 * @param mkiValue Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(int ssrcId, long kdr) {
+	public static SrtxpKmd createWithDefaults(long mkiValue, int ssrcId, @NonNull DynInteger kdr) {
 		return createWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				DEFAULT_MKI_LEN,
+				new DynInteger(mkiValue, DEFAULT_MKI_LEN),
 				ssrcId,
 				kdr
 			);
 	}
 
 	/**
-	 * Create a new KMD object with default key sizes and random values for usage with the legacy SDES key management.<br />
+	 * Create a new KMD object with default key sizes and random key/salt for usage with the legacy SDES key management.<br />
 	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.<br />
 	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
 	 * @param ssrcId SSRC ID
@@ -113,18 +118,18 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				0,
+				DynInteger.createEmpty(),
 				ssrcId,
-				0L
+				DynInteger.createEmpty()
 			);
 	}
 
 	/**
-	 * Create a new KMD object with custom key sizes and random values
+	 * Create a new KMD object with custom key sizes and random key/salt
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
-	 * @param mkiLen Master Key Identifier length (can be zero)
+	 * @param mki Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
@@ -132,25 +137,25 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
-				int mkiLen,
+				@NonNull DynInteger mki,
 				int ssrcId
 			) {
 		return createWithCustomKeySizes(
 				encrKeyLen,
 				authKeyLen,
 				authTagLen,
-				mkiLen,
+				mki,
 				ssrcId,
-				DEFAULT_KDR_PACKETS
+				DynInteger.createWithAutoSize(DEFAULT_KDR_PACKETS)
 			);
 	}
 
 	/**
-	 * Create a new KMD object with custom key sizes and random values
+	 * Create a new KMD object with custom key sizes and random key/salt
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
-	 * @param mkiLen Master Key Identifier length (can be zero)
+	 * @param mki Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
@@ -159,9 +164,9 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
-				int mkiLen,
+				@NonNull DynInteger mki,
 				int ssrcId,
-				long kdr
+				@NonNull DynInteger kdr
 			) {
 		SrtxpKmd resObj = new SrtxpKmd(
 				encrKeyLen,
@@ -169,15 +174,12 @@ public final class SrtxpKmd implements Cloneable {
 				new BufferExt(),
 				authKeyLen,
 				authTagLen,
-				new BufferExt(),
+				mki,
 				ssrcId,
 				kdr
 			);
 		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
 		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
-		if (mkiLen > 0) {
-			RandomHelper.getSecureRandomBytes(mkiLen, resObj.mki);
-		}
 		return resObj;
 	}
 
@@ -191,6 +193,7 @@ public final class SrtxpKmd implements Cloneable {
 			clone.masterKey = this.masterKey.clone();
 			clone.masterSalt = this.masterSalt.clone();
 			clone.mki = this.mki.clone();
+			clone.kdr = this.kdr.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -225,31 +228,16 @@ public final class SrtxpKmd implements Cloneable {
 		return authTagLen;
 	}
 
-	public @NonNull BufferExt mki() {
+	public @NonNull DynInteger mki() {
 		return mki.clone();
-	}
-
-	@SuppressWarnings("unused")
-	public long mkiAsLong() {
-		long resI = 0;
-		if (mkiLen() > 0 && mkiLen() <= Long.BYTES) {
-			byte[] tmpBa = new byte[mkiLen()];
-			mki.copyInto(0, tmpBa, 0, mkiLen());
-			resI = bytesToLongNative(tmpBa);
-		}
-		return resI;
-	}
-
-	public int mkiLen() {
-		return mki.getUsed();
 	}
 
 	public int ssrcId() {
 		return ssrcId;
 	}
 
-	public long kdr() {
-		return kdr;
+	public @NonNull DynInteger kdr() {
+		return kdr.clone();
 	}
 
 	@Override
@@ -268,7 +256,7 @@ public final class SrtxpKmd implements Cloneable {
 				this.authTagLen == that.authTagLen &&
 				Objects.equals(this.mki, that.mki) &&
 				this.ssrcId == that.ssrcId &&
-				this.kdr == that.kdr);
+				Objects.equals(this.kdr, that.kdr));
 	}
 
 	@Override
@@ -284,34 +272,10 @@ public final class SrtxpKmd implements Cloneable {
 				", masterSalt=" + masterSalt.toHexString(true) +
 				", authKeyLen=" + authKeyLen +
 				", authTagLen=" + authTagLen +
-				", mki=" + (mki.isEmpty() ? "empty" : mki.toHexString(true)) + " (len=" + mki.getUsed() + ")" +
+				", mki=" + mki +
 				", ssrcId=" + String.format("0x%08X", ssrcId) +
 				", kdr=" + kdr +
 				"]";
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static long bytesToLongNative(byte[] src) {
-		if (src == null) {
-			throw new IllegalArgumentException("src must not be null");
-		}
-		if (src.length < 1 || src.length > Long.BYTES) {
-			throw new IllegalArgumentException("src length must be in range 1..8");
-		}
-
-		long value = 0L;
-		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-			for (int i = 0; i < src.length; i++) {
-				value |= ((long)src[i] & 0xFFL) << (i * 8);
-			}
-		} else {
-			for (byte b : src) {
-				value = (value << 8) | ((long)b & 0xFFL);
-			}
-		}
-		return value;
 	}
 
 }

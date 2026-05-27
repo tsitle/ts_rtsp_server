@@ -108,8 +108,8 @@ public abstract class SrtxpContextBase {
 				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd, 0L);
 			}
 			markerNew = 0L;
-		} else if (ctxKmd.kdr() > 0L) {
-			markerNew = packetIndex / ctxKmd.kdr();
+		} else if (! ctxKmd.kdr().isEmpty() && ctxKmd.kdr().value() > 0L) {
+			markerNew = packetIndex / ctxKmd.kdr().value();
 			if (markerNew == markerLast) {
 				return;
 			}
@@ -302,7 +302,7 @@ public abstract class SrtxpContextBase {
 
 		// compute Auth Tag over: encrypted RTxP packet
 		bufView.setOffset(0);
-		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getUsed());
+		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
 		if (isRtpPkt) {
 			computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
 		} else {
@@ -318,11 +318,11 @@ public abstract class SrtxpContextBase {
 
 	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpSecurityException {
 		final int orgLen = bufView.getLength();
-		bufView.setLength(ctxKmd.mki().getUsed());
+		bufView.setLength(ctxKmd.mki().sizeBytes());
 		bufView.copyViewIntoBe(cacheValidateMkiBuf);
-		if (! ctxKmd.mki().equals(cacheValidateMkiBuf)) {
+		if (! ctxKmd.mki().equalsBufferBigEndian(cacheValidateMkiBuf)) {
 			throw new SrtxpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
-					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toHexString());
+					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toBufferExtBigEndian().toHexString());
 		}
 		bufView.setLength(orgLen);
 	}
@@ -356,16 +356,16 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For Unit Tests only */
-	void setKmdMasterKeyIdentifier(@NonNull BufferExt mki) {
+	void setKmdMasterKeyIdentifier(@NonNull DynInteger mki) {
 		ctxKmd = new SrtxpKmd(
 				ctxKmd.encrKeyLen(),
 				ctxKmd.masterKey().clone(),
 				ctxKmd.masterSalt().clone(),
 				ctxKmd.authKeyLen(),
 				ctxKmd.authTagLen(),
-				mki,
+				mki.clone(),
 				ctxKmd.ssrcId(),
-				ctxKmd.kdr()
+				ctxKmd.kdr().clone()
 			);
 	}
 

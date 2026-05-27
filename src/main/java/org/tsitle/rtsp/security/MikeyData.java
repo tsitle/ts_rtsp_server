@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.security;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.security.constants.KeySizes;
 import org.tsitle.rtsp.security.constants.MikeyMsgKemacKv;
@@ -31,14 +32,14 @@ public class MikeyData {
 	boolean spEnabledEncrRtp = false;
 	boolean spEnabledEncrRtcp = false;
 	boolean spEnabledAuthRtxp = false;
-	long spKdr = 0;
+	@NonNull DynInteger spKdr = DynInteger.createEmpty();
 
 	final BufferExt kemacMasterKey = new BufferExt();
 	final BufferExt kemacMasterSalt = new BufferExt();
 	MikeyMsgKemacPayloadType kemacPt = MikeyMsgKemacPayloadType.MMKEMPT_UNKNOWN;
 	final BufferExt kemacTekTgkSalt = new BufferExt();
 	MikeyMsgKemacKv kemacKvType = MikeyMsgKemacKv.MMKEMKV_UNKNOWN;
-	final BufferExt kemacKvDataSpiOrMki = new BufferExt();
+	@NonNull DynInteger kemacKvDataSpiOrMki = DynInteger.createEmpty();
 	final BufferExt kemacKvDataIntvF = new BufferExt();
 	final BufferExt kemacKvDataIntvT = new BufferExt();
 	boolean kemacHaveKeys = false;
@@ -51,7 +52,7 @@ public class MikeyData {
 		sb.append(getClass().getSimpleName())
 				.append(" [")
 				.append(String.format("hdCsbId=0x%08X", hdCsbId))
-				.append(String.format(", hdCsNr=%d", hdCsNr))
+				.append(", hdCsNr=").append(Byte.toUnsignedInt(hdCsNr))
 				.append(", hdCsIdMapInfo={");
 		for (int i = 0; i < hdCsIdMapInfoPolArr.length; i++) {
 			if (i > 0) {
@@ -78,14 +79,14 @@ public class MikeyData {
 		}
 		sb
 				.append(", randRandData=").append(randRandData.toHexString(true))
-				.append(String.format(", spEncrKeyLen=%d", spEncrKeyLen))
-				.append(String.format(", spAuthKeyLen=%d", spAuthKeyLen))
-				.append(String.format(", spSaltLen=%d", spSaltLen))
-				.append(String.format(", spAuthTagLen=%d", spAuthTagLen))
-				.append(String.format(", spEnabledEncrRtp=%s", spEnabledEncrRtp ? "T" : "F"))
-				.append(String.format(", spEnabledEncrRtcp=%s", spEnabledEncrRtcp ? "T" : "F"))
-				.append(String.format(", spEnabledAuthRtxp=%s", spEnabledAuthRtxp ? "T" : "F"))
-				.append(String.format(", spKdr=%s", Long.toUnsignedString(spKdr)))
+				.append(", spEncrKeyLen=").append(Integer.toUnsignedString(spEncrKeyLen))
+				.append(", spAuthKeyLen=").append(Integer.toUnsignedString(spAuthKeyLen))
+				.append(", spSaltLen=").append(Integer.toUnsignedString(spSaltLen))
+				.append(", spAuthTagLen=").append(Integer.toUnsignedString(spAuthTagLen))
+				.append(", spEnabledEncrRtp=").append(spEnabledEncrRtp ? "T" : "F")
+				.append(", spEnabledEncrRtcp=").append(spEnabledEncrRtcp ? "T" : "F")
+				.append(", spEnabledAuthRtxp=").append(spEnabledAuthRtxp ? "T" : "F")
+				.append(", spKdr=").append(spKdr)
 				.append(", kemacMasterKey=").append(kemacMasterKey.toHexString(true))
 				.append(", kemacMasterSalt=").append(kemacMasterSalt.toHexString(true))
 				.append(", kemacPt=").append(kemacPt);
@@ -94,7 +95,7 @@ public class MikeyData {
 		}
 		sb.append(", kemacKvType=").append(kemacKvType);
 		if (kemacKvType == MikeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
-			sb.append(", kemacKvDataSpiOrMki=").append(kemacKvDataSpiOrMki.toHexString(true));
+			sb.append(", kemacKvDataSpiOrMki=").append(kemacKvDataSpiOrMki);
 		} else if (kemacKvType == MikeyMsgKemacKv.MMKEMKV_INTV) {
 			sb
 					.append(", kemacKvDataIntvF=").append(kemacKvDataIntvF.toHexString(true))

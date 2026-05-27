@@ -253,7 +253,7 @@ public class SdpBuilder {
 		streamKmds.isForLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
 				rtspSessionInfo.clientUserAgent.startsWith("Lavf"));
 		if (! streamKmds.isForLegacySdes) {
-			streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(streamKmds.rtspSsrcId);
+			streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(1L, streamKmds.rtspSsrcId);
 		} else {
 			/*
 			 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.

@@ -203,7 +203,7 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys);
 
-		BufferExt mki = BufferExt.decodeHexString("0x01020304");
+		DynInteger mki = new DynInteger(16909060L, 4);
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
@@ -226,7 +226,7 @@ class SrtpProtectRoundTripTest {
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
 
-		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.getUsed();
+		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.sizeBytes();
 		tampered[mkiStart] ^= 0x01;
 
 		BufferExt tamperedBuf = new BufferExt();
