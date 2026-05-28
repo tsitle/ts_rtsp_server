@@ -10,7 +10,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 final class SrtcpVarsInbound {
 
-	@Nullable SrtcpContextInbound ctxObj;
+	@Nullable SrtcpContextInbound ctxObjCur;
+	@Nullable SrtcpContextInbound ctxObjNext;
 	final AtomicBoolean ctxUpdatePending = new AtomicBoolean(false);
 
 	private final ReadWriteLock ctxLock = new ReentrantReadWriteLock();

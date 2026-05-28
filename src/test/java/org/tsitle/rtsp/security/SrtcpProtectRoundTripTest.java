@@ -2,6 +2,8 @@ package org.tsitle.rtsp.security;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
@@ -176,8 +178,8 @@ class SrtcpProtectRoundTripTest {
 		tamperedBuf.copyOf(tampered);
 
 		BufferExt out = new BufferExt();
-		SrtxpSecurityException ex = assertThrows(
-				SrtxpSecurityException.class,
+		SrtxpInvalidAuthTagException ex = assertThrows(
+				SrtxpInvalidAuthTagException.class,
 				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out)
 			);
 
@@ -228,8 +230,8 @@ class SrtcpProtectRoundTripTest {
 		tamperedBuf.copyOf(tampered);
 
 		BufferExt out = new BufferExt();
-		SrtxpSecurityException ex = assertThrows(
-				SrtxpSecurityException.class,
+		SrtxpInvalidMkiException ex = assertThrows(
+				SrtxpInvalidMkiException.class,
 				() -> receiverCtx.unprotectSrtcpCompound(tamperedBuf, out),
 				"Packet with wrong MKI must be rejected"
 			);

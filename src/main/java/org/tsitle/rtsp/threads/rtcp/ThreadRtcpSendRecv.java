@@ -4,15 +4,13 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
-import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
-import org.tsitle.rtsp.exceptions.TcpSocketIoException;
+import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
-import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
 
 import java.io.IOException;
@@ -66,10 +64,10 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			try {
 				if (params.getCryptoKmdInbound().isPresent() &&
 						params.getCryptoKmdInbound().orElseThrow().encrKeyLen() > 0) {
-					this.srtcpVarsInbound.ctxObj = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
+					this.srtcpVarsInbound.ctxObjCur = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
 				} else {
 					// we cannot decrypt incoming RTCP packets
-					this.srtcpVarsInbound.ctxObj = null;
+					this.srtcpVarsInbound.ctxObjCur = null;
 					logWarn(getClass().getSimpleName() + ".ctor()",
 							"missing KmdInbound, cannot decrypt SRTCP packets");
 				}
@@ -84,7 +82,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
-			this.srtcpVarsInbound.ctxObj = null;
+			this.srtcpVarsInbound.ctxObjCur = null;
 			this.srtcpVarsOutbound.ctxObj = null;
 		}
 
@@ -123,6 +121,23 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	public long getPacketCountInbound() {
 		return packetCntInbound.get();
+	}
+
+	public void setNextSrtcpKmdInbound(@NonNull SrtxpKmd kmd) {
+		srtcpVarsInbound.ctxWriteLock.lock();
+		try {
+			if (srtcpVarsInbound.ctxObjCur == null) {
+				return;  // if we didn't have a KMD up until now, we don't need to set a new one
+			}
+			try {
+				srtcpVarsInbound.ctxUpdatePending.set(true);
+				srtcpVarsInbound.ctxObjNext = new SrtcpContextInbound(kmd);
+			} catch (SrtxpSecurityException e) {
+				throw new IllegalArgumentException("SrtxpSecurityException caught: " + e.getMessage());
+			}
+		} finally {
+			srtcpVarsInbound.ctxWriteLock.unlock();
+		}
 	}
 
 	public long getPacketCountOutbound() {
@@ -383,11 +398,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled()) {
 				srtcpVarsInbound.ctxReadLock.lock();
 				try {
-					if (srtcpVarsInbound.ctxObj != null) {
-						srtcpVarsInbound.ctxObj.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-						cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
-						cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
-						cacheRecvBuf2.clear();
+					if (srtcpVarsInbound.ctxObjCur != null) {
+						decryptPacket(tmpPktSz);
 						//
 						wasDecr = true;
 						tmpWasDecr = true;
@@ -420,22 +432,50 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			// handle the payload
 			//logDebug(FNC_NAME, "Handling RTCP packet: " + rtcpPktHd);
 			switch (rtcpPktHd.getPayloadType()) {
-				case RR:
-					handleRtcpPacketRR(rtcpPktHd);
-					break;
-				case SR:
-					handleRtcpPacketSR(rtcpPktHd);
-					break;
-				case SDES:
-					handleRtcpPacketSDES(rtcpPktHd);
-					break;
-				case BYE:
-					handleRtcpPacketBYE(rtcpPktHd);
-					break;
-				default:
-					logWarn(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
+				case RR: handleRtcpPacketRR(rtcpPktHd); break;
+				case SR: handleRtcpPacketSR(rtcpPktHd); break;
+				case SDES: handleRtcpPacketSDES(rtcpPktHd); break;
+				case BYE: handleRtcpPacketBYE(rtcpPktHd); break;
+				default: logWarn(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
 			}
 		}
+	}
+
+	private void decryptPacket(int pktSz) throws SrtxpSecurityException {
+		/*
+		 * Note that the ReadLock is already locked at this point
+		 */
+		if (srtcpVarsInbound.ctxObjCur == null) {
+			return;  // just for the linter
+		}
+		try {
+			srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+		} catch (SrtxpInvalidMkiException e1) {
+			if (srtcpVarsInbound.ctxObjNext != null) {
+				// replace the current KMD
+				srtcpVarsInbound.ctxReadLock.unlock();
+				srtcpVarsInbound.ctxWriteLock.lock();
+				try {
+					srtcpVarsInbound.ctxObjCur = srtcpVarsInbound.ctxObjNext;
+					srtcpVarsInbound.ctxObjNext = null;
+				} finally {
+					srtcpVarsInbound.ctxWriteLock.unlock();
+				}
+				srtcpVarsInbound.ctxReadLock.lock();
+				// try again
+				try {
+					srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+				} catch (SrtxpInvalidMkiException e2) {
+					throw new SrtxpSecurityException(e2.getMessage());
+				}
+			} else {
+				throw new SrtxpSecurityException(e1.getMessage());
+			}
+		}
+
+		cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, pktSz);  // contains the current decrypted packet
+		cacheRecvBuf1.copyOf(cacheRecvBuf2, pktSz, cacheRecvBuf2.getUsed() - pktSz);  // copy remaining buffer to Buf1
+		cacheRecvBuf2.clear();
 	}
 
 	private void handleRtcpPacketRR(RtcpPacketHeader rtcpPktHd) {

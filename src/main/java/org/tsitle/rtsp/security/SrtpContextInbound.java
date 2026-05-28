@@ -3,6 +3,8 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 
@@ -32,13 +34,15 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * Decrypt an SRTP packet
 	 * @param srtpPacket SRTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
+	 * @throws SrtxpInvalidMkiException If the MKI (Master Key Identifier) is invalid
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	@SuppressWarnings("unused")
 	public void unprotectSrtp(
 				@NonNull RtpEncryptedPacket srtpPacket,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtxpSecurityException {
+			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
 		unprotectSrtp(
 				srtpPacket.getPacketBufferView(),
 				srtpPacket.getSequenceNumber(),
@@ -53,6 +57,8 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
+	 * @throws SrtxpInvalidMkiException If the MKI (Master Key Identifier) is invalid
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void unprotectSrtp(
@@ -60,7 +66,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtxpSecurityException {
+			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
 		final BufferView encrPktView = new BufferView(srtpPacketBuf);
 		unprotectSrtp(encrPktView, hdSeqNr, hdSsrcId, outputDecryptedPacketBuf);
 	}
@@ -71,6 +77,8 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
+	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
+	 * @throws SrtxpInvalidMkiException If the MKI (Master Key Identifier) is invalid
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
 	public void unprotectSrtp(
@@ -78,7 +86,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 				short hdSeqNr,
 				int hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
-			) throws SrtxpSecurityException {
+			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtxpSecurityException("Session Keys not set");
 		}

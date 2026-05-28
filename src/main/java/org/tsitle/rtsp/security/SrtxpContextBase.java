@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
 
@@ -307,7 +309,7 @@ public abstract class SrtxpContextBase {
 				@NonNull BufferView bufView,
 				boolean isRtpPkt,
 				int srtpRoc
-			) throws SrtxpSecurityException {
+			) throws SrtxpInvalidAuthTagException {
 		// copy Auth Tag from the received packet
 		bufView.setOffset(bufView.getInternalBeLength() - ctxKmd.authTagLen());
 		bufView.setLength(ctxKmd.authTagLen());
@@ -316,25 +318,30 @@ public abstract class SrtxpContextBase {
 		// compute Auth Tag over: encrypted RTxP packet
 		bufView.setOffset(0);
 		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
-		if (isRtpPkt) {
-			computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
-		} else {
-			computeAuthTagForRtcp(bufView, cacheAuthTagActualBuf);
+		try {
+			if (isRtpPkt) {
+				computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
+			} else {
+				computeAuthTagForRtcp(bufView, cacheAuthTagActualBuf);
+			}
+		} catch (SrtxpSecurityException e) {
+			throw new SrtxpInvalidAuthTagException("Failed to compute Auth Tag for SRT" + (isRtpPkt ? "" : "C") + "P packet: " +
+					e.getMessage());
 		}
 
 		// validate Auth Tag
 		if (! cacheAuthTagActualBuf.equals(cacheAuthTagRcvdBuf)) {
-			throw new SrtxpSecurityException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
+			throw new SrtxpInvalidAuthTagException("Invalid Auth Tag in SRT" + (isRtpPkt ? "" : "C") + "P packet (rcvd=" +
 					cacheAuthTagRcvdBuf.toHexString() + ", exp=" + cacheAuthTagActualBuf.toHexString() + ")");
 		}
 	}
 
-	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpSecurityException {
+	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpInvalidMkiException {
 		final int orgLen = bufView.getLength();
 		bufView.setLength(ctxKmd.mki().sizeBytes());
 		bufView.copyViewIntoBe(cacheValidateMkiBuf);
 		if (! ctxKmd.mki().equalsBufferBigEndian(cacheValidateMkiBuf)) {
-			throw new SrtxpSecurityException("Invalid MKI in " + packetDesc + " packet: " +
+			throw new SrtxpInvalidMkiException("Invalid MKI in " + packetDesc + " packet: " +
 					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toBufferExtBigEndian().toHexString());
 		}
 		bufView.setLength(orgLen);

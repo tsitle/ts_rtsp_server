@@ -2,6 +2,8 @@ package org.tsitle.rtsp.security;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
+import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -136,8 +138,8 @@ class SrtpProtectRoundTripTest {
 
 		// Replay the already-accepted wrap packet -> must fail (Auth Tag mismatch because of ROC wrap)
 		final BufferExt replayOut = new BufferExt();
-		final SrtxpSecurityException ex = assertThrows(
-				SrtxpSecurityException.class,
+		final SrtxpInvalidAuthTagException ex = assertThrows(
+				SrtxpInvalidAuthTagException.class,
 				() -> receiverCtx.unprotectSrtp(encWrap, hdSeqNrWrap, hdSsrc, replayOut),
 				"Replayed packet must be rejected due to packet index"
 			);
@@ -235,8 +237,8 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInboundInjectStateSrtpLastIndex(receiverCtx, -1L);  // by-pass replay protection
 
 		BufferExt out = new BufferExt();
-		SrtxpSecurityException ex = assertThrows(
-				SrtxpSecurityException.class,
+		SrtxpInvalidMkiException ex = assertThrows(
+				SrtxpInvalidMkiException.class,
 				() -> receiverCtx.unprotectSrtp(tamperedBuf, hdSeqNrDoesntWrap, hdSenderSsrc, out),
 				"Packet with wrong MKI must be rejected"
 			);
