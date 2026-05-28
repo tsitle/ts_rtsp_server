@@ -37,8 +37,8 @@ public class ThreadRtspServer extends RunnableBase {
 		ThreadRtcpSendRecv rtcpThreadSendRecv;
 		int rtcpLastTargetCongestionLevel = -1;
 
-		boolean srtxpRekeyingPossible = true;
-		boolean srtxpRekeyingInProgress = false;
+		boolean srtxpOutboundRekeyingPossible = true;
+		boolean srtxpOutboundRekeyingInProgress = false;
 
 		ChildThreadsForOneStream(@NonNull String subStreamId, @NonNull String inputSourceId, int streamSourceId) {
 			this.subStreamId = subStreamId;
@@ -772,13 +772,15 @@ public class ThreadRtspServer extends RunnableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean srtxpRekey_oneStream(@NonNull ChildThreadsForOneStream ctfos) throws TcpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekey_oneStream()";
+	private boolean srtxpRekeyOutbound_oneStream(@NonNull ChildThreadsForOneStream ctfos) throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_oneStream()";
+
+		final String logMsgPrefix = "ss=" + ctfos.streamSourceId + ": ";
 
 		rtspProtoRequestBuilder.sendRequestOptions(ctfos.subStreamId);
 		RtspProtoResponseParser.ResponseInfo tmpRi = rtspProtoResponseParser.parseResponse();
 		if (tmpRi.statusCode != RtspProtoStatusCode.OK) {
-			logWarn(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
+			logWarn(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
 			return false;
 		}
 
@@ -790,68 +792,66 @@ public class ThreadRtspServer extends RunnableBase {
 					tmpRi.supportedMessageTypes
 				);
 		} catch (RtspInvalidRequestException e) {
-			logWarn(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");
+			logWarn(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
 			return false;
 		}
 		tmpRi = rtspProtoResponseParser.parseResponse();
 		if (tmpRi.statusCode != RtspProtoStatusCode.OK) {
-			logError(FNC_NAME, "SRTxP re-keying failed (" + tmpRi.statusCode + ")");
+			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed (" + tmpRi.statusCode + ")");
 			return false;
 		}
 
 		//
+		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
 		if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
-			ctfos.rtcpThreadSendRecv.setNextSrtxpKmdOutbound(tmpNextKmdOutbound);
+			ctfos.rtcpThreadSendRecv.setNextSrtcpKmdOutbound(tmpNextKmdOutbound);
 		}
 		if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isRunning()) {
-			ctfos.rtpThreadSender.setNextSrtxpKmdOutbound(tmpNextKmdOutbound);
+			ctfos.rtpThreadSender.setNextSrtpKmdOutbound(tmpNextKmdOutbound);
 		}
-		ctfos.srtxpRekeyingInProgress = true;
+		ctfos.srtxpOutboundRekeyingInProgress = true;
 		return true;
 	}
 
-	private boolean srtxpRekey() throws TcpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekey()";
+	private boolean srtxpRekeyOutbound() throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound()";
 
 		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
 			return false;  // this should never happen
 		}
 		for (ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
-			if (! ctfos.srtxpRekeyingPossible) {
+			if (! ctfos.srtxpOutboundRekeyingPossible ||
+					ctfos.rtpThreadSender == null || ! ctfos.rtpThreadSender.isRunning()) {
 				continue;
 			}
 			//
-			if (ctfos.srtxpRekeyingInProgress) {
+			if (ctfos.srtxpOutboundRekeyingInProgress) {
 				boolean tmpHasBeenCompleted;
 				if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
-					tmpHasBeenCompleted = ctfos.rtcpThreadSendRecv.hasSrtxpRekeyingBeenCompleted();
+					tmpHasBeenCompleted = ctfos.rtcpThreadSendRecv.hasSrtcpOutboundRekeyingBeenCompleted();
 				} else {
 					tmpHasBeenCompleted = true;
 				}
-				if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isRunning()) {
-					tmpHasBeenCompleted = (tmpHasBeenCompleted && ctfos.rtpThreadSender.hasSrtxpRekeyingBeenCompleted());
-				}
+				tmpHasBeenCompleted = (tmpHasBeenCompleted && ctfos.rtpThreadSender.hasSrtpOutboundRekeyingBeenCompleted());
 				if (tmpHasBeenCompleted) {
-					ctfos.srtxpRekeyingInProgress = false;
+					ctfos.srtxpOutboundRekeyingInProgress = false;
 				}
 				continue;
 			}
 			//
-			int tmpPktCount = 0;
-			if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
-				tmpPktCount = ctfos.rtcpThreadSendRecv.getPacketCountOutbound();
-			}
-			if (ctfos.rtpThreadSender != null && ctfos.rtpThreadSender.isRunning()) {
-				tmpPktCount = Math.max(tmpPktCount, ctfos.rtpThreadSender.getPacketCountOutbound());
-			}
-			if ((int)((double)tmpPktCount * 0.9) < RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_INT) {
+			long tmpPktCount = ctfos.rtpThreadSender.getPacketCountOutbound();
+			if ((long)((double)tmpPktCount * 0.9) < RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_INT) {
 				continue;
 			}
-			logWarn(FNC_NAME, "90% of packet count maximum reached: " + tmpPktCount + ", ss=" + ctfos.streamSourceId);
+			logDebug(FNC_NAME, String.format("ss=%d: 90%% of maximum outbound RTP packet count reached: %s (RTCP in %s / out %s)",
+					ctfos.streamSourceId,
+					Long.toUnsignedString(tmpPktCount),
+					ctfos.rtcpThreadSendRecv != null ? Long.toUnsignedString(ctfos.rtcpThreadSendRecv.getPacketCountInbound()) : "-",
+					ctfos.rtcpThreadSendRecv != null ? Long.toUnsignedString(ctfos.rtcpThreadSendRecv.getPacketCountOutbound()) : "-"));
 
 			//
-			if (! srtxpRekey_oneStream(ctfos)) {
-				ctfos.srtxpRekeyingPossible = false;
+			if (! srtxpRekeyOutbound_oneStream(ctfos)) {
+				ctfos.srtxpOutboundRekeyingPossible = false;
 				return false;  // shutdown the session
 			}
 		}
@@ -876,7 +876,7 @@ public class ThreadRtspServer extends RunnableBase {
 		if (loopCounter % 50 == 0) {
 			updateCongestionLevel();
 		} else if (loopCounter % 1125 == 0 && rtspSessionInfo.isTransportSrtpSrtcp) {  // 1125^=roughly once per minute
-			if (! srtxpRekey()) {
+			if (! srtxpRekeyOutbound()) {
 				return false;  // terminate session
 			}
 		}

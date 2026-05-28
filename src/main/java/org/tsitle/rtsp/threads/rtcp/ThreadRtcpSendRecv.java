@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
@@ -41,10 +42,11 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
-	private final @Nullable SrtcpContextInbound srtcpCtxInbound;
-	private final @Nullable SrtcpContextOutbound srtcpCtxOutbound;
+	private final SrtcpVarsInbound srtcpVarsInbound = new SrtcpVarsInbound();
+	private final SrtcpVarsOutbound srtcpVarsOutbound = new SrtcpVarsOutbound();
 
-	private final AtomicInteger packetCntOutbound = new AtomicInteger(0);
+	private final AtomicLong packetCntInbound = new AtomicLong(0L);
+	private final AtomicLong packetCntOutbound = new AtomicLong(0L);
 
 	/**
 	 * Constructor.
@@ -64,10 +66,10 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			try {
 				if (params.getCryptoKmdInbound().isPresent() &&
 						params.getCryptoKmdInbound().orElseThrow().encrKeyLen() > 0) {
-					this.srtcpCtxInbound = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
+					this.srtcpVarsInbound.ctxObj = new SrtcpContextInbound(params.getCryptoKmdInbound().orElseThrow());
 				} else {
 					// we cannot decrypt incoming RTCP packets
-					this.srtcpCtxInbound = null;
+					this.srtcpVarsInbound.ctxObj = null;
 					logWarn(getClass().getSimpleName() + ".ctor()",
 							"missing KmdInbound, cannot decrypt SRTCP packets");
 				}
@@ -76,14 +78,14 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 			try {
-				this.srtcpCtxOutbound = new SrtcpContextOutbound(params.getCryptoKmdOutbound().orElseThrow());
+				this.srtcpVarsOutbound.ctxObj = new SrtcpContextOutbound(params.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): KmdOutbound: " +
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
-			this.srtcpCtxInbound = null;
-			this.srtcpCtxOutbound = null;
+			this.srtcpVarsInbound.ctxObj = null;
+			this.srtcpVarsOutbound.ctxObj = null;
 		}
 
 		//
@@ -97,6 +99,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	public synchronized int getTargetCongestionLevel() {
 		return targetCongestionLevel.get();
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public synchronized void appendToSendQueue(BufferExt rtcpPacketsBuf) {
 		BufferExt tmpBuf = new BufferExt();
@@ -115,24 +119,38 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		queueSend.add(packetCompoundBuf);
 	}
 
-	public int getPacketCountOutbound() {
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public long getPacketCountInbound() {
+		return packetCntInbound.get();
+	}
+
+	public long getPacketCountOutbound() {
 		return packetCntOutbound.get();
 	}
 
-	public void setNextSrtxpKmdOutbound(@NonNull SrtxpKmd kmd) {
-		if (srtcpCtxOutbound == null) {
-			return;  // if we didn't have a KMD up until now, we don't need to set a new one
+	public void setNextSrtcpKmdOutbound(@NonNull SrtxpKmd kmd) {
+		srtcpVarsOutbound.ctxWriteLock.lock();
+		try {
+			if (srtcpVarsOutbound.ctxObj == null) {
+				return;  // if we didn't have a KMD up until now, we don't need to set a new one
+			}
+			try {
+				srtcpVarsOutbound.ctxUpdatePending.set(true);
+				srtcpVarsOutbound.ctxObj = new SrtcpContextOutbound(kmd);
+			} catch (SrtxpSecurityException e) {
+				throw new IllegalArgumentException("SrtxpSecurityException caught: " + e.getMessage());
+			}
+		} finally {
+			srtcpVarsOutbound.ctxWriteLock.unlock();
 		}
-		// @TODO enqueue the new KMD in the srtcpCtxOutbound
 	}
 
-	public boolean hasSrtxpRekeyingBeenCompleted() {
-		if (srtcpCtxOutbound == null) {
-			packetCntOutbound.set(0);
-			return true;
-		}
-		return false;  // @TODO once the srtcpCtxOutbound started using the new KMD we need to reset the packetCntOutbound and return true
+	public boolean hasSrtcpOutboundRekeyingBeenCompleted() {
+		return (! srtcpVarsOutbound.ctxUpdatePending.get());
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public void run() {
@@ -234,6 +252,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			throw new IllegalStateException("lastRtcpPacketReceived cannot be null");
 		}
 		handleReceived();
+		packetCntInbound.incrementAndGet();
 
 		return true;
 	}
@@ -249,21 +268,30 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		BufferExt encrPktBuf = new BufferExt();
 		BufferExt outpPacketPtr = plainPktBuf;
-		if (params.getCryptoIsRtxpEncryptionEnabled() && srtcpCtxOutbound != null) {
+		if (params.getCryptoIsRtxpEncryptionEnabled()) {
+			srtcpVarsOutbound.ctxReadLock.lock();
 			try {
-				if (srtcpCtxOutbound.getSsrcId() != params.getRtspSsrcId()) {
-					throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
+				if (srtcpVarsOutbound.ctxObj != null) {
+					if (srtcpVarsOutbound.ctxObj.getSsrcId() != params.getRtspSsrcId()) {
+						throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
+					}
+					srtcpVarsOutbound.ctxObj.protectRtcpSrCompound(
+							plainPktBuf,
+							params.getRtspSsrcId(),
+							encrPktBuf
+						);
+					outpPacketPtr = encrPktBuf;
+					if (srtcpVarsOutbound.ctxUpdatePending.get()) {
+						srtcpVarsOutbound.ctxUpdatePending.set(false);
+						packetCntOutbound.set(0L);
+					}
 				}
-				srtcpCtxOutbound.protectRtcpSrCompound(
-						plainPktBuf,
-						params.getRtspSsrcId(),
-						encrPktBuf
-					);
 			} catch (SrtxpSecurityException e) {
 				logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
 				return;
+			} finally {
+				srtcpVarsOutbound.ctxReadLock.unlock();
 			}
-			outpPacketPtr = encrPktBuf;
 		}
 
 		// send the compound packet as a DatagramPacket over the UDP socket
@@ -352,19 +380,29 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 
 			boolean tmpWasDecr = false;
-			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled() && srtcpCtxInbound != null) {
+			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled()) {
+				srtcpVarsInbound.ctxReadLock.lock();
 				try {
-					srtcpCtxInbound.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-					cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
-					cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
-					cacheRecvBuf2.clear();
-					//
-					wasDecr = true;
-					tmpWasDecr = true;
+					if (srtcpVarsInbound.ctxObj != null) {
+						srtcpVarsInbound.ctxObj.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
+						cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, tmpPktSz);  // contains the current packet
+						cacheRecvBuf1.copyOf(cacheRecvBuf2, tmpPktSz, cacheRecvBuf2.getUsed() - tmpPktSz);
+						cacheRecvBuf2.clear();
+						//
+						wasDecr = true;
+						tmpWasDecr = true;
+						//
+						if (srtcpVarsInbound.ctxUpdatePending.get()) {
+							srtcpVarsInbound.ctxUpdatePending.set(false);
+							packetCntInbound.set(0L);
+						}
+					}
 				} catch (SrtxpSecurityException e) {
 					logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
 					cacheRecvBuf1.clear();
 					return;
+				} finally {
+					srtcpVarsInbound.ctxReadLock.unlock();
 				}
 			}
 

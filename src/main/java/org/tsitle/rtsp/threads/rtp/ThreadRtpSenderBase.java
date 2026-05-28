@@ -27,7 +27,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ThreadRtpSenderBase<
@@ -88,10 +87,9 @@ public abstract class ThreadRtpSenderBase<
 	private int udpMaxPacketLenDelta;
 	private long largestFrame = 0L;
 
-	protected final @Nullable SrtpContextOutbound srtpCtxOutbound;
-	private @Nullable RtpEncryptedPacket cacheRtpEncrPacket = null;
+	private final SrtpVarsOutbound srtpVarsOutbound = new SrtpVarsOutbound();
 
-	private final AtomicInteger packetCntOutbound = new AtomicInteger(0);
+	private final AtomicLong packetCntOutbound = new AtomicLong(0L);
 
 	/**
 	 * Constructor.
@@ -147,13 +145,13 @@ public abstract class ThreadRtpSenderBase<
 		//
 		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			try {
-				this.srtpCtxOutbound = new SrtpContextOutbound(paramsCommon.getCryptoKmdOutbound().orElseThrow());
+				this.srtpVarsOutbound.ctxObj = new SrtpContextOutbound(paramsCommon.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
 				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
 						"SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
-			this.srtpCtxOutbound = null;
+			this.srtpVarsOutbound.ctxObj = null;
 		}
 
 		//
@@ -166,10 +164,10 @@ public abstract class ThreadRtpSenderBase<
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		}
 		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
-			if (this.srtpCtxOutbound == null) {
+			if (this.srtpVarsOutbound.ctxObj == null) {
 				throw new IllegalStateException("srtpCtxOutbound == null");
 			}
-			udpMaxPacketLenDelta += this.srtpCtxOutbound.getSrtpExtraPacketLength();
+			udpMaxPacketLenDelta += this.srtpVarsOutbound.ctxObj.getSrtpExtraPacketLength();
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
 			throw new AssertionError("UDP packet length too small");
@@ -184,24 +182,34 @@ public abstract class ThreadRtpSenderBase<
 
 	public abstract void notifyCongestionLevelChange(int congestionLevel);
 
-	public int getPacketCountOutbound() {
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public long getPacketCountOutbound() {
 		return packetCntOutbound.get();
 	}
 
-	public void setNextSrtxpKmdOutbound(@NonNull SrtxpKmd kmd) {
-		if (srtpCtxOutbound == null) {
-			return;  // if we didn't have a KMD up until now, we don't need to set a new one
+	public void setNextSrtpKmdOutbound(@NonNull SrtxpKmd kmd) {
+		srtpVarsOutbound.ctxWriteLock.lock();
+		try {
+			if (srtpVarsOutbound.ctxObj == null) {
+				return;  // if we didn't have a KMD up until now, we don't need to set a new one
+			}
+			try {
+				srtpVarsOutbound.ctxUpdatePending.set(true);
+				srtpVarsOutbound.ctxObj = new SrtpContextOutbound(kmd);
+			} catch (SrtxpSecurityException e) {
+				throw new IllegalArgumentException("SrtxpSecurityException caught: " + e.getMessage());
+			}
+		} finally {
+			srtpVarsOutbound.ctxWriteLock.unlock();
 		}
-		// @TODO enqueue the new KMD in the srtpCtxOutbound
 	}
 
-	public boolean hasSrtxpRekeyingBeenCompleted() {
-		if (srtpCtxOutbound == null) {
-			packetCntOutbound.set(0);
-			return true;
-		}
-		return false;  // @TODO once the srtpCtxOutbound started using the new KMD we need to reset the packetCntOutbound and return true
+	public boolean hasSrtpOutboundRekeyingBeenCompleted() {
+		return (! srtpVarsOutbound.ctxUpdatePending.get());
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public void run() {
@@ -419,24 +427,33 @@ public abstract class ThreadRtpSenderBase<
 	protected @NonNull RtpPacketContainerBase encryptRtpPacketPayload(@NonNull RtpPacketContainerBase plainPacket) {
 		final String FNC_NAME = getClass().getSimpleName() + ".encryptRtpPacketPayload()";
 
-		if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled() || srtpCtxOutbound == null) {
-			return plainPacket;
-		}
+		srtpVarsOutbound.ctxReadLock.lock();
 		try {
-			if (cacheRtpEncrPacket == null) {
-				cacheRtpEncrPacket = new RtpEncryptedPacket(
-					plainPacket.getPayloadType(),
-					plainPacket,
-					srtpCtxOutbound
-				);
-			} else {
-				cacheRtpEncrPacket.updatePacket(plainPacket);
+			if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled() || srtpVarsOutbound.ctxObj == null) {
+				return plainPacket;
 			}
-			return cacheRtpEncrPacket;
-		} catch (SrtxpSecurityException e) {
-			final String errMsg = "SrtxpSecurityException caught: " + e.getMessage();
-			logError(FNC_NAME, errMsg);
-			throw new IllegalStateException(FNC_NAME + ": " + errMsg);
+			try {
+				if (srtpVarsOutbound.cacheRtpEncrPacket == null || srtpVarsOutbound.ctxUpdatePending.get()) {
+					srtpVarsOutbound.cacheRtpEncrPacket = new RtpEncryptedPacket(
+							plainPacket.getPayloadType(),
+							plainPacket,
+							srtpVarsOutbound.ctxObj
+						);
+				} else {
+					srtpVarsOutbound.cacheRtpEncrPacket.updatePacket(plainPacket);
+				}
+				if (srtpVarsOutbound.ctxUpdatePending.get()) {
+					srtpVarsOutbound.ctxUpdatePending.set(false);
+					packetCntOutbound.set(0L);
+				}
+				return srtpVarsOutbound.cacheRtpEncrPacket;
+			} catch (SrtxpSecurityException e) {
+				final String errMsg = "SrtxpSecurityException caught: " + e.getMessage();
+				logError(FNC_NAME, errMsg);
+				throw new IllegalStateException(FNC_NAME + ": " + errMsg);
+			}
+		} finally {
+			srtpVarsOutbound.ctxReadLock.unlock();
 		}
 	}
 

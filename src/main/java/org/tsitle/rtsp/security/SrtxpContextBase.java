@@ -15,6 +15,7 @@ import java.nio.ByteOrder;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 /**
  * Base class for Contexts for SRTP/RTP and SRTCP/RTCP encryption/decryption
@@ -91,6 +92,18 @@ public abstract class SrtxpContextBase {
 	 */
 	public int getSsrcId() {
 		return ctxKmd.ssrcId();
+	}
+
+	/**
+	 * Get the MKI from the Key Management Data
+	 * @return MKI value
+	 */
+	@SuppressWarnings("unused")
+	public Optional<Long> getMkiValue() {
+		if (ctxKmd.mki().isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(ctxKmd.mki().value());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

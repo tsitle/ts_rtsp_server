@@ -8,6 +8,7 @@ import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.packets.rtp.RtpPacketAac;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp.security.DynInteger;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
@@ -248,12 +249,23 @@ public class SdpBuilder {
 	private void addCryptoParams(StringWriter sw, RtspStaticSessionInfo.StreamKmds streamKmds) {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCryptoParams()";
 
-		// @TODO Test with a different GStreamer version -- doesn't work with 1.24.11
-		// @TODO I did submit a Merge Request (#11629) to GStreamer to fix the issue with MIKEY
 		streamKmds.isForLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
 				rtspSessionInfo.clientUserAgent.startsWith("Lavf"));
 		if (! streamKmds.isForLegacySdes) {
-			streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(1L, streamKmds.rtspSsrcId);
+			// @TODO The current GStreamer version 1.24.11 is buggy and does not propagate the MKI to the SRTxP decoder.
+			// @TODO Try to fix this in GStreamer once my pending Merge Request (#11629) for the Auth Key length issue is accepted.
+			boolean isForBuggyGstreamer = rtspSessionInfo.clientUserAgent.startsWith("GStreamer");
+			if (isForBuggyGstreamer) {
+				streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
+						SrtxpKmd.DEFAULT_ENCR_KEY_LEN,
+						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
+						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
+						DynInteger.createEmpty(),  // <-- no MKI
+						streamKmds.rtspSsrcId
+					);
+			} else {
+				streamKmds.kmdOutbound = SrtxpKmd.createWithDefaults(1L, streamKmds.rtspSsrcId);
+			}
 		} else {
 			/*
 			 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.

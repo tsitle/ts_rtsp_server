@@ -111,16 +111,16 @@ public class RtspProtoParserBase {
 
 	private void parseHeaderLine_useragent(@NonNull String headerLine) {
 		/*
-		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11 -- SRTP Authentication failure
-		 * GStreamer (KUbuntu 24): GStreamer/1.24.2 -- SRTP Authentication failure
-		 * VLC (Rocky Linux 10): LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05) -- SRTP OK
+		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11
+		 * GStreamer (KUbuntu 24): GStreamer/1.24.2
+		 * VLC (Rocky Linux 10): LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)
 		 * FFplay (Rocky Linux 10): Lavf61.7.100
-		 * VLC (Windows): LibVLC/3.0.21 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
+		 * VLC (Windows): LibVLC/3.0.21 (LIVE555 Streaming Media v2016.11.28)
 		 * VLC (macOS x86):
-		 *   LibVLC/3.0.23 (LIVE555 Streaming Media v2016.11.28) -- no SRTP support
-		 *   RealMedia Player Version 6.0.9.1235 (linux-2.0-libc6-i386-gcc2.95) -- SRTP not tested
-		 * RTSP Player (Windows): Lavf59.27.100 -- SRTP not tested
-		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20) -- SRTP not tested
+		 *   LibVLC/3.0.23 (LIVE555 Streaming Media v2016.11.28)
+		 *   RealMedia Player Version 6.0.9.1235 (linux-2.0-libc6-i386-gcc2.95)
+		 * RTSP Player (Windows): Lavf59.27.100
+		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20)
 		 */
 		rtspSessionInfo.clientUserAgent = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT.length()).strip();
 	}

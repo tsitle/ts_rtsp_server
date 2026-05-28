@@ -456,14 +456,15 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP request");
 			}
 			parseHeaderLine_setup_transport(requestUrlInputOrStreamSource, headerLine);
-		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT)) {
-			if (requestType != RtspProtoMessageType.SETUP) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP request");
+		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT)) {
+			if (requestType != RtspProtoMessageType.SETUP && requestType != RtspProtoMessageType.ANNOUNCE) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP/ANNOUNCE request");
 			}
 			if (requestUrlInputOrStreamSource == null) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP request");
+				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP/ANNOUNCE request");
 			}
-			parseHeaderLine_setup_keymgmt(requestUrlInputOrStreamSource, headerLine);
+			SrtxpKmd tmpKmd = parseHeaderLine_keymgmt(headerLine);
+			handleKmd(requestType == RtspProtoMessageType.SETUP, requestUrlInputOrStreamSource, tmpKmd);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {
 			if (requestType != RtspProtoMessageType.PLAY) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Received RANGE header in non-PLAY request");
@@ -617,57 +618,38 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 		rtspSessionInfo.isTransportSrtpSrtcp = tmpStreamInfo.tpIsEncr;
 	}
 
-	private void parseHeaderLine_setup_keymgmt(
-				RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				String headerLine
-			) throws RtspMissingEncryptionParamsException {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_setup_keymgmt()";
+	private @NonNull SrtxpKmd parseHeaderLine_keymgmt(String headerLine) throws RtspMissingEncryptionParamsException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_keymgmt()";
 
-		Objects.requireNonNull(
-				rtspSessionInfo.clientIpAddr,
-				FNC_NAME + ": rtspSessionInfo.clientIpAddr is null"
-			);
-		Objects.requireNonNull(
-				requestUrlInputOrStreamSource.subStreamId,
-				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
-			);
-		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.clientIpAddr,
-				requestUrlInputOrStreamSource.subStreamId,
-				RandomHelper.getRandomUint32(false)
-			);
-
-		boolean haveKeyData = false;
+		SrtxpKmd resObj = null;
 		//
-		String tmpKeymgmt = headerLine.substring(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT.length()).strip();
+		String tmpKeymgmt = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT.length()).strip();
 		// e.g. 'KeyMgmt: prot=mikey; uri="rtsp://.../streamid00"; data="[BASE64 ENCODED DATA]"'
 		StringTokenizer tokens = new StringTokenizer(tmpKeymgmt, ";");
 		while (tokens.hasMoreTokens()) {
 			String curToken = tokens.nextToken().strip();
-			if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT)) {
-				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT.length());
-				if (! tmpSub.equals(RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY)) {
+			if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT)) {
+				String tmpSub = curToken.substring(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.length());
+				if (! tmpSub.equals(RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY)) {
 					throw new RtspMissingEncryptionParamsException();
 				}
-			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA)) {
-				String tmpSub = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA);
+			} else if (curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA)) {
+				String tmpSub = extractKeyValue(curToken, RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA);
 				try {
-					SrtxpKmd kmdRcvd = MikeyParser.parseMickeyMsgIntoKmd(tmpSub);
-					tmpStreamKmds.kmdInbound = kmdRcvd.clone();
-					haveKeyData = true;
-					//System.out.println("<<<<<<<<<<<<<<<< " + kmdRcvd);
+					resObj = MikeyParser.parseMickeyMsgIntoKmd(tmpSub);
 				} catch (SrtxpSecurityException e) {
 					logError(FNC_NAME, "Failed to set client MIKEY: " + e.getMessage());
 					throw new RtspMissingEncryptionParamsException();
 				}
-			} else if (! curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_KM_URI)) {
+			} else if (! curToken.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI)) {
 				logWarn(FNC_NAME, "Unknown Keymgmt parameter: '" + curToken + "'");
 			}
 		}
 
-		if (! haveKeyData) {
+		if (resObj == null) {
 			throw new RtspMissingEncryptionParamsException();
 		}
+		return resObj;
 	}
 
 	private void parseHeaderLine_range(String headerLine) {
@@ -736,6 +718,59 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 	private @NonNull String extractKeyValue(@NonNull String inputStr, @NonNull String key) {
 		return inputStr.substring(key.length())
 				.replace("\"", "").replace("'", "").strip();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void handleKmd(
+				boolean isSetup,
+				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				@NonNull SrtxpKmd kmd
+			) {
+		final String FNC_NAME = getClass().getSimpleName() + ".handleKmd()";
+
+		Objects.requireNonNull(
+				rtspSessionInfo.clientIpAddr,
+				FNC_NAME + ": rtspSessionInfo.clientIpAddr is null"
+			);
+		Objects.requireNonNull(
+				requestUrlInputOrStreamSource.subStreamId,
+				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
+			);
+		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
+				rtspSessionInfo.clientIpAddr,
+				requestUrlInputOrStreamSource.subStreamId,
+				RandomHelper.getRandomUint32(false)
+			);
+
+		//System.out.println("<<<<<<<<<<<<<<<< rcvd KMD: " + kmd);
+
+		SrtxpKmd kmdToUse = kmd;
+		if (kmd.authKeyLen() != SrtxpKmd.DEFAULT_AUTH_KEY_LEN) {
+			/*
+			 * GStreamer is currently buggy. It sends MIKEY messages with a wrong Auth Key length of 10 bytes
+			 * when it is actually using the correct length of 20 bytes.
+			 * I have submitted a Merge Request (#11629) to GStreamer to fix the issue with MIKEY.
+			 */
+			kmdToUse = new SrtxpKmd(
+					kmd.encrKeyLen(),
+					kmd.masterKey(),
+					kmd.masterSalt(),
+					SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
+					kmd.authTagLen(),
+					kmd.mki(),
+					kmd.ssrcId(),
+					kmd.kdr()
+				);
+			//System.out.println("<<<<<<<<<<<<<<<< fixed KMD: " + kmdToUse);
+			logDebug(FNC_NAME, "fixed inbound KMD with wrong Auth Key length");
+		}
+
+		if (isSetup) {
+			tmpStreamKmds.kmdInbound = kmdToUse.clone();
+		} else {
+			tmpStreamKmds.nextKmdInbound = kmdToUse.clone();
+		}
 	}
 
 }

@@ -71,10 +71,15 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 				(! tmpStreamKmds.isForLegacySdes && ! supportedMessageTypes.contains(RtspProtoMessageType.SET_PARAMETER))) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": client does not support SRTxP re-keying");
 		}
+		Objects.requireNonNull(tmpStreamKmds.kmdOutbound);
+		if (tmpStreamKmds.kmdOutbound.mki().isEmpty()) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": cannot re-key when initial KMD had no MKI");
+		}
 
 		//
 		if (! tmpStreamKmds.isForLegacySdes) {
-			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createWithDefaults(tmpStreamInfo.rtspSsrcId);
+			final long nextMki = tmpStreamKmds.kmdOutbound.mki().value() + 1;  // will automatically be wrapped around
+			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createWithDefaults(nextMki, tmpStreamInfo.rtspSsrcId);
 		} else {
 			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createForLegacySdes(tmpStreamInfo.rtspSsrcId);
 		}
@@ -99,10 +104,10 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			@SuppressWarnings("StringBufferReplaceableByString")
 			StringBuilder tmpKmSb = new StringBuilder();
 			tmpKmSb
-					.append(RTSP_RR_HEADER_TOKEN_SET_KEYMGMT).append(" ")
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_KM_PROT).append(RTSP_RR_HEADER_PARAM_VAL_SET_KM_MIKEY).append("; ")
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_KM_URI).append("\"").append(tmpStreamInfo.inputSourceUrlSetup).append("\"; ")
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_KM_DATA).append("\"").append(tmpCryptoStr).append("\"");
+					.append(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT).append(" ")
+					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT).append(RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY).append("; ")
+					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI).append("\"").append(tmpStreamInfo.inputSourceUrlSetup).append("\"; ")
+					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA).append("\"").append(tmpCryptoStr).append("\"");
 			contents.add(tmpKmSb.toString());
 			contents.add(RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + " 0");
 

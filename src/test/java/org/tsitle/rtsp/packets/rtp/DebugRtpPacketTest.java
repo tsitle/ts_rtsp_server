@@ -70,7 +70,6 @@ public class DebugRtpPacketTest {
 		 * }
 		 *
 		 * We can see that the Auth Key length is set to 4 bytes for HMAC-SHA1-32 and 10 bytes for HMAC-SHA1-80.
-		 * The Auth Tag length does not get encoded in the MIKEY Policy Parameters.
 		 *
 		 * See my Merge Request
 		 *   https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/11629
@@ -79,7 +78,7 @@ public class DebugRtpPacketTest {
 				kmdOrg.encrKeyLen(),
 				kmdOrg.masterKey(),
 				kmdOrg.masterSalt(),
-				20,  // <-- workaround for Gstreamer/SRTPENC bug
+				SrtxpKmd.DEFAULT_AUTH_KEY_LEN,  // <-- workaround for Gstreamer/SRTPENC bug
 				kmdOrg.authTagLen(),
 				kmdOrg.mki(),
 				kmdOrg.ssrcId(),

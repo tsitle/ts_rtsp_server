@@ -179,7 +179,13 @@ public final class SrtxpKmd implements Cloneable {
 				kdr
 			);
 		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
+		/*for (int i = 0; i < resObj.encrKeyLen; i++) {
+			resObj.masterKey.set(i, (byte)0x01);  // only for debugging
+		}*/
 		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
+		/*for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
+			resObj.masterSalt.set(i, (byte)0x02);  // only for debugging
+		}*/
 		return resObj;
 	}
 
