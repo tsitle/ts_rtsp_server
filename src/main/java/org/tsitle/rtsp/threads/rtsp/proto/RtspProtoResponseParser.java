@@ -24,12 +24,13 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 	private final RtspConfig rtspConfig;
 
 	public RtspProtoResponseParser(
+				boolean isForServer,
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+		super(isForServer, false, logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
 
 		this.rtspConfig = rtspConfig;
 	}

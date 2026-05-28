@@ -17,15 +17,21 @@ public class RtspProtoParserBase {
 
 	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
 
+	protected final boolean isForServer;
+	protected final boolean isForRequests;
 	protected final @NonNull LogMsgInterface logMsgInterface;
 	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
 	protected final RtspSessionInfo rtspSessionInfo;
 
 	protected RtspProtoParserBase(
+				boolean isForServer,
+				boolean isForRequests,
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
+		this.isForServer = isForServer;
+		this.isForRequests = isForRequests;
 		this.logMsgInterface = logMsgInterface;
 		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -129,6 +135,9 @@ public class RtspProtoParserBase {
 		//final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLine_session()";
 
 		String tmpSessId = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_SESSION.length()).strip();
+		if (isForServer && isForRequests) {
+			rtspSessionInfo.rtspClientRequestSessionId = tmpSessId;
+		}
 		//logDebug(FNC_NAME, "Session='" + tmpSessId + "'");
 		if (! rtspSessionInfo.rtspSessionId.equals(tmpSessId)) {
 			throw new RtspInvalidSessionIdException();

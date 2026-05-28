@@ -26,12 +26,13 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 	private final RtspConfig rtspConfig;
 
 	public RtspProtoRequestParser(
+				boolean isForServer,
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+		super(isForServer, true, logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
 
 		this.rtspConfig = rtspConfig;
 	}
@@ -43,6 +44,7 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseRequest()";
 
 		rtspSessionInfo.authInfo.resetPerRequest();
+		rtspSessionInfo.rtspClientRequestSessionId = "";
 
 		// parse request lines and extract the requestType:
 		String requestLine;
@@ -155,6 +157,26 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 		if (respStatusCode != RtspProtoStatusCode.OK) {
 			return RequestBasicInfo.createKnownWithError(requestType, respStatusCode);
 		}
+
+		//
+		switch (requestType) {
+			case RtspProtoMessageType.PLAY:
+			case RtspProtoMessageType.PAUSE:
+			case RtspProtoMessageType.GET_PARAMETER:
+			case RtspProtoMessageType.SET_PARAMETER:
+			case RtspProtoMessageType.TEARDOWN:
+				if (rtspSessionInfo.rtspSessionId.isBlank() ||
+						! rtspSessionInfo.rtspClientRequestSessionId.equals(rtspSessionInfo.rtspSessionId)) {
+					logError(FNC_NAME, "Invalid/missing Session ID for " + requestType + " request, " +
+							"rejecting request (URL='" + resourceUrl + "')");
+					respStatusCode = RtspProtoStatusCode.SESSION_NOT_FOUND;
+					return RequestBasicInfo.createKnownWithError(requestType, respStatusCode);
+				}
+				break;
+			default:
+				break;
+		}
+
 		//
 		if (requestType == RtspProtoMessageType.SETUP) {
 			Objects.requireNonNull(
@@ -457,11 +479,11 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 			}
 			parseHeaderLine_setup_transport(requestUrlInputOrStreamSource, headerLine);
 		} else if (headerLine.startsWith(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT)) {
-			if (requestType != RtspProtoMessageType.SETUP && requestType != RtspProtoMessageType.ANNOUNCE) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP/ANNOUNCE request");
+			if (requestType != RtspProtoMessageType.SETUP && requestType != RtspProtoMessageType.SET_PARAMETER) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": Received KEYMGMT header in non-SETUP/SET_PARAMETER request");
 			}
 			if (requestUrlInputOrStreamSource == null) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP/ANNOUNCE request");
+				throw new RtspInvalidRequestException(FNC_NAME + ": No IS/SS in SETUP/SET_PARAMETER request");
 			}
 			SrtxpKmd tmpKmd = parseHeaderLine_keymgmt(headerLine);
 			handleKmd(requestType == RtspProtoMessageType.SETUP, requestUrlInputOrStreamSource, tmpKmd);

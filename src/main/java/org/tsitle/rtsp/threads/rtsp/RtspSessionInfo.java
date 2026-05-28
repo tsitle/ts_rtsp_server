@@ -57,6 +57,8 @@ public class RtspSessionInfo {
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
+	/** Current request's RTSP Session ID as received from the client */
+	public @NonNull String rtspClientRequestSessionId = "";
 	/** Last received Sequence Number of RTSP messages within the session from the client for requests */
 	public int rtspClientSeqNrLastRcvd = -1;
 	/** Expected Sequence Number of RTSP messages within the session to receive from the client for requests */

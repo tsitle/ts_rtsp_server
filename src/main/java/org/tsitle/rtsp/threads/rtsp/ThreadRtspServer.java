@@ -106,10 +106,22 @@ public class ThreadRtspServer extends RunnableBase {
 		this.rtspSessionInfo.isRtspsConnection = isRtspsConnection;
 
 		//
-		this.rtspProtoRequestParser = new RtspProtoRequestParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspProtoRequestParser = new RtspProtoRequestParser(
+				true,
+				logMsgInterface,
+				this.rtxpTcpReadWrite,
+				rtspConfig,
+				rtspSessionInfo
+			);
 		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
 		this.rtspProtoResponseBuilder = new RtspProtoResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
-		this.rtspProtoResponseParser = new RtspProtoResponseParser(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
+		this.rtspProtoResponseParser = new RtspProtoResponseParser(
+				true,
+				logMsgInterface,
+				this.rtxpTcpReadWrite,
+				rtspConfig,
+				rtspSessionInfo
+			);
 
 		//
 		this.rtspRequAuthSvc = new RtspRequAuthSvc(logMsgInterface, rtspConfig, rtspSessionInfo);
