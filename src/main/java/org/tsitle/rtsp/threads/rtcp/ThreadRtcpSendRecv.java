@@ -18,6 +18,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -368,6 +369,27 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private void handleReceived() {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleReceived()";
 
+		List<@NonNull BufferExt> outputRawPackets = new ArrayList<>();
+		unpackReceivedCompound(outputRawPackets);
+
+		for (BufferExt rawPktBe : outputRawPackets) {
+			final RtcpPacketHeader rtcpPktHd = new RtcpPacketHeader(rawPktBe);
+
+			// handle the payload
+			//logDebug(FNC_NAME, "Handling RTCP packet: " + rtcpPktHd);
+			switch (rtcpPktHd.getPayloadType()) {
+				case RR: handleRtcpPacketRR(rtcpPktHd, rawPktBe); break;
+				case SR: handleRtcpPacketSR(rtcpPktHd, rawPktBe); break;
+				case SDES: handleRtcpPacketSDES(rtcpPktHd, rawPktBe); break;
+				case BYE: handleRtcpPacketBYE(rtcpPktHd, rawPktBe); break;
+				default: logWarn(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
+			}
+		}
+	}
+
+	private void unpackReceivedCompound(@NonNull List<@NonNull BufferExt> outputRawPackets) {
+		final String FNC_NAME = getClass().getSimpleName() + ".unpackReceivedCompound()";
+
 		boolean wasDecr = false;
 		while (! cacheRecvBuf1.isEmpty()) {
 			if (cacheRecvBuf1.getUsed() >= 4 &&
@@ -433,15 +455,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 				}
 			}
 
-			// handle the payload
-			//logDebug(FNC_NAME, "Handling RTCP packet: " + rtcpPktHd);
-			switch (rtcpPktHd.getPayloadType()) {
-				case RR: handleRtcpPacketRR(rtcpPktHd); break;
-				case SR: handleRtcpPacketSR(rtcpPktHd); break;
-				case SDES: handleRtcpPacketSDES(rtcpPktHd); break;
-				case BYE: handleRtcpPacketBYE(rtcpPktHd); break;
-				default: logWarn(FNC_NAME, "have unsupported RTCP packet type: " + rtcpPktHd.getPayloadType());
-			}
+			// add payload to output
+			outputRawPackets.add(cacheRecvBuf3.clone());
+			cacheRecvBuf3.clear();
 		}
 	}
 
@@ -477,7 +493,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		cacheRecvBuf2.clear();
 	}
 
-	private void handleRtcpPacketRR(RtcpPacketHeader rtcpPktHd) {
+	private void handleRtcpPacketRR(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
@@ -486,7 +502,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			return;
 		}
 		// read and validate the packet
-		RtcpPacketRR rtcpPktInner = new RtcpPacketRR(rtcpPktHd, cacheRecvBuf3);
+		RtcpPacketRR rtcpPktInner = new RtcpPacketRR(rtcpPktHd, rawPktBe);
 		//
 		for (int itemNr = 1; itemNr <= rtcpPktHd.getItemsCount(); itemNr++) {
 			RtcpInnerRecpReportBlock innerRb = rtcpPktInner.getRecpReportBlock(itemNr).orElseThrow();
@@ -514,15 +530,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		params.getCbNotifyRrPacketReceived().orElseThrow().accept(Instant.now());
 	}
 
-	private void handleRtcpPacketSR(RtcpPacketHeader rtcpPktHd) {
+	private void handleRtcpPacketSR(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {
 		// read and validate the packet
-		RtcpPacketSR rtcpPktInner = new RtcpPacketSR(rtcpPktHd, cacheRecvBuf3);
+		RtcpPacketSR rtcpPktInner = new RtcpPacketSR(rtcpPktHd, rawPktBe);
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			throw new IllegalStateException();  // only for the linter
 		}
 	}
 
-	private void handleRtcpPacketSDES(RtcpPacketHeader rtcpPktHd) {
+	private void handleRtcpPacketSDES(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketSDES()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
@@ -531,17 +547,17 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			return;
 		}
 		// read and validate the packet
-		RtcpPacketSDES rtcpPktInner = new RtcpPacketSDES(rtcpPktHd, cacheRecvBuf3);
+		RtcpPacketSDES rtcpPktInner = new RtcpPacketSDES(rtcpPktHd, rawPktBe);
 		if (rtcpPktInner.getItemsCount() > 1000) {
 			throw new IllegalStateException();  // only for the linter
 		}
 	}
 
-	private void handleRtcpPacketBYE(RtcpPacketHeader rtcpPktHd) {
+	private void handleRtcpPacketBYE(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketBYE()";
 
 		// read and validate the packet
-		RtcpPacketBYE rtcpPktInner = new RtcpPacketBYE(rtcpPktHd, cacheRecvBuf3);
+		RtcpPacketBYE rtcpPktInner = new RtcpPacketBYE(rtcpPktHd, rawPktBe);
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			return;  // only for the linter
 		}
