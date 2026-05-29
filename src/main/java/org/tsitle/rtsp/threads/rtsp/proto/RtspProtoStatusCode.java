@@ -12,6 +12,7 @@ public enum RtspProtoStatusCode {
 	METHOD_NOT_ALLOWED(405),
 	URI_TOO_LONG(414),
 	SESSION_NOT_FOUND(454),
+	METHOD_NOT_VALID_IN_THIS_STATE(455),
 	UNSUPPORTED_TRANSPORT(461),
 	INTERNAL_SERVER_ERROR(500),
 	NOT_IMPLEMENTED(501);
@@ -35,6 +36,7 @@ public enum RtspProtoStatusCode {
 				case METHOD_NOT_ALLOWED -> "Method Not Allowed";
 				case URI_TOO_LONG -> "URI Too Long";
 				case SESSION_NOT_FOUND -> "Session Not Found";
+				case METHOD_NOT_VALID_IN_THIS_STATE -> "Method Not Valid In This State";
 				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
 				case INTERNAL_SERVER_ERROR -> "Internal Server Error";
 				case NOT_IMPLEMENTED -> "Not Implemented";

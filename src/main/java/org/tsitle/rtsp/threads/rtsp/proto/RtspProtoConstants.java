@@ -27,7 +27,8 @@ public class RtspProtoConstants {
 			RtspProtoMessageType.TEARDOWN,
 			RtspProtoMessageType.DESCRIBE,
 			RtspProtoMessageType.OPTIONS,
-			RtspProtoMessageType.GET_PARAMETER
+			RtspProtoMessageType.GET_PARAMETER,
+			RtspProtoMessageType.SET_PARAMETER
 		);
 
 	// RTSP Requests/Responses

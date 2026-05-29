@@ -140,6 +140,10 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 	}
 
+	public boolean hasSrtcpInboundRekeyingBeenCompleted() {
+		return (! srtcpVarsInbound.ctxUpdatePending.get());
+	}
+
 	public long getPacketCountOutbound() {
 		return packetCntOutbound.get();
 	}
@@ -450,27 +454,22 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		try {
 			srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-		} catch (SrtxpInvalidMkiException e1) {
-			if (srtcpVarsInbound.ctxObjNext != null) {
-				// replace the current KMD
-				srtcpVarsInbound.ctxReadLock.unlock();
-				srtcpVarsInbound.ctxWriteLock.lock();
-				try {
-					srtcpVarsInbound.ctxObjCur = srtcpVarsInbound.ctxObjNext;
-					srtcpVarsInbound.ctxObjNext = null;
-				} finally {
-					srtcpVarsInbound.ctxWriteLock.unlock();
-				}
-				srtcpVarsInbound.ctxReadLock.lock();
-				// try again
-				try {
-					srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-				} catch (SrtxpInvalidMkiException e2) {
-					throw new SrtxpSecurityException(e2.getMessage());
-				}
-			} else {
+		} catch (SrtxpInvalidMkiException | SrtxpInvalidAuthTagException e1) {
+			if (srtcpVarsInbound.ctxObjNext == null) {
 				throw new SrtxpSecurityException(e1.getMessage());
 			}
+			// replace the current KMD
+			srtcpVarsInbound.ctxReadLock.unlock();
+			srtcpVarsInbound.ctxWriteLock.lock();
+			try {
+				srtcpVarsInbound.ctxObjCur = srtcpVarsInbound.ctxObjNext;
+				srtcpVarsInbound.ctxObjNext = null;
+			} finally {
+				srtcpVarsInbound.ctxWriteLock.unlock();
+			}
+			srtcpVarsInbound.ctxReadLock.lock();
+			// try again
+			srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
 		}
 
 		cacheRecvBuf3.copyOf(cacheRecvBuf2, 0, pktSz);  // contains the current decrypted packet

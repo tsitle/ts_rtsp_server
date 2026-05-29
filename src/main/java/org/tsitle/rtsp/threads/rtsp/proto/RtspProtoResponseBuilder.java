@@ -51,6 +51,9 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			case GET_PARAMETER:
 				sendResponseGetParameter();
 				break;
+			case SET_PARAMETER:
+				sendResponseSetParameter();
+				break;
 			case OPTIONS:
 				sendResponseOptions();
 				break;
@@ -106,6 +109,18 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	private void sendResponseGetParameter() throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseGetParameter()";
+
+		List<String> contents = new ArrayList<>();
+		contents.add("");
+		internalSendResponse(contents);
+		logDebug(FNC_NAME, "Sent response '" + RtspProtoStatusCode.OK +
+				"' to Client (<" +
+				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
+				">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
+	}
+
+	private void sendResponseSetParameter() throws TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendResponseSetParameter()";
 
 		List<String> contents = new ArrayList<>();
 		contents.add("");

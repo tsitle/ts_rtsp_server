@@ -362,6 +362,16 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 			return resObj;
 		}
 
+		if ((requestType == RtspProtoMessageType.GET_PARAMETER || requestType == RtspProtoMessageType.SET_PARAMETER) &&
+				! rscSubStreamId.isBlank()) {
+			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
+			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+
+			resObj.subStreamId = rscSubStreamId;
+			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
+		}
+
 		//
 		if (rscUrlPathMod.endsWith("/")) {
 			rscUrlPathMod = rscUrlPathMod.substring(0, rscUrlPathMod.length() - 1);
@@ -790,6 +800,16 @@ public final class RtspProtoRequestParser extends RtspProtoParserBase {
 
 		if (isSetup) {
 			tmpStreamKmds.kmdInbound = kmdToUse.clone();
+		} else if (tmpStreamKmds.kmdInbound == null) {
+			logWarn(FNC_NAME, "received new inbound KMD but had no previous KMD - ignoring new KMD");
+		} else if (tmpStreamKmds.kmdInbound.mki().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound KMD but previous KMD had no MKI - ignoring new KMD");
+		} else if (kmdToUse.mki().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound KMD but it has no MKI - ignoring new KMD");
+		} else if (kmdToUse.mki().value() == tmpStreamKmds.kmdInbound.mki().value()) {
+			logWarn(FNC_NAME, "received new inbound KMD but MKI is unchanged - ignoring new KMD");
+		} else if (kmdToUse.ssrcId() != tmpStreamKmds.kmdInbound.ssrcId()) {
+			logWarn(FNC_NAME, "received new inbound KMD but SSRC has been modified - ignoring new KMD");
 		} else {
 			tmpStreamKmds.nextKmdInbound = kmdToUse.clone();
 		}

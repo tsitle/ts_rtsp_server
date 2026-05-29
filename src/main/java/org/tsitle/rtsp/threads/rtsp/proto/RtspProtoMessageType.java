@@ -3,16 +3,27 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 public enum RtspProtoMessageType {
 
 	UNKNOWN,
-	SETUP,
-	PLAY,
-	PAUSE,
-	TEARDOWN,
-	DESCRIBE,
+	/** Send allowed methods. Also used for keep-alive. (RFC-2326 Section 10.1) */
 	OPTIONS,
-	SET_PARAMETER,
-	GET_PARAMETER,
+	/** Send initial SDP. (RFC-2326 Section 10.2) */
+	DESCRIBE,
+	/** Announce a new SDP. (RFC-2326 Section 10.3) */
 	ANNOUNCE,
-	RECORD,
-	REDIRECT
+	/** Set a sub-stream up. (RFC-2326 Section 10.4) */
+	SETUP,
+	/** Start playback of stream. (RFC-2326 Section 10.5) */
+	PLAY,
+	/** Pause playback of stream. (RFC-2326 Section 10.6) */
+	PAUSE,
+	/** Stop playback of stream and tear the session down. (RFC-2326 Section 10.7) */
+	TEARDOWN,
+	/** Send one or more parameter values for the session. Also used for keep-alive. (RFC-2326 Section 10.8) */
+	GET_PARAMETER,
+	/** Receive one or more parameter values for the session. (RFC-2326 Section 10.9) */
+	SET_PARAMETER,
+	/** Inform the client that it must connect to another server location. (RFC-2326 Section 10.10) */
+	REDIRECT,
+	/** Initiates recording a range of media data. (RFC-2326 Section 10.11) */
+	RECORD
 
 }
