@@ -106,16 +106,20 @@ public class SrtpContextInbound extends SrtpContextBase {
 		// Session keys re-derivation
 		sessionKeysRederivation(true, srtpPacketIndex);
 
+		// validate MKI
+		if (! ctxKmd.mki().isEmpty()) {
+			srtpPacketBufView.setOffset(srtpPacketBufView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+			validateMki(srtpPacketBufView, "SRTP");
+		}
+
 		// validate Auth Tag
 		validateAuthTag(srtpPacketBufView, true, ctxStateSrtpRocInbound);
 
 		//
 		srtpPacketBufView.setLength(srtpPacketBufView.getInternalBeLength() - ctxKmd.authTagLen());
 
-		// validate MKI
+		// remove MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			srtpPacketBufView.setOffset(srtpPacketBufView.getLength() - ctxKmd.mki().sizeBytes());
-			validateMki(srtpPacketBufView, "SRTP");
 			srtpPacketBufView.increaseLength(-1 * ctxKmd.mki().sizeBytes());
 		}
 

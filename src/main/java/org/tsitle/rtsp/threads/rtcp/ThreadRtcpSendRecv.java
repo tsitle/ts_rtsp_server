@@ -454,7 +454,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		try {
 			srtcpVarsInbound.ctxObjCur.unprotectSrtcpCompound(cacheRecvBuf1, cacheRecvBuf2);
-		} catch (SrtxpInvalidMkiException | SrtxpInvalidAuthTagException e1) {
+		} catch (SrtxpInvalidMkiException e1) {
 			if (srtcpVarsInbound.ctxObjNext == null) {
 				throw new SrtxpSecurityException(e1.getMessage());
 			}

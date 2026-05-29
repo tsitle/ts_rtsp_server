@@ -68,16 +68,20 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 		// Session keys re-derivation
 		sessionKeysRederivation(false, tmpIndexOnly);
 
+		// validate MKI
+		if (! ctxKmd.mki().isEmpty()) {
+			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+			validateMki(encrPktView, "SRTCP");
+		}
+
 		// validate Auth Tag
 		validateAuthTag(encrPktView, false, 0);
 
 		// remove Auth Tag
 		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen());
 
-		// validate and remove MKI
+		// remove MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.mki().sizeBytes());
-			validateMki(encrPktView, "SRTCP");
 			encrPktView.increaseLength(-1 * ctxKmd.mki().sizeBytes());
 		}
 
