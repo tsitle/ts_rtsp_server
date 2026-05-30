@@ -136,7 +136,7 @@ public class RtspProtoParserBase {
 
 		String tmpSessId = headerLine.substring(RTSP_RR_HEADER_TOKEN_XXX_SESSION.length()).strip();
 		if (isForServer && isForRequests) {
-			rtspSessionInfo.rtspClientRequestSessionId = tmpSessId;
+			/* OUTDATED rtspSessionInfo.rtspClientRequestSessionId = tmpSessId; */
 		}
 		//logDebug(FNC_NAME, "Session='" + tmpSessId + "'");
 		if (! rtspSessionInfo.rtspSessionId.equals(tmpSessId)) {

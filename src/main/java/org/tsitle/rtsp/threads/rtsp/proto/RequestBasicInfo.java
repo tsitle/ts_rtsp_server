@@ -35,13 +35,6 @@ public class RequestBasicInfo {
 		return res;
 	}
 
-	public static @NonNull RequestBasicInfo createUnsupportedMethod() {
-		RequestBasicInfo res = new RequestBasicInfo();
-		res.messageType = RtspProtoMessageType.UNKNOWN;
-		res.statusCode = RtspProtoStatusCode.METHOD_NOT_ALLOWED;
-		return res;
-	}
-
 	public static @NonNull RequestBasicInfo createKnownWithError(
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoStatusCode statusCode

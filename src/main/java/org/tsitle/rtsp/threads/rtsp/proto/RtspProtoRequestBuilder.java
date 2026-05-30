@@ -10,10 +10,12 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.util.*;
 
 import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1;
 
 public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
@@ -162,7 +164,9 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
 		List<String> finalOutputLines = new ArrayList<>();
 
-		finalOutputLines.add(messageType.name() + " " + uri + " " + rtspSessionInfo.lastRequestRtspProtoVersion + CRLF);
+		String tmpRtspProtoVersStr = (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V1_0 ?
+				RTSP_RR_CMD_PROTOCOL_VERSION_1 : RTSP_RR_CMD_PROTOCOL_VERSION_2);
+		finalOutputLines.add(messageType.name() + " " + uri + " " + tmpRtspProtoVersStr + CRLF);
 		//
 		finalOutputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspServerSeqNrExpected + CRLF);
 		if (! rtspSessionInfo.rtspSessionId.isBlank()) {

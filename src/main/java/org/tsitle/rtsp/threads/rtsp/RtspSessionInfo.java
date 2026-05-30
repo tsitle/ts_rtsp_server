@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -52,13 +53,11 @@ public class RtspSessionInfo {
 	public boolean isRtspsConnection = false;
 	/** Is RTP/RTCP encryption required? */
 	public boolean isRtpRtcpEncryptionRequired = false;
-	/** Force RTP/RTCP encryption? */
+	/** Force RTP/RTCP encryption (aka SRTP/SRTCP)? */
 	public boolean forceRtpRtcpEncryption = false;
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
-	/** Current request's RTSP Session ID as received from the client */
-	public @NonNull String rtspClientRequestSessionId = "";
 	/** Last received Sequence Number of RTSP messages within the session from the client for requests */
 	public int rtspClientSeqNrLastRcvd = -1;
 	/** Expected Sequence Number of RTSP messages within the session to receive from the client for requests */
@@ -74,7 +73,7 @@ public class RtspSessionInfo {
 	public @NonNull String clientPlaybackRangeValue = "";
 
 	/** RTSP protocol version used by the client in the last request (e.g. 'RTSP/1.0') */
-	public @NonNull String lastRequestRtspProtoVersion = "-";
+	public @NonNull RtspProtocolVersion lastRequestRtspProtoVersion = RtspProtocolVersion.NONE;
 
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();

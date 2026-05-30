@@ -62,7 +62,7 @@ public class ThreadRtspServer extends RunnableBase {
 	private final RtspConfig rtspConfig;
 	private final RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final RtspSessionInfo rtspSessionInfo = new RtspSessionInfo();
-	private final RtspProtoRequestParser rtspProtoRequestParser;
+	private final RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final RtspProtoRequestBuilder rtspProtoRequestBuilder;
 	private final RtspProtoResponseBuilder rtspProtoResponseBuilder;
 	private final RtspProtoResponseParser rtspProtoResponseParser;
@@ -71,8 +71,6 @@ public class ThreadRtspServer extends RunnableBase {
 
 	private final Map<Integer, ChildThreadsForOneStream> childThreadsForOneStreamMap = new HashMap<>();
 	private final Map<Integer, ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
-
-	private final RtspRequAuthSvc rtspRequAuthSvc;
 
 	/**
 	 * Constructor.
@@ -106,12 +104,11 @@ public class ThreadRtspServer extends RunnableBase {
 		this.rtspSessionInfo.isRtspsConnection = isRtspsConnection;
 
 		//
-		this.rtspProtoRequestParser = new RtspProtoRequestParser(
-				true,
+		this.rtspProtoRequestInputSvc = new RtspProtoRequestInputSvc(
 				logMsgInterface,
-				this.rtxpTcpReadWrite,
 				rtspConfig,
-				rtspSessionInfo
+				rtspSessionInfo,
+				this.rtxpTcpReadWrite
 			);
 		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
 		this.rtspProtoResponseBuilder = new RtspProtoResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
@@ -122,9 +119,6 @@ public class ThreadRtspServer extends RunnableBase {
 				rtspConfig,
 				rtspSessionInfo
 			);
-
-		//
-		this.rtspRequAuthSvc = new RtspRequAuthSvc(logMsgInterface, rtspConfig, rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -600,29 +594,15 @@ public class ThreadRtspServer extends RunnableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private Optional<RequestBasicInfo> getNextRequest()
+	private @NonNull RequestBasicInfo getNextRequest()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".getNextRequest()";
+		RequestBasicInfo resObj = rtspProtoRequestInputSvc.getNextRequest();
 
-		if (rtxpTcpReadWrite.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
-
-		RequestBasicInfo requestBasicInfo = rtspProtoRequestParser.parseRequest();  // blocks for setSoTimeout() value
-		if (! requestBasicInfo.isValid()) {
-			logError(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
-					requestBasicInfo.messageType,
-					requestBasicInfo.statusCode, rtspSessionInfo.rtspClientSeqNrLastRcvd));
-			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
-			return Optional.empty();
-		}
-		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%d)",
-				requestBasicInfo.messageType, rtspSessionInfo.rtspClientSeqNrLastRcvd));
-		return Optional.of(requestBasicInfo);
+		rtspProtoResponseBuilder.sendResponse(resObj);
+		return resObj;
 	}
 
-	private boolean handleSuccessfulRequest(@NonNull RequestBasicInfo requestBasicInfo)
-			throws TcpSocketClosedException, TcpSocketIoException, UdpSocketIoException {
+	private boolean handleSuccessfulRequest(@NonNull RequestBasicInfo requestBasicInfo) throws TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleSuccessfulRequest()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
@@ -631,24 +611,6 @@ public class ThreadRtspServer extends RunnableBase {
 
 		//
 		SessionState nextState = rtspSessionInfo.sessionState;
-
-		// check whether the request is allowed in the current RTSP state
-		checkRequestTypeVsState(requestBasicInfo);
-		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
-			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
-			return false;
-		}
-
-		// check whether the client needs to be authenticated and if so, whether he actually is
-		rtspRequAuthSvc.checkAuthorization(requestBasicInfo);
-		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
-			rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
-			// keep the connection open if only the authentication failed
-			return (requestBasicInfo.statusCode == RtspProtoStatusCode.UNAUTHORIZED);
-		}
-
-		//
-		rtspProtoResponseBuilder.sendResponse(requestBasicInfo);
 
 		//
 		Objects.requireNonNull(
@@ -736,43 +698,6 @@ public class ThreadRtspServer extends RunnableBase {
 			logDebug(FNC_NAME, "RTSP state is now " + nextState);
 		}
 		return true;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void checkRequestTypeVsState(@NonNull RequestBasicInfo requestBasicInfo) {
-		final String FNC_NAME = getClass().getSimpleName() + ".checkRequestTypeVsState()";
-
-		if (requestBasicInfo.messageType == RtspProtoMessageType.OPTIONS ||
-				requestBasicInfo.messageType == RtspProtoMessageType.DESCRIBE ||
-				requestBasicInfo.messageType == RtspProtoMessageType.SETUP ||
-				requestBasicInfo.messageType == RtspProtoMessageType.GET_PARAMETER ||
-				requestBasicInfo.messageType == RtspProtoMessageType.SET_PARAMETER) {
-			return;
-		}
-
-		boolean wasOk = false;
-		switch (rtspSessionInfo.sessionState) {
-			case READY:
-				if (requestBasicInfo.messageType == RtspProtoMessageType.PLAY ||
-						requestBasicInfo.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
-					wasOk = true;
-				}
-				break;
-			case PLAYING:
-				if (requestBasicInfo.messageType == RtspProtoMessageType.PAUSE ||
-						requestBasicInfo.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
-					wasOk = true;
-				}
-				break;
-		}
-
-		if (! wasOk) {
-			requestBasicInfo.statusCode = RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE;
-			logWarn(FNC_NAME, String.format("Request %s not valid for current RTSP state %s, rejecting it with code %s",
-					requestBasicInfo.messageType,
-					rtspSessionInfo.sessionState, requestBasicInfo.statusCode));
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -943,12 +868,13 @@ public class ThreadRtspServer extends RunnableBase {
 
 		//
 		try {
-			Optional<RequestBasicInfo> optRequestBasicInfo = getNextRequest();
+			RequestBasicInfo requestBasicInfo = getNextRequest();
 			rtspTimeoutLastRequ = Instant.now();
-			if (optRequestBasicInfo.isEmpty()) {
-				return false;  // terminate session
+			if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
+				// terminate session unless only the authentication failed
+				return (requestBasicInfo.statusCode == RtspProtoStatusCode.UNAUTHORIZED);
 			}
-			return handleSuccessfulRequest(optRequestBasicInfo.get());
+			return handleSuccessfulRequest(requestBasicInfo);
 		} catch (InputStreamNotReadyException e1) {
 			Thread.sleep(15);
 			return true;

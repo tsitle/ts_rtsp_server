@@ -12,12 +12,14 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.io.StringWriter;
 import java.net.*;
 import java.util.*;
 
 import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1;
 
 public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
@@ -249,7 +251,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED + tmpStreamInfo.tpClientDestTcpChannRtp + "-" +
 					tmpStreamInfo.tpClientDestTcpChannRtcp;
 		}
-		if (rtspSessionInfo.lastRequestRtspProtoVersion.equals(RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
+		if (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V2_0) {
 			tmpLine += ";" + RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId);  // only valid for unicast transmission
 		}
 		contents.add(tmpLine);
@@ -412,10 +414,13 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			throws TcpSocketIoException {
 		List<String> outputLines = new ArrayList<>();
 
-		outputLines.add(rtspSessionInfo.lastRequestRtspProtoVersion + " " +
-				errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
+		String tmpRtspProtoVersStr = (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V1_0 ?
+				RTSP_RR_CMD_PROTOCOL_VERSION_1 : RTSP_RR_CMD_PROTOCOL_VERSION_2);
+		outputLines.add(tmpRtspProtoVersStr + " " + errorCode.getValue() + " " + errorCode.getReasonPhrase() + CRLF);
 		//
-		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspClientSeqNrResponse + CRLF);
+		if (rtspSessionInfo.rtspClientSeqNrResponse >= 0) {
+			outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_CSEQ + " " + rtspSessionInfo.rtspClientSeqNrResponse + CRLF);
+		}
 		outputLines.add(RTSP_RR_HEADER_TOKEN_XXX_DATE + " " + buildDateString() + CRLF);
 		//
 		for (String entry : contents) {

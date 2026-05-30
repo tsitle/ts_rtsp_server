@@ -125,11 +125,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	}
 
 	public void setNextSrtcpKmdInbound(@NonNull SrtxpKmd kmd) {
+		final String FNC_NAME = getClass().getSimpleName() + ".setNextSrtcpKmdInbound()";
+
 		srtcpVarsInbound.ctxWriteLock.lock();
 		try {
 			if (srtcpVarsInbound.ctxObjCur == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
+			logDebug(FNC_NAME, "Setting next SRTCP inbound KMD (ss=" + params.getStreamSourceId() +
+					", MKI=" + Long.toUnsignedString(kmd.mki().value()) + ")");
 			try {
 				srtcpVarsInbound.ctxUpdatePending.set(true);
 				srtcpVarsInbound.ctxObjNext = new SrtcpContextInbound(kmd);
@@ -150,11 +154,15 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	}
 
 	public void setNextSrtcpKmdOutbound(@NonNull SrtxpKmd kmd) {
+		final String FNC_NAME = getClass().getSimpleName() + ".setNextSrtcpKmdOutbound()";
+
 		srtcpVarsOutbound.ctxWriteLock.lock();
 		try {
 			if (srtcpVarsOutbound.ctxObj == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
+			logDebug(FNC_NAME, "Setting next SRTCP outbound KMD (ss=" + params.getStreamSourceId() +
+					", MKI=" + Long.toUnsignedString(kmd.mki().value()) + ")");
 			try {
 				srtcpVarsOutbound.ctxUpdatePending.set(true);
 				srtcpVarsOutbound.ctxObj = new SrtcpContextOutbound(kmd);
