@@ -9,7 +9,6 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,11 +52,10 @@ public class RtspUserAuthSvc {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
 				! (rtspSessionInfo.authInfo.authNonceClient.equalsIgnoreCase(rtspSessionInfo.authInfo.authNonceServer) ||
 						RtspStaticSessionInfo.existsAuthServerNonce(
-								rtspSessionInfo.clientIpAddr, rtspSessionInfo.authInfo.authNonceClient
+								rtspSessionInfo.getClientIpAddr(), rtspSessionInfo.authInfo.authNonceClient
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;

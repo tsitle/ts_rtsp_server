@@ -43,7 +43,7 @@ public class RtspSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** Client IP address */
-	public @Nullable InetAddress clientIpAddr = null;
+	private @Nullable InetAddress clientIpAddr = null;
 	/** Has the client requested UDP transport? */
 	public boolean isTransportUdp = false;
 	/** Has the client requested RTP/RTCP encryption transport? */
@@ -95,5 +95,16 @@ public class RtspSessionInfo {
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
+
+	public @NonNull InetAddress getClientIpAddr() {
+		if (clientIpAddr == null) {
+			throw new IllegalStateException("Client IP address not set");
+		}
+		return clientIpAddr;
+	}
+
+	public void setClientIpAddr(@NonNull InetAddress clientIpAddr) {
+		this.clientIpAddr = clientIpAddr;
+	}
 
 }

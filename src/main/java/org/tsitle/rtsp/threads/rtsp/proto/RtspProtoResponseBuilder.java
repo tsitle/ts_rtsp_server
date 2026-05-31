@@ -226,7 +226,6 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 		 *   RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=38852-38853;server_port=6970-6971;ssrc=DEADBEEF
 		 * See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
 		 */
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr);
 		Objects.requireNonNull(tmpStreamInfo.tpServerSrcUdpSocketRtp);
 		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
 		String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
@@ -238,7 +237,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 		}
 		tmpLine += ";" +
 				RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST + ";" +
-				RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP + rtspSessionInfo.clientIpAddr.getHostAddress() + ";" +
+				RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP + rtspSessionInfo.getClientIpAddr().getHostAddress() + ";" +
 				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP + tmpRtspHostIp + ";";
 		if (tmpStreamInfo.tpIsUdp) {
 			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT +
@@ -431,8 +430,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	private void addAuthInfoToResponse(@NonNull List<@NonNull String> contents) {
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
-			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.clientIpAddr);
+			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.getClientIpAddr());
 		}
 		contents.add(RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH + " " + RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
 				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + RTSP_AUTH_REALM + "\", " +

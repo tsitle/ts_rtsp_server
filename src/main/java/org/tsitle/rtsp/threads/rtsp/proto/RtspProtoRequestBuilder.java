@@ -60,10 +60,9 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = getStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
 
 		// get the StreamKmds object
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr);
 		Objects.requireNonNull(requestUrlInputOrStreamSource.subStreamId);
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.clientIpAddr,
+				rtspSessionInfo.getClientIpAddr(),
 				requestUrlInputOrStreamSource.subStreamId,
 				tmpStreamInfo.rtspSsrcId
 			);

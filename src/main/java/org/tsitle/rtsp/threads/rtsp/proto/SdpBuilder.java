@@ -16,7 +16,6 @@ import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
 
 import java.io.StringWriter;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
@@ -120,9 +119,8 @@ public class SdpBuilder {
 		RtspStreamSource tmpSsObj = optSsObj.get();
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 		final String outputSubStreamId = RtspStaticSessionInfo.addSubStream(
-				rtspSessionInfo.clientIpAddr,
+				rtspSessionInfo.getClientIpAddr(),
 				rtspInputSource.getId(),
 				tmpSsObj.getId()
 			);
@@ -236,7 +234,7 @@ public class SdpBuilder {
 		// ----------------------------------------
 		// create or update the StreamKmds object
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.clientIpAddr,
+				rtspSessionInfo.getClientIpAddr(),
 				outputSubStreamId,
 				RandomHelper.getRandomUint32(false)
 			);

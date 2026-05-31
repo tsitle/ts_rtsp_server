@@ -186,8 +186,6 @@ public final class RtspProtoRequestProcessor {
 	}
 
 	private void checkRequestTypeVsState(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".checkRequestTypeVsState()";
-
 		if (msg.messageType == RtspProtoMessageType.OPTIONS ||
 				msg.messageType == RtspProtoMessageType.DESCRIBE ||
 				msg.messageType == RtspProtoMessageType.SETUP ||
@@ -224,8 +222,6 @@ public final class RtspProtoRequestProcessor {
 				@NonNull RtspProtoMessageType requestType,
 				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
-		final String FNC_NAME = getClass().getSimpleName() + ".processResourceUrl()";
-
 		if (rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RTSPS_URL_PROTOCOL + "://")) {
 			throw new RtspInvalidUriException("Invalid URL for RTSPS");
 		}
@@ -266,9 +262,8 @@ public final class RtspProtoRequestProcessor {
 				throw new RtspInvalidUriException("Invalid Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
 			}
 			//
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
 			if (tmpSubStreamInfo.isEmpty()) {
 				throw new RtspSubStreamIdNotFoundException("Sub-Stream ID='" + rscSubStreamId + "'");
 			}
@@ -289,10 +284,9 @@ public final class RtspProtoRequestProcessor {
 				throw new RtspInvalidUriException("Missing Sub-Stream ID in URL path: '" + rscUrlPathOrg + "'");
 			}
 			//
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 			final String tmpErrMsgSsid = rscSubStreamId;
 			RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getStreamKmds(
-					rtspSessionInfo.clientIpAddr,
+					rtspSessionInfo.getClientIpAddr(),
 					rscSubStreamId
 				).orElseThrow(() -> new RtspInvalidUriException("No StreamKmds for Sub-Stream ID '" + tmpErrMsgSsid + "'"));
 			RtspStaticSessionInfo.addStreamInfo(
@@ -305,9 +299,8 @@ public final class RtspProtoRequestProcessor {
 			//
 			rtspSessionInfo.inputSourceUrlPerMtMap.put(RtspProtoMessageType.SETUP, resourceUrl);
 
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
 			resObj.subStreamId = rscSubStreamId;
 			resObj.inputSourceId = tmpSubStreamInfo.orElseThrow().inputSourceId();
 			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
@@ -320,9 +313,8 @@ public final class RtspProtoRequestProcessor {
 
 		if ((requestType == RtspProtoMessageType.GET_PARAMETER || requestType == RtspProtoMessageType.SET_PARAMETER) &&
 				! rscSubStreamId.isBlank()) {
-			Objects.requireNonNull(rtspSessionInfo.clientIpAddr, FNC_NAME + ": rtspSessionInfo.clientIpAddr is null");
 			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.clientIpAddr, rscSubStreamId);
+					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
 
 			resObj.subStreamId = rscSubStreamId;
 			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
@@ -549,15 +541,11 @@ public final class RtspProtoRequestProcessor {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleKmd()";
 
 		Objects.requireNonNull(
-				rtspSessionInfo.clientIpAddr,
-				FNC_NAME + ": rtspSessionInfo.clientIpAddr is null"
-			);
-		Objects.requireNonNull(
 				requestUrlInputOrStreamSource.subStreamId,
 				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
 			);
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.clientIpAddr,
+				rtspSessionInfo.getClientIpAddr(),
 				requestUrlInputOrStreamSource.subStreamId,
 				RandomHelper.getRandomUint32(false)
 			);

@@ -45,8 +45,6 @@ public class RtspRequAuthSvc {
 	public void checkAuthorization(@NonNull RequestBasicInfo requestBasicInfo) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthorization()";
 
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
-
 		final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
 		Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
 		final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
@@ -88,7 +86,7 @@ public class RtspRequAuthSvc {
 		//
 		if (wasAuthentificationOk) {
 			// check if Client IP Address is blocked
-			int tmpUnauthCnt = RtspStaticSessionInfo.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+			int tmpUnauthCnt = RtspStaticSessionInfo.getUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIsId);
 			if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
 				// reject Client IP Address even if user credentials are OK
 				wasAuthentificationOk = false;
@@ -104,9 +102,9 @@ public class RtspRequAuthSvc {
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
 					requestBasicInfo.messageType, tmpIsId,
 					rtspSessionInfo.authInfo.authUser,
-					rtspSessionInfo.clientIpAddr.getHostAddress());
+					rtspSessionInfo.getClientIpAddr().getHostAddress());
 			logDebug(FNC_NAME, logMsg);
-			RtspStaticSessionInfo.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIsId);
+			RtspStaticSessionInfo.resetUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIsId);
 			return;
 		}
 
@@ -120,8 +118,7 @@ public class RtspRequAuthSvc {
 	private void rejectWithUnauthorized(@NonNull RequestBasicInfo requestBasicInfo, @NonNull String inpSrcId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".rejectWithUnauthorized()";
 
-		Objects.requireNonNull(rtspSessionInfo.clientIpAddr, "rtspSessionInfo.clientIpAddr is null");
-		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.clientIpAddr, inpSrcId);
+		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.getClientIpAddr(), inpSrcId);
 		//
 		requestBasicInfo.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
 		//
@@ -129,7 +126,7 @@ public class RtspRequAuthSvc {
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
 				requestBasicInfo.messageType, inpSrcId,
 				requestBasicInfo.statusCode, unauthCnt,
-				rtspSessionInfo.clientIpAddr.getHostAddress());
+				rtspSessionInfo.getClientIpAddr().getHostAddress());
 		if (unauthCnt > 1) {
 			/*
 			 * One rejection is normal due to the way RTSP clients detect the necessity of authentication.
