@@ -1,6 +1,6 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
-public class RtspProtoLowConstants {
+public class RtspProtoLowMsgConstants {
 
 	public static final String CRLF = "\r\n";
 

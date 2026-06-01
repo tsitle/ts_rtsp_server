@@ -1,8 +1,8 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntryResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderKey;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderKey;
 
 import java.util.HashMap;
 import java.util.Map;

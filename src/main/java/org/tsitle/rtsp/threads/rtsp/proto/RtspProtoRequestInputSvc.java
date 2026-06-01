@@ -10,9 +10,9 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgReader;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgReader;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
 
 public class RtspProtoRequestInputSvc {

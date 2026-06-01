@@ -5,10 +5,10 @@ import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -17,7 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.*;
 
 public final class RtspProtoLowResponseBuilder {
 

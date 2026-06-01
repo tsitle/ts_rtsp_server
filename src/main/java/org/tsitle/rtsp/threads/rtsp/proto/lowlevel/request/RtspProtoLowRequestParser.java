@@ -7,13 +7,13 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgRaw;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntryRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeAuth;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeKeymgmt;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderKey;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderTypeAuth;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderTypeKeymgmt;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.*;
+import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.*;
 
 public final class RtspProtoLowRequestParser {
 

@@ -15,7 +15,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import java.util.*;
 
 import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1;
+import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1;
 
 public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 

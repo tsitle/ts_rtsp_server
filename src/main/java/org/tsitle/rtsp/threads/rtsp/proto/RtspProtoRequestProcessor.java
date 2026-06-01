@@ -12,11 +12,11 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntryRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeKeymgmt;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderKey;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderTypeKeymgmt;
 
 import java.net.*;
 import java.util.*;

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 

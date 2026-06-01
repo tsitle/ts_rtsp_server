@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.*;

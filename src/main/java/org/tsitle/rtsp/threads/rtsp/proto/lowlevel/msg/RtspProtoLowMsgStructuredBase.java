@@ -1,8 +1,9 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.util.HashMap;
 import java.util.Map;
