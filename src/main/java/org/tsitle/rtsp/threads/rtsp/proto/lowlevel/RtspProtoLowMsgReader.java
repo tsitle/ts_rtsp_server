@@ -101,6 +101,10 @@ public final class RtspProtoLowMsgReader {
 			}
 		} while (! headerLine.isBlank());
 
+		// Read body
+		resObj.body = "";  // @TODO
+
+		//
 		resObj.readSuccess = true;
 		return resObj;
 	}
