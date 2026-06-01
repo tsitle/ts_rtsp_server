@@ -41,9 +41,9 @@ public final class RtspProtoLowRequestParser {
 		}
 
 		// read messageType from the requestLine
-		parseMessageType(input.requestLine, resObj);
+		parseMessageType(input.mainLine, resObj);
 		if (resObj.messageType == RtspProtoMessageType.UNKNOWN) {
-			logError(FNC_NAME, "Unknown request type in requestLine '" + input.requestLine + "'");
+			logError(FNC_NAME, "Unknown request type in requestLine '" + input.mainLine + "'");
 			resObj.statusCode = RtspProtoStatusCode.METHOD_NOT_ALLOWED;  // this will be ignored though
 			return resObj;
 		}
@@ -52,7 +52,7 @@ public final class RtspProtoLowRequestParser {
 		resObj.statusCode = RtspProtoStatusCode.OK;
 
 		// read resource URL from the requestLine
-		parseRequestResourceUrl(input.requestLine, resObj);
+		parseRequestResourceUrl(input.mainLine, resObj);
 		if (resObj.statusCode != RtspProtoStatusCode.OK) {
 			return resObj;
 		}

@@ -9,7 +9,7 @@ public final class RtspProtoLowMsgRaw {
 
 	public boolean readSuccess = false;
 
-	public @NonNull String requestLine = "";
+	public @NonNull String mainLine = "";
 	public @NonNull List<@NonNull String> headerLines = new ArrayList<>();
 
 }

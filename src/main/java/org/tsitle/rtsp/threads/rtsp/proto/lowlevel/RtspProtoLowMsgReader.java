@@ -33,27 +33,29 @@ public final class RtspProtoLowMsgReader {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoLowMsgRaw readMessage() throws InputStreamNotReadyException, TcpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".readRequest()";
+		final String FNC_NAME = getClass().getSimpleName() + ".readMessage()";
 
 		RtspProtoLowMsgRaw resObj = new RtspProtoLowMsgRaw();
 
 		/*
-		 * Read the request line.
+		 * Read the main (request/response) line.
 		 * Example:
 		 *   "GET_PARAMETER rtsp://admin:ABCDEFGH@192.168.1.1:1151/some.stream RTSP/1.0"
+		 *  or
+		 *   "RTSP/2.0 200 OK"
 		 */
 		try {
-			resObj.requestLine = readOneLine(true);
+			resObj.mainLine = readOneLine(true).replace("\t", "");
 			if (isDebugPrintRtspRcvd) {
 				logDebug(FNC_NAME, "-- BEG --------------------------------------------------------------------------");
-				logDebug(FNC_NAME, "-------- requestLine: " + resObj.requestLine);
+				logDebug(FNC_NAME, "-------- mainLine: " + resObj.mainLine);
 			}
 		} catch (InputStreamEosException e) {
 			logError(FNC_NAME, "EOS reached");
 			return resObj;
 		}
-		if (resObj.requestLine.isBlank()) {
-			logError(FNC_NAME, "received empty line");
+		if (resObj.mainLine.isBlank()) {
+			logError(FNC_NAME, "received empty mainLine");
 			return resObj;
 		}
 
@@ -63,6 +65,10 @@ public final class RtspProtoLowMsgReader {
 		 *   "CSeq: 8"
 		 *   "User-Agent: DummyRtspClient/1.0"
 		 *   "Session: 74DD52CE"
+		 *   "RTP-Info:url=\"rtsp://example.com/fizzle/audiotrack\""
+		 *   "         ssrc=0D12F123:seq=5712;rtptime=934207921,"
+		 *   "\t\turl=\"rtsp://example.com/fizzle/videotrack\""
+		 *   "         ssrc=789DAF12:seq=57654;rtptime=2792482193"
 		 *   ""
 		 */
 		String headerLine;
@@ -72,9 +78,14 @@ public final class RtspProtoLowMsgReader {
 				headerLine = readOneLine(false);
 				timeoutCnt = 0;
 				if (isDebugPrintRtspRcvd) {
-					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine);
+					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine.replace("\t", "<TAB>"));
 				}
-				resObj.headerLines.add(headerLine);
+				if ((headerLine.startsWith(" ") || headerLine.startsWith("\t")) && ! resObj.headerLines.isEmpty()) {
+					String tmpPrevLine = resObj.headerLines.getLast();
+					resObj.headerLines.set(resObj.headerLines.size() - 1, tmpPrevLine + " " + headerLine.strip());
+				} else {
+					resObj.headerLines.add(headerLine);
+				}
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				if (timeoutCnt++ > 10) {
 					break;
@@ -108,8 +119,10 @@ public final class RtspProtoLowMsgReader {
 		}
 		String resS = optLine.get();
 		// remove forbidden characters from the line
+		resS = resS.replace("\t", "###***TAB***###");
 		Matcher matcher = PATTERN_ILLEGAL_CHARS.matcher(resS);
 		resS = matcher.replaceAll("");
+		resS = resS.replace("###***TAB***###", "\t");
 		if (isFirst) {
 			// strip occasionally occurring nonsense from the beginning of the line
 			for (RtspProtoMessageType tmpType : RtspProtoMessageType.values()) {
