@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -144,6 +145,14 @@ public class RtxpTcpReadWrite {
 				@NonNull Socket socketTcp,
 				boolean debugPrintRtspSend
 			) {
+		try {
+			if (socketTcp.getSoTimeout() <= 0) {
+				throw new IllegalArgumentException("socketTcp.getSoTimeout() must be positive");
+			}
+		} catch (SocketException e) {
+			throw new RuntimeException(e);
+		}
+
 		this.logMsgInterface = logMsgInterface;
 		this.socketTcp = socketTcp;
 		this.debugPrintRtspSend = debugPrintRtspSend;
@@ -227,6 +236,7 @@ public class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean canReadRtsp() throws TcpSocketIoException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTSP_RCVD);
