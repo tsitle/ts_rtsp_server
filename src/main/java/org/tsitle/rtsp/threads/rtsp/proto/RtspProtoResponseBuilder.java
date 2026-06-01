@@ -226,7 +226,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 		 *   RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=38852-38853;server_port=6970-6971;ssrc=DEADBEEF
 		 * See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
 		 */
-		Objects.requireNonNull(tmpStreamInfo.tpServerSrcUdpSocketRtp);
+		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtp);
 		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
 		String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
 		String tmpLine = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT + " ";
@@ -241,14 +241,14 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP + tmpRtspHostIp + ";";
 		if (tmpStreamInfo.tpIsUdp) {
 			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT +
-					Integer.toUnsignedString(tmpStreamInfo.tpClientDestUdpPortRtp) + "-" +
-					Integer.toUnsignedString(tmpStreamInfo.tpClientDestUdpPortRtcp) + ";" +
+					Integer.toUnsignedString(tmpStreamInfo.tpClientUdpPortRtp) + "-" +
+					Integer.toUnsignedString(tmpStreamInfo.tpClientUdpPortRtcp) + ";" +
 				RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT +
-					Integer.toUnsignedString(tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort()) + "-" +
+					Integer.toUnsignedString(tmpStreamInfo.tpServerUdpSocketRtp.getLocalPort()) + "-" +
 					Integer.toUnsignedString(tmpStreamInfo.tpServerUdpSocketRtcp.getLocalPort());
 		} else {
-			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED + tmpStreamInfo.tpClientDestTcpChannRtp + "-" +
-					tmpStreamInfo.tpClientDestTcpChannRtcp;
+			tmpLine += RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED + tmpStreamInfo.tpClientTcpChannRtp + "-" +
+					tmpStreamInfo.tpClientTcpChannRtcp;
 		}
 		if (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V2_0) {
 			tmpLine += ";" + RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC + buildHexString(tmpStreamInfo.rtspSsrcId);  // only valid for unicast transmission
@@ -329,18 +329,18 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 		int loopCnt = 0;
 		boolean isOk = false;
 		while (++loopCnt <= 1000) {
-			if (tmpStreamInfo.tpServerSrcUdpSocketRtp != null) {
-				tmpStreamInfo.tpServerSrcUdpSocketRtp.close();
+			if (tmpStreamInfo.tpServerUdpSocketRtp != null) {
+				tmpStreamInfo.tpServerUdpSocketRtp.close();
 			}
 			if (tmpStreamInfo.tpServerUdpSocketRtcp != null) {
 				tmpStreamInfo.tpServerUdpSocketRtcp.close();
 			}
 			try {
-				tmpStreamInfo.tpServerSrcUdpSocketRtp = new DatagramSocket();
-				if (tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort() % 2 != 0) {
+				tmpStreamInfo.tpServerUdpSocketRtp = new DatagramSocket();
+				if (tmpStreamInfo.tpServerUdpSocketRtp.getLocalPort() % 2 != 0) {
 					continue;
 				}
-				tmpStreamInfo.tpServerUdpSocketRtcp = new DatagramSocket(tmpStreamInfo.tpServerSrcUdpSocketRtp.getLocalPort() + 1);
+				tmpStreamInfo.tpServerUdpSocketRtcp = new DatagramSocket(tmpStreamInfo.tpServerUdpSocketRtp.getLocalPort() + 1);
 				isOk = true;
 				break;
 			} catch (SocketException e) {
@@ -351,8 +351,8 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 			throw new IllegalStateException(FNC_NAME + ": Could not find proper UDP sockets");
 		}
 		try {
-			tmpStreamInfo.tpServerSrcUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
-			tmpStreamInfo.tpServerSrcUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
+			tmpStreamInfo.tpServerUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+			tmpStreamInfo.tpServerUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
 			tmpStreamInfo.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
 			tmpStreamInfo.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
 		} catch (SocketException e) {

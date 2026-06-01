@@ -7,18 +7,20 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructured;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntry;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeAuth;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeKeymgmt;
 
 import java.net.URI;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP;
 import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowConstants.*;
 
 public final class RtspProtoLowRequestParser {
@@ -32,10 +34,10 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgStructured parseRequest(@NonNull RtspProtoLowMsgRaw input) {
+	public @NonNull RtspProtoLowMsgStructuredRequest parseRequest(@NonNull RtspProtoLowMsgRaw input) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseRequest()";
 
-		RtspProtoLowMsgStructured resObj = new RtspProtoLowMsgStructured();
+		RtspProtoLowMsgStructuredRequest resObj = new RtspProtoLowMsgStructuredRequest();
 		if (! input.readSuccess) {
 			return resObj;
 		}
@@ -74,7 +76,7 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseMessageType(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructured output) {
+	private void parseMessageType(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseMessageType()";
 
 		try {
@@ -110,7 +112,7 @@ public final class RtspProtoLowRequestParser {
 		}
 	}
 
-	private void parseRequestResourceUrl(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructured output) {
+	private void parseRequestResourceUrl(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseRequestResourceUrl()";
 
 		try {
@@ -161,7 +163,7 @@ public final class RtspProtoLowRequestParser {
 
 	private static void extractResourceUrlQueryParam(
 				@NonNull String resourceUrlStr,
-				@NonNull RtspProtoLowMsgStructured output
+				@NonNull RtspProtoLowMsgStructuredRequest output
 			) throws RtspInvalidUriException {
 		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
 		String tmpQuery = rscUriObj.getQuery();
@@ -178,7 +180,7 @@ public final class RtspProtoLowRequestParser {
 		}
 	}
 
-	private void parseHeaderLines(@NonNull List<@NonNull String> headerLines, @NonNull RtspProtoLowMsgStructured output) {
+	private void parseHeaderLines(@NonNull List<@NonNull String> headerLines, @NonNull RtspProtoLowMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines()";
 
 		for (String tmpHeaderLine : headerLines) {
@@ -214,14 +216,14 @@ public final class RtspProtoLowRequestParser {
 	private void parseHeaderLines_oneLine(
 				@NonNull String hdKey,
 				@NonNull String hdValue,
-				@NonNull RtspProtoLowMsgStructured output
+				@NonNull RtspProtoLowMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
-		RtspProtoLowHeaderEntry entry = new RtspProtoLowHeaderEntry();
+		RtspProtoLowHeaderEntryRequest entry = new RtspProtoLowHeaderEntryRequest();
 		if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
 			parseHeaderValue_describe_accept(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_AUTH)) {
+		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_AUTH_CLIENT)) {
 			parseHeaderValue_com_auth(hdValue, output, entry);
 		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_CSEQ)) {
 			parseHeaderValue_com_cseq(hdValue, entry);
@@ -245,24 +247,24 @@ public final class RtspProtoLowRequestParser {
 			logWarn(FNC_NAME, "Received unknown header: '" + hdKey + "'");
 			return;
 		}
-		output.headers.put(entry.hdKeyEn, entry);
+		output.headers.put(entry.getHdKey(), entry);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry)
+	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		if (! RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP.equalsIgnoreCase(hdValue)) {
 			throw new RtspInvalidRequestException("Invalid Accept header value: '" + hdValue + "'");
 		}
 		entry.hdValAccept.acceptStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.ACCEPT;
+		entry.setHdKey(RtspProtoLowHeaderKey.ACCEPT);
 	}
 
 	private void parseHeaderValue_com_auth(
 				@NonNull String hdValue,
-				@NonNull RtspProtoLowMsgStructured output,
-				@NonNull RtspProtoLowHeaderEntry entry
+				@NonNull RtspProtoLowMsgStructuredRequest output,
+				@NonNull RtspProtoLowHeaderEntryRequest entry
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth()";
 
@@ -284,12 +286,12 @@ public final class RtspProtoLowRequestParser {
 				output.authUser = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER);
 				haveUser = true;  // tolerate empty username now and reject it later
 			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM.toLowerCase())) {
-				entry.hdValAuth.authRealmClient = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
-				haveRealm = (! entry.hdValAuth.authRealmClient.isBlank());
+				entry.hdValAuth.authRealm = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
+				haveRealm = (! entry.hdValAuth.authRealm.isBlank());
 			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE.toLowerCase())) {
-				entry.hdValAuth.authNonceClient = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
-				entry.hdValAuth.authNonceClient = entry.hdValAuth.authNonceClient.toLowerCase();
-				haveNonce = (! entry.hdValAuth.authNonceClient.isBlank());
+				entry.hdValAuth.authNonce = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
+				entry.hdValAuth.authNonce = entry.hdValAuth.authNonce.toLowerCase();
+				haveNonce = (! entry.hdValAuth.authNonce.isBlank());
 			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI.toLowerCase())) {
 				entry.hdValAuth.authUri = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI);
 				haveUri = (! entry.hdValAuth.authUri.isBlank());
@@ -311,28 +313,35 @@ public final class RtspProtoLowRequestParser {
 		if (! (haveUser && haveRealm && haveNonce && haveUri && haveResp)) {
 			throw new RtspInvalidRequestException("Missing required Auth parameters");
 		}
-		entry.hdKeyEn = RtspProtoLowHeaderKey.AUTH;
+		entry.setHdKey(RtspProtoLowHeaderKey.AUTH);
 	}
 
-	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry)
+	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		try {
-			entry.hdValCseq.cseqNr = Integer.parseInt(hdValue);
+			entry.hdValCseq.setCseqNr32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspInvalidRequestException("Invalid CSeq format: '" + hdValue + "'");
+		} catch (IllegalArgumentException e) {
+			throw new RtspInvalidRequestException("Invalid CSeq value: " + e.getMessage());
 		}
-		if (entry.hdValCseq.cseqNr < 0) {
-			throw new RtspInvalidRequestException("Invalid CSeq value: " + entry.hdValCseq.cseqNr);
-		}
-		entry.hdKeyEn = RtspProtoLowHeaderKey.CSEQ;
+		entry.setHdKey(RtspProtoLowHeaderKey.CSEQ);
 	}
 
-	private void parseHeaderValue_com_date(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
-		entry.hdValDate.dateStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.DATE;
+	private void parseHeaderValue_com_date(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+			throws RtspInvalidRequestException {
+		try {
+			entry.hdValDate.dateObj = ZonedDateTime.parse(
+					hdValue,
+					DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.ENGLISH)
+				).toInstant();
+		} catch (DateTimeParseException e) {
+			throw new RtspInvalidRequestException("Invalid Date format: '" + hdValue + "'");
+		}
+		entry.setHdKey(RtspProtoLowHeaderKey.DATE);
 	}
 
-	private void parseHeaderValue_com_keymgmt(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry)
+	private void parseHeaderValue_com_keymgmt(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_keymgmt()";
 
@@ -356,10 +365,10 @@ public final class RtspProtoLowRequestParser {
 			}
 		}
 
-		entry.hdKeyEn = RtspProtoLowHeaderKey.KEYMGMT;
+		entry.setHdKey(RtspProtoLowHeaderKey.KEYMGMT);
 	}
 
-	private void parseHeaderValue_options_public(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
+	private void parseHeaderValue_options_public(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_options_public()";
 
 		/*
@@ -375,25 +384,34 @@ public final class RtspProtoLowRequestParser {
 				logWarn(FNC_NAME, "Unknown option: '" + tmpOption + "'");
 			}
 		}
-		entry.hdKeyEn = RtspProtoLowHeaderKey.PUBLIC;
+		entry.setHdKey(RtspProtoLowHeaderKey.PUBLIC);
 	}
 
-	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
+	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
 		entry.hdValRange.rangeStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.RANGE;
+		entry.setHdKey(RtspProtoLowHeaderKey.RANGE);
 	}
 
-	private void parseHeaderValue_options_require(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
+	private void parseHeaderValue_options_require(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
 		entry.hdValRequire.requireStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.REQUIRE;
+		entry.setHdKey(RtspProtoLowHeaderKey.REQUIRE);
 	}
 
-	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
+	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_session()";
+
+		if (hdValue.contains(";")) {
+			String[] parts = hdValue.split(";");
+			if (parts.length > 1) {
+				logWarn(FNC_NAME, "Ignoring additional session parameters in '" + hdValue + "'");
+			}
+			hdValue = parts[0];
+		}
 		entry.hdValSession.sessionIdStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.SESSION;
+		entry.setHdKey(RtspProtoLowHeaderKey.SESSION);
 	}
 
-	private void parseHeaderValue_setup_transport(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry)
+	private void parseHeaderValue_setup_transport(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_setup_transport()";
 
@@ -428,11 +446,14 @@ public final class RtspProtoLowRequestParser {
 							"cannot parse ports, expected two ports");
 				}
 				try {
-					entry.hdValTransport.tpClientDestUdpPortRtp = Integer.parseInt(tmpPorts[0]);
-					entry.hdValTransport.tpClientDestUdpPortRtcp = Integer.parseInt(tmpPorts[1]);
+					entry.hdValTransport.setClientUdpPortRtp16bit(Integer.parseInt(tmpPorts[0]));
+					entry.hdValTransport.setClientUdpPortRtcp16bit(Integer.parseInt(tmpPorts[1]));
 				} catch (NumberFormatException e) {
 					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +
 							"cannot parse ports, invalid format");
+				} catch (IllegalArgumentException e) {
+					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +
+							e.getMessage());
 				}
 				entry.hdValTransport.tpIsInterleaved = false;
 			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.toLowerCase())) {
@@ -443,11 +464,14 @@ public final class RtspProtoLowRequestParser {
 							"cannot parse channels, expected two ports");
 				}
 				try {
-					entry.hdValTransport.tpClientDestTcpChannRtp = Integer.parseInt(tmpPorts[0]);
-					entry.hdValTransport.tpClientDestTcpChannRtcp = Integer.parseInt(tmpPorts[1]);
+					entry.hdValTransport.setClientTcpChannRtp16bit(Integer.parseInt(tmpPorts[0]));
+					entry.hdValTransport.setClientTcpChannRtcp16bit(Integer.parseInt(tmpPorts[1]));
 				} catch (NumberFormatException e) {
 					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +
 							"cannot parse channels, invalid format");
+				} catch (IllegalArgumentException e) {
+					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +
+							e.getMessage());
 				}
 				entry.hdValTransport.tpIsInterleaved = true;
 				/*logDebug(FNC_NAME, "interleaved RTP=" + entry.hdValTransport.tpClientDestTcpChannRtp +
@@ -457,10 +481,10 @@ public final class RtspProtoLowRequestParser {
 			}
 		}
 
-		entry.hdKeyEn = RtspProtoLowHeaderKey.TRANSPORT;
+		entry.setHdKey(RtspProtoLowHeaderKey.TRANSPORT);
 	}
 
-	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntry entry) {
+	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
 		/*
 		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11
 		 * GStreamer (KUbuntu 24): GStreamer/1.24.2
@@ -474,7 +498,7 @@ public final class RtspProtoLowRequestParser {
 		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20)
 		 */
 		entry.hdValUserAgent.userAgentStr = hdValue;
-		entry.hdKeyEn = RtspProtoLowHeaderKey.USERAGENT;
+		entry.setHdKey(RtspProtoLowHeaderKey.USERAGENT);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

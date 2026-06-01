@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgReader;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructured;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
 
 public class RtspProtoRequestInputSvc {
@@ -79,7 +79,7 @@ public class RtspProtoRequestInputSvc {
 		}
 
 		// parse the raw request
-		RtspProtoLowMsgStructured lowInputParsed = rtspProtoLowRequestParser.parseRequest(lowInputRaw);
+		RtspProtoLowMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseRequest(lowInputRaw);
 		if (lowInputParsed.messageType == RtspProtoMessageType.UNKNOWN) {
 			resObj = RequestBasicInfo.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",

@@ -12,11 +12,11 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntry;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header.RtspProtoLowHeaderTypeKeymgmt;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtoLowMsgStructured;
 
 import java.net.*;
 import java.util.*;
@@ -42,10 +42,10 @@ public final class RtspProtoRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public RequestBasicInfo processRequest(@NonNull RtspProtoLowMsgStructured msg) {
+	public RequestBasicInfo processRequest(@NonNull RtspProtoLowMsgStructuredRequest msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRequest()";
 
-		//System.out.println("<<<<<<<<< <<<<<<<<< " + msg);
+		System.out.println("<<<<<<<<< <<<<<<<<< " + msg);  // @TODO
 
 		rtspSessionInfo.authInfo.resetPerRequest();
 
@@ -135,14 +135,14 @@ public final class RtspProtoRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void checkAndUpdateRtspProtoVersion(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void checkAndUpdateRtspProtoVersion(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (msg.rtspProtoVersion == RtspProtocolVersion.NONE) {
 			throw new RtspInvalidRequestException("Missing RTSP protocol version");
 		}
 		rtspSessionInfo.lastRequestRtspProtoVersion = msg.rtspProtoVersion;
 	}
 
-	private void checkAndUpdateCseq(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void checkAndUpdateCseq(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		Optional<Integer> tmpOptCseq = msg.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspInvalidRequestException("Missing CSeq header");
@@ -156,7 +156,7 @@ public final class RtspProtoRequestProcessor {
 		rtspSessionInfo.rtspClientSeqNrResponse = rtspSessionInfo.rtspClientSeqNrExpected++;
 	}
 
-	private void checkSessionId(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void checkSessionId(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		switch (msg.messageType) {
 			case RtspProtoMessageType.PLAY:
 			case RtspProtoMessageType.PAUSE:
@@ -179,13 +179,13 @@ public final class RtspProtoRequestProcessor {
 		}
 	}
 
-	private void checkMessageType(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void checkMessageType(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (! SUPPORTED_MESSAGE_TYPES_SERVER.contains(msg.messageType)) {
 			throw new RtspInvalidRequestException("Unsupported request type");
 		}
 	}
 
-	private void checkRequestTypeVsState(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void checkRequestTypeVsState(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (msg.messageType == RtspProtoMessageType.OPTIONS ||
 				msg.messageType == RtspProtoMessageType.DESCRIBE ||
 				msg.messageType == RtspProtoMessageType.SETUP ||
@@ -364,7 +364,7 @@ public final class RtspProtoRequestProcessor {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processQueryParams(@NonNull RtspProtoLowMsgStructured msg) throws RtspInvalidRequestException {
+	private void processQueryParams(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		for (Map.Entry<@NonNull String, @NonNull String> entry : msg.queryParams.entrySet()) {
 			if (! entry.getKey().equalsIgnoreCase(URL_QUERY_PARAM_SRTP)) {
 				continue;
@@ -384,10 +384,10 @@ public final class RtspProtoRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void processRemainingHeaders(
-				@NonNull RtspProtoLowMsgStructured msg,
+				@NonNull RtspProtoLowMsgStructuredRequest msg,
 				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException {
-		for (Map.Entry<@NonNull RtspProtoLowHeaderKey, @NonNull RtspProtoLowHeaderEntry> entry : msg.headers.entrySet()) {
+		for (Map.Entry<@NonNull RtspProtoLowHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> entry : msg.headers.entrySet()) {
 			switch (entry.getKey()) {
 				case RtspProtoLowHeaderKey.ACCEPT ->
 						processHeader_describe_accept(msg.messageType);
@@ -420,13 +420,13 @@ public final class RtspProtoRequestProcessor {
 
 	private void processHeader_com_auth(
 				@NonNull String authUser,
-				@NonNull RtspProtoLowHeaderEntry headerEntry
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) {
 		// copy parameters - ignore empty values here and reject the request later if necessary
 		rtspSessionInfo.authInfo.authUser = authUser;
 		rtspSessionInfo.authInfo.authPlainPassword = "";
-		rtspSessionInfo.authInfo.authRealmClient = headerEntry.hdValAuth.authRealmClient;
-		rtspSessionInfo.authInfo.authNonceClient = headerEntry.hdValAuth.authNonceClient;
+		rtspSessionInfo.authInfo.authRealmClient = headerEntry.hdValAuth.authRealm;
+		rtspSessionInfo.authInfo.authNonceClient = headerEntry.hdValAuth.authNonce;
 		rtspSessionInfo.authInfo.authUri = headerEntry.hdValAuth.authUri;
 		rtspSessionInfo.authInfo.authResp = headerEntry.hdValAuth.authResp;
 	}
@@ -434,7 +434,7 @@ public final class RtspProtoRequestProcessor {
 	private void processHeader_com_keymgmt(
 				@NonNull RtspProtoMessageType messageType,
 				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoLowHeaderEntry headerEntry
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspProtoMessageType.SETUP && messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspInvalidRequestException("Received KEYMGMT header in non-SETUP/SET_PARAMETER request");
@@ -459,7 +459,7 @@ public final class RtspProtoRequestProcessor {
 
 	private void processHeader_play_range(
 				@NonNull RtspProtoMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntry headerEntry
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspProtoMessageType.PLAY) {
 			throw new RtspInvalidRequestException("Received RANGE header in non-PLAY request");
@@ -477,7 +477,7 @@ public final class RtspProtoRequestProcessor {
 	private void processHeader_setup_transport(
 				@NonNull RtspProtoMessageType messageType,
 				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoLowHeaderEntry headerEntry
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_setup_transport()";
 
@@ -500,10 +500,17 @@ public final class RtspProtoRequestProcessor {
 		// copy settings
 		tmpStreamInfo.tpIsUdp = headerEntry.hdValTransport.tpIsUdp;
 		tmpStreamInfo.tpIsUnicast = headerEntry.hdValTransport.tpIsUnicast;
-		tmpStreamInfo.tpClientDestUdpPortRtp = headerEntry.hdValTransport.tpClientDestUdpPortRtp;
-		tmpStreamInfo.tpClientDestUdpPortRtcp = headerEntry.hdValTransport.tpClientDestUdpPortRtcp;
-		tmpStreamInfo.tpClientDestTcpChannRtp = headerEntry.hdValTransport.tpClientDestTcpChannRtp;
-		tmpStreamInfo.tpClientDestTcpChannRtcp = headerEntry.hdValTransport.tpClientDestTcpChannRtcp;
+		if (tmpStreamInfo.tpIsUdp) {
+			tmpStreamInfo.tpClientUdpPortRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtp16bit()
+					.orElseThrow(() -> new RtspInvalidRequestException("No client UDP RTP port in SETUP request")));
+			tmpStreamInfo.tpClientUdpPortRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtcp16bit()
+					.orElseThrow(() -> new RtspInvalidRequestException("No client UDP RTCP port in SETUP request")));
+		} else {
+			tmpStreamInfo.tpClientTcpChannRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtp16bit()
+					.orElseThrow(() -> new RtspInvalidRequestException("No client TCP RTP channel in SETUP request")));
+			tmpStreamInfo.tpClientTcpChannRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtcp16bit()
+					.orElseThrow(() -> new RtspInvalidRequestException("No client TCP RTCP channel in SETUP request")));
+		}
 		tmpStreamInfo.tpIsInterleaved = headerEntry.hdValTransport.tpIsInterleaved;
 		tmpStreamInfo.tpIsEncr = headerEntry.hdValTransport.tpIsEncr;
 

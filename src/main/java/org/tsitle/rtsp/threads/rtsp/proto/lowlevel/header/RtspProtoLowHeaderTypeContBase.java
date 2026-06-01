@@ -2,15 +2,13 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.header;
 
 import org.jspecify.annotations.NonNull;
 
-import java.time.Instant;
+public class RtspProtoLowHeaderTypeContBase {
 
-public class RtspProtoLowHeaderTypeDate {
-
-	public @NonNull Instant dateObj = Instant.now();
+	public @NonNull String contentBaseStr = "";
 
 	@Override
 	public @NonNull String toString() {
-		return "[dateObj='" + dateObj + "']";
+		return "[contentBaseStr='" + contentBaseStr + "']";
 	}
 
 }

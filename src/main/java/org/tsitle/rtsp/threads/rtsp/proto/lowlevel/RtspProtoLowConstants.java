@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 public class RtspProtoLowConstants {
 
+	public static final String CRLF = "\r\n";
+
 	/** RTSP URL Protocol */
 	public static final String RTSP_URL_PROTOCOL = "rtsp";
 	/** RTSPS URL Protocol */
@@ -29,8 +31,8 @@ public class RtspProtoLowConstants {
 	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE = "Content-Type";
 	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length";
 	public static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH = "Authorization";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH = "WWW-Authenticate";
+	public static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH_CLIENT = "Authorization";
+	public static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH_SERVER = "WWW-Authenticate";
 	public static final String RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT = "KeyMgmt";
 	///
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT = "client_port=";
@@ -41,6 +43,7 @@ public class RtspProtoLowConstants {
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED = "interleaved=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT = "timeout=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL = "url=";
+	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC = "ssrc=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ = "seq=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME = "rtptime=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER = "username=";

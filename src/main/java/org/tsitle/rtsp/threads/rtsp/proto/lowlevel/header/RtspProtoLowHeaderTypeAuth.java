@@ -9,12 +9,10 @@ public class RtspProtoLowHeaderTypeAuth {
 		MD5
 	}
 
-	/** Authentication credentials: realm from the client */
-	public @NonNull String authRealmClient = "";
-	/** Authentication credentials: nonce from the server */
-	public @NonNull String authNonceServer = "";
-	/** Authentication credentials: nonce from the client */
-	public @NonNull String authNonceClient = "";
+	/** Authentication credentials: realm */
+	public @NonNull String authRealm = "";
+	/** Authentication credentials: nonce */
+	public @NonNull String authNonce = "";
 	/** Authentication credentials: URI */
 	public @NonNull String authUri = "";
 	/** Authentication credentials: response */
@@ -25,9 +23,8 @@ public class RtspProtoLowHeaderTypeAuth {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"authRealmClient='" + authRealmClient + "'" +
-				", authNonceServer='" + authNonceServer + "'" +
-				", authNonceClient='" + authNonceClient + "'" +
+				"authRealm='" + authRealm + "'" +
+				", authNonce='" + authNonce + "'" +
 				", authUri='" + authUri + "'" +
 				", authResp='" + authResp + "'" +
 				", authAlgo=" + authAlgo +

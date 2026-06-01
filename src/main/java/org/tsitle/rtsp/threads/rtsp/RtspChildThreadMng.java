@@ -220,12 +220,12 @@ final class RtspChildThreadMng {
 				.tpClientIpAddr(rtspSessionInfo.getClientIpAddr());
 		if (tmpStreamInfo.tpIsUdp) {
 			tmpBuilder
-					.tpClientDestUdpPortRtcp(tmpStreamInfo.tpClientDestUdpPortRtcp)
+					.tpClientDestUdpPortRtcp(tmpStreamInfo.tpClientUdpPortRtcp)
 					.tpSocketUdpRtcp(Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp));
 		} else {
 			tmpBuilder
 					.tpClientDestTcpIf(this.rtxpTcpReadWrite)
-					.tpClientDestTcpChannRtcp(tmpStreamInfo.tpClientDestTcpChannRtcp);
+					.tpClientDestTcpChannRtcp(tmpStreamInfo.tpClientTcpChannRtcp);
 		}
 		ctfos.rtcpThreadSendRecv = tmpBuilder
 				.cryptoIsRtxpEncryptionEnabled(tmpStreamInfo.tpIsEncr)
@@ -255,12 +255,12 @@ final class RtspChildThreadMng {
 				) {
 		if (streamInfo.tpIsUdp) {
 			builder
-					.comTpClientDestUdpPortRtp(streamInfo.tpClientDestUdpPortRtp)
-					.comTpSocketUdpRtp(Objects.requireNonNull(streamInfo.tpServerSrcUdpSocketRtp));
+					.comTpClientDestUdpPortRtp(streamInfo.tpClientUdpPortRtp)
+					.comTpSocketUdpRtp(Objects.requireNonNull(streamInfo.tpServerUdpSocketRtp));
 		} else {
 			builder
 					.comTpClientDestTcpIf(this.rtxpTcpReadWrite)
-					.comTpClientDestTcpChannRtp(streamInfo.tpClientDestTcpChannRtp);
+					.comTpClientDestTcpChannRtp(streamInfo.tpClientTcpChannRtp);
 		}
 		return builder
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
@@ -402,7 +402,7 @@ final class RtspChildThreadMng {
 		ctfos.rtpThreadSender.start();
 
 		// delete pointer to RTP socket
-		tmpStreamInfo.tpServerSrcUdpSocketRtp = null;
+		tmpStreamInfo.tpServerUdpSocketRtp = null;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

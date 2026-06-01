@@ -51,18 +51,18 @@ public class RtspStaticSessionInfo {
 		/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
 		public long rtspRtpGenTsT0Ns = 0L;
 
-		/** Client's incoming UDP port for RTP packets (audio and video), provided by the RTSP Client */
-		public int tpClientDestUdpPortRtp = 0;
-		/** Client's outgoing UDP port for RTCP packets (meta information), provided by the RTSP Client */
-		public int tpClientDestUdpPortRtcp = 0;
-		/** Server's outgoing UDP socket for RTP packets */
-		public @Nullable DatagramSocket tpServerSrcUdpSocketRtp = null;
-		/** Server's outgoing/incoming UDP socket for RTCP packets */
+		/** Client's UDP port for inbound RTP packets, provided by the RTSP Client */
+		public int tpClientUdpPortRtp = 0;
+		/** Client's UDP port for inbound/outbound RTCP packets, provided by the RTSP Client */
+		public int tpClientUdpPortRtcp = 0;
+		/** Server's UDP socket for outbound RTP packets */
+		public @Nullable DatagramSocket tpServerUdpSocketRtp = null;
+		/** Server's UDP socket for inbound/outbound RTCP packets */
 		public @Nullable DatagramSocket tpServerUdpSocketRtcp = null;
-		/** Client's incoming TCP channel for RTP packets (audio and video), provided by the RTSP Client */
-		public int tpClientDestTcpChannRtp = -1;
-		/** Client's outgoing TCP channel for RTCP packets (meta information), provided by the RTSP Client */
-		public int tpClientDestTcpChannRtcp = -1;
+		/** Client's TCP channel for inbound RTP packets, provided by the RTSP Client */
+		public int tpClientTcpChannRtp = -1;
+		/** Client's TCP channel for inbound/outbound RTCP packets, provided by the RTSP Client */
+		public int tpClientTcpChannRtcp = -1;
 		/** Requested transport type protocol (true: UDP, false: TCP) */
 		public boolean tpIsUdp = false;
 		/** Requested transport casting type (true: unicast, false: multicast) */
@@ -93,7 +93,7 @@ public class RtspStaticSessionInfo {
 				if (tpIsInterleaved) {
 					throw new Exception("Interleaved mode is not supported for UDP");
 				}
-				if (tpClientDestUdpPortRtp <= 0 || tpClientDestUdpPortRtcp <= 0) {
+				if (tpClientUdpPortRtp <= 0 || tpClientUdpPortRtcp <= 0) {
 					throw new Exception("Client UDP ports not set");
 				}
 				if (isRtspsConnection && ! tpIsEncr) {
@@ -107,10 +107,10 @@ public class RtspStaticSessionInfo {
 			if (! tpIsInterleaved) {
 				throw new Exception("Interleaved mode must be used for TCP");
 			}
-			if (tpClientDestTcpChannRtp < 0 || tpClientDestTcpChannRtcp < 0) {
+			if (tpClientTcpChannRtp < 0 || tpClientTcpChannRtcp < 0) {
 				throw new Exception("Client TCP channel IDs not set");
 			}
-			if (tpClientDestTcpChannRtp == tpClientDestTcpChannRtcp) {
+			if (tpClientTcpChannRtp == tpClientTcpChannRtcp) {
 				throw new Exception("Client TCP channel IDs for RTP and RTCP cannot be the same");
 			}
 		}
