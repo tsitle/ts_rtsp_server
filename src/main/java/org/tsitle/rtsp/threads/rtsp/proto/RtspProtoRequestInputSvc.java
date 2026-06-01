@@ -19,7 +19,7 @@ public class RtspProtoRequestInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
-	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
+	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowRequestParser rtspProtoLowRequestParser;
@@ -31,16 +31,16 @@ public class RtspProtoRequestInputSvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
-				this.rtxpTcpReadWriteInterface,
+				this.rtxpTcpReadWrite,
 				rtspConfig.getIsDebugPrintRtspRcvd()
 			);
 		this.rtspProtoLowRequestParser = new RtspProtoLowRequestParser(logMsgInterface);
@@ -61,7 +61,7 @@ public class RtspProtoRequestInputSvc {
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextRequest()";
 
-		if (rtxpTcpReadWriteInterface.isSocketClosed()) {
+		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 

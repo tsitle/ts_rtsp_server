@@ -30,11 +30,11 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 
 	public RtspProtoResponseBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+		super(logMsgInterface, rtxpTcpReadWrite, rtspSessionInfo);
 
 		this.rtspConfig = rtspConfig;
 	}
@@ -425,7 +425,7 @@ public final class RtspProtoResponseBuilder extends RtspProtoBuilderBase {
 		for (String entry : contents) {
 			outputLines.add(entry + CRLF);
 		}
-		rtxpTcpReadWriteInterface.writeRtspLines(outputLines);
+		rtxpTcpReadWrite.writeRtspLines(outputLines);
 	}
 
 	private void addAuthInfoToResponse(@NonNull List<@NonNull String> contents) {

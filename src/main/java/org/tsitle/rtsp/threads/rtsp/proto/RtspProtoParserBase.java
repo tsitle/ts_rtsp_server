@@ -20,20 +20,20 @@ public class RtspProtoParserBase {
 	protected final boolean isForServer;
 	protected final boolean isForRequests;
 	protected final @NonNull LogMsgInterface logMsgInterface;
-	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
+	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	protected final RtspSessionInfo rtspSessionInfo;
 
 	protected RtspProtoParserBase(
 				boolean isForServer,
 				boolean isForRequests,
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.isForServer = isForServer;
 		this.isForRequests = isForRequests;
 		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
 
@@ -42,10 +42,10 @@ public class RtspProtoParserBase {
 
 	protected @NonNull String readOneLine(boolean isFirst)
 			throws InputStreamNotReadyException, InputStreamEosException, TcpSocketIoException {
-		if (! rtxpTcpReadWriteInterface.canReadRtsp()) {
+		if (! rtxpTcpReadWrite.canReadRtsp()) {
 			throw new InputStreamNotReadyException();
 		}
-		Optional<String> optLine = rtxpTcpReadWriteInterface.readRtspLine();
+		Optional<String> optLine = rtxpTcpReadWrite.readRtspLine();
 		if (optLine.isEmpty()) {
 			throw new InputStreamEosException();
 		}

@@ -16,16 +16,16 @@ public class RtspProtoBuilderBase {
 	protected static final String CRLF = "\r\n";
 
 	protected final @NonNull LogMsgInterface logMsgInterface;
-	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
+	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	protected final RtspSessionInfo rtspSessionInfo;
 
 	protected RtspProtoBuilderBase(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
 

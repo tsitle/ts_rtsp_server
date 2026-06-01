@@ -16,16 +16,16 @@ public final class RtspProtoLowMsgReader {
 	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface;
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final boolean isDebugPrintRtspRcvd;
 
 	public RtspProtoLowMsgReader(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				boolean isDebugPrintRtspRcvd
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWriteInterface = rtxpTcpReadWriteInterface;
+		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 		this.isDebugPrintRtspRcvd = isDebugPrintRtspRcvd;
 	}
 
@@ -99,10 +99,10 @@ public final class RtspProtoLowMsgReader {
 
 	private @NonNull String readOneLine(boolean isFirst)
 			throws InputStreamNotReadyException, InputStreamEosException, TcpSocketIoException {
-		if (! rtxpTcpReadWriteInterface.canReadRtsp()) {
+		if (! rtxpTcpReadWrite.canReadRtsp()) {
 			throw new InputStreamNotReadyException();
 		}
-		Optional<String> optLine = rtxpTcpReadWriteInterface.readRtspLine();
+		Optional<String> optLine = rtxpTcpReadWrite.readRtspLine();
 		if (optLine.isEmpty()) {
 			throw new InputStreamEosException();
 		}

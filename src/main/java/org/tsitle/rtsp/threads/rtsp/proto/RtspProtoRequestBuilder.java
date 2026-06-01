@@ -21,10 +21,10 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
 	public RtspProtoRequestBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWriteInterface,
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
-		super(logMsgInterface, rtxpTcpReadWriteInterface, rtspSessionInfo);
+		super(logMsgInterface, rtxpTcpReadWrite, rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			finalOutputLines.add(entry + CRLF);
 		}
 		finalOutputLines.add(CRLF);
-		rtxpTcpReadWriteInterface.writeRtspLines(finalOutputLines);
+		rtxpTcpReadWrite.writeRtspLines(finalOutputLines);
 
 		//
 		logDebug(fncName, "Sent request '" + messageType +
