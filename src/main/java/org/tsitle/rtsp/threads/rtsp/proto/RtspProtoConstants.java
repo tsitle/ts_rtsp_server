@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+
 import java.util.Set;
 
 public class RtspProtoConstants {
@@ -20,15 +22,15 @@ public class RtspProtoConstants {
 	/** RTSP Authorization Realm */
 	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
 
-	public static final Set<RtspProtoMessageType> SUPPORTED_MESSAGE_TYPES_SERVER = Set.of(
-			RtspProtoMessageType.SETUP,
-			RtspProtoMessageType.PLAY,
-			RtspProtoMessageType.PAUSE,
-			RtspProtoMessageType.TEARDOWN,
-			RtspProtoMessageType.DESCRIBE,
-			RtspProtoMessageType.OPTIONS,
-			RtspProtoMessageType.GET_PARAMETER,
-			RtspProtoMessageType.SET_PARAMETER
+	public static final Set<RtspMessageType> SUPPORTED_MESSAGE_TYPES_SERVER = Set.of(
+			RtspMessageType.SETUP,
+			RtspMessageType.PLAY,
+			RtspMessageType.PAUSE,
+			RtspMessageType.TEARDOWN,
+			RtspMessageType.DESCRIBE,
+			RtspMessageType.OPTIONS,
+			RtspMessageType.GET_PARAMETER,
+			RtspMessageType.SET_PARAMETER
 		);
 
 	// RTSP Requests/Responses

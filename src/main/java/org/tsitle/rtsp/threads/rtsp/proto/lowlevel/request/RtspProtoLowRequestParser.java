@@ -5,8 +5,8 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtProto;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
@@ -43,18 +43,18 @@ public final class RtspProtoLowRequestParser {
 
 		// read messageType from the requestLine
 		parseMessageType(input.mainLine, resObj);
-		if (resObj.messageType == RtspProtoMessageType.UNKNOWN) {
+		if (resObj.messageType == RtspMessageType.UNKNOWN) {
 			logError(FNC_NAME, "Unknown request type in requestLine '" + input.mainLine + "'");
-			resObj.statusCode = RtspProtoStatusCode.METHOD_NOT_ALLOWED;  // this will be ignored though
+			resObj.statusCode = RtspStatusCode.METHOD_NOT_ALLOWED;  // this will be ignored though
 			return resObj;
 		}
 
 		//
-		resObj.statusCode = RtspProtoStatusCode.OK;
+		resObj.statusCode = RtspStatusCode.OK;
 
 		// read resource URL from the requestLine
 		parseRequestResourceUrl(input.mainLine, resObj);
-		if (resObj.statusCode != RtspProtoStatusCode.OK) {
+		if (resObj.statusCode != RtspStatusCode.OK) {
 			return resObj;
 		}
 
@@ -65,7 +65,7 @@ public final class RtspProtoLowRequestParser {
 		Optional<Integer> tmpOptCseq = resObj.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			logError(FNC_NAME, "Missing CSeq header in request");
-			resObj.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+			resObj.statusCode = RtspStatusCode.BAD_REQUEST;
 			return resObj;
 		}
 
@@ -85,12 +85,12 @@ public final class RtspProtoLowRequestParser {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
-			output.messageType = Arrays.stream(RtspProtoMessageType.values())
-					.filter(tmpType -> tmpType != RtspProtoMessageType.UNKNOWN)
+			output.messageType = Arrays.stream(RtspMessageType.values())
+					.filter(tmpType -> tmpType != RtspMessageType.UNKNOWN)
 					.filter(tmpType -> tmpType.name().equalsIgnoreCase(requestTypeStr))
 					.findFirst()
-					.orElse(RtspProtoMessageType.UNKNOWN);
-			if (output.messageType == RtspProtoMessageType.UNKNOWN) {
+					.orElse(RtspMessageType.UNKNOWN);
+			if (output.messageType == RtspMessageType.UNKNOWN) {
 				return;
 			}
 			tokens.nextToken();  // URL
@@ -101,12 +101,12 @@ public final class RtspProtoLowRequestParser {
 			String tmpProtoStr = tokens.nextToken();
 			output.rtspProtoVersion = RtspProtocolVersion.of(tmpProtoStr);
 			if (output.rtspProtoVersion == RtspProtocolVersion.NONE) {
-				output.messageType = RtspProtoMessageType.UNKNOWN;
+				output.messageType = RtspMessageType.UNKNOWN;
 				logError(FNC_NAME, "invalid protocol/version '" + tmpProtoStr + "'");
 			}
 		} catch (NoSuchElementException e) {
 			logError(FNC_NAME, "NoSuchElementException caught: " + e);
-			output.messageType = RtspProtoMessageType.UNKNOWN;
+			output.messageType = RtspMessageType.UNKNOWN;
 		}
 	}
 
@@ -121,7 +121,7 @@ public final class RtspProtoLowRequestParser {
 			boolean isRtsps = currentUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://");
 			if (! (currentUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://") || isRtsps)) {
 				logError(FNC_NAME, "invalid protocol in URL '" + currentUrl + "'");
-				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+				output.statusCode = RtspStatusCode.BAD_REQUEST;
 				return;
 			}
 			// rewrite the URL to get rid of any query parameters or fragments or userinfo (username + password)
@@ -138,7 +138,7 @@ public final class RtspProtoLowRequestParser {
 				try {
 					extractResourceUrlQueryParam(currentUrl + "?" + tmpUri.getQuery(), output);
 				} catch (RtspInvalidUriException e) {
-					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+					output.statusCode = RtspStatusCode.BAD_REQUEST;
 					return;
 				}
 			}
@@ -147,7 +147,7 @@ public final class RtspProtoLowRequestParser {
 			if (currentUrl.length() > RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH) {
 				logError(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
 						currentUrl.length(), RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH));
-				output.statusCode = RtspProtoStatusCode.URI_TOO_LONG;
+				output.statusCode = RtspStatusCode.URI_TOO_LONG;
 				return;
 			}
 
@@ -155,7 +155,7 @@ public final class RtspProtoLowRequestParser {
 			output.resourceUrl = currentUrl;
 		} catch (NoSuchElementException e) {
 			logError(FNC_NAME, "NoSuchElementException caught: " + e);
-			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+			output.statusCode = RtspStatusCode.BAD_REQUEST;
 		}
 	}
 
@@ -205,7 +205,7 @@ public final class RtspProtoLowRequestParser {
 				parseHeaderLines_oneLine(tmpHeaderKeyStr, tmpHeaderVal, output);
 			} catch (RtspInvalidRequestException e) {
 				logWarn(FNC_NAME, e.getMessage());
-				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+				output.statusCode = RtspStatusCode.BAD_REQUEST;
 				return;
 			}
 		}
@@ -455,7 +455,7 @@ public final class RtspProtoLowRequestParser {
 		for (String tmpOption : hdValue.split(",")) {
 			tmpOption = tmpOption.strip();
 			try {
-				RtspProtoMessageType tmpEn = RtspProtoMessageType.valueOf(tmpOption);
+				RtspMessageType tmpEn = RtspMessageType.valueOf(tmpOption);
 				entry.hdValPublic.messageTypes.add(tmpEn);
 			} catch (IllegalArgumentException e) {
 				logWarn(FNC_NAME, "Unknown option: '" + tmpOption + "'");

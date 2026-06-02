@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.net.InetAddress;
@@ -84,9 +84,9 @@ public class RtspSessionInfo {
 	/** Sub-Stream IDs that a successful SETUP request has been received for */
 	public final @NonNull List<@NonNull String> subStreamIdsSetup = new ArrayList<>();
 	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
-	public final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull String> inputSourceUrlPerMtMap = new ConcurrentHashMap<>();
+	public final @NonNull Map<@NonNull RtspMessageType, @NonNull String> inputSourceUrlPerMtMap = new ConcurrentHashMap<>();
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
-	public final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap = new ConcurrentHashMap<>();
+	public final @NonNull Map<@NonNull RtspMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap = new ConcurrentHashMap<>();
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;

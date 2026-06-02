@@ -15,7 +15,7 @@ import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.net.URI;
 import java.util.*;
@@ -103,16 +103,16 @@ final class RtspChildThreadMng {
 	void startChildThreads(String inputSourceId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startChildThreads()";
 
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
 			throw new IllegalStateException(FNC_NAME + ": No input source found (OBJ)");
 		}
-		if (! rtspSessionInfo.inputSourceUrlPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceUrlPerMtMap.containsKey(RtspMessageType.PLAY)) {
 			throw new IllegalStateException(FNC_NAME + ": No input source found (URL)");
 		}
 		//
 		String cnameHostname;
 		try {
-			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.PLAY);
+			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspMessageType.PLAY);
 			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(tmpIsUrl);
 			cnameHostname = tmpIsUri.getHost();
 		} catch (RtspInvalidUriException e) {
@@ -145,7 +145,7 @@ final class RtspChildThreadMng {
 	}
 
 	void pauseOrStopChildThreads(boolean doPause) {
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -173,7 +173,7 @@ final class RtspChildThreadMng {
 	}
 
 	void unpauseChildThreads() {
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.PLAY)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {

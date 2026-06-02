@@ -5,7 +5,7 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
 import java.util.*;
@@ -230,7 +230,7 @@ public final class RtspProtoLowMsgReader {
 		resS = resS.replace("###***TAB***###", "\t");
 		if (isFirst) {
 			// strip occasionally occurring nonsense from the beginning of the line
-			for (RtspProtoMessageType tmpType : RtspProtoMessageType.values()) {
+			for (RtspMessageType tmpType : RtspMessageType.values()) {
 				int tmpIx = resS.indexOf(tmpType.name());
 				if (tmpIx < 0) {
 					continue;

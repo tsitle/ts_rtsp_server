@@ -1,8 +1,8 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspProtoStatusCode {
+public enum RtspStatusCode {
 
 	OK(200),
 	BAD_REQUEST(400),
@@ -20,7 +20,7 @@ public enum RtspProtoStatusCode {
 
 	private final int value;
 
-	RtspProtoStatusCode(int value) {
+	RtspStatusCode(int value) {
 		this.value = value;
 	}
 	public int getValue() {

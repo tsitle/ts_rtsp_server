@@ -1,6 +1,6 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
-public enum RtspProtoMessageType {
+public enum RtspMessageType {
 
 	UNKNOWN,
 	/** Send allowed methods. Also used for keep-alive. (RFC-2326 Section 10.1) */

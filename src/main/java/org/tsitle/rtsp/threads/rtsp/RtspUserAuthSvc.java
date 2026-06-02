@@ -7,7 +7,7 @@ import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +34,7 @@ public class RtspUserAuthSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean authenticate(@NonNull RtspProtoMessageType messageType) {
+	public boolean authenticate(@NonNull RtspMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".authenticate()";
 
 		if (rtspSessionInfo.authInfo.authUser.isBlank()) {

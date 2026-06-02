@@ -6,8 +6,8 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RequestBasicInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -49,16 +49,16 @@ public class RtspRequAuthSvc {
 		Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
 		final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
 		if (tmpOptInputSource.isEmpty()) {
-			requestBasicInfo.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+			requestBasicInfo.statusCode = RtspStatusCode.BAD_REQUEST;
 			logError(FNC_NAME, String.format(
 					"Could not find InputSource, rejecting request with code %s", requestBasicInfo.statusCode));
 			return;
 		}
 
 		final boolean couldNeedAuthentification = switch (requestBasicInfo.messageType) {
-				case RtspProtoMessageType.DESCRIBE, RtspProtoMessageType.SETUP,
-						RtspProtoMessageType.PLAY, RtspProtoMessageType.PAUSE,
-						RtspProtoMessageType.TEARDOWN, RtspProtoMessageType.GET_PARAMETER -> true;
+				case RtspMessageType.DESCRIBE, RtspMessageType.SETUP,
+				     RtspMessageType.PLAY, RtspMessageType.PAUSE,
+				     RtspMessageType.TEARDOWN, RtspMessageType.GET_PARAMETER -> true;
 				default -> false;
 			};
 		boolean wasAuthentificationOk;
@@ -120,7 +120,7 @@ public class RtspRequAuthSvc {
 
 		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.getClientIpAddr(), inpSrcId);
 		//
-		requestBasicInfo.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
+		requestBasicInfo.statusCode = RtspStatusCode.UNAUTHORIZED;
 		//
 		final String logMsg = String.format(
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",

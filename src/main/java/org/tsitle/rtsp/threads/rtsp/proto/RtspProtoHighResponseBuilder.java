@@ -13,9 +13,7 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
@@ -59,7 +57,7 @@ public final class RtspProtoHighResponseBuilder {
 		addCommonHeaders(resObj);
 
 		//
-		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
+		if (requestBasicInfo.statusCode != RtspStatusCode.OK) {
 			buildResponse_nack(requestBasicInfo.statusCode, requestBasicInfo.unsupportedOptionName, resObj);
 			return resObj;
 		}
@@ -94,14 +92,14 @@ public final class RtspProtoHighResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildResponse_nack(
-				@NonNull RtspProtoStatusCode statusCode,
+				@NonNull RtspStatusCode statusCode,
 				@NonNull String unsupportedOptionName,
 				@NonNull RtspProtoLowMsgStructuredResponse msg
 			) {
-		if (statusCode == RtspProtoStatusCode.UNAUTHORIZED) {
+		if (statusCode == RtspStatusCode.UNAUTHORIZED) {
 			addAuthServerInfo(msg);
 		}
-		if (statusCode == RtspProtoStatusCode.OPTION_NOT_SUPPORTED) {
+		if (statusCode == RtspStatusCode.OPTION_NOT_SUPPORTED) {
 			// Unsupported
 			{
 				RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
@@ -137,8 +135,8 @@ public final class RtspProtoHighResponseBuilder {
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth
-		if (rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.OPTIONS)) {
-			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.OPTIONS).getNeedsAuthentication();
+		if (rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.OPTIONS)) {
+			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspMessageType.OPTIONS).getNeedsAuthentication();
 			if (tmpNeedAuth) {
 				addAuthServerInfo(msg);
 			}
@@ -148,20 +146,20 @@ public final class RtspProtoHighResponseBuilder {
 	private void buildResponse_describe(@NonNull RtspProtoLowMsgStructuredResponse msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
 
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.DESCRIBE)) {
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.DESCRIBE)) {
 			throw new IllegalStateException(FNC_NAME + ": Input Source not found");
 		}
-		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.DESCRIBE);
+		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspMessageType.DESCRIBE);
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			buildResponse_nack(RtspProtoStatusCode.BAD_REQUEST, "", msg);
+			buildResponse_nack(RtspStatusCode.BAD_REQUEST, "", msg);
 			return;
 		}
 
 		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, rtspSessionInfo);
 		List<@NonNull String> tmpSdpLines = sdpBuilder.buildSdp(
 				rtspInputSource,
-				findRtspHostIp(RtspProtoMessageType.DESCRIBE)
+				findRtspHostIp(RtspMessageType.DESCRIBE)
 			);
 		msg.body = String.join(RtspProtoLowMsgConstants.CRLF, tmpSdpLines);
 
@@ -175,7 +173,7 @@ public final class RtspProtoHighResponseBuilder {
 		// Content-Base
 		{
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
-			String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.DESCRIBE);
+			String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspMessageType.DESCRIBE);
 			hdEntry.hdValContBase.contentBaseStr = tmpUrlBase + "/";
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
@@ -241,7 +239,7 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Transport
 		{
-			String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
+			String tmpRtspHostIp = findRtspHostIp(RtspMessageType.SETUP);
 
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
 			hdEntry.hdValTransport.tpIsUdp = tmpStreamInfo.tpIsUdp;
@@ -319,7 +317,7 @@ public final class RtspProtoHighResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull String findRtspHostIp(RtspProtoMessageType messageType) {
+	private @NonNull String findRtspHostIp(RtspMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
 
 		String tmpRtspHostname;

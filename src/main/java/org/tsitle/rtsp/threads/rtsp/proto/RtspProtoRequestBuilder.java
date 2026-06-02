@@ -10,6 +10,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.util.*;
@@ -40,19 +41,19 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = getStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
 
 		//
-		internalSendRequest(FNC_NAME, RtspProtoMessageType.OPTIONS, tmpStreamInfo.inputSourceUrlSetup, new ArrayList<>());
+		internalSendRequest(FNC_NAME, RtspMessageType.OPTIONS, tmpStreamInfo.inputSourceUrlSetup, new ArrayList<>());
 	}
 
 	public @NonNull SrtxpKmd sendRequestSrtxpRekey(
 				@NonNull String subStreamId,
-				@NonNull Set<@NonNull RtspProtoMessageType> supportedMessageTypes
+				@NonNull Set<@NonNull RtspMessageType> supportedMessageTypes
 			) throws TcpSocketIoException, RtspInvalidRequestException {
 		return sendRequestSrtxpRekey(subStreamIdToRuioss(subStreamId), supportedMessageTypes);
 	}
 
 	public @NonNull SrtxpKmd sendRequestSrtxpRekey(
 				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull Set<@NonNull RtspProtoMessageType> supportedMessageTypes
+				@NonNull Set<@NonNull RtspMessageType> supportedMessageTypes
 			) throws TcpSocketIoException, RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestSrtxpRekey()";
 
@@ -67,8 +68,8 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			);
 
 		//
-		if ((tmpStreamKmds.isForLegacySdes && ! supportedMessageTypes.contains(RtspProtoMessageType.ANNOUNCE)) ||
-				(! tmpStreamKmds.isForLegacySdes && ! supportedMessageTypes.contains(RtspProtoMessageType.SET_PARAMETER))) {
+		if ((tmpStreamKmds.isForLegacySdes && ! supportedMessageTypes.contains(RtspMessageType.ANNOUNCE)) ||
+				(! tmpStreamKmds.isForLegacySdes && ! supportedMessageTypes.contains(RtspMessageType.SET_PARAMETER))) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": client does not support SRTxP re-keying");
 		}
 		Objects.requireNonNull(tmpStreamKmds.kmdOutbound);
@@ -112,7 +113,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			contents.add(RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + " 0");
 
 			//
-			internalSendRequest(FNC_NAME, RtspProtoMessageType.SET_PARAMETER, tmpStreamInfo.inputSourceUrlSetup, contents);
+			internalSendRequest(FNC_NAME, RtspMessageType.SET_PARAMETER, tmpStreamInfo.inputSourceUrlSetup, contents);
 		} else {
 			/*
 			 * we need to send an ANNOUNCE request that contains the entire SDP.
@@ -132,7 +133,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestTeardown()";
 
 		//
-		internalSendRequest(FNC_NAME, RtspProtoMessageType.TEARDOWN, inputSourceUrl, new ArrayList<>());
+		internalSendRequest(FNC_NAME, RtspMessageType.TEARDOWN, inputSourceUrl, new ArrayList<>());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -154,7 +155,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
 	private void internalSendRequest(
 				@NonNull String fncName,
-				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspMessageType messageType,
 				@NonNull String uri,
 				final @NonNull List<@NonNull String> contents
 			) throws TcpSocketIoException {

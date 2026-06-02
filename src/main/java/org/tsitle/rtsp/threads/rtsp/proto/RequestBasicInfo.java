@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
 public class RequestBasicInfo {
 
@@ -14,8 +16,8 @@ public class RequestBasicInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoMessageType messageType = RtspProtoMessageType.UNKNOWN;
-	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.OK;
+	public @NonNull RtspMessageType messageType = RtspMessageType.UNKNOWN;
+	public @NonNull RtspStatusCode statusCode = RtspStatusCode.OK;
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
 	public @NonNull String unsupportedOptionName = "";
 
@@ -25,20 +27,20 @@ public class RequestBasicInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean isValid() { return (messageType != RtspProtoMessageType.UNKNOWN && statusCode == RtspProtoStatusCode.OK); }
+	public boolean isValid() { return (messageType != RtspMessageType.UNKNOWN && statusCode == RtspStatusCode.OK); }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull RequestBasicInfo createUnknown() {
 		RequestBasicInfo res = new RequestBasicInfo();
-		res.messageType = RtspProtoMessageType.UNKNOWN;
+		res.messageType = RtspMessageType.UNKNOWN;
 		return res;
 	}
 
 	public static @NonNull RequestBasicInfo createKnownWithError(
-				@NonNull RtspProtoMessageType messageType,
-				@NonNull RtspProtoStatusCode statusCode
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspStatusCode statusCode
 			) {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.messageType = messageType;
@@ -47,18 +49,18 @@ public class RequestBasicInfo {
 	}
 
 	public static @NonNull RequestBasicInfo createKnownWithOptionNotSupported(
-				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspMessageType messageType,
 				@NonNull String optionName
 			) {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.messageType = messageType;
-		res.statusCode = RtspProtoStatusCode.OPTION_NOT_SUPPORTED;
+		res.statusCode = RtspStatusCode.OPTION_NOT_SUPPORTED;
 		res.unsupportedOptionName = optionName;
 		return res;
 	}
 
 	public static @NonNull RequestBasicInfo createOk(
-				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspMessageType messageType,
 				@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) {
 		RequestBasicInfo res = new RequestBasicInfo();

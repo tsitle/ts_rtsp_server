@@ -6,6 +6,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -55,7 +56,7 @@ public class RtspProtoParserBase {
 		resS = matcher.replaceAll("");
 		if (isFirst) {
 			// strip occasionally occurring nonsense from the beginning of the line
-			for (RtspProtoMessageType tmpType : RtspProtoMessageType.values()) {
+			for (RtspMessageType tmpType : RtspMessageType.values()) {
 				int tmpIx = resS.indexOf(tmpType.name());
 				if (tmpIx < 0) {
 					continue;

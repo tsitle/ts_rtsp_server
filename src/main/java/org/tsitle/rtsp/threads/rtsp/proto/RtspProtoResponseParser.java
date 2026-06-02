@@ -6,6 +6,8 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
 import java.util.*;
 
@@ -14,8 +16,8 @@ import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
 public final class RtspProtoResponseParser extends RtspProtoParserBase {
 
 	public static class ResponseInfo {
-		public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
-		public @NonNull Set<@NonNull RtspProtoMessageType> supportedMessageTypes = new HashSet<>();
+		public @NonNull RtspStatusCode statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+		public @NonNull Set<@NonNull RtspMessageType> supportedMessageTypes = new HashSet<>();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -92,10 +94,10 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 				headerLine = "xxx";  // keep the loop going
 			} catch (RtspInvalidRequestException e) {
 				logError(FNC_NAME, "InvalidRtspRequestException: " + e.getMessage());
-				resObj.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+				resObj.statusCode = RtspStatusCode.BAD_REQUEST;
 			} catch (RtspInvalidSessionIdException e) {
 				logError(FNC_NAME, "Invalid Session ID, rejecting response");
-				resObj.statusCode = RtspProtoStatusCode.SESSION_NOT_FOUND;
+				resObj.statusCode = RtspStatusCode.SESSION_NOT_FOUND;
 			}
 		} while (! headerLine.isBlank());
 
@@ -125,7 +127,7 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspProtoStatusCode parseResponseStatusCode(String requestLine) {
+	private @NonNull RtspStatusCode parseResponseStatusCode(String requestLine) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseResponseStatusCode()";
 
 		/*
@@ -143,16 +145,16 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 			} catch (NumberFormatException e) {
 				logWarn(FNC_NAME, "Invalid Status Code: '" + tmpStatCodeStr + "' - " +
 						"invalid format");
-				return RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+				return RtspStatusCode.INTERNAL_SERVER_ERROR;
 			}
 			//
-			return Arrays.stream(RtspProtoStatusCode.values())
+			return Arrays.stream(RtspStatusCode.values())
 					.filter(tmpType -> tmpType.getValue() == tmpStatCodeInt)
 					.findFirst()
-					.orElse(RtspProtoStatusCode.INTERNAL_SERVER_ERROR);
+					.orElse(RtspStatusCode.INTERNAL_SERVER_ERROR);
 		} catch (NoSuchElementException e) {
 			logError(FNC_NAME, "NoSuchElementException caught: " + e);
-			return RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
+			return RtspStatusCode.INTERNAL_SERVER_ERROR;
 		}
 	}
 
@@ -207,7 +209,7 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 		for (String tmpOption : tmpOptionsStr.split(",")) {
 			tmpOption = tmpOption.strip();
 			try {
-				RtspProtoMessageType tmpEn = RtspProtoMessageType.valueOf(tmpOption);
+				RtspMessageType tmpEn = RtspMessageType.valueOf(tmpOption);
 				responseInfo.supportedMessageTypes.add(tmpEn);
 			} catch (IllegalArgumentException e) {
 				logWarn(FNC_NAME, "Invalid option: '" + tmpOption + "'");

@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.util.HashMap;
@@ -10,8 +10,8 @@ import java.util.Map;
 
 public class RtspProtoLowMsgStructuredBase {
 
-	public @NonNull RtspProtoMessageType messageType = RtspProtoMessageType.UNKNOWN;
-	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.BAD_REQUEST;
+	public @NonNull RtspMessageType messageType = RtspMessageType.UNKNOWN;
+	public @NonNull RtspStatusCode statusCode = RtspStatusCode.BAD_REQUEST;
 
 	/** Resource URL without Query Parameters */
 	public @NonNull String resourceUrl = "";

@@ -10,6 +10,8 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
@@ -80,13 +82,13 @@ public class RtspProtoRequestInputSvc {
 
 		// parse the raw request
 		RtspProtoLowMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
-		if (lowInputParsed.messageType == RtspProtoMessageType.UNKNOWN) {
+		if (lowInputParsed.messageType == RtspMessageType.UNKNOWN) {
 			resObj = RequestBasicInfo.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
-		if (lowInputParsed.statusCode != RtspProtoStatusCode.OK) {
+		if (lowInputParsed.statusCode != RtspStatusCode.OK) {
 			resObj = RequestBasicInfo.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));

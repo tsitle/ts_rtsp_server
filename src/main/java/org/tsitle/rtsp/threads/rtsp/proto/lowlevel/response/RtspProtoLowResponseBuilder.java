@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
@@ -140,7 +140,7 @@ public final class RtspProtoLowResponseBuilder {
 
 	private static @NonNull String buildHeaderValue_options_public(@NonNull RtspProtoLowHeaderTypePublic hdValue)
 			throws RtspInvalidResponseException {
-		if (hdValue.messageTypes.contains(RtspProtoMessageType.UNKNOWN)) {
+		if (hdValue.messageTypes.contains(RtspMessageType.UNKNOWN)) {
 			throw new RtspInvalidResponseException("UNKNOWN message type in PUBLIC header");
 		}
 		List<String> tmpList = hdValue.messageTypes.stream()
