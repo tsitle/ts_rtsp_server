@@ -1,10 +1,10 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
 import java.time.Instant;
 
-public class RtspProtoLowHeaderTypeDate {
+public class RtspProtoHeaderTypeDate {
 
 	public @NonNull Instant dateObj = Instant.now();
 

@@ -1,11 +1,11 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class RtspProtoLowHeaderTypeRequire {
+public class RtspProtoHeaderTypeRequire {
 
 	public @NonNull Set<@NonNull String> requiredFeatures = new HashSet<>();
 

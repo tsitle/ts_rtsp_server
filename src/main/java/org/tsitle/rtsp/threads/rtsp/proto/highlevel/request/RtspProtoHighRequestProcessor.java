@@ -16,7 +16,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 
 import java.util.*;
 
@@ -325,7 +325,7 @@ public final class RtspProtoHighRequestProcessor {
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException, RtspUnsupportedFeatureRequestedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
-		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> entry : msg.headers.entrySet()) {
+		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> entry : msg.headers.entrySet()) {
 			switch (entry.getKey()) {
 				case RtspHeaderKey.ACCEPT ->
 						processHeader_describe_accept(msg.messageType);
@@ -370,7 +370,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_com_auth_client(
 				@NonNull String authUser,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) {
 		// copy parameters - ignore empty values here and reject the request later if necessary
 		rtspSessionInfo.authInfo.authUser = authUser;
@@ -383,7 +383,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_describe_contbase(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspMessageType.DESCRIBE) {
 			throw new RtspInvalidRequestException("Received ACCEPT header in non-DESCRIBE request");
@@ -391,18 +391,18 @@ public final class RtspProtoHighRequestProcessor {
 		// @TODO
 	}
 
-	private void processHeader_com_contlen(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+	private void processHeader_com_contlen(@NonNull RtspProtoHeaderEntryRequest headerEntry) {
 		// @TODO
 	}
 
-	private void processHeader_com_conttype(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+	private void processHeader_com_conttype(@NonNull RtspProtoHeaderEntryRequest headerEntry) {
 		// @TODO
 	}
 
 	private void processHeader_com_keymgmt(
 				@NonNull RtspMessageType messageType,
 				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspMessageType.SETUP && messageType != RtspMessageType.SET_PARAMETER) {
 			throw new RtspInvalidRequestException("Received Keymgmt header in non-SETUP/SET_PARAMETER request");
@@ -427,7 +427,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_play_range(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspMessageType.PLAY) {
 			throw new RtspInvalidRequestException("Received RANGE header in non-PLAY request");
@@ -437,7 +437,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_options_require(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException, RtspUnsupportedFeatureRequestedException {
 		if (messageType != RtspMessageType.OPTIONS && messageType != RtspMessageType.SETUP) {
 			throw new RtspInvalidRequestException("Received REQUIRE header in non-OPTIONS/SETUP request");
@@ -454,7 +454,7 @@ public final class RtspProtoHighRequestProcessor {
 	private void processHeader_setup_transport(
 				@NonNull RtspMessageType messageType,
 				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+				@NonNull RtspProtoHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_setup_transport()";
 
@@ -515,7 +515,7 @@ public final class RtspProtoHighRequestProcessor {
 		rtspSessionInfo.isTransportSrtpSrtcp = tmpSetupSubStream.tpIsEncr;
 	}
 
-	private void processHeader_com_useragent(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+	private void processHeader_com_useragent(@NonNull RtspProtoHeaderEntryRequest headerEntry) {
 		rtspSessionInfo.clientUserAgent = headerEntry.hdValUserAgent.userAgentStr;
 	}
 

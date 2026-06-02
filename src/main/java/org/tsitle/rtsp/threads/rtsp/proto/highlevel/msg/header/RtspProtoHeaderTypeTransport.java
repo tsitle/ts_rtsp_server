@@ -1,10 +1,10 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
-public class RtspProtoLowHeaderTypeTransport {
+public class RtspProtoHeaderTypeTransport {
 
 	/** Client's UDP port for inbound RTP packets */
 	private int tpClientUdpPortRtp = -1;

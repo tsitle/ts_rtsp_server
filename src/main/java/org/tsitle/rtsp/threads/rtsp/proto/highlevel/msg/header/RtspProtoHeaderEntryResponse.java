@@ -1,22 +1,22 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
-public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEntryBase {
+public final class RtspProtoHeaderEntryResponse extends RtspProtoHeaderEntryBase {
 
-	public @NonNull RtspProtoLowHeaderTypeAuthServer hdValAuthServer = new RtspProtoLowHeaderTypeAuthServer();
-	public @NonNull RtspProtoLowHeaderTypePublic hdValPublic = new RtspProtoLowHeaderTypePublic();
-	public @NonNull RtspProtoLowHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoLowHeaderTypeRtpinfo();
-	public @NonNull RtspProtoLowHeaderTypeServer hdValServer = new RtspProtoLowHeaderTypeServer();
-	public @NonNull RtspProtoLowHeaderTypeUnsupported hdValUnsupported = new RtspProtoLowHeaderTypeUnsupported();
+	public @NonNull RtspProtoHeaderTypeAuthServer hdValAuthServer = new RtspProtoHeaderTypeAuthServer();
+	public @NonNull RtspProtoHeaderTypePublic hdValPublic = new RtspProtoHeaderTypePublic();
+	public @NonNull RtspProtoHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoHeaderTypeRtpinfo();
+	public @NonNull RtspProtoHeaderTypeServer hdValServer = new RtspProtoHeaderTypeServer();
+	public @NonNull RtspProtoHeaderTypeUnsupported hdValUnsupported = new RtspProtoHeaderTypeUnsupported();
 
 	@SuppressWarnings("unused")
-	public RtspProtoLowHeaderEntryResponse() {
+	public RtspProtoHeaderEntryResponse() {
 		super();
 	}
 
-	public RtspProtoLowHeaderEntryResponse(@NonNull RtspHeaderKey hdKeyEn) {
+	public RtspProtoHeaderEntryResponse(@NonNull RtspHeaderKey hdKeyEn) {
 		super(hdKeyEn);
 
 		setHdKey(hdKeyEn);

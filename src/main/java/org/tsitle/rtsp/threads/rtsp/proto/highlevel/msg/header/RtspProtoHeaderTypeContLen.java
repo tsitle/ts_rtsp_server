@@ -1,10 +1,10 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
-public class RtspProtoLowHeaderTypeContLen {
+public class RtspProtoHeaderTypeContLen {
 
 	private long contentLen32bit = -1L;
 

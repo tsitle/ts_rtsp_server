@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +16,7 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 	public @NonNull String authPlainPassword = "";
 
 	/** Headers */
-	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> headers = new HashMap<>();
+	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> headers = new HashMap<>();
 
 	public RtspProtoHighMsgStructuredRequest() {
 		super();

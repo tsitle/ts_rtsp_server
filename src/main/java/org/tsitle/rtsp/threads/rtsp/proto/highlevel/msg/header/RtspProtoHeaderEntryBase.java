@@ -1,25 +1,25 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
-public class RtspProtoLowHeaderEntryBase {
+public class RtspProtoHeaderEntryBase {
 
 	protected @NonNull RtspHeaderKey hdKeyEn = RtspHeaderKey.NONE;
 	protected boolean baseClassHandlesHdKeyType = false;
 
-	public @NonNull RtspProtoLowHeaderTypeContBase hdValContBase = new RtspProtoLowHeaderTypeContBase();
-	public @NonNull RtspProtoLowHeaderTypeContLen hdValContLen = new RtspProtoLowHeaderTypeContLen();
-	public @NonNull RtspProtoLowHeaderTypeContType hdValContType = new RtspProtoLowHeaderTypeContType();
-	public @NonNull RtspProtoLowHeaderTypeCseq hdValCseq = new RtspProtoLowHeaderTypeCseq();
-	public @NonNull RtspProtoLowHeaderTypeDate hdValDate = new RtspProtoLowHeaderTypeDate();
-	public @NonNull RtspProtoLowHeaderTypeRange hdValRange = new RtspProtoLowHeaderTypeRange();
-	public @NonNull RtspProtoLowHeaderTypeSession hdValSession = new RtspProtoLowHeaderTypeSession();
-	public @NonNull RtspProtoLowHeaderTypeTransport hdValTransport = new RtspProtoLowHeaderTypeTransport();
+	public @NonNull RtspProtoHeaderTypeContBase hdValContBase = new RtspProtoHeaderTypeContBase();
+	public @NonNull RtspProtoHeaderTypeContLen hdValContLen = new RtspProtoHeaderTypeContLen();
+	public @NonNull RtspProtoHeaderTypeContType hdValContType = new RtspProtoHeaderTypeContType();
+	public @NonNull RtspProtoHeaderTypeCseq hdValCseq = new RtspProtoHeaderTypeCseq();
+	public @NonNull RtspProtoHeaderTypeDate hdValDate = new RtspProtoHeaderTypeDate();
+	public @NonNull RtspProtoHeaderTypeRange hdValRange = new RtspProtoHeaderTypeRange();
+	public @NonNull RtspProtoHeaderTypeSession hdValSession = new RtspProtoHeaderTypeSession();
+	public @NonNull RtspProtoHeaderTypeTransport hdValTransport = new RtspProtoHeaderTypeTransport();
 
-	protected RtspProtoLowHeaderEntryBase() { }
+	protected RtspProtoHeaderEntryBase() { }
 
-	protected RtspProtoLowHeaderEntryBase(@NonNull RtspHeaderKey hdKeyEn) {
+	protected RtspProtoHeaderEntryBase(@NonNull RtspHeaderKey hdKeyEn) {
 		setHdKey(hdKeyEn);
 	}
 

@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
@@ -12,7 +13,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -46,7 +46,7 @@ public final class RtspProtoLowResponseBuilder {
 				input.rtspProtoVersion.getStrValue(), input.statusCode.getIntValue(), input.statusCode.getReasonPhrase());
 
 		// set headers
-		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryResponse> entry : input.headers.entrySet()) {
+		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : input.headers.entrySet()) {
 			String tmpHdVal = switch (entry.getKey()) {
 					case AUTH_SERVER -> buildHeaderValue_com_auth_server(entry.getValue().hdValAuthServer);
 					case CONTENT_BASE -> buildHeaderValue_describe_contbase(entry.getValue().hdValContBase);
@@ -82,7 +82,7 @@ public final class RtspProtoLowResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String buildHeaderValue_com_auth_server(@NonNull RtspProtoLowHeaderTypeAuthServer hdValue)
+	private static @NonNull String buildHeaderValue_com_auth_server(@NonNull RtspProtoHeaderTypeAuthServer hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.authRealm.isBlank()) {
 			throw new RtspInvalidResponseException("Auth Realm cannot be blank");
@@ -99,7 +99,7 @@ public final class RtspProtoLowResponseBuilder {
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + hdValue.authAlgo.getStrValue() + "\"";
 	}
 
-	private static @NonNull String buildHeaderValue_describe_contbase(@NonNull RtspProtoLowHeaderTypeContBase hdValue)
+	private static @NonNull String buildHeaderValue_describe_contbase(@NonNull RtspProtoHeaderTypeContBase hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.contentBaseStr.isBlank()) {
 			throw new RtspInvalidResponseException("contentBaseStr cannot be blank");
@@ -107,7 +107,7 @@ public final class RtspProtoLowResponseBuilder {
 		return hdValue.contentBaseStr;
 	}
 
-	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoLowHeaderTypeContLen hdValue)
+	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoHeaderTypeContLen hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.getContentLen32bit().isEmpty()) {
 			throw new RtspInvalidResponseException("Content-Length must be set");
@@ -115,7 +115,7 @@ public final class RtspProtoLowResponseBuilder {
 		return Integer.toUnsignedString(hdValue.getContentLen32bit().get());
 	}
 
-	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoLowHeaderTypeContType hdValue)
+	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoHeaderTypeContType hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.contentType == RtspMimeType.NONE) {
 			throw new RtspInvalidResponseException("Content-Type must be set");
@@ -123,7 +123,7 @@ public final class RtspProtoLowResponseBuilder {
 		return hdValue.contentType.getStrValue();
 	}
 
-	private static @NonNull String buildHeaderValue_com_cseq(@NonNull RtspProtoLowHeaderTypeCseq hdValue)
+	private static @NonNull String buildHeaderValue_com_cseq(@NonNull RtspProtoHeaderTypeCseq hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.getCseqNr32bit().isEmpty()) {
 			throw new RtspInvalidResponseException("CSeq must be set");
@@ -131,14 +131,14 @@ public final class RtspProtoLowResponseBuilder {
 		return Integer.toUnsignedString(hdValue.getCseqNr32bit().get());
 	}
 
-	private static @NonNull String buildHeaderValue_com_date(@NonNull RtspProtoLowHeaderTypeDate hdValue) {
+	private static @NonNull String buildHeaderValue_com_date(@NonNull RtspProtoHeaderTypeDate hdValue) {
 		// Date: Fri, 03 Apr 2026 10:54:06 GMT
 		return DateTimeFormatter.RFC_1123_DATE_TIME
 				.withLocale(Locale.ENGLISH)
 				.format(hdValue.dateObj.atZone(ZoneOffset.UTC));
 	}
 
-	private static @NonNull String buildHeaderValue_options_public(@NonNull RtspProtoLowHeaderTypePublic hdValue)
+	private static @NonNull String buildHeaderValue_options_public(@NonNull RtspProtoHeaderTypePublic hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.messageTypes.contains(RtspMessageType.UNKNOWN)) {
 			throw new RtspInvalidResponseException("UNKNOWN message type in PUBLIC header");
@@ -149,7 +149,7 @@ public final class RtspProtoLowResponseBuilder {
 		return String.join(", ", tmpList);
 	}
 
-	private static @NonNull String buildHeaderValue_play_range(@NonNull RtspProtoLowHeaderTypeRange hdValue)
+	private static @NonNull String buildHeaderValue_play_range(@NonNull RtspProtoHeaderTypeRange hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.rangeStr.isBlank()) {
 			throw new RtspInvalidResponseException("rangeStr cannot be blank");
@@ -158,11 +158,11 @@ public final class RtspProtoLowResponseBuilder {
 	}
 
 	private static @NonNull String buildHeaderValue_play_rtpinfo(
-				@NonNull RtspProtoLowHeaderTypeRtpinfo hdValue,
+				@NonNull RtspProtoHeaderTypeRtpinfo hdValue,
 				@NonNull RtspProtocolVersion rtspProtocolVersion
 			) throws RtspInvalidResponseException {
-		Optional<RtspProtoLowHeaderTypeRtpinfo.SubStream> tmpSs1 = hdValue.getSubStream1();
-		Optional<RtspProtoLowHeaderTypeRtpinfo.SubStream> tmpSs2 = hdValue.getSubStream2();
+		Optional<RtspProtoHeaderTypeRtpinfo.SubStream> tmpSs1 = hdValue.getSubStream1();
+		Optional<RtspProtoHeaderTypeRtpinfo.SubStream> tmpSs2 = hdValue.getSubStream2();
 		if (tmpSs1.isEmpty()) {
 			throw new RtspInvalidResponseException("substream 1 is missing");
 		}
@@ -176,7 +176,7 @@ public final class RtspProtoLowResponseBuilder {
 	}
 
 	private static @NonNull String addRtpInfoForSubStream(
-				RtspProtoLowHeaderTypeRtpinfo.@NonNull SubStream subStreamInfo,
+				RtspProtoHeaderTypeRtpinfo.@NonNull SubStream subStreamInfo,
 				@NonNull RtspProtocolVersion rtspProtocolVersion
 			) throws RtspInvalidResponseException {
 		/*
@@ -226,7 +226,7 @@ public final class RtspProtoLowResponseBuilder {
 		return tmpSb.toString();
 	}
 
-	private static @NonNull String buildHeaderValue_com_server(@NonNull RtspProtoLowHeaderTypeServer hdValue)
+	private static @NonNull String buildHeaderValue_com_server(@NonNull RtspProtoHeaderTypeServer hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.serverStr.isBlank()) {
 			throw new RtspInvalidResponseException("serverStr cannot be blank");
@@ -234,7 +234,7 @@ public final class RtspProtoLowResponseBuilder {
 		return hdValue.serverStr;
 	}
 
-	private static @NonNull String buildHeaderValue_com_session(@NonNull RtspProtoLowHeaderTypeSession hdValue)
+	private static @NonNull String buildHeaderValue_com_session(@NonNull RtspProtoHeaderTypeSession hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.sessionIdStr.isBlank()) {
 			throw new RtspInvalidResponseException("sessionIdStr cannot be blank");
@@ -246,7 +246,7 @@ public final class RtspProtoLowResponseBuilder {
 	}
 
 	private static @NonNull String buildHeaderValue_setup_transport(
-				@NonNull RtspProtoLowHeaderTypeTransport hdValue,
+				@NonNull RtspProtoHeaderTypeTransport hdValue,
 				@NonNull RtspProtocolVersion rtspProtocolVersion
 			) throws RtspInvalidResponseException {
 		/*
@@ -344,7 +344,7 @@ public final class RtspProtoLowResponseBuilder {
 		return sb.toString();
 	}
 
-	private static @NonNull String buildHeaderValue_com_unsupported(@NonNull RtspProtoLowHeaderTypeUnsupported hdValue)
+	private static @NonNull String buildHeaderValue_com_unsupported(@NonNull RtspProtoHeaderTypeUnsupported hdValue)
 			throws RtspInvalidResponseException {
 		if (hdValue.unsupportedOptionStr.isBlank()) {
 			throw new RtspInvalidResponseException("unsupportedOptionStr cannot be blank");

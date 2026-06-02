@@ -11,7 +11,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -146,7 +146,7 @@ public class RtspProtoHighResponseProcessor {
 			) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
-		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryResponse> entry : msg.headers.entrySet()) {
+		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : msg.headers.entrySet()) {
 			switch (entry.getKey()) {
 				case RtspHeaderKey.AUTH_SERVER ->
 						processHeader_com_auth_server(entry.getValue());
@@ -179,7 +179,7 @@ public class RtspProtoHighResponseProcessor {
 		}
 	}
 
-	private void processHeader_com_auth_server(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_auth_server(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		if (isResponseFromClient) {
 			throw new RtspInvalidResponseException("Received Auth(Server) header from client");
@@ -189,7 +189,7 @@ public class RtspProtoHighResponseProcessor {
 
 	private void processHeader_describe_contbase(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryResponse headerEntry
+				@NonNull RtspProtoHeaderEntryResponse headerEntry
 			) throws RtspInvalidResponseException {
 		if (messageType != RtspMessageType.DESCRIBE) {
 			throw new RtspInvalidResponseException("Received Content-Base header in non-DESCRIBE request");
@@ -200,24 +200,24 @@ public class RtspProtoHighResponseProcessor {
 		// @TODO store params
 	}
 
-	private void processHeader_com_contlen(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_contlen(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		// @TODO store params
 	}
 
-	private void processHeader_com_conttype(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_conttype(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		// @TODO store params
 	}
 
-	private void processHeader_com_date(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_date(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		// @TODO store params
 	}
 
 	private void processHeader_options_public(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryResponse headerEntry
+				@NonNull RtspProtoHeaderEntryResponse headerEntry
 			) throws RtspInvalidResponseException {
 		if (messageType != RtspMessageType.OPTIONS) {
 			throw new RtspInvalidResponseException("Received Public header in non-OPTIONS request");
@@ -231,7 +231,7 @@ public class RtspProtoHighResponseProcessor {
 
 	private void processHeader_play_range(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryResponse headerEntry
+				@NonNull RtspProtoHeaderEntryResponse headerEntry
 			) throws RtspInvalidResponseException {
 		if (messageType != RtspMessageType.PLAY) {
 			throw new RtspInvalidResponseException("Received Range header in non-PLAY request");
@@ -241,7 +241,7 @@ public class RtspProtoHighResponseProcessor {
 
 	private void processHeader_play_rtpinfo(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryResponse headerEntry
+				@NonNull RtspProtoHeaderEntryResponse headerEntry
 			) throws RtspInvalidResponseException {
 		if (messageType != RtspMessageType.PLAY) {
 			throw new RtspInvalidResponseException("Received RTP-Info header in non-PLAY request");
@@ -252,7 +252,7 @@ public class RtspProtoHighResponseProcessor {
 		// @TODO store params
 	}
 
-	private void processHeader_com_server(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_server(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		if (isResponseFromClient) {
 			throw new RtspInvalidResponseException("Received Server header from client");
@@ -262,7 +262,7 @@ public class RtspProtoHighResponseProcessor {
 
 	private void processHeader_setup_transport(
 				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoLowHeaderEntryResponse headerEntry
+				@NonNull RtspProtoHeaderEntryResponse headerEntry
 			) throws RtspInvalidResponseException {
 		if (messageType != RtspMessageType.SETUP) {
 			throw new RtspInvalidResponseException("Received Transport header in non-SETUP request");
@@ -273,7 +273,7 @@ public class RtspProtoHighResponseProcessor {
 		// @TODO store params
 	}
 
-	private void processHeader_com_unsupported(@NonNull RtspProtoLowHeaderEntryResponse headerEntry)
+	private void processHeader_com_unsupported(@NonNull RtspProtoHeaderEntryResponse headerEntry)
 			throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_unsupported()";
 

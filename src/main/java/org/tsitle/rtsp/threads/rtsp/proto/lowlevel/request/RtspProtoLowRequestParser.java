@@ -7,6 +7,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
@@ -16,7 +17,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -221,7 +221,7 @@ public final class RtspProtoLowRequestParser {
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
-		RtspProtoLowHeaderEntryRequest entry = new RtspProtoLowHeaderEntryRequest();
+		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest();
 		RtspHeaderKey hdKeyEn = RtspHeaderKey.of(hdKeyStr);
 		switch (hdKeyEn) {
 			case ACCEPT -> parseHeaderValue_describe_accept(hdValue, entry);
@@ -247,7 +247,7 @@ public final class RtspProtoLowRequestParser {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		entry.hdValAccept.rtspMimeType = RtspMimeType.of(hdValue);
 		if (entry.hdValAccept.rtspMimeType == RtspMimeType.NONE) {
@@ -262,7 +262,7 @@ public final class RtspProtoLowRequestParser {
 	private void parseHeaderValue_com_auth_client(
 				@NonNull String hdValue,
 				@NonNull RtspProtoHighMsgStructuredRequest output,
-				@NonNull RtspProtoLowHeaderEntryRequest entry
+				@NonNull RtspProtoHeaderEntryRequest entry
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_client()";
 
@@ -314,7 +314,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.AUTH_CLIENT);
 	}
 
-	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		try {
 			entry.hdValCseq.setCseqNr32bit(Long.parseLong(hdValue));
@@ -326,12 +326,12 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.CSEQ);
 	}
 
-	private void parseHeaderValue_describe_contbase(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+	private void parseHeaderValue_describe_contbase(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		entry.hdValContBase.contentBaseStr = hdValue;
 		entry.setHdKey(RtspHeaderKey.CONTENT_BASE);
 	}
 
-	private void parseHeaderValue_com_contlen(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_com_contlen(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		try {
 			entry.hdValContLen.setContentLen32bit((int)Long.parseLong(hdValue));
@@ -343,7 +343,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.CONTENT_LEN);
 	}
 
-	private void parseHeaderValue_com_conttype(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_com_conttype(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		entry.hdValContType.contentType = RtspMimeType.of(hdValue);
 		if (entry.hdValContType.contentType == RtspMimeType.NONE) {
@@ -355,7 +355,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.CONTENT_TYPE);
 	}
 
-	private void parseHeaderValue_com_date(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_com_date(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		try {
 			entry.hdValDate.dateObj = ZonedDateTime.parse(
@@ -368,7 +368,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.DATE);
 	}
 
-	private void parseHeaderValue_com_keymgmt(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_com_keymgmt(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_keymgmt()";
 
@@ -398,12 +398,12 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.KEYMGMT);
 	}
 
-	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		entry.hdValRange.rangeStr = hdValue;
 		entry.setHdKey(RtspHeaderKey.RANGE);
 	}
 
-	private void parseHeaderValue_options_require(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+	private void parseHeaderValue_options_require(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		/*
 		 * Example:
 		 *   "Require: funky-feature"
@@ -423,7 +423,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.REQUIRE);
 	}
 
-	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_session()";
 
 		if (hdValue.contains(";")) {
@@ -437,7 +437,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.SESSION);
 	}
 
-	private void parseHeaderValue_setup_transport(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
+	private void parseHeaderValue_setup_transport(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_setup_transport()";
 
@@ -510,7 +510,7 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.TRANSPORT);
 	}
 
-	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
+	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		/*
 		 * GStreamer (Rocky Linux 10): GStreamer/1.24.11
 		 * GStreamer (KUbuntu 24): GStreamer/1.24.2

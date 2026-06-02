@@ -1,22 +1,22 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
-public final class RtspProtoLowHeaderEntryRequest extends RtspProtoLowHeaderEntryBase {
+public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase {
 
-	public @NonNull RtspProtoLowHeaderTypeAccept hdValAccept = new RtspProtoLowHeaderTypeAccept();
-	public @NonNull RtspProtoLowHeaderTypeAuthClient hdValAuthClient = new RtspProtoLowHeaderTypeAuthClient();
-	public @NonNull RtspProtoLowHeaderTypeKeymgmt hdValKeymgmt = new RtspProtoLowHeaderTypeKeymgmt();
-	public @NonNull RtspProtoLowHeaderTypeRequire hdValRequire = new RtspProtoLowHeaderTypeRequire();
-	public @NonNull RtspProtoLowHeaderTypeUa hdValUserAgent = new RtspProtoLowHeaderTypeUa();
+	public @NonNull RtspProtoHeaderTypeAccept hdValAccept = new RtspProtoHeaderTypeAccept();
+	public @NonNull RtspProtoHeaderTypeAuthClient hdValAuthClient = new RtspProtoHeaderTypeAuthClient();
+	public @NonNull RtspProtoHeaderTypeKeymgmt hdValKeymgmt = new RtspProtoHeaderTypeKeymgmt();
+	public @NonNull RtspProtoHeaderTypeRequire hdValRequire = new RtspProtoHeaderTypeRequire();
+	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
-	public RtspProtoLowHeaderEntryRequest() {
+	public RtspProtoHeaderEntryRequest() {
 		super();
 	}
 
 	@SuppressWarnings("unused")
-	public RtspProtoLowHeaderEntryRequest(@NonNull RtspHeaderKey hdKeyEn) {
+	public RtspProtoHeaderEntryRequest(@NonNull RtspHeaderKey hdKeyEn) {
 		super(hdKeyEn);
 
 		setHdKey(hdKeyEn);

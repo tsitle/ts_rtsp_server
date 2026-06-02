@@ -15,10 +15,11 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.net.*;
 import java.util.*;
@@ -104,7 +105,7 @@ public final class RtspProtoHighResponseBuilder {
 		if (statusCode == RtspStatusCode.OPTION_NOT_SUPPORTED) {
 			// Unsupported
 			{
-				RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
+				RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
 				hdEntry.hdValUnsupported.unsupportedOptionStr = (unsupportedOptionName.isBlank() ? "_unknown_" : unsupportedOptionName);
 				msg.headers.put(hdEntry.getHdKey(), hdEntry);
 			}
@@ -126,7 +127,7 @@ public final class RtspProtoHighResponseBuilder {
 	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		// Public
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.PUBLIC);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.PUBLIC);
 			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
@@ -168,14 +169,14 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Content-Base
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
 			String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspMessageType.DESCRIBE);
 			hdEntry.hdValContBase.contentBaseStr = tmpUrlBase + "/";
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Content-Type
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
 			hdEntry.hdValContType.contentType = RtspMimeType.SDP;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
@@ -222,7 +223,7 @@ public final class RtspProtoHighResponseBuilder {
 				rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32(false));
 				logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
 			}
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SESSION);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
 			hdEntry.hdValSession.timeout = RtspConstants.RTSP_SESSION_TIMEOUT;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
@@ -237,7 +238,7 @@ public final class RtspProtoHighResponseBuilder {
 		{
 			String tmpRtspHostIp = findRtspHostIp(RtspMessageType.SETUP);
 
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
 			hdEntry.hdValTransport.tpIsUdp = tmpSetupSubStream.tpIsUdp;
 			hdEntry.hdValTransport.tpIsEncr = tmpSetupSubStream.tpIsEncr;
 			hdEntry.hdValTransport.tpIsUnicast = tmpSetupSubStream.tpIsUnicast;
@@ -266,20 +267,20 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Range
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.RANGE);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RANGE);
 			hdEntry.hdValRange.rangeStr = rtspSessionInfo.clientPlaybackRangeValue;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// RTP-Info
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.RTPINFO);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RTPINFO);
 			int tmpSubStreamNr = 1;
 			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
 				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStreamInp = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
 						FNC_NAME,
 						tmpSubStreamId
 					);
-				RtspProtoLowHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoLowHeaderTypeRtpinfo.SubStream();
+				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
 				tmpStreamInfoOutput.urlStr = tmpSetupSubStreamInp.inputSourceUrlSetup;
 				tmpStreamInfoOutput.setSeqNr16bit(tmpSetupSubStreamInp.rtspRtpSeqNrT0);
 				tmpStreamInfoOutput.setRtpTimestamp32bit(tmpSetupSubStreamInp.rtspRtpTimestampT0);
@@ -394,18 +395,18 @@ public final class RtspProtoHighResponseBuilder {
 	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		// CSeq
 		if (rtspSessionInfo.rtspClientSeqNrResponse >= 0) {
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CSEQ);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CSEQ);
 			hdEntry.hdValCseq.setCseqNr32bit(rtspSessionInfo.rtspClientSeqNrResponse);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.DATE);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.DATE);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Server
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SERVER);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
 			hdEntry.hdValServer.serverStr = RtspProtoConstants.SERVER_NAME;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
@@ -416,7 +417,7 @@ public final class RtspProtoHighResponseBuilder {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.getClientIpAddr());
 		}
 
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.AUTH_SERVER);
+		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.AUTH_SERVER);
 		hdEntry.hdValAuthServer.authAlgo = RtspAuthAlgo.MD5;
 		hdEntry.hdValAuthServer.authRealm = RtspProtoConstants.RTSP_AUTH_REALM;
 		hdEntry.hdValAuthServer.authNonce = rtspSessionInfo.authInfo.authNonceServer;
@@ -424,7 +425,7 @@ public final class RtspProtoHighResponseBuilder {
 	}
 
 	private void addContentLengthHeader(@NonNull RtspProtoHighMsgStructuredResponse msg) {
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_LEN);
+		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_LEN);
 		hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}

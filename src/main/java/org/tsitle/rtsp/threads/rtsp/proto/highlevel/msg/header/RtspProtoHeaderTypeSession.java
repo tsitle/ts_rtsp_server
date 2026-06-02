@@ -1,8 +1,8 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoLowHeaderTypeSession {
+public class RtspProtoHeaderTypeSession {
 
 	public @NonNull String sessionIdStr = "";
 	/** Session timeout in seconds. -1 means no timeout. */

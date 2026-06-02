@@ -1,8 +1,8 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoLowHeaderTypeRange {
+public class RtspProtoHeaderTypeRange {
 
 	public @NonNull String rangeStr = "";
 

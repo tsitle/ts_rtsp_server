@@ -86,9 +86,9 @@ public class SdpBuilder {
 
 		// -------------------------------------
 		// optional Video Stream
-		buildSdpForSubstream(rtspInputSource, true, resL);
+		buildSdpForSubStream(rtspInputSource, true, resL);
 		// optional Audio Stream
-		buildSdpForSubstream(rtspInputSource, false, resL);
+		buildSdpForSubStream(rtspInputSource, false, resL);
 
 		return resL;
 	}
@@ -104,12 +104,12 @@ public class SdpBuilder {
 		return RtspProtoConstants.SERVER_NAME + " " + tmpAppVersion;
 	}
 
-	private void buildSdpForSubstream(
+	private void buildSdpForSubStream(
 				@NonNull RtspInputSource rtspInputSource,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
 			) {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubstream()";
+		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream()";
 
 		Optional<RtspStreamSource> optSsObj =
 				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), useVideo);
