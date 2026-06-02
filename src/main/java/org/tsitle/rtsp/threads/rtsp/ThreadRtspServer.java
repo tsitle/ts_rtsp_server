@@ -31,7 +31,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private final RtspChildThreadMng rtspChildThreadMng;
 	private final RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final RtspProtoRequestBuilder rtspProtoRequestBuilder;
-	private final RtspProtoResponseBuilder rtspProtoResponseBuilder;
+	private final RtspProtoResponseOutputSvc rtspProtoResponseOutputSvc;
 	private final RtspProtoResponseParser rtspProtoResponseParser;
 
 	private @Nullable Instant rtspTimeoutLastRequ = null;
@@ -84,8 +84,13 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				rtspSessionInfo,
 				this.rtxpTcpReadWrite
 			);
+		this.rtspProtoResponseOutputSvc = new RtspProtoResponseOutputSvc(
+				logMsgInterface,
+				rtspConfig,
+				rtspSessionInfo,
+				this.rtxpTcpReadWrite
+			);
 		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
-		this.rtspProtoResponseBuilder = new RtspProtoResponseBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspConfig, rtspSessionInfo);
 		this.rtspProtoResponseParser = new RtspProtoResponseParser(
 				true,
 				logMsgInterface,
@@ -261,7 +266,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
 		RequestBasicInfo resObj = rtspProtoRequestInputSvc.getNextRequest();
 
-		rtspProtoResponseBuilder.sendResponse(resObj);
+		rtspProtoResponseOutputSvc.sendResponse(resObj);
 		return resObj;
 	}
 

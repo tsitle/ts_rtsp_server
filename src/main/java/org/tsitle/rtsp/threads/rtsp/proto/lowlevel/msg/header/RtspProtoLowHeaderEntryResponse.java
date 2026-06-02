@@ -4,14 +4,15 @@ import org.jspecify.annotations.NonNull;
 
 public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEntryBase {
 
+	public @NonNull RtspProtoLowHeaderTypeContLen hdValContLen = new RtspProtoLowHeaderTypeContLen();
 	public @NonNull RtspProtoLowHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoLowHeaderTypeRtpinfo();
 	public @NonNull RtspProtoLowHeaderTypeServer hdValServer = new RtspProtoLowHeaderTypeServer();
 
+	@SuppressWarnings("unused")
 	public RtspProtoLowHeaderEntryResponse() {
 		super();
 	}
 
-	@SuppressWarnings("unused")
 	public RtspProtoLowHeaderEntryResponse(@NonNull RtspProtoLowHeaderKey hdKeyEn) {
 		super(hdKeyEn);
 
@@ -25,6 +26,7 @@ public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEnt
 			return;
 		}
 		switch (hdKeyEn) {
+			case CONTENT_LEN:
 			case RTPINFO:
 			case SERVER:
 				this.hdKeyEn = hdKeyEn;
@@ -43,6 +45,7 @@ public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEnt
 			return super.toString();
 		}
 		return switch (hdKeyEn) {
+				case CONTENT_LEN -> hdValContLen.toString();
 				case RTPINFO -> hdValRtpinfo.toString();
 				case SERVER -> hdValServer.toString();
 				default -> throw new IllegalArgumentException("Invalid header key for responses: " + hdKeyEn);

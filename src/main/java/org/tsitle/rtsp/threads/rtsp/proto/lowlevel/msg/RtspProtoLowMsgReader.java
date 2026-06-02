@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 public final class RtspProtoLowMsgReader {
 
 	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
+	private static final int MAX_HEADER_LINES = 1024;
+	private static final int MAX_BODY_SIZE = 1024 * 16;  // 16 kB
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
@@ -37,27 +39,62 @@ public final class RtspProtoLowMsgReader {
 
 		RtspProtoLowMsgRaw resObj = new RtspProtoLowMsgRaw();
 
+		try {
+			// main (request/status) line
+			readMainLine(resObj);
+			if (isDebugPrintRtspRcvd) {
+				logDebug(FNC_NAME, "-- BEG --------------------------------------------------------------------------");
+				logDebug(FNC_NAME, "-------- mainLine: " + resObj.mainLine);
+			}
+			if (resObj.mainLine.isBlank()) {
+				logError(FNC_NAME, "received empty mainLine");
+				return resObj;
+			}
+
+			// all header lines
+			readHeaderLines(resObj);
+			if (isDebugPrintRtspRcvd) {
+				for (String tmpHdLine : resObj.headerLines) {
+					logDebug(FNC_NAME, "---------------- headerLine: " + tmpHdLine.replace("\t", "<TAB>"));
+				}
+			}
+
+			// message body
+			readBody(resObj);
+			if (isDebugPrintRtspRcvd && ! resObj.body.isEmpty()) {
+				for (String tmpBodyLine : resObj.body.split(RtspProtoLowMsgConstants.CRLF)) {
+					logDebug(FNC_NAME, "---------------- bodyLine__: " + tmpBodyLine.replace("\t", "<TAB>"));
+				}
+			}
+
+			//
+			resObj.readSuccess = true;
+			return resObj;
+		} catch (InputStreamEosException e) {
+			logError(FNC_NAME, "EOS reached");
+			return resObj;
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void readMainLine(@NonNull RtspProtoLowMsgRaw outputMsg)
+			throws InputStreamNotReadyException, TcpSocketIoException, InputStreamEosException {
 		/*
-		 * Read the main (request/response) line.
+		 * Read the main (request/status) line.
 		 * Example:
 		 *   "GET_PARAMETER rtsp://admin:ABCDEFGH@192.168.1.1:1151/some.stream RTSP/1.0"
 		 *  or
 		 *   "RTSP/2.0 200 OK"
 		 */
-		try {
-			resObj.mainLine = readOneLine(true).replace("\t", "");
-			if (isDebugPrintRtspRcvd) {
-				logDebug(FNC_NAME, "-- BEG --------------------------------------------------------------------------");
-				logDebug(FNC_NAME, "-------- mainLine: " + resObj.mainLine);
-			}
-		} catch (InputStreamEosException e) {
-			logError(FNC_NAME, "EOS reached");
-			return resObj;
-		}
-		if (resObj.mainLine.isBlank()) {
-			logError(FNC_NAME, "received empty mainLine");
-			return resObj;
-		}
+
+		outputMsg.mainLine = readOneLine(true).replace("\t", "");
+	}
+
+	private void readHeaderLines(@NonNull RtspProtoLowMsgRaw outputMsg)
+			throws TcpSocketIoException, InputStreamEosException {
+		final String FNC_NAME = getClass().getSimpleName() + ".readHeaderLines()";
 
 		/*
 		 * Read all header lines.
@@ -71,20 +108,24 @@ public final class RtspProtoLowMsgReader {
 		 *   "         ssrc=789DAF12:seq=57654;rtptime=2792482193"
 		 *   ""
 		 */
+
 		String headerLine;
 		int timeoutCnt = 0;
 		do {
 			try {
 				headerLine = readOneLine(false);
-				timeoutCnt = 0;
-				if (isDebugPrintRtspRcvd) {
-					logDebug(FNC_NAME, "---------------- headerLine: " + headerLine.replace("\t", "<TAB>"));
+				//
+				if (outputMsg.headerLines.size() >= MAX_HEADER_LINES) {
+					logWarn(FNC_NAME, "Max. number of header lines (" + MAX_HEADER_LINES + ") reached, discarding further lines");
+					continue;
 				}
-				if ((headerLine.startsWith(" ") || headerLine.startsWith("\t")) && ! resObj.headerLines.isEmpty()) {
-					String tmpPrevLine = resObj.headerLines.getLast();
-					resObj.headerLines.set(resObj.headerLines.size() - 1, tmpPrevLine + " " + headerLine.strip());
-				} else {
-					resObj.headerLines.add(headerLine);
+				//
+				timeoutCnt = 0;
+				if ((headerLine.startsWith(" ") || headerLine.startsWith("\t")) && ! outputMsg.headerLines.isEmpty()) {
+					String tmpPrevLine = outputMsg.headerLines.getLast();
+					outputMsg.headerLines.set(outputMsg.headerLines.size() - 1, tmpPrevLine + " " + headerLine.strip());
+				} else if (! headerLine.isBlank()) {
+					outputMsg.headerLines.add(headerLine);
 				}
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
 				if (timeoutCnt++ > 10) {
@@ -100,16 +141,76 @@ public final class RtspProtoLowMsgReader {
 				headerLine = "xxx";  // keep the loop going
 			}
 		} while (! headerLine.isBlank());
-
-		// Read body
-		resObj.body = "";  // @TODO
-
-		//
-		resObj.readSuccess = true;
-		return resObj;
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	private void readBody(@NonNull RtspProtoLowMsgRaw outputMsg)
+			throws TcpSocketIoException, InputStreamEosException {
+		final String FNC_NAME = getClass().getSimpleName() + ".readBody()";
+
+		/*
+		 * Read the message body.
+		 * Example:
+		 *   "v=0"
+		 *   "o=mhandley 2890844526 IN IP4 126.16.64.4"
+		 *   "s=SDP Seminar"
+		 */
+
+		int contentLenHlIx = findContentLengthHeaderLineIndex(outputMsg);
+		if (contentLenHlIx < 0) {
+			return;
+		}
+		long parsedContentLen = parseContentLength(outputMsg.headerLines.get(contentLenHlIx));
+		if (parsedContentLen < 0L) {
+			return;
+		}
+
+		String bodyLine;
+		StringBuilder bodySb = new StringBuilder();
+		int timeoutCnt = 0;
+		do {
+			try {
+				bodyLine = readOneLine(false);
+				timeoutCnt = 0;
+				bodySb.append(bodyLine).append(RtspProtoLowMsgConstants.CRLF);
+			} catch (InputStreamNotReadyException | InputStreamEosException e) {
+				if (timeoutCnt++ > 10) {
+					break;
+				}
+				try {
+					//noinspection BusyWait
+					Thread.sleep(50);
+				} catch (InterruptedException e2) {
+					Thread.currentThread().interrupt();  // restore flag
+					break;
+				}
+				bodyLine = "xxx";  // keep the loop going
+			}
+		} while (! bodyLine.isBlank() && bodySb.length() < parsedContentLen);
+
+		outputMsg.body = bodySb.toString();
+		if (outputMsg.body.length() > parsedContentLen) {
+			/*
+			 * Silently trim the body length. We added CRLF to the last line of the body, but we do not know
+			 * if the original line ended with CRLF.
+			 */
+			outputMsg.body = outputMsg.body.substring(0, (int)parsedContentLen);
+		} else if (outputMsg.body.length() < parsedContentLen) {
+			logWarn(FNC_NAME, String.format(
+					"Content-Length is less than expected (is=%s, exp=%s)",
+					Integer.toUnsignedString(outputMsg.body.length()), Long.toUnsignedString(parsedContentLen)));
+		}
+		// update the 'Content-Length' header
+		if (outputMsg.body.length() != parsedContentLen) {
+			logDebug(FNC_NAME, "Updating Content-Length in msg headers to " +
+					Integer.toUnsignedString(outputMsg.body.length()));
+			outputMsg.headerLines.set(
+					contentLenHlIx,
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + ": " +
+							Integer.toUnsignedString(outputMsg.body.length())
+				);
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull String readOneLine(boolean isFirst)
@@ -146,8 +247,46 @@ public final class RtspProtoLowMsgReader {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static int findContentLengthHeaderLineIndex(@NonNull RtspProtoLowMsgRaw msg) {
+		final String SEARCH_CONTLEN = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTLEN.toLowerCase() + ":";
+
+		for (int i = 0; i < msg.headerLines.size(); i++) {
+			if (msg.headerLines.get(i).toLowerCase().startsWith(SEARCH_CONTLEN)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private long parseContentLength(@NonNull String headerLine) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseContentLength()";
+
+		long resI = -1L;
+		try {
+			String[] tmpSplit = headerLine.split(":");
+			if (tmpSplit.length != 2) {
+				throw new NumberFormatException();
+			}
+			resI = Long.parseLong(tmpSplit[1].strip());
+		} catch (NumberFormatException e) {
+			logWarn(FNC_NAME, "Failed to parse Content-Length in '" + headerLine + "'");
+			return resI;
+		}
+		if (resI > MAX_BODY_SIZE) {
+			logWarn(FNC_NAME, "Content-Length in '" + headerLine + "' exceeds max. of " +
+					Integer.toUnsignedString(MAX_BODY_SIZE) + " bytes, trimming body");
+			resI = MAX_BODY_SIZE;
+		}
+		return resI;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void logWarn(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.WARN, fncName, msg);
 	}
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);

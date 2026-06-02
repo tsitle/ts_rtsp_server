@@ -7,6 +7,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
@@ -21,8 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.*;
-
 public final class RtspProtoLowRequestParser {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -34,8 +33,8 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgStructuredRequest parseRequest(@NonNull RtspProtoLowMsgRaw input) {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseRequest()";
+	public @NonNull RtspProtoLowMsgStructuredRequest parseMessage(@NonNull RtspProtoLowMsgRaw input) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseMessage()";
 
 		RtspProtoLowMsgStructuredRequest resObj = new RtspProtoLowMsgStructuredRequest();
 		if (! input.readSuccess) {
@@ -97,9 +96,9 @@ public final class RtspProtoLowRequestParser {
 				return;
 			}
 			String proto = tokens.nextToken();
-			if (proto.equalsIgnoreCase(RTSP_RR_CMD_PROTOCOL_VERSION_1)) {
+			if (proto.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1)) {
 				output.rtspProtoVersion = RtspProtocolVersion.RTSP_V1_0;
-			} else if (proto.equalsIgnoreCase(RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
+			} else if (proto.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
 				output.rtspProtoVersion = RtspProtocolVersion.RTSP_V2_0;
 			} else {
 				output.rtspProtoVersion = RtspProtocolVersion.NONE;
@@ -120,8 +119,8 @@ public final class RtspProtoLowRequestParser {
 			tokens.nextToken();  // messageType
 			String currentUrl = tokens.nextToken();
 
-			boolean isRtsps = currentUrl.startsWith(RTSPS_URL_PROTOCOL + "://");
-			if (! (currentUrl.startsWith(RTSP_URL_PROTOCOL + "://") || isRtsps)) {
+			boolean isRtsps = currentUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://");
+			if (! (currentUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://") || isRtsps)) {
 				logError(FNC_NAME, "invalid protocol in URL '" + currentUrl + "'");
 				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 				return;
@@ -133,7 +132,7 @@ public final class RtspProtoLowRequestParser {
 				output.authPlainPassword = tmpUri.getUserInfo().split(":")[1];
 			}
 			int tmpPort = tmpUri.getPort();
-			currentUrl = (isRtsps ? RTSPS_URL_PROTOCOL : RTSP_URL_PROTOCOL) +
+			currentUrl = (isRtsps ? RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL) +
 					"://" + tmpUri.getHost() +
 					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
 			if (tmpUri.getQuery() != null) {
@@ -146,9 +145,9 @@ public final class RtspProtoLowRequestParser {
 			}
 
 			//
-			if (currentUrl.length() > RTSP_MAX_RESOURCE_URL_LENGTH) {
+			if (currentUrl.length() > RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH) {
 				logError(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
-						currentUrl.length(), RTSP_MAX_RESOURCE_URL_LENGTH));
+						currentUrl.length(), RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH));
 				output.statusCode = RtspProtoStatusCode.URI_TOO_LONG;
 				return;
 			}
@@ -187,8 +186,8 @@ public final class RtspProtoLowRequestParser {
 			if (tmpHeaderLine.isBlank()) {
 				break;
 			}
-			if (tmpHeaderLine.equals(" " + RTSP_RR_CMD_PROTOCOL_VERSION_1) ||
-					tmpHeaderLine.equals(" " + RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
+			if (tmpHeaderLine.equals(" " + RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1) ||
+					tmpHeaderLine.equals(" " + RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_2)) {
 				// ignore this non-standard header line
 				continue;
 			}
@@ -221,27 +220,27 @@ public final class RtspProtoLowRequestParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
 		RtspProtoLowHeaderEntryRequest entry = new RtspProtoLowHeaderEntryRequest();
-		if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
+		if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_DES_ACCEPT)) {
 			parseHeaderValue_describe_accept(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_AUTH_CLIENT)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_AUTH_CLIENT)) {
 			parseHeaderValue_com_auth(hdValue, output, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_CSEQ)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CSEQ)) {
 			parseHeaderValue_com_cseq(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_DATE)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_DATE)) {
 			parseHeaderValue_com_date(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT)) {
 			parseHeaderValue_com_keymgmt(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_OPT_PUBLIC)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_OPT_PUBLIC)) {
 			parseHeaderValue_options_public(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_PLA_RANGE)) {
 			parseHeaderValue_play_range(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_OPT_REQUIRE)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_OPT_REQUIRE)) {
 			parseHeaderValue_options_require(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_SESSION)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_SESSION)) {
 			parseHeaderValue_com_session(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_SET_TRANSPORT)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_SET_TRANSPORT)) {
 			parseHeaderValue_setup_transport(hdValue, entry);
-		} else if (hdKey.equalsIgnoreCase(RTSP_RR_HEADER_TOKEN_XXX_USERAGENT)) {
+		} else if (hdKey.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_USERAGENT)) {
 			parseHeaderValue_com_useragent(hdValue, entry);
 		} else {
 			logWarn(FNC_NAME, "Received unknown header: '" + hdKey + "'");
@@ -254,7 +253,7 @@ public final class RtspProtoLowRequestParser {
 
 	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
-		if (! RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP.equalsIgnoreCase(hdValue)) {
+		if (! RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP.equalsIgnoreCase(hdValue)) {
 			throw new RtspInvalidRequestException("Invalid Accept header value: '" + hdValue + "'");
 		}
 		entry.hdValAccept.acceptStr = hdValue;
@@ -269,10 +268,11 @@ public final class RtspProtoLowRequestParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth()";
 
 		// e.g. 'Authorization: Digest username="admin", realm="Abcdef Some", nonce="xxx", uri="rtsp://xxx:88/videoMain", response="xxx"'
-		if (! hdValue.toLowerCase().startsWith(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
+		if (! hdValue.toLowerCase()
+				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
 			throw new RtspInvalidRequestException("Invalid Auth header prefix");
 		}
-		hdValue = hdValue.substring(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.length()).strip();
+		hdValue = hdValue.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.length()).strip();
 		StringTokenizer tokens = new StringTokenizer(hdValue, ",");
 		boolean haveUser = false;
 		boolean haveRealm = false;
@@ -282,26 +282,32 @@ public final class RtspProtoLowRequestParser {
 		while (tokens.hasMoreTokens()) {
 			String curTokenAsIs = tokens.nextToken().strip();
 			String curTokenLc = curTokenAsIs.toLowerCase();
-			if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER.toLowerCase())) {
-				output.authUser = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER);
+			if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER.toLowerCase())) {
+				output.authUser =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER);
 				haveUser = true;  // tolerate empty username now and reject it later
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM.toLowerCase())) {
-				entry.hdValAuth.authRealm = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM.toLowerCase())) {
+				entry.hdValAuth.authRealm =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
 				haveRealm = (! entry.hdValAuth.authRealm.isBlank());
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE.toLowerCase())) {
-				entry.hdValAuth.authNonce = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE.toLowerCase())) {
+				entry.hdValAuth.authNonce =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
 				entry.hdValAuth.authNonce = entry.hdValAuth.authNonce.toLowerCase();
 				haveNonce = (! entry.hdValAuth.authNonce.isBlank());
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI.toLowerCase())) {
-				entry.hdValAuth.authUri = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI.toLowerCase())) {
+				entry.hdValAuth.authUri =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI);
 				haveUri = (! entry.hdValAuth.authUri.isBlank());
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP.toLowerCase())) {
-				entry.hdValAuth.authResp = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP.toLowerCase())) {
+				entry.hdValAuth.authResp =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP);
 				entry.hdValAuth.authResp = entry.hdValAuth.authResp.toLowerCase();
 				haveResp = true;  // tolerate empty challenge-response now and reject it later
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO.toLowerCase())) {
-				String tmpAlgo = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
-				if (! tmpAlgo.equalsIgnoreCase(RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5)) {
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO.toLowerCase())) {
+				String tmpAlgo =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
+				if (! tmpAlgo.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5)) {
 					throw new RtspInvalidRequestException("Unsupported Auth Algorithm: '" + tmpAlgo + "'");
 				}
 				entry.hdValAuth.authAlgo = RtspProtoLowHeaderTypeAuth.AuthAlgo.MD5;
@@ -350,16 +356,18 @@ public final class RtspProtoLowRequestParser {
 		while (tokens.hasMoreTokens()) {
 			String curTokenAsIs = tokens.nextToken().strip();
 			String curTokenLc = curTokenAsIs.toLowerCase();
-			if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.toLowerCase())) {
-				String tmpSub = curTokenAsIs.substring(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.length());
-				if (! tmpSub.equalsIgnoreCase(RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY)) {
+			if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.toLowerCase())) {
+				String tmpSub = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.length());
+				if (! tmpSub.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY)) {
 					throw new RtspInvalidRequestException("Invalid Keymgmt protocol '" + tmpSub + "'");
 				}
 				entry.hdValKeymgmt.proto = RtspProtoLowHeaderTypeKeymgmt.KeymgmtProto.MIKEY;
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA.toLowerCase())) {
-				entry.hdValKeymgmt.dataStr = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA);
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI.toLowerCase())) {
-				entry.hdValKeymgmt.uriStr = extractKeyValue(curTokenAsIs, RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA.toLowerCase())) {
+				entry.hdValKeymgmt.dataStr =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA);
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI.toLowerCase())) {
+				entry.hdValKeymgmt.uriStr =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI);
 			} else {
 				logWarn(FNC_NAME, "Unknown Keymgmt parameter: '" + curTokenAsIs + "'");
 			}
@@ -421,25 +429,25 @@ public final class RtspProtoLowRequestParser {
 		while (tokens.hasMoreTokens()) {
 			String curTokenAsIs = tokens.nextToken().strip();
 			String curTokenLc = curTokenAsIs.toLowerCase();
-			if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP1.equalsIgnoreCase(curTokenAsIs) ||
-					RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2.equalsIgnoreCase(curTokenAsIs)) {
+			if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP1.equalsIgnoreCase(curTokenAsIs) ||
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUdp = true;
 				entry.hdValTransport.tpIsEncr = false;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP1.equalsIgnoreCase(curTokenAsIs) ||
-					RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2.equalsIgnoreCase(curTokenAsIs)) {
+			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP1.equalsIgnoreCase(curTokenAsIs) ||
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUdp = true;
 				entry.hdValTransport.tpIsEncr = true;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP.equalsIgnoreCase(curTokenAsIs)) {
+			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUdp = false;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP.equalsIgnoreCase(curTokenAsIs)) {
+			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUdp = false;
 				entry.hdValTransport.tpIsEncr = true;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST.equalsIgnoreCase(curTokenAsIs)) {
+			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUnicast = true;
-			} else if (RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST.equalsIgnoreCase(curTokenAsIs)) {
+			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST.equalsIgnoreCase(curTokenAsIs)) {
 				entry.hdValTransport.tpIsUnicast = false;
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.toLowerCase())) {
-				String tmpSub = curTokenAsIs.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.toLowerCase())) {
+				String tmpSub = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				String[] tmpPorts = tmpSub.split("-");
 				if (tmpPorts.length != 2) {
 					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +
@@ -456,8 +464,8 @@ public final class RtspProtoLowRequestParser {
 							e.getMessage());
 				}
 				entry.hdValTransport.tpIsInterleaved = false;
-			} else if (curTokenLc.startsWith(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.toLowerCase())) {
-				String tmpSub = curTokenAsIs.substring(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.toLowerCase())) {
+				String tmpSub = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
 				String[] tmpPorts = tmpSub.split("-");
 				if (tmpPorts.length != 2) {
 					throw new RtspInvalidRequestException("Invalid Transport parameter: '" + curTokenAsIs + "' - " +

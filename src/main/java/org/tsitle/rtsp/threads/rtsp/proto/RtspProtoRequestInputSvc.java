@@ -23,7 +23,7 @@ public class RtspProtoRequestInputSvc {
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowRequestParser rtspProtoLowRequestParser;
-	private final RtspProtoRequestProcessor rtspProtoRequestProcessor;
+	private final RtspProtoHighRequestProcessor rtspProtoHighRequestProcessor;
 
 	private final RtspRequAuthSvc rtspRequAuthSvc;
 
@@ -44,7 +44,7 @@ public class RtspProtoRequestInputSvc {
 				rtspConfig.getIsDebugPrintRtspRcvd()
 			);
 		this.rtspProtoLowRequestParser = new RtspProtoLowRequestParser(logMsgInterface);
-		this.rtspProtoRequestProcessor = new RtspProtoRequestProcessor(
+		this.rtspProtoHighRequestProcessor = new RtspProtoHighRequestProcessor(
 				logMsgInterface,
 				rtspConfig,
 				rtspSessionInfo
@@ -79,7 +79,7 @@ public class RtspProtoRequestInputSvc {
 		}
 
 		// parse the raw request
-		RtspProtoLowMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseRequest(lowInputRaw);
+		RtspProtoLowMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
 		if (lowInputParsed.messageType == RtspProtoMessageType.UNKNOWN) {
 			resObj = RequestBasicInfo.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
@@ -94,7 +94,7 @@ public class RtspProtoRequestInputSvc {
 		}
 
 		// process the request - without checking authentication
-		resObj = rtspProtoRequestProcessor.processRequest(lowInputParsed);
+		resObj = rtspProtoHighRequestProcessor.processRequest(lowInputParsed);
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
 					resObj.messageType, resObj.statusCode, rtspSessionInfo.rtspClientSeqNrLastRcvd));

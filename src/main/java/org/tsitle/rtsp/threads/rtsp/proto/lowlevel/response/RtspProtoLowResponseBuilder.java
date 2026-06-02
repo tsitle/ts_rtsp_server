@@ -5,6 +5,7 @@ import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
@@ -17,8 +18,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.*;
-
 public final class RtspProtoLowResponseBuilder {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -30,8 +29,8 @@ public final class RtspProtoLowResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgRaw buildResponse(@NonNull RtspProtoLowMsgStructuredResponse input) throws RtspInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
+	public @NonNull RtspProtoLowMsgRaw buildMessage(@NonNull RtspProtoLowMsgStructuredResponse input) throws RtspInvalidResponseException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildMessage()";
 
 		if (input.rtspProtoVersion == RtspProtocolVersion.NONE) {
 			throw new RtspInvalidResponseException(FNC_NAME + ": rtspProtoVersion cannot be NONE");
@@ -41,7 +40,8 @@ public final class RtspProtoLowResponseBuilder {
 
 		// set response line
 		String tmpRtspProtoVersStr = (input.rtspProtoVersion == RtspProtocolVersion.RTSP_V1_0 ?
-				RTSP_RR_CMD_PROTOCOL_VERSION_1 : RTSP_RR_CMD_PROTOCOL_VERSION_2);
+				RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1
+				: RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_2);
 		resObj.mainLine = String.format("%s %d %s", tmpRtspProtoVersStr, input.statusCode.getValue(), input.statusCode.getReasonPhrase());
 
 		// set headers
@@ -49,61 +49,67 @@ public final class RtspProtoLowResponseBuilder {
 			String tmpHdKey;
 			String tmpHdVal = switch (entry.getKey()) {
 					case AUTH -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_AUTH_SERVER;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_AUTH_SERVER;
 						yield buildHeaderValue_com_auth(entry.getValue().hdValAuth);
 					}
 					case CONTENT_BASE -> {  // @TODO add to request parser
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_DES_CONTBASE;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_DES_CONTBASE;
 						yield buildHeaderValue_describe_contbase(entry.getValue().hdValContBase);
 					}
+					case CONTENT_LEN -> {  // @TODO add to request parser
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTLEN;
+						yield buildHeaderValue_com_contlen(entry.getValue().hdValContLen);
+					}
 					case CONTENT_TYPE -> {  // @TODO add to request parser
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE;
 						yield buildHeaderValue_com_conttype(entry.getValue().hdValContType);
 					}
 					case CSEQ -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_CSEQ;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CSEQ;
 						yield buildHeaderValue_com_cseq(entry.getValue().hdValCseq);
 					}
 					case DATE -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_DATE;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_DATE;
 						yield buildHeaderValue_com_date(entry.getValue().hdValDate);
 					}
 					case PUBLIC -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_OPT_PUBLIC;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_OPT_PUBLIC;
 						yield buildHeaderValue_options_public(entry.getValue().hdValPublic);
 					}
 					case RANGE -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_PLA_RANGE;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_PLA_RANGE;
 						yield buildHeaderValue_play_range(entry.getValue().hdValRange);
 					}
 					case RTPINFO -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_PLA_RTPINFO;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_PLA_RTPINFO;
 						yield buildHeaderValue_play_rtpinfo(entry.getValue().hdValRtpinfo, input.rtspProtoVersion);
 					}
 					case SERVER -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_SERVER;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_SERVER;
 						yield buildHeaderValue_com_server(entry.getValue().hdValServer);
 					}
 					case SESSION -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_XXX_SESSION;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_SESSION;
 						yield buildHeaderValue_com_session(entry.getValue().hdValSession);
 					}
 					case TRANSPORT -> {
-						tmpHdKey = RTSP_RR_HEADER_TOKEN_SET_TRANSPORT;
+						tmpHdKey = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_SET_TRANSPORT;
 						yield buildHeaderValue_setup_transport(entry.getValue().hdValTransport, input.rtspProtoVersion);
 					}
 					default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unknown header key: " + entry.getKey());
 				};
-			resObj.headerLines.add(tmpHdKey + " " + tmpHdVal);
+			resObj.headerLines.add(tmpHdKey + ": " + tmpHdVal);
 		}
 
 		// set body
 		if (! input.body.isBlank()) {
 			if (! input.headers.containsKey(RtspProtoLowHeaderKey.CONTENT_TYPE)) {
-				throw new RtspInvalidResponseException(FNC_NAME + ": Have a msg body but no ContentType header");
+				throw new RtspInvalidResponseException(FNC_NAME + ": Have a msg body but no Content-Type header");
 			}
-			resObj.headerLines.add(RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + " " + Integer.toUnsignedString(input.body.length()));
-			resObj.body = input.body;  // @TODO add to request parser
+			if (! input.headers.containsKey(RtspProtoLowHeaderKey.CONTENT_LEN)) {
+				throw new RtspInvalidResponseException(FNC_NAME + ": Have a msg body but no Content-Length header");
+			}
+			resObj.body = input.body;
 		}
 
 		return resObj;
@@ -121,13 +127,13 @@ public final class RtspProtoLowResponseBuilder {
 		}
 		//noinspection SwitchStatementWithTooFewBranches
 		String tmpAlgoStr = switch (hdValue.authAlgo) {
-				case MD5 -> RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5;
+				case MD5 -> RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5;
 				default -> throw new RtspInvalidResponseException("Unsupported Auth Algorithm: " + hdValue.authAlgo);
 			};
-		return RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
-				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + hdValue.authRealm + "\", " +
-				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + hdValue.authNonce + "\", " +
-				RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + tmpAlgoStr + "\"";
+		return RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
+				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + hdValue.authRealm + "\", " +
+				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + hdValue.authNonce + "\", " +
+				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + tmpAlgoStr + "\"";
 	}
 
 	private static @NonNull String buildHeaderValue_describe_contbase(@NonNull RtspProtoLowHeaderTypeContBase hdValue)
@@ -138,12 +144,20 @@ public final class RtspProtoLowResponseBuilder {
 		return hdValue.contentBaseStr;
 	}
 
+	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoLowHeaderTypeContLen hdValue)
+			throws RtspInvalidResponseException {
+		if (hdValue.getContentLen32bit().isEmpty()) {
+			throw new RtspInvalidResponseException("Content-Length must be set");
+		}
+		return Integer.toUnsignedString(hdValue.getContentLen32bit().get());
+	}
+
 	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoLowHeaderTypeContType hdValue)
 			throws RtspInvalidResponseException {
 		//noinspection SwitchStatementWithTooFewBranches
 		return switch (hdValue.contentType) {
-				case SDP -> RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP;
-				default -> throw new RtspInvalidResponseException("Unsupported content type: " + hdValue.contentType);
+				case SDP -> RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP;
+				default -> throw new RtspInvalidResponseException("Unsupported Content-Type: " + hdValue.contentType);
 			};
 	}
 
@@ -219,7 +233,7 @@ public final class RtspProtoLowResponseBuilder {
 		if (subStreamInfo.urlStr.isBlank()) {
 			throw new RtspInvalidResponseException("urlStr cannot be blank");
 		}
-		tmpSb.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL);
+		tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL);
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2_0) {
 			tmpSb.append("\"");
 		}
@@ -229,7 +243,8 @@ public final class RtspProtoLowResponseBuilder {
 			if (subStreamInfo.getSsrcId32bit().isEmpty()) {
 				throw new RtspInvalidResponseException("ssrcId must be set for RTSP v2.0");
 			}
-			tmpSb.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC).append(buildHexString(subStreamInfo.getSsrcId32bit().get()));
+			tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC)
+					.append(buildHexString(subStreamInfo.getSsrcId32bit().get()));
 			tmpSb.append(":");
 		} else {
 			tmpSb.append(";");
@@ -241,9 +256,11 @@ public final class RtspProtoLowResponseBuilder {
 			throw new RtspInvalidResponseException("rtpTimestamp must be set");
 		}
 		tmpSb
-				.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ).append(Short.toUnsignedInt(subStreamInfo.getSeqNr16bit().get()))
+				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ)
+						.append(Short.toUnsignedInt(subStreamInfo.getSeqNr16bit().get()))
 				.append(";")
-				.append(RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME).append(Integer.toUnsignedString(subStreamInfo.getRtpTimestamp32bit().get()));
+				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME)
+						.append(Integer.toUnsignedString(subStreamInfo.getRtpTimestamp32bit().get()));
 		return tmpSb.toString();
 	}
 
@@ -261,7 +278,9 @@ public final class RtspProtoLowResponseBuilder {
 			throw new RtspInvalidResponseException("sessionIdStr cannot be blank");
 		}
 		return hdValue.sessionIdStr +
-				(hdValue.timeout >= 0 ? ";" + RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT + Integer.toUnsignedString(hdValue.timeout) : "");
+				(hdValue.timeout >= 0 ?
+						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT + Integer.toUnsignedString(hdValue.timeout)
+						: "");
 	}
 
 	private static @NonNull String buildHeaderValue_setup_transport(
@@ -281,9 +300,13 @@ public final class RtspProtoLowResponseBuilder {
 		StringBuilder sb = new StringBuilder();
 
 		if (hdValue.tpIsUdp) {
-			sb.append(hdValue.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2 : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
+			sb.append(hdValue.tpIsEncr ?
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2
+					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
 		} else {
-			sb.append(hdValue.tpIsEncr ? RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP : RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP);
+			sb.append(hdValue.tpIsEncr ?
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP
+					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP);
 		}
 		sb.append(";");
 
@@ -297,9 +320,11 @@ public final class RtspProtoLowResponseBuilder {
 			throw new RtspInvalidResponseException("Transport destination IP/host cannot be blank");
 		}
 		sb
-				.append(RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";")
-				.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP).append(hdValue.tpDestIpOrHost).append(";")
-				.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP).append(hdValue.tpSourceIpOrHost).append(";");
+				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";")
+				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP)
+						.append(hdValue.tpDestIpOrHost).append(";")
+				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP)
+						.append(hdValue.tpSourceIpOrHost).append(";");
 
 		if (hdValue.tpIsUdp) {
 			if (hdValue.getClientUdpPortRtp16bit().isEmpty()) {
@@ -312,7 +337,7 @@ public final class RtspProtoLowResponseBuilder {
 				throw new RtspInvalidResponseException("Transport Client RTP and RTCP UDP ports must be different");
 			}
 			sb
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)
 					.append(Short.toUnsignedInt(hdValue.getClientUdpPortRtp16bit().get()))
 					.append("-")
 					.append(Short.toUnsignedInt(hdValue.getClientUdpPortRtcp16bit().get()))
@@ -327,7 +352,7 @@ public final class RtspProtoLowResponseBuilder {
 				throw new RtspInvalidResponseException("Transport Server RTP and RTCP UDP ports must be different");
 			}
 			sb
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT)
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT)
 					.append(Short.toUnsignedInt(hdValue.getServerUdpPortRtp16bit().get()))
 					.append("-")
 					.append(Short.toUnsignedInt(hdValue.getServerUdpPortRtcp16bit().get()));
@@ -342,7 +367,7 @@ public final class RtspProtoLowResponseBuilder {
 				throw new RtspInvalidResponseException("Transport Client RTP and RTCP TCP channels must be different");
 			}
 			sb
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)
 					.append(Short.toUnsignedInt(hdValue.getClientTcpChannRtp16bit().get()))
 					.append("-")
 					.append(Short.toUnsignedInt(hdValue.getClientTcpChannRtcp16bit().get()));
@@ -350,7 +375,7 @@ public final class RtspProtoLowResponseBuilder {
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2_0 && hdValue.tpIsUnicast) {
 			sb
 					.append(";")
-					.append(RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
 					.append(buildHexString(hdValue.getSsrcId32bit().get()));
 		}
 

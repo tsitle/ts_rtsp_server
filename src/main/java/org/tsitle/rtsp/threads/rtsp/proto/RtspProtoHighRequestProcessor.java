@@ -12,6 +12,7 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
@@ -21,15 +22,13 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeader
 import java.net.*;
 import java.util.*;
 
-import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
-
-public final class RtspProtoRequestProcessor {
+public final class RtspProtoHighRequestProcessor {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtspConfig rtspConfig;
 
-	public RtspProtoRequestProcessor(
+	public RtspProtoHighRequestProcessor(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo
@@ -180,7 +179,7 @@ public final class RtspProtoRequestProcessor {
 	}
 
 	private void checkMessageType(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
-		if (! SUPPORTED_MESSAGE_TYPES_SERVER.contains(msg.messageType)) {
+		if (! RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER.contains(msg.messageType)) {
 			throw new RtspInvalidRequestException("Unsupported request type");
 		}
 	}
@@ -222,10 +221,10 @@ public final class RtspProtoRequestProcessor {
 				@NonNull RtspProtoMessageType requestType,
 				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
-		if (rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RTSPS_URL_PROTOCOL + "://")) {
+		if (rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://")) {
 			throw new RtspInvalidUriException("Invalid URL for RTSPS");
 		}
-		if (! rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RTSP_URL_PROTOCOL + "://")) {
+		if (! rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://")) {
 			throw new RtspInvalidUriException("Invalid URL for RTSP");
 		}
 
@@ -244,13 +243,13 @@ public final class RtspProtoRequestProcessor {
 		 *   rtsp://localhost:1051/streamid0
 		 */
 		String tmpRscStreamIdStr = rscUrlPathOrg;
-		int tmpIdxA = tmpRscStreamIdStr.lastIndexOf("/" + STREAM_ID_PREFIX);
+		int tmpIdxA = tmpRscStreamIdStr.lastIndexOf("/" + RtspProtoConstants.STREAM_ID_PREFIX);
 		if (tmpIdxA > 0) {
 			// the Resource URL Path contains the Input Source ID and the Stream ID
-			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(tmpIdxA + 1 + STREAM_ID_PREFIX.length());
+			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(tmpIdxA + 1 + RtspProtoConstants.STREAM_ID_PREFIX.length());
 			rscUrlPathMod = rscUrlPathMod.substring(0, tmpIdxA);
-		} else if (tmpRscStreamIdStr.startsWith(STREAM_ID_PREFIX)) {
-			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(STREAM_ID_PREFIX.length());
+		} else if (tmpRscStreamIdStr.startsWith(RtspProtoConstants.STREAM_ID_PREFIX)) {
+			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(RtspProtoConstants.STREAM_ID_PREFIX.length());
 		} else {
 			tmpRscStreamIdStr = "";
 		}
@@ -366,7 +365,7 @@ public final class RtspProtoRequestProcessor {
 
 	private void processQueryParams(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		for (Map.Entry<@NonNull String, @NonNull String> entry : msg.queryParams.entrySet()) {
-			if (! entry.getKey().equalsIgnoreCase(URL_QUERY_PARAM_SRTP)) {
+			if (! entry.getKey().equalsIgnoreCase(RtspProtoConstants.URL_QUERY_PARAM_SRTP)) {
 				continue;
 			}
 			if (entry.getValue().equalsIgnoreCase("1")) {

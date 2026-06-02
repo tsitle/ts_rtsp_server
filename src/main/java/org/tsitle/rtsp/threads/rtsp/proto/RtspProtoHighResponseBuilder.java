@@ -1,0 +1,425 @@
+package org.tsitle.rtsp.threads.rtsp.proto;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspInputSource;
+import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.config.RtspStreamSource;
+import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.UdpSocketIoException;
+import org.tsitle.rtsp.helpers.HostnameHelper;
+import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
+
+import java.net.*;
+import java.util.*;
+
+public final class RtspProtoHighResponseBuilder {
+
+	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 50;
+	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
+
+	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull RtspSessionInfo rtspSessionInfo;
+
+	public RtspProtoHighResponseBuilder(
+				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSessionInfo rtspSessionInfo
+			) {
+		this.logMsgInterface = logMsgInterface;
+		this.rtspConfig = rtspConfig;
+		this.rtspSessionInfo = rtspSessionInfo;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspProtoLowMsgStructuredResponse buildResponse(@NonNull RequestBasicInfo requestBasicInfo)
+			throws RtspInvalidResponseException, UdpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
+
+		RtspProtoLowMsgStructuredResponse resObj = new RtspProtoLowMsgStructuredResponse();
+
+		resObj.rtspProtoVersion = rtspSessionInfo.lastRequestRtspProtoVersion;
+		resObj.statusCode = requestBasicInfo.statusCode;
+		resObj.messageType = requestBasicInfo.messageType;
+
+		//
+		addCommonHeaders(resObj);
+
+		//
+		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
+			buildResponse_nack(requestBasicInfo.statusCode, resObj);
+			return resObj;
+		}
+
+		//
+		switch (requestBasicInfo.messageType) {
+			case GET_PARAMETER -> buildResponse_getParameter();
+			case SET_PARAMETER -> buildResponse_setParameter();
+			case OPTIONS -> buildResponse_options(resObj);
+			case DESCRIBE -> buildResponse_describe(resObj);
+			case SETUP -> buildResponse_setup(requestBasicInfo.requestUrlInputOrStreamSource, resObj);
+			case PLAY -> buildResponse_play(resObj);
+			case PAUSE, TEARDOWN -> buildResponse_ack();
+			default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unsupported message type: " +
+					requestBasicInfo.messageType);
+		}
+
+		//
+		if (! resObj.body.isBlank()) {
+			if (! resObj.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
+				resObj.body += RtspProtoLowMsgConstants.CRLF;
+			}
+			addContentLengthHeader(resObj);
+		}
+
+		System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);  // @TODO
+
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void buildResponse_nack(
+				@NonNull RtspProtoStatusCode statusCode,
+				@NonNull RtspProtoLowMsgStructuredResponse msg
+			) {
+		if (statusCode == RtspProtoStatusCode.UNAUTHORIZED) {
+			addAuthInfo(msg);
+		}
+	}
+
+	private void buildResponse_ack() {
+		// nothing to do
+	}
+
+	private void buildResponse_getParameter() {
+		// nothing to do
+	}
+
+	private void buildResponse_setParameter() {
+		// nothing to do
+	}
+
+	private void buildResponse_options(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		// Server
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.SERVER);
+			hdEntry.hdValServer.serverStr = RtspProtoConstants.SERVER_NAME;
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Public
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.PUBLIC);
+			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER);
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Auth
+		if (rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.OPTIONS)) {
+			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.OPTIONS).getNeedsAuthentication();
+			if (tmpNeedAuth) {
+				addAuthInfo(msg);
+			}
+		}
+	}
+
+	private void buildResponse_describe(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
+
+		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.DESCRIBE)) {
+			throw new IllegalStateException(FNC_NAME + ": Input Source not found");
+		}
+		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.DESCRIBE);
+
+		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
+			buildResponse_nack(RtspProtoStatusCode.BAD_REQUEST, msg);
+			return;
+		}
+
+		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, rtspSessionInfo);
+		msg.body = sdpBuilder.buildSdp(
+				rtspInputSource,
+				findRtspHostIp(RtspProtoMessageType.DESCRIBE)
+			);
+
+		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
+			logDebug(FNC_NAME, "SDP: '" + msg.body + "'");
+		}
+
+		// Content-Base
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_BASE);
+			String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.DESCRIBE);
+			hdEntry.hdValContBase.contentBaseStr = tmpUrlBase + "/";
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Content-Type
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_TYPE);
+			hdEntry.hdValContType.contentType =  RtspProtoLowHeaderTypeContType.ContentType.SDP;
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+	}
+
+	/**
+	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
+	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
+	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
+	 */
+	private void buildResponse_setup(
+				RequestBasicInfo.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				@NonNull RtspProtoLowMsgStructuredResponse msg
+			) throws RtspInvalidResponseException, UdpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_setup()";
+
+		if (requestUrlInputOrStreamSource == null) {
+			throw new RtspInvalidResponseException(FNC_NAME + ": requestUrlInputOrStreamSource is null");
+		}
+		if (requestUrlInputOrStreamSource.subStreamId == null) {
+			throw new RtspInvalidResponseException(FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null");
+		}
+
+		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(
+				FNC_NAME,
+				requestUrlInputOrStreamSource.subStreamId
+			);
+		try {
+			tmpStreamInfo.isTransportValid(
+					rtspSessionInfo.isRtpRtcpEncryptionRequired,
+					rtspSessionInfo.forceRtpRtcpEncryption,
+					rtspSessionInfo.isRtspsConnection,
+					rtspConfig.getIsDebugDisableTransportUdp()
+				);
+		} catch (Exception e) {
+			// this should never happen
+			throw new IllegalStateException(FNC_NAME + ": Transport unsupported: " + e.getMessage());
+		}
+
+		// Session ID
+		{
+			// generate RTSP Session ID
+			if (rtspSessionInfo.rtspSessionId.isBlank()) {
+				rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32(false));
+				logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
+			}
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.SESSION);
+			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
+			hdEntry.hdValSession.timeout = RtspConstants.RTSP_SESSION_TIMEOUT;
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// we need to open the sockets now so we can get the port numbers
+		findAndOpenUdpSocketPorts(tmpStreamInfo);
+		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtp);
+		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
+
+		// Transport
+		{
+			String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
+
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.TRANSPORT);
+			hdEntry.hdValTransport.tpIsUdp = tmpStreamInfo.tpIsUdp;
+			hdEntry.hdValTransport.tpIsEncr = tmpStreamInfo.tpIsEncr;
+			hdEntry.hdValTransport.tpIsUnicast = tmpStreamInfo.tpIsUnicast;
+			hdEntry.hdValTransport.tpIsInterleaved = tmpStreamInfo.tpIsInterleaved;
+			hdEntry.hdValTransport.tpSourceIpOrHost = tmpRtspHostIp;
+			hdEntry.hdValTransport.tpDestIpOrHost = rtspSessionInfo.getClientIpAddr().getHostAddress();
+			if (tmpStreamInfo.tpIsUdp) {
+				hdEntry.hdValTransport.setClientUdpPortRtp16bit(tmpStreamInfo.tpClientUdpPortRtp);
+				hdEntry.hdValTransport.setClientUdpPortRtcp16bit(tmpStreamInfo.tpClientUdpPortRtcp);
+				hdEntry.hdValTransport.setServerUdpPortRtp16bit(tmpStreamInfo.tpServerUdpSocketRtp.getLocalPort());
+				hdEntry.hdValTransport.setServerUdpPortRtcp16bit(tmpStreamInfo.tpServerUdpSocketRtcp.getLocalPort());
+			} else {
+				hdEntry.hdValTransport.setClientTcpChannRtp16bit(tmpStreamInfo.tpClientTcpChannRtp);
+				hdEntry.hdValTransport.setClientTcpChannRtcp16bit(tmpStreamInfo.tpClientTcpChannRtcp);
+			}
+			hdEntry.hdValTransport.setSsrcId32bit(tmpStreamInfo.rtspSsrcId);
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+	}
+
+	/**
+	 * The client makes one PLAY request per Input Source
+	 */
+	private void buildResponse_play(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_play()";
+
+		// Range
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.RANGE);
+			hdEntry.hdValRange.rangeStr = rtspSessionInfo.clientPlaybackRangeValue;
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// RTP-Info
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.RTPINFO);
+			int tmpSubStreamNr = 1;
+			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
+				RtspStaticSessionInfo.StreamInfo tmpStreamInfoInput = RtspStaticSessionInfo.getStreamInfoOrThrow(
+						FNC_NAME,
+						tmpSubStreamId
+					);
+				RtspProtoLowHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoLowHeaderTypeRtpinfo.SubStream();
+				tmpStreamInfoOutput.urlStr = tmpStreamInfoInput.inputSourceUrlSetup;
+				tmpStreamInfoOutput.setSeqNr16bit(tmpStreamInfoInput.rtspRtpSeqNrT0);
+				tmpStreamInfoOutput.setRtpTimestamp32bit(tmpStreamInfoInput.rtspRtpTimestampT0);
+				tmpStreamInfoOutput.setSsrcId32bit(tmpStreamInfoInput.rtspSsrcId);
+				if (tmpSubStreamNr == 1) {
+					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
+				} else if (tmpSubStreamNr == 2) {
+					hdEntry.hdValRtpinfo.setSubStream2(tmpStreamInfoOutput);
+				} else {
+					throw new IllegalStateException(FNC_NAME + ": Too many sub-streams");
+				}
+				++tmpSubStreamNr;
+			}
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean checkStreamsForInputSource(String fncName, RtspInputSource rtspInputSource) {
+		Optional<RtspStreamSource> optSsObjVideo =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), true);
+		Optional<RtspStreamSource> optSsObjAudio =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), false);
+		if (! (optSsObjVideo.isPresent() || optSsObjAudio.isPresent())) {
+			logError(fncName, "No valid Stream Source found for Input Source '" + rtspInputSource.getId() + "'");
+			return false;
+		}
+		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull String findRtspHostIp(RtspProtoMessageType messageType) {
+		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
+
+		String tmpRtspHostname;
+		try {
+			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(rtspSessionInfo.inputSourceUrlPerMtMap.get(messageType));
+			tmpRtspHostname = rscUriObj.getHost();
+		} catch (RtspInvalidUriException e) {
+			// this should never happen
+			throw new RuntimeException(e);
+		}
+		if (tmpRtspHostname.isBlank()) {
+			throw new IllegalStateException(FNC_NAME + ": Could not determine RTSP hostname");
+		}
+		try {
+			Optional<InetAddress> optRtspHostIp = HostnameHelper.firstAvailableLocalIpv4AddressForHostname(tmpRtspHostname, true);
+			if (optRtspHostIp.isEmpty()) {
+				throw new IllegalStateException(FNC_NAME + ": Could not determine IPv4 address for RTSP hostname '" + tmpRtspHostname + "'");
+			}
+			return optRtspHostIp.get().getHostAddress();
+		} catch (UnknownHostException | SocketException e) {
+			throw new IllegalStateException(FNC_NAME + ": Unknown RTSP hostname '" + tmpRtspHostname + "'");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC-3551 Section 8
+	 */
+	private void findAndOpenUdpSocketPorts(RtspStaticSessionInfo.@NonNull StreamInfo streamInfo) throws UdpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
+
+		int loopCnt = 0;
+		boolean isOk = false;
+		while (++loopCnt <= 1000) {
+			if (streamInfo.tpServerUdpSocketRtp != null) {
+				streamInfo.tpServerUdpSocketRtp.close();
+			}
+			if (streamInfo.tpServerUdpSocketRtcp != null) {
+				streamInfo.tpServerUdpSocketRtcp.close();
+			}
+			try {
+				streamInfo.tpServerUdpSocketRtp = new DatagramSocket();
+				if (streamInfo.tpServerUdpSocketRtp.getLocalPort() % 2 != 0) {
+					continue;
+				}
+				streamInfo.tpServerUdpSocketRtcp = new DatagramSocket(streamInfo.tpServerUdpSocketRtp.getLocalPort() + 1);
+				isOk = true;
+				break;
+			} catch (SocketException e) {
+				// keep going until we find a free port pair
+			}
+		}
+		if (! isOk) {
+			throw new IllegalStateException(FNC_NAME + ": Could not find proper UDP sockets");
+		}
+		try {
+			streamInfo.tpServerUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+			streamInfo.tpServerUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
+			streamInfo.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
+			streamInfo.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
+		} catch (SocketException e) {
+			throw new UdpSocketIoException(FNC_NAME + ": Could not configure UDP sockets: " + e.getMessage());
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String buildHexString(int value) {
+		return String.format("%08X", value);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void addCommonHeaders(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		// CSeq
+		if (rtspSessionInfo.rtspClientSeqNrResponse >= 0) {
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CSEQ);
+			hdEntry.hdValCseq.setCseqNr32bit(rtspSessionInfo.rtspClientSeqNrResponse);
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// Date
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.DATE);
+		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+	}
+
+	private void addAuthInfo(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
+			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.getClientIpAddr());
+		}
+
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.AUTH);
+		hdEntry.hdValAuth.authAlgo = RtspProtoLowHeaderTypeAuth.AuthAlgo.MD5;
+		hdEntry.hdValAuth.authRealm = RtspProtoConstants.RTSP_AUTH_REALM;
+		hdEntry.hdValAuth.authNonce = rtspSessionInfo.authInfo.authNonceServer;
+		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+	}
+
+	private void addContentLengthHeader(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_LEN);
+		hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
+		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
+	}
+	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
+		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
+				fncName + ": " + msg);
+	}
+
+}

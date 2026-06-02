@@ -30,7 +30,10 @@ public final class RtspProtoLowMsgRaw {
 				"readSuccess=" + (readSuccess ? "T" : "F") +
 				", mainLine='" + mainLine.replace("'", "\\'") + "'" +
 				", headerLines={" + sb + "}" +
-				", body='" + body.replace("'", "\\'") + "'" +
+				", body='" + body
+						.replace("'", "\\'")
+						.replace("\r\n", "<CRLF>")
+						.replace("\n", "<LF>") + "'" +
 				"]";
 	}
 
