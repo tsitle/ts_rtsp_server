@@ -15,7 +15,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import java.util.*;
 
 import static org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants.*;
-import static org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants.RTSP_RR_CMD_PROTOCOL_VERSION_1;
 
 public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
@@ -163,7 +162,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 
 		List<String> finalOutputLines = new ArrayList<>();
 
-		String tmpRtspProtoVersStr = (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V1_0 ?
+		String tmpRtspProtoVersStr = (rtspSessionInfo.lastRequestRtspProtoVersion == RtspProtocolVersion.RTSP_V1 ?
 				RTSP_RR_CMD_PROTOCOL_VERSION_1 : RTSP_RR_CMD_PROTOCOL_VERSION_2);
 		finalOutputLines.add(messageType.name() + " " + uri + " " + tmpRtspProtoVersStr + CRLF);
 		//

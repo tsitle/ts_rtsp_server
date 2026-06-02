@@ -15,7 +15,8 @@ public enum RtspProtoStatusCode {
 	METHOD_NOT_VALID_IN_THIS_STATE(455),
 	UNSUPPORTED_TRANSPORT(461),
 	INTERNAL_SERVER_ERROR(500),
-	NOT_IMPLEMENTED(501);
+	NOT_IMPLEMENTED(501),
+	OPTION_NOT_SUPPORTED(551);
 
 	private final int value;
 
@@ -40,6 +41,7 @@ public enum RtspProtoStatusCode {
 				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
 				case INTERNAL_SERVER_ERROR -> "Internal Server Error";
 				case NOT_IMPLEMENTED -> "Not Implemented";
+				case OPTION_NOT_SUPPORTED -> "Option Not Supported";
 			};
 	}
 

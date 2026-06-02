@@ -6,6 +6,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -205,8 +206,7 @@ public final class RtspProtoLowMsgReader {
 					Integer.toUnsignedString(outputMsg.body.length()));
 			outputMsg.headerLines.set(
 					contentLenHlIx,
-					RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + ": " +
-							Integer.toUnsignedString(outputMsg.body.length())
+					RtspHeaderKey.CONTENT_LEN.getStrValue() + ": " + Integer.toUnsignedString(outputMsg.body.length())
 				);
 		}
 	}
@@ -248,7 +248,7 @@ public final class RtspProtoLowMsgReader {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static int findContentLengthHeaderLineIndex(@NonNull RtspProtoLowMsgRaw msg) {
-		final String SEARCH_CONTLEN = RtspProtoLowMsgConstants.RTSP_RR_HEADER_TOKEN_XXX_CONTLEN.toLowerCase() + ":";
+		final String SEARCH_CONTLEN = RtspHeaderKey.CONTENT_LEN.getStrValue().toLowerCase() + ":";
 
 		for (int i = 0; i < msg.headerLines.size(); i++) {
 			if (msg.headerLines.get(i).toLowerCase().startsWith(SEARCH_CONTLEN)) {

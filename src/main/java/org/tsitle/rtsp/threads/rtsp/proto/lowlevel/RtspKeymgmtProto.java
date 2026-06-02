@@ -2,15 +2,14 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspProtocolVersion {
+public enum RtspKeymgmtProto {
 
 	NONE("-none-"),
-	RTSP_V1("RTSP/1.0"),
-	RTSP_V2("RTSP/2.0");
+	MIKEY("mikey");
 
 	private final @NonNull String value;
 
-	RtspProtocolVersion(@NonNull String value) {
+	RtspKeymgmtProto(@NonNull String value) {
 		this.value = value;
 	}
 
@@ -18,8 +17,8 @@ public enum RtspProtocolVersion {
 		return value;
 	}
 
-	public static @NonNull RtspProtocolVersion of(@NonNull String value) {
-		for (RtspProtocolVersion entry : values()) {
+	public static @NonNull RtspKeymgmtProto of(@NonNull String value) {
+		for (RtspKeymgmtProto entry : values()) {
 			if (entry == NONE) {
 				continue;
 			}

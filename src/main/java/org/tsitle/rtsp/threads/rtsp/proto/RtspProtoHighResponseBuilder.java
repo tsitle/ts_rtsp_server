@@ -13,6 +13,9 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
@@ -57,7 +60,7 @@ public final class RtspProtoHighResponseBuilder {
 
 		//
 		if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
-			buildResponse_nack(requestBasicInfo.statusCode, resObj);
+			buildResponse_nack(requestBasicInfo.statusCode, requestBasicInfo.unsupportedOptionName, resObj);
 			return resObj;
 		}
 
@@ -92,10 +95,19 @@ public final class RtspProtoHighResponseBuilder {
 
 	private void buildResponse_nack(
 				@NonNull RtspProtoStatusCode statusCode,
+				@NonNull String unsupportedOptionName,
 				@NonNull RtspProtoLowMsgStructuredResponse msg
 			) {
 		if (statusCode == RtspProtoStatusCode.UNAUTHORIZED) {
-			addAuthInfo(msg);
+			addAuthServerInfo(msg);
+		}
+		if (statusCode == RtspProtoStatusCode.OPTION_NOT_SUPPORTED) {
+			// Unsupported
+			{
+				RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
+				hdEntry.hdValUnsupported.unsupportedOptionStr = (unsupportedOptionName.isBlank() ? "_unknown_" : unsupportedOptionName);
+				msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			}
 		}
 	}
 
@@ -114,13 +126,13 @@ public final class RtspProtoHighResponseBuilder {
 	private void buildResponse_options(@NonNull RtspProtoLowMsgStructuredResponse msg) {
 		// Server
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.SERVER);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SERVER);
 			hdEntry.hdValServer.serverStr = RtspProtoConstants.SERVER_NAME;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Public
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.PUBLIC);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.PUBLIC);
 			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
@@ -128,7 +140,7 @@ public final class RtspProtoHighResponseBuilder {
 		if (rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspProtoMessageType.OPTIONS)) {
 			boolean tmpNeedAuth = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.OPTIONS).getNeedsAuthentication();
 			if (tmpNeedAuth) {
-				addAuthInfo(msg);
+				addAuthServerInfo(msg);
 			}
 		}
 	}
@@ -142,7 +154,7 @@ public final class RtspProtoHighResponseBuilder {
 		RtspInputSource rtspInputSource = rtspSessionInfo.inputSourceObjPerMtMap.get(RtspProtoMessageType.DESCRIBE);
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			buildResponse_nack(RtspProtoStatusCode.BAD_REQUEST, msg);
+			buildResponse_nack(RtspProtoStatusCode.BAD_REQUEST, "", msg);
 			return;
 		}
 
@@ -162,15 +174,15 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Content-Base
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_BASE);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
 			String tmpUrlBase = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspProtoMessageType.DESCRIBE);
 			hdEntry.hdValContBase.contentBaseStr = tmpUrlBase + "/";
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Content-Type
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_TYPE);
-			hdEntry.hdValContType.contentType =  RtspProtoLowHeaderTypeContType.ContentType.SDP;
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
+			hdEntry.hdValContType.contentType = RtspMimeType.SDP;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
@@ -216,7 +228,7 @@ public final class RtspProtoHighResponseBuilder {
 				rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32(false));
 				logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
 			}
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.SESSION);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
 			hdEntry.hdValSession.timeout = RtspConstants.RTSP_SESSION_TIMEOUT;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
@@ -231,7 +243,7 @@ public final class RtspProtoHighResponseBuilder {
 		{
 			String tmpRtspHostIp = findRtspHostIp(RtspProtoMessageType.SETUP);
 
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.TRANSPORT);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
 			hdEntry.hdValTransport.tpIsUdp = tmpStreamInfo.tpIsUdp;
 			hdEntry.hdValTransport.tpIsEncr = tmpStreamInfo.tpIsEncr;
 			hdEntry.hdValTransport.tpIsUnicast = tmpStreamInfo.tpIsUnicast;
@@ -260,13 +272,13 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Range
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.RANGE);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.RANGE);
 			hdEntry.hdValRange.rangeStr = rtspSessionInfo.clientPlaybackRangeValue;
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// RTP-Info
 		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.RTPINFO);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.RTPINFO);
 			int tmpSubStreamNr = 1;
 			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
 				RtspStaticSessionInfo.StreamInfo tmpStreamInfoInput = RtspStaticSessionInfo.getStreamInfoOrThrow(
@@ -385,30 +397,30 @@ public final class RtspProtoHighResponseBuilder {
 	private void addCommonHeaders(@NonNull RtspProtoLowMsgStructuredResponse msg) {
 		// CSeq
 		if (rtspSessionInfo.rtspClientSeqNrResponse >= 0) {
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CSEQ);
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CSEQ);
 			hdEntry.hdValCseq.setCseqNr32bit(rtspSessionInfo.rtspClientSeqNrResponse);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
 		// Date
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.DATE);
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.DATE);
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
-	private void addAuthInfo(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void addAuthServerInfo(@NonNull RtspProtoLowMsgStructuredResponse msg) {
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.getClientIpAddr());
 		}
 
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.AUTH);
-		hdEntry.hdValAuth.authAlgo = RtspProtoLowHeaderTypeAuth.AuthAlgo.MD5;
-		hdEntry.hdValAuth.authRealm = RtspProtoConstants.RTSP_AUTH_REALM;
-		hdEntry.hdValAuth.authNonce = rtspSessionInfo.authInfo.authNonceServer;
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.AUTH_SERVER);
+		hdEntry.hdValAuthServer.authAlgo = RtspAuthAlgo.MD5;
+		hdEntry.hdValAuthServer.authRealm = RtspProtoConstants.RTSP_AUTH_REALM;
+		hdEntry.hdValAuthServer.authNonce = rtspSessionInfo.authInfo.authNonceServer;
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
 	private void addContentLengthHeader(@NonNull RtspProtoLowMsgStructuredResponse msg) {
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspProtoLowHeaderKey.CONTENT_LEN);
+		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_LEN);
 		hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}

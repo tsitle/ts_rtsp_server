@@ -13,28 +13,6 @@ public class RtspProtoLowMsgConstants {
 	public static final int RTSP_MAX_RESOURCE_URL_LENGTH = 512;
 
 	// RTSP Requests/Responses
-	///
-	public static final String RTSP_RR_CMD_PROTOCOL_VERSION_1 = "RTSP/1.0";
-	public static final String RTSP_RR_CMD_PROTOCOL_VERSION_2 = "RTSP/2.0";
-	///
-	public static final String RTSP_RR_HEADER_TOKEN_DES_ACCEPT = "Accept";
-	public static final String RTSP_RR_HEADER_TOKEN_DES_CONTBASE = "Content-Base";
-	public static final String RTSP_RR_HEADER_TOKEN_SET_TRANSPORT = "Transport";
-	public static final String RTSP_RR_HEADER_TOKEN_PLA_RANGE = "Range";
-	public static final String RTSP_RR_HEADER_TOKEN_PLA_RTPINFO = "RTP-Info";
-	public static final String RTSP_RR_HEADER_TOKEN_OPT_PUBLIC = "Public";
-	public static final String RTSP_RR_HEADER_TOKEN_OPT_REQUIRE = "Require";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CSEQ = "CSeq";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_SESSION = "Session";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_USERAGENT = "User-Agent";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_SERVER = "Server";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE = "Content-Type";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH_CLIENT = "Authorization";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_AUTH_SERVER = "WWW-Authenticate";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT = "KeyMgmt";
-	///
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT = "client_port=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT = "server_port=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP = "destination=";
@@ -63,10 +41,6 @@ public class RtspProtoLowMsgConstants {
 	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP = "RTP/SAVP/TCP";
 	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
 	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST = "multicast";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP = "application/sdp";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_MIKEY = "application/x-rtsp-mikey";
 	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY = "mikey";
 
 }

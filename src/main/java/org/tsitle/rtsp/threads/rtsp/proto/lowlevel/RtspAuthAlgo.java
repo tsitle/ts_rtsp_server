@@ -2,15 +2,14 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspProtocolVersion {
+public enum RtspAuthAlgo {
 
 	NONE("-none-"),
-	RTSP_V1("RTSP/1.0"),
-	RTSP_V2("RTSP/2.0");
+	MD5("MD5");
 
 	private final @NonNull String value;
 
-	RtspProtocolVersion(@NonNull String value) {
+	RtspAuthAlgo(@NonNull String value) {
 		this.value = value;
 	}
 
@@ -18,8 +17,8 @@ public enum RtspProtocolVersion {
 		return value;
 	}
 
-	public static @NonNull RtspProtocolVersion of(@NonNull String value) {
-		for (RtspProtocolVersion entry : values()) {
+	public static @NonNull RtspAuthAlgo of(@NonNull String value) {
+		for (RtspAuthAlgo entry : values()) {
 			if (entry == NONE) {
 				continue;
 			}

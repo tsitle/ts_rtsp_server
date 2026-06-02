@@ -1,14 +1,15 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
 public class RtspProtoLowHeaderEntryBase {
 
-	protected @NonNull RtspProtoLowHeaderKey hdKeyEn = RtspProtoLowHeaderKey.NONE;
+	protected @NonNull RtspHeaderKey hdKeyEn = RtspHeaderKey.NONE;
 	protected boolean baseClassHandlesHdKeyType = false;
 
-	public @NonNull RtspProtoLowHeaderTypeAuth hdValAuth = new RtspProtoLowHeaderTypeAuth();
 	public @NonNull RtspProtoLowHeaderTypeContBase hdValContBase = new RtspProtoLowHeaderTypeContBase();
+	public @NonNull RtspProtoLowHeaderTypeContLen hdValContLen = new RtspProtoLowHeaderTypeContLen();
 	public @NonNull RtspProtoLowHeaderTypeContType hdValContType = new RtspProtoLowHeaderTypeContType();
 	public @NonNull RtspProtoLowHeaderTypeCseq hdValCseq = new RtspProtoLowHeaderTypeCseq();
 	public @NonNull RtspProtoLowHeaderTypeDate hdValDate = new RtspProtoLowHeaderTypeDate();
@@ -19,24 +20,24 @@ public class RtspProtoLowHeaderEntryBase {
 
 	protected RtspProtoLowHeaderEntryBase() { }
 
-	protected RtspProtoLowHeaderEntryBase(@NonNull RtspProtoLowHeaderKey hdKeyEn) {
+	protected RtspProtoLowHeaderEntryBase(@NonNull RtspHeaderKey hdKeyEn) {
 		setHdKey(hdKeyEn);
 	}
 
-	public @NonNull RtspProtoLowHeaderKey getHdKey() {
-		if (hdKeyEn == RtspProtoLowHeaderKey.NONE) {
+	public @NonNull RtspHeaderKey getHdKey() {
+		if (hdKeyEn == RtspHeaderKey.NONE) {
 			throw new IllegalStateException("Header key is not set");
 		}
 		return hdKeyEn;
 	}
 
-	protected void setHdKey(@NonNull RtspProtoLowHeaderKey hdKeyEn) {
-		if (hdKeyEn == RtspProtoLowHeaderKey.NONE) {
+	protected void setHdKey(@NonNull RtspHeaderKey hdKeyEn) {
+		if (hdKeyEn == RtspHeaderKey.NONE) {
 			throw new IllegalArgumentException("Invalid header key: NONE");
 		}
 		switch (hdKeyEn) {
-			case AUTH:
 			case CONTENT_BASE:
+			case CONTENT_LEN:
 			case CONTENT_TYPE:
 			case CSEQ:
 			case DATE:
@@ -48,7 +49,7 @@ public class RtspProtoLowHeaderEntryBase {
 				this.baseClassHandlesHdKeyType = true;
 				break;
 			default:
-				this.hdKeyEn = RtspProtoLowHeaderKey.NONE;
+				this.hdKeyEn = RtspHeaderKey.NONE;
 				this.baseClassHandlesHdKeyType = false;
 				break;
 		}
@@ -58,8 +59,8 @@ public class RtspProtoLowHeaderEntryBase {
 	public @NonNull String toString() {
 		return switch (hdKeyEn) {
 				case NONE -> "[empty]";
-				case AUTH -> hdValAuth.toString();
 				case CONTENT_BASE -> hdValContBase.toString();
+				case CONTENT_LEN -> hdValContLen.toString();
 				case CONTENT_TYPE -> hdValContType.toString();
 				case CSEQ -> hdValCseq.toString();
 				case DATE -> hdValDate.toString();

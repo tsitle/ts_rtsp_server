@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderKey;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +16,7 @@ public final class RtspProtoLowMsgStructuredRequest extends RtspProtoLowMsgStruc
 	public @NonNull String authPlainPassword = "";
 
 	/** Headers */
-	public @NonNull Map<@NonNull RtspProtoLowHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> headers = new HashMap<>();
+	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> headers = new HashMap<>();
 
 	public RtspProtoLowMsgStructuredRequest() {
 		super();
@@ -34,20 +34,20 @@ public final class RtspProtoLowMsgStructuredRequest extends RtspProtoLowMsgStruc
 	}
 
 	public Optional<Integer> getHeaderCseq() {
-		if (! headers.containsKey(RtspProtoLowHeaderKey.CSEQ)) {
+		if (! headers.containsKey(RtspHeaderKey.CSEQ)) {
 			return Optional.empty();
 		}
-		return headers.get(RtspProtoLowHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
+		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
 	}
 
 	public Optional<String> getHeaderSessionId() {
-		if (! headers.containsKey(RtspProtoLowHeaderKey.SESSION)) {
+		if (! headers.containsKey(RtspHeaderKey.SESSION)) {
 			return Optional.empty();
 		}
-		if (headers.get(RtspProtoLowHeaderKey.SESSION).hdValSession.sessionIdStr.isEmpty()) {
+		if (headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr.isEmpty()) {
 			return Optional.empty();
 		}
-		return Optional.of(headers.get(RtspProtoLowHeaderKey.SESSION).hdValSession.sessionIdStr);
+		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr);
 	}
 
 }

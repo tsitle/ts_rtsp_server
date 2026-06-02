@@ -1,15 +1,11 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtProto;
 
 public class RtspProtoLowHeaderTypeKeymgmt {
 
-	public enum KeymgmtProto {
-		NONE,
-		MIKEY
-	}
-
-	public @NonNull KeymgmtProto proto = KeymgmtProto.NONE;
+	public @NonNull RtspKeymgmtProto proto = RtspKeymgmtProto.NONE;
 	public @NonNull String dataStr = "";
 	public @NonNull String uriStr = "";
 

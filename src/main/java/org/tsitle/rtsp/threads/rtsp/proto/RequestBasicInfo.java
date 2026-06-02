@@ -17,6 +17,7 @@ public class RequestBasicInfo {
 	public @NonNull RtspProtoMessageType messageType = RtspProtoMessageType.UNKNOWN;
 	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.OK;
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
+	public @NonNull String unsupportedOptionName = "";
 
 	private RequestBasicInfo() { }
 
@@ -42,6 +43,17 @@ public class RequestBasicInfo {
 		RequestBasicInfo res = new RequestBasicInfo();
 		res.messageType = messageType;
 		res.statusCode = statusCode;
+		return res;
+	}
+
+	public static @NonNull RequestBasicInfo createKnownWithOptionNotSupported(
+				@NonNull RtspProtoMessageType messageType,
+				@NonNull String optionName
+			) {
+		RequestBasicInfo res = new RequestBasicInfo();
+		res.messageType = messageType;
+		res.statusCode = RtspProtoStatusCode.OPTION_NOT_SUPPORTED;
+		res.unsupportedOptionName = optionName;
 		return res;
 	}
 

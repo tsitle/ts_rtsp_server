@@ -1,10 +1,12 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 
 public final class RtspProtoLowHeaderEntryRequest extends RtspProtoLowHeaderEntryBase {
 
 	public @NonNull RtspProtoLowHeaderTypeAccept hdValAccept = new RtspProtoLowHeaderTypeAccept();
+	public @NonNull RtspProtoLowHeaderTypeAuthClient hdValAuthClient = new RtspProtoLowHeaderTypeAuthClient();
 	public @NonNull RtspProtoLowHeaderTypeKeymgmt hdValKeymgmt = new RtspProtoLowHeaderTypeKeymgmt();
 	public @NonNull RtspProtoLowHeaderTypeRequire hdValRequire = new RtspProtoLowHeaderTypeRequire();
 	public @NonNull RtspProtoLowHeaderTypeUa hdValUserAgent = new RtspProtoLowHeaderTypeUa();
@@ -14,20 +16,21 @@ public final class RtspProtoLowHeaderEntryRequest extends RtspProtoLowHeaderEntr
 	}
 
 	@SuppressWarnings("unused")
-	public RtspProtoLowHeaderEntryRequest(@NonNull RtspProtoLowHeaderKey hdKeyEn) {
+	public RtspProtoLowHeaderEntryRequest(@NonNull RtspHeaderKey hdKeyEn) {
 		super(hdKeyEn);
 
 		setHdKey(hdKeyEn);
 	}
 
 	@Override
-	public void setHdKey(@NonNull RtspProtoLowHeaderKey hdKeyEn) {
+	public void setHdKey(@NonNull RtspHeaderKey hdKeyEn) {
 		super.setHdKey(hdKeyEn);
 		if (baseClassHandlesHdKeyType) {
 			return;
 		}
 		switch (hdKeyEn) {
 			case ACCEPT:
+			case AUTH_CLIENT:
 			case KEYMGMT:
 			case REQUIRE:
 			case USERAGENT:
@@ -40,7 +43,7 @@ public final class RtspProtoLowHeaderEntryRequest extends RtspProtoLowHeaderEntr
 
 	@Override
 	public @NonNull String toString() {
-		if (hdKeyEn == RtspProtoLowHeaderKey.NONE) {
+		if (hdKeyEn == RtspHeaderKey.NONE) {
 			throw new IllegalStateException("Header key is not set");
 		}
 		if (baseClassHandlesHdKeyType) {
@@ -48,6 +51,7 @@ public final class RtspProtoLowHeaderEntryRequest extends RtspProtoLowHeaderEntr
 		}
 		return switch (hdKeyEn) {
 				case ACCEPT -> hdValAccept.toString();
+				case AUTH_CLIENT -> hdValAuthClient.toString();
 				case KEYMGMT -> hdValKeymgmt.toString();
 				case REQUIRE -> hdValRequire.toString();
 				case USERAGENT -> hdValUserAgent.toString();

@@ -12,12 +12,12 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtProto;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderTypeKeymgmt;
 
 import java.net.*;
 import java.util.*;
@@ -27,6 +27,8 @@ public final class RtspProtoHighRequestProcessor {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtspConfig rtspConfig;
+
+	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
 
 	public RtspProtoHighRequestProcessor(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -41,10 +43,12 @@ public final class RtspProtoHighRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public RequestBasicInfo processRequest(@NonNull RtspProtoLowMsgStructuredRequest msg) {
+	public @NonNull RequestBasicInfo processRequest(@NonNull RtspProtoLowMsgStructuredRequest msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRequest()";
 
 		System.out.println("<<<<<<<<< <<<<<<<<< " + msg);  // @TODO
+
+		preProcessedHeaders.clear();
 
 		rtspSessionInfo.authInfo.resetPerRequest();
 
@@ -114,7 +118,16 @@ public final class RtspProtoHighRequestProcessor {
 		} catch (RtspUnsupportedTransportException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspProtoStatusCode.UNSUPPORTED_TRANSPORT);
+		} catch (RtspUnsupportedFeatureRequestedException e) {
+			logWarn(FNC_NAME, "Requested Option '" + e.getMessage() + "' not supported" + logMsgSuffix);
+			return RequestBasicInfo.createKnownWithOptionNotSupported(
+					msg.messageType,
+					e.getMessage()
+				);
 		}
+
+		// process body
+		// @TODO
 
 		// add Sub-Stream ID to session info
 		if (msg.messageType == RtspProtoMessageType.SETUP) {
@@ -153,6 +166,9 @@ public final class RtspProtoHighRequestProcessor {
 			throw new RtspInvalidRequestException("Invalid CSeq value");
 		}
 		rtspSessionInfo.rtspClientSeqNrResponse = rtspSessionInfo.rtspClientSeqNrExpected++;
+
+		//
+		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
 	}
 
 	private void checkSessionId(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
@@ -176,6 +192,9 @@ public final class RtspProtoHighRequestProcessor {
 			default:
 				break;
 		}
+
+		//
+		preProcessedHeaders.add(RtspHeaderKey.SESSION);
 	}
 
 	private void checkMessageType(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
@@ -385,27 +404,41 @@ public final class RtspProtoHighRequestProcessor {
 	private void processRemainingHeaders(
 				@NonNull RtspProtoLowMsgStructuredRequest msg,
 				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
-			) throws RtspInvalidRequestException, RtspUnsupportedTransportException {
-		for (Map.Entry<@NonNull RtspProtoLowHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> entry : msg.headers.entrySet()) {
+			) throws RtspInvalidRequestException, RtspUnsupportedTransportException, RtspUnsupportedFeatureRequestedException {
+		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
+
+		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> entry : msg.headers.entrySet()) {
 			switch (entry.getKey()) {
-				case RtspProtoLowHeaderKey.ACCEPT ->
+				case RtspHeaderKey.ACCEPT ->
 						processHeader_describe_accept(msg.messageType);
-				case RtspProtoLowHeaderKey.AUTH ->
-						processHeader_com_auth(msg.authUser, entry.getValue());
-				case RtspProtoLowHeaderKey.KEYMGMT ->
+				case RtspHeaderKey.AUTH_CLIENT ->
+						processHeader_com_auth_client(msg.authUser, entry.getValue());
+				case RtspHeaderKey.CONTENT_BASE ->
+						processHeader_describe_contbase(entry.getValue());
+				case RtspHeaderKey.CONTENT_LEN ->
+						processHeader_com_contlen(entry.getValue());
+				case RtspHeaderKey.CONTENT_TYPE ->
+						processHeader_com_conttype(entry.getValue());
+				case RtspHeaderKey.KEYMGMT ->
 						processHeader_com_keymgmt(msg.messageType, requestUrlInputOrStreamSource, entry.getValue());
-				case RtspProtoLowHeaderKey.RANGE ->
+				case RtspHeaderKey.RANGE ->
 						processHeader_play_range(msg.messageType, entry.getValue());
-				case RtspProtoLowHeaderKey.REQUIRE ->
-						processHeader_options_require(msg.messageType);
-				case RtspProtoLowHeaderKey.TRANSPORT ->
+				case RtspHeaderKey.REQUIRE ->
+						processHeader_options_require(msg.messageType, entry.getValue());
+				case RtspHeaderKey.TRANSPORT ->
 						processHeader_setup_transport(msg.messageType, requestUrlInputOrStreamSource, entry.getValue());
-				default -> { }
+				case RtspHeaderKey.USERAGENT ->
+						processHeader_com_useragent(entry.getValue());
+				default -> {
+					if (! preProcessedHeaders.contains(entry.getKey())) {
+						logWarn(FNC_NAME, "Skipping header: " + entry.getKey());
+					}
+				}
 			}
 		}
 
 		//
-		if (! msg.headers.containsKey(RtspProtoLowHeaderKey.AUTH)) {
+		if (! msg.headers.containsKey(RtspHeaderKey.AUTH_CLIENT)) {
 			rtspSessionInfo.authInfo.authUser = msg.authUser;
 			rtspSessionInfo.authInfo.authPlainPassword = msg.authPlainPassword;
 		}
@@ -417,17 +450,29 @@ public final class RtspProtoHighRequestProcessor {
 		}
 	}
 
-	private void processHeader_com_auth(
+	private void processHeader_com_auth_client(
 				@NonNull String authUser,
 				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) {
 		// copy parameters - ignore empty values here and reject the request later if necessary
 		rtspSessionInfo.authInfo.authUser = authUser;
 		rtspSessionInfo.authInfo.authPlainPassword = "";
-		rtspSessionInfo.authInfo.authRealmClient = headerEntry.hdValAuth.authRealm;
-		rtspSessionInfo.authInfo.authNonceClient = headerEntry.hdValAuth.authNonce;
-		rtspSessionInfo.authInfo.authUri = headerEntry.hdValAuth.authUri;
-		rtspSessionInfo.authInfo.authResp = headerEntry.hdValAuth.authResp;
+		rtspSessionInfo.authInfo.authRealmClient = headerEntry.hdValAuthClient.authRealm;
+		rtspSessionInfo.authInfo.authNonceClient = headerEntry.hdValAuthClient.authNonce;
+		rtspSessionInfo.authInfo.authUri = headerEntry.hdValAuthClient.authUri;
+		rtspSessionInfo.authInfo.authResp = headerEntry.hdValAuthClient.authResp;
+	}
+
+	private void processHeader_describe_contbase(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+		// @TODO
+	}
+
+	private void processHeader_com_contlen(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+		// @TODO
+	}
+
+	private void processHeader_com_conttype(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+		// @TODO
 	}
 
 	private void processHeader_com_keymgmt(
@@ -436,13 +481,13 @@ public final class RtspProtoHighRequestProcessor {
 				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspProtoMessageType.SETUP && messageType != RtspProtoMessageType.SET_PARAMETER) {
-			throw new RtspInvalidRequestException("Received KEYMGMT header in non-SETUP/SET_PARAMETER request");
+			throw new RtspInvalidRequestException("Received Keymgmt header in non-SETUP/SET_PARAMETER request");
 		}
 		if (requestUrlInputOrStreamSource.inputSourceId == null ||
 				requestUrlInputOrStreamSource.streamSourceId < 0) {
 			throw new RtspInvalidRequestException("No IS/SS in SETUP/SET_PARAMETER request");
 		}
-		if (headerEntry.hdValKeymgmt.proto != RtspProtoLowHeaderTypeKeymgmt.KeymgmtProto.MIKEY) {
+		if (headerEntry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
 			throw new RtspInvalidRequestException("Unsupported Keymgmt protocol in SETUP/SET_PARAMETER request");
 		}
 
@@ -466,11 +511,20 @@ public final class RtspProtoHighRequestProcessor {
 		rtspSessionInfo.clientPlaybackRangeValue = headerEntry.hdValRange.rangeStr;
 	}
 
-	private void processHeader_options_require(@NonNull RtspProtoMessageType messageType) throws RtspInvalidRequestException {
-		if (messageType != RtspProtoMessageType.OPTIONS) {
-			throw new RtspInvalidRequestException("Received REQUIRE header in non-OPTIONS request");
+	private void processHeader_options_require(
+				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+			) throws RtspInvalidRequestException, RtspUnsupportedFeatureRequestedException {
+		if (messageType != RtspProtoMessageType.OPTIONS && messageType != RtspProtoMessageType.SETUP) {
+			throw new RtspInvalidRequestException("Received REQUIRE header in non-OPTIONS/SETUP request");
 		}
-		// ignore value
+		if (headerEntry.hdValRequire.requiredFeatures.isEmpty()) {
+			return;
+		}
+		// we need to respond with "551 Option not supported"
+		throw new RtspUnsupportedFeatureRequestedException(
+				headerEntry.hdValRequire.requiredFeatures.stream().findFirst().orElse("")
+			);
 	}
 
 	private void processHeader_setup_transport(
@@ -535,6 +589,10 @@ public final class RtspProtoHighRequestProcessor {
 
 		rtspSessionInfo.isTransportUdp = tmpStreamInfo.tpIsUdp;
 		rtspSessionInfo.isTransportSrtpSrtcp = tmpStreamInfo.tpIsEncr;
+	}
+
+	private void processHeader_com_useragent(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+		rtspSessionInfo.clientUserAgent = headerEntry.hdValUserAgent.userAgentStr;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
