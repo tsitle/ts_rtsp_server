@@ -176,14 +176,14 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				throw new IllegalStateException(FNC_NAME + ": No input source found");
 			}
 			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-				RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+				RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 				RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 				if (! rtspChildThreadMng.ctfosMapContainsKey(tmpSsObj.getId())) {
 					continue;
 				}
-				RtspStaticSessionInfo.StreamInfo tmpStreamInfo =
-						RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, tmpSubStreamId);
-				if (tmpStreamInfo.rtspSsrcId != ssrcId) {
+				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream =
+						RtspStaticSessionInfo.getSetupSubStreamOrThrow(FNC_NAME, tmpSubStreamId);
+				if (tmpSetupSubStream.rtspSsrcId != ssrcId) {
 					continue;
 				}
 				ctfosToUse = rtspChildThreadMng.getCtfosMapValue(tmpSsObj.getId());
@@ -216,7 +216,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		}
 		boolean areAllReady = true;
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+			RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			if (! rtspSessionInfo.threadReadyStates.getOrDefault(tmpSsi.streamSourceId(), false)) {
 				areAllReady = false;
 				break;
@@ -251,7 +251,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+			RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 			if (! rtspChildThreadMng.ctfosMapContainsKey(tmpSsObj.getId())) {
 				continue;
@@ -298,15 +298,15 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					);
 				final String tmpSubStreamId = rtspRequestBasics.requestUrlInputOrStreamSource.subStreamId;
 				// sanity check
-				if (! RtspStaticSessionInfo.existsStreamInfo(tmpSubStreamId)) {
+				if (! RtspStaticSessionInfo.existsSetupSubStream(tmpSubStreamId)) {
 					// this should never happen
 					logError(FNC_NAME, "SETUP failed");
 					return false;  // tear down the session
 				}
-				RtspStaticSessionInfo.StreamInfo tmpStreamInfo =
-						RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, tmpSubStreamId);
+				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream =
+						RtspStaticSessionInfo.getSetupSubStreamOrThrow(FNC_NAME, tmpSubStreamId);
 				try {
-					tmpStreamInfo.isTransportValid(
+					tmpSetupSubStream.isTransportValid(
 							rtspSessionInfo.isRtpRtcpEncryptionRequired,
 							rtspSessionInfo.forceRtpRtcpEncryption,
 							rtspSessionInfo.isRtspsConnection,
@@ -371,8 +371,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private RtspStaticSessionInfo.@NonNull SubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
-		return RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
+	private RtspStaticSessionInfo.@NonNull SdpSubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
+		return RtspStaticSessionInfo.getSdpSubStream(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -380,12 +380,15 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private void srtxpRekeyInbound_oneStream(RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos) {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyInbound_oneStream()";
 
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.subStreamId);
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
+				FNC_NAME,
+				ctfos.subStreamId
+			);
 
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
 				rtspSessionInfo.getClientIpAddr(),
 				ctfos.subStreamId,
-				tmpStreamInfo.rtspSsrcId
+				tmpSetupSubStream.rtspSsrcId
 			);
 		//
 		if (tmpStreamKmds.nextKmdInbound == null) {

@@ -16,8 +16,8 @@ public class RtspProtoConstants {
 
 	public static final String SERVER_NAME = "TS RTSP Server";
 
-	/** Prefix for Stream IDs as publicized over SDP */
-	public static final String STREAM_ID_PREFIX = "streamid";
+	/** Prefix for Sub-Stream IDs as publicized over SDP */
+	public static final String SUBSTREAM_ID_PREFIX = "substreamid";
 
 	/** RTSP Authorization Realm */
 	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";

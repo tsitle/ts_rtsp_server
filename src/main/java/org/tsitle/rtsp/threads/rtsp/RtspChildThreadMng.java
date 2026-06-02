@@ -121,7 +121,7 @@ final class RtspChildThreadMng {
 		}
 		//
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+			RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 			if (childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				throw new IllegalStateException(FNC_NAME + ": Child thread for ss=" + tmpSsObj.getId() + " already exists");
@@ -149,7 +149,7 @@ final class RtspChildThreadMng {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+			RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				continue;
@@ -177,7 +177,7 @@ final class RtspChildThreadMng {
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-			RtspStaticSessionInfo.SubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
+			RtspStaticSessionInfo.SdpSubStreamInfo tmpSsi = getSubStreamInfo(tmpSubStreamId);
 			RtspStreamSource tmpSsObj = rtspConfig.getStreamSourceObj(tmpSsi.streamSourceId()).orElseThrow();
 			if (! childThreadsForOneStreamMap.containsKey(tmpSsObj.getId())) {
 				continue;
@@ -209,8 +209,8 @@ final class RtspChildThreadMng {
 
 		stopChildThread(ctfos.rtcpThreadSendRecv);
 		//
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo =
-				RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.subStreamId);
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpStreamInfo =
+				RtspStaticSessionInfo.getSetupSubStreamOrThrow(FNC_NAME, ctfos.subStreamId);
 		//
 		BuilderThreadRtcp.Builder tmpBuilder = BuilderThreadRtcp.builder()
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
@@ -249,7 +249,7 @@ final class RtspChildThreadMng {
 	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 			B buildThreadRtpSender(
 					B builder,
-					RtspStaticSessionInfo.StreamInfo streamInfo,
+					RtspStaticSessionInfo.SetupSubStreamInfo streamInfo,
 					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
@@ -287,7 +287,7 @@ final class RtspChildThreadMng {
 	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 			B buildThreadVideo(
 					B builder,
-					RtspStaticSessionInfo.StreamInfo streamInfo,
+					RtspStaticSessionInfo.SetupSubStreamInfo streamInfo,
 					double avFps,
 					RtcpInnerXsrcBlock xsrcBlock
 				) {
@@ -297,7 +297,7 @@ final class RtspChildThreadMng {
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 					B buildThreadAudio(
 					B builder,
-					RtspStaticSessionInfo.StreamInfo streamInfo,
+					RtspStaticSessionInfo.SetupSubStreamInfo streamInfo,
 					@SuppressWarnings("SameParameterValue") double avFps,
 					RtcpInnerXsrcBlock xsrcBlock,
 					int samplesPerFrame
@@ -313,8 +313,8 @@ final class RtspChildThreadMng {
 
 		stopChildThread(ctfos.rtpThreadSender);
 		//
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo =
-				RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, ctfos.subStreamId);
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpStreamInfo =
+				RtspStaticSessionInfo.getSetupSubStreamOrThrow(FNC_NAME, ctfos.subStreamId);
 		//
 		RtcpInnerXsrcBlock xsrcBlock = new RtcpInnerXsrcBlock(
 				1,
@@ -407,8 +407,8 @@ final class RtspChildThreadMng {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private RtspStaticSessionInfo.@NonNull SubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
-		return RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
+	private RtspStaticSessionInfo.@NonNull SdpSubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
+		return RtspStaticSessionInfo.getSdpSubStream(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

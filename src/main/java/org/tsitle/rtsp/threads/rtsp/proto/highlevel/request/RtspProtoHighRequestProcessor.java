@@ -3,9 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.*;
-import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.MikeyParser;
 import org.tsitle.rtsp.security.SrtxpKmd;
@@ -19,7 +17,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
 
-import java.net.*;
 import java.util.*;
 
 public final class RtspProtoHighRequestProcessor {
@@ -248,136 +245,56 @@ public final class RtspProtoHighRequestProcessor {
 		}
 
 		//
-		final String rscUrlPathOrg = extractResourceUrlPath(resourceUrl);
-		String rscUrlPathMod = rscUrlPathOrg;
+		final ResourceUrlParsingVars resourceUrlParsingVars = new ResourceUrlParsingVars(requestType, resourceUrl);
 
-		/*
-		 * Extract Input Source ID from the URL.
-		 * For DESCRIBE/PLAY/PAUSE/TEARDOWN requests, the Resource URL needs to contain only the Input Source ID (== SDP name):
-		 *   rtsp://localhost:1051/movie.sdp
-		 * For SETUP/GET_PARAMETER/SET_PARAMETER requests, the Resource URL can contain the Input Source ID and the Stream ID,
-		 * or it only contains the Stream ID:
-		 *   rtsp://localhost:1051/movie.sdp/streamid0
-		 *   or
-		 *   rtsp://localhost:1051/streamid0
-		 */
-		String tmpRscStreamIdStr = rscUrlPathOrg;
-		int tmpIdxA = tmpRscStreamIdStr.lastIndexOf("/" + RtspProtoConstants.STREAM_ID_PREFIX);
-		if (tmpIdxA > 0) {
-			// the Resource URL Path contains the Input Source ID and the Stream ID
-			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(tmpIdxA + 1 + RtspProtoConstants.STREAM_ID_PREFIX.length());
-			rscUrlPathMod = rscUrlPathMod.substring(0, tmpIdxA);
-		} else if (tmpRscStreamIdStr.startsWith(RtspProtoConstants.STREAM_ID_PREFIX)) {
-			tmpRscStreamIdStr = tmpRscStreamIdStr.substring(RtspProtoConstants.STREAM_ID_PREFIX.length());
-		} else {
-			tmpRscStreamIdStr = "";
+		//
+		ResourceUrlProcessor.extractSubStreamId(resourceUrlParsingVars);
+		if (! resourceUrlParsingVars.subStreamId.isBlank()) {
+			ResourceUrlProcessor.findStreamSourceObj(
+					resourceUrlParsingVars,
+					rtspSessionInfo.getClientIpAddr(),
+					rtspConfig
+				);
 		}
-		String rscSubStreamId = "";
-		RtspStreamSource rtspStreamSource = null;
-		if (! tmpRscStreamIdStr.isEmpty()) {
-			rscSubStreamId = tmpRscStreamIdStr;
-			if (rscSubStreamId.isBlank()) {
-				throw new RtspInvalidUriException("Invalid Stream Source ID in URL path: '" + rscUrlPathOrg + "'");
-			}
+
+		//
+		if (requestType == RtspMessageType.SETUP) {
+			ResourceUrlProcessor.createSetupSubStreamRecord(resourceUrlParsingVars, rtspSessionInfo.getClientIpAddr());
 			//
-			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
-			if (tmpSubStreamInfo.isEmpty()) {
-				throw new RtspSubStreamIdNotFoundException("Sub-Stream ID='" + rscSubStreamId + "'");
-			}
+			RtspRequestBasics.RequestUrlInputOrStreamSource resObj = ResourceUrlProcessor.buildRuiossForSetupRequest(
+					resourceUrlParsingVars,
+					rtspSessionInfo.getClientIpAddr()
+				);
+			// preliminary setting
+			Objects.requireNonNull(resObj.inputSourceId);
+			rtspSessionInfo.isRtpRtcpEncryptionRequired =
+					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
 			//
-			rtspStreamSource = rtspConfig.getStreamSourceObj(tmpSubStreamInfo.get().streamSourceId()).orElse(null);
-			if (rtspStreamSource == null) {  // sanity check
-				throw new RtspSubStreamIdNotFoundException("Non-existing Stream Source ID in Sub-Stream ID " +
-						"'" + rscSubStreamId + "'");
-			}
+			rtspSessionInfo.inputSourceUrlPerMtMap.put(RtspMessageType.SETUP, resourceUrl);
+			return resObj;
 		}
 
 		//
 		RtspRequestBasics.RequestUrlInputOrStreamSource resObj = new RtspRequestBasics.RequestUrlInputOrStreamSource();
 
-		//
-		if (requestType == RtspMessageType.SETUP) {
-			if (rscSubStreamId.isBlank()) {  // sanity check
-				throw new RtspInvalidUriException("Missing Sub-Stream ID in URL path: '" + rscUrlPathOrg + "'");
-			}
-			//
-			final String tmpErrMsgSsid = rscSubStreamId;
-			RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getStreamKmds(
-					rtspSessionInfo.getClientIpAddr(),
-					rscSubStreamId
-				).orElseThrow(() -> new RtspInvalidUriException("No StreamKmds for Sub-Stream ID '" + tmpErrMsgSsid + "'"));
-			RtspStaticSessionInfo.addStreamInfo(
-					rscSubStreamId,
-					tmpStreamKmds,
-					rtspStreamSource,
-					resourceUrl
-				);
-
-			//
-			rtspSessionInfo.inputSourceUrlPerMtMap.put(RtspMessageType.SETUP, resourceUrl);
-
-			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
-			resObj.subStreamId = rscSubStreamId;
-			resObj.inputSourceId = tmpSubStreamInfo.orElseThrow().inputSourceId();
-			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
-
-			// preliminary setting
-			rtspSessionInfo.isRtpRtcpEncryptionRequired =
-					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
-			return resObj;
-		}
-
-		if ((requestType == RtspMessageType.GET_PARAMETER || requestType == RtspMessageType.SET_PARAMETER) &&
-				! rscSubStreamId.isBlank()) {
-			Optional<RtspStaticSessionInfo.SubStreamInfo> tmpSubStreamInfo =
-					RtspStaticSessionInfo.getSubStreamInfo(rtspSessionInfo.getClientIpAddr(), rscSubStreamId);
-
-			resObj.subStreamId = rscSubStreamId;
-			resObj.streamSourceId = tmpSubStreamInfo.orElseThrow().streamSourceId();
-		}
+		ResourceUrlProcessor.storeSubStreamAndStreamSourceIdsForNonSetupRequests(
+				resourceUrlParsingVars,
+				rtspSessionInfo.getClientIpAddr(),
+				resObj
+			);
 
 		//
-		if (rscUrlPathMod.endsWith("/")) {
-			rscUrlPathMod = rscUrlPathMod.substring(0, rscUrlPathMod.length() - 1);
-		}
-		Optional<RtspInputSource> optInputSource = rtspConfig.getInputSourceObj(rscUrlPathMod);
-		if (optInputSource.isEmpty()) {
-			throw new RtspInputSourceIdNotFoundException("URL path: '" + rscUrlPathMod + "'");
-		}
-		if (! optInputSource.get().getEnabled()) {
-			throw new RtspInputSourceIdNotFoundException("Disabled Input Source used in URL path: '" + rscUrlPathMod + "'");
-		}
+		RtspInputSource tmpInputSrcObj = ResourceUrlProcessor.findInputSourceObjectForNonSetupRequests(
+				resourceUrlParsingVars,
+				rtspConfig
+			);
 		rtspSessionInfo.inputSourceUrlPerMtMap.put(requestType, resourceUrl);
-		rtspSessionInfo.inputSourceObjPerMtMap.put(requestType, optInputSource.get());
+		rtspSessionInfo.inputSourceObjPerMtMap.put(requestType, tmpInputSrcObj);
 		// preliminary setting
-		rtspSessionInfo.isRtpRtcpEncryptionRequired = optInputSource.get().getNeedsEncryption();
+		rtspSessionInfo.isRtpRtcpEncryptionRequired = tmpInputSrcObj.getNeedsEncryption();
 
-		resObj.inputSourceId = optInputSource.get().getId();
+		resObj.inputSourceId = tmpInputSrcObj.getId();
 		return resObj;
-	}
-
-	/**
-	 * Returns the resource URL path from the given resource URL string
-	 * @param resourceUrlStr Full resource URL string (e.g. 'rtsp://localhost:1051/movie.sdp/streamid0')
-	 * @return The resource URL path (e.g. 'movie.sdp/streamid0')
-	 * @throws RtspInvalidUriException If the resource URL is invalid
-	 */
-	private static @NonNull String extractResourceUrlPath(@NonNull String resourceUrlStr) throws RtspInvalidUriException {
-		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
-		String tmpPath = rscUriObj.getPath();
-		tmpPath = tmpPath.strip();
-		if (tmpPath.startsWith("/")) {
-			tmpPath = tmpPath.substring(1).strip();
-		}
-		if (tmpPath.startsWith("../") || tmpPath.contains("/../")) {
-			throw new RtspInvalidUriException("Path contains '../'");
-		}
-		if (tmpPath.isBlank()) {
-			throw new RtspInvalidUriException("Empty path");
-		}
-		return tmpPath;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -545,39 +462,39 @@ public final class RtspProtoHighRequestProcessor {
 			throw new RtspInvalidRequestException("No SSID in SETUP request");
 		}
 
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
 				FNC_NAME,
 				requestUrlInputOrStreamSource.subStreamId
 			);
 
 		// copy settings
-		tmpStreamInfo.tpIsUdp = headerEntry.hdValTransport.tpIsUdp;
-		tmpStreamInfo.tpIsUnicast = headerEntry.hdValTransport.tpIsUnicast;
-		if (tmpStreamInfo.tpIsUdp) {
-			tmpStreamInfo.tpClientUdpPortRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtp16bit()
+		tmpSetupSubStream.tpIsUdp = headerEntry.hdValTransport.tpIsUdp;
+		tmpSetupSubStream.tpIsUnicast = headerEntry.hdValTransport.tpIsUnicast;
+		if (tmpSetupSubStream.tpIsUdp) {
+			tmpSetupSubStream.tpClientUdpPortRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtp16bit()
 					.orElseThrow(() -> new RtspInvalidRequestException("No client UDP RTP port in SETUP request")));
-			tmpStreamInfo.tpClientUdpPortRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtcp16bit()
+			tmpSetupSubStream.tpClientUdpPortRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientUdpPortRtcp16bit()
 					.orElseThrow(() -> new RtspInvalidRequestException("No client UDP RTCP port in SETUP request")));
 		} else {
-			tmpStreamInfo.tpClientTcpChannRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtp16bit()
+			tmpSetupSubStream.tpClientTcpChannRtp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtp16bit()
 					.orElseThrow(() -> new RtspInvalidRequestException("No client TCP RTP channel in SETUP request")));
-			tmpStreamInfo.tpClientTcpChannRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtcp16bit()
+			tmpSetupSubStream.tpClientTcpChannRtcp = Short.toUnsignedInt(headerEntry.hdValTransport.getClientTcpChannRtcp16bit()
 					.orElseThrow(() -> new RtspInvalidRequestException("No client TCP RTCP channel in SETUP request")));
 		}
-		tmpStreamInfo.tpIsInterleaved = headerEntry.hdValTransport.tpIsInterleaved;
-		tmpStreamInfo.tpIsEncr = headerEntry.hdValTransport.tpIsEncr;
+		tmpSetupSubStream.tpIsInterleaved = headerEntry.hdValTransport.tpIsInterleaved;
+		tmpSetupSubStream.tpIsEncr = headerEntry.hdValTransport.tpIsEncr;
 
 		//
 		if (rtspSessionInfo.forceRtpRtcpEncryption) {
-			if (! tmpStreamInfo.tpIsEncr) {
+			if (! tmpSetupSubStream.tpIsEncr) {
 				logWarn(FNC_NAME, "Client requested unencrypted Transport but server will force encryption");
 			}
-			tmpStreamInfo.tpIsEncr = true;
+			tmpSetupSubStream.tpIsEncr = true;
 		}
 
 		//
 		try {
-			tmpStreamInfo.isTransportValid(
+			tmpSetupSubStream.isTransportValid(
 					rtspSessionInfo.isRtpRtcpEncryptionRequired,
 					rtspSessionInfo.forceRtpRtcpEncryption,
 					rtspSessionInfo.isRtspsConnection,
@@ -587,8 +504,8 @@ public final class RtspProtoHighRequestProcessor {
 			throw new RtspUnsupportedTransportException("Invalid Transport: " + e.getMessage());
 		}
 
-		rtspSessionInfo.isTransportUdp = tmpStreamInfo.tpIsUdp;
-		rtspSessionInfo.isTransportSrtpSrtcp = tmpStreamInfo.tpIsEncr;
+		rtspSessionInfo.isTransportUdp = tmpSetupSubStream.tpIsUdp;
+		rtspSessionInfo.isTransportSrtpSrtcp = tmpSetupSubStream.tpIsEncr;
 	}
 
 	private void processHeader_com_useragent(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {

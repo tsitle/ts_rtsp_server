@@ -205,12 +205,12 @@ public final class RtspProtoHighResponseBuilder {
 			throw new RtspInvalidResponseException(FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null");
 		}
 
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = RtspStaticSessionInfo.getStreamInfoOrThrow(
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
 				FNC_NAME,
 				requestUrlInputOrStreamSource.subStreamId
 			);
 		try {
-			tmpStreamInfo.isTransportValid(
+			tmpSetupSubStream.isTransportValid(
 					rtspSessionInfo.isRtpRtcpEncryptionRequired,
 					rtspSessionInfo.forceRtpRtcpEncryption,
 					rtspSessionInfo.isRtspsConnection,
@@ -235,31 +235,31 @@ public final class RtspProtoHighResponseBuilder {
 		}
 
 		// we need to open the sockets now so we can get the port numbers
-		findAndOpenUdpSocketPorts(tmpStreamInfo);
-		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtp);
-		Objects.requireNonNull(tmpStreamInfo.tpServerUdpSocketRtcp);
+		findAndOpenUdpSocketPorts(tmpSetupSubStream);
+		Objects.requireNonNull(tmpSetupSubStream.tpServerUdpSocketRtp);
+		Objects.requireNonNull(tmpSetupSubStream.tpServerUdpSocketRtcp);
 
 		// Transport
 		{
 			String tmpRtspHostIp = findRtspHostIp(RtspMessageType.SETUP);
 
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
-			hdEntry.hdValTransport.tpIsUdp = tmpStreamInfo.tpIsUdp;
-			hdEntry.hdValTransport.tpIsEncr = tmpStreamInfo.tpIsEncr;
-			hdEntry.hdValTransport.tpIsUnicast = tmpStreamInfo.tpIsUnicast;
-			hdEntry.hdValTransport.tpIsInterleaved = tmpStreamInfo.tpIsInterleaved;
+			hdEntry.hdValTransport.tpIsUdp = tmpSetupSubStream.tpIsUdp;
+			hdEntry.hdValTransport.tpIsEncr = tmpSetupSubStream.tpIsEncr;
+			hdEntry.hdValTransport.tpIsUnicast = tmpSetupSubStream.tpIsUnicast;
+			hdEntry.hdValTransport.tpIsInterleaved = tmpSetupSubStream.tpIsInterleaved;
 			hdEntry.hdValTransport.tpSourceIpOrHost = tmpRtspHostIp;
 			hdEntry.hdValTransport.tpDestIpOrHost = rtspSessionInfo.getClientIpAddr().getHostAddress();
-			if (tmpStreamInfo.tpIsUdp) {
-				hdEntry.hdValTransport.setClientUdpPortRtp16bit(tmpStreamInfo.tpClientUdpPortRtp);
-				hdEntry.hdValTransport.setClientUdpPortRtcp16bit(tmpStreamInfo.tpClientUdpPortRtcp);
-				hdEntry.hdValTransport.setServerUdpPortRtp16bit(tmpStreamInfo.tpServerUdpSocketRtp.getLocalPort());
-				hdEntry.hdValTransport.setServerUdpPortRtcp16bit(tmpStreamInfo.tpServerUdpSocketRtcp.getLocalPort());
+			if (tmpSetupSubStream.tpIsUdp) {
+				hdEntry.hdValTransport.setClientUdpPortRtp16bit(tmpSetupSubStream.tpClientUdpPortRtp);
+				hdEntry.hdValTransport.setClientUdpPortRtcp16bit(tmpSetupSubStream.tpClientUdpPortRtcp);
+				hdEntry.hdValTransport.setServerUdpPortRtp16bit(tmpSetupSubStream.tpServerUdpSocketRtp.getLocalPort());
+				hdEntry.hdValTransport.setServerUdpPortRtcp16bit(tmpSetupSubStream.tpServerUdpSocketRtcp.getLocalPort());
 			} else {
-				hdEntry.hdValTransport.setClientTcpChannRtp16bit(tmpStreamInfo.tpClientTcpChannRtp);
-				hdEntry.hdValTransport.setClientTcpChannRtcp16bit(tmpStreamInfo.tpClientTcpChannRtcp);
+				hdEntry.hdValTransport.setClientTcpChannRtp16bit(tmpSetupSubStream.tpClientTcpChannRtp);
+				hdEntry.hdValTransport.setClientTcpChannRtcp16bit(tmpSetupSubStream.tpClientTcpChannRtcp);
 			}
-			hdEntry.hdValTransport.setSsrcId32bit(tmpStreamInfo.rtspSsrcId);
+			hdEntry.hdValTransport.setSsrcId32bit(tmpSetupSubStream.rtspSsrcId);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
@@ -281,15 +281,15 @@ public final class RtspProtoHighResponseBuilder {
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.RTPINFO);
 			int tmpSubStreamNr = 1;
 			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-				RtspStaticSessionInfo.StreamInfo tmpStreamInfoInput = RtspStaticSessionInfo.getStreamInfoOrThrow(
+				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStreamInp = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
 						FNC_NAME,
 						tmpSubStreamId
 					);
 				RtspProtoLowHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoLowHeaderTypeRtpinfo.SubStream();
-				tmpStreamInfoOutput.urlStr = tmpStreamInfoInput.inputSourceUrlSetup;
-				tmpStreamInfoOutput.setSeqNr16bit(tmpStreamInfoInput.rtspRtpSeqNrT0);
-				tmpStreamInfoOutput.setRtpTimestamp32bit(tmpStreamInfoInput.rtspRtpTimestampT0);
-				tmpStreamInfoOutput.setSsrcId32bit(tmpStreamInfoInput.rtspSsrcId);
+				tmpStreamInfoOutput.urlStr = tmpSetupSubStreamInp.inputSourceUrlSetup;
+				tmpStreamInfoOutput.setSeqNr16bit(tmpSetupSubStreamInp.rtspRtpSeqNrT0);
+				tmpStreamInfoOutput.setRtpTimestamp32bit(tmpSetupSubStreamInp.rtspRtpTimestampT0);
+				tmpStreamInfoOutput.setSsrcId32bit(tmpSetupSubStreamInp.rtspSsrcId);
 				if (tmpSubStreamNr == 1) {
 					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
 				} else if (tmpSubStreamNr == 2) {
@@ -349,24 +349,27 @@ public final class RtspProtoHighResponseBuilder {
 	/**
 	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC-3551 Section 8
 	 */
-	private void findAndOpenUdpSocketPorts(RtspStaticSessionInfo.@NonNull StreamInfo streamInfo) throws UdpSocketIoException {
+	private void findAndOpenUdpSocketPorts(RtspStaticSessionInfo.@NonNull SetupSubStreamInfo setupSubStreamInfo)
+			throws UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
 
 		int loopCnt = 0;
 		boolean isOk = false;
 		while (++loopCnt <= 1000) {
-			if (streamInfo.tpServerUdpSocketRtp != null) {
-				streamInfo.tpServerUdpSocketRtp.close();
+			if (setupSubStreamInfo.tpServerUdpSocketRtp != null) {
+				setupSubStreamInfo.tpServerUdpSocketRtp.close();
 			}
-			if (streamInfo.tpServerUdpSocketRtcp != null) {
-				streamInfo.tpServerUdpSocketRtcp.close();
+			if (setupSubStreamInfo.tpServerUdpSocketRtcp != null) {
+				setupSubStreamInfo.tpServerUdpSocketRtcp.close();
 			}
 			try {
-				streamInfo.tpServerUdpSocketRtp = new DatagramSocket();
-				if (streamInfo.tpServerUdpSocketRtp.getLocalPort() % 2 != 0) {
+				setupSubStreamInfo.tpServerUdpSocketRtp = new DatagramSocket();
+				if (setupSubStreamInfo.tpServerUdpSocketRtp.getLocalPort() % 2 != 0) {
 					continue;
 				}
-				streamInfo.tpServerUdpSocketRtcp = new DatagramSocket(streamInfo.tpServerUdpSocketRtp.getLocalPort() + 1);
+				setupSubStreamInfo.tpServerUdpSocketRtcp = new DatagramSocket(
+						setupSubStreamInfo.tpServerUdpSocketRtp.getLocalPort() + 1
+					);
 				isOk = true;
 				break;
 			} catch (SocketException e) {
@@ -377,10 +380,10 @@ public final class RtspProtoHighResponseBuilder {
 			throw new IllegalStateException(FNC_NAME + ": Could not find proper UDP sockets");
 		}
 		try {
-			streamInfo.tpServerUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
-			streamInfo.tpServerUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
-			streamInfo.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
-			streamInfo.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
+			setupSubStreamInfo.tpServerUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+			setupSubStreamInfo.tpServerUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
+			setupSubStreamInfo.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
+			setupSubStreamInfo.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
 		} catch (SocketException e) {
 			throw new UdpSocketIoException(FNC_NAME + ": Could not configure UDP sockets: " + e.getMessage());
 		}

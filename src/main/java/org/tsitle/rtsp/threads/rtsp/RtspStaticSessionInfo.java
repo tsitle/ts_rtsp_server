@@ -35,7 +35,7 @@ public class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static class StreamInfo {
+	public static class SetupSubStreamInfo {
 		/** Stream Source object */
 		@Nullable RtspStreamSource rtspStreamSource = null;
 
@@ -115,7 +115,7 @@ public class RtspStaticSessionInfo {
 			}
 		}
 
-		public StreamInfo(RtspStaticSessionInfo.@NonNull StreamKmds streamKmds) {
+		public SetupSubStreamInfo(RtspStaticSessionInfo.@NonNull StreamKmds streamKmds) {
 			this.streamKmds = streamKmds;
 		}
 	}
@@ -123,7 +123,7 @@ public class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public record SubStreamInfo(@NonNull String clientIpAddrStr, @NonNull String inputSourceId, int streamSourceId) { }
+	public record SdpSubStreamInfo(@NonNull String clientIpAddrStr, @NonNull String inputSourceId, int streamSourceId) { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -138,16 +138,16 @@ public class RtspStaticSessionInfo {
 	private static final Lock theReadLock = theLock.readLock();
 	private static final Lock theWriteLock = theLock.writeLock();
 
-	private static final List<@NonNull String> subStreamInfoIds = new ArrayList<>();
-	private static final Map<@NonNull String, @NonNull SubStreamInfo> subStreamInfoMap = new HashMap<>();
+	private static final List<@NonNull String> sdpSubStreamIds = new ArrayList<>();
+	private static final Map<@NonNull String, @NonNull SdpSubStreamInfo> sdpSubStreamInfoMap = new HashMap<>();
 
 	private static final List<@NonNull String> authServerNonceList = new ArrayList<>();
 
 	private static final List<@NonNull String> streamKmdsIds = new ArrayList<>();
 	private static final Map<@NonNull String, @NonNull StreamKmds> streamKmdsMap = new HashMap<>();
 
-	private static final List<@NonNull String> streamsSetupIds = new ArrayList<>();
-	private static final @NonNull Map<@NonNull String, @NonNull StreamInfo> streamsSetupMap = new HashMap<>();
+	private static final List<@NonNull String> setupSubStreamIds = new ArrayList<>();
+	private static final @NonNull Map<@NonNull String, @NonNull SetupSubStreamInfo> setupSubStreamInfoMap = new HashMap<>();
 
 	private static final List<@NonNull String> unauthorizedIds = new ArrayList<>();
 	private static final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
@@ -164,7 +164,7 @@ public class RtspStaticSessionInfo {
 	 * @param streamSourceId Stream Source ID as requested from the client per DESCRIBE request
 	 * @return Unique Sub-Stream ID
 	 */
-	public static @NonNull String addSubStream(
+	public static @NonNull String addSdpSubStream(
 				@NonNull InetAddress clientIpAddr,
 				@NonNull String inputSourceId,
 				int streamSourceId
@@ -180,14 +180,14 @@ public class RtspStaticSessionInfo {
 						String.format("%s : %05d : %08X", inputSourceId, streamSourceId, RandomHelper.getRandomUint32(false)),
 						false
 					).substring(0, HASH_LEN);
-			} while (subStreamInfoIds.contains(subStreamId));
-			subStreamInfoIds.add(subStreamId);
-			subStreamInfoMap.put(subStreamId, new SubStreamInfo(ipStr, inputSourceId, streamSourceId));
+			} while (sdpSubStreamIds.contains(subStreamId));
+			sdpSubStreamIds.add(subStreamId);
+			sdpSubStreamInfoMap.put(subStreamId, new SdpSubStreamInfo(ipStr, inputSourceId, streamSourceId));
 			//
-			if (subStreamInfoMap.size() > MAX_SUB_STREAM_INFOS) {
+			if (sdpSubStreamInfoMap.size() > MAX_SUB_STREAM_INFOS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
-				subStreamInfoMap.remove(subStreamInfoIds.getFirst());
-				subStreamInfoIds.removeFirst();
+				sdpSubStreamInfoMap.remove(sdpSubStreamIds.getFirst());
+				sdpSubStreamIds.removeFirst();
 			}
 			return subStreamId;
 		} finally {
@@ -195,10 +195,10 @@ public class RtspStaticSessionInfo {
 		}
 	}
 
-	public static Optional<SubStreamInfo> getSubStreamInfo(@NonNull InetAddress clientIpAddr, @NonNull String subStreamId) {
+	public static Optional<SdpSubStreamInfo> getSdpSubStream(@NonNull InetAddress clientIpAddr, @NonNull String subStreamId) {
 		theReadLock.lock();
 		try {
-			Optional<SubStreamInfo> optRes = Optional.ofNullable(subStreamInfoMap.get(subStreamId));
+			Optional<SdpSubStreamInfo> optRes = Optional.ofNullable(sdpSubStreamInfoMap.get(subStreamId));
 			if (optRes.isEmpty()) {
 				return Optional.empty();
 			}
@@ -253,7 +253,7 @@ public class RtspStaticSessionInfo {
 				@NonNull String subStreamId,
 				int rtspSsrcId
 			) {
-		if (rtspSsrcId == 0) {
+		if (Integer.toUnsignedLong(rtspSsrcId) == 0L) {
 			throw new IllegalArgumentException("rtspSsrcId must not be 0");
 		}
 		Optional<StreamKmds> optStreamKmds = getStreamKmds(clientIpAddr, subStreamId);
@@ -301,31 +301,31 @@ public class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("UnusedReturnValue")
-	public static @NonNull StreamInfo addStreamInfo(
+	public static @NonNull SetupSubStreamInfo addSetupSubStream(
 				@NonNull String subStreamId,
 				RtspStaticSessionInfo.@NonNull StreamKmds streamKmds,
 				@NonNull RtspStreamSource rtspStreamSource,
 				@NonNull String resourceUrl
 			) {
-		if (streamKmds.rtspSsrcId == 0) {
+		if (Integer.toUnsignedLong(streamKmds.rtspSsrcId) == 0L) {
 			throw new IllegalArgumentException("streamKmds.rtspSsrcId must not be 0");
 		}
 		theWriteLock.lock();
 		try {
-			StreamInfo resObj = new StreamInfo(streamKmds);
+			SetupSubStreamInfo resObj = new SetupSubStreamInfo(streamKmds);
 			resObj.rtspSsrcId = streamKmds.rtspSsrcId;
 			resObj.rtspStreamSource = rtspStreamSource;
 			resObj.inputSourceUrlSetup = resourceUrl;
 			resObj.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
 			resObj.rtspRtpTimestampT0 = RandomHelper.getRandomUint32(true);
 			resObj.rtspRtpGenTsT0Ns = System.nanoTime();
-			streamsSetupIds.add(subStreamId);
-			streamsSetupMap.put(subStreamId, resObj);
+			setupSubStreamIds.add(subStreamId);
+			setupSubStreamInfoMap.put(subStreamId, resObj);
 			//
-			if (streamsSetupMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
+			if (setupSubStreamInfoMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
-				streamsSetupMap.remove(streamsSetupIds.getFirst());
-				streamsSetupIds.removeFirst();
+				setupSubStreamInfoMap.remove(setupSubStreamIds.getFirst());
+				setupSubStreamIds.removeFirst();
 			}
 			return resObj;
 		} finally {
@@ -333,22 +333,22 @@ public class RtspStaticSessionInfo {
 		}
 	}
 
-	public static @NonNull StreamInfo getStreamInfoOrThrow(@NonNull String fncName, @NonNull String subStreamId) {
+	public static @NonNull SetupSubStreamInfo getSetupSubStreamOrThrow(@NonNull String fncName, @NonNull String subStreamId) {
 		theReadLock.lock();
 		try {
-			if (! streamsSetupMap.containsKey(subStreamId)) {
+			if (! setupSubStreamInfoMap.containsKey(subStreamId)) {
 				throw new IllegalStateException(fncName + ": Stream info not found for Sub-Stream ID: " + subStreamId);
 			}
-			return streamsSetupMap.get(subStreamId);
+			return setupSubStreamInfoMap.get(subStreamId);
 		} finally {
 			theReadLock.unlock();
 		}
 	}
 
-	public static boolean existsStreamInfo(@NonNull String subStreamId) {
+	public static boolean existsSetupSubStream(@NonNull String subStreamId) {
 		theReadLock.lock();
 		try {
-			return streamsSetupMap.containsKey(subStreamId);
+			return setupSubStreamInfoMap.containsKey(subStreamId);
 		} finally {
 			theReadLock.unlock();
 		}

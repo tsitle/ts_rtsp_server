@@ -119,7 +119,7 @@ public class SdpBuilder {
 		RtspStreamSource tmpSsObj = optSsObj.get();
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
-		final String outputSubStreamId = RtspStaticSessionInfo.addSubStream(
+		final String outputSubStreamId = RtspStaticSessionInfo.addSdpSubStream(
 				rtspSessionInfo.getClientIpAddr(),
 				rtspInputSource.getId(),
 				tmpSsObj.getId()
@@ -229,7 +229,7 @@ public class SdpBuilder {
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		outputList.add(
-				String.format("a=control:%s%s", RtspProtoConstants.STREAM_ID_PREFIX, outputSubStreamId)
+				String.format("a=control:%s%s", RtspProtoConstants.SUBSTREAM_ID_PREFIX, outputSubStreamId)
 			);
 
 		// ----------------------------------------

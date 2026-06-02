@@ -39,10 +39,10 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestOptions()";
 
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = getStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream = getSetupSubStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
 
 		//
-		internalSendRequest(FNC_NAME, RtspMessageType.OPTIONS, tmpStreamInfo.inputSourceUrlSetup, new ArrayList<>());
+		internalSendRequest(FNC_NAME, RtspMessageType.OPTIONS, tmpSetupSubStream.inputSourceUrlSetup, new ArrayList<>());
 	}
 
 	public @NonNull SrtxpKmd sendRequestSrtxpRekey(
@@ -58,14 +58,14 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			) throws TcpSocketIoException, RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestSrtxpRekey()";
 
-		RtspStaticSessionInfo.StreamInfo tmpStreamInfo = getStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
+		RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStream = getSetupSubStreamInfo(FNC_NAME, requestUrlInputOrStreamSource);
 
 		// get the StreamKmds object
 		Objects.requireNonNull(requestUrlInputOrStreamSource.subStreamId);
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
 				rtspSessionInfo.getClientIpAddr(),
 				requestUrlInputOrStreamSource.subStreamId,
-				tmpStreamInfo.rtspSsrcId
+				tmpSetupSubStream.rtspSsrcId
 			);
 
 		//
@@ -81,9 +81,9 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		//
 		if (! tmpStreamKmds.isForLegacySdes) {
 			final long nextMki = tmpStreamKmds.kmdOutbound.mki().value() + 1;  // will automatically be wrapped around
-			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createWithDefaults(nextMki, tmpStreamInfo.rtspSsrcId);
+			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createWithDefaults(nextMki, tmpSetupSubStream.rtspSsrcId);
 		} else {
-			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createForLegacySdes(tmpStreamInfo.rtspSsrcId);
+			tmpStreamKmds.nextKmdOutbound = SrtxpKmd.createForLegacySdes(tmpSetupSubStream.rtspSsrcId);
 		}
 		String tmpCryptoStr;
 		try {
@@ -108,13 +108,13 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 			tmpKmSb
 					.append(RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT).append(" ")
 					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT).append(RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY).append("; ")
-					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI).append("\"").append(tmpStreamInfo.inputSourceUrlSetup).append("\"; ")
+					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI).append("\"").append(tmpSetupSubStream.inputSourceUrlSetup).append("\"; ")
 					.append(RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA).append("\"").append(tmpCryptoStr).append("\"");
 			contents.add(tmpKmSb.toString());
 			contents.add(RTSP_RR_HEADER_TOKEN_XXX_CONTLEN + " 0");
 
 			//
-			internalSendRequest(FNC_NAME, RtspMessageType.SET_PARAMETER, tmpStreamInfo.inputSourceUrlSetup, contents);
+			internalSendRequest(FNC_NAME, RtspMessageType.SET_PARAMETER, tmpSetupSubStream.inputSourceUrlSetup, contents);
 		} else {
 			/*
 			 * we need to send an ANNOUNCE request that contains the entire SDP.
@@ -146,12 +146,12 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		return ruioss;
 	}
 
-	private RtspStaticSessionInfo.@NonNull StreamInfo getStreamInfo(
+	private RtspStaticSessionInfo.@NonNull SetupSubStreamInfo getSetupSubStreamInfo(
 				@NonNull String fncName,
 				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) {
 		Objects.requireNonNull(requestUrlInputOrStreamSource.subStreamId);
-		return RtspStaticSessionInfo.getStreamInfoOrThrow(fncName, requestUrlInputOrStreamSource.subStreamId);
+		return RtspStaticSessionInfo.getSetupSubStreamOrThrow(fncName, requestUrlInputOrStreamSource.subStreamId);
 	}
 
 	private void internalSendRequest(
