@@ -147,13 +147,17 @@ public final class RtspProtoHighResponseBuilder {
 		}
 
 		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, rtspSessionInfo);
-		msg.body = sdpBuilder.buildSdp(
+		List<@NonNull String> tmpSdpLines = sdpBuilder.buildSdp(
 				rtspInputSource,
 				findRtspHostIp(RtspProtoMessageType.DESCRIBE)
 			);
+		msg.body = String.join(RtspProtoLowMsgConstants.CRLF, tmpSdpLines);
 
 		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
-			logDebug(FNC_NAME, "SDP: '" + msg.body + "'");
+			logDebug(FNC_NAME, "-------- SDP:");
+			for (String tmpSingleSdpLine : tmpSdpLines) {
+				logDebug(FNC_NAME, "---------------- " + tmpSingleSdpLine);
+			}
 		}
 
 		// Content-Base

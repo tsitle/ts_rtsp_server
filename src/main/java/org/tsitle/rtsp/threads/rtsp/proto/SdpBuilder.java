@@ -14,9 +14,9 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
-import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class SdpBuilder {
@@ -38,24 +38,24 @@ public class SdpBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Builds an SDP response string<br />
+	 * Builds an SDP response.<br />
 	 * SDP: Session Description Protocol (for some examples see
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param rtspInputSource Input Source
 	 * @param rtspHostIpOrName Server's host IP address or hostname
-	 * @return SDP formatted string
+	 * @return SDP lines
 	 */
-	public @NonNull String buildSdp(
+	public @NonNull List<@NonNull String> buildSdp(
 				@NonNull RtspInputSource rtspInputSource,
 				@NonNull String rtspHostIpOrName
 			) {
-		StringWriter sw = new StringWriter();
+		List<@NonNull String> resL = new ArrayList<>();
 
 		// SDP Specification (RFC-2327 Section 6)
 		// -------------------------------------
 		// v: Protocol Version
-		sw.write(String.format("v=0%s", RtspProtoLowMsgConstants.CRLF));
+		resL.add("v=0");
 		// o: Origin
 		final String tmpO_Username = "-";
 		final String tmpO_Id = "" + System.currentTimeMillis();
@@ -64,32 +64,32 @@ public class SdpBuilder {
 		final String tmpO_AddressType = "IP4";
 		@SuppressWarnings("UnnecessaryLocalVariable")
 		final String tmpO_UnicastAddress = rtspHostIpOrName;  // can be an IP address or a hostname
-		sw.write(String.format("o=%s %s %s %s %s %s%s",
+		resL.add(String.format("o=%s %s %s %s %s %s",
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
-				tmpO_AddressType, tmpO_UnicastAddress, RtspProtoLowMsgConstants.CRLF));
+				tmpO_AddressType, tmpO_UnicastAddress));
 		// s: Session Name
-		sw.write(String.format("s=%s%s", SESSION_NAME, RtspProtoLowMsgConstants.CRLF));
+		resL.add(String.format("s=%s", SESSION_NAME));
 		// i: Session Information
-		sw.write(String.format("i=%s%s", rtspInputSource.getId(), RtspProtoLowMsgConstants.CRLF));
+		resL.add(String.format("i=%s", rtspInputSource.getId()));
 		// t: Time Active
-		sw.write(String.format("t=0 0%s", RtspProtoLowMsgConstants.CRLF));
+		resL.add("t=0 0");
 		// a: Session Attribute: Name and version number of the tool used to create the session description
 		String tmpSdpEnc = getSdpEncoderName();
-		sw.write(String.format("a=tool:%s%s", tmpSdpEnc, RtspProtoLowMsgConstants.CRLF));
+		resL.add(String.format("a=tool:%s", tmpSdpEnc));
 		// a: Session Attribute: Type of the conference
-		sw.write(String.format("a=type:broadcast%s", RtspProtoLowMsgConstants.CRLF));
+		resL.add("a=type:broadcast");
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
-		sw.write(String.format("a=control:*%s", RtspProtoLowMsgConstants.CRLF));
+		resL.add("a=control:*");
 		// a: Session Attribute: Range of presentation (RFC-7826 Section D.1.6)
-		sw.write(String.format("a=range:npt=0-%s", RtspProtoLowMsgConstants.CRLF));
+		resL.add("a=range:npt=0-");
 
 		// -------------------------------------
 		// optional Video Stream
-		buildSdpForSubstream(rtspInputSource, true, sw);
+		buildSdpForSubstream(rtspInputSource, true, resL);
 		// optional Audio Stream
-		buildSdpForSubstream(rtspInputSource, false, sw);
+		buildSdpForSubstream(rtspInputSource, false, resL);
 
-		return sw.toString().substring(0, sw.toString().length() - RtspProtoLowMsgConstants.CRLF.length());
+		return resL;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -104,9 +104,9 @@ public class SdpBuilder {
 	}
 
 	private void buildSdpForSubstream(
-				RtspInputSource rtspInputSource,
+				@NonNull RtspInputSource rtspInputSource,
 				boolean useVideo,
-				StringWriter sw
+				@NonNull List<@NonNull String> outputList
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubstream()";
 
@@ -145,19 +145,18 @@ public class SdpBuilder {
 				rtspSessionInfo.forceRtpRtcpEncryption
 			);
 		final int tmpM_port = 0;
-		sw.write(String.format("m=%s %d RTP/%sAVP %d%s",
+		outputList.add(String.format("m=%s %d RTP/%sAVP %d",
 				(useVideo ? "video" : "audio"), tmpM_port, isEncrRequ ? "S" : "",
-				tmpSsObj.getCodec().getValue(), RtspProtoLowMsgConstants.CRLF));
+				tmpSsObj.getCodec().getValue()));
 		// c: Connection Information (can be an IP address or a hostname)
-		//sw.write(String.format("c=IN IP4 0.0.0.0%s", CRLF));
+		//outputList.add("c=IN IP4 0.0.0.0");
 		//
 		if (tmpSsObj.getCodec().isPcmAudio()) {
 			if (tmpSsObj.getCodec().getPcmAudioBitsPerSample().isPresent()) {
 				// b: Bandwidth Information
-				sw.write(String.format("b=AS:%d%s",
+				outputList.add(String.format("b=AS:%d",
 						tmpSsObj.getAudioChannelCount() * tmpSsObj.getAudioSamplerateHz() *
-								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get(),
-						RtspProtoLowMsgConstants.CRLF));
+								tmpSsObj.getCodec().getPcmAudioBitsPerSample().get()));
 			}
 		}
 		if (tmpSsObj.getCodec().isAudio() && tmpSsObj.getIsSourceFromFile()) {
@@ -176,17 +175,15 @@ public class SdpBuilder {
 			} else {
 				tmpTimeMs = RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 			}
-			sw.write(
-					String.format("a=ptime:%.5f%s", tmpTimeMs, RtspProtoLowMsgConstants.CRLF)
-							.replace(",", ".")
+			outputList.add(
+					String.format("a=ptime:%.5f", tmpTimeMs).replace(",", ".")
 				);
 		}
 		//
 		if (useVideo && tmpSsObj.getIsSourceFromFile()) {
 			// a: Session Attribute: video framerate
-			sw.write(
-					String.format("a=framerate:%.2f%s", tmpSsObj.getVideoFps(), RtspProtoLowMsgConstants.CRLF)
-							.replace(",", ".")
+			outputList.add(
+					String.format("a=framerate:%.2f", tmpSsObj.getVideoFps()).replace(",", ".")
 				);
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
@@ -194,11 +191,11 @@ public class SdpBuilder {
 				"/" +
 				(useVideo ? videoRtpClockRate : tmpSsObj.getAudioSamplerateHz()) +
 				(useVideo ? "" : "/" + tmpSsObj.getAudioChannelCount());
-		sw.write(String.format("a=rtpmap:%d %s%s", tmpSsObj.getCodec().getValue(), tmpA_Map, RtspProtoLowMsgConstants.CRLF));
+		outputList.add(String.format("a=rtpmap:%d %s", tmpSsObj.getCodec().getValue(), tmpA_Map));
 		//
 		switch (tmpSsObj.getCodec()) {
 			case RtpPacketType.A_AAC:
-				sw.write(
+				outputList.add(
 						String.format(
 								"a=fmtp:%d " +
 								"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
@@ -208,8 +205,7 @@ public class SdpBuilder {
 								"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
 								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
 								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
-								"constantDuration=%d" +  // optional: 512/960/1024 samples per frame
-								"%s",
+								"constantDuration=%d",  // optional: 512/960/1024 samples per frame
 								tmpSsObj.getCodec().getValue(),
 								RtspProtoConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
 								RtspProtoConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
@@ -217,26 +213,22 @@ public class SdpBuilder {
 								RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEXDELTA_LENGTH_BITS,
-								tmpSsObj.getAacSamplesPerFrame(),
-								RtspProtoLowMsgConstants.CRLF
+								tmpSsObj.getAacSamplesPerFrame()
 					));
 				break;
 			case RtpPacketType.V_H264:
-				sw.write(
+				outputList.add(
 						String.format(
 								"a=fmtp:%d " +
-								"packetization-mode=%d" +
-								"%s",
+								"packetization-mode=%d",
 								tmpSsObj.getCodec().getValue(),
-								RtspProtoConstants.H26xPacketizationMode.NON_INTERLEAVED.value,
-								RtspProtoLowMsgConstants.CRLF
+								RtspProtoConstants.H26xPacketizationMode.NON_INTERLEAVED.value
 					));
 				break;
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
-		sw.write(
-				String.format("a=control:%s%s%s",
-						RtspProtoConstants.STREAM_ID_PREFIX, outputSubStreamId, RtspProtoLowMsgConstants.CRLF)
+		outputList.add(
+				String.format("a=control:%s%s", RtspProtoConstants.STREAM_ID_PREFIX, outputSubStreamId)
 			);
 
 		// ----------------------------------------
@@ -248,11 +240,14 @@ public class SdpBuilder {
 			);
 		// create and send crypto parameters
 		if (isEncrRequ) {
-			addCryptoParams(sw, tmpStreamKmds);
+			addCryptoParams(outputList, tmpStreamKmds);
 		}
 	}
 
-	private void addCryptoParams(StringWriter sw, RtspStaticSessionInfo.StreamKmds streamKmds) {
+	private void addCryptoParams(
+				@NonNull List<@NonNull String> outputList,
+				RtspStaticSessionInfo.@NonNull StreamKmds streamKmds
+			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCryptoParams()";
 
 		streamKmds.isForLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
@@ -282,22 +277,28 @@ public class SdpBuilder {
 		//System.out.println(">>>>>>>>>>>>>>>> " + streamInfo.streamKmds.kmdOutbound);
 		try {
 			if (! streamKmds.isForLegacySdes) {
-				// modern MIKEY key management
+				/*
+				 * modern MIKEY key management
+				 */
 				String tmpMsg = MikeyGenerator.generate(streamKmds.kmdOutbound);
-				sw.write(String.format("a=key-mgmt:mikey %s%s", tmpMsg, RtspProtoLowMsgConstants.CRLF));
+				outputList.add(String.format("a=key-mgmt:mikey %s", tmpMsg));
 			} else {
-				// legacy SDES key management (SDP Security Descriptions RFC-4568)
+				/*
+				 * legacy SDES key management (SDP Security Descriptions RFC-4568)
+				 */
 				String tmpSdesB64 = streamKmds.kmdOutbound.getMasterKeyAndSaltAsBase64();
-				sw.write(String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
-						tmpSdesB64));
 
-				//sw.write(String.format("|%s",  // key lifetime, format "2^DIGITS" (not supported by Lavf)
-						//RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR));
+				String tmpOutpLine = String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
+						tmpSdesB64);
 
-				//sw.write(String.format("|%s:%d",  // MKI, format "MKI_value:MKI_length_bytes" (not supported by Lavf)
-						//Long.toUnsignedString(streamKmds.kmdOutbound.mkiAsLong()), streamKmds.kmdOutbound.mkiLen()));
+				//tmpOutpLine += String.format("|%s",  // key lifetime, format "2^DIGITS" (not supported by Lavf)
+						//RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR);
 
-				sw.write(RtspProtoLowMsgConstants.CRLF);
+				//tmpOutpLine += String.format("|%s:%d",  // MKI, format "MKI_value:MKI_length_bytes" (not supported by Lavf)
+						//Long.toUnsignedString(streamKmds.kmdOutbound.mki().value()),
+						//streamKmds.kmdOutbound.mki().sizeBytes());
+
+				outputList.add(tmpOutpLine);
 			}
 		} catch (SrtxpSecurityException e) {
 			throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
