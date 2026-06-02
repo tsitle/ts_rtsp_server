@@ -33,7 +33,7 @@ public class RtspProtoLowMsgReaderTest {
 
 			//
 			TestLogs logMsgIf = new TestLogs();
-			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(logMsgIf, tcpSocket, true);
+			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
 			String msgForSocketStr =
@@ -77,7 +77,7 @@ public class RtspProtoLowMsgReaderTest {
 
 			//
 			TestLogs logMsgIf = new TestLogs();
-			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(logMsgIf, tcpSocket, true);
+			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
 			@SuppressWarnings("TextBlockMigration") String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +

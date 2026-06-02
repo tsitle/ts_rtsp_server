@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -114,10 +113,8 @@ public class RtxpTcpReadWrite {
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_DEF = 10L;  // VLC sometimes takes quite a while to complete an RTSP setup right after being started
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY = 60L;
 
-	private final @NonNull LogMsgInterface logMsgInterface;
 	/** TCP socket used to send/receive RTxP messages */
 	private final Socket socketTcp;
-	private final boolean debugPrintRtspSend;
 
 	private final InputStream socketIs;
 	private final OutputStream socketOs;
@@ -136,15 +133,9 @@ public class RtxpTcpReadWrite {
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
 	 * @param socketTcp TCP socket used to send/receive RTxP messages
-	 * @param debugPrintRtspSend If true, then outgoing RTSP messages are logged
 	 */
-	public RtxpTcpReadWrite(
-				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull Socket socketTcp,
-				boolean debugPrintRtspSend
-			) {
+	public RtxpTcpReadWrite(@NonNull Socket socketTcp) {
 		try {
 			if (socketTcp.getSoTimeout() <= 0) {
 				throw new IllegalArgumentException("socketTcp.getSoTimeout() must be positive");
@@ -153,9 +144,7 @@ public class RtxpTcpReadWrite {
 			throw new RuntimeException(e);
 		}
 
-		this.logMsgInterface = logMsgInterface;
 		this.socketTcp = socketTcp;
-		this.debugPrintRtspSend = debugPrintRtspSend;
 
 		try {
 			this.socketIs = socketTcp.getInputStream();
@@ -532,9 +521,6 @@ public class RtxpTcpReadWrite {
 				if (doStop.get() || socketTcp.isClosed()) {
 					return;
 				}
-				if (debugPrintRtspSend) {
-					logDebug(FNC_NAME, "-------- " + line.replace(CRLF, "<CRLF>"));
-				}
 				socketOs.write(line.getBytes(StandardCharsets.UTF_8));
 			}
 			//
@@ -580,13 +566,6 @@ public class RtxpTcpReadWrite {
 		if (Instant.now().minusSeconds(tcpActivityTimeout.get()).isAfter(lastActivityTime)) {
 			throw new TcpSocketIoException(fncName + ": TCP activity timeout");
 		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void logDebug(@NonNull String fncName, @NonNull String msg) {
-		logMsgInterface.addMsgForLogThread(RtxpLogLevel.DEBUG, Thread.currentThread().getName(),
-				fncName + ": " + msg);
 	}
 
 }

@@ -61,7 +61,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		this.threadName = "RTSP#c" + clientConnectionNr;
 
 		this.rtspConfig = rtspConfig;
-		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(logMsgInterface, rtspSocketTcp, rtspConfig.getIsDebugPrintRtspSent());
+		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
 
 		//
 		this.rtspSessionInfo.setClientIpAddr(rtspSocketTcp.getInetAddress());
