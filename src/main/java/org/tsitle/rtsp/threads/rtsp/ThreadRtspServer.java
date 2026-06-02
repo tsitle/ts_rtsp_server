@@ -300,7 +300,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				if (! RtspStaticSessionInfo.existsStreamInfo(tmpSubStreamId)) {
 					// this should never happen
 					logError(FNC_NAME, "SETUP failed");
-					return false;
+					return false;  // tear down the session
 				}
 				RtspStaticSessionInfo.StreamInfo tmpStreamInfo =
 						RtspStaticSessionInfo.getStreamInfoOrThrow(FNC_NAME, tmpSubStreamId);
@@ -314,7 +314,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				} catch (Exception e) {
 					// this should never happen
 					logError(FNC_NAME, "SETUP failed: " + e.getMessage());
-					return false;
+					return false;  // tear down the session
 				}
 				nextState = SessionState.READY;
 				break;
@@ -533,8 +533,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			RequestBasicInfo requestBasicInfo = getNextRequest();
 			rtspTimeoutLastRequ = Instant.now();
 			if (requestBasicInfo.statusCode != RtspProtoStatusCode.OK) {
-				// terminate session unless only the authentication failed
-				return (requestBasicInfo.statusCode == RtspProtoStatusCode.UNAUTHORIZED);
+				return true;
 			}
 			return handleSuccessfulRequest(requestBasicInfo);
 		} catch (InputStreamNotReadyException e1) {
