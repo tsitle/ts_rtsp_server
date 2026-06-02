@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
@@ -7,12 +7,12 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeader
 import java.util.HashMap;
 import java.util.Map;
 
-public final class RtspProtoLowMsgStructuredResponse extends RtspProtoLowMsgStructuredBase {
+public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgStructuredBase {
 
 	/** Headers */
 	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryResponse> headers = new HashMap<>();
 
-	public RtspProtoLowMsgStructuredResponse() {
+	public RtspProtoHighMsgStructuredResponse() {
 		super();
 	}
 

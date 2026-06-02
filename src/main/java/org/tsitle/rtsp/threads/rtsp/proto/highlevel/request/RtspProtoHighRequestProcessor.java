@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspInputSource;
@@ -12,9 +12,11 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeaderEntryRequest;
 
 import java.net.*;
@@ -41,7 +43,7 @@ public final class RtspProtoHighRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RequestBasicInfo processRequest(@NonNull RtspProtoLowMsgStructuredRequest msg) {
+	public @NonNull RtspRequestBasics processRequest(@NonNull RtspProtoHighMsgStructuredRequest msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRequest()";
 
 		System.out.println("<<<<<<<<< <<<<<<<<< " + msg);  // @TODO
@@ -59,44 +61,44 @@ public final class RtspProtoHighRequestProcessor {
 			checkAndUpdateRtspProtoVersion(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
 		}
 		try {
 			checkAndUpdateCseq(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
 		}
 		try {
 			checkSessionId(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.SESSION_NOT_FOUND);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.SESSION_NOT_FOUND);
 		}
 		try {
 			checkMessageType(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.METHOD_NOT_ALLOWED);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.METHOD_NOT_ALLOWED);
 		}
 		try {
 			// check whether the request is allowed in the current RTSP state
 			checkRequestTypeVsState(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
 		}
 
 		// process resource URL
-		RequestBasicInfo.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource;
+		RtspRequestBasics.RequestUrlInputOrStreamSource requestUrlInputOrStreamSource;
 		try {
 			requestUrlInputOrStreamSource = processResourceUrl(msg.messageType, msg.resourceUrl);
 		} catch (RtspInvalidUriException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.FORBIDDEN);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.FORBIDDEN);
 		} catch (RtspInputSourceIdNotFoundException | RtspSubStreamIdNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.NOT_FOUND);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.NOT_FOUND);
 		}
 
 		// process resource URL query parameters
@@ -104,7 +106,7 @@ public final class RtspProtoHighRequestProcessor {
 			processQueryParams(msg);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
 		}
 
 		// process headers that haven't been processed yet
@@ -112,13 +114,13 @@ public final class RtspProtoHighRequestProcessor {
 			processRemainingHeaders(msg, requestUrlInputOrStreamSource);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.BAD_REQUEST);
 		} catch (RtspUnsupportedTransportException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithError(msg.messageType, RtspStatusCode.UNSUPPORTED_TRANSPORT);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.UNSUPPORTED_TRANSPORT);
 		} catch (RtspUnsupportedFeatureRequestedException e) {
 			logWarn(FNC_NAME, "Requested Option '" + e.getMessage() + "' not supported" + logMsgSuffix);
-			return RequestBasicInfo.createKnownWithOptionNotSupported(
+			return RtspRequestBasics.createKnownWithOptionNotSupported(
 					msg.messageType,
 					e.getMessage()
 				);
@@ -139,20 +141,20 @@ public final class RtspProtoHighRequestProcessor {
 		}
 
 		//
-		return RequestBasicInfo.createOk(msg.messageType, requestUrlInputOrStreamSource);
+		return RtspRequestBasics.createOk(msg.messageType, requestUrlInputOrStreamSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void checkAndUpdateRtspProtoVersion(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void checkAndUpdateRtspProtoVersion(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (msg.rtspProtoVersion == RtspProtocolVersion.NONE) {
 			throw new RtspInvalidRequestException("Missing RTSP protocol version");
 		}
 		rtspSessionInfo.lastRequestRtspProtoVersion = msg.rtspProtoVersion;
 	}
 
-	private void checkAndUpdateCseq(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void checkAndUpdateCseq(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		Optional<Integer> tmpOptCseq = msg.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspInvalidRequestException("Missing CSeq header");
@@ -169,7 +171,7 @@ public final class RtspProtoHighRequestProcessor {
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
 	}
 
-	private void checkSessionId(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void checkSessionId(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		switch (msg.messageType) {
 			case RtspMessageType.PLAY:
 			case RtspMessageType.PAUSE:
@@ -195,13 +197,13 @@ public final class RtspProtoHighRequestProcessor {
 		preProcessedHeaders.add(RtspHeaderKey.SESSION);
 	}
 
-	private void checkMessageType(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void checkMessageType(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (! RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER.contains(msg.messageType)) {
 			throw new RtspInvalidRequestException("Unsupported request type");
 		}
 	}
 
-	private void checkRequestTypeVsState(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void checkRequestTypeVsState(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		if (msg.messageType == RtspMessageType.OPTIONS ||
 				msg.messageType == RtspMessageType.DESCRIBE ||
 				msg.messageType == RtspMessageType.SETUP ||
@@ -234,7 +236,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource processResourceUrl(
+	private RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource processResourceUrl(
 				@NonNull RtspMessageType requestType,
 				@NonNull String resourceUrl
 			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
@@ -292,7 +294,7 @@ public final class RtspProtoHighRequestProcessor {
 		}
 
 		//
-		RequestBasicInfo.RequestUrlInputOrStreamSource resObj = new RequestBasicInfo.RequestUrlInputOrStreamSource();
+		RtspRequestBasics.RequestUrlInputOrStreamSource resObj = new RtspRequestBasics.RequestUrlInputOrStreamSource();
 
 		//
 		if (requestType == RtspMessageType.SETUP) {
@@ -380,7 +382,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processQueryParams(@NonNull RtspProtoLowMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void processQueryParams(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		for (Map.Entry<@NonNull String, @NonNull String> entry : msg.queryParams.entrySet()) {
 			if (! entry.getKey().equalsIgnoreCase(RtspProtoConstants.URL_QUERY_PARAM_SRTP)) {
 				continue;
@@ -400,8 +402,8 @@ public final class RtspProtoHighRequestProcessor {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void processRemainingHeaders(
-				@NonNull RtspProtoLowMsgStructuredRequest msg,
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
+				@NonNull RtspProtoHighMsgStructuredRequest msg,
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException, RtspUnsupportedFeatureRequestedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
@@ -475,7 +477,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_com_keymgmt(
 				@NonNull RtspMessageType messageType,
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException {
 		if (messageType != RtspMessageType.SETUP && messageType != RtspMessageType.SET_PARAMETER) {
@@ -527,7 +529,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processHeader_setup_transport(
 				@NonNull RtspMessageType messageType,
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
 			) throws RtspInvalidRequestException, RtspUnsupportedTransportException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_setup_transport()";
@@ -597,7 +599,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void handleKmd(
 				boolean isSetup,
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull SrtxpKmd kmd
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleKmd()";

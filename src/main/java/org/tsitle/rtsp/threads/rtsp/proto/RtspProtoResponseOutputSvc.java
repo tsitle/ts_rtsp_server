@@ -10,9 +10,11 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseBuilder;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgWriter;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseBuilder;
 
 public class RtspProtoResponseOutputSvc {
@@ -48,7 +50,7 @@ public class RtspProtoResponseOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void sendResponse(@NonNull RequestBasicInfo requestBasicInfo)
+	public void sendResponse(@NonNull RtspRequestBasics rtspRequestBasics)
 			throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
@@ -57,9 +59,9 @@ public class RtspProtoResponseOutputSvc {
 		}
 
 		// build the outgoing message
-		RtspProtoLowMsgStructuredResponse msgStructured;
+		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
-			msgStructured = rtspProtoHighResponseBuilder.buildResponse(requestBasicInfo);
+			msgStructured = rtspProtoHighResponseBuilder.buildResponse(rtspRequestBasics);
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;

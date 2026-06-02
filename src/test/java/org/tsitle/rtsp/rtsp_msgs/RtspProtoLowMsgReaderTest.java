@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgReader;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 
 import java.net.ServerSocket;
 import java.net.Socket;

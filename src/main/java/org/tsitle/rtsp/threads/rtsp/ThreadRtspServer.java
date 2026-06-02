@@ -10,6 +10,7 @@ import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtsp.proto.*;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
@@ -262,15 +263,15 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RequestBasicInfo getNextRequest()
+	private @NonNull RtspRequestBasics getNextRequest()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
-		RequestBasicInfo resObj = rtspProtoRequestInputSvc.getNextRequest();
+		RtspRequestBasics resObj = rtspProtoRequestInputSvc.getNextRequest();
 
 		rtspProtoResponseOutputSvc.sendResponse(resObj);
 		return resObj;
 	}
 
-	private boolean handleSuccessfulRequest(@NonNull RequestBasicInfo requestBasicInfo) throws TcpSocketClosedException {
+	private boolean handleSuccessfulRequest(@NonNull RtspRequestBasics rtspRequestBasics) throws TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleSuccessfulRequest()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
@@ -282,20 +283,20 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		Objects.requireNonNull(
-				requestBasicInfo.requestUrlInputOrStreamSource,
-				FNC_NAME + ": requestBasicInfo.requestUrlInputOrStreamSource is null"
+				rtspRequestBasics.requestUrlInputOrStreamSource,
+				FNC_NAME + ": rtspRequestBasics.requestUrlInputOrStreamSource is null"
 			);
 
 		//
-		switch (requestBasicInfo.messageType) {
+		switch (rtspRequestBasics.messageType) {
 			case RtspMessageType.SETUP:
 				rtspSessionInfo.isPlaybackPaused = false;
 				//
 				Objects.requireNonNull(
-						requestBasicInfo.requestUrlInputOrStreamSource.subStreamId,
-						FNC_NAME + ": requestBasicInfo.requestUrlInputOrStreamSource.subStreamId is null"
+						rtspRequestBasics.requestUrlInputOrStreamSource.subStreamId,
+						FNC_NAME + ": rtspRequestBasics subStreamId is null"
 					);
-				final String tmpSubStreamId = requestBasicInfo.requestUrlInputOrStreamSource.subStreamId;
+				final String tmpSubStreamId = rtspRequestBasics.requestUrlInputOrStreamSource.subStreamId;
 				// sanity check
 				if (! RtspStaticSessionInfo.existsStreamInfo(tmpSubStreamId)) {
 					// this should never happen
@@ -319,7 +320,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				nextState = SessionState.READY;
 				break;
 			case RtspMessageType.PLAY:
-				final String tmpIsIdPlay = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
+				final String tmpIsIdPlay = rtspRequestBasics.requestUrlInputOrStreamSource.inputSourceId;
 				logInfo(FNC_NAME, String.format(
 						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
 						rtspSessionInfo.isPlaybackPaused ? "Resuming" : "Starting",
@@ -343,7 +344,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				nextState = SessionState.PLAYING;
 				break;
 			case RtspMessageType.PAUSE:
-				final String tmpIsIdPause = requestBasicInfo.requestUrlInputOrStreamSource.inputSourceId;
+				final String tmpIsIdPause = rtspRequestBasics.requestUrlInputOrStreamSource.inputSourceId;
 				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIsIdPause));
 				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
@@ -530,12 +531,12 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		try {
-			RequestBasicInfo requestBasicInfo = getNextRequest();
+			RtspRequestBasics rtspRequestBasics = getNextRequest();
 			rtspTimeoutLastRequ = Instant.now();
-			if (requestBasicInfo.statusCode != RtspStatusCode.OK) {
+			if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
 				return true;
 			}
-			return handleSuccessfulRequest(requestBasicInfo);
+			return handleSuccessfulRequest(rtspRequestBasics);
 		} catch (InputStreamNotReadyException e1) {
 			Thread.sleep(15);
 			return true;

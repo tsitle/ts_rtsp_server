@@ -10,11 +10,13 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProcessor;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgReader;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
 
 public class RtspProtoRequestInputSvc {
@@ -59,7 +61,7 @@ public class RtspProtoRequestInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RequestBasicInfo getNextRequest()
+	public @NonNull RtspRequestBasics getNextRequest()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextRequest()";
 
@@ -69,27 +71,27 @@ public class RtspProtoRequestInputSvc {
 
 		rtspSessionInfo.rtspClientSeqNrResponse = -1;
 
-		RequestBasicInfo resObj;
+		RtspRequestBasics resObj;
 
 		// read the raw request from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
 		if (! lowInputRaw.readSuccess) {
-			resObj = RequestBasicInfo.createUnknown();
+			resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Receiving RTSP request message failed, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
 
 		// parse the raw request
-		RtspProtoLowMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
+		RtspProtoHighMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
 		if (lowInputParsed.messageType == RtspMessageType.UNKNOWN) {
-			resObj = RequestBasicInfo.createUnknown();
+			resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
 		if (lowInputParsed.statusCode != RtspStatusCode.OK) {
-			resObj = RequestBasicInfo.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
+			resObj = RtspRequestBasics.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));
 			return resObj;

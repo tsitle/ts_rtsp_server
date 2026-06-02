@@ -10,6 +10,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
@@ -34,7 +35,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 		sendRequestOptions(subStreamIdToRuioss(subStreamId));
 	}
 
-	public void sendRequestOptions(RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
+	public void sendRequestOptions(RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource)
 			throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestOptions()";
 
@@ -52,7 +53,7 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 	}
 
 	public @NonNull SrtxpKmd sendRequestSrtxpRekey(
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull Set<@NonNull RtspMessageType> supportedMessageTypes
 			) throws TcpSocketIoException, RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequestSrtxpRekey()";
@@ -139,15 +140,15 @@ public final class RtspProtoRequestBuilder extends RtspProtoBuilderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource subStreamIdToRuioss(@NonNull String subStreamId) {
-		RequestBasicInfo.RequestUrlInputOrStreamSource ruioss = new RequestBasicInfo.RequestUrlInputOrStreamSource();
+	private static RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource subStreamIdToRuioss(@NonNull String subStreamId) {
+		RtspRequestBasics.RequestUrlInputOrStreamSource ruioss = new RtspRequestBasics.RequestUrlInputOrStreamSource();
 		ruioss.subStreamId = subStreamId;
 		return ruioss;
 	}
 
 	private RtspStaticSessionInfo.@NonNull StreamInfo getStreamInfo(
 				@NonNull String fncName,
-				RequestBasicInfo.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
+				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) {
 		Objects.requireNonNull(requestUrlInputOrStreamSource.subStreamId);
 		return RtspStaticSessionInfo.getStreamInfoOrThrow(fncName, requestUrlInputOrStreamSource.subStreamId);

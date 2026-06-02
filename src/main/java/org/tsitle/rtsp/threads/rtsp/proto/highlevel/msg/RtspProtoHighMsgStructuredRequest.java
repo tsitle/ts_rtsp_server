@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public final class RtspProtoLowMsgStructuredRequest extends RtspProtoLowMsgStructuredBase {
+public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStructuredBase {
 
 	/** Authentication credentials: username (from URL or WWW-Authenticate header) */
 	public @NonNull String authUser = "";
@@ -18,7 +18,7 @@ public final class RtspProtoLowMsgStructuredRequest extends RtspProtoLowMsgStruc
 	/** Headers */
 	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryRequest> headers = new HashMap<>();
 
-	public RtspProtoLowMsgStructuredRequest() {
+	public RtspProtoHighMsgStructuredRequest() {
 		super();
 	}
 

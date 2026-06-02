@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtProto;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
@@ -33,10 +33,10 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgStructuredRequest parseMessage(@NonNull RtspProtoLowMsgRaw input) {
+	public @NonNull RtspProtoHighMsgStructuredRequest parseMessage(@NonNull RtspProtoLowMsgRaw input) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseMessage()";
 
-		RtspProtoLowMsgStructuredRequest resObj = new RtspProtoLowMsgStructuredRequest();
+		RtspProtoHighMsgStructuredRequest resObj = new RtspProtoHighMsgStructuredRequest();
 		if (! input.readSuccess) {
 			return resObj;
 		}
@@ -78,7 +78,7 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseMessageType(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructuredRequest output) {
+	private void parseMessageType(@NonNull String requestLine, @NonNull RtspProtoHighMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseMessageType()";
 
 		try {
@@ -110,7 +110,7 @@ public final class RtspProtoLowRequestParser {
 		}
 	}
 
-	private void parseRequestResourceUrl(@NonNull String requestLine, @NonNull RtspProtoLowMsgStructuredRequest output) {
+	private void parseRequestResourceUrl(@NonNull String requestLine, @NonNull RtspProtoHighMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseRequestResourceUrl()";
 
 		try {
@@ -161,7 +161,7 @@ public final class RtspProtoLowRequestParser {
 
 	private static void extractResourceUrlQueryParam(
 				@NonNull String resourceUrlStr,
-				@NonNull RtspProtoLowMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidUriException {
 		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
 		String tmpQuery = rscUriObj.getQuery();
@@ -178,7 +178,7 @@ public final class RtspProtoLowRequestParser {
 		}
 	}
 
-	private void parseHeaderLines(@NonNull List<@NonNull String> headerLines, @NonNull RtspProtoLowMsgStructuredRequest output) {
+	private void parseHeaderLines(@NonNull List<@NonNull String> headerLines, @NonNull RtspProtoHighMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines()";
 
 		for (String tmpHeaderLine : headerLines) {
@@ -214,7 +214,7 @@ public final class RtspProtoLowRequestParser {
 	private void parseHeaderLines_oneLine(
 				@NonNull String hdKeyStr,
 				@NonNull String hdValue,
-				@NonNull RtspProtoLowMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
@@ -259,7 +259,7 @@ public final class RtspProtoLowRequestParser {
 
 	private void parseHeaderValue_com_auth_client(
 				@NonNull String hdValue,
-				@NonNull RtspProtoLowMsgStructuredRequest output,
+				@NonNull RtspProtoHighMsgStructuredRequest output,
 				@NonNull RtspProtoLowHeaderEntryRequest entry
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_client()";

@@ -5,7 +5,7 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.RequestBasicInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
@@ -42,20 +42,20 @@ public class RtspRequAuthSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void checkAuthorization(@NonNull RequestBasicInfo requestBasicInfo) {
+	public void checkAuthorization(@NonNull RtspRequestBasics rtspRequestBasics) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthorization()";
 
-		final String tmpIsId = Objects.requireNonNull(requestBasicInfo.requestUrlInputOrStreamSource).inputSourceId;
-		Objects.requireNonNull(tmpIsId, "requestBasicInfo inputSourceId is null");
+		final String tmpIsId = Objects.requireNonNull(rtspRequestBasics.requestUrlInputOrStreamSource).inputSourceId;
+		Objects.requireNonNull(tmpIsId, "rtspRequestBasics inputSourceId is null");
 		final Optional<RtspInputSource> tmpOptInputSource = rtspConfig.getInputSourceObj(tmpIsId);
 		if (tmpOptInputSource.isEmpty()) {
-			requestBasicInfo.statusCode = RtspStatusCode.BAD_REQUEST;
+			rtspRequestBasics.statusCode = RtspStatusCode.BAD_REQUEST;
 			logError(FNC_NAME, String.format(
-					"Could not find InputSource, rejecting request with code %s", requestBasicInfo.statusCode));
+					"Could not find InputSource, rejecting request with code %s", rtspRequestBasics.statusCode));
 			return;
 		}
 
-		final boolean couldNeedAuthentification = switch (requestBasicInfo.messageType) {
+		final boolean couldNeedAuthentification = switch (rtspRequestBasics.messageType) {
 				case RtspMessageType.DESCRIBE, RtspMessageType.SETUP,
 				     RtspMessageType.PLAY, RtspMessageType.PAUSE,
 				     RtspMessageType.TEARDOWN, RtspMessageType.GET_PARAMETER -> true;
@@ -68,7 +68,7 @@ public class RtspRequAuthSvc {
 
 		//
 		if (doCheckAuthorization) {
-			wasAuthentificationOk = rtspUserAuthSvc.authenticate(requestBasicInfo.messageType);
+			wasAuthentificationOk = rtspUserAuthSvc.authenticate(rtspRequestBasics.messageType);
 			//
 			if (wasAuthentificationOk) {
 				wasAuthorizationOk = rtspUserAuthSvc.checkAccessToInputSource(tmpOptInputSource.get());
@@ -100,7 +100,7 @@ public class RtspRequAuthSvc {
 		if (wasAuthentificationOk && wasAuthorizationOk) {
 			final String logMsg = String.format(
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
-					requestBasicInfo.messageType, tmpIsId,
+					rtspRequestBasics.messageType, tmpIsId,
 					rtspSessionInfo.authInfo.authUser,
 					rtspSessionInfo.getClientIpAddr().getHostAddress());
 			logDebug(FNC_NAME, logMsg);
@@ -109,23 +109,23 @@ public class RtspRequAuthSvc {
 		}
 
 		//
-		rejectWithUnauthorized(requestBasicInfo, tmpIsId);
+		rejectWithUnauthorized(rtspRequestBasics, tmpIsId);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void rejectWithUnauthorized(@NonNull RequestBasicInfo requestBasicInfo, @NonNull String inpSrcId) {
+	private void rejectWithUnauthorized(@NonNull RtspRequestBasics rtspRequestBasics, @NonNull String inpSrcId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".rejectWithUnauthorized()";
 
 		final int unauthCnt = RtspStaticSessionInfo.addUnauthorized(rtspSessionInfo.getClientIpAddr(), inpSrcId);
 		//
-		requestBasicInfo.statusCode = RtspStatusCode.UNAUTHORIZED;
+		rtspRequestBasics.statusCode = RtspStatusCode.UNAUTHORIZED;
 		//
 		final String logMsg = String.format(
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
-				requestBasicInfo.messageType, inpSrcId,
-				requestBasicInfo.statusCode, unauthCnt,
+				rtspRequestBasics.messageType, inpSrcId,
+				rtspRequestBasics.statusCode, unauthCnt,
 				rtspSessionInfo.getClientIpAddr().getHostAddress());
 		if (unauthCnt > 1) {
 			/*

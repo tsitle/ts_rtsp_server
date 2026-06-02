@@ -1,11 +1,11 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
-public class RequestBasicInfo {
+public class RtspRequestBasics {
 
 	public static class RequestUrlInputOrStreamSource {
 		public @Nullable String subStreamId = null;
@@ -21,7 +21,7 @@ public class RequestBasicInfo {
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
 	public @NonNull String unsupportedOptionName = "";
 
-	private RequestBasicInfo() { }
+	private RtspRequestBasics() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -32,38 +32,38 @@ public class RequestBasicInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull RequestBasicInfo createUnknown() {
-		RequestBasicInfo res = new RequestBasicInfo();
+	public static @NonNull RtspRequestBasics createUnknown() {
+		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = RtspMessageType.UNKNOWN;
 		return res;
 	}
 
-	public static @NonNull RequestBasicInfo createKnownWithError(
+	public static @NonNull RtspRequestBasics createKnownWithError(
 				@NonNull RtspMessageType messageType,
 				@NonNull RtspStatusCode statusCode
 			) {
-		RequestBasicInfo res = new RequestBasicInfo();
+		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = messageType;
 		res.statusCode = statusCode;
 		return res;
 	}
 
-	public static @NonNull RequestBasicInfo createKnownWithOptionNotSupported(
+	public static @NonNull RtspRequestBasics createKnownWithOptionNotSupported(
 				@NonNull RtspMessageType messageType,
 				@NonNull String optionName
 			) {
-		RequestBasicInfo res = new RequestBasicInfo();
+		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = messageType;
 		res.statusCode = RtspStatusCode.OPTION_NOT_SUPPORTED;
 		res.unsupportedOptionName = optionName;
 		return res;
 	}
 
-	public static @NonNull RequestBasicInfo createOk(
+	public static @NonNull RtspRequestBasics createOk(
 				@NonNull RtspMessageType messageType,
 				@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource
 			) {
-		RequestBasicInfo res = new RequestBasicInfo();
+		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = messageType;
 		res.requestUrlInputOrStreamSource = requestUrlInputOrStreamSource;
 		return res;

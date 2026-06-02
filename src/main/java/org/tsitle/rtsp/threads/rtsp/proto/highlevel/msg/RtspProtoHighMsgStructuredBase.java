@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
@@ -8,7 +8,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RtspProtoLowMsgStructuredBase {
+public class RtspProtoHighMsgStructuredBase {
 
 	public @NonNull RtspMessageType messageType = RtspMessageType.UNKNOWN;
 	public @NonNull RtspStatusCode statusCode = RtspStatusCode.BAD_REQUEST;
@@ -24,7 +24,7 @@ public class RtspProtoLowMsgStructuredBase {
 	/** Message body (requires the header 'CONTENT_TYPE') */
 	public @NonNull String body = "";
 
-	protected RtspProtoLowMsgStructuredBase() { }
+	protected RtspProtoHighMsgStructuredBase() { }
 
 	protected @NonNull String internalToString(boolean firstPart) {
 		String resS;

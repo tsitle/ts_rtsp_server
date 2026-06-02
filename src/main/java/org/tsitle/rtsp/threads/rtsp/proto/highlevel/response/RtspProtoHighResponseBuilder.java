@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -13,9 +13,11 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.net.*;
@@ -43,36 +45,36 @@ public final class RtspProtoHighResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgStructuredResponse buildResponse(@NonNull RequestBasicInfo requestBasicInfo)
+	public @NonNull RtspProtoHighMsgStructuredResponse buildResponse(@NonNull RtspRequestBasics rtspRequestBasics)
 			throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
 
-		RtspProtoLowMsgStructuredResponse resObj = new RtspProtoLowMsgStructuredResponse();
+		RtspProtoHighMsgStructuredResponse resObj = new RtspProtoHighMsgStructuredResponse();
 
 		resObj.rtspProtoVersion = rtspSessionInfo.lastRequestRtspProtoVersion;
-		resObj.statusCode = requestBasicInfo.statusCode;
-		resObj.messageType = requestBasicInfo.messageType;
+		resObj.statusCode = rtspRequestBasics.statusCode;
+		resObj.messageType = rtspRequestBasics.messageType;
 
 		//
 		addCommonHeaders(resObj);
 
 		//
-		if (requestBasicInfo.statusCode != RtspStatusCode.OK) {
-			buildResponse_nack(requestBasicInfo.statusCode, requestBasicInfo.unsupportedOptionName, resObj);
+		if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
+			buildResponse_nack(rtspRequestBasics.statusCode, rtspRequestBasics.unsupportedOptionName, resObj);
 			return resObj;
 		}
 
 		//
-		switch (requestBasicInfo.messageType) {
+		switch (rtspRequestBasics.messageType) {
 			case GET_PARAMETER -> buildResponse_getParameter();
 			case SET_PARAMETER -> buildResponse_setParameter();
 			case OPTIONS -> buildResponse_options(resObj);
 			case DESCRIBE -> buildResponse_describe(resObj);
-			case SETUP -> buildResponse_setup(requestBasicInfo.requestUrlInputOrStreamSource, resObj);
+			case SETUP -> buildResponse_setup(rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
 			case PLAY -> buildResponse_play(resObj);
 			case PAUSE, TEARDOWN -> buildResponse_ack();
 			default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unsupported message type: " +
-					requestBasicInfo.messageType);
+					rtspRequestBasics.messageType);
 		}
 
 		//
@@ -94,7 +96,7 @@ public final class RtspProtoHighResponseBuilder {
 	private void buildResponse_nack(
 				@NonNull RtspStatusCode statusCode,
 				@NonNull String unsupportedOptionName,
-				@NonNull RtspProtoLowMsgStructuredResponse msg
+				@NonNull RtspProtoHighMsgStructuredResponse msg
 			) {
 		if (statusCode == RtspStatusCode.UNAUTHORIZED) {
 			addAuthServerInfo(msg);
@@ -121,7 +123,7 @@ public final class RtspProtoHighResponseBuilder {
 		// nothing to do
 	}
 
-	private void buildResponse_options(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		// Server
 		{
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SERVER);
@@ -143,7 +145,7 @@ public final class RtspProtoHighResponseBuilder {
 		}
 	}
 
-	private void buildResponse_describe(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void buildResponse_describe(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
 
 		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.DESCRIBE)) {
@@ -191,8 +193,8 @@ public final class RtspProtoHighResponseBuilder {
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */
 	private void buildResponse_setup(
-				RequestBasicInfo.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoLowMsgStructuredResponse msg
+				RtspRequestBasics.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
+				@NonNull RtspProtoHighMsgStructuredResponse msg
 			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_setup()";
 
@@ -265,7 +267,7 @@ public final class RtspProtoHighResponseBuilder {
 	/**
 	 * The client makes one PLAY request per Input Source
 	 */
-	private void buildResponse_play(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void buildResponse_play(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_play()";
 
 		// Range
@@ -392,7 +394,7 @@ public final class RtspProtoHighResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void addCommonHeaders(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		// CSeq
 		if (rtspSessionInfo.rtspClientSeqNrResponse >= 0) {
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CSEQ);
@@ -405,7 +407,7 @@ public final class RtspProtoHighResponseBuilder {
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
-	private void addAuthServerInfo(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(rtspSessionInfo.getClientIpAddr());
 		}
@@ -417,7 +419,7 @@ public final class RtspProtoHighResponseBuilder {
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
-	private void addContentLengthHeader(@NonNull RtspProtoLowMsgStructuredResponse msg) {
+	private void addContentLengthHeader(@NonNull RtspProtoHighMsgStructuredResponse msg) {
 		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.CONTENT_LEN);
 		hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);

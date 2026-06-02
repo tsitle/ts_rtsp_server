@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
@@ -14,6 +14,7 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 
 import java.util.ArrayList;
 import java.util.List;

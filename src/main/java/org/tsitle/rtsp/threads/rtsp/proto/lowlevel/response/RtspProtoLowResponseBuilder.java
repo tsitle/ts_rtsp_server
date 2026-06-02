@@ -11,7 +11,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.*;
 
 import java.time.ZoneOffset;
@@ -32,7 +32,7 @@ public final class RtspProtoLowResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoLowMsgRaw buildMessage(@NonNull RtspProtoLowMsgStructuredResponse input) throws RtspInvalidResponseException {
+	public @NonNull RtspProtoLowMsgRaw buildMessage(@NonNull RtspProtoHighMsgStructuredResponse input) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildMessage()";
 
 		if (input.rtspProtoVersion == RtspProtocolVersion.NONE) {
