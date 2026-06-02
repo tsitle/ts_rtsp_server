@@ -380,6 +380,7 @@ public class RtxpTcpReadWrite {
 		BufferExt payloadBe = new BufferExt();
 		int payloadLen = 0;
 		int payloadOffset = 0;
+		int readTimeoutCnt = 0;
 		while (! doStop.get() && packetRd < packetLen) {
 			if (packetRd == 1) {
 				try {
@@ -387,7 +388,11 @@ public class RtxpTcpReadWrite {
 					if (channId == -1) {
 						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
+					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
+					if (++readTimeoutCnt >= 5) {
+						break;
+					}
 					continue;
 				}
 				if (! mapQueueRtpRtcpDataRcvd.containsKey(channId)) {
@@ -400,7 +405,11 @@ public class RtxpTcpReadWrite {
 					if (tmpVal == -1) {
 						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
+					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
+					if (++readTimeoutCnt >= 5) {
+						break;
+					}
 					continue;
 				}
 				if (packetRd == 2) {
@@ -417,7 +426,11 @@ public class RtxpTcpReadWrite {
 					if (tmpDidRead == -1) {
 						throw new IOException(FNC_NAME + ": " + "Could not read from socket");
 					}
+					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
+					if (++readTimeoutCnt >= 5) {
+						break;
+					}
 					continue;
 				}
 				if (tmpDidRead > 0) {
@@ -448,13 +461,18 @@ public class RtxpTcpReadWrite {
 
 		boolean haveCr = (firstChar == CRLF.charAt(0));
 		int tmpInt;
+		int readTimeoutCnt = 0;
 		while (! doStop.get()) {
 			try {
 				tmpInt = socketIs.read();  // blocks for setSoTimeout() value
 				if (tmpInt == -1) {
 					throw new IOException(FNC_NAME + ": Could not read from socket");
 				}
+				readTimeoutCnt = 0;
 			} catch (SocketTimeoutException e) {
+				if (++readTimeoutCnt >= 5) {
+					break;
+				}
 				continue;
 			}
 			tmpList.add((char)tmpInt);
