@@ -5,8 +5,8 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
-import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
@@ -124,12 +124,6 @@ public final class RtspProtoHighResponseBuilder {
 	}
 
 	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse msg) {
-		// Server
-		{
-			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SERVER);
-			hdEntry.hdValServer.serverStr = RtspProtoConstants.SERVER_NAME;
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
-		}
 		// Public
 		{
 			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.PUBLIC);
@@ -326,7 +320,7 @@ public final class RtspProtoHighResponseBuilder {
 		try {
 			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(rtspSessionInfo.inputSourceUrlPerMtMap.get(messageType));
 			tmpRtspHostname = rscUriObj.getHost();
-		} catch (RtspInvalidUriException e) {
+		} catch (HostnameHelperInvalidUriException e) {
 			// this should never happen
 			throw new RuntimeException(e);
 		}
@@ -404,10 +398,17 @@ public final class RtspProtoHighResponseBuilder {
 			hdEntry.hdValCseq.setCseqNr32bit(rtspSessionInfo.rtspClientSeqNrResponse);
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
-
 		// Date
-		RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.DATE);
-		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.DATE);
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Server
+		{
+			RtspProtoLowHeaderEntryResponse hdEntry = new RtspProtoLowHeaderEntryResponse(RtspHeaderKey.SERVER);
+			hdEntry.hdValServer.serverStr = RtspProtoConstants.SERVER_NAME;
+			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 	}
 
 	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse msg) {

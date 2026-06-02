@@ -18,6 +18,7 @@ public enum RtspHeaderKey {
 	CSEQ("CSeq"),
 	DATE("Date"),
 	KEYMGMT("KeyMgmt"),
+	/** (only for responses) */
 	PUBLIC("Public"),
 	RANGE("Range"),
 	/** (only for requests) */

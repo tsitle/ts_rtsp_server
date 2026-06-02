@@ -1,10 +1,12 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.exceptions.*;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
@@ -85,11 +87,7 @@ public final class RtspProtoLowRequestParser {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
-			output.messageType = Arrays.stream(RtspMessageType.values())
-					.filter(tmpType -> tmpType != RtspMessageType.UNKNOWN)
-					.filter(tmpType -> tmpType.name().equalsIgnoreCase(requestTypeStr))
-					.findFirst()
-					.orElse(RtspMessageType.UNKNOWN);
+			output.messageType = RtspMessageType.of(requestTypeStr);
 			if (output.messageType == RtspMessageType.UNKNOWN) {
 				return;
 			}
@@ -163,7 +161,12 @@ public final class RtspProtoLowRequestParser {
 				@NonNull String resourceUrlStr,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidUriException {
-		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
+		URI rscUriObj;
+		try {
+			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
+		} catch (HostnameHelperInvalidUriException e) {
+			throw new RtspInvalidUriException(e.getMessage());
+		}
 		String tmpQuery = rscUriObj.getQuery();
 		if (tmpQuery == null) {
 			return;
@@ -229,7 +232,6 @@ public final class RtspProtoLowRequestParser {
 			case CSEQ -> parseHeaderValue_com_cseq(hdValue, entry);
 			case DATE -> parseHeaderValue_com_date(hdValue, entry);
 			case KEYMGMT -> parseHeaderValue_com_keymgmt(hdValue, entry);
-			case PUBLIC -> parseHeaderValue_options_public(hdValue, entry);
 			case RANGE -> parseHeaderValue_play_range(hdValue, entry);
 			case REQUIRE -> parseHeaderValue_options_require(hdValue, entry);
 			case SESSION -> parseHeaderValue_com_session(hdValue, entry);
@@ -311,55 +313,6 @@ public final class RtspProtoLowRequestParser {
 		}
 		entry.setHdKey(RtspHeaderKey.AUTH_CLIENT);
 	}
-
-	/* @TODO move to response parser
-	private void parseHeaderValue_com_auth_server(
-				@NonNull String hdValue,
-				@NonNull RtspProtoLowHeaderEntryRequest entry
-			) throws RtspInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_server()";
-
-		// e.g. 'WWW-Authenticate: Digest realm="Abcdef Some", nonce="xxx", algorithm="MD5"'
-		if (! hdValue.toLowerCase()
-				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
-			throw new RtspInvalidRequestException("Invalid Auth header prefix");
-		}
-		hdValue = hdValue.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.length()).strip();
-		StringTokenizer tokens = new StringTokenizer(hdValue, ",");
-		boolean haveRealm = false;
-		boolean haveNonce = false;
-		boolean haveAlgo = false;
-		while (tokens.hasMoreTokens()) {
-			String curTokenAsIs = tokens.nextToken().strip();
-			String curTokenLc = curTokenAsIs.toLowerCase();
-			if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM.toLowerCase())) {
-				entry.hdValAuthServer.authRealm =
-						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM);
-				haveRealm = (! entry.hdValAuthServer.authRealm.isBlank());
-			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE.toLowerCase())) {
-				entry.hdValAuthServer.authNonce =
-						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE);
-				entry.hdValAuthServer.authNonce = entry.hdValAuthServer.authNonce.toLowerCase();
-				haveNonce = (! entry.hdValAuthServer.authNonce.isBlank());
-			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO.toLowerCase())) {
-				String tmpAlgo =
-						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
-				if (! tmpAlgo.equalsIgnoreCase(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5)) {
-					throw new RtspInvalidRequestException("Unsupported Auth Algorithm: '" + tmpAlgo + "'");
-				}
-				entry.hdValAuthServer.authAlgo = RtspProtoLowHeaderTypeAuth.AuthAlgo.MD5;
-				haveAlgo = true;
-			} else {
-				logWarn(FNC_NAME, "Unknown Auth parameter: '" + curTokenAsIs + "'");
-			}
-		}
-
-		if (! (haveRealm && haveNonce && haveAlgo)) {
-			throw new RtspInvalidRequestException("Missing required Auth parameters");
-		}
-		entry.setHdKey(RtspHeaderKey.AUTH_SERVER);
-	}
-	*/
 
 	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry)
 			throws RtspInvalidRequestException {
@@ -443,25 +396,6 @@ public final class RtspProtoLowRequestParser {
 		}
 
 		entry.setHdKey(RtspHeaderKey.KEYMGMT);
-	}
-
-	private void parseHeaderValue_options_public(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_options_public()";
-
-		/*
-		 * Example:
-		 *   "Public: SETUP, PLAY, PAUSE, TEARDOWN, DESCRIBE, OPTIONS, SET_PARAMETER"
-		 */
-		for (String tmpOption : hdValue.split(",")) {
-			tmpOption = tmpOption.strip();
-			try {
-				RtspMessageType tmpEn = RtspMessageType.valueOf(tmpOption);
-				entry.hdValPublic.messageTypes.add(tmpEn);
-			} catch (IllegalArgumentException e) {
-				logWarn(FNC_NAME, "Unknown option: '" + tmpOption + "'");
-			}
-		}
-		entry.setHdKey(RtspHeaderKey.PUBLIC);
 	}
 
 	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoLowHeaderEntryRequest entry) {

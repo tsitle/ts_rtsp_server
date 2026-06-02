@@ -6,6 +6,8 @@ import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidSessionIdException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
@@ -149,7 +151,7 @@ public final class RtspProtoResponseParser extends RtspProtoParserBase {
 			}
 			//
 			return Arrays.stream(RtspStatusCode.values())
-					.filter(tmpType -> tmpType.getValue() == tmpStatCodeInt)
+					.filter(tmpType -> tmpType.getIntValue() == tmpStatCodeInt)
 					.findFirst()
 					.orElse(RtspStatusCode.INTERNAL_SERVER_ERROR);
 		} catch (NoSuchElementException e) {

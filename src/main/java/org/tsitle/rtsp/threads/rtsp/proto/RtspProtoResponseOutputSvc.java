@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;

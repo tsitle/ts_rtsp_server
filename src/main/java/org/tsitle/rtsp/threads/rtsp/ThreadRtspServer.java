@@ -10,6 +10,7 @@ import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtsp.proto.*;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;

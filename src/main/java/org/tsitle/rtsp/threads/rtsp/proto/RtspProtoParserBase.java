@@ -6,6 +6,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidSessionIdException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.util.*;

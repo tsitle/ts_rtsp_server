@@ -1,5 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
+import org.jspecify.annotations.NonNull;
+
 public enum RtspMessageType {
 
 	UNKNOWN,
@@ -24,6 +26,18 @@ public enum RtspMessageType {
 	/** Inform the client that it must connect to another server location. (RFC-2326 Section 10.10) */
 	REDIRECT,
 	/** Initiates recording a range of media data. (RFC-2326 Section 10.11) */
-	RECORD
+	RECORD;
+
+	public static @NonNull RtspMessageType of(@NonNull String value) {
+		for (RtspMessageType entry : values()) {
+			if (entry == UNKNOWN) {
+				continue;
+			}
+			if (entry.name().equalsIgnoreCase(value)) {
+				return entry;
+			}
+		}
+		return UNKNOWN;
+	}
 
 }

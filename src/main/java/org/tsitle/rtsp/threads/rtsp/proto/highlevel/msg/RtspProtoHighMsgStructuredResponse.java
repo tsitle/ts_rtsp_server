@@ -6,6 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.header.RtspProtoLowHeader
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgStructuredBase {
 
@@ -23,6 +24,23 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 		resS += "headers=" + headers + ", ";
 		resS += internalToString(false);
 		return resS + "]";
+	}
+
+	public Optional<Integer> getHeaderCseq() {
+		if (! headers.containsKey(RtspHeaderKey.CSEQ)) {
+			return Optional.empty();
+		}
+		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
+	}
+
+	public Optional<String> getHeaderSessionId() {
+		if (! headers.containsKey(RtspHeaderKey.SESSION)) {
+			return Optional.empty();
+		}
+		if (headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr);
 	}
 
 }

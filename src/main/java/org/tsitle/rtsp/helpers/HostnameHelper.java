@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.helpers;
 
-import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 
 import java.net.*;
@@ -65,13 +65,13 @@ public final class HostnameHelper {
 	 * Convert an RTSP URL into a URI object.
 	 * @param url RTSP URL
 	 * @return URI object
-	 * @throws RtspInvalidUriException If the URL is invalid
+	 * @throws HostnameHelperInvalidUriException If the URL is invalid
 	 */
-	public static URI convertRtspUrlIntoURI(String url) throws RtspInvalidUriException {
+	public static URI convertRtspUrlIntoURI(String url) throws HostnameHelperInvalidUriException {
 		try {
 			if (! (url.startsWith(RtspProtoConstants.RTSPS_URL_PROTOCOL + "://") ||
 						url.startsWith(RtspProtoConstants.RTSP_URL_PROTOCOL + "://"))) {
-				throw new RtspInvalidUriException("Invalid protocol in URL: '" + url + "'");
+				throw new HostnameHelperInvalidUriException("Invalid protocol in URL: '" + url + "'");
 			}
 			// we need to replace the protocol here since the URI class does not support 'rtsp://'
 			@SuppressWarnings("HttpUrlsUsage") URI resObj = new URI(
@@ -80,11 +80,11 @@ public final class HostnameHelper {
 							.replaceAll("^" + RtspProtoConstants.RTSP_URL_PROTOCOL + "://", "http://"
 						));
 			if (! (resObj.getScheme().equals("https") || resObj.getScheme().equals("http"))) {
-				throw new RtspInvalidUriException("Invalid protocol: " + resObj.getScheme());
+				throw new HostnameHelperInvalidUriException("Invalid protocol: " + resObj.getScheme());
 			}
 			return resObj;
 		} catch (URISyntaxException e) {
-			throw new RtspInvalidUriException(e.getMessage());
+			throw new HostnameHelperInvalidUriException(e.getMessage());
 		}
 	}
 

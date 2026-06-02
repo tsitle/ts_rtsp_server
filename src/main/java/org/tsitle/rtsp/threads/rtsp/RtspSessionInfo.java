@@ -7,9 +7,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RtspSessionInfo {
@@ -92,6 +90,9 @@ public class RtspSessionInfo {
 	public @NonNull SessionState sessionState = SessionState.INIT;
 	/** Has the client requested PAUSE? */
 	public boolean isPlaybackPaused = false;
+
+	/** RTSP message types that are supported by the remote host */
+	public @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();

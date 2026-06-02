@@ -11,6 +11,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
@@ -331,7 +332,7 @@ public final class RtspProtoHighRequestProcessor {
 				case RtspHeaderKey.AUTH_CLIENT ->
 						processHeader_com_auth_client(msg.authUser, entry.getValue());
 				case RtspHeaderKey.CONTENT_BASE ->
-						processHeader_describe_contbase(entry.getValue());
+						processHeader_describe_contbase(msg.messageType, entry.getValue());
 				case RtspHeaderKey.CONTENT_LEN ->
 						processHeader_com_contlen(entry.getValue());
 				case RtspHeaderKey.CONTENT_TYPE ->
@@ -380,7 +381,13 @@ public final class RtspProtoHighRequestProcessor {
 		rtspSessionInfo.authInfo.authResp = headerEntry.hdValAuthClient.authResp;
 	}
 
-	private void processHeader_describe_contbase(@NonNull RtspProtoLowHeaderEntryRequest headerEntry) {
+	private void processHeader_describe_contbase(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoLowHeaderEntryRequest headerEntry
+			) throws RtspInvalidRequestException {
+		if (messageType != RtspMessageType.DESCRIBE) {
+			throw new RtspInvalidRequestException("Received ACCEPT header in non-DESCRIBE request");
+		}
 		// @TODO
 	}
 

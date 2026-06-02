@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
@@ -115,7 +115,7 @@ final class RtspChildThreadMng {
 			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspMessageType.PLAY);
 			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(tmpIsUrl);
 			cnameHostname = tmpIsUri.getHost();
-		} catch (RtspInvalidUriException e) {
+		} catch (HostnameHelperInvalidUriException e) {
 			// this should never happen
 			throw new RuntimeException(e);
 		}

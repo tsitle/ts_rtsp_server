@@ -6,6 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEntryBase {
 
 	public @NonNull RtspProtoLowHeaderTypeAuthServer hdValAuthServer = new RtspProtoLowHeaderTypeAuthServer();
+	public @NonNull RtspProtoLowHeaderTypePublic hdValPublic = new RtspProtoLowHeaderTypePublic();
 	public @NonNull RtspProtoLowHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoLowHeaderTypeRtpinfo();
 	public @NonNull RtspProtoLowHeaderTypeServer hdValServer = new RtspProtoLowHeaderTypeServer();
 	public @NonNull RtspProtoLowHeaderTypeUnsupported hdValUnsupported = new RtspProtoLowHeaderTypeUnsupported();
@@ -29,6 +30,7 @@ public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEnt
 		}
 		switch (hdKeyEn) {
 			case AUTH_SERVER:
+			case PUBLIC:
 			case RTPINFO:
 			case SERVER:
 			case UNSUPPORTED:
@@ -49,6 +51,7 @@ public final class RtspProtoLowHeaderEntryResponse extends RtspProtoLowHeaderEnt
 		}
 		return switch (hdKeyEn) {
 				case AUTH_SERVER -> hdValAuthServer.toString();
+				case PUBLIC -> hdValPublic.toString();
 				case RTPINFO -> hdValRtpinfo.toString();
 				case SERVER -> hdValServer.toString();
 				case UNSUPPORTED -> hdValUnsupported.toString();

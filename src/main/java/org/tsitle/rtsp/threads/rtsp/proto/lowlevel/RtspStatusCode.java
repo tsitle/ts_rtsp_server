@@ -23,7 +23,8 @@ public enum RtspStatusCode {
 	RtspStatusCode(int value) {
 		this.value = value;
 	}
-	public int getValue() {
+
+	public int getIntValue() {
 		return value;
 	}
 
@@ -43,6 +44,15 @@ public enum RtspStatusCode {
 				case NOT_IMPLEMENTED -> "Not Implemented";
 				case OPTION_NOT_SUPPORTED -> "Option Not Supported";
 			};
+	}
+
+	public static @NonNull RtspStatusCode of(int value) {
+		for (RtspStatusCode entry : values()) {
+			if (entry.value == value) {
+				return entry;
+			}
+		}
+		return INTERNAL_SERVER_ERROR;
 	}
 
 }

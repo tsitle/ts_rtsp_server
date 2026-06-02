@@ -3,8 +3,9 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.net.URI;
@@ -33,7 +34,12 @@ final class ResourceUrlParsingVars {
 	 * @throws RtspInvalidUriException If the resource URL is invalid
 	 */
 	private static @NonNull String extractResourceUrlPath(@NonNull String resourceUrlStr) throws RtspInvalidUriException {
-		URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
+		URI rscUriObj;
+		try {
+			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
+		} catch (HostnameHelperInvalidUriException e) {
+			throw new RtspInvalidUriException(e.getMessage());
+		}
 		String tmpPath = rscUriObj.getPath();
 		tmpPath = tmpPath.strip();
 		if (tmpPath.startsWith("/")) {

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.security.MikeyGenerator;

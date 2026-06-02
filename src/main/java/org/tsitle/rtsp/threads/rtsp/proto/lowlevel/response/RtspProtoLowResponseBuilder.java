@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
@@ -43,7 +43,7 @@ public final class RtspProtoLowResponseBuilder {
 
 		// set response line
 		resObj.mainLine = String.format("%s %d %s",
-				input.rtspProtoVersion.getStrValue(), input.statusCode.getValue(), input.statusCode.getReasonPhrase());
+				input.rtspProtoVersion.getStrValue(), input.statusCode.getIntValue(), input.statusCode.getReasonPhrase());
 
 		// set headers
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoLowHeaderEntryResponse> entry : input.headers.entrySet()) {
