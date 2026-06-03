@@ -12,6 +12,7 @@ import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtsp.proto.*;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
@@ -33,8 +34,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private final RtspChildThreadMng rtspChildThreadMng;
 	private final RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final RtspProtoRequestBuilder rtspProtoRequestBuilder;
+	private final RtspProtoResponseInputSvc rtspProtoResponseInputSvc;
 	private final RtspProtoResponseOutputSvc rtspProtoResponseOutputSvc;
-	private final RtspProtoResponseParser rtspProtoResponseParser;
 
 	private @Nullable Instant rtspTimeoutLastRequ = null;
 
@@ -86,19 +87,19 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				rtspSessionInfo,
 				this.rtxpTcpReadWrite
 			);
+		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
+		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
+				logMsgInterface,
+				rtspConfig,
+				rtspSessionInfo,
+				this.rtxpTcpReadWrite,
+				true
+			);
 		this.rtspProtoResponseOutputSvc = new RtspProtoResponseOutputSvc(
 				logMsgInterface,
 				rtspConfig,
 				rtspSessionInfo,
 				this.rtxpTcpReadWrite
-			);
-		this.rtspProtoRequestBuilder = new RtspProtoRequestBuilder(logMsgInterface, this.rtxpTcpReadWrite, rtspSessionInfo);
-		this.rtspProtoResponseParser = new RtspProtoResponseParser(
-				true,
-				logMsgInterface,
-				this.rtxpTcpReadWrite,
-				rtspConfig,
-				rtspSessionInfo
 			);
 	}
 
@@ -264,9 +265,9 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspRequestBasics getNextRequest()
+	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
-		RtspRequestBasics resObj = rtspProtoRequestInputSvc.getNextRequest();
+		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequest();
 
 		rtspProtoResponseOutputSvc.sendResponse(resObj);
 		return resObj;
@@ -372,6 +373,21 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private @NonNull RtspResponseBasics receiveClientResponse(@NonNull RtspMessageType requestMessageType)
+			throws TcpSocketClosedException, TcpSocketIoException {
+		int timeoutCnt = 0;
+		while (++timeoutCnt < 100) {
+			try {
+				return rtspProtoResponseInputSvc.receiveResponse(requestMessageType);
+			} catch (InputStreamNotReadyException ignored) {
+				// ignore
+			}
+		}
+		throw new TcpSocketIoException("could not receive response");
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private RtspStaticSessionInfo.@NonNull SdpSubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
 		return RtspStaticSessionInfo.getSdpSubStream(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
 	}
@@ -424,14 +440,15 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		}
 	}
 
-	private boolean srtxpRekeyOutbound_oneStream(RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos) throws TcpSocketIoException {
+	private boolean srtxpRekeyOutbound_oneStream(RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos)
+			throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_oneStream()";
 
 		final String logMsgPrefix = "ss=" + ctfos.streamSourceId + ": ";
 
 		rtspProtoRequestBuilder.sendRequestOptions(ctfos.subStreamId);
-		RtspProtoResponseParser.ResponseInfo tmpRi = rtspProtoResponseParser.parseResponse();
-		if (tmpRi.statusCode != RtspStatusCode.OK) {
+		RtspResponseBasics rrb = receiveClientResponse(RtspMessageType.OPTIONS);
+		if (rrb.statusCode != RtspStatusCode.OK) {
 			logWarn(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
 			return false;
 		}
@@ -441,15 +458,15 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		try {
 			tmpNextKmdOutbound = rtspProtoRequestBuilder.sendRequestSrtxpRekey(
 					ctfos.subStreamId,
-					tmpRi.supportedMessageTypes
+					rtspSessionInfo.serverSupportedMessageTypes
 				);
 		} catch (RtspInvalidRequestException e) {
 			logWarn(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
 			return false;
 		}
-		tmpRi = rtspProtoResponseParser.parseResponse();
-		if (tmpRi.statusCode != RtspStatusCode.OK) {
-			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed (" + tmpRi.statusCode + ")");
+		rrb = receiveClientResponse(RtspMessageType.SET_PARAMETER);
+		if (rrb.statusCode != RtspStatusCode.OK) {
+			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed (" + rrb.statusCode + ")");
 			return false;
 		}
 
@@ -465,7 +482,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		return true;
 	}
 
-	private boolean srtxpRekeyOutbound() throws TcpSocketIoException {
+	private boolean srtxpRekeyOutbound() throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound()";
 
 		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
@@ -535,7 +552,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		try {
-			RtspRequestBasics rtspRequestBasics = getNextRequest();
+			RtspRequestBasics rtspRequestBasics = receiveClientRequestAndRespond();
 			rtspTimeoutLastRequ = Instant.now();
 			if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
 				return true;

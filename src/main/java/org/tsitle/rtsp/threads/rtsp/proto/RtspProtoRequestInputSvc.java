@@ -61,9 +61,9 @@ public class RtspProtoRequestInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspRequestBasics getNextRequest()
+	public @NonNull RtspRequestBasics receiveRequest()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
-		final String FNC_NAME = getClass().getSimpleName() + ".getNextRequest()";
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequest()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
@@ -71,12 +71,10 @@ public class RtspProtoRequestInputSvc {
 
 		rtspSessionInfo.rtspClientSeqNrResponse = -1;
 
-		RtspRequestBasics resObj;
-
 		// read the raw request from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
 		if (! lowInputRaw.readSuccess) {
-			resObj = RtspRequestBasics.createUnknown();
+			RtspRequestBasics resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Receiving RTSP request message failed, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
@@ -85,20 +83,20 @@ public class RtspProtoRequestInputSvc {
 		// parse the raw request
 		RtspProtoHighMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
 		if (lowInputParsed.messageType == RtspMessageType.UNKNOWN) {
-			resObj = RtspRequestBasics.createUnknown();
+			RtspRequestBasics resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
 		if (lowInputParsed.statusCode != RtspStatusCode.OK) {
-			resObj = RtspRequestBasics.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
+			RtspRequestBasics resObj = RtspRequestBasics.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));
 			return resObj;
 		}
 
 		// process the request - without checking authentication
-		resObj = rtspProtoHighRequestProcessor.processRequest(lowInputParsed);
+		RtspRequestBasics resObj = rtspProtoHighRequestProcessor.processRequest(lowInputParsed);
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
 					resObj.messageType, resObj.statusCode, rtspSessionInfo.rtspClientSeqNrLastRcvd));

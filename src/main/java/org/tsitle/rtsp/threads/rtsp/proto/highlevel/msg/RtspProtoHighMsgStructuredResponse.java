@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,8 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 
 	public RtspProtoHighMsgStructuredResponse() {
 		super();
+
+		this.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
 	}
 
 	@Override

@@ -24,7 +24,7 @@ public class RtspProtoLowMsgReaderTest {
 	}
 
 	@Test
-	void testRtpInfoHeaderLineRtspV1() throws Exception {
+	void testResponse_rtpInfoHeaderLineRtspV1() throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -66,7 +66,7 @@ public class RtspProtoLowMsgReaderTest {
 	}
 
 	@Test
-	void testRtpInfoHeaderLineRtspV2() throws Exception {
+	void testResponse_rtpInfoHeaderLineRtspV2() throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -78,7 +78,8 @@ public class RtspProtoLowMsgReaderTest {
 			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
-			@SuppressWarnings("TextBlockMigration") String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
+			@SuppressWarnings("TextBlockMigration")
+			String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
 					"CSeq: 8\r\n" +
 					"RTP-Info: url=\"rtsp://example.com/fizzle/audiotrack\"\r\n" +
 					"    seq=5712:rtptime=934207921\r\n" +
@@ -107,7 +108,7 @@ public class RtspProtoLowMsgReaderTest {
 	}
 
 	@Test
-	void testMsgBody_correctContLen1() throws Exception {
+	void testResponse_msgBody_correctContLen1() throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -119,7 +120,8 @@ public class RtspProtoLowMsgReaderTest {
 			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
-			@SuppressWarnings("TextBlockMigration") String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
+			@SuppressWarnings("TextBlockMigration")
+			String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
 					"Content-Type: xylo\r\n" +
 					"Content-Length: 60\r\n" +
 					"\r\n" +
@@ -151,7 +153,7 @@ public class RtspProtoLowMsgReaderTest {
 	}
 
 	@Test
-	void testMsgBody_correctContLen2() throws Exception {
+	void testResponse_msgBody_correctContLen2() throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -163,7 +165,8 @@ public class RtspProtoLowMsgReaderTest {
 			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
-			@SuppressWarnings("TextBlockMigration") String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
+			@SuppressWarnings("TextBlockMigration")
+			String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
 					"Content-Type: xylo\r\n" +
 					"Content-Length: 60\r\n" +
 					"\r\n" +
@@ -195,7 +198,7 @@ public class RtspProtoLowMsgReaderTest {
 	}
 
 	@Test
-	void testMsgBody_tooShortContLen() throws Exception {
+	void testResponse_msgBody_tooShortContLen() throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -207,7 +210,53 @@ public class RtspProtoLowMsgReaderTest {
 			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
 
 			//
-			@SuppressWarnings("TextBlockMigration") String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
+			@SuppressWarnings("TextBlockMigration")
+			String msgForSocketStr = "RTSP/2.0 200 OK\r\n" +
+					"Content-Type: xylo\r\n" +
+					"Content-Length: 1000\r\n" +
+					"\r\n" +
+					"v=0\r\n" +
+					"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
+					"s=SDP Seminar";
+			peerSocket.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));
+			peerSocket.getOutputStream().flush();
+
+			//
+			RtspProtoLowMsgReader reader = new RtspProtoLowMsgReader(logMsgIf, rw, true);
+			RtspProtoLowMsgRaw msgParsedRaw = reader.readMessage();
+
+			assertTrue(msgParsedRaw.readSuccess);
+			assertEquals(2, msgParsedRaw.headerLines.size());
+
+			final String expLine1 = "Content-Type: xylo";
+			final String expLine2 = "Content-Length: 62";
+			final int expBodyLen = 62;
+
+			assertEquals(expLine1, msgParsedRaw.headerLines.get(0));
+			assertEquals(expLine2, msgParsedRaw.headerLines.get(1));
+			assertEquals(expBodyLen, msgParsedRaw.body.length());
+
+			System.out.println(msgParsedRaw);
+
+			rw.closeSocket();
+		}
+	}
+
+	@Test
+	void testRequest_options() throws Exception {
+		try (ServerSocket serverSocket = new ServerSocket(0);
+				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
+				Socket peerSocket = serverSocket.accept()) {
+
+			tcpSocket.setSoTimeout(50);  // only for read()
+
+			//
+			TestLogs logMsgIf = new TestLogs();
+			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
+
+			//
+			@SuppressWarnings("TextBlockMigration")
+			String msgForSocketStr = "RTSP/3.0 200 OK\r\n" +
 					"Content-Type: xylo\r\n" +
 					"Content-Length: 1000\r\n" +
 					"\r\n" +

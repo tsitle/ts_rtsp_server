@@ -91,8 +91,8 @@ public class RtspSessionInfo {
 	/** Has the client requested PAUSE? */
 	public boolean isPlaybackPaused = false;
 
-	/** RTSP message types that are supported by the remote host */
-	public @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
+	/** RTSP message types that are supported by the server */
+	public @NonNull Set<@NonNull RtspMessageType> serverSupportedMessageTypes = new HashSet<>();
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();

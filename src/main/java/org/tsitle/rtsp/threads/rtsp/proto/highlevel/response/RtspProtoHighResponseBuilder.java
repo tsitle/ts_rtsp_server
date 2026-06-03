@@ -225,7 +225,11 @@ public final class RtspProtoHighResponseBuilder {
 			}
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
-			hdEntry.hdValSession.timeout = RtspConstants.RTSP_SESSION_TIMEOUT;
+			if (RtspConstants.RTSP_SESSION_TIMEOUT >= 0) {
+				hdEntry.hdValSession.setTimeout32bit(RtspConstants.RTSP_SESSION_TIMEOUT);
+			} else {
+				hdEntry.hdValSession.clearTimeout();
+			}
 			msg.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 

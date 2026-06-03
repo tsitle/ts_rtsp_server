@@ -10,6 +10,11 @@ import java.util.Optional;
 
 public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStructuredBase {
 
+	/** Resource URL without Query Parameters */
+	public @NonNull String resourceUrl = "";
+	/** URL Query Parameters */
+	public @NonNull Map<@NonNull String, @NonNull String> queryParams = new HashMap<>();
+
 	/** Authentication credentials: username (from URL or WWW-Authenticate header) */
 	public @NonNull String authUser = "";
 	/** Authentication credentials: password (from URL - not WWW-Authenticate header) */
@@ -22,10 +27,27 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 		super();
 	}
 
+	private @NonNull String queryParamsToString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		boolean isFirst = true;
+		for (Map.Entry<@NonNull String, @NonNull String> tmpEntry : queryParams.entrySet()) {
+			if (! isFirst) {
+				sb.append(", ");
+			}
+			sb.append(tmpEntry.getKey()).append("='").append(tmpEntry.getValue()).append("'");
+			isFirst = false;
+		}
+		sb.append("}");
+		return sb.toString();
+	}
+
 	@Override
 	public @NonNull String toString() {
 		String resS = getClass().getSimpleName() + " [";
 		resS += internalToString(true);
+		resS += "resourceUrl='" + resourceUrl + "', ";
+		resS += "queryParams=" + queryParamsToString() + ", ";
 		resS += "authUser='" + authUser + "', ";
 		resS += "authPlainPassword='" + authPlainPassword + "', ";
 		resS += "headers=" + headers + ", ";

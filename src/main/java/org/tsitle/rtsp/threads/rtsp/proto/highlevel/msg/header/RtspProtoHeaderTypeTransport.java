@@ -94,6 +94,10 @@ public class RtspProtoHeaderTypeTransport {
 		this.tpSsrcId32bit = ssrc32bit;
 	}
 
+	public void clearSsrcId() {
+		this.tpSsrcId32bit = -1L;
+	}
+
 	public Optional<Integer> getSsrcId32bit() {
 		return (tpSsrcId32bit < 0L ? Optional.empty() : Optional.of((int)tpSsrcId32bit));
 	}

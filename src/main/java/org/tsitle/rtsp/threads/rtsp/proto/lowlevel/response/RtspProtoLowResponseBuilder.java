@@ -10,6 +10,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowBuilderHelper;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
@@ -59,7 +60,7 @@ public final class RtspProtoLowResponseBuilder {
 					case RTPINFO -> buildHeaderValue_play_rtpinfo(entry.getValue().hdValRtpinfo, input.rtspProtoVersion);
 					case SERVER -> buildHeaderValue_com_server(entry.getValue().hdValServer);
 					case SESSION -> buildHeaderValue_com_session(entry.getValue().hdValSession);
-					case TRANSPORT -> buildHeaderValue_setup_transport(entry.getValue().hdValTransport, input.rtspProtoVersion);
+					case TRANSPORT -> buildHeaderValue_setup_transport(entry.getValue().hdValTransport);
 					case UNSUPPORTED -> buildHeaderValue_com_unsupported(entry.getValue().hdValUnsupported);
 					default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unknown header key: " + entry.getKey());
 				};
@@ -154,6 +155,7 @@ public final class RtspProtoLowResponseBuilder {
 		if (hdValue.rangeStr.isBlank()) {
 			throw new RtspInvalidResponseException("rangeStr cannot be blank");
 		}
+		// @TODO add example
 		return hdValue.rangeStr;
 	}
 
@@ -180,14 +182,11 @@ public final class RtspProtoLowResponseBuilder {
 				@NonNull RtspProtocolVersion rtspProtocolVersion
 			) throws RtspInvalidResponseException {
 		/*
-		 * RTSP v1:
-		 *   Rtp-Info:
+		 * Example:
+		 *   RTSP v1 (see https://datatracker.ietf.org/doc/html/rfc2326#section-12.33):
 		 *     url=rtsp://foo.com/bar.file;seq=232433;rtptime=972948234
-		 *   See https://datatracker.ietf.org/doc/html/rfc2326#section-12.33
-		 * RTSP v2:
-		 *   Rtp-Info:
+		 *   RTSP v2 (see https://datatracker.ietf.org/doc/html/rfc7826#section-13.4):
 		 *     url="rtsp://example.com/audio" ssrc=0D12F123:seq=14783;rtptime=2345962545
-		 *   See https://datatracker.ietf.org/doc/html/rfc7826#section-13.4
 		 */
 
 		StringBuilder tmpSb = new StringBuilder();
@@ -206,7 +205,7 @@ public final class RtspProtoLowResponseBuilder {
 				throw new RtspInvalidResponseException("ssrcId must be set for RTSP v2.0");
 			}
 			tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC)
-					.append(buildHexString(subStreamInfo.getSsrcId32bit().get()));
+					.append(RtspLowBuilderHelper.buildHexString(subStreamInfo.getSsrcId32bit().get()));
 			tmpSb.append(":");
 		} else {
 			tmpSb.append(";");
@@ -240,24 +239,33 @@ public final class RtspProtoLowResponseBuilder {
 			throw new RtspInvalidResponseException("sessionIdStr cannot be blank");
 		}
 		return hdValue.sessionIdStr +
-				(hdValue.timeout >= 0 ?
-						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT + Integer.toUnsignedString(hdValue.timeout)
+				(hdValue.getTimeout32bit().isPresent() ?
+						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT +
+								Integer.toUnsignedString(hdValue.getTimeout32bit().get())
 						: "");
 	}
 
-	private static @NonNull String buildHeaderValue_setup_transport(
-				@NonNull RtspProtoHeaderTypeTransport hdValue,
-				@NonNull RtspProtocolVersion rtspProtocolVersion
-			) throws RtspInvalidResponseException {
+	private static @NonNull String buildHeaderValue_setup_transport(@NonNull RtspProtoHeaderTypeTransport hdValue)
+			throws RtspInvalidResponseException {
 		/*
-		 * Transport:
-		 *   RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=38852-38853;server_port=6970-6971;ssrc=DEADBEEF
-		 * See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
+		 * Example:
+		 *   Request:
+		 *     "RTP/AVP;unicast;client_port=1050-1051"
+		 *     or
+		 *     "RTP/AVP/TCP;interleaved=0-1"
+		 *     or
+		 *     "RTP/AVP;multicast;ttl=127;mode=\"PLAY\""
+		 *     or
+		 *     "RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
+		 *   Response:
+		 *     "RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=1050-1051;server_port=6970-6971;ssrc=DEADBEEF"
+		 *     or
+		 *     "RTP/AVP/TCP;interleaved=0-1"
+		 * See https://datatracker.ietf.org/doc/html/rfc2326#section-12.39
+		 *
+		 * Currently, there is no support for RTSP v2.0 style Transport parameters
+		 *   See https://datatracker.ietf.org/doc/html/rfc7826#section-13.3
 		 */
-
-		if (hdValue.getSsrcId32bit().isEmpty()) {
-			throw new RtspInvalidResponseException("SSRC identifier must be set");
-		}
 
 		StringBuilder sb = new StringBuilder();
 
@@ -275,18 +283,18 @@ public final class RtspProtoLowResponseBuilder {
 		if (! hdValue.tpIsUnicast) {
 			throw new RtspInvalidResponseException("No other Transport Casting Mode than UNICAST is supported");
 		}
-		if (hdValue.tpSourceIpOrHost.isBlank()) {
-			throw new RtspInvalidResponseException("Transport source IP/host cannot be blank");
+		sb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";");
+
+		if (! hdValue.tpSourceIpOrHost.isBlank()) {
+			sb
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP)
+					.append(hdValue.tpSourceIpOrHost).append(";");
 		}
-		if (hdValue.tpDestIpOrHost.isBlank()) {
-			throw new RtspInvalidResponseException("Transport destination IP/host cannot be blank");
+		if (! hdValue.tpDestIpOrHost.isBlank()) {
+			sb
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP)
+					.append(hdValue.tpDestIpOrHost).append(";");
 		}
-		sb
-				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";")
-				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP)
-						.append(hdValue.tpDestIpOrHost).append(";")
-				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP)
-						.append(hdValue.tpSourceIpOrHost).append(";");
 
 		if (hdValue.tpIsUdp) {
 			if (hdValue.getClientUdpPortRtp16bit().isEmpty()) {
@@ -334,11 +342,11 @@ public final class RtspProtoLowResponseBuilder {
 					.append("-")
 					.append(Short.toUnsignedInt(hdValue.getClientTcpChannRtcp16bit().get()));
 		}
-		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2 && hdValue.tpIsUnicast) {
+		if (hdValue.tpIsUnicast && hdValue.getSsrcId32bit().isPresent()) {
 			sb
 					.append(";")
 					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
-					.append(buildHexString(hdValue.getSsrcId32bit().get()));
+					.append(RtspLowBuilderHelper.buildHexString(hdValue.getSsrcId32bit().get()));
 		}
 
 		return sb.toString();
@@ -350,12 +358,6 @@ public final class RtspProtoLowResponseBuilder {
 			throw new RtspInvalidResponseException("unsupportedOptionStr cannot be blank");
 		}
 		return hdValue.unsupportedOptionStr;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static @NonNull String buildHexString(int value) {
-		return String.format("%08X", value);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
