@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Static RTSP session information storage.
  */
-public class RtspStaticSessionInfo {
+public final class RtspStaticSessionInfo {
 
 	public static class StreamKmds {
 		public final int rtspSsrcId;
@@ -25,7 +25,6 @@ public class RtspStaticSessionInfo {
 		public @Nullable SrtxpKmd kmdInbound = null;
 		public @Nullable SrtxpKmd kmdOutbound = null;
 		public @Nullable SrtxpKmd nextKmdInbound = null;
-		public @Nullable SrtxpKmd nextKmdOutbound = null;
 
 		public StreamKmds(int rtspSsrcId) {
 			this.rtspSsrcId = rtspSsrcId;
@@ -65,7 +64,7 @@ public class RtspStaticSessionInfo {
 		public int tpClientTcpChannRtcp = -1;
 		/** Requested transport type protocol (true: UDP, false: TCP) */
 		public boolean tpIsUdp = false;
-		/** Requested transport casting type (true: unicast, false: multicast) */
+		/** Requested transport delivery type (true: unicast, false: multicast) */
 		public boolean tpIsUnicast = false;
 		/** Requested transport interleaved mode (true: interleaved (requires TCP), false: separate (requires UDP)) */
 		public boolean tpIsInterleaved = true;
@@ -151,6 +150,11 @@ public class RtspStaticSessionInfo {
 
 	private static final List<@NonNull String> unauthorizedIds = new ArrayList<>();
 	private static final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private RtspStaticSessionInfo() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

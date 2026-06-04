@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
@@ -356,7 +357,7 @@ public final class RtspProtoLowResponseParser {
 				resObj.setSeqNr16bit(Integer.parseInt(rawSeqNrStr.strip()));
 			} catch (NumberFormatException e) {
 				throw new RtspInvalidResponseException("Cannot parse " + fieldDesc + ": '" + rawSeqNrStr + "'");
-			} catch (IllegalArgumentException e) {
+			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException("Invalid " + fieldDesc + ": '" + rawSeqNrStr + "': " +
 						e.getMessage());
 			}
@@ -369,11 +370,11 @@ public final class RtspProtoLowResponseParser {
 			final String fieldDesc = "RTP-Info parameter value for SSRC";
 			try {
 				resObj.setSsrcId32bit(
-						RtspLowParserHelper.parseHexStringIntoLong(fieldDesc, rawSsrcHexStr)
+						RtspLowParserHelper.helperParseHexStringIntoLong(fieldDesc, rawSsrcHexStr)
 					);
 			} catch (RtspLowInvalidRrException e) {
 				throw new RtspInvalidResponseException(e.getMessage());
-			} catch (IllegalArgumentException e) {
+			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException("Invalid " + fieldDesc + ": '" + rawSsrcHexStr + "': " +
 						e.getMessage());
 			}
@@ -388,7 +389,7 @@ public final class RtspProtoLowResponseParser {
 				resObj.setRtpTimestamp32bit(Long.parseLong(rawTimeStr.strip()));
 			} catch (NumberFormatException e) {
 				throw new RtspInvalidResponseException("Cannot parse " + fieldDesc + ": '" + rawTimeStr + "'");
-			} catch (IllegalArgumentException e) {
+			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException("Invalid " + fieldDesc + ": '" + rawTimeStr + "': " +
 						e.getMessage());
 			}

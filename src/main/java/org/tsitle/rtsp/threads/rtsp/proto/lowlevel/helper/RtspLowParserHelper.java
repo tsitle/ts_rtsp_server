@@ -1,8 +1,10 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.time.ZonedDateTime;
@@ -34,7 +36,7 @@ public final class RtspLowParserHelper {
 			outputHd.setContentLen32bit((int)Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid Content-Length format: '" + hdValue + "'");
-		} catch (IllegalArgumentException e) {
+		} catch (RtspNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid Content-Length value: " + e.getMessage());
 		}
 	}
@@ -60,7 +62,7 @@ public final class RtspLowParserHelper {
 			outputHd.setCseqNr32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid CSeq format: '" + hdValue + "'");
-		} catch (IllegalArgumentException e) {
+		} catch (RtspNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid CSeq value: " + e.getMessage());
 		}
 	}
@@ -120,7 +122,7 @@ public final class RtspLowParserHelper {
 			} catch (NumberFormatException e) {
 				throw new RtspLowInvalidRrException("Invalid Session timeout parameter: '" + rawTimeout + "' - " +
 						"invalid format");
-			} catch (IllegalArgumentException e) {
+			} catch (RtspNumberRangeException e) {
 				throw new RtspLowInvalidRrException("Invalid Session parameter: '" + rawTimeout + "' - " +
 						e.getMessage());
 			}
@@ -161,8 +163,8 @@ public final class RtspLowParserHelper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("SameParameterValue")
-	public static long parseHexStringIntoLong(@NonNull String fieldDesc, @NonNull String hexStr) throws RtspLowInvalidRrException {
+	public static long helperParseHexStringIntoLong(@NonNull String fieldDesc, @NonNull String hexStr)
+			throws RtspLowInvalidRrException {
 		try {
 			return Long.parseLong(hexStr.strip(), 16);
 		} catch (NumberFormatException e) {
@@ -214,6 +216,7 @@ public final class RtspLowParserHelper {
 		String rawSourceIp = "";
 		String rawDestIp = "";
 		String rawSsrc = "";
+		String rawMode = "";
 
 		StringTokenizer tokens = new StringTokenizer(hdPartValue, ";");
 		while (tokens.hasMoreTokens()) {
@@ -253,6 +256,9 @@ public final class RtspLowParserHelper {
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC.toLowerCase())) {
 				rawSsrc = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC.length());
 				rawSsrc = rawSsrc.strip();
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_MODE.toLowerCase())) {
+				rawMode = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_MODE.length());
+				rawMode = rawMode.strip();
 			} else {
 				outputWarnings.add("Unknown Transport parameter: '" + curTokenAsIs + "'");
 			}
@@ -261,7 +267,7 @@ public final class RtspLowParserHelper {
 		// parse Transport/Profile/Lower-Transport
 		parseTransportParam_tpProfLtp(rawTransportProfileLowerTp, outputHd);
 		// check Unicast/Multicast
-		checkTransportParam_uniMultiCast(rawClientPorts, rawClientChanns, rawServerPorts, outputHd);
+		checkTransportParam_delivery(rawClientPorts, rawClientChanns, rawServerPorts, outputHd);
 		// check Interleaved
 		checkTransportParam_interleaved(outputHd);
 		// parse client UDP ports
@@ -280,6 +286,8 @@ public final class RtspLowParserHelper {
 		parseTransportParam_sourceDestIps(rawSourceIp, rawDestIp, isForRequest, outputHd);
 		// parse SSRC ID
 		parseTransportParam_ssrc(rawSsrc, isForRequest, outputHd);
+		// parse Mode
+		parseTransportParam_mode(rawMode, outputHd);
 	}
 
 	private static void parseTransportParam_tpProfLtp(
@@ -307,7 +315,7 @@ public final class RtspLowParserHelper {
 		}
 	}
 
-	private static void checkTransportParam_uniMultiCast(
+	private static void checkTransportParam_delivery(
 				@NonNull String rawClientPorts,
 				@NonNull String rawClientChanns,
 				@NonNull String rawServerPorts,
@@ -352,7 +360,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					"cannot parse ports, invalid format");
-		} catch (IllegalArgumentException e) {
+		} catch (RtspNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					e.getMessage());
 		}
@@ -377,7 +385,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					"cannot parse channels, invalid format");
-		} catch (IllegalArgumentException e) {
+		} catch (RtspNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					e.getMessage());
 		}
@@ -409,7 +417,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					"cannot parse ports, invalid format");
-		} catch (IllegalArgumentException e) {
+		} catch (RtspNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					e.getMessage());
 		}
@@ -451,9 +459,25 @@ public final class RtspLowParserHelper {
 		if (! outputHd.tpIsUnicast) {
 			throw new RtspLowInvalidRrException(fieldDesc + " is only valid for Unicast");
 		}
-		outputHd.setSsrcId32bit(
-				parseHexStringIntoLong(fieldDesc, rawSsrc)
-			);
+		try {
+			outputHd.setSsrcId32bit(
+					helperParseHexStringIntoLong(fieldDesc, rawSsrc)
+				);
+		} catch (RtspNumberRangeException e) {
+			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawSsrc + "' - " +
+					e.getMessage());
+		}
+	}
+
+	private static void parseTransportParam_mode(
+				@NonNull String rawMode,
+				@NonNull RtspProtoHeaderTypeTransport outputHd
+			) {
+		if (rawMode.isBlank()) {
+			outputHd.tpMode = RtspTransportMode.NONE;
+			return;
+		}
+		outputHd.tpMode = RtspTransportMode.of(rawMode);
 	}
 
 }

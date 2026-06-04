@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 
 import java.util.Optional;
 
@@ -8,9 +9,9 @@ public class RtspProtoHeaderTypeCseq {
 
 	private long cseqNr32bit = -1L;
 
-	public void setCseqNr32bit(long cseqNr32bit) throws IllegalArgumentException {
+	public void setCseqNr32bit(long cseqNr32bit) throws RtspNumberRangeException {
 		if (cseqNr32bit < 0L || cseqNr32bit > 0xFFFFFFFFL) {
-			throw new IllegalArgumentException("cseqNr32bit must be non-negative and within 32-bit range");
+			throw new RtspNumberRangeException("cseqNr32bit must be non-negative and within 32-bit range");
 		}
 		this.cseqNr32bit = cseqNr32bit;
 	}

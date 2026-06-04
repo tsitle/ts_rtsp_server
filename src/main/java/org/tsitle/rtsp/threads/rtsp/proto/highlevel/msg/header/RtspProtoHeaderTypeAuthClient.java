@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 
 public class RtspProtoHeaderTypeAuthClient {
 
+	/** Authentication credentials: username */
+	public @NonNull String authUser = "";
 	/** Authentication credentials: realm */
 	public @NonNull String authRealm = "";
 	/** Authentication credentials: nonce */
@@ -16,7 +18,8 @@ public class RtspProtoHeaderTypeAuthClient {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"authRealm='" + authRealm + "'" +
+				"authUser='" + authUser + "'" +
+				", authRealm='" + authRealm + "'" +
 				", authNonce='" + authNonce + "'" +
 				", authUri='" + authUri + "'" +
 				", authResp='" + authResp + "'" +

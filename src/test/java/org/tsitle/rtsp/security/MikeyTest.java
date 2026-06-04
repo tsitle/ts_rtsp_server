@@ -57,6 +57,7 @@ public class MikeyTest {
 		final int expSsrcId = 0x147FAB12;
 
 		SrtxpKmd kmdExp = SrtxpKmd.createWithCustomKeySizes(
+				false,
 				KeySizes.AES_KEY_SIZE_256,
 				KeySizes.AUTH_KEY_SIZE_080,
 				5,
@@ -77,6 +78,7 @@ public class MikeyTest {
 		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
 
 		SrtxpKmd kmdInpA = new SrtxpKmd(
+				false,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -90,6 +92,7 @@ public class MikeyTest {
 		SrtxpKmd kmdResA = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64a);
 
 		SrtxpKmd kmdInpB = new SrtxpKmd(
+				false,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -113,6 +116,7 @@ public class MikeyTest {
 		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
 
 		SrtxpKmd kmdInpA = new SrtxpKmd(
+				false,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -126,6 +130,7 @@ public class MikeyTest {
 		SrtxpKmd kmdResA = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64a);
 
 		SrtxpKmd kmdInpB = new SrtxpKmd(
+				false,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),

@@ -75,6 +75,7 @@ public class DebugRtpPacketTest {
 		 *   https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/11629
 		 */
 		SrtxpKmd kmdMod = new SrtxpKmd(
+				false,
 				kmdOrg.encrKeyLen(),
 				kmdOrg.masterKey(),
 				kmdOrg.masterSalt(),

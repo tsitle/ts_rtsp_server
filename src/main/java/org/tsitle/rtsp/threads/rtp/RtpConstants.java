@@ -1,26 +1,13 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtp;
 
-public class RtspConstants {
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.SdpConstants;
 
-	/** Name of the system property that holds the application version */
-	public static final String SYSPROP_CSTM_APP_VERSION = "appVersion";
+public final class RtpConstants {
 
-	/** Default TCP port for a RTSP server (without SSL/TLS) */
-	@SuppressWarnings("unused")
-	public static final int SERVER_RTSP_TCP_PORT = 554;
-	/** Default TCP port for a RTSPS server (with SSL/TLS) */
-	@SuppressWarnings("unused")
-	public static final int SERVER_RTSPS_TCP_PORT = 332;
-
-	/**
-	 * RTSP Session Timeout in seconds -- this value will be announced to the client.<br />
-	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link org.tsitle.rtsp.threads.RtxpTcpReadWrite}
-	 * instance will check for a timeout.
-	 */
-	public static final int RTSP_SESSION_TIMEOUT = 20;
+	private RtpConstants() { }
 
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
-	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
+	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = SdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
 	/** Samples per frame for AAC-LC audio -- Default Type 2 */

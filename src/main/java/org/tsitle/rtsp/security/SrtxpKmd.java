@@ -18,6 +18,8 @@ public final class SrtxpKmd implements Cloneable {
 	public static final int DEFAULT_MKI_LEN = 4;  // VLC requires 4-byte MKI
 	public static final long DEFAULT_KDR_PACKETS = 0;  // VLC requires a KDR of 0
 
+	/** Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826) */
+	private final boolean isForLegacySdes;
 	/** Encryption Key length */
 	private final int encrKeyLen;
 	/** Master AES-128 key (16 bytes) */
@@ -42,6 +44,7 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Constructor.
+	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
 	 * @param encrKeyLen Encryption Key length
 	 * @param masterKey Master Key
 	 * @param masterSalt Master Salt
@@ -52,6 +55,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param kdr Key Derivation Rate
 	 */
 	public SrtxpKmd(
+				boolean isForLegacySdes,
 				int encrKeyLen,
 				@NonNull BufferExt masterKey,
 				@NonNull BufferExt masterSalt,
@@ -61,6 +65,7 @@ public final class SrtxpKmd implements Cloneable {
 				int ssrcId,
 				@NonNull DynInteger kdr
 			) {
+		this.isForLegacySdes = isForLegacySdes;
 		this.encrKeyLen = encrKeyLen;
 		this.masterKey = masterKey.clone();
 		this.masterSalt = masterSalt.clone();
@@ -97,6 +102,7 @@ public final class SrtxpKmd implements Cloneable {
 	 */
 	public static SrtxpKmd createWithDefaults(long mkiValue, int ssrcId, @NonNull DynInteger kdr) {
 		return createWithCustomKeySizes(
+				false,
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
@@ -115,6 +121,7 @@ public final class SrtxpKmd implements Cloneable {
 	 */
 	public static SrtxpKmd createForLegacySdes(int ssrcId) {
 		return createWithCustomKeySizes(
+				true,
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
@@ -126,6 +133,7 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Create a new KMD object with custom key sizes and random key/salt
+	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
@@ -134,6 +142,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createWithCustomKeySizes(
+				boolean isForLegacySdes,
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
@@ -141,6 +150,7 @@ public final class SrtxpKmd implements Cloneable {
 				int ssrcId
 			) {
 		return createWithCustomKeySizes(
+				isForLegacySdes,
 				encrKeyLen,
 				authKeyLen,
 				authTagLen,
@@ -152,6 +162,7 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Create a new KMD object with custom key sizes and random key/salt
+	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
 	 * @param encrKeyLen Encryption Key length
 	 * @param authKeyLen Authentication Key length
 	 * @param authTagLen Authentication Tag length
@@ -161,6 +172,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createWithCustomKeySizes(
+				boolean isForLegacySdes,
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
@@ -169,6 +181,7 @@ public final class SrtxpKmd implements Cloneable {
 				@NonNull DynInteger kdr
 			) {
 		SrtxpKmd resObj = new SrtxpKmd(
+				isForLegacySdes,
 				encrKeyLen,
 				new BufferExt(),
 				new BufferExt(),
@@ -204,6 +217,10 @@ public final class SrtxpKmd implements Cloneable {
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
+	}
+
+	public boolean isForLegacySdes() {
+		return isForLegacySdes;
 	}
 
 	public int encrKeyLen() {
@@ -255,7 +272,8 @@ public final class SrtxpKmd implements Cloneable {
 			return false;
 		}
 		var that = (SrtxpKmd) obj;
-		return (this.encrKeyLen == that.encrKeyLen &&
+		return (this.isForLegacySdes == that.isForLegacySdes &&
+				this.encrKeyLen == that.encrKeyLen &&
 				Objects.equals(this.masterKey, that.masterKey) &&
 				Objects.equals(this.masterSalt, that.masterSalt) &&
 				this.authKeyLen == that.authKeyLen &&
@@ -267,13 +285,14 @@ public final class SrtxpKmd implements Cloneable {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId, kdr);
+		return Objects.hash(isForLegacySdes, encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId, kdr);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"encrKeyLen=" + encrKeyLen +
+				"isForLegacySdes=" + (isForLegacySdes ? "T" : "F") +
+				", encrKeyLen=" + encrKeyLen +
 				", masterKey=" + masterKey.toHexString(true) +
 				", masterSalt=" + masterSalt.toHexString(true) +
 				", authKeyLen=" + authKeyLen +

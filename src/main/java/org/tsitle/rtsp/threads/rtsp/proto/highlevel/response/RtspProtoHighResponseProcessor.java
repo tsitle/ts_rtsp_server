@@ -8,6 +8,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseExceptio
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidSessionIdException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
@@ -104,7 +105,7 @@ public class RtspProtoHighResponseProcessor {
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspInvalidResponseException("Missing CSeq header");
 		}
-		if (tmpOptCseq.get() != rtspSessionInfo.rtspServerSeqNrExpected) {
+		if (Integer.toUnsignedLong(tmpOptCseq.get()) != rtspSessionInfo.seqNr_respRem_expected) {
 			throw new RtspInvalidResponseException("Invalid CSeq");
 		}
 
@@ -184,7 +185,11 @@ public class RtspProtoHighResponseProcessor {
 		if (isResponseFromClient) {
 			throw new RtspInvalidResponseException("Received Auth(Server) header from client");
 		}
-		// @TODO store params
+		if (headerEntry.hdValAuthServer.authAlgo == RtspAuthAlgo.NONE) {
+			throw new RtspInvalidResponseException("Auth(Server) Algo must be set");
+		}
+		rtspSessionInfo.authInfo.authRealmServer = headerEntry.hdValAuthServer.authRealm;
+		rtspSessionInfo.authInfo.authNonceServer = headerEntry.hdValAuthServer.authNonce;
 	}
 
 	private void processHeader_describe_contbase(
@@ -222,11 +227,8 @@ public class RtspProtoHighResponseProcessor {
 		if (messageType != RtspMessageType.OPTIONS) {
 			throw new RtspInvalidResponseException("Received Public header in non-OPTIONS request");
 		}
-		if (isResponseFromClient) {
-			throw new RtspInvalidResponseException("Received Public header from client");
-		}
-		rtspSessionInfo.serverSupportedMessageTypes.clear();
-		rtspSessionInfo.serverSupportedMessageTypes.addAll(headerEntry.hdValPublic.messageTypes);
+		rtspSessionInfo.rhSupportedMessageTypes.clear();
+		rtspSessionInfo.rhSupportedMessageTypes.addAll(headerEntry.hdValPublic.messageTypes);
 	}
 
 	private void processHeader_play_range(

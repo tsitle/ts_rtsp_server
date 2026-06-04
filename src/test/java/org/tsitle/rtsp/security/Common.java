@@ -60,6 +60,7 @@ class Common {
 
 		//
 		return new SrtxpKmd(
+				false,
 				ENCR_KEY_SIZE_FOR_ALL_TESTS,
 				DEFAULT_MASTER_KEY,
 				DEFAULT_MASTER_SALT,
@@ -115,6 +116,7 @@ class Common {
 			) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = new SrtxpKmd(
+				false,
 				mk.getUsed(),
 				mk,
 				ms,
@@ -137,6 +139,7 @@ class Common {
 			) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = new SrtxpKmd(
+				false,
 				mk.getUsed(),
 				mk,
 				ms,

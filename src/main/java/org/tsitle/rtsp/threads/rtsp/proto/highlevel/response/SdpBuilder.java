@@ -11,27 +11,32 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.DynInteger;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class SdpBuilder {
 
-	private static final String SESSION_NAME = "Just A Session";
-
-	private final RtspConfig rtspConfig;
-	private final RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull String cfgServerNameAndVersion;
+	private final @NonNull RtspSessionInfo rtspSessionInfo;
 
 	public SdpBuilder(
 				@NonNull RtspConfig rtspConfig,
+				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
+		if (cfgServerNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
+		}
 		this.rtspConfig = rtspConfig;
+		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.rtspSessionInfo = rtspSessionInfo;
 	}
 
@@ -46,11 +51,12 @@ public class SdpBuilder {
 	 * @param rtspInputSource Input Source
 	 * @param rtspHostIpOrName Server's host IP address or hostname
 	 * @return SDP lines
+	 * @throws RtspSdpException If an error occurs during SDP generation
 	 */
 	public @NonNull List<@NonNull String> buildSdp(
 				@NonNull RtspInputSource rtspInputSource,
 				@NonNull String rtspHostIpOrName
-			) {
+			) throws RtspSdpException {
 		List<@NonNull String> resL = new ArrayList<>();
 
 		// SDP Specification (RFC-2327 Section 6)
@@ -69,14 +75,13 @@ public class SdpBuilder {
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
 		// s: Session Name
-		resL.add(String.format("s=%s", SESSION_NAME));
+		resL.add(String.format("s=%s", SdpConstants.SESSION_NAME));
 		// i: Session Information
 		resL.add(String.format("i=%s", rtspInputSource.getId()));
 		// t: Time Active
 		resL.add("t=0 0");
 		// a: Session Attribute: Name and version number of the tool used to create the session description
-		String tmpSdpEnc = getSdpEncoderName();
-		resL.add(String.format("a=tool:%s", tmpSdpEnc));
+		resL.add(String.format("a=tool:%s", cfgServerNameAndVersion));
 		// a: Session Attribute: Type of the conference
 		resL.add("a=type:broadcast");
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
@@ -96,19 +101,11 @@ public class SdpBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String getSdpEncoderName() {
-		String tmpAppVersion = System.getProperty(RtspConstants.SYSPROP_CSTM_APP_VERSION);
-		if (tmpAppVersion == null) {
-			tmpAppVersion = "0.0";
-		}
-		return RtspProtoConstants.SERVER_NAME + " " + tmpAppVersion;
-	}
-
 	private void buildSdpForSubStream(
 				@NonNull RtspInputSource rtspInputSource,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
-			) {
+			) throws RtspSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream()";
 
 		Optional<RtspStreamSource> optSsObj =
@@ -120,7 +117,7 @@ public class SdpBuilder {
 
 		// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
 		final String outputSubStreamId = RtspStaticSessionInfo.addSdpSubStream(
-				rtspSessionInfo.getClientIpAddr(),
+				getClientIpAddr(),
 				rtspInputSource.getId(),
 				tmpSsObj.getId()
 			);
@@ -130,14 +127,14 @@ public class SdpBuilder {
 		try {
 			sdpCodecName = tmpSsObj.getCodec().getSdpCodecName();
 		} catch (IllegalStateException e) {
-			throw new IllegalStateException(FNC_NAME + ": " + e.getMessage());
+			throw new RtspSdpException(FNC_NAME + ": " + e.getMessage());
 		}
 
 		final int videoRtpClockRate;
 		try {
 			videoRtpClockRate = (useVideo ? tmpSsObj.getCodec().getVideoCodecRtpClockrate() : 0);
 		} catch (IllegalStateException e) {
-			throw new IllegalStateException(FNC_NAME + ": " + e.getMessage());
+			throw new RtspSdpException(FNC_NAME + ": " + e.getMessage());
 		}
 
 		// m: Media Description with available codec(s)
@@ -174,7 +171,7 @@ public class SdpBuilder {
 						(double)tmpSsObj.getAudioSamplerateHz());
 				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
 			} else {
-				tmpTimeMs = RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
+				tmpTimeMs = SdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 			}
 			outputList.add(
 					String.format("a=ptime:%.5f", tmpTimeMs).replace(",", ".")
@@ -208,8 +205,8 @@ public class SdpBuilder {
 								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
 								"constantDuration=%d",  // optional: 512/960/1024 samples per frame
 								tmpSsObj.getCodec().getValue(),
-								RtspProtoConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
-								RtspProtoConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
+								SdpConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
+								SdpConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
 								tmpSsObj.getAacAudioSpecificConfigHexStr(),
 								RtpPacketAac.HEADER_FLD_SIZE_LENGTH_BITS,
 								RtpPacketAac.HEADER_FLD_INDEX_LENGTH_BITS,
@@ -223,19 +220,19 @@ public class SdpBuilder {
 								"a=fmtp:%d " +
 								"packetization-mode=%d",
 								tmpSsObj.getCodec().getValue(),
-								RtspProtoConstants.H26xPacketizationMode.NON_INTERLEAVED.value
+								SdpConstants.H26xPacketizationMode.NON_INTERLEAVED.value
 					));
 				break;
 		}
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		outputList.add(
-				String.format("a=control:%s%s", RtspProtoConstants.SUBSTREAM_ID_PREFIX, outputSubStreamId)
+				String.format("a=control:%s%s", RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX, outputSubStreamId)
 			);
 
 		// ----------------------------------------
 		// create or update the StreamKmds object
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.getClientIpAddr(),
+				getClientIpAddr(),
 				outputSubStreamId,
 				RandomHelper.getRandomUint32(false)
 			);
@@ -248,7 +245,7 @@ public class SdpBuilder {
 	private void addCryptoParams(
 				@NonNull List<@NonNull String> outputList,
 				RtspStaticSessionInfo.@NonNull StreamKmds streamKmds
-			) {
+			) throws RtspSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCryptoParams()";
 
 		streamKmds.isForLegacySdes = (! rtspSessionInfo.clientUserAgent.isBlank() &&
@@ -259,6 +256,7 @@ public class SdpBuilder {
 			boolean isForBuggyGstreamer = rtspSessionInfo.clientUserAgent.startsWith("GStreamer");
 			if (isForBuggyGstreamer) {
 				streamKmds.kmdOutbound = SrtxpKmd.createWithCustomKeySizes(
+						false,
 						SrtxpKmd.DEFAULT_ENCR_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
@@ -302,8 +300,15 @@ public class SdpBuilder {
 				outputList.add(tmpOutpLine);
 			}
 		} catch (SrtxpSecurityException e) {
-			throw new IllegalStateException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
+			throw new RtspSdpException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull InetAddress getClientIpAddr() throws RtspSdpException {
+		return rtspSessionInfo.getClientIpAddr()
+				.orElseThrow(() -> new RtspSdpException("Client IP address is not set"));
 	}
 
 }

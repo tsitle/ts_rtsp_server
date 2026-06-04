@@ -10,7 +10,7 @@ import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.*;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
+import org.tsitle.rtsp.threads.rtp.RtpConstants;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -88,7 +88,7 @@ public class RtspStreamSource {
 		this.audioChannelCount = -1;
 		this.isAudioBigEndian = false;
 
-		this.aacSamplesPerFrame = RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
+		this.aacSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
 		this.aacAudioSpecificConfigHex = "";
 
 		this.internalCodec = RtpPacketType.UNKNOWN;
@@ -339,16 +339,16 @@ public class RtspStreamSource {
 			//
 			if (enabled && internalCodec == RtpPacketType.A_AAC) {
 				switch (aacSamplesPerFrame) {
-					case RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
-					case RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
-					case RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
+					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
+					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
+					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
 						break;
 					default:
 						throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
 								"for Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
-								RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
-								RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
-								RtspConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
+								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
+								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
+								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
 				}
 				//
 				readAacHeader(getId(), tmpExtSsId);

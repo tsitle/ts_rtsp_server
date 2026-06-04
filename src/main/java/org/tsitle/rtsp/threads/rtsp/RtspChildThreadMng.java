@@ -12,11 +12,13 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
+import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.util.*;
 
@@ -82,8 +84,22 @@ final class RtspChildThreadMng {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValues() {
+	@NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesAll() {
 		return childThreadsForOneStreamMap.values();
+	}
+
+	@NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesOnlyRunning() {
+		final Collection<@NonNull ChildThreadsForOneStream> resC = new ArrayList<>();
+		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : childThreadsForOneStreamMap.values()) {
+			if (ctfos.rtpThreadSender == null || ! ctfos.rtpThreadSender.isRunning()) {
+				continue;
+			}
+			if (ctfos.rtcpThreadSendRecv == null || ! ctfos.rtcpThreadSendRecv.isRunning()) {
+				continue;
+			}
+			resC.add(ctfos);
+		}
+		return resC;
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -103,16 +119,16 @@ final class RtspChildThreadMng {
 	void startChildThreads(String inputSourceId) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startChildThreads()";
 
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
-			throw new IllegalStateException(FNC_NAME + ": No input source found (OBJ)");
+		if (! rtspSessionInfo.existsInputSourceObjForMt_nonSetup(RtspMessageType.PLAY)) {
+			throw new IllegalStateException(FNC_NAME + ": No Input Source found (OBJ)");
 		}
-		if (! rtspSessionInfo.inputSourceUrlPerMtMap.containsKey(RtspMessageType.PLAY)) {
-			throw new IllegalStateException(FNC_NAME + ": No input source found (URL)");
+		if (! rtspSessionInfo.existsResourceUrlForMt_nonSetup(RtspMessageType.PLAY)) {
+			throw new IllegalStateException(FNC_NAME + ": No Input Source found (URL)");
 		}
 		//
 		String cnameHostname;
 		try {
-			String tmpIsUrl = rtspSessionInfo.inputSourceUrlPerMtMap.get(RtspMessageType.PLAY);
+			String tmpIsUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspMessageType.PLAY).orElseThrow();
 			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(tmpIsUrl);
 			cnameHostname = tmpIsUri.getHost();
 		} catch (HostnameHelperInvalidUriException e) {
@@ -145,7 +161,7 @@ final class RtspChildThreadMng {
 	}
 
 	void pauseOrStopChildThreads(boolean doPause) {
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
+		if (! rtspSessionInfo.existsInputSourceObjForMt_nonSetup(RtspMessageType.PLAY)) {  // sanity check
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -173,7 +189,7 @@ final class RtspChildThreadMng {
 	}
 
 	void unpauseChildThreads() {
-		if (! rtspSessionInfo.inputSourceObjPerMtMap.containsKey(RtspMessageType.PLAY)) {
+		if (! rtspSessionInfo.existsInputSourceObjForMt_nonSetup(RtspMessageType.PLAY)) {  // sanity check
 			return;
 		}
 		for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
@@ -193,6 +209,12 @@ final class RtspChildThreadMng {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull InetAddress getClientIpAddr() {
+		return rtspSessionInfo.getClientIpAddr().orElseThrow(() -> new IllegalStateException("Client IP address is not set"));
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void stopChildThread(ThreadPausableBase thread) {
@@ -217,7 +239,7 @@ final class RtspChildThreadMng {
 				.debugSessionId(rtspSessionInfo.rtspSessionId)
 				.streamSourceId(Objects.requireNonNull(tmpStreamInfo.rtspStreamSource).getId())
 				.rtspSsrcId(tmpStreamInfo.rtspSsrcId)
-				.tpClientIpAddr(rtspSessionInfo.getClientIpAddr());
+				.tpClientIpAddr(getClientIpAddr());
 		if (tmpStreamInfo.tpIsUdp) {
 			tmpBuilder
 					.tpClientDestUdpPortRtcp(tmpStreamInfo.tpClientUdpPortRtcp)
@@ -267,7 +289,7 @@ final class RtspChildThreadMng {
 				.comDebugSessionId(rtspSessionInfo.rtspSessionId)
 				.comStreamSourceId(Objects.requireNonNull(streamInfo.rtspStreamSource).getId())
 				.comRtspSsrcId(streamInfo.rtspSsrcId)
-				.comTpClientIpAddr(rtspSessionInfo.getClientIpAddr())
+				.comTpClientIpAddr(getClientIpAddr())
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.tpIsEncr)
 				.comCryptoKmdOutboundRtp(streamInfo.streamKmds.kmdOutbound)
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
@@ -373,7 +395,7 @@ final class RtspChildThreadMng {
 			default:
 				if (tmpStreamInfo.rtspStreamSource.getCodec().isPcmAudio()) {
 					// the virtual FPS value only when the source is a file
-					final double tmpVirtualFpsPcm = (1000.0 / (double)RtspConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
+					final double tmpVirtualFpsPcm = (1000.0 / (double) RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
 					//
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),
@@ -408,7 +430,7 @@ final class RtspChildThreadMng {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private RtspStaticSessionInfo.@NonNull SdpSubStreamInfo getSubStreamInfo(@NonNull String subStreamId) {
-		return RtspStaticSessionInfo.getSdpSubStream(rtspSessionInfo.getClientIpAddr(), subStreamId).orElseThrow();
+		return RtspStaticSessionInfo.getSdpSubStream(getClientIpAddr(), subStreamId).orElseThrow();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

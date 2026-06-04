@@ -1,6 +1,8 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
 
 import java.util.Optional;
 
@@ -20,7 +22,7 @@ public class RtspProtoHeaderTypeTransport {
 	private int tpClientTcpChannRtcp = -1;
 	/** Transport type protocol (true: UDP, false: TCP) */
 	public boolean tpIsUdp = false;
-	/** Transport casting type (true: unicast, false: multicast) */
+	/** Transport delivery type (true: unicast, false: multicast) */
 	public boolean tpIsUnicast = false;
 	/** Transport interleaved mode (true: interleaved (requires TCP), false: separate (requires UDP)) */
 	public boolean tpIsInterleaved = false;
@@ -35,7 +37,10 @@ public class RtspProtoHeaderTypeTransport {
 	/** SSRC identifier for RTP/RTCP packets */
 	private long tpSsrcId32bit = -1L;
 
-	public void setClientUdpPortRtp16bit(int portNumber16bit) throws IllegalArgumentException {
+	/** Mode (either PLAY or RECORD) */
+	public @NonNull RtspTransportMode tpMode = RtspTransportMode.NONE;
+
+	public void setClientUdpPortRtp16bit(int portNumber16bit) throws RtspNumberRangeException {
 		validatePortNumber("tpClientUdpPortRtp", portNumber16bit);
 		this.tpClientUdpPortRtp = portNumber16bit;
 	}
@@ -44,7 +49,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpClientUdpPortRtp < 0L ? Optional.empty() : Optional.of((short)tpClientUdpPortRtp));
 	}
 
-	public void setClientUdpPortRtcp16bit(int portNumber16bit) throws IllegalArgumentException {
+	public void setClientUdpPortRtcp16bit(int portNumber16bit) throws RtspNumberRangeException {
 		validatePortNumber("tpClientUdpPortRtcp", portNumber16bit);
 		this.tpClientUdpPortRtcp = portNumber16bit;
 	}
@@ -53,7 +58,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpClientUdpPortRtcp < 0L ? Optional.empty() : Optional.of((short)tpClientUdpPortRtcp));
 	}
 
-	public void setServerUdpPortRtp16bit(int portNumber16bit) throws IllegalArgumentException {
+	public void setServerUdpPortRtp16bit(int portNumber16bit) throws RtspNumberRangeException {
 		validatePortNumber("tpServerUdpPortRtp", portNumber16bit);
 		this.tpServerUdpPortRtp = portNumber16bit;
 	}
@@ -62,7 +67,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpServerUdpPortRtp < 0L ? Optional.empty() : Optional.of((short)tpServerUdpPortRtp));
 	}
 
-	public void setServerUdpPortRtcp16bit(int portNumber16bit) throws IllegalArgumentException {
+	public void setServerUdpPortRtcp16bit(int portNumber16bit) throws RtspNumberRangeException {
 		validatePortNumber("tpServerUdpPortRtcp", portNumber16bit);
 		this.tpServerUdpPortRtcp = portNumber16bit;
 	}
@@ -71,7 +76,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpServerUdpPortRtcp < 0L ? Optional.empty() : Optional.of((short)tpServerUdpPortRtcp));
 	}
 
-	public void setClientTcpChannRtp16bit(int tcpChann16bit) throws IllegalArgumentException {
+	public void setClientTcpChannRtp16bit(int tcpChann16bit) throws RtspNumberRangeException {
 		validateTcpChannel("tpClientTcpChannRtp", tcpChann16bit);
 		this.tpClientTcpChannRtp = tcpChann16bit;
 	}
@@ -80,7 +85,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpClientTcpChannRtp < 0L ? Optional.empty() : Optional.of((short)tpClientTcpChannRtp));
 	}
 
-	public void setClientTcpChannRtcp16bit(int tcpChann16bit) throws IllegalArgumentException {
+	public void setClientTcpChannRtcp16bit(int tcpChann16bit) throws RtspNumberRangeException {
 		validateTcpChannel("tpClientTcpChannRtcp", tcpChann16bit);
 		this.tpClientTcpChannRtcp = tcpChann16bit;
 	}
@@ -89,7 +94,7 @@ public class RtspProtoHeaderTypeTransport {
 		return (tpClientTcpChannRtcp < 0L ? Optional.empty() : Optional.of((short)tpClientTcpChannRtcp));
 	}
 
-	public void setSsrcId32bit(long ssrc32bit) throws IllegalArgumentException {
+	public void setSsrcId32bit(long ssrc32bit) throws RtspNumberRangeException {
 		validateSsrc("tpSsrcId32bit", ssrc32bit);
 		this.tpSsrcId32bit = ssrc32bit;
 	}
@@ -121,22 +126,22 @@ public class RtspProtoHeaderTypeTransport {
 				"]";
 	}
 
-	private static void validatePortNumber(@NonNull String desc, int port) {
+	private static void validatePortNumber(@NonNull String desc, int port) throws RtspNumberRangeException {
 		if (port < 1 || port > 65535) {
-			throw new IllegalArgumentException(desc + " must be between 1 and 65535, got: " + port);
+			throw new RtspNumberRangeException(desc + " must be between 1 and 65535, got: " + port);
 		}
 	}
 
-	private static void validateTcpChannel(@NonNull String desc, int channel) {
+	private static void validateTcpChannel(@NonNull String desc, int channel) throws RtspNumberRangeException {
 		if (channel < 0 || channel > 65535) {
-			throw new IllegalArgumentException(desc + " must be between 0 and 65535, got: " + channel);
+			throw new RtspNumberRangeException(desc + " must be between 0 and 65535, got: " + channel);
 		}
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private static void validateSsrc(@NonNull String desc, long ssrc) {
+	private static void validateSsrc(@NonNull String desc, long ssrc) throws RtspNumberRangeException {
 		if (ssrc < 1L || ssrc > 0xFFFFFFFFL) {
-			throw new IllegalArgumentException(desc + " must be between 1 and 0xFFFFFFFF, got: " + ssrc);
+			throw new RtspNumberRangeException(desc + " must be between 1 and 0xFFFFFFFF, got: " + ssrc);
 		}
 	}
 

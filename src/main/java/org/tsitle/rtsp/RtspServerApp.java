@@ -13,6 +13,7 @@ import org.tsitle.rtsp.security.SslContextFactory;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
+import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
 
 import javax.net.ssl.SSLContext;
@@ -276,6 +277,8 @@ public class RtspServerApp {
 		final int rtspsTcpPort = rtspConfig.getServerTcpPortRtsps();
 		final int rtspTcpPort = rtspConfig.getServerTcpPortRtsp();
 
+		final String cfgServerNameAndVersion = getAppNameAndVersion();
+
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
 			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspConfig.getServerTcpPortRtsp()) : null)) {
 				if (listenSocketRtsps != null) {
@@ -320,6 +323,7 @@ public class RtspServerApp {
 							RtspServerApp::addMsgForLogThread,
 							cancelToken,
 							rtspConfig,
+							cfgServerNameAndVersion,
 							++clientConnectionCount,
 							socketRtspTcp,
 							isRtspsConn
@@ -385,6 +389,16 @@ public class RtspServerApp {
 			System.err.println(fncName + ": interrupted, forcing shutdown " + poolName);
 			poolObj.shutdownNow();
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String getAppNameAndVersion() {
+		String tmpAppVersion = System.getProperty(AppConstants.SYSPROP_CSTM_APP_VERSION);
+		if (tmpAppVersion == null) {
+			tmpAppVersion = "0.0";
+		}
+		return RtspServerConstants.SERVER_NAME + "/" + tmpAppVersion;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

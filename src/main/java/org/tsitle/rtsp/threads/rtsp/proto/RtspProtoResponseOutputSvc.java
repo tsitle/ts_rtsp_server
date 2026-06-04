@@ -17,11 +17,11 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseBuilder;
 
-public class RtspProtoResponseOutputSvc {
+public final class RtspProtoResponseOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
-	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoHighResponseBuilder rtspProtoHighResponseBuilder;
 	private final RtspProtoLowResponseBuilder rtspProtoLowResponseBuilder;
@@ -30,6 +30,7 @@ public class RtspProtoResponseOutputSvc {
 	public RtspProtoResponseOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
+				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
@@ -38,7 +39,12 @@ public class RtspProtoResponseOutputSvc {
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
-		this.rtspProtoHighResponseBuilder = new RtspProtoHighResponseBuilder(logMsgInterface, rtspConfig, rtspSessionInfo);
+		this.rtspProtoHighResponseBuilder = new RtspProtoHighResponseBuilder(
+				logMsgInterface,
+				rtspConfig,
+				cfgServerNameAndVersion,
+				rtspSessionInfo
+			);
 		this.rtspProtoLowResponseBuilder = new RtspProtoLowResponseBuilder(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
@@ -78,10 +84,10 @@ public class RtspProtoResponseOutputSvc {
 
 		// send the message
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
-		logDebug(FNC_NAME, "Sent response '" + msgStructured.statusCode +
-				"' to Client (<" +
-				(rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId) +
-				">, CSeq=" + rtspSessionInfo.rtspClientSeqNrResponse + ")\n");
+		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",
+				msgStructured.statusCode,
+				rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId,
+				msgStructured.getHeaderCseq().isPresent() ? Integer.toUnsignedString(msgStructured.getHeaderCseq().get()) : "-"));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -93,7 +99,6 @@ public class RtspProtoResponseOutputSvc {
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
-	@SuppressWarnings("SameParameterValue")
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
 				fncName + ": " + msg);

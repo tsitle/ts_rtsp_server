@@ -10,14 +10,15 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.*;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 
+import java.net.InetAddress;
 import java.util.*;
 
 public final class RtspProtoHighRequestProcessor {
@@ -25,17 +26,20 @@ public final class RtspProtoHighRequestProcessor {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtspConfig rtspConfig;
+	private final boolean isRequestFromClient;
 
 	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
 
 	public RtspProtoHighRequestProcessor(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
-				@NonNull RtspSessionInfo rtspSessionInfo
+				@NonNull RtspSessionInfo rtspSessionInfo,
+				boolean isRequestFromClient
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
+		this.isRequestFromClient = isRequestFromClient;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -97,6 +101,9 @@ public final class RtspProtoHighRequestProcessor {
 		} catch (RtspInputSourceIdNotFoundException | RtspSubStreamIdNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.NOT_FOUND);
+		} catch (RtspInvalidRequestException e) {
+			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
+			return RtspRequestBasics.createKnownWithError(msg.messageType, RtspStatusCode.INTERNAL_SERVER_ERROR);
 		}
 
 		// process resource URL query parameters
@@ -133,9 +140,7 @@ public final class RtspProtoHighRequestProcessor {
 					requestUrlInputOrStreamSource.subStreamId,
 					FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
 				);
-			if (! rtspSessionInfo.subStreamIdsSetup.contains(requestUrlInputOrStreamSource.subStreamId)) {
-				rtspSessionInfo.subStreamIdsSetup.add(requestUrlInputOrStreamSource.subStreamId);
-			}
+			rtspSessionInfo.subStreamIdsSetup.add(requestUrlInputOrStreamSource.subStreamId);
 		}
 
 		//
@@ -157,13 +162,12 @@ public final class RtspProtoHighRequestProcessor {
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspInvalidRequestException("Missing CSeq header");
 		}
-		rtspSessionInfo.rtspClientSeqNrLastRcvd = tmpOptCseq.get();
-		if (rtspSessionInfo.rtspClientSeqNrLastRcvd > rtspSessionInfo.rtspClientSeqNrExpected) {
-			rtspSessionInfo.rtspClientSeqNrExpected = rtspSessionInfo.rtspClientSeqNrLastRcvd;
-		} else if (rtspSessionInfo.rtspClientSeqNrLastRcvd < rtspSessionInfo.rtspClientSeqNrExpected) {
+		rtspSessionInfo.seqNr_requRem_lastRcvd = Integer.toUnsignedLong(tmpOptCseq.get());
+		if (rtspSessionInfo.seqNr_requRem_lastRcvd > rtspSessionInfo.seqNr_requRem_expected) {
+			rtspSessionInfo.seqNr_requRem_expected = rtspSessionInfo.seqNr_requRem_lastRcvd;
+		} else if (rtspSessionInfo.seqNr_requRem_lastRcvd < rtspSessionInfo.seqNr_requRem_expected) {
 			throw new RtspInvalidRequestException("Invalid CSeq value");
 		}
-		rtspSessionInfo.rtspClientSeqNrResponse = rtspSessionInfo.rtspClientSeqNrExpected++;
 
 		//
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
@@ -196,7 +200,7 @@ public final class RtspProtoHighRequestProcessor {
 	}
 
 	private void checkMessageType(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
-		if (! RtspProtoConstants.SUPPORTED_MESSAGE_TYPES_SERVER.contains(msg.messageType)) {
+		if (! RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES.contains(msg.messageType)) {
 			throw new RtspInvalidRequestException("Unsupported request type");
 		}
 	}
@@ -237,7 +241,8 @@ public final class RtspProtoHighRequestProcessor {
 	private RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource processResourceUrl(
 				@NonNull RtspMessageType requestType,
 				@NonNull String resourceUrl
-			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException {
+			) throws RtspInvalidUriException, RtspInputSourceIdNotFoundException, RtspSubStreamIdNotFoundException,
+					RtspInvalidRequestException{
 		if (rtspSessionInfo.isRtspsConnection && ! resourceUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://")) {
 			throw new RtspInvalidUriException("Invalid URL for RTSPS");
 		}
@@ -249,29 +254,33 @@ public final class RtspProtoHighRequestProcessor {
 		final ResourceUrlParsingVars resourceUrlParsingVars = new ResourceUrlParsingVars(requestType, resourceUrl);
 
 		//
+		InetAddress tmpRemoteHostIpAddr = getRemoteHostIpAddr();
+
+		//
 		ResourceUrlProcessor.extractSubStreamId(resourceUrlParsingVars);
 		if (! resourceUrlParsingVars.subStreamId.isBlank()) {
 			ResourceUrlProcessor.findStreamSourceObj(
 					resourceUrlParsingVars,
-					rtspSessionInfo.getClientIpAddr(),
+					tmpRemoteHostIpAddr,
 					rtspConfig
 				);
 		}
 
 		//
 		if (requestType == RtspMessageType.SETUP) {
-			ResourceUrlProcessor.createSetupSubStreamRecord(resourceUrlParsingVars, rtspSessionInfo.getClientIpAddr());
+			ResourceUrlProcessor.createSetupSubStreamRecord(resourceUrlParsingVars, tmpRemoteHostIpAddr);
 			//
 			RtspRequestBasics.RequestUrlInputOrStreamSource resObj = ResourceUrlProcessor.buildRuiossForSetupRequest(
 					resourceUrlParsingVars,
-					rtspSessionInfo.getClientIpAddr()
+					tmpRemoteHostIpAddr
 				);
 			// preliminary setting
 			Objects.requireNonNull(resObj.inputSourceId);
 			rtspSessionInfo.isRtpRtcpEncryptionRequired =
 					rtspConfig.getInputSourceObj(resObj.inputSourceId).orElseThrow().getNeedsEncryption();
 			//
-			rtspSessionInfo.inputSourceUrlPerMtMap.put(RtspMessageType.SETUP, resourceUrl);
+			Objects.requireNonNull(resObj.subStreamId);
+			rtspSessionInfo.setResourceUrlForMt_onlySetup(resObj.subStreamId, resourceUrl);
 			return resObj;
 		}
 
@@ -280,7 +289,7 @@ public final class RtspProtoHighRequestProcessor {
 
 		ResourceUrlProcessor.storeSubStreamAndStreamSourceIdsForNonSetupRequests(
 				resourceUrlParsingVars,
-				rtspSessionInfo.getClientIpAddr(),
+				tmpRemoteHostIpAddr,
 				resObj
 			);
 
@@ -289,8 +298,8 @@ public final class RtspProtoHighRequestProcessor {
 				resourceUrlParsingVars,
 				rtspConfig
 			);
-		rtspSessionInfo.inputSourceUrlPerMtMap.put(requestType, resourceUrl);
-		rtspSessionInfo.inputSourceObjPerMtMap.put(requestType, tmpInputSrcObj);
+		rtspSessionInfo.setResourceUrlForMt_nonSetup(requestType, resourceUrl);
+		rtspSessionInfo.setInputSourceObjForMt_nonSetup(requestType, tmpInputSrcObj);
 		// preliminary setting
 		rtspSessionInfo.isRtpRtcpEncryptionRequired = tmpInputSrcObj.getNeedsEncryption();
 
@@ -302,7 +311,7 @@ public final class RtspProtoHighRequestProcessor {
 
 	private void processQueryParams(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		for (Map.Entry<@NonNull String, @NonNull String> entry : msg.queryParams.entrySet()) {
-			if (! entry.getKey().equalsIgnoreCase(RtspProtoConstants.URL_QUERY_PARAM_SRTP)) {
+			if (! entry.getKey().equalsIgnoreCase(RtspProtoHighConstants.URL_QUERY_PARAM_SRTP)) {
 				continue;
 			}
 			if (entry.getValue().equalsIgnoreCase("1")) {
@@ -330,7 +339,7 @@ public final class RtspProtoHighRequestProcessor {
 				case RtspHeaderKey.ACCEPT ->
 						processHeader_describe_accept(msg.messageType);
 				case RtspHeaderKey.AUTH_CLIENT ->
-						processHeader_com_auth_client(msg.authUser, entry.getValue());
+						processHeader_com_auth_client(entry.getValue());
 				case RtspHeaderKey.CONTENT_BASE ->
 						processHeader_describe_contbase(msg.messageType, entry.getValue());
 				case RtspHeaderKey.CONTENT_LEN ->
@@ -368,12 +377,9 @@ public final class RtspProtoHighRequestProcessor {
 		}
 	}
 
-	private void processHeader_com_auth_client(
-				@NonNull String authUser,
-				@NonNull RtspProtoHeaderEntryRequest headerEntry
-			) {
+	private void processHeader_com_auth_client(@NonNull RtspProtoHeaderEntryRequest headerEntry) {
 		// copy parameters - ignore empty values here and reject the request later if necessary
-		rtspSessionInfo.authInfo.authUser = authUser;
+		rtspSessionInfo.authInfo.authUser = headerEntry.hdValAuthClient.authUser;
 		rtspSessionInfo.authInfo.authPlainPassword = "";
 		rtspSessionInfo.authInfo.authRealmClient = headerEntry.hdValAuthClient.authRealm;
 		rtspSessionInfo.authInfo.authNonceClient = headerEntry.hdValAuthClient.authNonce;
@@ -422,7 +428,7 @@ public final class RtspProtoHighRequestProcessor {
 			throw new RtspInvalidRequestException("Failed to set client MIKEY: " + e.getMessage());
 		}
 
-		handleKmd(messageType == RtspMessageType.SETUP, requestUrlInputOrStreamSource, tmpKmd);
+		handleKmdFromMikey(messageType == RtspMessageType.SETUP, requestUrlInputOrStreamSource, tmpKmd);
 	}
 
 	private void processHeader_play_range(
@@ -521,19 +527,21 @@ public final class RtspProtoHighRequestProcessor {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void handleKmd(
+	private void handleKmdFromMikey(
 				boolean isSetup,
 				RtspRequestBasics.@NonNull RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull SrtxpKmd kmd
-			) {
-		final String FNC_NAME = getClass().getSimpleName() + ".handleKmd()";
+			) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".handleKmdFromMikey()";
+
+		InetAddress tmpRemoteHostIpAddr = getRemoteHostIpAddr();
 
 		Objects.requireNonNull(
 				requestUrlInputOrStreamSource.subStreamId,
 				FNC_NAME + ": requestUrlInputOrStreamSource.subStreamId is null"
 			);
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = RtspStaticSessionInfo.getOrAddStreamKmds(
-				rtspSessionInfo.getClientIpAddr(),
+				tmpRemoteHostIpAddr,
 				requestUrlInputOrStreamSource.subStreamId,
 				RandomHelper.getRandomUint32(false)
 			);
@@ -548,6 +556,7 @@ public final class RtspProtoHighRequestProcessor {
 			 * I have submitted a Merge Request (#11629) to GStreamer to fix the issue with MIKEY.
 			 */
 			kmdToUse = new SrtxpKmd(
+					false,
 					kmd.encrKeyLen(),
 					kmd.masterKey(),
 					kmd.masterSalt(),
@@ -576,6 +585,15 @@ public final class RtspProtoHighRequestProcessor {
 		} else {
 			tmpStreamKmds.nextKmdInbound = kmdToUse.clone();
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull InetAddress getRemoteHostIpAddr() throws RtspInvalidRequestException {
+		Optional<InetAddress> tmpOptRemoteHostIpAddr = (isRequestFromClient ?
+				rtspSessionInfo.getClientIpAddr() : rtspSessionInfo.getServerIpAddr());
+		final String excMsg = (isRequestFromClient ? "Client" : "Server") + " IP address is not set";
+		return tmpOptRemoteHostIpAddr.orElseThrow(() -> new RtspInvalidRequestException(excMsg));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

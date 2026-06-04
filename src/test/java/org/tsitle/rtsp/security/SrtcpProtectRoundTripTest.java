@@ -91,6 +91,7 @@ class SrtcpProtectRoundTripTest {
 		final int hdSsrc = rnd.nextInt();
 
 		SrtxpKmd rtcpKmd = new SrtxpKmd(
+				false,
 				mkeyLen,
 				new BufferExt(masterKeyBa),
 				new BufferExt(masterSaltBa),

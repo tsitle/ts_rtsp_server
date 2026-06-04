@@ -5,7 +5,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.RtspConstants;
+import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -42,8 +42,8 @@ public class RtspConfig {
 		private final @NonNull String sslCa;
 
 		public SectionServer() {
-			this.tcpPortRtsp = RtspConstants.SERVER_RTSP_TCP_PORT;
-			this.tcpPortRtsps = RtspConstants.SERVER_RTSPS_TCP_PORT;
+			this.tcpPortRtsp = RtspServerConstants.SERVER_RTSP_TCP_PORT;
+			this.tcpPortRtsps = RtspServerConstants.SERVER_RTSPS_TCP_PORT;
 			this.dataDir = "";
 			this.sslCertificate = "";
 			this.sslKey = "";

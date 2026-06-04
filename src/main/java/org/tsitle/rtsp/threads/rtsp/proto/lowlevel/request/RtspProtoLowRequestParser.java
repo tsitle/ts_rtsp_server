@@ -121,7 +121,7 @@ public final class RtspProtoLowRequestParser {
 				output.statusCode = RtspStatusCode.BAD_REQUEST;
 				return;
 			}
-			// rewrite the URL to get rid of any query parameters or fragments or userinfo (username + password)
+			// rewrite the URL to get rid of any query parameters, fragments and userinfo (username + password)
 			URI tmpUri = URI.create(currentUrl);
 			if (tmpUri.getUserInfo() != null && tmpUri.getUserInfo().split(":").length == 2) {
 				output.authUser = tmpUri.getUserInfo().split(":")[0];
@@ -224,13 +224,13 @@ public final class RtspProtoLowRequestParser {
 		RtspHeaderKey hdKeyEn = RtspHeaderKey.of(hdKeyStr);
 		switch (hdKeyEn) {
 			case ACCEPT -> parseHeaderValue_describe_accept(hdValue, entry);
-			case AUTH_CLIENT -> parseHeaderValue_com_auth_client(hdValue, output, entry);
+			case AUTH_CLIENT -> parseHeaderValue_com_auth_client(hdValue, entry);
 			case CONTENT_BASE -> parseHeaderValue_describe_contbase(hdValue, entry);
 			case CONTENT_LEN -> parseHeaderValue_com_contlen(hdValue, entry);
 			case CONTENT_TYPE -> parseHeaderValue_com_conttype(hdValue, entry);
 			case CSEQ -> parseHeaderValue_com_cseq(hdValue, entry);
 			case DATE -> parseHeaderValue_com_date(hdValue, entry);
-			case KEYMGMT -> parseHeaderValue_com_keymgmt(hdValue, entry);
+			case KEYMGMT -> parseHeaderValue_com_keymgmt(hdValue, output.resourceUrl, entry);
 			case RANGE -> parseHeaderValue_play_range(hdValue, entry);
 			case REQUIRE -> parseHeaderValue_options_require(hdValue, entry);
 			case SESSION -> parseHeaderValue_com_session(hdValue, entry);
@@ -260,12 +260,14 @@ public final class RtspProtoLowRequestParser {
 
 	private void parseHeaderValue_com_auth_client(
 				@NonNull String hdValue,
-				@NonNull RtspProtoHighMsgStructuredRequest output,
 				@NonNull RtspProtoHeaderEntryRequest entry
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_client()";
 
-		// e.g. 'Authorization: Digest username="admin", realm="Abcdef Some", nonce="xxx", uri="rtsp://xxx:88/videoMain", response="xxx"'
+		/*
+		 * Example:
+		 *   "Authorization: Digest username=\"admin\", realm=\"Abcdef Some\", nonce=\"xxx\", uri=\"rtsp://xxx:88/videoMain\", response=\"xxx\""
+		 */
 		if (! hdValue.toLowerCase()
 				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
 			throw new RtspInvalidRequestException("Invalid Auth header prefix");
@@ -281,7 +283,7 @@ public final class RtspProtoLowRequestParser {
 			String curTokenAsIs = tokens.nextToken().strip();
 			String curTokenLc = curTokenAsIs.toLowerCase();
 			if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER.toLowerCase())) {
-				output.authUser =
+				entry.hdValAuthClient.authUser =
 						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER);
 				haveUser = true;  // tolerate empty username now and reject it later
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM.toLowerCase())) {
@@ -342,32 +344,50 @@ public final class RtspProtoLowRequestParser {
 		entry.setHdKey(RtspHeaderKey.DATE);
 	}
 
-	private void parseHeaderValue_com_keymgmt(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
-			throws RtspInvalidRequestException {
+	private void parseHeaderValue_com_keymgmt(
+				@NonNull String hdValue,
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_keymgmt()";
 
-		// e.g. 'KeyMgmt: prot=mikey; uri="rtsp://.../streamid00"; data="[BASE64 ENCODED DATA]"'
+		/*
+		 * Example:
+		 *   "prot=mikey; uri=\"rtsp://.../streamid00\"; data=\"[BASE64 ENCODED DATA]\""
+		 */
+
+		String rawProt = "";
+		String rawUri = "";
+		String rawData = "";
+
 		StringTokenizer tokens = new StringTokenizer(hdValue, ";");
 		while (tokens.hasMoreTokens()) {
 			String curTokenAsIs = tokens.nextToken().strip();
 			String curTokenLc = curTokenAsIs.toLowerCase();
 			if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.toLowerCase())) {
-				String tmpSub = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.length());
-				tmpSub = tmpSub.replace("\"", "");  // just in case
-				entry.hdValKeymgmt.proto = RtspKeymgmtProto.of(tmpSub);
-				if (entry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
-					throw new RtspInvalidRequestException("Invalid Keymgmt Protocol value: '" + hdValue + "'");
-				}
+				rawProt = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT.length());
+				rawProt = rawProt.replace("\"", "").strip();  // just in case
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA.toLowerCase())) {
-				entry.hdValKeymgmt.dataStr =
-						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA);
+				rawData = extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA);
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI.toLowerCase())) {
-				entry.hdValKeymgmt.uriStr =
-						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI);
+				rawUri = extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI);
 			} else {
 				logWarn(FNC_NAME, "Unknown Keymgmt parameter: '" + curTokenAsIs + "'");
 			}
 		}
+
+		if (rawProt.isBlank()) {
+			throw new RtspInvalidRequestException("Keymgmt Protocol must be set");
+		}
+		entry.hdValKeymgmt.proto = RtspKeymgmtProto.of(rawProt);
+		if (entry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
+			throw new RtspInvalidRequestException("Invalid Keymgmt Protocol value: '" + rawProt + "'");
+		}
+		entry.hdValKeymgmt.uriStr = (rawUri.isBlank() ? resourceUrl : rawUri);
+		if (rawData.isBlank()) {
+			throw new RtspInvalidRequestException("Keymgmt Data must be set");
+		}
+		entry.hdValKeymgmt.dataStr = rawData;
 
 		entry.setHdKey(RtspHeaderKey.KEYMGMT);
 	}

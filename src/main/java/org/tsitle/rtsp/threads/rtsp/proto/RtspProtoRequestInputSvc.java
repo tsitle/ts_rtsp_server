@@ -19,11 +19,11 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
 
-public class RtspProtoRequestInputSvc {
+public final class RtspProtoRequestInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
-	protected final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowRequestParser rtspProtoLowRequestParser;
@@ -35,7 +35,8 @@ public class RtspProtoRequestInputSvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				boolean isRequestFromClient
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -51,7 +52,8 @@ public class RtspProtoRequestInputSvc {
 		this.rtspProtoHighRequestProcessor = new RtspProtoHighRequestProcessor(
 				logMsgInterface,
 				rtspConfig,
-				rtspSessionInfo
+				rtspSessionInfo,
+				isRequestFromClient
 			);
 
 		//
@@ -69,8 +71,6 @@ public class RtspProtoRequestInputSvc {
 			throw new TcpSocketClosedException();
 		}
 
-		rtspSessionInfo.rtspClientSeqNrResponse = -1;
-
 		// read the raw request from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
 		if (! lowInputRaw.readSuccess) {
@@ -81,25 +81,26 @@ public class RtspProtoRequestInputSvc {
 		}
 
 		// parse the raw request
-		RtspProtoHighMsgStructuredRequest lowInputParsed = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
-		if (lowInputParsed.messageType == RtspMessageType.UNKNOWN) {
+		RtspProtoHighMsgStructuredRequest msgStructured = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
+		if (msgStructured.messageType == RtspMessageType.UNKNOWN) {
 			RtspRequestBasics resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
-		if (lowInputParsed.statusCode != RtspStatusCode.OK) {
-			RtspRequestBasics resObj = RtspRequestBasics.createKnownWithError(lowInputParsed.messageType, lowInputParsed.statusCode);
+		if (msgStructured.statusCode != RtspStatusCode.OK) {
+			RtspRequestBasics resObj = RtspRequestBasics.createKnownWithError(msgStructured.messageType, msgStructured.statusCode);
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));
 			return resObj;
 		}
 
 		// process the request - without checking authentication
-		RtspRequestBasics resObj = rtspProtoHighRequestProcessor.processRequest(lowInputParsed);
+		RtspRequestBasics resObj = rtspProtoHighRequestProcessor.processRequest(msgStructured);
 		if (! resObj.isValid()) {
-			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
-					resObj.messageType, resObj.statusCode, rtspSessionInfo.rtspClientSeqNrLastRcvd));
+			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
+					resObj.messageType, resObj.statusCode,
+					Long.toUnsignedString(rtspSessionInfo.seqNr_requRem_lastRcvd)));
 			return resObj;
 		}
 
@@ -108,8 +109,8 @@ public class RtspProtoRequestInputSvc {
 
 		//
 		if (resObj.isValid()) {
-			logDebug(FNC_NAME, String.format("Received %s request (CSeq=%d)",
-					resObj.messageType, rtspSessionInfo.rtspClientSeqNrLastRcvd));
+			logDebug(FNC_NAME, String.format("Received %s request (CSeq=%s)",
+					resObj.messageType, Long.toUnsignedString(rtspSessionInfo.seqNr_requRem_lastRcvd)));
 		}
 		return resObj;
 	}

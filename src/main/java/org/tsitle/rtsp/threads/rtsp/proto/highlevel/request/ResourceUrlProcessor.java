@@ -7,7 +7,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInputSourceIdNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSubStreamIdNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
@@ -31,15 +31,15 @@ final class ResourceUrlProcessor {
 		 * The output for "/substreamid1234" would be "1234"
 		 */
 		String tmpPath = resourceUrlParsingVars.rscUrlPathOrg;
-		int tmpIdxA = tmpPath.lastIndexOf("/" + RtspProtoConstants.SUBSTREAM_ID_PREFIX);
+		final String tmpDefSsIdPfx = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX;
+		int tmpIdxA = tmpPath.lastIndexOf("/" + tmpDefSsIdPfx);
 		if (tmpIdxA > 0) {
 			// the Resource URL Path contains the Input Source ID and the Sub-Stream ID
-			resourceUrlParsingVars.subStreamId = tmpPath
-					.substring(tmpIdxA + 1 + RtspProtoConstants.SUBSTREAM_ID_PREFIX.length());
+			resourceUrlParsingVars.subStreamId = tmpPath.substring(tmpIdxA + 1 + tmpDefSsIdPfx.length());
 			resourceUrlParsingVars.rscUrlPathMod = resourceUrlParsingVars.rscUrlPathMod.substring(0, tmpIdxA);
-		} else if (tmpPath.startsWith(RtspProtoConstants.SUBSTREAM_ID_PREFIX)) {
+		} else if (tmpPath.startsWith(tmpDefSsIdPfx)) {
 			// the Resource URL Path contains only the Sub-Stream ID
-			resourceUrlParsingVars.subStreamId = tmpPath.substring(RtspProtoConstants.SUBSTREAM_ID_PREFIX.length());
+			resourceUrlParsingVars.subStreamId = tmpPath.substring(tmpDefSsIdPfx.length());
 		}
 	}
 

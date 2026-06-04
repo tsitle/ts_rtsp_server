@@ -1,87 +1,16 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
 
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+public final class SdpConstants {
 
-import java.util.Set;
+	private SdpConstants() { }
 
-public class RtspProtoConstants {
+	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
+	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
 
-	/** URL Query Parameter for forcing the usage of SRTP/SRTCP (if the parameter value is '1') */
-	public static final String URL_QUERY_PARAM_SRTP = "srtp";
-
-	/** RTSP URL Protocol */
-	public static final String RTSP_URL_PROTOCOL = "rtsp";
-	/** RTSPS URL Protocol */
-	public static final String RTSPS_URL_PROTOCOL = "rtsps";
-
-	public static final String SERVER_NAME = "TS RTSP Server";
-
-	/** Prefix for Sub-Stream IDs as publicized over SDP */
-	public static final String SUBSTREAM_ID_PREFIX = "substreamid";
-
-	/** RTSP Authorization Realm */
-	public static final String RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
-
-	public static final Set<RtspMessageType> SUPPORTED_MESSAGE_TYPES_SERVER = Set.of(
-			RtspMessageType.SETUP,
-			RtspMessageType.PLAY,
-			RtspMessageType.PAUSE,
-			RtspMessageType.TEARDOWN,
-			RtspMessageType.DESCRIBE,
-			RtspMessageType.OPTIONS,
-			RtspMessageType.GET_PARAMETER,
-			RtspMessageType.SET_PARAMETER
-		);
-
-	// RTSP Requests/Responses
-	///
-	public static final String RTSP_RR_CMD_PROTOCOL_VERSION_1 = "RTSP/1.0";
-	public static final String RTSP_RR_CMD_PROTOCOL_VERSION_2 = "RTSP/2.0";
-	///
-	public static final String RTSP_RR_HEADER_TOKEN_DES_CONTBASE = "Content-Base:";
-	public static final String RTSP_RR_HEADER_TOKEN_SET_TRANSPORT = "Transport:";
-	public static final String RTSP_RR_HEADER_TOKEN_PLA_RANGE = "Range:";
-	public static final String RTSP_RR_HEADER_TOKEN_PLA_RTPINFO = "RTP-Info:";
-	public static final String RTSP_RR_HEADER_TOKEN_OPT_PUBLIC = "Public:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CSEQ = "CSeq:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_SESSION = "Session:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_USERAGENT = "User-Agent:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_SERVER = "Server:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTTYPE = "Content-Type:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_CONTLEN = "Content-Length:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_DATE = "Date:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_WWWAUTH = "WWW-Authenticate:";
-	public static final String RTSP_RR_HEADER_TOKEN_XXX_KEYMGMT = "KeyMgmt:";
-	///
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT = "client_port=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT = "server_port=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP = "destination=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP = "source=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC = "ssrc=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED = "interleaved=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT = "timeout=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL = "url=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ = "seq=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME = "rtptime=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM = "realm=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE = "nonce=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO = "algorithm=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_KM_PROT = "prot=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_KM_URI = "uri=";
-	public static final String RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA = "data=";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2 = "RTP/AVP/UDP";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2 = "RTP/SAVP/UDP";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP = "RTP/AVP/TCP";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP = "RTP/SAVP/TCP";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST = "unicast";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_SDP = "application/sdp";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_CT_MIKEY = "application/x-rtsp-mikey";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX = "Digest ";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_ALGO_MD5 = "MD5";
-	public static final String RTSP_RR_HEADER_PARAM_VAL_XXX_KM_MIKEY = "mikey";
+	static final String SESSION_NAME = "Just A Session";
 
 	/** Stream types according to ISO/IEC 14496-1 */
-	public enum IsoIec14496_1_StreamType {
+	enum IsoIec14496_1_StreamType {
 		/** Forbidden */
 		FORBIDDEN(0x00),
 		/** ObjectDescriptorStream (see ISO/IEC 14496-1 Section 7.2.5) */
@@ -117,7 +46,7 @@ public class RtspProtoConstants {
 	 * Audio profiles and levels.<br />
 	 * According to ISO/IEC 14496-3:2009 Table 1.14 audioProfileLevelIndication values
 	 */
-	public enum IsoIec14496_3_AudioProfilesAndLevels {
+	enum IsoIec14496_3_AudioProfilesAndLevels {
 		/*
 			0x05 Scalable Audio Profile; L1
 			0x06 Scalable Audio Profile; L2
@@ -228,7 +157,7 @@ public class RtspProtoConstants {
 		}
 	}
 
-	public enum H26xPacketizationMode {
+	enum H26xPacketizationMode {
 		/** One NAL unit per RTP packet. Simple but inefficient for large frames */
 		SINGLE_NALU(0),
 		/** Allows fragmentation (FU-A) and aggregation (STAP-A). Most common for streaming */

@@ -5,18 +5,21 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RtspSessionInfo {
+public final class RtspSessionInfo {
 
 	public static class AuthInfo {
 		/** Authentication credentials: username (from URL or WWW-Authenticate header) */
 		public @NonNull String authUser = "";
 		/** Authentication credentials: password (from URL - not WWW-Authenticate header) */
 		public @NonNull String authPlainPassword = "";
+		/** Authentication credentials: realm from the server */
+		public @NonNull String authRealmServer = "";
 		/** Authentication credentials: realm from the client */
 		public @NonNull String authRealmClient = "";
 		/** Authentication credentials: nonce from the server */
@@ -40,8 +43,11 @@ public class RtspSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/** Server IP address */
+	private @Nullable InetAddress serverIpAddr = null;
 	/** Client IP address */
 	private @Nullable InetAddress clientIpAddr = null;
+
 	/** Has the client requested UDP transport? */
 	public boolean isTransportUdp = false;
 	/** Has the client requested RTP/RTCP encryption transport? */
@@ -56,22 +62,19 @@ public class RtspSessionInfo {
 
 	/** RTSP Session ID */
 	public @NonNull String rtspSessionId = "";
-	/** Last received Sequence Number of RTSP messages within the session from the client for requests */
-	public int rtspClientSeqNrLastRcvd = -1;
-	/** Expected Sequence Number of RTSP messages within the session to receive from the client for requests */
-	public int rtspClientSeqNrExpected = 0;
-	/** Sequence Number of RTSP messages within the session in responses from the server */
-	public int rtspClientSeqNrResponse = 0;
-	/** Expected Sequence Number of RTSP messages within the session to receive from the client for responses */
-	public int rtspServerSeqNrExpected = 0;
-	/** Sequence Number of RTSP messages within the session in requests from the server */
-	public int rtspServerSeqNrRequest = 0;
 
-	/** Playback range request value from client */
+	/** Request from remote host: Last received RTSP message Sequence Number */
+	public long seqNr_requRem_lastRcvd = -1L;
+	/** Request from remote host: Expected RTSP message Sequence Number */
+	public long seqNr_requRem_expected = 0L;
+	/** Response from remote host: Expected RTSP message Sequence Number */
+	public long seqNr_respRem_expected = 0L;
+
+	/** Playback range request value from the client */
 	public @NonNull String clientPlaybackRangeValue = "";
 
 	/** RTSP protocol version used by the client in the last request (e.g. 'RTSP/1.0') */
-	public @NonNull RtspProtocolVersion lastRequestRtspProtoVersion = RtspProtocolVersion.NONE;
+	public @NonNull RtspProtocolVersion lastRequestRtspProtoVersion = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
 
 	/** Authentication-related info */
 	public @NonNull AuthInfo authInfo = new AuthInfo();
@@ -80,32 +83,107 @@ public class RtspSessionInfo {
 	public @NonNull String clientUserAgent = "";
 
 	/** Sub-Stream IDs that a successful SETUP request has been received for */
-	public final @NonNull List<@NonNull String> subStreamIdsSetup = new ArrayList<>();
-	/** URL of the Input Source as requested from the client per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
-	public final @NonNull Map<@NonNull RtspMessageType, @NonNull String> inputSourceUrlPerMtMap = new ConcurrentHashMap<>();
+	public final @NonNull Set<@NonNull String> subStreamIdsSetup = new HashSet<>();
+
+	/** Resource URL per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
+	private final @NonNull Map<@NonNull RtspMessageType, @NonNull String> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
+	/** Resource URL per Sub-Stream for SETUP request */
+	private final @NonNull Map<@NonNull String, @NonNull String> resourceUrlPerMtMap_onlySetup = new ConcurrentHashMap<>();
+
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
-	public final @NonNull Map<@NonNull RtspMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap = new ConcurrentHashMap<>();
+	private final @NonNull Map<@NonNull RtspMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
 	/** Current state of the RTSP session */
 	public @NonNull SessionState sessionState = SessionState.INIT;
 	/** Has the client requested PAUSE? */
 	public boolean isPlaybackPaused = false;
 
-	/** RTSP message types that are supported by the server */
-	public @NonNull Set<@NonNull RtspMessageType> serverSupportedMessageTypes = new HashSet<>();
+	/** RTSP message types that are supported by the remote host */
+	public @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
 
-	public @NonNull InetAddress getClientIpAddr() {
-		if (clientIpAddr == null) {
-			throw new IllegalStateException("Client IP address not set");
-		}
-		return clientIpAddr;
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<InetAddress> getServerIpAddr() {
+		return Optional.ofNullable(serverIpAddr);
 	}
 
-	public void setClientIpAddr(@NonNull InetAddress clientIpAddr) {
-		this.clientIpAddr = clientIpAddr;
+	@SuppressWarnings("unused")
+	public void setServerIpAddr(@NonNull InetAddress ipAddr) {
+		this.serverIpAddr = ipAddr;
+	}
+
+	public Optional<InetAddress> getClientIpAddr() {
+		return Optional.ofNullable(clientIpAddr);
+	}
+
+	public void setClientIpAddr(@NonNull InetAddress ipAddr) {
+		this.clientIpAddr = ipAddr;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void setResourceUrlForMt_nonSetup(@NonNull RtspMessageType mt, @NonNull String url) {
+		if (mt == RtspMessageType.UNKNOWN) {
+			throw new IllegalArgumentException("Cannot set Resource URL for UNKNOWN message type");
+		}
+		if (mt == RtspMessageType.SETUP) {
+			throw new IllegalArgumentException("Cannot set Resource URL for SETUP message type");
+		}
+		this.resourceUrlPerMtMap_nonSetup.put(mt, url);
+	}
+
+	public Optional<String> getResourceUrlForMt_nonSetup(@NonNull RtspMessageType mt) {
+		if (mt == RtspMessageType.UNKNOWN) {
+			throw new IllegalArgumentException("Cannot get Resource URL for UNKNOWN message type");
+		}
+		if (mt == RtspMessageType.SETUP) {
+			throw new IllegalArgumentException("Cannot get Resource URL for SETUP message type");
+		}
+		return Optional.ofNullable(this.resourceUrlPerMtMap_nonSetup.get(mt));
+	}
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean existsResourceUrlForMt_nonSetup(@NonNull RtspMessageType mt) {
+		return this.resourceUrlPerMtMap_nonSetup.containsKey(mt);
+	}
+
+	public void setResourceUrlForMt_onlySetup(@NonNull String subStreamId, @NonNull String url) {
+		this.resourceUrlPerMtMap_onlySetup.put(subStreamId, url);
+	}
+
+	public Optional<String> getResourceUrlForMt_onlySetup(@NonNull String subStreamId) {
+		return Optional.ofNullable(this.resourceUrlPerMtMap_onlySetup.get(subStreamId));
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void setInputSourceObjForMt_nonSetup(@NonNull RtspMessageType mt, @NonNull RtspInputSource inputSourceObj) {
+		if (mt == RtspMessageType.UNKNOWN) {
+			throw new IllegalArgumentException("Cannot set Input Source for UNKNOWN message type");
+		}
+		if (mt == RtspMessageType.SETUP) {
+			throw new IllegalArgumentException("Cannot set Input Source for SETUP message type");
+		}
+		this.inputSourceObjPerMtMap_nonSetup.put(mt, inputSourceObj);
+	}
+
+	public Optional<RtspInputSource> getInputSourceObjForMt_nonSetup(@NonNull RtspMessageType mt) {
+		if (mt == RtspMessageType.UNKNOWN) {
+			throw new IllegalArgumentException("Cannot get Input Source for UNKNOWN message type");
+		}
+		if (mt == RtspMessageType.SETUP) {
+			throw new IllegalArgumentException("Cannot get Input Source for SETUP message type");
+		}
+		return Optional.ofNullable(this.inputSourceObjPerMtMap_nonSetup.get(mt));
+	}
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean existsInputSourceObjForMt_nonSetup(@NonNull RtspMessageType mt) {
+		return this.inputSourceObjPerMtMap_nonSetup.containsKey(mt);
 	}
 
 }

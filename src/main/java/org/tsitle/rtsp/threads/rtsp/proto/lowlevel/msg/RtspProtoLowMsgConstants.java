@@ -1,6 +1,12 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg;
 
-public class RtspProtoLowMsgConstants {
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+
+public final class RtspProtoLowMsgConstants {
+
+	private RtspProtoLowMsgConstants() { }
+
+	public static final RtspProtocolVersion DEFAULT_RTSP_PROTO_VERSION = RtspProtocolVersion.RTSP_V1;
 
 	public static final String CRLF = "\r\n";
 
@@ -19,6 +25,7 @@ public class RtspProtoLowMsgConstants {
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP = "source=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC = "ssrc=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED = "interleaved=";
+	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TP_MODE = "mode=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT = "timeout=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL = "url=";
 	public static final String RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC = "ssrc=";
