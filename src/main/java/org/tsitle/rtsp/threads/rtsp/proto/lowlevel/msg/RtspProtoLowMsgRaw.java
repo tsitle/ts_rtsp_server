@@ -33,7 +33,9 @@ public final class RtspProtoLowMsgRaw {
 				", body='" + body
 						.replace("'", "\\'")
 						.replace("\r\n", "<CRLF>")
-						.replace("\n", "<LF>") + "'" +
+						.replace("\r", "<CR>")
+						.replace("\n", "<LF>")
+						.replace("\t", "<TAB>") + "'" +
 				"]";
 	}
 

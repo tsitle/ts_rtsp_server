@@ -8,7 +8,10 @@ public class RtspProtoHeaderEntryBase {
 	protected @NonNull RtspHeaderKey hdKeyEn = RtspHeaderKey.NONE;
 	protected boolean baseClassHandlesHdKeyType = false;
 
+	public @NonNull RtspProtoHeaderTypeConnection hdValConnection = new RtspProtoHeaderTypeConnection();
 	public @NonNull RtspProtoHeaderTypeContBase hdValContBase = new RtspProtoHeaderTypeContBase();
+	public @NonNull RtspProtoHeaderTypeContEnc hdValContEnc = new RtspProtoHeaderTypeContEnc();
+	public @NonNull RtspProtoHeaderTypeContLang hdValContLang = new RtspProtoHeaderTypeContLang();
 	public @NonNull RtspProtoHeaderTypeContLen hdValContLen = new RtspProtoHeaderTypeContLen();
 	public @NonNull RtspProtoHeaderTypeContType hdValContType = new RtspProtoHeaderTypeContType();
 	public @NonNull RtspProtoHeaderTypeCseq hdValCseq = new RtspProtoHeaderTypeCseq();
@@ -35,7 +38,10 @@ public class RtspProtoHeaderEntryBase {
 			throw new IllegalArgumentException("Invalid header key: NONE");
 		}
 		switch (hdKeyEn) {
+			case CONNECTION:
 			case CONTENT_BASE:
+			case CONTENT_ENC:
+			case CONTENT_LANG:
 			case CONTENT_LEN:
 			case CONTENT_TYPE:
 			case CSEQ:
@@ -57,7 +63,10 @@ public class RtspProtoHeaderEntryBase {
 	public @NonNull String toString() {
 		return switch (hdKeyEn) {
 				case NONE -> "[empty]";
+				case CONNECTION -> hdValConnection.toString();
 				case CONTENT_BASE -> hdValContBase.toString();
+				case CONTENT_ENC -> hdValContEnc.toString();
+				case CONTENT_LANG -> hdValContLang.toString();
 				case CONTENT_LEN -> hdValContLen.toString();
 				case CONTENT_TYPE -> hdValContType.toString();
 				case CSEQ -> hdValCseq.toString();

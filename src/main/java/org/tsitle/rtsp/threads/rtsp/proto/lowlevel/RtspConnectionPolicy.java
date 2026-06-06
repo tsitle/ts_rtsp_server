@@ -2,16 +2,15 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspMimeType {
+public enum RtspConnectionPolicy {
 
 	NONE("-none-"),
-	MIKEY("application/x-rtsp-mikey"),
-	PARAMETERS("text/parameters"),
-	SDP("application/sdp");
+	CLOSE("close"),
+	KEEPALIVE("keep-alive");
 
 	private final @NonNull String value;
 
-	RtspMimeType(@NonNull String value) {
+	RtspConnectionPolicy(@NonNull String value) {
 		this.value = value;
 	}
 
@@ -19,8 +18,8 @@ public enum RtspMimeType {
 		return value;
 	}
 
-	public static @NonNull RtspMimeType of(@NonNull String value) {
-		for (RtspMimeType entry : values()) {
+	public static @NonNull RtspConnectionPolicy of(@NonNull String value) {
+		for (RtspConnectionPolicy entry : values()) {
 			if (entry == NONE) {
 				continue;
 			}

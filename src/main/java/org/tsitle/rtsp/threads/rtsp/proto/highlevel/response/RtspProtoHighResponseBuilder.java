@@ -75,7 +75,7 @@ public final class RtspProtoHighResponseBuilder {
 
 		//
 		switch (rtspRequestBasics.messageType) {
-			case GET_PARAMETER -> buildResponse_getParameter();
+			case GET_PARAMETER -> buildResponse_getParameter(resObj);
 			case SET_PARAMETER -> buildResponse_setParameter();
 			case OPTIONS -> buildResponse_options(resObj);
 			case DESCRIBE -> buildResponse_describe(resObj);
@@ -86,14 +86,6 @@ public final class RtspProtoHighResponseBuilder {
 					rtspRequestBasics.messageType);
 		}
 
-		//
-		if (! resObj.body.isBlank()) {
-			if (! resObj.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
-				resObj.body += RtspProtoLowMsgConstants.CRLF;
-			}
-			addContentLengthHeader(resObj);
-		}
-
 		System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);  // @TODO
 
 		return resObj;
@@ -102,54 +94,31 @@ public final class RtspProtoHighResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private void buildResponse_ack() {
+		// nothing to do
+	}
+
 	private void buildResponse_nack(
 				@NonNull RtspStatusCode statusCode,
 				@NonNull String unsupportedOptionName,
-				@NonNull RtspProtoHighMsgStructuredResponse msg
+				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException {
 		if (statusCode == RtspStatusCode.UNAUTHORIZED) {
-			addAuthServerInfo(msg);
+			addAuthServerInfo(output);
 		}
 		if (statusCode == RtspStatusCode.OPTION_NOT_SUPPORTED) {
 			// Unsupported
 			{
 				RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
 				hdEntry.hdValUnsupported.unsupportedOptionStr = (unsupportedOptionName.isBlank() ? "_unknown_" : unsupportedOptionName);
-				msg.headers.put(hdEntry.getHdKey(), hdEntry);
+				output.headers.put(hdEntry.getHdKey(), hdEntry);
 			}
 		}
 	}
 
-	private void buildResponse_ack() {
-		// nothing to do
-	}
+	// -----------------------------------------------------------------------------------------------------------------
 
-	private void buildResponse_getParameter() {
-		// nothing to do
-	}
-
-	private void buildResponse_setParameter() {
-		// nothing to do
-	}
-
-	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
-		// Public
-		{
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.PUBLIC);
-			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES);
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
-		}
-		// Auth
-		if (rtspSessionInfo.existsInputSourceObjForMt_nonSetup(RtspMessageType.OPTIONS)) {
-			boolean tmpNeedAuth = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.OPTIONS)
-					.orElseThrow().getNeedsAuthentication();
-			if (tmpNeedAuth) {
-				addAuthServerInfo(msg);
-			}
-		}
-	}
-
-	private void buildResponse_describe(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
+	private void buildResponse_describe(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
 
 		RtspInputSource rtspInputSource = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.DESCRIBE)
@@ -158,7 +127,7 @@ public final class RtspProtoHighResponseBuilder {
 				.orElseThrow(() -> new RtspInvalidResponseException(FNC_NAME + ": Resource URL not found"));
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			buildResponse_nack(RtspStatusCode.BAD_REQUEST, "", msg);
+			buildResponse_nack(RtspStatusCode.BAD_REQUEST, "", output);
 			return;
 		}
 
@@ -171,10 +140,10 @@ public final class RtspProtoHighResponseBuilder {
 				);
 		} catch (RtspSdpException e) {
 			logError(FNC_NAME, "Building SDP failed: " + e.getMessage());
-			buildResponse_nack(RtspStatusCode.INTERNAL_SERVER_ERROR, "", msg);
+			buildResponse_nack(RtspStatusCode.INTERNAL_SERVER_ERROR, "", output);
 			return;
 		}
-		msg.body = String.join(RtspProtoLowMsgConstants.CRLF, tmpSdpLines);
+		output.bodyDescribeSdp = String.join(RtspProtoLowMsgConstants.CRLF, tmpSdpLines);
 
 		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
 			logDebug(FNC_NAME, "-------- SDP:");
@@ -186,15 +155,91 @@ public final class RtspProtoHighResponseBuilder {
 		// Content-Base
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
-			hdEntry.hdValContBase.contentBaseStr = resourceUrl + "/";
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			hdEntry.hdValContBase.contentBaseStr = resourceUrl + (resourceUrl.endsWith("/") ? "" : "/");
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
-		// Content-Type
+		//
+		addContentTypeHeader(output);
+	}
+
+	private void buildResponse_getParameter(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		if (output.bodyGetParamKv.isEmpty()) {
+			return;
+		}
+		// @TODO add key-value-pairs for supported and requested parameters (output.bodyGetParamKv)
+		//addContentTypeHeader(output);
+	}
+
+	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		// Public
 		{
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
-			hdEntry.hdValContType.contentType = RtspMimeType.SDP;
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.PUBLIC);
+			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
+		// Auth
+		if (rtspSessionInfo.existsInputSourceObjForMt_nonSetup(RtspMessageType.OPTIONS)) {
+			boolean tmpNeedAuth = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.OPTIONS)
+					.orElseThrow().getNeedsAuthentication();
+			if (tmpNeedAuth) {
+				addAuthServerInfo(output);
+			}
+		}
+	}
+
+	/**
+	 * The client makes one PLAY request per Input Source
+	 */
+	private void buildResponse_play(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_play()";
+
+		// Range
+		{
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RANGE);
+			hdEntry.hdValRange.rangeStr = rtspSessionInfo.clientPlaybackRangeValue;
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// RTP-Info
+		{
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RTPINFO);
+			int tmpSubStreamNr = 1;
+			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
+				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStreamInp = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
+						FNC_NAME,
+						tmpSubStreamId
+					);
+				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
+				tmpStreamInfoOutput.urlStr = tmpSetupSubStreamInp.inputSourceUrlSetup;
+				try {
+					tmpStreamInfoOutput.setSeqNr16bit(tmpSetupSubStreamInp.rtspRtpSeqNrT0);
+				} catch (RtspNumberRangeException e) {
+					throw new RtspInvalidResponseException(FNC_NAME + ": Setting RTP sequence number failed: " + e.getMessage());
+				}
+				try {
+					tmpStreamInfoOutput.setRtpTimestamp32bit(tmpSetupSubStreamInp.rtspRtpTimestampT0);
+				} catch (RtspNumberRangeException e) {
+					throw new RtspInvalidResponseException(FNC_NAME + ": Setting RTP timestamp failed: " + e.getMessage());
+				}
+				try {
+					tmpStreamInfoOutput.setSsrcId32bit(tmpSetupSubStreamInp.rtspSsrcId);
+				} catch (RtspNumberRangeException e) {
+					throw new RtspInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
+				}
+				if (tmpSubStreamNr == 1) {
+					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
+				} else if (tmpSubStreamNr == 2) {
+					hdEntry.hdValRtpinfo.setSubStream2(tmpStreamInfoOutput);
+				} else {
+					throw new RtspInvalidResponseException(FNC_NAME + ": Too many sub-streams");
+				}
+				++tmpSubStreamNr;
+			}
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+	}
+
+	private void buildResponse_setParameter() {
+		// nothing to do
 	}
 
 	/**
@@ -204,7 +249,7 @@ public final class RtspProtoHighResponseBuilder {
 	 */
 	private void buildResponse_setup(
 				RtspRequestBasics.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
-				@NonNull RtspProtoHighMsgStructuredResponse msg
+				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_setup()";
 
@@ -249,7 +294,7 @@ public final class RtspProtoHighResponseBuilder {
 			} else {
 				hdEntry.hdValSession.clearTimeout();
 			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
 		// we need to open the sockets now so we can get the port numbers
@@ -297,58 +342,7 @@ public final class RtspProtoHighResponseBuilder {
 			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
 			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
-		}
-	}
-
-	/**
-	 * The client makes one PLAY request per Input Source
-	 */
-	private void buildResponse_play(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_play()";
-
-		// Range
-		{
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RANGE);
-			hdEntry.hdValRange.rangeStr = rtspSessionInfo.clientPlaybackRangeValue;
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
-		}
-		// RTP-Info
-		{
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RTPINFO);
-			int tmpSubStreamNr = 1;
-			for (String tmpSubStreamId : rtspSessionInfo.subStreamIdsSetup) {
-				RtspStaticSessionInfo.SetupSubStreamInfo tmpSetupSubStreamInp = RtspStaticSessionInfo.getSetupSubStreamOrThrow(
-						FNC_NAME,
-						tmpSubStreamId
-					);
-				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
-				tmpStreamInfoOutput.urlStr = tmpSetupSubStreamInp.inputSourceUrlSetup;
-				try {
-					tmpStreamInfoOutput.setSeqNr16bit(tmpSetupSubStreamInp.rtspRtpSeqNrT0);
-				} catch (RtspNumberRangeException e) {
-					throw new RtspInvalidResponseException(FNC_NAME + ": Setting RTP sequence number failed: " + e.getMessage());
-				}
-				try {
-					tmpStreamInfoOutput.setRtpTimestamp32bit(tmpSetupSubStreamInp.rtspRtpTimestampT0);
-				} catch (RtspNumberRangeException e) {
-					throw new RtspInvalidResponseException(FNC_NAME + ": Setting RTP timestamp failed: " + e.getMessage());
-				}
-				try {
-					tmpStreamInfoOutput.setSsrcId32bit(tmpSetupSubStreamInp.rtspSsrcId);
-				} catch (RtspNumberRangeException e) {
-					throw new RtspInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
-				}
-				if (tmpSubStreamNr == 1) {
-					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
-				} else if (tmpSubStreamNr == 2) {
-					hdEntry.hdValRtpinfo.setSubStream2(tmpStreamInfoOutput);
-				} else {
-					throw new RtspInvalidResponseException(FNC_NAME + ": Too many sub-streams");
-				}
-				++tmpSubStreamNr;
-			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
@@ -463,7 +457,7 @@ public final class RtspProtoHighResponseBuilder {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
+	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
 		// CSeq
@@ -474,22 +468,22 @@ public final class RtspProtoHighResponseBuilder {
 			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
 			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.DATE);
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Server
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
 			hdEntry.hdValServer.serverStr = cfgServerNameAndVersion;
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
-	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
+	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(getClientIpAddr());
 		}
@@ -501,19 +495,20 @@ public final class RtspProtoHighResponseBuilder {
 		hdEntry.hdValAuthServer.authAlgo = RtspAuthAlgo.MD5;
 		hdEntry.hdValAuthServer.authRealm = rtspSessionInfo.authInfo.authRealmServer;
 		hdEntry.hdValAuthServer.authNonce = rtspSessionInfo.authInfo.authNonceServer;
-		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
-	private void addContentLengthHeader(@NonNull RtspProtoHighMsgStructuredResponse msg) throws RtspInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".addContentLengthHeader()";
+	private void addContentTypeHeader(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addContentTypeHeader()";
 
-		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_LEN);
-		try {
-			hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
-		} catch (RtspNumberRangeException e) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": Setting Content-Length failed: " + e.getMessage());
+		if (output.messageType != RtspMessageType.DESCRIBE && output.messageType != RtspMessageType.GET_PARAMETER) {
+			throw new RtspInvalidResponseException(FNC_NAME + ": Content-Type header only allowed for " +
+					"DESCRIBE/GET_PARAMETER messages");
 		}
-		msg.headers.put(hdEntry.getHdKey(), hdEntry);
+		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
+		hdEntry.hdValContType.contentType = (output.messageType == RtspMessageType.DESCRIBE ?
+				RtspMimeType.SDP : RtspMimeType.PARAMETERS);
+		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

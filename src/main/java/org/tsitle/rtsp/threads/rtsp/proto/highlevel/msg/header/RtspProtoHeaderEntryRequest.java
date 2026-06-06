@@ -8,6 +8,7 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 	public @NonNull RtspProtoHeaderTypeAccept hdValAccept = new RtspProtoHeaderTypeAccept();
 	public @NonNull RtspProtoHeaderTypeAuthClient hdValAuthClient = new RtspProtoHeaderTypeAuthClient();
 	public @NonNull RtspProtoHeaderTypeKeymgmt hdValKeymgmt = new RtspProtoHeaderTypeKeymgmt();
+	public @NonNull RtspProtoHeaderTypeProxyRequ hdValProxyRequ = new RtspProtoHeaderTypeProxyRequ();
 	public @NonNull RtspProtoHeaderTypeRequire hdValRequire = new RtspProtoHeaderTypeRequire();
 	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
@@ -32,6 +33,7 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 			case ACCEPT:
 			case AUTH_CLIENT:
 			case KEYMGMT:
+			case PROXY_REQU:
 			case REQUIRE:
 			case USERAGENT:
 				this.hdKeyEn = hdKeyEn;
@@ -53,6 +55,7 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 				case ACCEPT -> hdValAccept.toString();
 				case AUTH_CLIENT -> hdValAuthClient.toString();
 				case KEYMGMT -> hdValKeymgmt.toString();
+				case PROXY_REQU -> hdValProxyRequ.toString();
 				case REQUIRE -> hdValRequire.toString();
 				case USERAGENT -> hdValUserAgent.toString();
 				default -> throw new IllegalArgumentException("Invalid header key for requests: " + hdKeyEn);

@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspConnectionPolicy;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspContentEncoding;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
@@ -17,17 +19,67 @@ public final class RtspLowBuilderHelper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static @NonNull String helperBuildHeaderValue_connection(@NonNull RtspProtoHeaderTypeConnection hdValue)
+			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Connection: close" (close | keep-alive)
+		 * Controls whether the client and server should close the connection after the current request/response
+		 */
+		if (hdValue.connectionPol == RtspConnectionPolicy.NONE) {
+			throw new RtspLowInvalidRrException("connectionPol must be set");
+		}
+		return hdValue.connectionPol.getStrValue();
+	}
+
 	public static @NonNull String helperBuildHeaderValue_contbase(@NonNull RtspProtoHeaderTypeContBase hdValue)
 			throws RtspLowInvalidRrException {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "Content-Base: rtsp://example.com/path/to/resource"
+		 * Contains an absolute URI as base for resolving relative URLs within the entity
+		 */
 		if (hdValue.contentBaseStr.isBlank()) {
 			throw new RtspLowInvalidRrException("contentBaseStr cannot be blank");
 		}
 		return hdValue.contentBaseStr;
 	}
 
+	public static @NonNull String helperBuildHeaderValue_contenc(@NonNull RtspProtoHeaderTypeContEnc hdValue)
+			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Encoding: gzip" (gzip | compress | deflate)
+		 * Specifies the encoding method used for the entity body
+		 */
+		if (hdValue.contentEnc == RtspContentEncoding.NONE) {
+			throw new RtspLowInvalidRrException("contentEnc must be set");
+		}
+		return hdValue.contentEnc.getStrValue();
+	}
+
+	public static @NonNull String helperBuildHeaderValue_contlang(@NonNull RtspProtoHeaderTypeContLang hdValue)
+			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Language: en" (en | fr | de | ...)
+		 *  or
+		 *   "Content-Language: en, de"
+		 * Specifies the language(s) of the entity body
+		 */
+		if (hdValue.contentLangStr.isBlank()) {
+			throw new RtspLowInvalidRrException("contentLangStr cannot be blank");
+		}
+		return hdValue.contentLangStr;
+	}
+
 	public static @NonNull String helperBuildHeaderValue_contlen(@NonNull RtspProtoHeaderTypeContLen hdValue)
 			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Length: 1234"
+		 * Specifies the length of the entity body
+		 */
 		if (hdValue.getContentLen32bit().isEmpty()) {
 			throw new RtspLowInvalidRrException("Content-Length must be set");
 		}
@@ -36,6 +88,10 @@ public final class RtspLowBuilderHelper {
 
 	public static @NonNull String helperBuildHeaderValue_conttype(@NonNull RtspProtoHeaderTypeContType hdValue)
 			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Type: text/parameters"
+		 */
 		if (hdValue.contentType == RtspMimeType.NONE) {
 			throw new RtspLowInvalidRrException("Content-Type must be set");
 		}
@@ -44,6 +100,11 @@ public final class RtspLowBuilderHelper {
 
 	public static @NonNull String helperBuildHeaderValue_cseq(@NonNull RtspProtoHeaderTypeCseq hdValue)
 			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "CSeq: 1234"
+		 * Specifies the sequence number of the request or response
+		 */
 		if (hdValue.getCseqNr32bit().isEmpty()) {
 			throw new RtspLowInvalidRrException("CSeq must be set");
 		}
@@ -53,7 +114,7 @@ public final class RtspLowBuilderHelper {
 	public static @NonNull String helperBuildHeaderValue_date(@NonNull RtspProtoHeaderTypeDate hdValue) {
 		/*
 		 * Example:
-		 *   "Fri, 03 Apr 2026 10:54:06 GMT"
+		 *   "Date: Fri, 03 Apr 2026 10:54:06 GMT"
 		 */
 		return DateTimeFormatter.RFC_1123_DATE_TIME
 				.withLocale(Locale.ENGLISH)
@@ -62,7 +123,21 @@ public final class RtspLowBuilderHelper {
 
 	public static @NonNull String helperBuildHeaderValue_range(@NonNull RtspProtoHeaderTypeRange hdValue)
 			throws RtspLowInvalidRrException {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "Range: clock=19960213T143205Z-;time=19970123T143720Z"
+		 * SMPTE Relative Timestamps:
+		 *    "Range: smpte=10:12:33:20-"
+		 *    "Range: smpte=10:07:33-"
+		 *    "Range: smpte=10:07:00-10:07:33:05.01"
+		 *    "Range: smpte-25=10:07:00-10:07:33:05.01"
+		 * Normal Play Time:
+		 *    "Range: npt=123.45-125"
+		 *    "Range: npt=12:05:35.3-"
+		 *    "Range: npt=now-"
+		 * Absolute Time:
+		 *    "Range: clock=19961108T143720.25Z-"  (November 8, 1996 at 14h37 and 20 and a quarter seconds UTC)
+		 */
 		if (hdValue.rangeStr.isBlank()) {
 			throw new RtspLowInvalidRrException("rangeStr cannot be blank");
 		}
@@ -73,7 +148,11 @@ public final class RtspLowBuilderHelper {
 				@NonNull RtspProtoHeaderTypeSession hdValue,
 				boolean isForRequest
 			) throws RtspLowInvalidRrException {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "Session: 1234567890"
+		 *   "Session: 1234567890;timeout=60"
+		 */
 		if (hdValue.sessionIdStr.isBlank()) {
 			throw new RtspLowInvalidRrException("sessionIdStr cannot be blank");
 		}

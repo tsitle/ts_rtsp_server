@@ -79,14 +79,6 @@ public final class RtspProtoHighRequestBuilder {
 					requestMessageType);
 		}
 
-		//
-		if (! resObj.body.isBlank()) {
-			if (! resObj.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
-				resObj.body += RtspProtoLowMsgConstants.CRLF;
-			}
-			addContentLengthHeader(resObj);
-		}
-
 		System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);  // @TODO
 
 		return resObj;
@@ -209,6 +201,8 @@ public final class RtspProtoHighRequestBuilder {
 	private void buildRequest_setup(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
 
+		// @TODO check if we need and have KMD
+
 		// @TODO set some headers
 		logError(FNC_NAME, "SETUP is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": SETUP is not supported yet");
@@ -267,8 +261,23 @@ public final class RtspProtoHighRequestBuilder {
 		}
 	}
 
-	private void addContentLengthHeader(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".addContentLengthHeader()";
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void addBody(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addBody()";
+
+		// @TODO add body for ANNOUNCE / GET_PARAMETER / SET_PARAMETER
+
+		/*if (! resObj.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
+			resObj.body += RtspProtoLowMsgConstants.CRLF;
+		}
+		addContentLengthAndTypeHeader(resObj);*/
+	}
+
+	/*private void addContentLengthAndTypeHeader(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addContentLengthAndTypeHeader()";
+
+		@TODO add Content-Length + Content-Type
 
 		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LEN);
 		try {
@@ -277,11 +286,10 @@ public final class RtspProtoHighRequestBuilder {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Setting Content-Length failed: " + e.getMessage());
 		}
 		msg.headers.put(hdEntry.getHdKey(), hdEntry);
-	}
+	}*/
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("SameParameterValue")
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}

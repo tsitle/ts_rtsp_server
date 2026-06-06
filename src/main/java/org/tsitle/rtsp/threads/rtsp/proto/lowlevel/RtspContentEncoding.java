@@ -2,16 +2,16 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspMimeType {
+public enum RtspContentEncoding {
 
 	NONE("-none-"),
-	MIKEY("application/x-rtsp-mikey"),
-	PARAMETERS("text/parameters"),
-	SDP("application/sdp");
+	GZIP("gzip"),
+	COMPRESS("compress"),
+	DEFLATE("deflate");
 
 	private final @NonNull String value;
 
-	RtspMimeType(@NonNull String value) {
+	RtspContentEncoding(@NonNull String value) {
 		this.value = value;
 	}
 
@@ -19,8 +19,8 @@ public enum RtspMimeType {
 		return value;
 	}
 
-	public static @NonNull RtspMimeType of(@NonNull String value) {
-		for (RtspMimeType entry : values()) {
+	public static @NonNull RtspContentEncoding of(@NonNull String value) {
+		for (RtspContentEncoding entry : values()) {
 			if (entry == NONE) {
 				continue;
 			}

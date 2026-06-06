@@ -3,8 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.time.ZonedDateTime;
@@ -12,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 public final class RtspLowParserHelper {
@@ -21,17 +21,71 @@ public final class RtspLowParserHelper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static void helperParseHeaderValue_connection(
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderTypeConnection outputHd
+			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Connection: close" (close | keep-alive)
+		 * Controls whether the client and server should close the connection after the current request/response
+		 */
+		outputHd.connectionPol = RtspConnectionPolicy.of(hdValue);
+		if (outputHd.connectionPol == RtspConnectionPolicy.NONE) {
+			throw new RtspLowInvalidRrException("Invalid Connection value: '" + hdValue + "'");
+		}
+	}
+
 	public static void helperParseHeaderValue_contbase(
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeContBase outputHd
 			) {
+		/*
+		 * Example:
+		 *   "Content-Base: rtsp://example.com/path/to/resource"
+		 * Contains an absolute URI as base for resolving relative URLs within the entity
+		 */
 		outputHd.contentBaseStr = hdValue;
+	}
+
+	public static void helperParseHeaderValue_contenc(
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderTypeContEnc outputHd
+			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Encoding: gzip" (gzip | compress | deflate)
+		 * Specifies the encoding method used for the entity body
+		 */
+		outputHd.contentEnc = RtspContentEncoding.of(hdValue);
+		if (outputHd.contentEnc == RtspContentEncoding.NONE) {
+			throw new RtspLowInvalidRrException("Invalid Content-Encoding value: '" + hdValue + "'");
+		}
+	}
+
+	public static void helperParseHeaderValue_contlang(
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderTypeContLang outputHd
+			) {
+		/*
+		 * Example:
+		 *   "Content-Language: en" (en | fr | de | ...)
+		 *  or
+		 *   "Content-Language: en, de"
+		 * Specifies the language(s) of the entity body
+		 */
+		outputHd.contentLangStr = hdValue;
 	}
 
 	public static void helperParseHeaderValue_contlen(
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeContLen outputHd
 			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Length: 1234"
+		 * Specifies the length of the entity body
+		 */
 		try {
 			outputHd.setContentLen32bit((int)Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
@@ -45,11 +99,15 @@ public final class RtspLowParserHelper {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeContType outputHd
 			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Content-Type: text/parameters"
+		 */
 		outputHd.contentType = RtspMimeType.of(hdValue);
 		if (outputHd.contentType == RtspMimeType.NONE) {
 			throw new RtspLowInvalidRrException("Invalid Content-Type value: '" + hdValue + "'");
 		}
-		if (outputHd.contentType != RtspMimeType.SDP) {
+		if (outputHd.contentType != RtspMimeType.PARAMETERS && outputHd.contentType != RtspMimeType.SDP) {
 			throw new RtspLowInvalidRrException("Unsupported Content-Type value: " + outputHd.contentType);
 		}
 	}
@@ -58,6 +116,11 @@ public final class RtspLowParserHelper {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeCseq outputHd
 			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "CSeq: 1234"
+		 * Specifies the sequence number of the request or response
+		 */
 		try {
 			outputHd.setCseqNr32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
@@ -71,6 +134,10 @@ public final class RtspLowParserHelper {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeDate outputHd
 			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Date: Fri, 03 Apr 2026 10:54:06 GMT"
+		 */
 		try {
 			outputHd.dateObj = ZonedDateTime.parse(
 					hdValue,
@@ -85,7 +152,21 @@ public final class RtspLowParserHelper {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeRange outputHd
 			) {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "Range: clock=19960213T143205Z-;time=19970123T143720Z"
+		 * SMPTE Relative Timestamps:
+		 *    "Range: smpte=10:12:33:20-"
+		 *    "Range: smpte=10:07:33-"
+		 *    "Range: smpte=10:07:00-10:07:33:05.01"
+		 *    "Range: smpte-25=10:07:00-10:07:33:05.01"
+		 * Normal Play Time:
+		 *    "Range: npt=123.45-125"
+		 *    "Range: npt=12:05:35.3-"
+		 *    "Range: npt=now-"
+		 * Absolute Time:
+		 *    "Range: clock=19961108T143720.25Z-"  (November 8, 1996 at 14h37 and 20 and a quarter seconds UTC)
+		 */
 		outputHd.rangeStr = hdValue;
 	}
 
@@ -95,6 +176,11 @@ public final class RtspLowParserHelper {
 				@NonNull RtspProtoHeaderTypeSession outputHd,
 				@NonNull List<@NonNull String> outputWarnings
 			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "Session: 1234567890"
+		 *   "Session: 1234567890;timeout=60"
+		 */
 		String rawSid;
 		String rawTimeout = "";
 		if (hdValue.contains(";")) {
@@ -170,6 +256,43 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Cannot parse " + fieldDesc + ": '" + hexStr + "'");
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull String helperCleanUpBodyLine(@NonNull String bodyLine) {
+		return bodyLine
+				.replace("'", "").replace("\"", "")
+				.replace("\t", "")
+				.replace("\r", "").replace("\n", "")
+				.strip();
+	}
+
+	public static void helperParseBodyLine_keyValue(
+				@NonNull RtspMessageType messageType,
+				@NonNull String bodyLine,
+				@NonNull Map<@NonNull String, @NonNull String> outputMap
+			) throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "barparam: barstuff"
+		 */
+		if (helperCleanUpBodyLine(bodyLine).isBlank()) {
+			return;
+		}
+		String[] tmpSplit = bodyLine.split(":");
+		if (tmpSplit.length < 2) {
+			throw new RtspLowInvalidRrException(messageType + ": '" + bodyLine + "'");
+		}
+		String tmpParKey = helperCleanUpBodyLine(tmpSplit[0]);
+		if (tmpParKey.isBlank()) {
+			throw new RtspLowInvalidRrException(messageType + ": '" + bodyLine + "'");
+		}
+		String tmpParVal = helperCleanUpBodyLine(bodyLine.substring(tmpSplit[0].length() + 1));
+		if (tmpParVal.isBlank()) {
+			throw new RtspLowInvalidRrException(messageType + ": '" + bodyLine + "'");
+		}
+		outputMap.put(tmpParKey, tmpParVal);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

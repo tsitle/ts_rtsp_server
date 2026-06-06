@@ -3,10 +3,9 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStructuredBase {
 
@@ -23,35 +22,35 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 	/** Headers */
 	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> headers = new HashMap<>();
 
+	/** Message body for 'ANNOUNCE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public @NonNull String bodyAnnounceSdp = "";
+	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public @NonNull Set<@NonNull String> bodyGetParamKeys = new HashSet<>();
+	/** Message body for 'SET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public @NonNull Map<@NonNull String, @NonNull String> bodySetParamKv = new HashMap<>();
+
 	public RtspProtoHighMsgStructuredRequest() {
 		super();
 	}
 
-	private @NonNull String queryParamsToString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{");
-		boolean isFirst = true;
-		for (Map.Entry<@NonNull String, @NonNull String> tmpEntry : queryParams.entrySet()) {
-			if (! isFirst) {
-				sb.append(", ");
-			}
-			sb.append(tmpEntry.getKey()).append("='").append(tmpEntry.getValue()).append("'");
-			isFirst = false;
-		}
-		sb.append("}");
-		return sb.toString();
-	}
-
 	@Override
 	public @NonNull String toString() {
-		String resS = getClass().getSimpleName() + " [";
-		resS += internalToString(true);
-		resS += "resourceUrl='" + resourceUrl + "', ";
-		resS += "queryParams=" + queryParamsToString() + ", ";
-		resS += "authUser='" + authUser + "', ";
-		resS += "authPlainPassword='" + authPlainPassword + "', ";
-		resS += "headers=" + headers + ", ";
-		resS += internalToString(false);
+		String resS =
+				getClass().getSimpleName() + " [" +
+				internalToStringFirstPart() +
+				", resourceUrl='" + resourceUrl + "'" +
+				", queryParams=" + mapToString(queryParams) +
+				", authUser='" + authUser + "', " +
+				", authPlainPassword='" + authPlainPassword + "'" +
+				", headers=" + headers;
+
+		if (messageType == RtspMessageType.ANNOUNCE) {
+			resS += ", bodyAnnounceSdp='" + cleanUpBodyString(bodyAnnounceSdp) + "'";
+		} else if (messageType == RtspMessageType.GET_PARAMETER) {
+			resS += ", bodyGetParamKeys=" + setToString(bodyGetParamKeys);
+		} else if (messageType == RtspMessageType.SET_PARAMETER) {
+			resS += ", bodySetParamKv=" + mapToString(bodySetParamKv);
+		}
 		return resS + "]";
 	}
 
@@ -70,6 +69,21 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 			return Optional.empty();
 		}
 		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr);
+	}
+
+	private static @NonNull String setToString(@NonNull Set<@NonNull String> input) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		boolean isFirst = true;
+		for (String tmpEntry : input) {
+			if (! isFirst) {
+				sb.append(", ");
+			}
+			sb.append(tmpEntry);
+			isFirst = false;
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

@@ -10,6 +10,7 @@ public enum RtspStatusCode {
 	FORBIDDEN(403),
 	NOT_FOUND(404),
 	METHOD_NOT_ALLOWED(405),
+	NOT_ACCEPTABLE(406),
 	URI_TOO_LONG(414),
 	SESSION_NOT_FOUND(454),
 	METHOD_NOT_VALID_IN_THIS_STATE(455),
@@ -36,6 +37,7 @@ public enum RtspStatusCode {
 				case FORBIDDEN -> "Forbidden";
 				case NOT_FOUND -> "Not Found";
 				case METHOD_NOT_ALLOWED -> "Method Not Allowed";
+				case NOT_ACCEPTABLE -> "Not Acceptable";
 				case URI_TOO_LONG -> "URI Too Long";
 				case SESSION_NOT_FOUND -> "Session Not Found";
 				case METHOD_NOT_VALID_IN_THIS_STATE -> "Method Not Valid In This State";

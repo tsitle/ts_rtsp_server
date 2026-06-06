@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
 import java.util.HashMap;
@@ -14,6 +15,11 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 	/** Headers */
 	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> headers = new HashMap<>();
 
+	/** Message body for 'DESCRIBE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public @NonNull String bodyDescribeSdp = "";
+	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public @NonNull Map<@NonNull String, @NonNull String> bodyGetParamKv = new HashMap<>();
+
 	public RtspProtoHighMsgStructuredResponse() {
 		super();
 
@@ -22,10 +28,16 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 
 	@Override
 	public @NonNull String toString() {
-		String resS = getClass().getSimpleName() + " [";
-		resS += internalToString(true);
-		resS += "headers=" + headers + ", ";
-		resS += internalToString(false);
+		String resS =
+				getClass().getSimpleName() + " [" +
+				internalToStringFirstPart() +
+				", headers=" + headers;
+
+		if (messageType == RtspMessageType.DESCRIBE) {
+			resS += ", bodyDescribeSdp='" + cleanUpBodyString(bodyDescribeSdp) + "'";
+		} else if (messageType == RtspMessageType.GET_PARAMETER) {
+			resS += ", bodySetParamKv='" + mapToString(bodyGetParamKv) + "'";
+		}
 		return resS + "]";
 	}
 

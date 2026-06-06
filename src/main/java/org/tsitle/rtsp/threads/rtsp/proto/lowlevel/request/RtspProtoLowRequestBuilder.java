@@ -14,6 +14,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 public final class RtspProtoLowRequestBuilder {
 
@@ -47,14 +48,12 @@ public final class RtspProtoLowRequestBuilder {
 		}
 
 		// set body
-		if (! input.body.isBlank()) {
-			if (! input.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": Have a msg body but no Content-Type header");
+		if (input.headers.containsKey(RtspHeaderKey.CONTENT_TYPE) && input.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
+			try {
+				buildBody(input, resObj);
+			} catch (RtspLowInvalidRrException e) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": " + e.getMessage());
 			}
-			if (! input.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": Have a msg body but no Content-Length header");
-			}
-			resObj.body = input.body;
 		}
 
 		return resObj;
@@ -88,29 +87,41 @@ public final class RtspProtoLowRequestBuilder {
 
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> entry : input.headers.entrySet()) {
 			String tmpHdVal = switch (entry.getKey()) {
-					case ACCEPT -> buildHeaderValue_describe_accept(entry.getValue().hdValAccept);
+					case ACCEPT -> buildHeaderValue_describe_accept(input.messageType, entry.getValue().hdValAccept);
 					case AUTH_CLIENT -> buildHeaderValue_com_auth_client(entry.getValue().hdValAuthClient);
-					case CONTENT_BASE -> buildHeaderValue_describe_contbase(entry.getValue().hdValContBase);
-					case CONTENT_LEN -> buildHeaderValue_com_contlen(entry.getValue().hdValContLen);
-					case CONTENT_TYPE -> buildHeaderValue_com_conttype(entry.getValue().hdValContType);
+					case CONNECTION -> buildHeaderValue_com_connection(entry.getValue().hdValConnection);
+					case CONTENT_BASE -> buildHeaderValue_announce_contbase(input.messageType, entry.getValue().hdValContBase);
+					case CONTENT_ENC -> buildHeaderValue_com_contenc(input.messageType, entry.getValue().hdValContEnc);
+					case CONTENT_LEN -> /* add this when adding the body */ "";
+					case CONTENT_LANG -> buildHeaderValue_com_contlang(input.messageType, entry.getValue().hdValContLang);
+					case CONTENT_TYPE -> buildHeaderValue_com_conttype(input.messageType, entry.getValue().hdValContType);
 					case CSEQ -> buildHeaderValue_com_cseq(entry.getValue().hdValCseq);
 					case DATE -> buildHeaderValue_com_date(entry.getValue().hdValDate);
-					case KEYMGMT -> buildHeaderValue_com_keymgmt(entry.getValue().hdValKeymgmt);
-					case RANGE -> buildHeaderValue_play_range(entry.getValue().hdValRange);
-					case REQUIRE -> buildHeaderValue_options_require(entry.getValue().hdValRequire);
+					case KEYMGMT -> buildHeaderValue_com_keymgmt(input.messageType, entry.getValue().hdValKeymgmt);
+					case PROXY_REQU -> buildHeaderValue_com_proxyrequ(entry.getValue().hdValProxyRequ);
+					case RANGE -> buildHeaderValue_play_range(input.messageType, entry.getValue().hdValRange);
+					case REQUIRE -> buildHeaderValue_com_require(entry.getValue().hdValRequire);
 					case SESSION -> buildHeaderValue_com_session(entry.getValue().hdValSession);
-					case TRANSPORT -> buildHeaderValue_setup_transport(entry.getValue().hdValTransport);
+					case TRANSPORT -> buildHeaderValue_setup_transport(input.messageType, entry.getValue().hdValTransport);
 					case USERAGENT -> buildHeaderValue_com_useragent(entry.getValue().hdValUserAgent);
 					default -> throw new RtspInvalidRequestException(FNC_NAME + ": Unknown header key: " + entry.getKey());
 				};
+			if (tmpHdVal.isBlank()) {
+				continue;
+			}
 			output.headerLines.add(entry.getKey().getStrValue() + ": " + tmpHdVal);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String buildHeaderValue_describe_accept(@NonNull RtspProtoHeaderTypeAccept hdValue)
-			throws RtspInvalidRequestException {
+	private static @NonNull String buildHeaderValue_describe_accept(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeAccept hdValue
+			) throws RtspInvalidRequestException {
+		if (messageType != RtspMessageType.DESCRIBE) {
+			throw new RtspInvalidRequestException("Accept header is only valid for DESCRIBE requests");
+		}
 		if (hdValue.rtspMimeType == RtspMimeType.NONE) {
 			throw new RtspInvalidRequestException("MIME-Type must be set");
 		}
@@ -147,18 +158,42 @@ public final class RtspProtoLowRequestBuilder {
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI + "\"" + hdValue.authUri + "\"";
 	}
 
-	private static @NonNull String buildHeaderValue_describe_contbase(@NonNull RtspProtoHeaderTypeContBase hdValue)
+	private static @NonNull String buildHeaderValue_com_connection(@NonNull RtspProtoHeaderTypeConnection hdValue)
 			throws RtspLowInvalidRrException {
+		return RtspLowBuilderHelper.helperBuildHeaderValue_connection(hdValue);
+	}
+
+	private static @NonNull String buildHeaderValue_announce_contbase(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeContBase hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		if (messageType != RtspMessageType.ANNOUNCE) {
+			throw new RtspInvalidRequestException("Content-Base header is only valid for ANNOUNCE requests");
+		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contbase(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoHeaderTypeContLen hdValue)
-			throws RtspLowInvalidRrException {
-		return RtspLowBuilderHelper.helperBuildHeaderValue_contlen(hdValue);
+	private static @NonNull String buildHeaderValue_com_contenc(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeContEnc hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Encoding", messageType);
+		return RtspLowBuilderHelper.helperBuildHeaderValue_contenc(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoHeaderTypeContType hdValue)
-			throws RtspLowInvalidRrException {
+	private static @NonNull String buildHeaderValue_com_contlang(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeContLang hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Language", messageType);
+		return RtspLowBuilderHelper.helperBuildHeaderValue_contlang(hdValue);
+	}
+
+	private static @NonNull String buildHeaderValue_com_conttype(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeContType hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Type", messageType);
 		return RtspLowBuilderHelper.helperBuildHeaderValue_conttype(hdValue);
 	}
 
@@ -171,13 +206,18 @@ public final class RtspProtoLowRequestBuilder {
 		return RtspLowBuilderHelper.helperBuildHeaderValue_date(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_com_keymgmt(@NonNull RtspProtoHeaderTypeKeymgmt hdValue)
-			throws RtspInvalidRequestException {
+	private static @NonNull String buildHeaderValue_com_keymgmt(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeKeymgmt hdValue
+			) throws RtspInvalidRequestException {
 		/*
 		 * Example:
 		 *   "prot=mikey; uri=\"rtsp://.../streamid00\"; data=\"[BASE64 ENCODED DATA]\""
 		 */
 
+		if (messageType != RtspMessageType.SET_PARAMETER && messageType != RtspMessageType.SETUP) {
+			throw new RtspInvalidRequestException("Keymgmt header is only valid for SET_PARAMETER/SETUP requests");
+		}
 		if (hdValue.proto == RtspKeymgmtProto.NONE) {
 			throw new RtspInvalidRequestException("Proto must be set");
 		}
@@ -192,36 +232,24 @@ public final class RtspProtoLowRequestBuilder {
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_KM_DATA + "\"" + hdValue.dataStr + "\"";
 	}
 
-	private static @NonNull String buildHeaderValue_play_range(@NonNull RtspProtoHeaderTypeRange hdValue)
-			throws RtspLowInvalidRrException {
+	private static @NonNull String buildHeaderValue_com_proxyrequ(@NonNull RtspProtoHeaderTypeProxyRequ hdValue)
+			throws RtspInvalidRequestException {
+		return buildRequiredFeatures(hdValue.requiredFeatures);
+	}
+
+	private static @NonNull String buildHeaderValue_play_range(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeRange hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		if (messageType != RtspMessageType.PLAY) {
+			throw new RtspInvalidRequestException("Range header is only valid for PLAY requests");
+		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_range(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_options_require(
-				@NonNull RtspProtoHeaderTypeRequire hdValue
-			) throws RtspInvalidRequestException {
-		/*
-		 * Example:
-		 *   "Require: funky-feature"
-		 * This header may be accompanied by a custom header like:
-		 *   "Funky-Parameter: funkystuff"
-		 * See
-		 *   https://datatracker.ietf.org/doc/html/rfc2326#section-12.32
-		 */
-
-		if (hdValue.requiredFeatures.isEmpty()) {
-			throw new RtspInvalidRequestException("requiredFeatures cannot be empty");
-		}
-		StringBuilder sb = new StringBuilder();
-		boolean isFirst = true;
-		for (String tmpEntry : hdValue.requiredFeatures) {
-			if (! isFirst) {
-				sb.append(", ");
-			}
-			sb.append(tmpEntry);
-			isFirst = false;
-		}
-		return sb.toString();
+	private static @NonNull String buildHeaderValue_com_require(@NonNull RtspProtoHeaderTypeRequire hdValue)
+			throws RtspInvalidRequestException {
+		return buildRequiredFeatures(hdValue.requiredFeatures);
 	}
 
 	private static @NonNull String buildHeaderValue_com_session(@NonNull RtspProtoHeaderTypeSession hdValue)
@@ -229,8 +257,13 @@ public final class RtspProtoLowRequestBuilder {
 		return RtspLowBuilderHelper.helperBuildHeaderValue_session(hdValue, true);
 	}
 
-	private static @NonNull String buildHeaderValue_setup_transport(@NonNull RtspProtoHeaderTypeTransport hdValue)
-			throws RtspLowInvalidRrException {
+	private static @NonNull String buildHeaderValue_setup_transport(
+				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoHeaderTypeTransport hdValue
+			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+		if (messageType != RtspMessageType.SETUP) {
+			throw new RtspInvalidRequestException("Transport header is only valid for SETUP requests");
+		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_transport(hdValue, true);
 	}
 
@@ -240,6 +273,59 @@ public final class RtspProtoLowRequestBuilder {
 			throw new RtspInvalidRequestException("userAgentStr cannot be blank");
 		}
 		return hdValue.userAgentStr;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void allowOnlyAnnounceGetOrSetParameter(@NonNull String hdDesc, @NonNull RtspMessageType messageType)
+			throws RtspInvalidRequestException {
+		if (messageType != RtspMessageType.ANNOUNCE &&
+				messageType != RtspMessageType.GET_PARAMETER && messageType != RtspMessageType.SET_PARAMETER) {
+			throw new RtspInvalidRequestException(hdDesc + " header is only valid for " +
+					"ANNOUNCE/GET_PARAMETER/SET_PARAMETER requests");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String buildRequiredFeatures(@NonNull Set<@NonNull String> requiredFeatures)
+			throws RtspInvalidRequestException {
+		/*
+		 * Example:
+		 *   "Require: funky-feature" // "Proxy-Require: funky-feature"
+		 * This header may be accompanied by a custom header like:
+		 *   "Funky-Parameter: funkystuff"
+		 * See
+		 *   https://datatracker.ietf.org/doc/html/rfc2326#section-12.32
+		 */
+
+		if (requiredFeatures.isEmpty()) {
+			throw new RtspInvalidRequestException("requiredFeatures cannot be empty");
+		}
+		StringBuilder sb = new StringBuilder();
+		boolean isFirst = true;
+		for (String tmpEntry : requiredFeatures) {
+			if (! isFirst) {
+				sb.append(", ");
+			}
+			sb.append(tmpEntry);
+			isFirst = false;
+		}
+		return sb.toString();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void buildBody(
+				@NonNull RtspProtoHighMsgStructuredRequest input,
+				@NonNull RtspProtoLowMsgRaw output
+			) throws RtspLowInvalidRrException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildBody()";
+
+		// @TODO
+		/*buildHeaderValue_com_contlen(input.messageType, entry.getValue().hdValContLen);
+		allowOnlyAnnounceGetOrSetParameter("Content-Length", messageType);
+		return RtspLowBuilderHelper.helperBuildHeaderValue_contlen(hdValue);*/
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

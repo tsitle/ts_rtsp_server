@@ -7,13 +7,9 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSkippedHeaderException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtProto;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowInvalidRrException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowParserHelper;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
@@ -43,10 +39,11 @@ public final class RtspProtoLowRequestParser {
 		}
 
 		// read messageType from the requestLine
-		parseMessageTypeAndProtoVers(input.mainLine, resObj);
-		if (resObj.messageType == RtspMessageType.UNKNOWN) {
-			logWarn(FNC_NAME, "Unknown request type in requestLine '" + input.mainLine + "'");
-			resObj.statusCode = RtspStatusCode.METHOD_NOT_ALLOWED;  // this will be ignored though
+		try {
+			parseMessageTypeAndProtoVers(input.mainLine, resObj);
+		} catch (RtspInvalidRequestException e) {
+			logWarn(FNC_NAME, e.getMessage());
+			resObj.messageType = RtspMessageType.UNKNOWN;
 			return resObj;
 		}
 
@@ -61,6 +58,9 @@ public final class RtspProtoLowRequestParser {
 
 		// parse header lines
 		parseHeaderLines(input.headerLines, resObj);
+		if (resObj.statusCode != RtspStatusCode.OK) {
+			return resObj;
+		}
 
 		// check CSeq
 		Optional<Integer> tmpOptCseq = resObj.getHeaderCseq();
@@ -71,7 +71,9 @@ public final class RtspProtoLowRequestParser {
 		}
 
 		// parse body
-		// @TODO
+		if (! input.body.isBlank()) {
+			parseBody(input.body, resObj);
+		}
 
 		return resObj;
 	}
@@ -79,16 +81,16 @@ public final class RtspProtoLowRequestParser {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseMessageTypeAndProtoVers(@NonNull String requestLine, @NonNull RtspProtoHighMsgStructuredRequest output) {
-		final String FNC_NAME = getClass().getSimpleName() + ".parseMessageType()";
-
+	private void parseMessageTypeAndProtoVers(@NonNull String requestLine, @NonNull RtspProtoHighMsgStructuredRequest output)
+			throws RtspInvalidRequestException {
 		try {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
 			output.messageType = RtspMessageType.of(requestTypeStr);
 			if (output.messageType == RtspMessageType.UNKNOWN) {
-				return;
+				output.statusCode = RtspStatusCode.METHOD_NOT_ALLOWED;
+				throw new RtspInvalidRequestException("Unknown request type in requestLine '" + requestLine + "'");
 			}
 			tokens.nextToken();  // URL
 			// we shall be tolerant here and ignore a missing PROTOCOL/VERSION token
@@ -98,12 +100,12 @@ public final class RtspProtoLowRequestParser {
 			String tmpProtoStr = tokens.nextToken();
 			output.rtspProtoVersion = RtspProtocolVersion.of(tmpProtoStr);
 			if (output.rtspProtoVersion == RtspProtocolVersion.NONE) {
-				output.messageType = RtspMessageType.UNKNOWN;
-				logWarn(FNC_NAME, "invalid protocol/version '" + tmpProtoStr + "'");
+				output.statusCode = RtspStatusCode.BAD_REQUEST;
+				throw new RtspInvalidRequestException("Invalid protocol/version '" + tmpProtoStr + "'");
 			}
 		} catch (NoSuchElementException e) {
-			logWarn(FNC_NAME, "Missing element in request line '" + requestLine + "'");
-			output.messageType = RtspMessageType.UNKNOWN;
+			output.statusCode = RtspStatusCode.BAD_REQUEST;
+			throw new RtspInvalidRequestException("Missing element in request line '" + requestLine + "'");
 		}
 	}
 
@@ -180,6 +182,8 @@ public final class RtspProtoLowRequestParser {
 		}
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void parseHeaderLines(@NonNull List<@NonNull String> headerLines, @NonNull RtspProtoHighMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines()";
 
@@ -209,6 +213,8 @@ public final class RtspProtoLowRequestParser {
 				logWarn(FNC_NAME, e.getMessage());
 				output.statusCode = RtspStatusCode.BAD_REQUEST;
 				return;
+			} catch (RtspSkippedHeaderException e) {
+				logWarn(FNC_NAME, "Skipped header: " + e.getMessage());
 			}
 		}
 	}
@@ -217,37 +223,48 @@ public final class RtspProtoLowRequestParser {
 				@NonNull String hdKeyStr,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHighMsgStructuredRequest output
-			) throws RtspInvalidRequestException, RtspLowInvalidRrException {
+			) throws RtspInvalidRequestException, RtspLowInvalidRrException, RtspSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
 		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest();
 		RtspHeaderKey hdKeyEn = RtspHeaderKey.of(hdKeyStr);
 		switch (hdKeyEn) {
-			case ACCEPT -> parseHeaderValue_describe_accept(hdValue, entry);
+			case ACCEPT -> parseHeaderValue_describe_accept(output.messageType, hdValue, entry);
 			case AUTH_CLIENT -> parseHeaderValue_com_auth_client(hdValue, entry);
-			case CONTENT_BASE -> parseHeaderValue_describe_contbase(hdValue, entry);
-			case CONTENT_LEN -> parseHeaderValue_com_contlen(hdValue, entry);
-			case CONTENT_TYPE -> parseHeaderValue_com_conttype(hdValue, entry);
+			case CONNECTION -> parseHeaderValue_com_connection(hdValue, entry);
+			case CONTENT_BASE -> parseHeaderValue_announce_contbase(output.messageType, hdValue, entry);
+			case CONTENT_ENC -> parseHeaderValue_com_contenc(output.messageType, hdValue, entry);
+			case CONTENT_LANG -> parseHeaderValue_com_contlang(output.messageType, hdValue, entry);
+			case CONTENT_LEN -> parseHeaderValue_com_contlen(output.messageType, hdValue, entry);
+			case CONTENT_TYPE -> parseHeaderValue_com_conttype(output.messageType, hdValue, entry);
 			case CSEQ -> parseHeaderValue_com_cseq(hdValue, entry);
 			case DATE -> parseHeaderValue_com_date(hdValue, entry);
-			case KEYMGMT -> parseHeaderValue_com_keymgmt(hdValue, output.resourceUrl, entry);
-			case RANGE -> parseHeaderValue_play_range(hdValue, entry);
-			case REQUIRE -> parseHeaderValue_options_require(hdValue, entry);
+			case KEYMGMT -> parseHeaderValue_com_keymgmt(output.messageType, hdValue, output.resourceUrl, entry);
+			case PROXY_REQU -> parseHeaderValue_com_proxyrequ(hdValue, entry);
+			case RANGE -> parseHeaderValue_play_range(output.messageType, hdValue, entry);
+			case REQUIRE -> parseHeaderValue_com_require(hdValue, entry);
 			case SESSION -> parseHeaderValue_com_session(hdValue, entry);
-			case TRANSPORT -> parseHeaderValue_setup_transport(hdValue, entry);
+			case TRANSPORT -> parseHeaderValue_setup_transport(output.messageType, hdValue, entry);
 			case USERAGENT -> parseHeaderValue_com_useragent(hdValue, entry);
 			default -> {
 				logWarn(FNC_NAME, "Received unknown/invalid header: '" + hdKeyStr + "'");
 				return;
 			}
 		}
+		entry.setHdKey(hdKeyEn);
 		output.headers.put(entry.getHdKey(), entry);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void parseHeaderValue_describe_accept(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
-			throws RtspInvalidRequestException {
+	private void parseHeaderValue_describe_accept(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspInvalidRequestException, RtspSkippedHeaderException {
+		if (messageType != RtspMessageType.DESCRIBE) {
+			throw new RtspSkippedHeaderException("Accept header only allowed in DESCRIBE requests");
+		}
 		entry.hdValAccept.rtspMimeType = RtspMimeType.of(hdValue);
 		if (entry.hdValAccept.rtspMimeType == RtspMimeType.NONE) {
 			throw new RtspInvalidRequestException("Invalid Accept value: '" + hdValue + "'");
@@ -255,7 +272,6 @@ public final class RtspProtoLowRequestParser {
 		if (entry.hdValAccept.rtspMimeType != RtspMimeType.SDP) {
 			throw new RtspInvalidRequestException("Unsupported Accept value: " + entry.hdValAccept.rtspMimeType);
 		}
-		entry.setHdKey(RtspHeaderKey.ACCEPT);
 	}
 
 	private void parseHeaderValue_com_auth_client(
@@ -312,45 +328,81 @@ public final class RtspProtoLowRequestParser {
 		if (! (haveUser && haveRealm && haveNonce && haveUri && haveResp)) {
 			throw new RtspInvalidRequestException("Missing required Auth parameters");
 		}
-		entry.setHdKey(RtspHeaderKey.AUTH_CLIENT);
 	}
 
-	private void parseHeaderValue_describe_contbase(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
+	private void parseHeaderValue_com_connection(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
+			throws RtspLowInvalidRrException {
+		RtspLowParserHelper.helperParseHeaderValue_connection(hdValue, entry.hdValConnection);
+	}
+
+	private void parseHeaderValue_announce_contbase(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspSkippedHeaderException {
+		if (messageType != RtspMessageType.ANNOUNCE) {
+			throw new RtspSkippedHeaderException("Content-Base header only allowed in ANNOUNCE requests");
+		}
 		RtspLowParserHelper.helperParseHeaderValue_contbase(hdValue, entry.hdValContBase);
-		entry.setHdKey(RtspHeaderKey.CONTENT_BASE);
 	}
 
-	private void parseHeaderValue_com_contlen(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
-			throws RtspLowInvalidRrException {
+	private void parseHeaderValue_com_contenc(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Encoding", messageType);
+		RtspLowParserHelper.helperParseHeaderValue_contenc(hdValue, entry.hdValContEnc);
+	}
+
+	private void parseHeaderValue_com_contlang(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspSkippedHeaderException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Language", messageType);
+		RtspLowParserHelper.helperParseHeaderValue_contlang(hdValue, entry.hdValContLang);
+	}
+
+	private void parseHeaderValue_com_contlen(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Length", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contlen(hdValue, entry.hdValContLen);
-		entry.setHdKey(RtspHeaderKey.CONTENT_LEN);
 	}
 
-	private void parseHeaderValue_com_conttype(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
-			throws RtspLowInvalidRrException {
+	private void parseHeaderValue_com_conttype(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Type", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_conttype(hdValue, entry.hdValContType);
-		entry.setHdKey(RtspHeaderKey.CONTENT_TYPE);
 	}
 
 	private void parseHeaderValue_com_cseq(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspLowInvalidRrException {
 		RtspLowParserHelper.helperParseHeaderValue_cseq(hdValue, entry.hdValCseq);
-		entry.setHdKey(RtspHeaderKey.CSEQ);
 	}
 
 	private void parseHeaderValue_com_date(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
 			throws RtspLowInvalidRrException {
 		RtspLowParserHelper.helperParseHeaderValue_date(hdValue, entry.hdValDate);
-		entry.setHdKey(RtspHeaderKey.DATE);
 	}
 
 	private void parseHeaderValue_com_keymgmt(
+				@NonNull RtspMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspInvalidRequestException {
+			) throws RtspInvalidRequestException, RtspSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_keymgmt()";
 
+		if (messageType != RtspMessageType.SETUP && messageType != RtspMessageType.SET_PARAMETER) {
+			throw new RtspSkippedHeaderException("Keymgmt header only allowed in SETUP/SET_PARAMETER requests");
+		}
 		/*
 		 * Example:
 		 *   "prot=mikey; uri=\"rtsp://.../streamid00\"; data=\"[BASE64 ENCODED DATA]\""
@@ -388,33 +440,25 @@ public final class RtspProtoLowRequestParser {
 			throw new RtspInvalidRequestException("Keymgmt Data must be set");
 		}
 		entry.hdValKeymgmt.dataStr = rawData;
-
-		entry.setHdKey(RtspHeaderKey.KEYMGMT);
 	}
 
-	private void parseHeaderValue_play_range(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
-		RtspLowParserHelper.helperParseHeaderValue_range(hdValue, entry.hdValRange);
-		entry.setHdKey(RtspHeaderKey.RANGE);
+	private void parseHeaderValue_com_proxyrequ(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
+		parseRequiredFeatures(hdValue, entry.hdValProxyRequ.requiredFeatures);
 	}
 
-	private void parseHeaderValue_options_require(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
-		/*
-		 * Example:
-		 *   "Require: funky-feature"
-		 * This header may be accompanied by a custom header like:
-		 *   "Funky-Parameter: funkystuff"
-		 * Unsupported features need to be handled by responding with a message like this:
-		 *   "RTSP/1.0 551 Option not supported"
-		 *   "CSeq: 302"
-		 *   "Unsupported: funky-feature"
-		 * See
-		 *   https://datatracker.ietf.org/doc/html/rfc2326#section-12.32
-		 */
-		for (String tmpFeat : hdValue.split(",")) {
-			tmpFeat = tmpFeat.strip().replace("'", "").replace("\"", "");
-			entry.hdValRequire.requiredFeatures.add(tmpFeat.toLowerCase());
+	private void parseHeaderValue_play_range(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspSkippedHeaderException {
+		if (messageType != RtspMessageType.PLAY) {
+			throw new RtspSkippedHeaderException("Range header only allowed in PLAY requests");
 		}
-		entry.setHdKey(RtspHeaderKey.REQUIRE);
+		RtspLowParserHelper.helperParseHeaderValue_range(hdValue, entry.hdValRange);
+	}
+
+	private void parseHeaderValue_com_require(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
+		parseRequiredFeatures(hdValue, entry.hdValRequire.requiredFeatures);
 	}
 
 	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
@@ -431,13 +475,18 @@ public final class RtspProtoLowRequestParser {
 		for (String warning : outputWarnings) {
 			logWarn(FNC_NAME, warning);
 		}
-
-		entry.setHdKey(RtspHeaderKey.SESSION);
 	}
 
-	private void parseHeaderValue_setup_transport(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)
-			throws RtspLowInvalidRrException {
+	private void parseHeaderValue_setup_transport(
+				@NonNull RtspMessageType messageType,
+				@NonNull String hdValue,
+				@NonNull RtspProtoHeaderEntryRequest entry
+			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_setup_transport()";
+
+		if (messageType != RtspMessageType.SETUP) {
+			throw new RtspSkippedHeaderException("Transport header only allowed in SETUP requests");
+		}
 
 		List<@NonNull String> outputWarnings = new ArrayList<>();
 		RtspLowParserHelper.helperParseHeaderValue_transport(
@@ -449,8 +498,6 @@ public final class RtspProtoLowRequestParser {
 		for (String warning : outputWarnings) {
 			logWarn(FNC_NAME, warning);
 		}
-
-		entry.setHdKey(RtspHeaderKey.TRANSPORT);
 	}
 
 	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
@@ -467,7 +514,148 @@ public final class RtspProtoLowRequestParser {
 		 * Win RTSP Player (Windows): RTSPClient v1.0.16.0615 (LIVE555 Streaming Media v2016.05.20)
 		 */
 		entry.hdValUserAgent.userAgentStr = hdValue;
-		entry.setHdKey(RtspHeaderKey.USERAGENT);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void allowOnlyAnnounceGetOrSetParameter(@NonNull String hdDesc, @NonNull RtspMessageType messageType)
+			throws RtspSkippedHeaderException {
+		if (messageType != RtspMessageType.ANNOUNCE &&
+				messageType != RtspMessageType.GET_PARAMETER && messageType != RtspMessageType.SET_PARAMETER) {
+			throw new RtspSkippedHeaderException(hdDesc + " header is only valid for " +
+					"ANNOUNCE/GET_PARAMETER/SET_PARAMETER requests");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void parseBody(@NonNull String bodyValue, @NonNull RtspProtoHighMsgStructuredRequest output) {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseBody()";
+
+		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
+			return;
+		}
+		int tmpContLenInt = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
+		long contLenLong = Integer.toUnsignedLong(tmpContLenInt);
+		if (contLenLong == 0L) {
+			return;
+		}
+
+		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
+			logWarn(FNC_NAME, "Missing Content-Type header");
+			output.statusCode = RtspStatusCode.BAD_REQUEST;
+			return;
+		}
+		if (output.headers.containsKey(RtspHeaderKey.CONTENT_ENC) &&
+				output.headers.get(RtspHeaderKey.CONTENT_ENC).hdValContEnc.contentEnc != RtspContentEncoding.NONE) {
+			logWarn(FNC_NAME, "No other Content-Encoding than NONE is supported");
+			output.statusCode = RtspStatusCode.NOT_ACCEPTABLE;
+			return;
+		}
+
+		switch (output.messageType) {
+			case ANNOUNCE -> {
+				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.SDP) {
+					logWarn(FNC_NAME, "Invalid Content-Type header value");
+					output.statusCode = RtspStatusCode.BAD_REQUEST;
+					return;
+				}
+				output.bodyAnnounceSdp = bodyValue;
+			}
+			case GET_PARAMETER, SET_PARAMETER -> {
+				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
+					logWarn(FNC_NAME, "Invalid Content-Type header value");
+					output.statusCode = RtspStatusCode.BAD_REQUEST;
+					return;
+				}
+				try {
+					for (String tmpBdLine : bodyValue.split(RtspProtoLowMsgConstants.CRLF)) {
+						if (output.messageType == RtspMessageType.GET_PARAMETER) {
+							parseBody_getParamLine(tmpBdLine, output);
+						} else {
+							parseBody_setParamLine(tmpBdLine, output);
+						}
+					}
+				} catch (RtspLowInvalidRrException e) {
+					logWarn(FNC_NAME, "Invalid body line format for " + e.getMessage());
+					output.statusCode = RtspStatusCode.BAD_REQUEST;
+				}
+			}
+			default -> {
+				logWarn(FNC_NAME, "Content-Type header only allowed in ANNOUNCE/GET_PARAMETER/SET_PARAMETER request");
+				output.statusCode = RtspStatusCode.BAD_REQUEST;
+			}
+		}
+	}
+
+	private void parseBody_getParamLine(@NonNull String bodyLine, @NonNull RtspProtoHighMsgStructuredRequest output) {
+		/*
+		 * Example:
+		 *   "GET_PARAMETER rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "CSeq: 431"
+		 *   "Content-Type: text/parameters"
+		 *   "Session: 12345678"
+		 *   "Content-Length: 15"
+		 *   ""
+		 *   "packets_received"
+		 *   "jitter"
+		 *
+		 * @TODO If a parameter is not supported, the server should respond with a message like this:
+		 *   "RTSP/1.0 451 Invalid Parameter"
+		 *   "CSeq: 421"
+		 *   "Content-length: 10"
+		 *   "Content-type: text/parameters"
+		 *   ""
+		 *   "barparam"
+		 */
+		String tmpParam = RtspLowParserHelper.helperCleanUpBodyLine(bodyLine);
+		if (tmpParam.isBlank()) {
+			return;
+		}
+		output.bodyGetParamKeys.add(tmpParam);
+	}
+
+	private void parseBody_setParamLine(@NonNull String bodyLine, @NonNull RtspProtoHighMsgStructuredRequest output)
+			throws RtspLowInvalidRrException {
+		/*
+		 * Example:
+		 *   "SET_PARAMETER rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "CSeq: 421"
+		 *   "Content-length: 20"
+		 *   "Content-type: text/parameters"
+		 *   ""
+		 *   "barparam: barstuff"
+		 *
+		 * @TODO If a parameter is not supported, the server should respond with a message like this:
+		 *   "RTSP/1.0 451 Invalid Parameter"
+		 *   "CSeq: 421"
+		 *   "Content-length: 10"
+		 *   "Content-type: text/parameters"
+		 *   ""
+		 *   "barparam"
+		 */
+		RtspLowParserHelper.helperParseBodyLine_keyValue(RtspMessageType.SET_PARAMETER, bodyLine, output.bodySetParamKv);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void parseRequiredFeatures(@NonNull String hdValue, @NonNull Set<@NonNull String> requiredFeatures) {
+		/*
+		 * Example:
+		 *   "Require: funky-feature" // "Proxy-Require: funky-feature"
+		 * This header may be accompanied by a custom header like:
+		 *   "Funky-Parameter: funkystuff"
+		 * Unsupported features need to be handled by responding with a message like this:
+		 *   "RTSP/1.0 551 Option not supported"
+		 *   "CSeq: 302"
+		 *   "Unsupported: funky-feature"
+		 * See
+		 *   https://datatracker.ietf.org/doc/html/rfc2326#section-12.32
+		 */
+		for (String tmpFeat : hdValue.split(",")) {
+			tmpFeat = tmpFeat.strip().replace("'", "").replace("\"", "");
+			requiredFeatures.add(tmpFeat.toLowerCase());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

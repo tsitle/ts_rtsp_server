@@ -12,12 +12,17 @@ public enum RtspHeaderKey {
 	AUTH_CLIENT("Authorization"),
 	/** (only for responses) */
 	AUTH_SERVER("WWW-Authenticate"),
+	CONNECTION("Connection"),
 	CONTENT_BASE("Content-Base"),
+	CONTENT_ENC("Content-Encoding"),
+	CONTENT_LANG("Content-Language"),
 	CONTENT_LEN("Content-Length"),
 	CONTENT_TYPE("Content-Type"),
 	CSEQ("CSeq"),
 	DATE("Date"),
 	KEYMGMT("KeyMgmt"),
+	/** (only for requests) */
+	PROXY_REQU("Proxy-Require"),
 	/** (only for responses) */
 	PUBLIC("Public"),
 	RANGE("Range"),
