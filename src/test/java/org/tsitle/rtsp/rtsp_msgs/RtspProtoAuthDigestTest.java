@@ -12,6 +12,7 @@ public class RtspProtoAuthDigestTest {
 	public void testAuthDigest() {
 		/*
 		 * Method: DESCRIBE
+		 * Password: ABCDEFGH
 		 * WWW-Authenticate: Digest realm="Realm_A1B2C3D4E5F6_G7H8I9_J10K11", nonce="362e04b16faee54441fc9d536a04ed40", algorithm="MD5"
 		 * Authorization: Digest username="admin", realm="Realm_A1B2C3D4E5F6_G7H8I9_J10K11", nonce="362e04b16faee54441fc9d536a04ed40", uri="rtsp://localhost:1151/buerrow-av.stream", response="160ca64f99160e6ea50a46e24a197a13"
 		 */
