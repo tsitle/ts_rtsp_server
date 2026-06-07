@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp;
 
-public enum SessionState {
+public enum RtspSessionState {
 
 	INIT(0),
 	READY(1),
@@ -8,7 +8,7 @@ public enum SessionState {
 
 	private final int value;
 
-	SessionState(int value) {
+	RtspSessionState(int value) {
 		this.value = value;
 	}
 	public int getValue() {

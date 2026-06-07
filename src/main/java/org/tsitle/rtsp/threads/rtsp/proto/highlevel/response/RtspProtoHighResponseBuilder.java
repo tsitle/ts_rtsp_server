@@ -6,6 +6,7 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoParameterGetterInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
@@ -20,7 +21,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 
 import java.net.*;
@@ -35,12 +35,14 @@ public final class RtspProtoHighResponseBuilder {
 	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface;
 
 	public RtspProtoHighResponseBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
-				@NonNull RtspSessionInfo rtspSessionInfo
+				@NonNull RtspSessionInfo rtspSessionInfo,
+				@Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface
 			) {
 		if (cfgServerNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
@@ -49,6 +51,7 @@ public final class RtspProtoHighResponseBuilder {
 		this.rtspConfig = rtspConfig;
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.rtspSessionInfo = rtspSessionInfo;
+		this.rtspProtoParameterGetterInterface = rtspProtoParameterGetterInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -69,19 +72,18 @@ public final class RtspProtoHighResponseBuilder {
 
 		//
 		if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
-			buildResponse_nack(rtspRequestBasics.statusCode, rtspRequestBasics.unsupportedOptionName, resObj);
+			buildResponse_nack(rtspRequestBasics.statusCode, rtspRequestBasics.unsupportedFeatureName, resObj);
 			return resObj;
 		}
 
 		//
 		switch (rtspRequestBasics.messageType) {
-			case GET_PARAMETER -> buildResponse_getParameter(resObj);
-			case SET_PARAMETER -> buildResponse_setParameter();
-			case OPTIONS -> buildResponse_options(resObj);
+			case ANNOUNCE, PAUSE, RECORD, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
 			case DESCRIBE -> buildResponse_describe(resObj);
-			case SETUP -> buildResponse_setup(rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
+			case GET_PARAMETER -> buildResponse_getParameter(resObj);
+			case OPTIONS -> buildResponse_options(resObj);
 			case PLAY -> buildResponse_play(resObj);
-			case PAUSE, TEARDOWN -> buildResponse_ack();
+			case SETUP -> buildResponse_setup(rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
 			default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unsupported message type: " +
 					rtspRequestBasics.messageType);
 		}
@@ -95,24 +97,46 @@ public final class RtspProtoHighResponseBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildResponse_ack() {
+		/*
+		 * Example:
+		 *   "RTSP/1.0 200 OK"
+		 *   "CSeq: 312"
+		 *   ...
+		 */
 		// nothing to do
 	}
 
 	private void buildResponse_nack(
 				@NonNull RtspStatusCode statusCode,
-				@NonNull String unsupportedOptionName,
+				@NonNull String unsupportedFeatureName,
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException {
-		if (statusCode == RtspStatusCode.UNAUTHORIZED) {
-			addAuthServerInfo(output);
-		}
-		if (statusCode == RtspStatusCode.OPTION_NOT_SUPPORTED) {
-			// Unsupported
-			{
-				RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
-				hdEntry.hdValUnsupported.unsupportedOptionStr = (unsupportedOptionName.isBlank() ? "_unknown_" : unsupportedOptionName);
-				output.headers.put(hdEntry.getHdKey(), hdEntry);
-			}
+		/*
+		 * Example:
+		 *   "RTSP/1.0 500 Something went wrong"
+		 *   "CSeq: 312"
+		 *   ...
+		 *   plus optionally:
+		 *   "WWW-Authenticate: Digest realm=\"Abcdef Some\", nonce=\"xxx\", algorithm=\"MD5\""
+		 *   "Unsupported: some_feature"
+		 */
+		switch (statusCode) {
+			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
+				output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requReceivedInvalidParamValues);
+				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
+				addContentTypeHeader(output);
+				break;
+			case RtspStatusCode.OPTION_NOT_SUPPORTED:
+				// Unsupported
+				{
+					RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
+					hdEntry.hdValUnsupported.unsupportedFeatureStr = (unsupportedFeatureName.isBlank() ? "_unknown_" : unsupportedFeatureName);
+					output.headers.put(hdEntry.getHdKey(), hdEntry);
+				}
+				break;
+			case RtspStatusCode.UNAUTHORIZED:
+				addAuthServerInfo(output);
+				break;
 		}
 	}
 
@@ -121,16 +145,32 @@ public final class RtspProtoHighResponseBuilder {
 	private void buildResponse_describe(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
 
+		/*
+		 * Example:
+		 *   "RTSP/1.0 200 OK"
+		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
+		 *   "Server: TS RTSP Server/1.0"
+		 *   "Content-Base: rtsp://example.com/fizzle/foo/"
+		 *   "Content-Type: application/sdp"
+		 *   "Content-Length: 761"
+		 *   "CSeq: 4"
+		 *   ""
+		 *   "v=0"
+		 *   "a=tool:TS RTSP Server/1.0"
+		 *   ...
+		 */
+
 		RtspInputSource rtspInputSource = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.DESCRIBE)
 				.orElseThrow(() -> new RtspInvalidResponseException(FNC_NAME + ": Input Source not found"));
 		String resourceUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspMessageType.DESCRIBE)
 				.orElseThrow(() -> new RtspInvalidResponseException(FNC_NAME + ": Resource URL not found"));
 
 		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			buildResponse_nack(RtspStatusCode.BAD_REQUEST, "", output);
+			output.statusCode = RtspStatusCode.BAD_REQUEST;
 			return;
 		}
 
+		// @TODO fetch SDP from SDP-Producer
 		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
 		List<@NonNull String> tmpSdpLines;
 		try {
@@ -140,10 +180,10 @@ public final class RtspProtoHighResponseBuilder {
 				);
 		} catch (RtspSdpException e) {
 			logError(FNC_NAME, "Building SDP failed: " + e.getMessage());
-			buildResponse_nack(RtspStatusCode.INTERNAL_SERVER_ERROR, "", output);
+			output.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
 			return;
 		}
-		output.bodyDescribeSdp = String.join(RtspProtoLowMsgConstants.CRLF, tmpSdpLines);
+		output.bodyDescribeSdp.addAll(tmpSdpLines);
 
 		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
 			logDebug(FNC_NAME, "-------- SDP:");
@@ -158,19 +198,70 @@ public final class RtspProtoHighResponseBuilder {
 			hdEntry.hdValContBase.contentBaseStr = resourceUrl + (resourceUrl.endsWith("/") ? "" : "/");
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
-		//
+		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 		addContentTypeHeader(output);
 	}
 
 	private void buildResponse_getParameter(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
-		if (output.bodyGetParamKv.isEmpty()) {
+		/*
+		 * Example:
+		 *   Success:
+		 *     "RTSP/1.0 200 OK"
+		 *     "Content-Length: 1234"
+		 *     "Content-Type: text/parameters"
+		 *     ...
+		 *     ""
+		 *     "packets_received: 10"
+		 *     "jitter: 0.3838"
+		 *   Failure:
+		 *     "RTSP/1.0 451 Invalid Parameter"
+		 *     "Content-Length: 1234"
+		 *     "Content-Type: text/parameters"
+		 *     ...
+		 *     ""
+		 *     "barparam"
+		 */
+
+		if (rtspSessionInfo.requRequestedGetParamValues.isEmpty()) {
+			// nothing to do
 			return;
 		}
-		// @TODO add key-value-pairs for supported and requested parameters (output.bodyGetParamKv)
-		//addContentTypeHeader(output);
+
+		if (rtspProtoParameterGetterInterface == null) {
+			output.statusCode = RtspStatusCode.INVALID_PARAMETER;
+			output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requRequestedGetParamValues);
+		} else {
+			Map<String, String> tmpAllInpParamKv = rtspProtoParameterGetterInterface.getAllRtspParameters(rtspSessionInfo.rtspSessionId);
+			Set<String> tmpMissingParams = new HashSet<>();
+			for (String requParam : rtspSessionInfo.requRequestedGetParamValues) {
+				if (! tmpAllInpParamKv.containsKey(requParam)) {
+					tmpMissingParams.add(requParam);
+				} else {
+					output.bodyGetParamKv.put(requParam, tmpAllInpParamKv.get(requParam));
+				}
+			}
+
+			if (! tmpMissingParams.isEmpty()) {
+				output.statusCode = RtspStatusCode.INVALID_PARAMETER;
+				output.bodyGetParamKv.clear();
+				output.bodyGetSetInvalidParams.addAll(tmpMissingParams);
+			}
+		}
+
+		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
+		addContentTypeHeader(output);
 	}
 
 	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		/*
+		 * Example:
+		 *   "RTSP/1.0 200 OK"
+		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
+		 *   "CSeq: 2"
+		 *   ...
+		 *   "Public: PLAY, OPTIONS, SET_PARAMETER, PAUSE, TEARDOWN, GET_PARAMETER, SETUP, DESCRIBE"
+		 */
+
 		// Public
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.PUBLIC);
@@ -192,6 +283,16 @@ public final class RtspProtoHighResponseBuilder {
 	 */
 	private void buildResponse_play(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_play()";
+
+		/*
+		 * Example:
+		 *   "RTSP/1.0 200 OK"
+		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
+		 *   "Range: npt=0.000-"
+		 *   "Server: TS RTSP Server/1.0"
+		 *   "RTP-Info: url=rtsp://...;seq=2786;rtptime=1380770927,url=...;seq=22526;rtptime=257277163"
+		 *   "CSeq: 7"
+		 */
 
 		// Range
 		{
@@ -238,10 +339,6 @@ public final class RtspProtoHighResponseBuilder {
 		}
 	}
 
-	private void buildResponse_setParameter() {
-		// nothing to do
-	}
-
 	/**
 	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
@@ -252,6 +349,16 @@ public final class RtspProtoHighResponseBuilder {
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_setup()";
+
+		/*
+		 * Example:
+		 *   "RTSP/1.0 200 OK"
+		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
+		 *   "Transport: RTP/SAVP/UDP;unicast;source=127.0.0.1;destination=127.0.0.1;client_port=32968-32969;server_port=53270-53271;ssrc=7C9B4196"
+		 *   "Server: TS RTSP Server/1.0"
+		 *   "CSeq: 6"
+		 *   "Session: 2BA52D87;timeout=20"
+		 */
 
 		if (requestUrlInputOrStreamSource == null) {
 			throw new RtspInvalidResponseException(FNC_NAME + ": requestUrlInputOrStreamSource is null");
@@ -484,6 +591,10 @@ public final class RtspProtoHighResponseBuilder {
 	}
 
 	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+		/*
+		 * Example:
+		 *   "WWW-Authenticate: Digest realm=\"Abcdef Some\", nonce=\"xxx\", algorithm=\"MD5\""
+		 */
 		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
 			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(getClientIpAddr());
 		}

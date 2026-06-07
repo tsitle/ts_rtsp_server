@@ -300,7 +300,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		}
 
 		//
-		SessionState nextState = rtspSessionInfo.sessionState;
+		RtspSessionState nextState = rtspSessionInfo.sessionState;
 
 		//
 		Objects.requireNonNull(
@@ -338,7 +338,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					logError(FNC_NAME, "SETUP failed: " + e.getMessage());
 					return false;  // tear down the session
 				}
-				nextState = SessionState.READY;
+				nextState = RtspSessionState.READY;
 				break;
 			case RtspMessageType.PLAY:
 				final String tmpIsIdPlay = rtspRequestBasics.requestUrlInputOrStreamSource.inputSourceId;
@@ -362,7 +362,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				} else {
 					rtspChildThreadMng.startChildThreads(tmpIsIdPlay);
 				}
-				nextState = SessionState.PLAYING;
+				nextState = RtspSessionState.PLAYING;
 				break;
 			case RtspMessageType.PAUSE:
 				final String tmpIsIdPause = rtspRequestBasics.requestUrlInputOrStreamSource.inputSourceId;
@@ -370,11 +370,11 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				rtspChildThreadMng.pauseOrStopChildThreads(true);
-				nextState = SessionState.READY;
+				nextState = RtspSessionState.READY;
 				rtspSessionInfo.isPlaybackPaused = true;
 				break;
 			case RtspMessageType.TEARDOWN:
-				nextState = SessionState.INIT;
+				nextState = RtspSessionState.INIT;
 				rtspSessionInfo.isPlaybackPaused = false;
 				break;
 		}
@@ -382,7 +382,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		//
 		if (rtspSessionInfo.sessionState != nextState) {
 			rtspSessionInfo.sessionState = nextState;
-			if (rtspSessionInfo.sessionState == SessionState.INIT) {
+			if (rtspSessionInfo.sessionState == RtspSessionState.INIT) {
 				return false;  // tear down the session
 			}
 			logDebug(FNC_NAME, "RTSP state is now " + nextState);

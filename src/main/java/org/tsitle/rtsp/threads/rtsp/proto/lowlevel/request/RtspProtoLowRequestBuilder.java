@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
@@ -48,12 +49,8 @@ public final class RtspProtoLowRequestBuilder {
 		}
 
 		// set body
-		if (input.headers.containsKey(RtspHeaderKey.CONTENT_TYPE) && input.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
-			try {
-				buildBody(input, resObj);
-			} catch (RtspLowInvalidRrException e) {
-				throw new RtspInvalidRequestException(FNC_NAME + ": " + e.getMessage());
-			}
+		if (input.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
+			buildBody(input, resObj);
 		}
 
 		return resObj;
@@ -92,9 +89,9 @@ public final class RtspProtoLowRequestBuilder {
 					case CONNECTION -> buildHeaderValue_com_connection(entry.getValue().hdValConnection);
 					case CONTENT_BASE -> buildHeaderValue_announce_contbase(input.messageType, entry.getValue().hdValContBase);
 					case CONTENT_ENC -> buildHeaderValue_com_contenc(input.messageType, entry.getValue().hdValContEnc);
-					case CONTENT_LEN -> /* add this when adding the body */ "";
+					case CONTENT_LEN -> buildHeaderValue_com_contlen(input.messageType);
 					case CONTENT_LANG -> buildHeaderValue_com_contlang(input.messageType, entry.getValue().hdValContLang);
-					case CONTENT_TYPE -> buildHeaderValue_com_conttype(input.messageType, entry.getValue().hdValContType);
+					case CONTENT_TYPE -> buildHeaderValue_com_conttype(input.messageType);
 					case CSEQ -> buildHeaderValue_com_cseq(entry.getValue().hdValCseq);
 					case DATE -> buildHeaderValue_com_date(entry.getValue().hdValDate);
 					case KEYMGMT -> buildHeaderValue_com_keymgmt(input.messageType, entry.getValue().hdValKeymgmt);
@@ -189,12 +186,16 @@ public final class RtspProtoLowRequestBuilder {
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contlang(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_com_conttype(
-				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoHeaderTypeContType hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidRequestException {
+	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspMessageType messageType)
+			throws RtspInvalidRequestException {
+		allowOnlyAnnounceGetOrSetParameter("Content-Length", messageType);
+		return "";  // add this header when adding the body
+	}
+
+	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspMessageType messageType)
+			throws RtspInvalidRequestException {
 		allowOnlyAnnounceGetOrSetParameter("Content-Type", messageType);
-		return RtspLowBuilderHelper.helperBuildHeaderValue_conttype(hdValue);
+		return "";  // add this header when adding the body
 	}
 
 	private static @NonNull String buildHeaderValue_com_cseq(@NonNull RtspProtoHeaderTypeCseq hdValue)
@@ -319,13 +320,74 @@ public final class RtspProtoLowRequestBuilder {
 	private void buildBody(
 				@NonNull RtspProtoHighMsgStructuredRequest input,
 				@NonNull RtspProtoLowMsgRaw output
-			) throws RtspLowInvalidRrException {
+			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildBody()";
 
-		// @TODO
-		/*buildHeaderValue_com_contlen(input.messageType, entry.getValue().hdValContLen);
-		allowOnlyAnnounceGetOrSetParameter("Content-Length", messageType);
-		return RtspLowBuilderHelper.helperBuildHeaderValue_contlen(hdValue);*/
+		RtspProtoHeaderTypeContType outpHdValueContTp = new RtspProtoHeaderTypeContType();
+
+		switch (input.messageType) {
+			case RtspMessageType.ANNOUNCE:
+				if (input.bodyAnnounceSdp.isEmpty()) {
+					throw new RtspInvalidRequestException(FNC_NAME + ": bodyAnnounceSdp cannot be empty");
+				}
+				output.body = String.join(RtspProtoLowMsgConstants.CRLF, input.bodyAnnounceSdp);
+				if (! output.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
+					output.body += RtspProtoLowMsgConstants.CRLF;
+				}
+				outpHdValueContTp.contentType = RtspMimeType.SDP;
+				break;
+			case RtspMessageType.GET_PARAMETER:
+				if (! input.bodyGetParamKeys.isEmpty()) {
+					StringBuilder sb = new StringBuilder();
+					for (String entry : input.bodyGetParamKeys) {
+						sb.append(entry).append(RtspProtoLowMsgConstants.CRLF);
+					}
+					output.body = sb.toString();
+					outpHdValueContTp.contentType = RtspMimeType.PARAMETERS;
+				}
+				break;
+			case RtspMessageType.SET_PARAMETER:
+				if (! input.bodySetParamKv.isEmpty()) {
+					StringBuilder sb = new StringBuilder();
+					for (Map.Entry<@NonNull String, @NonNull String> entry : input.bodySetParamKv.entrySet()) {
+						sb.append(entry.getKey()).append(": ").append(entry.getValue()).append(RtspProtoLowMsgConstants.CRLF);
+					}
+					output.body = sb.toString();
+					outpHdValueContTp.contentType = RtspMimeType.PARAMETERS;
+				}
+				break;
+		}
+
+		if (output.body.isBlank()) {
+			return;
+		}
+
+		// Content-Type
+		{
+			String tmpHdVal;
+			try {
+				tmpHdVal = RtspLowBuilderHelper.helperBuildHeaderValue_conttype(outpHdValueContTp);
+			} catch (RtspLowInvalidRrException e) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": body Content-Type: " + e.getMessage());
+			}
+			output.headerLines.add(RtspHeaderKey.CONTENT_TYPE.getStrValue() + ": " + tmpHdVal);
+		}
+		// Content-Length
+		{
+			RtspProtoHeaderTypeContLen hdValue = new RtspProtoHeaderTypeContLen();
+			try {
+				hdValue.setContentLen32bit(output.body.length());
+			} catch (RtspNumberRangeException e) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": body length out of range: " + e.getMessage());
+			}
+			String tmpHdVal;
+			try {
+				tmpHdVal = RtspLowBuilderHelper.helperBuildHeaderValue_contlen(hdValue);
+			} catch (RtspLowInvalidRrException e) {
+				throw new RtspInvalidRequestException(e.getMessage());
+			}
+			output.headerLines.add(RtspHeaderKey.CONTENT_LEN.getStrValue() + ": " + tmpHdVal);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

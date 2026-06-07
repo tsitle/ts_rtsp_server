@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
-public class RtspRequestBasics {
+public final class RtspRequestBasics {
 
 	public static class RequestUrlInputOrStreamSource {
 		public @Nullable String subStreamId = null;
@@ -19,7 +19,7 @@ public class RtspRequestBasics {
 	public @NonNull RtspMessageType messageType = RtspMessageType.UNKNOWN;
 	public @NonNull RtspStatusCode statusCode = RtspStatusCode.OK;
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
-	public @NonNull String unsupportedOptionName = "";
+	public @NonNull String unsupportedFeatureName = "";
 
 	private RtspRequestBasics() { }
 
@@ -50,12 +50,12 @@ public class RtspRequestBasics {
 
 	public static @NonNull RtspRequestBasics createKnownWithOptionNotSupported(
 				@NonNull RtspMessageType messageType,
-				@NonNull String optionName
+				@NonNull String featureName
 			) {
 		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = messageType;
 		res.statusCode = RtspStatusCode.OPTION_NOT_SUPPORTED;
-		res.unsupportedOptionName = optionName;
+		res.unsupportedFeatureName = featureName;
 		return res;
 	}
 

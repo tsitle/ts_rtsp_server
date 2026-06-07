@@ -2,7 +2,6 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
@@ -15,27 +14,22 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public final class RtspProtoHighRequestBuilder {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
-	private final boolean isRequestFromClient;
 
 	public RtspProtoHighRequestBuilder(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
-				@NonNull RtspSessionInfo rtspSessionInfo,
-				boolean isRequestFromClient
+				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
-		this.isRequestFromClient = isRequestFromClient;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -46,7 +40,8 @@ public final class RtspProtoHighRequestBuilder {
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				@Nullable String getOrSetParameterName
+				@Nullable Set<String> getParameterNames,
+				@Nullable Map<@NonNull String, @NonNull String> setParameterKvs
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
@@ -66,13 +61,13 @@ public final class RtspProtoHighRequestBuilder {
 		switch (requestMessageType) {
 			case ANNOUNCE -> buildRequest_announce(kmdsOutbound, resObj);
 			case DESCRIBE -> buildRequest_describe(resObj);
-			case GET_PARAMETER -> buildRequest_getParameter(getOrSetParameterName, resObj);
+			case GET_PARAMETER -> buildRequest_getParameter(getParameterNames, resObj);
 			case OPTIONS -> buildRequest_options(resObj);
 			case PAUSE -> buildRequest_pause(resObj);
 			case PLAY -> buildRequest_play(resObj);
 			case RECORD -> buildRequest_record(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(kmdsOutbound, subStreamId, getOrSetParameterName, resObj);
+			case SET_PARAMETER -> buildRequest_setParameter(kmdsOutbound, subStreamId, setParameterKvs, resObj);
 			case SETUP -> buildRequest_setup(resObj);
 			case TEARDOWN -> buildRequest_teardown(resObj);
 			default -> throw new RtspInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
@@ -89,11 +84,26 @@ public final class RtspProtoHighRequestBuilder {
 
 	private void buildRequest_announce(
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				@NonNull RtspProtoHighMsgStructuredRequest msg
+				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_announce()";
 
+		/*
+		 * Example:
+		 *   "ANNOUNCE rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "Content-Type: application/sdp"
+		 *   "Content-Length: 1234"
+		 *   ...
+		 *   ""
+		 *   "v=0"
+		 *   "a=tool:TS RTSP Server/1.0"
+		 *   ...
+		 */
+
 		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
+
+		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
+		addContentTypeHeader(output);
 
 		logError(FNC_NAME, "ANNOUNCE is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": ANNOUNCE is not supported yet");
@@ -114,54 +124,92 @@ public final class RtspProtoHighRequestBuilder {
 		*/
 	}
 
-	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
 	private void buildRequest_getParameter(
-				@Nullable String parameterName,
-				@NonNull RtspProtoHighMsgStructuredRequest msg
-			) {
-		// @TODO handle parameterName
+				@Nullable Set<String> parameterNames,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) throws RtspInvalidRequestException {
+		/*
+		 * Example:
+		 *   "GET_PARAMETER rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "Content-Type: text/parameters"
+		 *   "Content-Length: 1234"
+		 *   ...
+		 *   ""
+		 *   "packets_received"
+		 *   "jitter"
+		 */
+
+		if (parameterNames == null || parameterNames.isEmpty()) {
+			return;
+		}
+		output.bodyGetParamKeys.addAll(parameterNames);
+		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
+		addContentTypeHeader(output);
 	}
 
-	private void buildRequest_options(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_options(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
-	private void buildRequest_pause(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_pause(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
 	/**
 	 * The client makes one PLAY request per Input Source
 	 */
-	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_play()";
 
+		// @TODO add example
 		// @TODO set some headers
 
 		logError(FNC_NAME, "PLAY is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": PLAY is not supported yet");
 	}
 
-	private void buildRequest_record(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_record(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
-	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
 	private void buildRequest_setParameter(
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
 				@Nullable String subStreamId,
-				@Nullable String parameterName,
-				@NonNull RtspProtoHighMsgStructuredRequest msg
+				@Nullable Map<@NonNull String, @NonNull String> parameterKvs,
+				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
 
-		// @TODO handle parameterName
+		/*
+		 * Example:
+		 *   "SET_PARAMETER rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "Content-Type: text/parameters"
+		 *   "Content-Length: 1234"
+		 *   ...
+		 *   ""
+		 *   "packets_received: 100.0"
+		 *   "jitter: 13.8"
+		 */
+
+		//
+		if (parameterKvs != null && ! parameterKvs.isEmpty()) {
+			output.bodySetParamKv.putAll(parameterKvs);
+			// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
+			addContentTypeHeader(output);
+		}
 
 		// set the SRTxP Key Management Data for a SET_PARAMETER request used for re-keying
 		if (kmdsOutbound == null) {
@@ -188,9 +236,9 @@ public final class RtspProtoHighRequestBuilder {
 		}
 		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.KEYMGMT);
 		entry.hdValKeymgmt.proto = RtspKeymgmtProto.MIKEY;
-		entry.hdValKeymgmt.uriStr = msg.resourceUrl;
+		entry.hdValKeymgmt.uriStr = output.resourceUrl;
 		entry.hdValKeymgmt.dataStr = tmpCryptoStrB64;
-		msg.headers.put(RtspHeaderKey.KEYMGMT, entry);
+		output.headers.put(RtspHeaderKey.KEYMGMT, entry);
 	}
 
 	/**
@@ -198,9 +246,10 @@ public final class RtspProtoHighRequestBuilder {
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */
-	private void buildRequest_setup(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void buildRequest_setup(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
 
+		// @TODO add example
 		// @TODO check if we need and have KMD
 
 		// @TODO set some headers
@@ -208,13 +257,14 @@ public final class RtspProtoHighRequestBuilder {
 		throw new RtspInvalidRequestException(FNC_NAME + ": SETUP is not supported yet");
 	}
 
-	private void buildRequest_teardown(@NonNull RtspProtoHighMsgStructuredRequest msg) {
+	private void buildRequest_teardown(@NonNull RtspProtoHighMsgStructuredRequest output) {
+		// @TODO add example
 		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
+	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
 		// CSeq
@@ -225,23 +275,23 @@ public final class RtspProtoHighRequestBuilder {
 			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
 			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.DATE);
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
 		if (! rtspSessionInfo.rtspSessionId.isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)
 		if (! rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
-			hdEntry.hdValAuthClient.authUri = msg.resourceUrl;
+			hdEntry.hdValAuthClient.authUri = output.resourceUrl;
 			hdEntry.hdValAuthClient.authRealm = rtspSessionInfo.authInfo.authRealmClient;
 			hdEntry.hdValAuthClient.authNonce = rtspSessionInfo.authInfo.authNonceServer;
 			try {
@@ -249,7 +299,7 @@ public final class RtspProtoHighRequestBuilder {
 						rtspSessionInfo.authInfo.authUser,
 						rtspSessionInfo.authInfo.authPlainPassword,
 						hdEntry.hdValAuthClient.authUri,
-						msg.messageType,
+						output.messageType,
 						hdEntry.hdValAuthClient.authRealm,
 						hdEntry.hdValAuthClient.authNonce
 					);
@@ -257,36 +307,23 @@ public final class RtspProtoHighRequestBuilder {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Computing authentication response failed: " +
 						e.getMessage());
 			}
-			msg.headers.put(hdEntry.getHdKey(), hdEntry);
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	private void addContentTypeHeader(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addContentTypeHeader()";
 
-	private void addBody(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".addBody()";
-
-		// @TODO add body for ANNOUNCE / GET_PARAMETER / SET_PARAMETER
-
-		/*if (! resObj.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
-			resObj.body += RtspProtoLowMsgConstants.CRLF;
+		if (output.messageType != RtspMessageType.ANNOUNCE &&
+				output.messageType != RtspMessageType.GET_PARAMETER && output.messageType != RtspMessageType.SET_PARAMETER) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Type header only allowed for " +
+					"DESCRIBE/GET_PARAMETER/SET_PARAMETER messages");
 		}
-		addContentLengthAndTypeHeader(resObj);*/
+		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_TYPE);
+		hdEntry.hdValContType.contentType = (output.messageType == RtspMessageType.ANNOUNCE ?
+				RtspMimeType.SDP : RtspMimeType.PARAMETERS);
+		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
-
-	/*private void addContentLengthAndTypeHeader(@NonNull RtspProtoHighMsgStructuredRequest msg) throws RtspInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".addContentLengthAndTypeHeader()";
-
-		@TODO add Content-Length + Content-Type
-
-		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LEN);
-		try {
-			hdEntry.hdValContLen.setContentLen32bit(msg.body.length());
-		} catch (RtspNumberRangeException e) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": Setting Content-Length failed: " + e.getMessage());
-		}
-		msg.headers.put(hdEntry.getHdKey(), hdEntry);
-	}*/
 
 	// -----------------------------------------------------------------------------------------------------------------
 

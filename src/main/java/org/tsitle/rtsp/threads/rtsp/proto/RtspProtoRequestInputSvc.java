@@ -53,7 +53,8 @@ public final class RtspProtoRequestInputSvc {
 				logMsgInterface,
 				rtspConfig,
 				rtspSessionInfo,
-				isRequestFromClient
+				isRequestFromClient,
+				null
 			);
 
 		//

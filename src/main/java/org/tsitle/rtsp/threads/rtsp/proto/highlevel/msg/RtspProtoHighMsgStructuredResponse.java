@@ -6,19 +6,19 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEn
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgStructuredBase {
 
 	/** Headers */
-	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> headers = new HashMap<>();
+	public final @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> headers = new HashMap<>();
 
 	/** Message body for 'DESCRIBE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public @NonNull String bodyDescribeSdp = "";
+	public final @NonNull List<String> bodyDescribeSdp = new ArrayList<>();
 	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public @NonNull Map<@NonNull String, @NonNull String> bodyGetParamKv = new HashMap<>();
+	public final @NonNull Map<@NonNull String, @NonNull String> bodyGetParamKv = new HashMap<>();
+	/** Message body for 'GET_PARAMETER'/'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
+	public final @NonNull Set<@NonNull String> bodyGetSetInvalidParams = new HashSet<>();
 
 	public RtspProtoHighMsgStructuredResponse() {
 		super();
@@ -34,9 +34,13 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 				", headers=" + headers;
 
 		if (messageType == RtspMessageType.DESCRIBE) {
-			resS += ", bodyDescribeSdp='" + cleanUpBodyString(bodyDescribeSdp) + "'";
-		} else if (messageType == RtspMessageType.GET_PARAMETER) {
-			resS += ", bodySetParamKv='" + mapToString(bodyGetParamKv) + "'";
+			resS += ", bodyDescribeSdp=" + listToString(bodyDescribeSdp);
+		} else if (messageType == RtspMessageType.GET_PARAMETER || messageType == RtspMessageType.SET_PARAMETER) {
+			if (! bodyGetSetInvalidParams.isEmpty()) {
+				resS += ", bodyGetSetInvalidParams=" + setToString(bodyGetSetInvalidParams);
+			} else if (messageType == RtspMessageType.GET_PARAMETER) {
+				resS += ", bodyGetParamKv=" + mapToString(bodyGetParamKv);
+			}
 		}
 		return resS + "]";
 	}

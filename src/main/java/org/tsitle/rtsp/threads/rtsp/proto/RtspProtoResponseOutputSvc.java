@@ -43,7 +43,8 @@ public final class RtspProtoResponseOutputSvc {
 				logMsgInterface,
 				rtspConfig,
 				cfgServerNameAndVersion,
-				rtspSessionInfo
+				rtspSessionInfo,
+				null
 			);
 		this.rtspProtoLowResponseBuilder = new RtspProtoLowResponseBuilder(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(

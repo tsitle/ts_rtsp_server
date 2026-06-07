@@ -21,8 +21,10 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestBuilder;
 
 import java.net.InetAddress;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class RtspProtoRequestOutputSvc {
 
@@ -50,9 +52,7 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		this.rtspProtoHighRequestBuilder = new RtspProtoHighRequestBuilder(
 				logMsgInterface,
-				rtspConfig,
-				rtspSessionInfo,
-				isRequestFromClient
+				rtspSessionInfo
 			);
 		this.rtspProtoLowRequestBuilder = new RtspProtoLowRequestBuilder(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
@@ -79,8 +79,10 @@ public final class RtspProtoRequestOutputSvc {
 		return internalSendRequest(FNC_NAME, RtspMessageType.GET_PARAMETER, resourceUrl);
 	}
 
-	public @NonNull RtspMessageType sendRequest_getParameter(@NonNull String resourceUrl, @NonNull String parameterName)
-			throws TcpSocketClosedException, TcpSocketIoException {
+	public @NonNull RtspMessageType sendRequest_getParameter(
+				@NonNull String resourceUrl,
+				@Nullable Set<String> getParameterNames
+			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		return internalSendRequest(
@@ -89,7 +91,8 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrl,
 				null,
 				null,
-				parameterName
+				getParameterNames,
+				null
 			);
 	}
 
@@ -128,8 +131,10 @@ public final class RtspProtoRequestOutputSvc {
 		return internalSendRequest(FNC_NAME, RtspMessageType.REDIRECT, resourceUrl);
 	}
 
-	public @NonNull RtspMessageType sendRequest_setParameter(@NonNull String resourceUrl, @NonNull String parameterName)
-			throws TcpSocketClosedException, TcpSocketIoException {
+	public @NonNull RtspMessageType sendRequest_setParameter(
+				@NonNull String resourceUrl,
+				@NonNull Map<@NonNull String, @NonNull String> setParameterKvs
+			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
 		return internalSendRequest(
@@ -138,7 +143,8 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrl,
 				null,
 				null,
-				parameterName
+				null,
+				setParameterKvs
 			);
 	}
 
@@ -169,6 +175,7 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrlForSubStream,
 				subStreamId,
 				tmpKmdsOutbound,
+				null,
 				null
 			);
 	}
@@ -192,6 +199,7 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrl,
 				null,
 				kmdsOutbound,
+				null,
 				null
 			);
 	}
@@ -265,6 +273,7 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrl,
 				null,
 				null,
+				null,
 				null
 			);
 	}
@@ -275,7 +284,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				@Nullable String getOrSetParameterName
+				@Nullable Set<String> getParameterNames,
+				@Nullable Map<@NonNull String, @NonNull String> setParameterKvs
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
@@ -289,7 +299,8 @@ public final class RtspProtoRequestOutputSvc {
 					resourceUrl,
 					subStreamId,
 					kmdsOutbound,
-					getOrSetParameterName
+					getParameterNames,
+					setParameterKvs
 				);
 		} catch (RtspInvalidRequestException e) {
 			logError(fncName, "Failed to build HL request: " + e.getMessage());

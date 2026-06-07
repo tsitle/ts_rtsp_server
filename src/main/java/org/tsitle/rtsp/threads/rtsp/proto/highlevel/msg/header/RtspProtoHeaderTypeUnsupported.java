@@ -4,11 +4,11 @@ import org.jspecify.annotations.NonNull;
 
 public class RtspProtoHeaderTypeUnsupported {
 
-	public @NonNull String unsupportedOptionStr = "";
+	public @NonNull String unsupportedFeatureStr = "";
 
 	@Override
 	public @NonNull String toString() {
-		return "[unsupportedOptionStr='" + unsupportedOptionStr + "']";
+		return "[unsupportedFeatureStr='" + unsupportedFeatureStr + "']";
 	}
 
 }

@@ -163,7 +163,10 @@ public final class RtspProtoLowResponseParser {
 			) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_server()";
 
-		// e.g. 'WWW-Authenticate: Digest realm="Abcdef Some", nonce="xxx", algorithm="MD5"'
+		/*
+		 * Example:
+		 *   "WWW-Authenticate: Digest realm=\"Abcdef Some\", nonce=\"xxx\", algorithm=\"MD5\""
+		 */
 		if (! hdValue.toLowerCase()
 				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
 			throw new RtspInvalidResponseException("Invalid Auth header prefix");
@@ -502,7 +505,7 @@ public final class RtspProtoLowResponseParser {
 	}
 
 	private void parseHeaderValue_com_unsupported(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryResponse entry) {
-		entry.hdValUnsupported.unsupportedOptionStr = hdValue;
+		entry.hdValUnsupported.unsupportedFeatureStr = hdValue;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -532,14 +535,32 @@ public final class RtspProtoLowResponseParser {
 
 		/*
 		 * Example:
+		 *   DESCRIBE:
+		 *     "RTSP/1.0 200 OK"
+		 *     "Content-Base: rtsp://example.com/fizzle/foo/"
+		 *     "Content-Type: application/sdp"
+		 *     "Content-Length: 1234"
+		 *     ...
+		 *     ""
+		 *     "v=0"
+		 *     "a=tool:TS RTSP Server/1.0"
+		 *     ...
 		 *   GET_PARAMETER:
 		 *     "RTSP/1.0 200 OK"
-		 *     "CSeq: 431"
-		 *     "Content-Length: 46"
+		 *     "Content-Length: 1234"
 		 *     "Content-Type: text/parameters"
+		 *     ...
 		 *     ""
 		 *     "packets_received: 10"
 		 *     "jitter: 0.3838"
+		 *   GET_PARAMETER/SET_PARAMETER:
+		 *     "RTSP/1.0 451 Invalid Parameter"
+		 *     "Content-Length: 1234"
+		 *     "Content-Type: text/parameters"
+		 *     ...
+		 *     ""
+		 *     "packets_received"
+		 *     "jitter"
 		 */
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 			return;
@@ -563,9 +584,10 @@ public final class RtspProtoLowResponseParser {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.SDP) {
 					throw new RtspInvalidResponseException(FNC_NAME + ": Invalid Content-Type header value");
 				}
-				output.bodyDescribeSdp = bodyValue;
+				String[] tmpSplit = bodyValue.split(RtspProtoLowMsgConstants.CRLF);
+				output.bodyDescribeSdp.addAll(Arrays.asList(tmpSplit));
 			}
-			case GET_PARAMETER -> {
+			case GET_PARAMETER, SET_PARAMETER -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
 					throw new RtspInvalidResponseException(FNC_NAME + ": Invalid Content-Type header value");
 				}
@@ -587,15 +609,17 @@ public final class RtspProtoLowResponseParser {
 		/*
 		 * Example:
 		 *   "barparam: barstuff"
-		 *
-		 * @TODO If a parameter is not supported, the server should respond with a message like this:
-		 *   "RTSP/1.0 451 Invalid Parameter"
-		 *   "CSeq: 421"
-		 *   "Content-length: 10"
-		 *   "Content-type: text/parameters"
-		 *   ""
+		 *   or
 		 *   "barparam"
 		 */
+		if (! bodyLine.contains(":")) {
+			bodyLine = RtspLowParserHelper.helperCleanUpBodyLine(bodyLine);
+			output.bodyGetSetInvalidParams.add(bodyLine);
+			return;
+		}
+		if (output.messageType == RtspMessageType.SET_PARAMETER) {
+			throw new RtspLowInvalidRrException(output.messageType + ": '" + bodyLine + "'");
+		}
 		RtspLowParserHelper.helperParseBodyLine_keyValue(RtspMessageType.GET_PARAMETER, bodyLine, output.bodyGetParamKv);
 	}
 
@@ -612,7 +636,10 @@ public final class RtspProtoLowResponseParser {
 		}
 		//
 		if (output.messageType == RtspMessageType.DESCRIBE) {
-			final String errMsgSuffix = " for DESCRIBE message";
+			final String errMsgSuffix = " for " + output.messageType + " message";
+			if (output.statusCode != RtspStatusCode.OK) {
+				return;
+			}
 			if (! output.headers.containsKey(RtspHeaderKey.CONTENT_BASE)) {
 				throw new RtspInvalidResponseException("Missing Content-Base header" + errMsgSuffix);
 			}
@@ -627,8 +654,14 @@ public final class RtspProtoLowResponseParser {
 			if (contentLengthLong == 0L) {
 				throw new RtspInvalidResponseException("Content-Length header value is zero" + errMsgSuffix);
 			}
-		} else if (output.messageType == RtspMessageType.GET_PARAMETER) {
-			final String errMsgSuffix = " for GET_PARAMETER message";
+		} else if (output.messageType == RtspMessageType.GET_PARAMETER || output.messageType == RtspMessageType.SET_PARAMETER) {
+			if (output.statusCode != RtspStatusCode.OK && output.bodyGetSetInvalidParams.isEmpty()) {
+				return;
+			}
+			if (output.messageType != RtspMessageType.GET_PARAMETER || output.bodyGetParamKv.isEmpty()) {
+				return;
+			}
+			final String errMsgSuffix = " for " + output.messageType + " message";
 			if (output.headers.containsKey(RtspHeaderKey.CONTENT_TYPE) &&
 					! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 				throw new RtspInvalidResponseException("Missing Content-Length header when Content-Type is present" + errMsgSuffix);

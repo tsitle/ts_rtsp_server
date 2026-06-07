@@ -560,7 +560,8 @@ public final class RtspProtoLowRequestParser {
 					output.statusCode = RtspStatusCode.BAD_REQUEST;
 					return;
 				}
-				output.bodyAnnounceSdp = bodyValue;
+				String[] tmpSplit = bodyValue.split(RtspProtoLowMsgConstants.CRLF);
+				output.bodyAnnounceSdp.addAll(Arrays.asList(tmpSplit));
 			}
 			case GET_PARAMETER, SET_PARAMETER -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
@@ -599,14 +600,6 @@ public final class RtspProtoLowRequestParser {
 		 *   ""
 		 *   "packets_received"
 		 *   "jitter"
-		 *
-		 * @TODO If a parameter is not supported, the server should respond with a message like this:
-		 *   "RTSP/1.0 451 Invalid Parameter"
-		 *   "CSeq: 421"
-		 *   "Content-length: 10"
-		 *   "Content-type: text/parameters"
-		 *   ""
-		 *   "barparam"
 		 */
 		String tmpParam = RtspLowParserHelper.helperCleanUpBodyLine(bodyLine);
 		if (tmpParam.isBlank()) {
@@ -621,18 +614,10 @@ public final class RtspProtoLowRequestParser {
 		 * Example:
 		 *   "SET_PARAMETER rtsp://example.com/fizzle/foo RTSP/1.0"
 		 *   "CSeq: 421"
-		 *   "Content-length: 20"
-		 *   "Content-type: text/parameters"
+		 *   "Content-Length: 20"
+		 *   "Content-Type: text/parameters"
 		 *   ""
 		 *   "barparam: barstuff"
-		 *
-		 * @TODO If a parameter is not supported, the server should respond with a message like this:
-		 *   "RTSP/1.0 451 Invalid Parameter"
-		 *   "CSeq: 421"
-		 *   "Content-length: 10"
-		 *   "Content-type: text/parameters"
-		 *   ""
-		 *   "barparam"
 		 */
 		RtspLowParserHelper.helperParseBodyLine_keyValue(RtspMessageType.SET_PARAMETER, bodyLine, output.bodySetParamKv);
 	}

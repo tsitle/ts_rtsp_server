@@ -82,6 +82,25 @@ public final class RtspSessionInfo {
 	/** Client's User-Agent */
 	public @NonNull String clientUserAgent = "";
 
+	/** RTSP message parameters that have been requested by the remote host in the last request */
+	public final @NonNull Set<@NonNull String> requRequestedGetParamValues = new HashSet<>();
+	/** RTSP message parameters that have been sent by the remote host in the last request */
+	public final @NonNull Map<@NonNull String, @NonNull String> requReceivedSetParamValues = new HashMap<>();
+	/** RTSP message parameters that have been sent by the remote host in the last request but are invalid */
+	public final @NonNull Set<@NonNull String> requReceivedInvalidParamValues = new HashSet<>();
+	/** SDP that has been announced by the remote host in the last request */
+	public final @NonNull List<@NonNull String> requAnnouncedSdp = new ArrayList<>();
+
+	/** RTSP message parameters that the remote host has sent in the last response */
+	public final @NonNull Map<@NonNull String, @NonNull String> respReceivedGetParamValues = new HashMap<>();
+	/** RTSP message parameters that the remote host does not support as received in the last response */
+	public final @NonNull Set<@NonNull String> respReceivedInvalidParamValues = new HashSet<>();
+
+	/** RTSP message types that are supported by the remote host */
+	public final @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
+
+	// ----------------------------------------------------------------
+
 	/** Sub-Stream IDs that a successful SETUP request has been received for */
 	public final @NonNull Set<@NonNull String> subStreamIdsSetup = new HashSet<>();
 
@@ -93,13 +112,14 @@ public final class RtspSessionInfo {
 	/** Input Source objects per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
 	private final @NonNull Map<@NonNull RtspMessageType, @NonNull RtspInputSource> inputSourceObjPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
+	// ----------------------------------------------------------------
+
 	/** Current state of the RTSP session */
-	public @NonNull SessionState sessionState = SessionState.INIT;
+	public @NonNull RtspSessionState sessionState = RtspSessionState.INIT;
 	/** Has the client requested PAUSE? */
 	public boolean isPlaybackPaused = false;
 
-	/** RTSP message types that are supported by the remote host */
-	public @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
+	// ----------------------------------------------------------------
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();

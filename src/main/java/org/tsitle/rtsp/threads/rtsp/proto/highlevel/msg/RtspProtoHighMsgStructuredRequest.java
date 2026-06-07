@@ -12,7 +12,7 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 	/** Resource URL without Query Parameters */
 	public @NonNull String resourceUrl = "";
 	/** URL Query Parameters */
-	public @NonNull Map<@NonNull String, @NonNull String> queryParams = new HashMap<>();
+	public final @NonNull Map<@NonNull String, @NonNull String> queryParams = new HashMap<>();
 
 	/** Authentication credentials: username (from URL or WWW-Authenticate header) */
 	public @NonNull String authUser = "";
@@ -20,14 +20,14 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 	public @NonNull String authPlainPassword = "";
 
 	/** Headers */
-	public @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> headers = new HashMap<>();
+	public final @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> headers = new HashMap<>();
 
 	/** Message body for 'ANNOUNCE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public @NonNull String bodyAnnounceSdp = "";
+	public final @NonNull List<@NonNull String> bodyAnnounceSdp = new ArrayList<>();
 	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public @NonNull Set<@NonNull String> bodyGetParamKeys = new HashSet<>();
+	public final @NonNull Set<@NonNull String> bodyGetParamKeys = new HashSet<>();
 	/** Message body for 'SET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public @NonNull Map<@NonNull String, @NonNull String> bodySetParamKv = new HashMap<>();
+	public final @NonNull Map<@NonNull String, @NonNull String> bodySetParamKv = new HashMap<>();
 
 	public RtspProtoHighMsgStructuredRequest() {
 		super();
@@ -45,7 +45,7 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 				", headers=" + headers;
 
 		if (messageType == RtspMessageType.ANNOUNCE) {
-			resS += ", bodyAnnounceSdp='" + cleanUpBodyString(bodyAnnounceSdp) + "'";
+			resS += ", bodyAnnounceSdp=" + listToString(bodyAnnounceSdp);
 		} else if (messageType == RtspMessageType.GET_PARAMETER) {
 			resS += ", bodyGetParamKeys=" + setToString(bodyGetParamKeys);
 		} else if (messageType == RtspMessageType.SET_PARAMETER) {
@@ -69,21 +69,6 @@ public final class RtspProtoHighMsgStructuredRequest extends RtspProtoHighMsgStr
 			return Optional.empty();
 		}
 		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr);
-	}
-
-	private static @NonNull String setToString(@NonNull Set<@NonNull String> input) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{");
-		boolean isFirst = true;
-		for (String tmpEntry : input) {
-			if (! isFirst) {
-				sb.append(", ");
-			}
-			sb.append(tmpEntry);
-			isFirst = false;
-		}
-		sb.append("}");
-		return sb.toString();
 	}
 
 }
