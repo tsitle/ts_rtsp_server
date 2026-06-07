@@ -17,6 +17,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestPa
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -276,7 +277,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(0, msgStructured.bodySetParamKv.size());
 	}
@@ -328,8 +329,8 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(expBodyLen, msgStructured.bodyAnnounceSdp.length());
-		assertEquals(expBodyStr, msgStructured.bodyAnnounceSdp);
+		assertEquals(3, msgStructured.bodyAnnounceSdp.size());
+		assertEquals(Arrays.asList(expBodyStr.split("\\r\\n")), msgStructured.bodyAnnounceSdp);
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(0, msgStructured.bodySetParamKv.size());
 
@@ -539,7 +540,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(0, msgStructured.bodySetParamKv.size());
 
@@ -595,7 +596,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(3, msgStructured.bodyGetParamKeys.size());
 		assertEquals(expBodySet, msgStructured.bodyGetParamKeys);
 		assertEquals(0, msgStructured.bodySetParamKv.size());
@@ -770,7 +771,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(0, msgStructured.bodySetParamKv.size());
 
@@ -835,7 +836,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expAuthUser, msgStructured.authUser);
 		assertEquals(expAuthPlainPw, msgStructured.authPlainPassword);
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(2, msgStructured.bodySetParamKv.size());
 		assertEquals(expBodyMap, msgStructured.bodySetParamKv);
@@ -924,7 +925,7 @@ public class RtspProtoLowRequestParserTest {
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
 
-		assertEquals(0, msgStructured.bodyAnnounceSdp.length());
+		assertEquals(0, msgStructured.bodyAnnounceSdp.size());
 		assertEquals(0, msgStructured.bodyGetParamKeys.size());
 		assertEquals(0, msgStructured.bodySetParamKv.size());
 
