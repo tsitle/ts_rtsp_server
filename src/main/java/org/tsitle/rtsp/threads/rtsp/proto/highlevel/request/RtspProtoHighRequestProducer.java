@@ -15,16 +15,15 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public final class RtspProtoHighRequestBuilder {
+public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 
-	public RtspProtoHighRequestBuilder(
+	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
@@ -40,14 +39,15 @@ public final class RtspProtoHighRequestBuilder {
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
+				RtspSessionInfo.@Nullable DataSdp announceSdp,
 				@Nullable Set<String> getParameterNames,
-				@Nullable Map<@NonNull String, @NonNull String> setParameterKvs
+				RtspSessionInfo.@Nullable DataGetSetParamKvs setParameterKvs
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
 		RtspProtoHighMsgStructuredRequest resObj = new RtspProtoHighMsgStructuredRequest();
 
-		resObj.rtspProtoVersion = rtspSessionInfo.lastRequestRtspProtoVersion;
+		resObj.rtspProtoVersion = rtspSessionInfo.rtspProtoVersionToUse;
 		resObj.statusCode = RtspStatusCode.OK;
 		resObj.messageType = requestMessageType;
 
@@ -59,7 +59,7 @@ public final class RtspProtoHighRequestBuilder {
 
 		//
 		switch (requestMessageType) {
-			case ANNOUNCE -> buildRequest_announce(kmdsOutbound, resObj);
+			case ANNOUNCE -> buildRequest_announce(kmdsOutbound, announceSdp, resObj);
 			case DESCRIBE -> buildRequest_describe(resObj);
 			case GET_PARAMETER -> buildRequest_getParameter(getParameterNames, resObj);
 			case OPTIONS -> buildRequest_options(resObj);
@@ -74,7 +74,7 @@ public final class RtspProtoHighRequestBuilder {
 					requestMessageType);
 		}
 
-		System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);  // @TODO
+		//System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);
 
 		return resObj;
 	}
@@ -84,6 +84,7 @@ public final class RtspProtoHighRequestBuilder {
 
 	private void buildRequest_announce(
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
+				RtspSessionInfo.@Nullable DataSdp announceSdp,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_announce()";
@@ -100,16 +101,32 @@ public final class RtspProtoHighRequestBuilder {
 		 *   ...
 		 */
 
+		if (announceSdp == null) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": SDP data is required for ANNOUNCE");
+		}
+		if (announceSdp.contentBase.isBlank()) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Base is required for ANNOUNCE");
+		}
+		if (announceSdp.sdpLinesAllRaw.isEmpty()) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": SDP content is required for ANNOUNCE");
+		}
+
 		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
+		// @TODO fetch Content-Language from SDP-Producer
 
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
+		// Content-Language
+		addContentLangHeader(announceSdp.contentLang, output);
+
+		//
+		output.bodyAnnounceSdp.addAll(announceSdp.sdpLinesAllRaw);
 
 		logError(FNC_NAME, "ANNOUNCE is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": ANNOUNCE is not supported yet");
 
 		/*
-		 * Re-keying legacy SDES key:
+		 * Re-keying legacy SDES key: @TODO
 		 * we need to send an ANNOUNCE request that contains the entire SDP.
 		 * Only the 'a=crypto' line must change and use a different tag.
 		 * The initial SDP would contain something like 'a=crypto:1 ...' and the new SDP
@@ -188,7 +205,7 @@ public final class RtspProtoHighRequestBuilder {
 	private void buildRequest_setParameter(
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
 				@Nullable String subStreamId,
-				@Nullable Map<@NonNull String, @NonNull String> parameterKvs,
+				RtspSessionInfo.@Nullable DataGetSetParamKvs parameterKvs,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
@@ -205,10 +222,12 @@ public final class RtspProtoHighRequestBuilder {
 		 */
 
 		//
-		if (parameterKvs != null && ! parameterKvs.isEmpty()) {
-			output.bodySetParamKv.putAll(parameterKvs);
+		if (parameterKvs != null && ! parameterKvs.paramKvs.isEmpty()) {
+			output.bodySetParamKv.putAll(parameterKvs.paramKvs);
 			// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 			addContentTypeHeader(output);
+			// Content-Language
+			addContentLangHeader(parameterKvs.contentLang, output);
 		}
 
 		// set the SRTxP Key Management Data for a SET_PARAMETER request used for re-keying
@@ -322,6 +341,24 @@ public final class RtspProtoHighRequestBuilder {
 		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_TYPE);
 		hdEntry.hdValContType.contentType = (output.messageType == RtspMessageType.ANNOUNCE ?
 				RtspMimeType.SDP : RtspMimeType.PARAMETERS);
+		output.headers.put(hdEntry.getHdKey(), hdEntry);
+	}
+
+	private void addContentLangHeader(
+				@NonNull String contLang,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) throws RtspInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addContentLangHeader()";
+
+		if (output.messageType != RtspMessageType.ANNOUNCE && output.messageType != RtspMessageType.SET_PARAMETER) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Language header only allowed for " +
+					"ANNOUNCE/SET_PARAMETER messages");
+		}
+		if (contLang.isBlank()) {
+			return;
+		}
+		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LANG);
+		hdEntry.hdValContLang.contentLangStr = contLang;
 		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 

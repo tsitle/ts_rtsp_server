@@ -13,15 +13,14 @@ import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestBuilder;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProducer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtKmdsOutbound;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestBuilder;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestProducer;
 
 import java.net.InetAddress;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -33,8 +32,8 @@ public final class RtspProtoRequestOutputSvc {
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final boolean isRequestFromClient;
 
-	private final RtspProtoHighRequestBuilder rtspProtoHighRequestBuilder;
-	private final RtspProtoLowRequestBuilder rtspProtoLowRequestBuilder;
+	private final RtspProtoHighRequestProducer rtspProtoHighRequestProducer;
+	private final RtspProtoLowRequestProducer rtspProtoLowRequestProducer;
 	private final RtspProtoLowMsgWriter rtspProtoLowMsgWriter;
 
 	public RtspProtoRequestOutputSvc(
@@ -50,11 +49,11 @@ public final class RtspProtoRequestOutputSvc {
 		this.isRequestFromClient = isRequestFromClient;
 
 		//
-		this.rtspProtoHighRequestBuilder = new RtspProtoHighRequestBuilder(
+		this.rtspProtoHighRequestProducer = new RtspProtoHighRequestProducer(
 				logMsgInterface,
 				rtspSessionInfo
 			);
-		this.rtspProtoLowRequestBuilder = new RtspProtoLowRequestBuilder(logMsgInterface);
+		this.rtspProtoLowRequestProducer = new RtspProtoLowRequestProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,
@@ -64,6 +63,24 @@ public final class RtspProtoRequestOutputSvc {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspMessageType sendRequest_announce(
+				@NonNull String resourceUrl,
+				RtspSessionInfo.@NonNull DataSdp announceSdp
+			) throws TcpSocketClosedException, TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
+
+		return internalSendRequest(
+				FNC_NAME,
+				RtspMessageType.ANNOUNCE,
+				resourceUrl,
+				null,
+				null,
+				announceSdp,
+				null,
+				null
+			);
+	}
 
 	public @NonNull RtspMessageType sendRequest_describe(@NonNull String resourceUrl)
 			throws TcpSocketClosedException, TcpSocketIoException {
@@ -89,6 +106,7 @@ public final class RtspProtoRequestOutputSvc {
 				FNC_NAME,
 				RtspMessageType.GET_PARAMETER,
 				resourceUrl,
+				null,
 				null,
 				null,
 				getParameterNames,
@@ -133,7 +151,7 @@ public final class RtspProtoRequestOutputSvc {
 
 	public @NonNull RtspMessageType sendRequest_setParameter(
 				@NonNull String resourceUrl,
-				@NonNull Map<@NonNull String, @NonNull String> setParameterKvs
+				RtspSessionInfo.@NonNull DataGetSetParamKvs setParameterKvs
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
@@ -141,6 +159,7 @@ public final class RtspProtoRequestOutputSvc {
 				FNC_NAME,
 				RtspMessageType.SET_PARAMETER,
 				resourceUrl,
+				null,
 				null,
 				null,
 				null,
@@ -176,6 +195,7 @@ public final class RtspProtoRequestOutputSvc {
 				subStreamId,
 				tmpKmdsOutbound,
 				null,
+				null,
 				null
 			);
 	}
@@ -199,6 +219,7 @@ public final class RtspProtoRequestOutputSvc {
 				resourceUrl,
 				null,
 				kmdsOutbound,
+				null,
 				null,
 				null
 			);
@@ -274,6 +295,7 @@ public final class RtspProtoRequestOutputSvc {
 				null,
 				null,
 				null,
+				null,
 				null
 			);
 	}
@@ -284,8 +306,9 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
+				RtspSessionInfo.@Nullable DataSdp announceSdp,
 				@Nullable Set<String> getParameterNames,
-				@Nullable Map<@NonNull String, @NonNull String> setParameterKvs
+				RtspSessionInfo.@Nullable DataGetSetParamKvs setParameterKvs
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
@@ -294,11 +317,12 @@ public final class RtspProtoRequestOutputSvc {
 		// build the outgoing message
 		RtspProtoHighMsgStructuredRequest msgStructured;
 		try {
-			msgStructured = rtspProtoHighRequestBuilder.buildRequest(
+			msgStructured = rtspProtoHighRequestProducer.buildRequest(
 					requestMessageType,
 					resourceUrl,
 					subStreamId,
 					kmdsOutbound,
+					announceSdp,
 					getParameterNames,
 					setParameterKvs
 				);
@@ -310,7 +334,7 @@ public final class RtspProtoRequestOutputSvc {
 		// convert the message
 		RtspProtoLowMsgRaw msgRaw;
 		try {
-			msgRaw = rtspProtoLowRequestBuilder.buildMessage(msgStructured);
+			msgRaw = rtspProtoLowRequestProducer.buildMessage(msgStructured);
 		} catch (RtspInvalidRequestException e) {
 			logError(fncName, "Failed to build LL request: " + e.getMessage());
 			return requestMessageType;

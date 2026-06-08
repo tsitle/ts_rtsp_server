@@ -1,11 +1,10 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
-
-import java.util.Map;
+import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 
 public interface RtspProtoParameterGetterInterface {
 
-	@NonNull Map<@NonNull String, @NonNull String> getAllRtspParameters(@NonNull String rtspSessionId);
+	RtspSessionInfo.@NonNull DataGetSetParamKvs getAllRtspParameters(@NonNull String rtspSessionId);
 
 }

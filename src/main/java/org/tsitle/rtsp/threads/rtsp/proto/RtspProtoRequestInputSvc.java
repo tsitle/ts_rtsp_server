@@ -11,13 +11,13 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
-import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProcessor;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
 
 public final class RtspProtoRequestInputSvc {
 
@@ -26,8 +26,8 @@ public final class RtspProtoRequestInputSvc {
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
-	private final RtspProtoLowRequestParser rtspProtoLowRequestParser;
-	private final RtspProtoHighRequestProcessor rtspProtoHighRequestProcessor;
+	private final RtspProtoLowRequestConsumer rtspProtoLowRequestConsumer;
+	private final RtspProtoHighRequestConsumer rtspProtoHighRequestConsumer;
 
 	private final RtspRequAuthSvc rtspRequAuthSvc;
 
@@ -48,8 +48,8 @@ public final class RtspProtoRequestInputSvc {
 				this.rtxpTcpReadWrite,
 				rtspConfig.getIsDebugPrintRtspRcvd()
 			);
-		this.rtspProtoLowRequestParser = new RtspProtoLowRequestParser(logMsgInterface);
-		this.rtspProtoHighRequestProcessor = new RtspProtoHighRequestProcessor(
+		this.rtspProtoLowRequestConsumer = new RtspProtoLowRequestConsumer(logMsgInterface);
+		this.rtspProtoHighRequestConsumer = new RtspProtoHighRequestConsumer(
 				logMsgInterface,
 				rtspConfig,
 				rtspSessionInfo,
@@ -82,7 +82,7 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// parse the raw request
-		RtspProtoHighMsgStructuredRequest msgStructured = rtspProtoLowRequestParser.parseMessage(lowInputRaw);
+		RtspProtoHighMsgStructuredRequest msgStructured = rtspProtoLowRequestConsumer.parseMessage(lowInputRaw);
 		if (msgStructured.messageType == RtspMessageType.UNKNOWN) {
 			RtspRequestBasics resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
@@ -97,7 +97,7 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// process the request - without checking authentication
-		RtspRequestBasics resObj = rtspProtoHighRequestProcessor.processRequest(msgStructured);
+		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(msgStructured);
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
 					resObj.messageType, resObj.statusCode,

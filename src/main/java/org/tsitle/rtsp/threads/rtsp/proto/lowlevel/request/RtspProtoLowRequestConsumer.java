@@ -19,11 +19,11 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import java.net.URI;
 import java.util.*;
 
-public final class RtspProtoLowRequestParser {
+public final class RtspProtoLowRequestConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 
-	public RtspProtoLowRequestParser(@NonNull LogMsgInterface logMsgInterface) {
+	public RtspProtoLowRequestConsumer(@NonNull LogMsgInterface logMsgInterface) {
 		this.logMsgInterface = logMsgInterface;
 	}
 

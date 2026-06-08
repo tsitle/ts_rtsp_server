@@ -43,6 +43,75 @@ public final class RtspSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static class DataSdp {
+		/** Content language(s) (e.g. 'de') */
+		public @NonNull String contentLang = "";
+
+		/** Content base (e.g. 'rtsp://some.com/camera.stream/') */
+		public @NonNull String contentBase = "";
+
+		/** Session Description Protocol (SDP) data */
+		public final @NonNull List<@NonNull String> sdpLinesAllRaw = new ArrayList<>();
+
+		public void resetPerRequest() {
+			contentLang = "";
+			contentBase = "";
+			sdpLinesAllRaw.clear();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static class DataGetSetParamKvs {
+		/** Content language(s) (e.g. 'de') */
+		public @NonNull String contentLang = "";
+
+		/** Parameter key-value-pairs */
+		public final @NonNull Map<@NonNull String, @NonNull String> paramKvs = new HashMap<>();
+
+		public void resetPerRequest() {
+			contentLang = "";
+			paramKvs.clear();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static class DataGetSetParamNames {
+		/** Parameter names */
+		public final @NonNull Set<@NonNull String> paramNames = new HashSet<>();
+
+		public void resetPerRequest() {
+			paramNames.clear();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/** Authentication-related info */
+	public @NonNull AuthInfo authInfo = new AuthInfo();
+
+	/** RTSP message parameters that have been requested by the remote host in the last request */
+	public final @NonNull DataGetSetParamNames requRequestedGetParamNames = new DataGetSetParamNames();
+	/** RTSP message parameters that have been sent by the remote host in the last request */
+	public final @NonNull DataGetSetParamKvs requReceivedSetParamValues = new DataGetSetParamKvs();
+	/** RTSP message parameters that have been sent by the remote host in the last request but are invalid */
+	public final @NonNull DataGetSetParamNames requReceivedInvalidParamNames = new DataGetSetParamNames();
+	/** SDP that has been announced by the remote host in the last request */
+	public final @NonNull DataSdp requAnnouncedSdp = new DataSdp();
+
+	/** RTSP message parameters that the remote host has sent in the last response */
+	public final @NonNull DataGetSetParamKvs respReceivedGetParamValues = new DataGetSetParamKvs();
+	/** RTSP message parameters that the remote host does not support as received in the last response */
+	public final @NonNull DataGetSetParamNames respReceivedInvalidParamNames = new DataGetSetParamNames();
+	/** SDP that has been announced by the remote host in the last response */
+	public final @NonNull DataSdp respDescribeSdp = new DataSdp();
+
+	// ----------------------------------------------------------------
+
 	/** Server IP address */
 	private @Nullable InetAddress serverIpAddr = null;
 	/** Client IP address */
@@ -73,28 +142,11 @@ public final class RtspSessionInfo {
 	/** Playback range request value from the client */
 	public @NonNull String clientPlaybackRangeValue = "";
 
-	/** RTSP protocol version used by the client in the last request (e.g. 'RTSP/1.0') */
-	public @NonNull RtspProtocolVersion lastRequestRtspProtoVersion = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
-
-	/** Authentication-related info */
-	public @NonNull AuthInfo authInfo = new AuthInfo();
+	/** RTSP protocol version to be used */
+	public @NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
 
 	/** Client's User-Agent */
 	public @NonNull String clientUserAgent = "";
-
-	/** RTSP message parameters that have been requested by the remote host in the last request */
-	public final @NonNull Set<@NonNull String> requRequestedGetParamValues = new HashSet<>();
-	/** RTSP message parameters that have been sent by the remote host in the last request */
-	public final @NonNull Map<@NonNull String, @NonNull String> requReceivedSetParamValues = new HashMap<>();
-	/** RTSP message parameters that have been sent by the remote host in the last request but are invalid */
-	public final @NonNull Set<@NonNull String> requReceivedInvalidParamValues = new HashSet<>();
-	/** SDP that has been announced by the remote host in the last request */
-	public final @NonNull List<@NonNull String> requAnnouncedSdp = new ArrayList<>();
-
-	/** RTSP message parameters that the remote host has sent in the last response */
-	public final @NonNull Map<@NonNull String, @NonNull String> respReceivedGetParamValues = new HashMap<>();
-	/** RTSP message parameters that the remote host does not support as received in the last response */
-	public final @NonNull Set<@NonNull String> respReceivedInvalidParamValues = new HashSet<>();
 
 	/** RTSP message types that are supported by the remote host */
 	public final @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
@@ -125,6 +177,16 @@ public final class RtspSessionInfo {
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void resetPerRequest() {
+		authInfo.resetPerRequest();
+		requRequestedGetParamNames.resetPerRequest();
+		requReceivedSetParamValues.resetPerRequest();
+		requReceivedInvalidParamNames.resetPerRequest();
+		requAnnouncedSdp.resetPerRequest();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<InetAddress> getServerIpAddr() {

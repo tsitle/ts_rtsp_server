@@ -26,7 +26,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import java.net.*;
 import java.util.*;
 
-public final class RtspProtoHighResponseBuilder {
+public final class RtspProtoHighResponseProducer {
 
 	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 50;
 	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
@@ -37,7 +37,7 @@ public final class RtspProtoHighResponseBuilder {
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface;
 
-	public RtspProtoHighResponseBuilder(
+	public RtspProtoHighResponseProducer(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
@@ -63,7 +63,7 @@ public final class RtspProtoHighResponseBuilder {
 
 		RtspProtoHighMsgStructuredResponse resObj = new RtspProtoHighMsgStructuredResponse();
 
-		resObj.rtspProtoVersion = rtspSessionInfo.lastRequestRtspProtoVersion;
+		resObj.rtspProtoVersion = rtspSessionInfo.rtspProtoVersionToUse;
 		resObj.statusCode = rtspRequestBasics.statusCode;
 		resObj.messageType = rtspRequestBasics.messageType;
 
@@ -88,7 +88,7 @@ public final class RtspProtoHighResponseBuilder {
 					rtspRequestBasics.messageType);
 		}
 
-		System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);  // @TODO
+		//System.out.println(">>>>>>>>> >>>>>>>>> " + resObj);
 
 		return resObj;
 	}
@@ -122,7 +122,7 @@ public final class RtspProtoHighResponseBuilder {
 		 */
 		switch (statusCode) {
 			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
-				output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requReceivedInvalidParamValues);
+				output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requReceivedInvalidParamNames.paramNames);
 				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 				addContentTypeHeader(output);
 				break;
@@ -148,12 +148,10 @@ public final class RtspProtoHighResponseBuilder {
 		/*
 		 * Example:
 		 *   "RTSP/1.0 200 OK"
-		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
-		 *   "Server: TS RTSP Server/1.0"
 		 *   "Content-Base: rtsp://example.com/fizzle/foo/"
 		 *   "Content-Type: application/sdp"
-		 *   "Content-Length: 761"
-		 *   "CSeq: 4"
+		 *   "Content-Length: 1234"
+		 *   ...
 		 *   ""
 		 *   "v=0"
 		 *   "a=tool:TS RTSP Server/1.0"
@@ -171,6 +169,8 @@ public final class RtspProtoHighResponseBuilder {
 		}
 
 		// @TODO fetch SDP from SDP-Producer
+		// @TODO fetch Content-Language from SDP-Producer
+		String sdpContentLanguage = "";
 		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
 		List<@NonNull String> tmpSdpLines;
 		try {
@@ -200,6 +200,8 @@ public final class RtspProtoHighResponseBuilder {
 		}
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 		addContentTypeHeader(output);
+		// Content-Language
+		addContentLangHeader(sdpContentLanguage, output);
 	}
 
 	private void buildResponse_getParameter(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
@@ -222,24 +224,29 @@ public final class RtspProtoHighResponseBuilder {
 		 *     "barparam"
 		 */
 
-		if (rtspSessionInfo.requRequestedGetParamValues.isEmpty()) {
+		if (rtspSessionInfo.requRequestedGetParamNames.paramNames.isEmpty()) {
 			// nothing to do
 			return;
 		}
 
+		String tmpContLang = "";
 		if (rtspProtoParameterGetterInterface == null) {
 			output.statusCode = RtspStatusCode.INVALID_PARAMETER;
-			output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requRequestedGetParamValues);
+			output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requRequestedGetParamNames.paramNames);
 		} else {
-			Map<String, String> tmpAllInpParamKv = rtspProtoParameterGetterInterface.getAllRtspParameters(rtspSessionInfo.rtspSessionId);
+			RtspSessionInfo.DataGetSetParamKvs tmpDataGsp =
+					rtspProtoParameterGetterInterface.getAllRtspParameters(rtspSessionInfo.rtspSessionId);
+
 			Set<String> tmpMissingParams = new HashSet<>();
-			for (String requParam : rtspSessionInfo.requRequestedGetParamValues) {
-				if (! tmpAllInpParamKv.containsKey(requParam)) {
+			for (String requParam : rtspSessionInfo.requRequestedGetParamNames.paramNames) {
+				if (! tmpDataGsp.paramKvs.containsKey(requParam)) {
 					tmpMissingParams.add(requParam);
 				} else {
-					output.bodyGetParamKv.put(requParam, tmpAllInpParamKv.get(requParam));
+					output.bodyGetParamKv.put(requParam, tmpDataGsp.paramKvs.get(requParam));
 				}
 			}
+
+			tmpContLang = tmpDataGsp.contentLang;
 
 			if (! tmpMissingParams.isEmpty()) {
 				output.statusCode = RtspStatusCode.INVALID_PARAMETER;
@@ -250,6 +257,8 @@ public final class RtspProtoHighResponseBuilder {
 
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 		addContentTypeHeader(output);
+		// Content-Language
+		addContentLangHeader(tmpContLang, output);
 	}
 
 	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
@@ -619,6 +628,24 @@ public final class RtspProtoHighResponseBuilder {
 		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
 		hdEntry.hdValContType.contentType = (output.messageType == RtspMessageType.DESCRIBE ?
 				RtspMimeType.SDP : RtspMimeType.PARAMETERS);
+		output.headers.put(hdEntry.getHdKey(), hdEntry);
+	}
+
+	private void addContentLangHeader(
+				@NonNull String contLang,
+				@NonNull RtspProtoHighMsgStructuredResponse output
+			) throws RtspInvalidResponseException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addContentLangHeader()";
+
+		if (output.messageType != RtspMessageType.DESCRIBE && output.messageType != RtspMessageType.GET_PARAMETER) {
+			throw new RtspInvalidResponseException(FNC_NAME + ": Content-Language header only allowed for " +
+					"DESCRIBE/GET_PARAMETER messages");
+		}
+		if (contLang.isBlank()) {
+			return;
+		}
+		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_LANG);
+		hdEntry.hdValContLang.contentLangStr = contLang;
 		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 

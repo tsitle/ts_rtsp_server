@@ -11,11 +11,11 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
-import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseBuilder;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseProducer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseBuilder;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseProducer;
 
 public final class RtspProtoResponseOutputSvc {
 
@@ -23,8 +23,8 @@ public final class RtspProtoResponseOutputSvc {
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
-	private final RtspProtoHighResponseBuilder rtspProtoHighResponseBuilder;
-	private final RtspProtoLowResponseBuilder rtspProtoLowResponseBuilder;
+	private final RtspProtoHighResponseProducer rtspProtoHighResponseBuilder;
+	private final RtspProtoLowResponseProducer rtspProtoLowResponseBuilder;
 	private final RtspProtoLowMsgWriter rtspProtoLowMsgWriter;
 
 	public RtspProtoResponseOutputSvc(
@@ -39,14 +39,14 @@ public final class RtspProtoResponseOutputSvc {
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
-		this.rtspProtoHighResponseBuilder = new RtspProtoHighResponseBuilder(
+		this.rtspProtoHighResponseBuilder = new RtspProtoHighResponseProducer(
 				logMsgInterface,
 				rtspConfig,
 				cfgServerNameAndVersion,
 				rtspSessionInfo,
 				null
 			);
-		this.rtspProtoLowResponseBuilder = new RtspProtoLowResponseBuilder(logMsgInterface);
+		this.rtspProtoLowResponseBuilder = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,

@@ -11,12 +11,12 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseProcessor;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseParser;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseConsumer;
 
 public final class RtspProtoResponseInputSvc {
 
@@ -24,8 +24,8 @@ public final class RtspProtoResponseInputSvc {
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
-	private final RtspProtoLowResponseParser rtspProtoLowResponseParser;
-	private final RtspProtoHighResponseProcessor rtspProtoHighResponseProcessor;
+	private final RtspProtoLowResponseConsumer rtspProtoLowResponseConsumer;
+	private final RtspProtoHighResponseConsumer rtspProtoHighResponseConsumer;
 
 	public RtspProtoResponseInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -43,8 +43,8 @@ public final class RtspProtoResponseInputSvc {
 				this.rtxpTcpReadWrite,
 				rtspConfig.getIsDebugPrintRtspRcvd()
 			);
-		this.rtspProtoLowResponseParser = new RtspProtoLowResponseParser(logMsgInterface);
-		this.rtspProtoHighResponseProcessor = new RtspProtoHighResponseProcessor(
+		this.rtspProtoLowResponseConsumer = new RtspProtoLowResponseConsumer(logMsgInterface);
+		this.rtspProtoHighResponseConsumer = new RtspProtoHighResponseConsumer(
 				logMsgInterface,
 				rtspSessionInfo,
 				isResponseFromClient
@@ -70,14 +70,14 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		// parse the raw response
-		RtspProtoHighMsgStructuredResponse msgStructured = rtspProtoLowResponseParser.parseMessage(requestMessageType, lowInputRaw);
+		RtspProtoHighMsgStructuredResponse msgStructured = rtspProtoLowResponseConsumer.parseMessage(requestMessageType, lowInputRaw);
 		if (msgStructured.statusCode == RtspStatusCode.INTERNAL_SERVER_ERROR) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP response message for request '%s'", requestMessageType));
 			return RtspResponseBasics.createInternalServerError();
 		}
 
 		// process the response
-		RtspResponseBasics resObj = rtspProtoHighResponseProcessor.processResponse(msgStructured);
+		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(msgStructured);
 
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",

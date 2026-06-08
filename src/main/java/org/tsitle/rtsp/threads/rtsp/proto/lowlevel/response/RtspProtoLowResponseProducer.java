@@ -17,11 +17,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public final class RtspProtoLowResponseBuilder {
+public final class RtspProtoLowResponseProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 
-	public RtspProtoLowResponseBuilder(@NonNull LogMsgInterface logMsgInterface) {
+	public RtspProtoLowResponseProducer(@NonNull LogMsgInterface logMsgInterface) {
 		this.logMsgInterface = logMsgInterface;
 	}
 

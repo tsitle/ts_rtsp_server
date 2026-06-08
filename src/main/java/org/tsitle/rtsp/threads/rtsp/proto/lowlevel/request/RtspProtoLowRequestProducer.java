@@ -17,11 +17,11 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
-public final class RtspProtoLowRequestBuilder {
+public final class RtspProtoLowRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 
-	public RtspProtoLowRequestBuilder(@NonNull LogMsgInterface logMsgInterface) {
+	public RtspProtoLowRequestProducer(@NonNull LogMsgInterface logMsgInterface) {
 		this.logMsgInterface = logMsgInterface;
 	}
 

@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class RtspProtoHighResponseProcessor {
+public class RtspProtoHighResponseConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
@@ -24,7 +24,7 @@ public class RtspProtoHighResponseProcessor {
 
 	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
 
-	public RtspProtoHighResponseProcessor(
+	public RtspProtoHighResponseConsumer(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				boolean isResponseFromClient
@@ -40,12 +40,12 @@ public class RtspProtoHighResponseProcessor {
 	public @NonNull RtspResponseBasics processResponse(@NonNull RtspProtoHighMsgStructuredResponse input) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processResponse()";
 
-		System.out.println("<<<<<<<<< <<<<<<<<< " + input);  // @TODO
+		//System.out.println("<<<<<<<<< <<<<<<<<< " + input);
 
 		preProcessedHeaders.clear();
 
-		rtspSessionInfo.respReceivedInvalidParamValues.clear();
-		rtspSessionInfo.respReceivedGetParamValues.clear();
+		rtspSessionInfo.respReceivedInvalidParamNames.paramNames.clear();
+		rtspSessionInfo.respReceivedGetParamValues.paramKvs.clear();
 
 		//
 		final String logMsgSuffix = " in response for " + input.messageType + " request";
@@ -155,9 +155,9 @@ public class RtspProtoHighResponseProcessor {
 			switch (entry.getKey()) {
 				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue());
 				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue());
-				case RtspHeaderKey.CONTENT_BASE -> processHeader_describe_contbase(input.messageType, entry.getValue());
+				case RtspHeaderKey.CONTENT_BASE -> processHeader_describe_contbase(input.messageType);
 				case RtspHeaderKey.CONTENT_ENC -> processHeader_com_contenc(input.messageType, entry.getValue());
-				case RtspHeaderKey.CONTENT_LANG -> processHeader_com_contlang(input.messageType, entry.getValue());
+				case RtspHeaderKey.CONTENT_LANG -> processHeader_com_contlang(input.messageType);
 				case RtspHeaderKey.CONTENT_LEN -> processHeader_com_contlen(input.messageType);
 				case RtspHeaderKey.CONTENT_TYPE -> processHeader_com_conttype(input.messageType);
 				case RtspHeaderKey.DATE -> processHeader_com_date();
@@ -194,10 +194,7 @@ public class RtspProtoHighResponseProcessor {
 		// @TODO store param
 	}
 
-	private void processHeader_describe_contbase(
-				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoHeaderEntryResponse headerEntry
-			) throws RtspInvalidResponseException {
+	private void processHeader_describe_contbase(@NonNull RtspMessageType messageType) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_describe_contbase()";
 
 		if (messageType != RtspMessageType.DESCRIBE) {
@@ -207,7 +204,6 @@ public class RtspProtoHighResponseProcessor {
 		if (isResponseFromClient) {
 			throw new RtspInvalidResponseException("Received Content-Base header from client");
 		}
-		// @TODO store params
 	}
 
 	private void processHeader_com_contenc(
@@ -224,16 +220,10 @@ public class RtspProtoHighResponseProcessor {
 		}
 	}
 
-	private void processHeader_com_contlang(
-				@NonNull RtspMessageType messageType,
-				@NonNull RtspProtoHeaderEntryResponse headerEntry
-			) {
+	private void processHeader_com_contlang(@NonNull RtspMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_contlang()";
 
-		if (! allowOnlyDescribeGetParameter(FNC_NAME, "Content-Language", messageType)) {
-			return;
-		}
-		// @TODO store params
+		allowOnlyDescribeGetParameter(FNC_NAME, "Content-Language", messageType);
 	}
 
 	private void processHeader_com_contlen(@NonNull RtspMessageType messageType) {
@@ -379,6 +369,7 @@ public class RtspProtoHighResponseProcessor {
 		 *     "jitter"
 		 */
 
+		// Content-Type
 		boolean haveHdContTp = input.headers.containsKey(RtspHeaderKey.CONTENT_TYPE);
 		if (! haveHdContTp) {
 			if (input.messageType == RtspMessageType.DESCRIBE) {
@@ -387,7 +378,7 @@ public class RtspProtoHighResponseProcessor {
 			return;
 		}
 		RtspMimeType contentType = input.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType;
-		//
+		// Content-Length
 		boolean haveHdContLen = input.headers.containsKey(RtspHeaderKey.CONTENT_LEN);
 		if (! haveHdContLen) {
 			if (input.messageType == RtspMessageType.DESCRIBE) {
@@ -410,18 +401,38 @@ public class RtspProtoHighResponseProcessor {
 				if (contentType != RtspMimeType.SDP) {
 					throw new RtspInvalidResponseException("Content-Type for DESCRIBE message must be SDP");
 				}
-				// @TODO store param
+				// Content-Base
+				if (! input.headers.containsKey(RtspHeaderKey.CONTENT_BASE)) {
+					throw new RtspInvalidResponseException("Content-Base for DESCRIBE message missing");
+				}
+				rtspSessionInfo.respDescribeSdp.contentBase = input.headers.get(RtspHeaderKey.CONTENT_BASE)
+						.hdValContBase.contentBaseStr;
+				//
+				rtspSessionInfo.respDescribeSdp.sdpLinesAllRaw.addAll(input.bodyDescribeSdp);
 				break;
 			case GET_PARAMETER, SET_PARAMETER:
 				if (contentType != RtspMimeType.PARAMETERS) {
 					throw new RtspInvalidResponseException("Content-Type for GET_PARAMETER message must be PARAMETERS");
 				}
 				if (! input.bodyGetSetInvalidParams.isEmpty()) {
-					rtspSessionInfo.respReceivedInvalidParamValues.addAll(input.bodyGetSetInvalidParams);
+					rtspSessionInfo.respReceivedInvalidParamNames.paramNames.addAll(input.bodyGetSetInvalidParams);
 				} else if (input.messageType == RtspMessageType.GET_PARAMETER) {
-					rtspSessionInfo.respReceivedGetParamValues.putAll(input.bodyGetParamKv);
+					rtspSessionInfo.respReceivedGetParamValues.paramKvs.putAll(input.bodyGetParamKv);
 				}
 				break;
+		}
+
+		// Content-Language
+		if (input.messageType == RtspMessageType.DESCRIBE || input.messageType == RtspMessageType.GET_PARAMETER) {
+			String tmpContLang = "";
+			if (input.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
+				tmpContLang = input.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
+			}
+			if (input.messageType == RtspMessageType.DESCRIBE) {
+				rtspSessionInfo.respDescribeSdp.contentLang = tmpContLang;
+			} else {
+				rtspSessionInfo.respReceivedGetParamValues.contentLang = tmpContLang;
+			}
 		}
 	}
 
