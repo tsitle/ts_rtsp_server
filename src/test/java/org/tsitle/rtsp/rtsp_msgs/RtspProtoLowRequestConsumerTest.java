@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestParser;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -24,7 +24,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RtspProtoLowRequestParserTest {
+public class RtspProtoLowRequestConsumerTest {
 
 	static class TestLogs implements LogMsgInterface {
 		@Override
@@ -63,7 +63,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(RtspMessageType.UNKNOWN, msgStructured.messageType);
@@ -96,7 +96,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(RtspMessageType.UNKNOWN, msgStructured.messageType);
@@ -130,7 +130,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -161,7 +161,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -191,7 +191,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -221,7 +221,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -268,7 +268,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -320,7 +320,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -382,7 +382,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -432,7 +432,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -483,7 +483,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -531,7 +531,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -587,7 +587,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -647,7 +647,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -693,7 +693,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -762,7 +762,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -824,7 +824,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -916,7 +916,7 @@ public class RtspProtoLowRequestParserTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestParser parser = new RtspProtoLowRequestParser(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
