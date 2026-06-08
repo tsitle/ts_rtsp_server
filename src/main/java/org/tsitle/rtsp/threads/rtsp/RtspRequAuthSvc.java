@@ -5,6 +5,7 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
@@ -37,13 +38,16 @@ public class RtspRequAuthSvc {
 		this.rtspSessionInfo = rtspSessionInfo;
 
 		//
-		this.rtspUserAuthSvc = new RtspUserAuthSvc(logMsgInterface, rtspConfig);
+		this.rtspUserAuthSvc = new RtspUserAuthSvc(logMsgInterface, rtspConfig, rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void checkAuthorization(@NonNull RtspRequestBasics rtspRequestBasics) {
+	public void checkAuthorization(
+				@NonNull RtspRequestBasics rtspRequestBasics,
+				@NonNull RtspProtoDataCntAuthClient requAuthClient
+			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthorization()";
 
 		final String tmpIsId = Objects.requireNonNull(rtspRequestBasics.requestUrlInputOrStreamSource).inputSourceId;
@@ -69,14 +73,14 @@ public class RtspRequAuthSvc {
 
 		//
 		if (doCheckAuthorization) {
-			wasAuthentificationOk = rtspUserAuthSvc.authenticate(rtspSessionInfo, rtspRequestBasics.messageType);
+			wasAuthentificationOk = rtspUserAuthSvc.authenticate(requAuthClient, rtspRequestBasics.messageType);
 			//
 			if (wasAuthentificationOk) {
-				wasAuthorizationOk = rtspUserAuthSvc.checkAccessToInputSource(rtspSessionInfo, tmpOptInputSource.get());
+				wasAuthorizationOk = rtspUserAuthSvc.checkAccessToInputSource(requAuthClient, tmpOptInputSource.get());
 				if (! wasAuthorizationOk) {
 					logError(FNC_NAME, String.format(
 							"User '%s' is not allowed to access IS='%s'",
-							rtspSessionInfo.authInfo.authUser,
+							rtspSessionInfo.permAuthClient.authUser,
 							tmpIsId));
 				}
 			}
@@ -102,7 +106,7 @@ public class RtspRequAuthSvc {
 			final String logMsg = String.format(
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
 					rtspRequestBasics.messageType, tmpIsId,
-					rtspSessionInfo.authInfo.authUser,
+					rtspSessionInfo.permAuthClient.authUser,
 					getClientIpAddr().getHostAddress());
 			logDebug(FNC_NAME, logMsg);
 			RtspStaticSessionInfo.resetUnauthorized(getClientIpAddr(), tmpIsId);

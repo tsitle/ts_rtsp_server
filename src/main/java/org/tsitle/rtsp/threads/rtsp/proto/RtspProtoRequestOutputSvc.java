@@ -11,6 +11,10 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamNames;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProducer;
@@ -23,7 +27,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestPr
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 public final class RtspProtoRequestOutputSvc {
 
@@ -66,18 +69,18 @@ public final class RtspProtoRequestOutputSvc {
 
 	public @NonNull RtspMessageType sendRequest_announce(
 				@NonNull String resourceUrl,
-				RtspSessionInfo.@NonNull DataSdp announceSdp
+				@NonNull RtspProtoDataCntSdp announceSdp
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.requAnnouncedSdp.copyFrom(announceSdp);
 		return internalSendRequest(
 				FNC_NAME,
 				RtspMessageType.ANNOUNCE,
 				resourceUrl,
 				null,
-				null,
-				announceSdp,
-				null,
+				inputDataRequ,
 				null
 			);
 	}
@@ -98,18 +101,18 @@ public final class RtspProtoRequestOutputSvc {
 
 	public @NonNull RtspMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
-				@Nullable Set<String> getParameterNames
+				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.requGetParamNames.copyFrom(getParameterNames);
 		return internalSendRequest(
 				FNC_NAME,
 				RtspMessageType.GET_PARAMETER,
 				resourceUrl,
 				null,
-				null,
-				null,
-				getParameterNames,
+				inputDataRequ,
 				null
 			);
 	}
@@ -151,19 +154,19 @@ public final class RtspProtoRequestOutputSvc {
 
 	public @NonNull RtspMessageType sendRequest_setParameter(
 				@NonNull String resourceUrl,
-				RtspSessionInfo.@NonNull DataGetSetParamKvs setParameterKvs
+				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.requSetParamValues.copyFrom(setParameterKvs);
 		return internalSendRequest(
 				FNC_NAME,
 				RtspMessageType.SET_PARAMETER,
 				resourceUrl,
 				null,
-				null,
-				null,
-				null,
-				setParameterKvs
+				inputDataRequ,
+				null
 			);
 	}
 
@@ -181,6 +184,8 @@ public final class RtspProtoRequestOutputSvc {
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundMikey()";
 
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+
 		if (kmdOutbound.isForLegacySdes()) {
 			throw new IllegalArgumentException("KMD cannot be for legacy SDES");
 		}
@@ -193,10 +198,8 @@ public final class RtspProtoRequestOutputSvc {
 				RtspMessageType.SET_PARAMETER,
 				resourceUrlForSubStream,
 				subStreamId,
-				tmpKmdsOutbound,
-				null,
-				null,
-				null
+				inputDataRequ,
+				tmpKmdsOutbound
 			);
 	}
 
@@ -205,6 +208,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
+
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 
 		if (kmdsOutbound.getNumberOfSubStreams() == 0) {
 			throw new IllegalArgumentException("Need KMD for at least one sub-stream");
@@ -218,10 +223,8 @@ public final class RtspProtoRequestOutputSvc {
 				RtspMessageType.ANNOUNCE,
 				resourceUrl,
 				null,
-				kmdsOutbound,
-				null,
-				null,
-				null
+				inputDataRequ,
+				kmdsOutbound
 			);
 	}
 
@@ -288,14 +291,13 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspMessageType requestMessageType,
 				@NonNull String resourceUrl
 			) throws TcpSocketClosedException, TcpSocketIoException {
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		return internalSendRequest(
 				fncName,
 				requestMessageType,
 				resourceUrl,
 				null,
-				null,
-				null,
-				null,
+				inputDataRequ,
 				null
 			);
 	}
@@ -305,14 +307,18 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspMessageType requestMessageType,
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
-				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				RtspSessionInfo.@Nullable DataSdp announceSdp,
-				@Nullable Set<String> getParameterNames,
-				RtspSessionInfo.@Nullable DataGetSetParamKvs setParameterKvs
+				@NonNull RtspProtoDataRequest inputDataRequ,
+				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
+
+		// authentication parameters
+		inputDataRequ.requAuthClient.authUser = rtspSessionInfo.permAuthClient.authUser;
+		inputDataRequ.requAuthClient.authPlainPassword = rtspSessionInfo.permAuthClient.authPlainPassword;
+		inputDataRequ.requAuthClient.authRealm = rtspSessionInfo.permAuthServer.authRealm;
+		inputDataRequ.requAuthClient.authNonce = rtspSessionInfo.permAuthServer.authNonce;
 
 		// build the outgoing message
 		RtspProtoHighMsgStructuredRequest msgStructured;
@@ -321,10 +327,8 @@ public final class RtspProtoRequestOutputSvc {
 					requestMessageType,
 					resourceUrl,
 					subStreamId,
-					kmdsOutbound,
-					announceSdp,
-					getParameterNames,
-					setParameterKvs
+					inputDataRequ,
+					kmdsOutbound
 				);
 		} catch (RtspInvalidRequestException e) {
 			logError(fncName, "Failed to build HL request: " + e.getMessage());

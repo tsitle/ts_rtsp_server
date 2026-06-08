@@ -6,7 +6,7 @@ import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
-import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.net.InetAddress;
@@ -20,70 +20,76 @@ public class RtspUserAuthSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull RtspSessionInfo rtspSessionInfo;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig
+				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSessionInfo rtspSessionInfo
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
+		this.rtspSessionInfo = rtspSessionInfo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean authenticate(@NonNull RtspSessionInfo rtspSessionInfo, @NonNull RtspMessageType messageType) {
+	public boolean authenticate(
+				@NonNull RtspProtoDataCntAuthClient requAuthClient,
+				@NonNull RtspMessageType messageType
+			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".authenticate()";
 
-		if (rtspSessionInfo.authInfo.authUser.isBlank()) {
+		if (requAuthClient.authUser.isBlank()) {
 			// fail silently since missing at least the username is normal for the first unauthorized request
 			return false;
 		}
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				(rtspSessionInfo.authInfo.authRealmClient.isBlank() ||
-					rtspSessionInfo.authInfo.authNonceClient.isBlank() || rtspSessionInfo.authInfo.authResp.isBlank())) {
+		if (requAuthClient.authPlainPassword.isBlank() &&
+				(requAuthClient.authRealm.isBlank() ||
+					requAuthClient.authNonce.isBlank() || requAuthClient.authResp.isBlank())) {
 			// fail silently
 			return false;
 		}
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				! rtspSessionInfo.authInfo.authRealmClient.equals(RtspProtoHighConstants.DEFAULT_RTSP_AUTH_REALM)) {
+		if (requAuthClient.authPlainPassword.isBlank() &&
+				! requAuthClient.authRealm.equals(rtspSessionInfo.permAuthServer.authRealm)) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank() &&
-				! (rtspSessionInfo.authInfo.authNonceClient.equals(rtspSessionInfo.authInfo.authNonceServer) ||
+		if (requAuthClient.authPlainPassword.isBlank() &&
+				! (requAuthClient.authNonce.equals(rtspSessionInfo.permAuthServer.authNonce) &&
 						RtspStaticSessionInfo.existsAuthServerNonce(
-								getClientIpAddr(rtspSessionInfo), rtspSessionInfo.authInfo.authNonceClient
+								getClientIpAddr(rtspSessionInfo), rtspSessionInfo.permAuthServer.authNonce
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;
 		}
-		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(rtspSessionInfo.authInfo.authUser);
+		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(requAuthClient.authUser);
 		if (tmpOptUserPw.isEmpty()) {
 			logDebug(FNC_NAME, "Invalid username");
 			return false;
 		}
 		//
-		if (rtspSessionInfo.authInfo.authPlainPassword.isBlank()) {
+		if (requAuthClient.authPlainPassword.isBlank()) {
 			final String expectedResponse;
 			try {
 				expectedResponse = RtspProtoAuthDigest.computeAuthResponse(
-						rtspSessionInfo.authInfo.authUser,
+						requAuthClient.authUser,
 						tmpOptUserPw.get(),
-						rtspSessionInfo.authInfo.authUri,
+						requAuthClient.authUri,
 						messageType,
-						rtspSessionInfo.authInfo.authRealmServer,
-						rtspSessionInfo.authInfo.authNonceClient
+						requAuthClient.authRealm,
+						requAuthClient.authNonce
 					);
 			} catch (IllegalArgumentException e) {
 				logDebug(FNC_NAME, "Invalid authentication parameters: " + e.getMessage());
 				return false;
 			}
-			if (! rtspSessionInfo.authInfo.authResp.equalsIgnoreCase(expectedResponse)) {
+			if (! requAuthClient.authResp.equalsIgnoreCase(expectedResponse)) {
 				logDebug(FNC_NAME, "Invalid challenge-response");
 				return false;
 			}
-		} else if (! rtspSessionInfo.authInfo.authPlainPassword.equals(tmpOptUserPw.get())) {
+		} else if (! requAuthClient.authPlainPassword.equals(tmpOptUserPw.get())) {
 			logDebug(FNC_NAME, "Invalid plain password");
 			return false;
 		}
@@ -91,7 +97,10 @@ public class RtspUserAuthSvc {
 		return true;
 	}
 
-	public boolean checkAccessToInputSource(@NonNull RtspSessionInfo rtspSessionInfo, @NonNull RtspInputSource inputSource) {
+	public boolean checkAccessToInputSource(
+				@NonNull RtspProtoDataCntAuthClient requAuthClient,
+				@NonNull RtspInputSource inputSource
+			) {
 		if (! inputSource.getEnabled()) {
 			return false;
 		}
@@ -103,7 +112,7 @@ public class RtspUserAuthSvc {
 		if (tmpUsers.isEmpty()) {
 			return false;
 		}
-		return tmpUsers.contains(rtspSessionInfo.authInfo.authUser.toLowerCase());
+		return tmpUsers.contains(requAuthClient.authUser.toLowerCase());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

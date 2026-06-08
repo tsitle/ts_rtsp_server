@@ -9,6 +9,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseConsumer;
@@ -21,6 +22,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponse
 public final class RtspProtoResponseInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
@@ -35,6 +37,7 @@ public final class RtspProtoResponseInputSvc {
 				boolean isResponseFromClient
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
@@ -77,7 +80,14 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		// process the response
-		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(msgStructured);
+		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
+		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(msgStructured, outputDataResp);
+
+		// authentication parameters
+		if (! outputDataResp.respAuthServer.authRealm.isEmpty()) {
+			rtspSessionInfo.permAuthServer.authRealm = outputDataResp.respAuthServer.authRealm;
+			rtspSessionInfo.permAuthServer.authNonce = outputDataResp.respAuthServer.authNonce;
+		}
 
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",

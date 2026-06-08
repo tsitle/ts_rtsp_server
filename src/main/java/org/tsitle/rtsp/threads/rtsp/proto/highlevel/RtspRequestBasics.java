@@ -19,7 +19,6 @@ public final class RtspRequestBasics {
 	public @NonNull RtspMessageType messageType = RtspMessageType.UNKNOWN;
 	public @NonNull RtspStatusCode statusCode = RtspStatusCode.OK;
 	public @Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource = null;
-	public @NonNull String unsupportedFeatureName = "";
 
 	private RtspRequestBasics() { }
 
@@ -48,14 +47,10 @@ public final class RtspRequestBasics {
 		return res;
 	}
 
-	public static @NonNull RtspRequestBasics createKnownWithOptionNotSupported(
-				@NonNull RtspMessageType messageType,
-				@NonNull String featureName
-			) {
+	public static @NonNull RtspRequestBasics createKnownWithOptionNotSupported(@NonNull RtspMessageType messageType) {
 		RtspRequestBasics res = new RtspRequestBasics();
 		res.messageType = messageType;
 		res.statusCode = RtspStatusCode.OPTION_NOT_SUPPORTED;
-		res.unsupportedFeatureName = featureName;
 		return res;
 	}
 

@@ -13,104 +13,27 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class RtspSessionInfo {
 
-	public static class AuthInfo {
-		/** Authentication credentials: username (from URL or WWW-Authenticate header) */
+	public final static class PermDataCntAuthSrv {
+		/** Authentication credentials: realm */
+		public @NonNull String authRealm = "";
+		/** Authentication credentials: nonce */
+		public @NonNull String authNonce = "";
+	}
+
+	public final static class PermDataCntAuthClient {
+		/** Authentication credentials: username */
 		public @NonNull String authUser = "";
-		/** Authentication credentials: password (from URL - not WWW-Authenticate header) */
+		/** Authentication credentials: password */
 		public @NonNull String authPlainPassword = "";
-		/** Authentication credentials: realm from the server */
-		public @NonNull String authRealmServer = "";
-		/** Authentication credentials: realm from the client */
-		public @NonNull String authRealmClient = "";
-		/** Authentication credentials: nonce from the server */
-		public @NonNull String authNonceServer = "";
-		/** Authentication credentials: nonce from the client */
-		public @NonNull String authNonceClient = "";
-		/** Authentication credentials: URI */
-		public @NonNull String authUri = "";
-		/** Authentication credentials: response */
-		public @NonNull String authResp = "";
-
-		public void resetPerRequest() {
-			authUser = "";
-			authRealmClient = "";
-			authNonceClient = "";
-			authUri = "";
-			authResp = "";
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static class DataSdp {
-		/** Content language(s) (e.g. 'de') */
-		public @NonNull String contentLang = "";
-
-		/** Content base (e.g. 'rtsp://some.com/camera.stream/') */
-		public @NonNull String contentBase = "";
-
-		/** Session Description Protocol (SDP) data */
-		public final @NonNull List<@NonNull String> sdpLinesAllRaw = new ArrayList<>();
-
-		public void resetPerRequest() {
-			contentLang = "";
-			contentBase = "";
-			sdpLinesAllRaw.clear();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public static class DataGetSetParamKvs {
-		/** Content language(s) (e.g. 'de') */
-		public @NonNull String contentLang = "";
-
-		/** Parameter key-value-pairs */
-		public final @NonNull Map<@NonNull String, @NonNull String> paramKvs = new HashMap<>();
-
-		public void resetPerRequest() {
-			contentLang = "";
-			paramKvs.clear();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public static class DataGetSetParamNames {
-		/** Parameter names */
-		public final @NonNull Set<@NonNull String> paramNames = new HashSet<>();
-
-		public void resetPerRequest() {
-			paramNames.clear();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/** Authentication-related info */
-	public @NonNull AuthInfo authInfo = new AuthInfo();
-
-	/** RTSP message parameters that have been requested by the remote host in the last request */
-	public final @NonNull DataGetSetParamNames requRequestedGetParamNames = new DataGetSetParamNames();
-	/** RTSP message parameters that have been sent by the remote host in the last request */
-	public final @NonNull DataGetSetParamKvs requReceivedSetParamValues = new DataGetSetParamKvs();
-	/** RTSP message parameters that have been sent by the remote host in the last request but are invalid */
-	public final @NonNull DataGetSetParamNames requReceivedInvalidParamNames = new DataGetSetParamNames();
-	/** SDP that has been announced by the remote host in the last request */
-	public final @NonNull DataSdp requAnnouncedSdp = new DataSdp();
-
-	/** RTSP message parameters that the remote host has sent in the last response */
-	public final @NonNull DataGetSetParamKvs respReceivedGetParamValues = new DataGetSetParamKvs();
-	/** RTSP message parameters that the remote host does not support as received in the last response */
-	public final @NonNull DataGetSetParamNames respReceivedInvalidParamNames = new DataGetSetParamNames();
-	/** SDP that has been announced by the remote host in the last response */
-	public final @NonNull DataSdp respDescribeSdp = new DataSdp();
-
-	// ----------------------------------------------------------------
+	/** Authentication-related info from the server */
+	public final @NonNull PermDataCntAuthSrv permAuthServer = new PermDataCntAuthSrv();
+	/** Authentication-related info for the client */
+	public final @NonNull PermDataCntAuthClient permAuthClient = new PermDataCntAuthClient();
 
 	/** Server IP address */
 	private @Nullable InetAddress serverIpAddr = null;
@@ -177,16 +100,6 @@ public final class RtspSessionInfo {
 	public final @NonNull Map<@NonNull Integer, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public void resetPerRequest() {
-		authInfo.resetPerRequest();
-		requRequestedGetParamNames.resetPerRequest();
-		requReceivedSetParamValues.resetPerRequest();
-		requReceivedInvalidParamNames.resetPerRequest();
-		requAnnouncedSdp.resetPerRequest();
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<InetAddress> getServerIpAddr() {

@@ -2,6 +2,8 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
@@ -57,8 +59,10 @@ public final class RtspProtoResponseOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void sendResponse(@NonNull RtspRequestBasics rtspRequestBasics)
-			throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException {
+	public void sendResponse(
+				@NonNull RtspRequestBasics rtspRequestBasics,
+				@NonNull RtspProtoDataRequest inputDataRequ
+			) throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
@@ -68,7 +72,8 @@ public final class RtspProtoResponseOutputSvc {
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
-			msgStructured = rtspProtoHighResponseBuilder.buildResponse(rtspRequestBasics);
+			RtspProtoDataResponse inputDataResp = new RtspProtoDataResponse(inputDataRequ);
+			msgStructured = rtspProtoHighResponseBuilder.buildResponse(rtspRequestBasics, inputDataResp);
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;

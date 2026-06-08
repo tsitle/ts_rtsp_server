@@ -9,6 +9,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
@@ -16,7 +17,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEn
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 
 import java.util.Optional;
-import java.util.Set;
 
 public final class RtspProtoHighRequestProducer {
 
@@ -38,10 +38,8 @@ public final class RtspProtoHighRequestProducer {
 				@NonNull RtspMessageType requestMessageType,
 				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
-				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				RtspSessionInfo.@Nullable DataSdp announceSdp,
-				@Nullable Set<String> getParameterNames,
-				RtspSessionInfo.@Nullable DataGetSetParamKvs setParameterKvs
+				@NonNull RtspProtoDataRequest inputDataRequ,
+				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
@@ -55,21 +53,21 @@ public final class RtspProtoHighRequestProducer {
 		resObj.resourceUrl = resourceUrl;
 
 		//
-		addCommonHeaders(resObj);
+		addCommonHeaders(inputDataRequ, resObj);
 
 		//
 		switch (requestMessageType) {
-			case ANNOUNCE -> buildRequest_announce(kmdsOutbound, announceSdp, resObj);
+			case ANNOUNCE -> buildRequest_announce(inputDataRequ, kmdsOutbound, resObj);
 			case DESCRIBE -> buildRequest_describe(resObj);
-			case GET_PARAMETER -> buildRequest_getParameter(getParameterNames, resObj);
+			case GET_PARAMETER -> buildRequest_getParameter(inputDataRequ, resObj);
 			case OPTIONS -> buildRequest_options(resObj);
 			case PAUSE -> buildRequest_pause(resObj);
 			case PLAY -> buildRequest_play(resObj);
 			case RECORD -> buildRequest_record(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(kmdsOutbound, subStreamId, setParameterKvs, resObj);
+			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, subStreamId, resObj);
 			case SETUP -> buildRequest_setup(resObj);
-			case TEARDOWN -> buildRequest_teardown(resObj);
+			case TEARDOWN -> buildRequest_teardown();
 			default -> throw new RtspInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
 					requestMessageType);
 		}
@@ -83,8 +81,8 @@ public final class RtspProtoHighRequestProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildRequest_announce(
+				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				RtspSessionInfo.@Nullable DataSdp announceSdp,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_announce()";
@@ -101,13 +99,10 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
-		if (announceSdp == null) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": SDP data is required for ANNOUNCE");
-		}
-		if (announceSdp.contentBase.isBlank()) {
+		if (inputDataRequ.requAnnouncedSdp.contentBase.isBlank()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Base is required for ANNOUNCE");
 		}
-		if (announceSdp.sdpLinesAllRaw.isEmpty()) {
+		if (inputDataRequ.requAnnouncedSdp.sdpLinesAllRaw.isEmpty()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": SDP content is required for ANNOUNCE");
 		}
 
@@ -117,10 +112,10 @@ public final class RtspProtoHighRequestProducer {
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
 		// Content-Language
-		addContentLangHeader(announceSdp.contentLang, output);
+		addContentLangHeader(inputDataRequ.requAnnouncedSdp.contentLang, output);
 
 		//
-		output.bodyAnnounceSdp.addAll(announceSdp.sdpLinesAllRaw);
+		output.bodyAnnounceSdp.addAll(inputDataRequ.requAnnouncedSdp.sdpLinesAllRaw);
 
 		logError(FNC_NAME, "ANNOUNCE is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": ANNOUNCE is not supported yet");
@@ -142,12 +137,20 @@ public final class RtspProtoHighRequestProducer {
 	}
 
 	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "DESCRIBE rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "CSeq: 4"
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo\", response=\"...\""
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   "Accept: application/sdp"
+		 */
+
 		// nothing to do
 	}
 
 	private void buildRequest_getParameter(
-				@Nullable Set<String> parameterNames,
+				@NonNull RtspProtoDataRequest inputDataRequ,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		/*
@@ -161,21 +164,35 @@ public final class RtspProtoHighRequestProducer {
 		 *   "jitter"
 		 */
 
-		if (parameterNames == null || parameterNames.isEmpty()) {
+		if (inputDataRequ.requGetParamNames.paramNames.isEmpty()) {
 			return;
 		}
-		output.bodyGetParamKeys.addAll(parameterNames);
+		output.bodyGetParamKeys.addAll(inputDataRequ.requGetParamNames.paramNames);
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
 	}
 
 	private void buildRequest_options(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "OPTIONS rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "CSeq: 2"
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 */
+
 		// nothing to do
 	}
 
 	private void buildRequest_pause(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "PAUSE rtsp://example.com/fizzle/foo/ RTSP/1.0"
+		 *   "CSeq: 96"
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo/\", response=\"...\""
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   "Session: 126437FE"
+		 */
+
 		// nothing to do
 	}
 
@@ -185,7 +202,16 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_play()";
 
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "PLAY rtsp://example.com/fizzle/foo/ RTSP/1.0"
+		 *   "CSeq: 7"
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo/\", response=\"...\""
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   "Session: 126437FE"
+		 *   "Range: npt=0.000-"
+		 */
+
 		// @TODO set some headers
 
 		logError(FNC_NAME, "PLAY is not supported yet");
@@ -193,19 +219,17 @@ public final class RtspProtoHighRequestProducer {
 	}
 
 	private void buildRequest_record(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
 		// nothing to do
 	}
 
 	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
 		// nothing to do
 	}
 
 	private void buildRequest_setParameter(
+				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
 				@Nullable String subStreamId,
-				RtspSessionInfo.@Nullable DataGetSetParamKvs parameterKvs,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
@@ -222,12 +246,12 @@ public final class RtspProtoHighRequestProducer {
 		 */
 
 		//
-		if (parameterKvs != null && ! parameterKvs.paramKvs.isEmpty()) {
-			output.bodySetParamKv.putAll(parameterKvs.paramKvs);
+		if (! inputDataRequ.requSetParamValues.paramKvs.isEmpty()) {
+			output.bodySetParamKv.putAll(inputDataRequ.requSetParamValues.paramKvs);
 			// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 			addContentTypeHeader(output);
 			// Content-Language
-			addContentLangHeader(parameterKvs.contentLang, output);
+			addContentLangHeader(inputDataRequ.requSetParamValues.contentLang, output);
 		}
 
 		// set the SRTxP Key Management Data for a SET_PARAMETER request used for re-keying
@@ -268,7 +292,17 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_setup(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
 
-		// @TODO add example
+		/*
+		 * Example:
+		 *   "SETUP rtsp://example.com/fizzle/foo/substreamidf528764d_93b6207a RTSP/1.0"
+		 *   "CSeq: 6"
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo/\", response=\"...\""
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   "Transport: RTP/SAVP;unicast;client_port=43704-43705"
+		 *   "Session: 126437FE"
+		 *   "KeyMgmt: prot=mikey; uri=\"rtsp://example.com/fizzle/foo/substreamidf528764d_93b6207a\"; data=\"...\""
+		 */
+
 		// @TODO check if we need and have KMD
 
 		// @TODO set some headers
@@ -276,14 +310,24 @@ public final class RtspProtoHighRequestProducer {
 		throw new RtspInvalidRequestException(FNC_NAME + ": SETUP is not supported yet");
 	}
 
-	private void buildRequest_teardown(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// @TODO add example
+	private void buildRequest_teardown() {
+		/*
+		 * Example:
+		 *   "TEARDOWN rtsp://example.com/fizzle/foo/ RTSP/1.0"
+		 *   "CSeq: 8"
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo/\", response=\"...\""
+		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 */
+
 		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspInvalidRequestException {
+	private void addCommonHeaders(
+				@NonNull RtspProtoDataRequest inputDataRequ,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
 		// CSeq
@@ -308,15 +352,15 @@ public final class RtspProtoHighRequestProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)
-		if (! rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
+		if (! inputDataRequ.requAuthClient.authNonce.isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
 			hdEntry.hdValAuthClient.authUri = output.resourceUrl;
-			hdEntry.hdValAuthClient.authRealm = rtspSessionInfo.authInfo.authRealmClient;
-			hdEntry.hdValAuthClient.authNonce = rtspSessionInfo.authInfo.authNonceServer;
+			hdEntry.hdValAuthClient.authRealm = inputDataRequ.requAuthClient.authRealm;
+			hdEntry.hdValAuthClient.authNonce = inputDataRequ.requAuthClient.authNonce;
 			try {
 				hdEntry.hdValAuthClient.authResp = RtspProtoAuthDigest.computeAuthResponse(
-						rtspSessionInfo.authInfo.authUser,
-						rtspSessionInfo.authInfo.authPlainPassword,
+						inputDataRequ.requAuthClient.authUser,
+						inputDataRequ.requAuthClient.authPlainPassword,
 						hdEntry.hdValAuthClient.authUri,
 						output.messageType,
 						hdEntry.hdValAuthClient.authRealm,

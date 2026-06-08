@@ -10,6 +10,7 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
@@ -64,7 +65,7 @@ public final class RtspProtoRequestInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspRequestBasics receiveRequest()
+	public @NonNull RtspRequestBasics receiveRequest(@NonNull RtspProtoDataRequest outputDataRequ)
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequest()";
 
@@ -97,7 +98,7 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// process the request - without checking authentication
-		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(msgStructured);
+		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(msgStructured, outputDataRequ);
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
 					resObj.messageType, resObj.statusCode,
@@ -106,7 +107,7 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
-		rtspRequAuthSvc.checkAuthorization(resObj);
+		rtspRequAuthSvc.checkAuthorization(resObj, outputDataRequ.requAuthClient);
 
 		//
 		if (resObj.isValid()) {

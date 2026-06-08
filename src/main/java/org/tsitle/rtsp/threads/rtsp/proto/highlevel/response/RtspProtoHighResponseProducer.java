@@ -7,6 +7,8 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoParameterGetterInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
@@ -57,8 +59,10 @@ public final class RtspProtoHighResponseProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoHighMsgStructuredResponse buildResponse(@NonNull RtspRequestBasics rtspRequestBasics)
-			throws RtspInvalidResponseException, UdpSocketIoException {
+	public @NonNull RtspProtoHighMsgStructuredResponse buildResponse(
+				@NonNull RtspRequestBasics rtspRequestBasics,
+				@NonNull RtspProtoDataResponse inputDataResp
+			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
 
 		RtspProtoHighMsgStructuredResponse resObj = new RtspProtoHighMsgStructuredResponse();
@@ -72,7 +76,7 @@ public final class RtspProtoHighResponseProducer {
 
 		//
 		if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
-			buildResponse_nack(rtspRequestBasics.statusCode, rtspRequestBasics.unsupportedFeatureName, resObj);
+			buildResponse_nack(rtspRequestBasics.statusCode, inputDataResp, resObj);
 			return resObj;
 		}
 
@@ -80,7 +84,7 @@ public final class RtspProtoHighResponseProducer {
 		switch (rtspRequestBasics.messageType) {
 			case ANNOUNCE, PAUSE, RECORD, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
 			case DESCRIBE -> buildResponse_describe(resObj);
-			case GET_PARAMETER -> buildResponse_getParameter(resObj);
+			case GET_PARAMETER -> buildResponse_getParameter(inputDataResp, resObj);
 			case OPTIONS -> buildResponse_options(resObj);
 			case PLAY -> buildResponse_play(resObj);
 			case SETUP -> buildResponse_setup(rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
@@ -108,7 +112,7 @@ public final class RtspProtoHighResponseProducer {
 
 	private void buildResponse_nack(
 				@NonNull RtspStatusCode statusCode,
-				@NonNull String unsupportedFeatureName,
+				@NonNull RtspProtoDataResponse inputDataResp,
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException {
 		/*
@@ -122,7 +126,7 @@ public final class RtspProtoHighResponseProducer {
 		 */
 		switch (statusCode) {
 			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
-				output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requReceivedInvalidParamNames.paramNames);
+				output.bodyGetSetInvalidParams.addAll(inputDataResp.respInvalidParamNames.paramNames);
 				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 				addContentTypeHeader(output);
 				break;
@@ -130,12 +134,13 @@ public final class RtspProtoHighResponseProducer {
 				// Unsupported
 				{
 					RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
-					hdEntry.hdValUnsupported.unsupportedFeatureStr = (unsupportedFeatureName.isBlank() ? "_unknown_" : unsupportedFeatureName);
+					hdEntry.hdValUnsupported.unsupportedFeatureStr = (inputDataResp.respUnsupportedFeatureName.isBlank()
+							? "_unknown_" : inputDataResp.respUnsupportedFeatureName);
 					output.headers.put(hdEntry.getHdKey(), hdEntry);
 				}
 				break;
 			case RtspStatusCode.UNAUTHORIZED:
-				addAuthServerInfo(output);
+				addAuthServerHeader(output);
 				break;
 		}
 	}
@@ -204,7 +209,10 @@ public final class RtspProtoHighResponseProducer {
 		addContentLangHeader(sdpContentLanguage, output);
 	}
 
-	private void buildResponse_getParameter(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+	private void buildResponse_getParameter(
+				@NonNull RtspProtoDataResponse inputDataResp,
+				@NonNull RtspProtoHighMsgStructuredResponse output
+			) throws RtspInvalidResponseException {
 		/*
 		 * Example:
 		 *   Success:
@@ -224,7 +232,7 @@ public final class RtspProtoHighResponseProducer {
 		 *     "barparam"
 		 */
 
-		if (rtspSessionInfo.requRequestedGetParamNames.paramNames.isEmpty()) {
+		if (inputDataResp.respGetParamNames.paramNames.isEmpty()) {
 			// nothing to do
 			return;
 		}
@@ -232,13 +240,13 @@ public final class RtspProtoHighResponseProducer {
 		String tmpContLang = "";
 		if (rtspProtoParameterGetterInterface == null) {
 			output.statusCode = RtspStatusCode.INVALID_PARAMETER;
-			output.bodyGetSetInvalidParams.addAll(rtspSessionInfo.requRequestedGetParamNames.paramNames);
+			output.bodyGetSetInvalidParams.addAll(inputDataResp.respGetParamNames.paramNames);
 		} else {
-			RtspSessionInfo.DataGetSetParamKvs tmpDataGsp =
+			RtspProtoDataCntGetSetParamKvs tmpDataGsp =
 					rtspProtoParameterGetterInterface.getAllRtspParameters(rtspSessionInfo.rtspSessionId);
 
 			Set<String> tmpMissingParams = new HashSet<>();
-			for (String requParam : rtspSessionInfo.requRequestedGetParamNames.paramNames) {
+			for (String requParam : inputDataResp.respGetParamNames.paramNames) {
 				if (! tmpDataGsp.paramKvs.containsKey(requParam)) {
 					tmpMissingParams.add(requParam);
 				} else {
@@ -282,7 +290,7 @@ public final class RtspProtoHighResponseProducer {
 			boolean tmpNeedAuth = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.OPTIONS)
 					.orElseThrow().getNeedsAuthentication();
 			if (tmpNeedAuth) {
-				addAuthServerInfo(output);
+				addAuthServerHeader(output);
 			}
 		}
 	}
@@ -599,22 +607,22 @@ public final class RtspProtoHighResponseProducer {
 		}
 	}
 
-	private void addAuthServerInfo(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+	private void addAuthServerHeader(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
 		/*
 		 * Example:
 		 *   "WWW-Authenticate: Digest realm=\"Abcdef Some\", nonce=\"xxx\", algorithm=\"MD5\""
 		 */
-		if (rtspSessionInfo.authInfo.authNonceServer.isBlank()) {
-			rtspSessionInfo.authInfo.authNonceServer = RtspStaticSessionInfo.addAuthServerNonce(getClientIpAddr());
+		if (rtspSessionInfo.permAuthServer.authNonce.isBlank()) {
+			rtspSessionInfo.permAuthServer.authNonce = RtspStaticSessionInfo.addAuthServerNonce(getClientIpAddr());
 		}
-		if (rtspSessionInfo.authInfo.authRealmServer.isBlank()) {
-			rtspSessionInfo.authInfo.authRealmServer = RtspProtoHighConstants.DEFAULT_RTSP_AUTH_REALM;
+		if (rtspSessionInfo.permAuthServer.authRealm.isBlank()) {
+			rtspSessionInfo.permAuthServer.authRealm = RtspProtoHighConstants.DEFAULT_RTSP_AUTH_REALM;
 		}
 
 		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.AUTH_SERVER);
 		hdEntry.hdValAuthServer.authAlgo = RtspAuthAlgo.MD5;
-		hdEntry.hdValAuthServer.authRealm = rtspSessionInfo.authInfo.authRealmServer;
-		hdEntry.hdValAuthServer.authNonce = rtspSessionInfo.authInfo.authNonceServer;
+		hdEntry.hdValAuthServer.authRealm = rtspSessionInfo.permAuthServer.authRealm;
+		hdEntry.hdValAuthServer.authNonce = rtspSessionInfo.permAuthServer.authNonce;
 		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 

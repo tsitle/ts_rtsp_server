@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidSessionIdException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
@@ -37,15 +38,17 @@ public class RtspProtoHighResponseConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspResponseBasics processResponse(@NonNull RtspProtoHighMsgStructuredResponse input) {
+	public @NonNull RtspResponseBasics processResponse(
+				@NonNull RtspProtoHighMsgStructuredResponse input,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processResponse()";
 
 		//System.out.println("<<<<<<<<< <<<<<<<<< " + input);
 
 		preProcessedHeaders.clear();
 
-		rtspSessionInfo.respReceivedInvalidParamNames.paramNames.clear();
-		rtspSessionInfo.respReceivedGetParamValues.paramKvs.clear();
+		outputDataResp.clear();
 
 		//
 		final String logMsgSuffix = " in response for " + input.messageType + " request";
@@ -56,12 +59,9 @@ public class RtspProtoHighResponseConsumer {
 			return RtspResponseBasics.createInternalServerError();
 		}
 
-		//
-		RtspResponseBasics resObj = RtspResponseBasics.createDefault(input.statusCode);
-
 		// process headers that haven't been processed yet
 		try {
-			processRemainingHeaders(input);
+			processRemainingHeaders(input, outputDataResp);
 		} catch (RtspInvalidResponseException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
@@ -69,14 +69,14 @@ public class RtspProtoHighResponseConsumer {
 
 		// process body
 		try {
-			processBody(input);
+			processBody(input, outputDataResp);
 		} catch (RtspInvalidResponseException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
 		}
 
 		//
-		return resObj;
+		return RtspResponseBasics.createDefault(input.statusCode);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -148,12 +148,15 @@ public class RtspProtoHighResponseConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processRemainingHeaders(@NonNull RtspProtoHighMsgStructuredResponse input) throws RtspInvalidResponseException {
+	private void processRemainingHeaders(
+				@NonNull RtspProtoHighMsgStructuredResponse input,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : input.headers.entrySet()) {
 			switch (entry.getKey()) {
-				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue());
+				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue(), outputDataResp);
 				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue());
 				case RtspHeaderKey.CONTENT_BASE -> processHeader_describe_contbase(input.messageType);
 				case RtspHeaderKey.CONTENT_ENC -> processHeader_com_contenc(input.messageType, entry.getValue());
@@ -178,16 +181,21 @@ public class RtspProtoHighResponseConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processHeader_com_auth_server(@NonNull RtspProtoHeaderEntryResponse headerEntry)
-			throws RtspInvalidResponseException {
+	private void processHeader_com_auth_server(
+				@NonNull RtspProtoHeaderEntryResponse headerEntry,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) throws RtspInvalidResponseException {
 		if (isResponseFromClient) {
 			throw new RtspInvalidResponseException("Received Auth(Server) header from client");
 		}
 		if (headerEntry.hdValAuthServer.authAlgo == RtspAuthAlgo.NONE) {
 			throw new RtspInvalidResponseException("Auth(Server) Algo must be set");
 		}
-		rtspSessionInfo.authInfo.authRealmServer = headerEntry.hdValAuthServer.authRealm;
-		rtspSessionInfo.authInfo.authNonceServer = headerEntry.hdValAuthServer.authNonce;
+		outputDataResp.respAuthServer.authRealm = headerEntry.hdValAuthServer.authRealm;
+		outputDataResp.respAuthServer.authNonce = headerEntry.hdValAuthServer.authNonce;
+		//
+		rtspSessionInfo.permAuthServer.authRealm = headerEntry.hdValAuthServer.authRealm;
+		rtspSessionInfo.permAuthServer.authNonce = headerEntry.hdValAuthServer.authNonce;
 	}
 
 	private void processHeader_com_connection(@NonNull RtspProtoHeaderEntryResponse headerEntry) {
@@ -338,7 +346,10 @@ public class RtspProtoHighResponseConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processBody(@NonNull RtspProtoHighMsgStructuredResponse input) throws RtspInvalidResponseException {
+	private void processBody(
+				@NonNull RtspProtoHighMsgStructuredResponse input,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) throws RtspInvalidResponseException {
 		/*
 		 * Example:
 		 *   DESCRIBE:
@@ -405,19 +416,19 @@ public class RtspProtoHighResponseConsumer {
 				if (! input.headers.containsKey(RtspHeaderKey.CONTENT_BASE)) {
 					throw new RtspInvalidResponseException("Content-Base for DESCRIBE message missing");
 				}
-				rtspSessionInfo.respDescribeSdp.contentBase = input.headers.get(RtspHeaderKey.CONTENT_BASE)
+				outputDataResp.respDescribeSdp.contentBase = input.headers.get(RtspHeaderKey.CONTENT_BASE)
 						.hdValContBase.contentBaseStr;
 				//
-				rtspSessionInfo.respDescribeSdp.sdpLinesAllRaw.addAll(input.bodyDescribeSdp);
+				outputDataResp.respDescribeSdp.sdpLinesAllRaw.addAll(input.bodyDescribeSdp);
 				break;
 			case GET_PARAMETER, SET_PARAMETER:
 				if (contentType != RtspMimeType.PARAMETERS) {
 					throw new RtspInvalidResponseException("Content-Type for GET_PARAMETER message must be PARAMETERS");
 				}
 				if (! input.bodyGetSetInvalidParams.isEmpty()) {
-					rtspSessionInfo.respReceivedInvalidParamNames.paramNames.addAll(input.bodyGetSetInvalidParams);
+					outputDataResp.respInvalidParamNames.paramNames.addAll(input.bodyGetSetInvalidParams);
 				} else if (input.messageType == RtspMessageType.GET_PARAMETER) {
-					rtspSessionInfo.respReceivedGetParamValues.paramKvs.putAll(input.bodyGetParamKv);
+					outputDataResp.respGetParamValues.paramKvs.putAll(input.bodyGetParamKv);
 				}
 				break;
 		}
@@ -429,9 +440,9 @@ public class RtspProtoHighResponseConsumer {
 				tmpContLang = input.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
 			}
 			if (input.messageType == RtspMessageType.DESCRIBE) {
-				rtspSessionInfo.respDescribeSdp.contentLang = tmpContLang;
+				outputDataResp.respDescribeSdp.contentLang = tmpContLang;
 			} else {
-				rtspSessionInfo.respReceivedGetParamValues.contentLang = tmpContLang;
+				outputDataResp.respGetParamValues.contentLang = tmpContLang;
 			}
 		}
 	}

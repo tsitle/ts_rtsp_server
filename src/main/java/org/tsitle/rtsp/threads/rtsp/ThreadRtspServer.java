@@ -11,6 +11,7 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.*;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
@@ -286,9 +287,10 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
-		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequest();
+		RtspProtoDataRequest tmpDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequest(tmpDataRequ);
 
-		rtspProtoResponseOutputSvc.sendResponse(resObj);
+		rtspProtoResponseOutputSvc.sendResponse(resObj, tmpDataRequ);
 		return resObj;
 	}
 
