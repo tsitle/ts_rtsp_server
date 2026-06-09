@@ -896,19 +896,23 @@ public class RtspProtoLowRequestConsumerTest {
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE * 2L;
 		final String expLine1 = "cseq:" + Long.toUnsignedString(expCseqLong);
+		final String expSessId = "BEEF1234";
+		final String expLine2 = "SeSsIoN:" + expSessId;
 
 		@SuppressWarnings("TextBlockMigration")
 		String msgForSocketStr =
 				expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue() + "\r\n" +
 				expLine1 + "\r\n" +
+				expLine2 + "\r\n" +
 				"\r\n";
 		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
-		assertEquals(1, msgParsedRaw.headerLines.size());
+		assertEquals(2, msgParsedRaw.headerLines.size());
 
 		assertEquals(expLine1, msgParsedRaw.headerLines.getFirst());
+		assertEquals(expLine2, msgParsedRaw.headerLines.get(1));
 		assertEquals(0, msgParsedRaw.body.length());
 
 		System.out.println(msgParsedRaw);
@@ -924,6 +928,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getId());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());
