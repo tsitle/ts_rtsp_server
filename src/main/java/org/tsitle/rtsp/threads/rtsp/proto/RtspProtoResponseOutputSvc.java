@@ -14,10 +14,13 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseProducer;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseProducer;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducer;
 
 import java.util.Optional;
 
@@ -27,8 +30,8 @@ public final class RtspProtoResponseOutputSvc {
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
-	private final RtspProtoHighResponseProducer rtspProtoHighResponseBuilder;
-	private final RtspProtoLowResponseProducer rtspProtoLowResponseBuilder;
+	private final RtspProtoHighResponseProducer rtspProtoHighResponseProducer;
+	private final RtspProtoLowResponseProducer rtspProtoLowResponseProducer;
 	private final RtspProtoLowMsgWriter rtspProtoLowMsgWriter;
 
 	public RtspProtoResponseOutputSvc(
@@ -43,14 +46,19 @@ public final class RtspProtoResponseOutputSvc {
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
-		this.rtspProtoHighResponseBuilder = new RtspProtoHighResponseProducer(
+		SdpProducer sdpProducer = new SdpProducer(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
+
+		//
+		this.rtspProtoHighResponseProducer = new RtspProtoHighResponseProducer(
 				logMsgInterface,
-				rtspConfig,
 				cfgServerNameAndVersion,
+				rtspConfig.getIsDebugPrintRtspSdpSent(),
+				rtspConfig.getIsDebugDisableTransportUdp(),
 				rtspSessionInfo,
-				null
+				null,
+				sdpProducer
 			);
-		this.rtspProtoLowResponseBuilder = new RtspProtoLowResponseProducer(logMsgInterface);
+		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,
@@ -78,10 +86,20 @@ public final class RtspProtoResponseOutputSvc {
 		try {
 			RtspProtoDataResponse inputDataResp = new RtspProtoDataResponse(inputDataRequ);
 			inputDataResp.respIdSession.setId(rtspSessionInfo.rtspSessionId);
+			if (rtspRequestBasics.messageType == RtspMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspStatusCode.OK) {
+				if (inputDataResp.getRespServerIpFromRscUrl().isEmpty()) {
+					logError(FNC_NAME, "Server IP from Resource URL must be set");
+					return;
+				}
+				if (inputDataResp.getRespIdInputSource().isEmpty()) {
+					logError(FNC_NAME, "Input Source ID must be set");
+					return;
+				}
+			}
 			inputDataResp.writeProtect();
 
 			//
-			msgStructured = rtspProtoHighResponseBuilder.buildResponse(rtspRequestBasics, inputDataResp);
+			msgStructured = rtspProtoHighResponseProducer.buildResponse(rtspRequestBasics, inputDataResp);
 
 			// get new Session ID if one has been generated
 			Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
@@ -98,7 +116,7 @@ public final class RtspProtoResponseOutputSvc {
 		// convert the message
 		RtspProtoLowMsgRaw msgRaw;
 		try {
-			msgRaw = rtspProtoLowResponseBuilder.buildMessage(msgStructured);
+			msgRaw = rtspProtoLowResponseProducer.buildMessage(msgStructured);
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build LL response: " + e.getMessage());
 			return;

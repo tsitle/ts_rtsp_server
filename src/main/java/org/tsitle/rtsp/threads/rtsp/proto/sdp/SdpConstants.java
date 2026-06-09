@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
+package org.tsitle.rtsp.threads.rtsp.proto.sdp;
 
 public final class SdpConstants {
 

@@ -97,6 +97,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		this.rtspProtoRequestOutputSvc = new RtspProtoRequestOutputSvc(
 				logMsgInterface,
 				rtspConfig,
+				cfgServerNameAndVersion,
 				rtspSessionInfo,
 				this.rtxpTcpReadWrite,
 				false

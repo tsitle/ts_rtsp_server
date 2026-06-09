@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.security.SrtxpKmd;
@@ -15,6 +16,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamNames;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProducer;
@@ -23,6 +25,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestProducer;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducer;
 
 import java.net.InetAddress;
 import java.util.Objects;
@@ -42,6 +45,7 @@ public final class RtspProtoRequestOutputSvc {
 	public RtspProtoRequestOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
+				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				boolean isRequestFromClient
@@ -52,9 +56,14 @@ public final class RtspProtoRequestOutputSvc {
 		this.isRequestFromClient = isRequestFromClient;
 
 		//
+		SdpProducer sdpProducer = new SdpProducer(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
+
+		//
 		this.rtspProtoHighRequestProducer = new RtspProtoHighRequestProducer(
 				logMsgInterface,
-				rtspSessionInfo
+				rtspConfig.getIsDebugPrintRtspSdpSent(),
+				rtspSessionInfo,
+				sdpProducer
 			);
 		this.rtspProtoLowRequestProducer = new RtspProtoLowRequestProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
@@ -310,6 +319,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalSendRequest()";
+
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
@@ -317,6 +328,25 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		inputDataRequ.writeProtect();
 		RtspProtoDataRequest tmpInputDataRequCopy = new RtspProtoDataRequest(inputDataRequ);
+		tmpInputDataRequCopy.requIdSession.setId(rtspSessionInfo.rtspSessionId);
+		tmpInputDataRequCopy.setRequResourceUrl(resourceUrl);
+		if (requestMessageType == RtspMessageType.ANNOUNCE) {
+			try {
+				tmpInputDataRequCopy.setRequServerIpFromRscUrl(
+						rtspSessionInfo.findRtspIpFromResourceUrl(requestMessageType, null)
+				);
+			} catch (RtspCannotFindIpFromRscUrlException e) {
+				logError(FNC_NAME, e.getMessage());
+				return requestMessageType;
+			}
+			//
+			Optional<RtspInputSource> tmpOptIs = rtspSessionInfo.getInputSourceObjForMt_nonSetup(requestMessageType);
+			if (tmpOptIs.isEmpty()) {
+				logError(FNC_NAME, "Input Source not found");
+				return requestMessageType;
+			}
+			tmpInputDataRequCopy.setRequIdInputSource(tmpOptIs.get().getIdAsProtoId());
+		}
 
 		// authentication parameters
 		tmpInputDataRequCopy.requAuthClient.setAuthUser(rtspSessionInfo.permAuthClient.authUser);
@@ -332,7 +362,6 @@ public final class RtspProtoRequestOutputSvc {
 		try {
 			msgStructured = rtspProtoHighRequestProducer.buildRequest(
 					requestMessageType,
-					resourceUrl,
 					subStreamId,
 					tmpInputDataRequCopy,
 					kmdsOutbound

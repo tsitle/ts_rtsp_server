@@ -12,23 +12,31 @@ import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducerInterface;
 
 import java.util.Optional;
 
 public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull SdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSessionInfo rtspSessionInfo
+				boolean cfgIsDebugPrintRtspSdpSent,
+				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull SdpProducerInterface sdpProducerInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.rtspSessionInfo = rtspSessionInfo;
+		this.sdpProducerInterface = sdpProducerInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -36,12 +44,15 @@ public final class RtspProtoHighRequestProducer {
 
 	public @NonNull RtspProtoHighMsgStructuredRequest buildRequest(
 				@NonNull RtspMessageType requestMessageType,
-				@NonNull String resourceUrl,
 				@Nullable String subStreamId,
 				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
+
+		if (inputDataRequ.getRequResourceUrl().isBlank()) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
+		}
 
 		inputDataRequ.writeProtect();
 
@@ -53,7 +64,7 @@ public final class RtspProtoHighRequestProducer {
 		resObj.messageType = requestMessageType;
 
 		//
-		resObj.resourceUrl = resourceUrl;
+		resObj.resourceUrl = inputDataRequ.getRequResourceUrl();
 
 		//
 		addCommonHeaders(inputDataRequ, resObj);
@@ -102,26 +113,7 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
-		if (inputDataRequ.requAnnouncedSdp.getContentBase().isBlank()) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Base is required for ANNOUNCE");
-		}
-		if (inputDataRequ.requAnnouncedSdp.isSdpLinesAllRawEmpty()) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": SDP content is required for ANNOUNCE");
-		}
-
 		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
-		// @TODO fetch Content-Language from SDP-Producer
-
-		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
-		addContentTypeHeader(output);
-		// Content-Language
-		addContentLangHeader(inputDataRequ.requAnnouncedSdp.getContentLang(), output);
-
-		//
-		output.bodyAnnounceSdp.copyFrom(inputDataRequ.requAnnouncedSdp);
-
-		logError(FNC_NAME, "ANNOUNCE is not supported yet");
-		throw new RtspInvalidRequestException(FNC_NAME + ": ANNOUNCE is not supported yet");
 
 		/*
 		 * Re-keying legacy SDES key: @TODO
@@ -130,13 +122,40 @@ public final class RtspProtoHighRequestProducer {
 		 * The initial SDP would contain something like 'a=crypto:1 ...' and the new SDP
 		 * would contain something like 'a=crypto:2 ...'.
 		 */
-		/*
-		if (! kmd.isForLegacySdes()) {
-			throw new IllegalArgumentException(FNC_NAME + ": SrtxpKmd must be for legacy SDES key management");
+
+		try {
+			sdpProducerInterface.buildUpdatedSdpForAnnounce(
+					inputDataRequ.getRequIdInputSource(),
+					inputDataRequ.getRequServerIpFromRscUrl(),
+					kmdsOutbound,
+					output.bodyAnnounceSdp
+				);
+		} catch (RtspSdpException e) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Building SDP failed: " + e.getMessage());
 		}
-		// legacy SDES key management (SDP Security Descriptions RFC-4568)
-		String tmpCryptoStrB64 = kmd.getMasterKeyAndSaltAsBase64();
-		*/
+
+		if (cfgIsDebugPrintRtspSdpSent) {
+			logDebug(FNC_NAME, "-------- SDP:");
+			for (String tmpSingleSdpLine : output.bodyAnnounceSdp.getSdpLinesAllRaw()) {
+				logDebug(FNC_NAME, "---------------- " + tmpSingleSdpLine);
+			}
+		}
+
+		// Content-Base
+		{
+			String tmpRscUrl = inputDataRequ.getRequResourceUrl();
+			if (tmpRscUrl.isBlank()) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
+			}
+			//
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_BASE);
+			hdEntry.hdValContBase.contentBaseStr = tmpRscUrl + (tmpRscUrl.endsWith("/") ? "" : "/");
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
+		addContentTypeHeader(output);
+		// Content-Language
+		addContentLangHeader(output.bodyAnnounceSdp.getContentLang(), output);
 	}
 
 	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest output) {
@@ -349,7 +368,7 @@ public final class RtspProtoHighRequestProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
-		if (! rtspSessionInfo.rtspSessionId.isBlank()) {
+		if (! inputDataRequ.requIdSession.isEmpty()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.idSession.copyFrom(inputDataRequ.requIdSession);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
@@ -411,10 +430,12 @@ public final class RtspProtoHighRequestProducer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private void logDebug(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
+	}
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
-	@SuppressWarnings("SameParameterValue")
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
 				fncName + ": " + msg);

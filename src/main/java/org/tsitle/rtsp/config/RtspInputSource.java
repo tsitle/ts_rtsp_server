@@ -3,6 +3,7 @@ package org.tsitle.rtsp.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdInputSource;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -58,6 +59,13 @@ public class RtspInputSource {
 		checkPostProcessed();
 		//noinspection ConstantValue
 		return (id == null ? "" : id.strip());
+	}
+
+	public @NonNull RtspProtoIdInputSource getIdAsProtoId() {
+		checkPostProcessed();
+		RtspProtoIdInputSource resObj = new RtspProtoIdInputSource(getId());
+		resObj.writeProtect();
+		return resObj;
 	}
 
 	public void setId(@NonNull String id) {

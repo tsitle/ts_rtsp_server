@@ -1,6 +1,7 @@
-package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
+package org.tsitle.rtsp.threads.rtsp.proto.sdp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.config.RtspStreamSource;
@@ -13,21 +14,25 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdInputSource;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspKeymgmtKmdsOutbound;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class SdpBuilder {
+public final class SdpProducer implements SdpProducerInterface {
 
 	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 
-	public SdpBuilder(
+	public SdpProducer(
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspSessionInfo rtspSessionInfo
@@ -43,19 +48,64 @@ public class SdpBuilder {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	public void buildSdpForDescribe(
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull String serverIpOrName,
+				@NonNull RtspProtoDataCntSdp outputSdp
+			) throws RtspSdpException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildSdp()";
+
+		RtspInputSource rtspInputSource = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.DESCRIBE)
+				.orElseThrow(() -> new RtspSdpException(FNC_NAME + ": Input Source not found"));
+		if (! checkStreamsForInputSource(rtspInputSource)) {
+			throw new RtspSdpException(FNC_NAME + ": No valid Stream Source found for Input Source '" +
+					rtspInputSource.getId() + "'");
+		}
+
+		String sdpContentLanguage = "";  // @TODO set Content-Language
+
+		List<@NonNull String> tmpSdpLines;
+		tmpSdpLines = buildSdpLines(rtspInputSource, serverIpOrName);
+		outputSdp.addAllSdpLinesAllRaw(tmpSdpLines);
+		outputSdp.setContentLang(sdpContentLanguage);
+	}
+
+	public void buildUpdatedSdpForAnnounce(
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull String serverIpOrName,
+				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
+				@NonNull RtspProtoDataCntSdp outputSdp
+			) throws RtspSdpException {
+		// @TODO implement
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean checkStreamsForInputSource(@NonNull RtspInputSource rtspInputSource) {
+		Optional<RtspStreamSource> optSsObjVideo =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), true);
+		Optional<RtspStreamSource> optSsObjAudio =
+				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), false);
+		return (optSsObjVideo.isPresent() || optSsObjAudio.isPresent());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Builds an SDP response.<br />
 	 * SDP: Session Description Protocol (for some examples see
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param rtspInputSource Input Source
-	 * @param rtspHostIpOrName Server's host IP address or hostname
+	 * @param serverIpOrName Server's IP address or hostname
 	 * @return SDP lines
 	 * @throws RtspSdpException If an error occurs during SDP generation
 	 */
-	public @NonNull List<@NonNull String> buildSdp(
+	private @NonNull List<@NonNull String> buildSdpLines(
 				@NonNull RtspInputSource rtspInputSource,
-				@NonNull String rtspHostIpOrName
+				@NonNull String serverIpOrName
 			) throws RtspSdpException {
 		List<@NonNull String> resL = new ArrayList<>();
 
@@ -70,7 +120,7 @@ public class SdpBuilder {
 		final String tmpO_NetworkType = "IN";
 		final String tmpO_AddressType = "IP4";
 		@SuppressWarnings("UnnecessaryLocalVariable")
-		final String tmpO_UnicastAddress = rtspHostIpOrName;  // can be an IP address or a hostname
+		final String tmpO_UnicastAddress = serverIpOrName;  // can be an IP address or a hostname
 		resL.add(String.format("o=%s %s %s %s %s %s",
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
@@ -98,7 +148,6 @@ public class SdpBuilder {
 		return resL;
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildSdpForSubStream(
@@ -287,8 +336,10 @@ public class SdpBuilder {
 				 */
 				String tmpSdesB64 = streamKmds.kmdOutbound.getMasterKeyAndSaltAsBase64();
 
-				String tmpOutpLine = String.format("a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
-						tmpSdesB64);
+				int tmpCryptoSdesTag = 1;  // @TODO increment per ANNOUNCE request
+
+				String tmpOutpLine = String.format("a=crypto:%s AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
+						Integer.toUnsignedString(tmpCryptoSdesTag), tmpSdesB64);
 
 				//tmpOutpLine += String.format("|%s",  // key lifetime, format "2^DIGITS" (not supported by Lavf)
 						//RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR);

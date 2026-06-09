@@ -3,11 +3,17 @@ package org.tsitle.rtsp.threads.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
+import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
+import org.tsitle.rtsp.helpers.HostnameHelper;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -152,6 +158,48 @@ public final class RtspSessionInfo {
 
 	public Optional<String> getResourceUrlForMt_onlySetup(@NonNull String subStreamId) {
 		return Optional.ofNullable(this.resourceUrlPerMtMap_onlySetup.get(subStreamId));
+	}
+
+	public @NonNull String findRtspIpFromResourceUrl(
+				@NonNull RtspMessageType messageType,
+				@Nullable String subStreamIdForSetup
+			) throws RtspCannotFindIpFromRscUrlException {
+		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
+
+		if (messageType == RtspMessageType.SETUP && (subStreamIdForSetup == null || subStreamIdForSetup.isBlank())) {
+			throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Sub-Stream ID is blank for SETUP message type");
+		}
+
+		String tmpRtspHostname;
+		try {
+			Optional<String> tmpOptRscUrl = (messageType == RtspMessageType.SETUP ?
+					getResourceUrlForMt_onlySetup(subStreamIdForSetup)
+					: getResourceUrlForMt_nonSetup(messageType));
+			if (tmpOptRscUrl.isEmpty()) {
+				throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": No Resource URL found for message type: " + messageType);
+			}
+			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(tmpOptRscUrl.get());
+			tmpRtspHostname = rscUriObj.getHost();
+		} catch (HostnameHelperInvalidUriException e) {
+			// this should never happen
+			throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Could not parse URL: " + e.getMessage());
+		}
+		if (tmpRtspHostname.isBlank()) {
+			throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Could not determine RTSP hostname");
+		}
+		try {
+			Optional<InetAddress> optRtspHostIp = HostnameHelper.firstAvailableLocalIpv4AddressForHostname(
+					tmpRtspHostname,
+					true
+				);
+			if (optRtspHostIp.isEmpty()) {
+				throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Could not determine IPv4 address for RTSP hostname '" +
+						tmpRtspHostname + "'");
+			}
+			return optRtspHostIp.get().getHostAddress();
+		} catch (UnknownHostException | SocketException e) {
+			throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Unknown RTSP hostname '" + tmpRtspHostname + "'");
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

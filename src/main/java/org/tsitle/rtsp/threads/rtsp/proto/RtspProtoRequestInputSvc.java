@@ -2,6 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
+import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.exceptions.InputStreamNotReadyException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
@@ -11,6 +12,8 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
@@ -19,6 +22,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
+
+import java.util.Optional;
 
 public final class RtspProtoRequestInputSvc {
 
@@ -116,6 +121,24 @@ public final class RtspProtoRequestInputSvc {
 		rtspRequAuthSvc.checkAuthorization(resObj, outputDataRequ.requAuthClient);
 
 		//
+		try {
+			// store the Input Source ID
+			storeInputSourceId(msgStructured, outputDataRequ);
+			// store the Resource URL
+			storeResourceUrl(msgStructured, outputDataRequ);
+			// store the Server's IP address
+			storeServerIp(msgStructured, outputDataRequ, resObj);
+		} catch (RtspInvalidRequestException e) {
+			RtspRequestBasics locResObj = RtspRequestBasics.createKnownWithError(
+					msgStructured.messageType,
+					RtspStatusCode.INTERNAL_SERVER_ERROR
+				);
+			logWarn(FNC_NAME, String.format("%s for RTSP request message (rt=%s), rejecting it with code %s",
+					e.getMessage(), locResObj.messageType, locResObj.statusCode));
+			return locResObj;
+		}
+
+		//
 		outputDataRequ.writeProtect();
 
 		//
@@ -127,6 +150,50 @@ public final class RtspProtoRequestInputSvc {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void storeInputSourceId(
+				RtspProtoHighMsgStructuredRequest msgStructured,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspInvalidRequestException {
+		if (msgStructured.messageType == RtspMessageType.SETUP) {
+			return;
+		}
+		Optional<RtspInputSource> tmpOptIs = rtspSessionInfo.getInputSourceObjForMt_nonSetup(msgStructured.messageType);
+		if (tmpOptIs.isEmpty()) {
+			throw new RtspInvalidRequestException("Input Source not found");
+		}
+		outputDataRequ.setRequIdInputSource(tmpOptIs.get().getIdAsProtoId());
+	}
+
+	private void storeResourceUrl(
+				RtspProtoHighMsgStructuredRequest msgStructured,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) {
+		outputDataRequ.setRequResourceUrl(msgStructured.resourceUrl);
+	}
+
+	private void storeServerIp(
+				RtspProtoHighMsgStructuredRequest msgStructured,
+				@NonNull RtspProtoDataRequest outputDataRequ,
+				@NonNull RtspRequestBasics requBasics
+			) throws RtspInvalidRequestException {
+		try {
+			String tmpSubStreamId = "";
+			if (msgStructured.messageType == RtspMessageType.SETUP) {
+				if (requBasics.requestUrlInputOrStreamSource == null || requBasics.requestUrlInputOrStreamSource.subStreamId == null) {
+					throw new RtspInvalidRequestException("Sub-Stream ID not found");
+				}
+				tmpSubStreamId = requBasics.requestUrlInputOrStreamSource.subStreamId;
+			}
+			outputDataRequ.setRequServerIpFromRscUrl(
+					rtspSessionInfo.findRtspIpFromResourceUrl(msgStructured.messageType, tmpSubStreamId)
+				);
+		} catch (RtspCannotFindIpFromRscUrlException e) {
+			throw new RtspInvalidRequestException(e.getMessage());
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {

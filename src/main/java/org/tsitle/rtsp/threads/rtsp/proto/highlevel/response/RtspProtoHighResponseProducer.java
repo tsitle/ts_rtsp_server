@@ -2,16 +2,11 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.response;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspInputSource;
-import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.config.RtspStreamSource;
-import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoParameterGetterInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
-import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
@@ -24,6 +19,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEn
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducerInterface;
 
 import java.net.*;
 import java.util.*;
@@ -34,26 +30,29 @@ public final class RtspProtoHighResponseProducer {
 	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull String cfgServerNameAndVersion;
+	private final boolean cfgIsDebugPrintRtspSdpSent;
+	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface;
+	private final @NonNull SdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighResponseProducer(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
+				boolean cfgIsDebugPrintRtspSdpSent,
+				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspSessionInfo rtspSessionInfo,
-				@Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface
+				@Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface,
+				@NonNull SdpProducerInterface sdpProducerInterface
 			) {
-		if (cfgServerNameAndVersion.isBlank()) {
-			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
-		}
 		this.logMsgInterface = logMsgInterface;
-		this.rtspConfig = rtspConfig;
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
+		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
+		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtspProtoParameterGetterInterface = rtspProtoParameterGetterInterface;
+		this.sdpProducerInterface = sdpProducerInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -64,6 +63,10 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull RtspProtoDataResponse inputDataResp
 			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
+
+		if (inputDataResp.getRespResourceUrl().isBlank()) {
+			throw new RtspInvalidResponseException(FNC_NAME + ": Resource URL must be set");
+		}
 
 		RtspProtoHighMsgStructuredResponse resObj = new RtspProtoHighMsgStructuredResponse();
 
@@ -83,7 +86,7 @@ public final class RtspProtoHighResponseProducer {
 		//
 		switch (rtspRequestBasics.messageType) {
 			case ANNOUNCE, PAUSE, RECORD, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
-			case DESCRIBE -> buildResponse_describe(resObj);
+			case DESCRIBE -> buildResponse_describe(inputDataResp, resObj);
 			case GET_PARAMETER -> buildResponse_getParameter(inputDataResp, resObj);
 			case OPTIONS -> buildResponse_options(resObj);
 			case PLAY -> buildResponse_play(resObj);
@@ -147,7 +150,10 @@ public final class RtspProtoHighResponseProducer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void buildResponse_describe(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+	private void buildResponse_describe(
+				@NonNull RtspProtoDataResponse inputDataResp,
+				@NonNull RtspProtoHighMsgStructuredResponse output
+			) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_describe()";
 
 		/*
@@ -163,45 +169,32 @@ public final class RtspProtoHighResponseProducer {
 		 *   ...
 		 */
 
-		RtspInputSource rtspInputSource = rtspSessionInfo.getInputSourceObjForMt_nonSetup(RtspMessageType.DESCRIBE)
-				.orElseThrow(() -> new RtspInvalidResponseException(FNC_NAME + ": Input Source not found"));
-		String resourceUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspMessageType.DESCRIBE)
-				.orElseThrow(() -> new RtspInvalidResponseException(FNC_NAME + ": Resource URL not found"));
-
-		if (! checkStreamsForInputSource(FNC_NAME, rtspInputSource)) {
-			output.statusCode = RtspStatusCode.BAD_REQUEST;
-			return;
-		}
-
-		// @TODO fetch SDP from SDP-Producer
-		// @TODO fetch Content-Language from SDP-Producer
-		String sdpContentLanguage = "";
-		SdpBuilder sdpBuilder = new SdpBuilder(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
-		List<@NonNull String> tmpSdpLines;
 		try {
-			tmpSdpLines = sdpBuilder.buildSdp(
-					rtspInputSource,
-					findRtspHostIp(RtspMessageType.DESCRIBE, "")
+			sdpProducerInterface.buildSdpForDescribe(
+					inputDataResp.getRespIdInputSource(),
+					inputDataResp.getRespServerIpFromRscUrl(),
+					output.bodyDescribeSdp
 				);
 		} catch (RtspSdpException e) {
-			logError(FNC_NAME, "Building SDP failed: " + e.getMessage());
-			output.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
-			return;
+			throw new RtspInvalidResponseException(FNC_NAME + ": Building SDP failed: " + e.getMessage());
 		}
-		output.bodyDescribeSdp.addAllSdpLinesAllRaw(tmpSdpLines);
-		output.bodyDescribeSdp.setContentLang(sdpContentLanguage);
 
-		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
+		if (cfgIsDebugPrintRtspSdpSent) {
 			logDebug(FNC_NAME, "-------- SDP:");
-			for (String tmpSingleSdpLine : tmpSdpLines) {
+			for (String tmpSingleSdpLine : output.bodyDescribeSdp.getSdpLinesAllRaw()) {
 				logDebug(FNC_NAME, "---------------- " + tmpSingleSdpLine);
 			}
 		}
 
 		// Content-Base
 		{
+			String tmpRscUrl = inputDataResp.getRespResourceUrl();
+			if (tmpRscUrl.isBlank()) {
+				throw new RtspInvalidResponseException(FNC_NAME + ": Resource URL must be set");
+			}
+			//
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_BASE);
-			hdEntry.hdValContBase.contentBaseStr = resourceUrl + (resourceUrl.endsWith("/") ? "" : "/");
+			hdEntry.hdValContBase.contentBaseStr = tmpRscUrl + (tmpRscUrl.endsWith("/") ? "" : "/");
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
@@ -395,7 +388,7 @@ public final class RtspProtoHighResponseProducer {
 					rtspSessionInfo.isRtpRtcpEncryptionRequired,
 					rtspSessionInfo.forceRtpRtcpEncryption,
 					rtspSessionInfo.isRtspsConnection,
-					rtspConfig.getIsDebugDisableTransportUdp()
+					cfgIsDebugDisableTransportUdp
 				);
 		} catch (Exception e) {
 			// this should never happen
@@ -432,17 +425,12 @@ public final class RtspProtoHighResponseProducer {
 
 		// Transport
 		{
-			String tmpRtspHostIp = findRtspHostIp(
-					RtspMessageType.SETUP,
-					requestUrlInputOrStreamSource.subStreamId
-				);
-
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
 			hdEntry.hdValTransport.tpIsUdp = tmpSetupSubStream.tpIsUdp;
 			hdEntry.hdValTransport.tpIsEncr = tmpSetupSubStream.tpIsEncr;
 			hdEntry.hdValTransport.tpIsUnicast = tmpSetupSubStream.tpIsUnicast;
 			hdEntry.hdValTransport.tpIsInterleaved = tmpSetupSubStream.tpIsInterleaved;
-			hdEntry.hdValTransport.tpSourceIpOrHost = tmpRtspHostIp;
+			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.getRespServerIpFromRscUrl();
 			hdEntry.hdValTransport.tpDestIpOrHost = getClientIpAddr().getHostAddress();
 			if (tmpSetupSubStream.tpIsUdp) {
 				try {
@@ -471,64 +459,6 @@ public final class RtspProtoHighResponseProducer {
 				throw new RtspInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
 			}
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private boolean checkStreamsForInputSource(@NonNull String fncName, @NonNull RtspInputSource rtspInputSource) {
-		Optional<RtspStreamSource> optSsObjVideo =
-				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), true);
-		Optional<RtspStreamSource> optSsObjAudio =
-				rtspConfig.getInputSourcesFirstOfKindStreamSourceObj(rtspInputSource.getId(), false);
-		if (! (optSsObjVideo.isPresent() || optSsObjAudio.isPresent())) {
-			logError(fncName, "No valid Stream Source found for Input Source '" + rtspInputSource.getId() + "'");
-			return false;
-		}
-		return true;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private @NonNull String findRtspHostIp(
-				@NonNull RtspMessageType messageType,
-				@NonNull String subStreamId
-			) throws RtspInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".findRtspHostIp()";
-
-		if (messageType == RtspMessageType.SETUP && subStreamId.isBlank()) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": Sub-Stream ID is blank for SETUP message type");
-		}
-
-		String tmpRtspHostname;
-		try {
-			Optional<String> tmpOptRscUrl = (messageType == RtspMessageType.SETUP ?
-					rtspSessionInfo.getResourceUrlForMt_onlySetup(subStreamId)
-					: rtspSessionInfo.getResourceUrlForMt_nonSetup(messageType));
-			if (tmpOptRscUrl.isEmpty()) {
-				throw new RtspInvalidResponseException(FNC_NAME + ": No Resource URL found for message type: " + messageType);
-			}
-			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(tmpOptRscUrl.get());
-			tmpRtspHostname = rscUriObj.getHost();
-		} catch (HostnameHelperInvalidUriException e) {
-			// this should never happen
-			throw new RtspInvalidResponseException(FNC_NAME + ": Could not parse URL: " + e.getMessage());
-		}
-		if (tmpRtspHostname.isBlank()) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": Could not determine RTSP hostname");
-		}
-		try {
-			Optional<InetAddress> optRtspHostIp = HostnameHelper.firstAvailableLocalIpv4AddressForHostname(
-					tmpRtspHostname,
-					true
-				);
-			if (optRtspHostIp.isEmpty()) {
-				throw new RtspInvalidResponseException(FNC_NAME + ": Could not determine IPv4 address for RTSP hostname '" +
-						tmpRtspHostname + "'");
-			}
-			return optRtspHostIp.get().getHostAddress();
-		} catch (UnknownHostException | SocketException e) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": Unknown RTSP hostname '" + tmpRtspHostname + "'");
 		}
 	}
 
