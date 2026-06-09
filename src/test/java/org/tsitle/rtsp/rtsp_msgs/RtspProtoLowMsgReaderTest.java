@@ -217,7 +217,10 @@ public class RtspProtoLowMsgReaderTest {
 
 			//
 			RtspProtoLowMsgReader reader = new RtspProtoLowMsgReader(logMsgIf, rw, true);
+
+			//java.time.Instant tmpNow = java.time.Instant.now();
 			RtspProtoLowMsgRaw msgRaw = reader.readMessage();
+			//System.out.println("Read time [ms]: " + (java.time.Instant.now().toEpochMilli() - tmpNow.toEpochMilli()));
 
 			rw.closeSocket();
 
