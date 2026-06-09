@@ -130,6 +130,8 @@ public final class RtspProtoLowRequestProducer {
 		/*
 		 * Example:
 		 *   "Authorization: Digest username=\"admin\", realm=\"Abcdef Some\", nonce=\"xxx\", uri=\"rtsp://xxx:88/videoMain\", response=\"xxx\""
+		 *   or
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"...\", response=\"...\", algorithm=\"MD5\""
 		 */
 
 		if (hdValue.authUser.isBlank()) {
@@ -147,12 +149,14 @@ public final class RtspProtoLowRequestProducer {
 		if (hdValue.authUri.isBlank()) {
 			throw new RtspInvalidRequestException("Auth URI cannot be blank");
 		}
+		String tmpAlgoStr = RtspAuthAlgo.MD5.getStrValue();
 		return RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_USER + "\"" + hdValue.authUser + "\", " +
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + hdValue.authRealm + "\", " +
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_NONCE + "\"" + hdValue.authNonce + "\", " +
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP + "\"" + hdValue.authResp + "\", " +
-				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI + "\"" + hdValue.authUri + "\"";
+				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_URI + "\"" + hdValue.authUri + "\", " +
+				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO + "\"" + tmpAlgoStr + "\"";
 	}
 
 	private static @NonNull String buildHeaderValue_com_connection(@NonNull RtspProtoHeaderTypeConnection hdValue)

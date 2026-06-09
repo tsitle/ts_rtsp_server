@@ -283,6 +283,8 @@ public final class RtspProtoLowRequestConsumer {
 		/*
 		 * Example:
 		 *   "Authorization: Digest username=\"admin\", realm=\"Abcdef Some\", nonce=\"xxx\", uri=\"rtsp://xxx:88/videoMain\", response=\"xxx\""
+		 *   or
+		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"...\", response=\"...\", algorithm=\"MD5\""
 		 */
 		if (! hdValue.toLowerCase()
 				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
@@ -320,6 +322,13 @@ public final class RtspProtoLowRequestConsumer {
 						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_RESP);
 				entry.hdValAuthClient.authResp = entry.hdValAuthClient.authResp.toLowerCase();
 				haveResp = true;  // tolerate empty challenge-response now and reject it later
+			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO.toLowerCase())) {
+				String tmpAlgoStr =
+						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
+				RtspAuthAlgo tmpAlgoEn = RtspAuthAlgo.of(tmpAlgoStr);
+				if (tmpAlgoEn == RtspAuthAlgo.NONE) {
+					throw new RtspInvalidRequestException("Invalid Auth Algo '" + tmpAlgoStr + "'");
+				}
 			} else {
 				logWarn(FNC_NAME, "Unknown Auth parameter: '" + curTokenAsIs + "'");
 			}
