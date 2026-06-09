@@ -1,8 +1,14 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
 
 public final class RtspProtoDataResponse {
+
+	private boolean isWriteProtected = false;
+
+	/** RTSP Session ID */
+	public final @NonNull RtspProtoIdSession respIdSession = new RtspProtoIdSession();
 
 	/** Authentication-related info from the server */
 	public final @NonNull RtspProtoDataCntAuthSrv respAuthServer = new RtspProtoDataCntAuthSrv();
@@ -17,7 +23,10 @@ public final class RtspProtoDataResponse {
 	public final @NonNull RtspProtoDataCntSdp respDescribeSdp = new RtspProtoDataCntSdp();
 
 	/** Name of an unsupported feature that has been requested */
-	public @NonNull String respUnsupportedFeatureName = "";
+	private @NonNull String respUnsupportedFeatureName = "";
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public RtspProtoDataResponse() { }
 
@@ -25,7 +34,27 @@ public final class RtspProtoDataResponse {
 		copyFrom(inputDataRequ);
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull String getRespUnsupportedFeatureName() {
+		return respUnsupportedFeatureName;
+	}
+
+	public void setRespUnsupportedFeatureName(@NonNull String featureName) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.respUnsupportedFeatureName = featureName;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public void clear() {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		respIdSession.clear();
 		respAuthServer.clear();
 		respGetParamNames.clear();
 		respGetParamValues.clear();
@@ -35,9 +64,24 @@ public final class RtspProtoDataResponse {
 	}
 
 	public void copyFrom(@NonNull RtspProtoDataRequest inputDataRequ) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		respIdSession.copyFrom(inputDataRequ.requIdSession);
 		respGetParamNames.copyFrom(inputDataRequ.requGetParamNames);
 		respInvalidParamNames.copyFrom(inputDataRequ.requInvalidParamNames);
-		respUnsupportedFeatureName = inputDataRequ.requUnsupportedFeatureName;
+		respUnsupportedFeatureName = inputDataRequ.getRequUnsupportedFeatureName();
+	}
+
+	public void writeProtect() {
+		isWriteProtected = true;
+
+		respIdSession.writeProtect();
+		respAuthServer.writeProtect();
+		respGetParamNames.writeProtect();
+		respGetParamValues.writeProtect();
+		respInvalidParamNames.writeProtect();
+		respDescribeSdp.writeProtect();
 	}
 
 }

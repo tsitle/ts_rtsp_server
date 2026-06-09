@@ -81,12 +81,18 @@ public final class RtspProtoResponseInputSvc {
 
 		// process the response
 		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
-		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(msgStructured, outputDataResp);
+		RtspProtoIdSession currentIdSession = new RtspProtoIdSession(rtspSessionInfo.rtspSessionId);
+		currentIdSession.writeProtect();
+		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(
+				currentIdSession,
+				msgStructured,
+				outputDataResp
+			);
 
 		// authentication parameters
-		if (! outputDataResp.respAuthServer.authRealm.isEmpty()) {
-			rtspSessionInfo.permAuthServer.authRealm = outputDataResp.respAuthServer.authRealm;
-			rtspSessionInfo.permAuthServer.authNonce = outputDataResp.respAuthServer.authNonce;
+		if (! outputDataResp.respAuthServer.getAuthRealm().isEmpty()) {
+			rtspSessionInfo.permAuthServer.authRealm = outputDataResp.respAuthServer.getAuthRealm();
+			rtspSessionInfo.permAuthServer.authNonce = outputDataResp.respAuthServer.getAuthNonce();
 		}
 
 		//

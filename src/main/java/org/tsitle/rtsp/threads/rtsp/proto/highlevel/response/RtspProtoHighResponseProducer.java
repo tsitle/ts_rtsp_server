@@ -72,7 +72,7 @@ public final class RtspProtoHighResponseProducer {
 		resObj.messageType = rtspRequestBasics.messageType;
 
 		//
-		addCommonHeaders(resObj);
+		addCommonHeaders(inputDataResp, resObj);
 
 		//
 		if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
@@ -87,7 +87,7 @@ public final class RtspProtoHighResponseProducer {
 			case GET_PARAMETER -> buildResponse_getParameter(inputDataResp, resObj);
 			case OPTIONS -> buildResponse_options(resObj);
 			case PLAY -> buildResponse_play(resObj);
-			case SETUP -> buildResponse_setup(rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
+			case SETUP -> buildResponse_setup(inputDataResp, rtspRequestBasics.requestUrlInputOrStreamSource, resObj);
 			default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unsupported message type: " +
 					rtspRequestBasics.messageType);
 		}
@@ -126,7 +126,7 @@ public final class RtspProtoHighResponseProducer {
 		 */
 		switch (statusCode) {
 			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
-				output.bodyGetSetInvalidParams.addAll(inputDataResp.respInvalidParamNames.paramNames);
+				output.bodyGetSetInvalidParams.copyFrom(inputDataResp.respInvalidParamNames);
 				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 				addContentTypeHeader(output);
 				break;
@@ -134,8 +134,8 @@ public final class RtspProtoHighResponseProducer {
 				// Unsupported
 				{
 					RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
-					hdEntry.hdValUnsupported.unsupportedFeatureStr = (inputDataResp.respUnsupportedFeatureName.isBlank()
-							? "_unknown_" : inputDataResp.respUnsupportedFeatureName);
+					hdEntry.hdValUnsupported.unsupportedFeatureStr = (inputDataResp.getRespUnsupportedFeatureName().isBlank()
+							? "_unknown_" : inputDataResp.getRespUnsupportedFeatureName());
 					output.headers.put(hdEntry.getHdKey(), hdEntry);
 				}
 				break;
@@ -188,7 +188,8 @@ public final class RtspProtoHighResponseProducer {
 			output.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
 			return;
 		}
-		output.bodyDescribeSdp.addAll(tmpSdpLines);
+		output.bodyDescribeSdp.addAllSdpLinesAllRaw(tmpSdpLines);
+		output.bodyDescribeSdp.setContentLang(sdpContentLanguage);
 
 		if (rtspConfig.getIsDebugPrintRtspSdpSent()) {
 			logDebug(FNC_NAME, "-------- SDP:");
@@ -206,7 +207,7 @@ public final class RtspProtoHighResponseProducer {
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 		addContentTypeHeader(output);
 		// Content-Language
-		addContentLangHeader(sdpContentLanguage, output);
+		addContentLangHeader(output.bodyDescribeSdp.getContentLang(), output);
 	}
 
 	private void buildResponse_getParameter(
@@ -232,41 +233,41 @@ public final class RtspProtoHighResponseProducer {
 		 *     "barparam"
 		 */
 
-		if (inputDataResp.respGetParamNames.paramNames.isEmpty()) {
+		if (inputDataResp.respGetParamNames.isParamNamesEmpty()) {
 			// nothing to do
 			return;
 		}
 
-		String tmpContLang = "";
 		if (rtspProtoParameterGetterInterface == null) {
 			output.statusCode = RtspStatusCode.INVALID_PARAMETER;
-			output.bodyGetSetInvalidParams.addAll(inputDataResp.respGetParamNames.paramNames);
+			output.bodyGetSetInvalidParams.copyFrom(inputDataResp.respGetParamNames);
 		} else {
 			RtspProtoDataCntGetSetParamKvs tmpDataGsp =
-					rtspProtoParameterGetterInterface.getAllRtspParameters(rtspSessionInfo.rtspSessionId);
+					rtspProtoParameterGetterInterface.getAllRtspParameters(inputDataResp.respIdSession.getId());
 
 			Set<String> tmpMissingParams = new HashSet<>();
-			for (String requParam : inputDataResp.respGetParamNames.paramNames) {
-				if (! tmpDataGsp.paramKvs.containsKey(requParam)) {
+			for (String requParam : inputDataResp.respGetParamNames.getParamNames()) {
+				Optional<String> tmpRequParVal = tmpDataGsp.getParamKvsValue(requParam);
+				if (tmpRequParVal.isEmpty()) {
 					tmpMissingParams.add(requParam);
 				} else {
-					output.bodyGetParamKv.put(requParam, tmpDataGsp.paramKvs.get(requParam));
+					output.bodyGetParamKv.putParamKvsEntry(requParam, tmpRequParVal.get());
 				}
 			}
 
-			tmpContLang = tmpDataGsp.contentLang;
+			output.bodyGetParamKv.setContentLang(tmpDataGsp.getContentLang());
 
 			if (! tmpMissingParams.isEmpty()) {
 				output.statusCode = RtspStatusCode.INVALID_PARAMETER;
 				output.bodyGetParamKv.clear();
-				output.bodyGetSetInvalidParams.addAll(tmpMissingParams);
+				output.bodyGetSetInvalidParams.putAllParamNames(tmpMissingParams);
 			}
 		}
 
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 		addContentTypeHeader(output);
 		// Content-Language
-		addContentLangHeader(tmpContLang, output);
+		addContentLangHeader(output.bodyGetParamKv.getContentLang(), output);
 	}
 
 	private void buildResponse_options(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
@@ -362,6 +363,7 @@ public final class RtspProtoHighResponseProducer {
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */
 	private void buildResponse_setup(
+				@NonNull RtspProtoDataResponse inputDataResp,
 				RtspRequestBasics.@Nullable RequestUrlInputOrStreamSource requestUrlInputOrStreamSource,
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspInvalidResponseException, UdpSocketIoException {
@@ -402,13 +404,15 @@ public final class RtspProtoHighResponseProducer {
 
 		// Session ID
 		{
-			// generate RTSP Session ID
-			if (rtspSessionInfo.rtspSessionId.isBlank()) {
-				rtspSessionInfo.rtspSessionId = buildHexString(RandomHelper.getRandomUint32(false));
-				logDebug(FNC_NAME, "New RTSP session ID: " + rtspSessionInfo.rtspSessionId);
+			// generate RTSP Session ID if necessary
+			String tmpOutpIdSession = inputDataResp.respIdSession.getId();
+			if (tmpOutpIdSession.isEmpty()) {
+				tmpOutpIdSession = buildHexString(RandomHelper.getRandomUint32(false));
+				logDebug(FNC_NAME, "New RTSP session ID: " + tmpOutpIdSession);
 			}
+			//
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SESSION);
-			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
+			hdEntry.hdValSession.idSession.setId(tmpOutpIdSession);
 			if (RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT >= 0) {
 				try {
 					hdEntry.hdValSession.setTimeout32bit(RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT);
@@ -581,7 +585,10 @@ public final class RtspProtoHighResponseProducer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void addCommonHeaders(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspInvalidResponseException {
+	private void addCommonHeaders(
+				@NonNull RtspProtoDataResponse inputDataResp,
+				@NonNull RtspProtoHighMsgStructuredResponse output
+			) throws RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
 		// CSeq
@@ -603,6 +610,12 @@ public final class RtspProtoHighResponseProducer {
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
 			hdEntry.hdValServer.serverStr = cfgServerNameAndVersion;
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Session
+		if (! inputDataResp.respIdSession.isEmpty()) {
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.copyFrom(inputDataResp.respIdSession);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}

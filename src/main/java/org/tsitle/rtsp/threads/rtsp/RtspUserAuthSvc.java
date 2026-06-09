@@ -41,55 +41,55 @@ public class RtspUserAuthSvc {
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".authenticate()";
 
-		if (requAuthClient.authUser.isBlank()) {
+		if (requAuthClient.getAuthUser().isBlank()) {
 			// fail silently since missing at least the username is normal for the first unauthorized request
 			return false;
 		}
-		if (requAuthClient.authPlainPassword.isBlank() &&
-				(requAuthClient.authRealm.isBlank() ||
-					requAuthClient.authNonce.isBlank() || requAuthClient.authResp.isBlank())) {
+		if (requAuthClient.getAuthPlainPassword().isBlank() &&
+				(requAuthClient.getAuthRealm().isBlank() ||
+					requAuthClient.getAuthNonce().isBlank() || requAuthClient.getAuthResp().isBlank())) {
 			// fail silently
 			return false;
 		}
-		if (requAuthClient.authPlainPassword.isBlank() &&
-				! requAuthClient.authRealm.equals(rtspSessionInfo.permAuthServer.authRealm)) {
+		if (requAuthClient.getAuthPlainPassword().isBlank() &&
+				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.permAuthServer.authRealm)) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
-		if (requAuthClient.authPlainPassword.isBlank() &&
-				! (requAuthClient.authNonce.equals(rtspSessionInfo.permAuthServer.authNonce) &&
+		if (requAuthClient.getAuthPlainPassword().isBlank() &&
+				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.permAuthServer.authNonce) &&
 						RtspStaticSessionInfo.existsAuthServerNonce(
 								getClientIpAddr(rtspSessionInfo), rtspSessionInfo.permAuthServer.authNonce
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;
 		}
-		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(requAuthClient.authUser);
+		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(requAuthClient.getAuthUser());
 		if (tmpOptUserPw.isEmpty()) {
 			logDebug(FNC_NAME, "Invalid username");
 			return false;
 		}
 		//
-		if (requAuthClient.authPlainPassword.isBlank()) {
+		if (requAuthClient.getAuthPlainPassword().isBlank()) {
 			final String expectedResponse;
 			try {
 				expectedResponse = RtspProtoAuthDigest.computeAuthResponse(
-						requAuthClient.authUser,
+						requAuthClient.getAuthUser(),
 						tmpOptUserPw.get(),
-						requAuthClient.authUri,
+						requAuthClient.getAuthUri(),
 						messageType,
-						requAuthClient.authRealm,
-						requAuthClient.authNonce
+						requAuthClient.getAuthRealm(),
+						requAuthClient.getAuthNonce()
 					);
 			} catch (IllegalArgumentException e) {
 				logDebug(FNC_NAME, "Invalid authentication parameters: " + e.getMessage());
 				return false;
 			}
-			if (! requAuthClient.authResp.equalsIgnoreCase(expectedResponse)) {
+			if (! requAuthClient.getAuthResp().equalsIgnoreCase(expectedResponse)) {
 				logDebug(FNC_NAME, "Invalid challenge-response");
 				return false;
 			}
-		} else if (! requAuthClient.authPlainPassword.equals(tmpOptUserPw.get())) {
+		} else if (! requAuthClient.getAuthPlainPassword().equals(tmpOptUserPw.get())) {
 			logDebug(FNC_NAME, "Invalid plain password");
 			return false;
 		}
@@ -112,7 +112,7 @@ public class RtspUserAuthSvc {
 		if (tmpUsers.isEmpty()) {
 			return false;
 		}
-		return tmpUsers.contains(requAuthClient.authUser.toLowerCase());
+		return tmpUsers.contains(requAuthClient.getAuthUser().toLowerCase());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

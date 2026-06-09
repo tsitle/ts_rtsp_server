@@ -98,7 +98,13 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// process the request - without checking authentication
-		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(msgStructured, outputDataRequ);
+		RtspProtoIdSession currentIdSession = new RtspProtoIdSession(rtspSessionInfo.rtspSessionId);
+		currentIdSession.writeProtect();
+		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(
+				currentIdSession,
+				msgStructured,
+				outputDataRequ
+			);
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
 					resObj.messageType, resObj.statusCode,
@@ -108,6 +114,9 @@ public final class RtspProtoRequestInputSvc {
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
 		rtspRequAuthSvc.checkAuthorization(resObj, outputDataRequ.requAuthClient);
+
+		//
+		outputDataRequ.writeProtect();
 
 		//
 		if (resObj.isValid()) {

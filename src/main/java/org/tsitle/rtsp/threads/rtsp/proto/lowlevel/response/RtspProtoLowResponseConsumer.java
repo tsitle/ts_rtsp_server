@@ -562,6 +562,8 @@ public final class RtspProtoLowResponseConsumer {
 		 *     "packets_received"
 		 *     "jitter"
 		 */
+
+		// Content-Length
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 			return;
 		}
@@ -570,13 +572,19 @@ public final class RtspProtoLowResponseConsumer {
 		if (contLenLong == 0L) {
 			return;
 		}
-
+		// Content-Type
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
 			throw new RtspInvalidResponseException(FNC_NAME + ": Missing Content-Type header");
 		}
+		// Content-Encoding
 		if (output.headers.containsKey(RtspHeaderKey.CONTENT_ENC) &&
 				output.headers.get(RtspHeaderKey.CONTENT_ENC).hdValContEnc.contentEnc != RtspContentEncoding.NONE) {
 			throw new RtspInvalidResponseException(FNC_NAME + ": No other Content-Encoding than NONE is supported");
+		}
+		// Content-Language
+		String tmpBodyContLang = "";
+		if (output.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
+			tmpBodyContLang = output.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
 		}
 
 		switch (output.messageType) {
@@ -585,7 +593,8 @@ public final class RtspProtoLowResponseConsumer {
 					throw new RtspInvalidResponseException(FNC_NAME + ": Invalid Content-Type header value");
 				}
 				String[] tmpSplit = bodyValue.split(RtspProtoLowMsgConstants.CRLF);
-				output.bodyDescribeSdp.addAll(Arrays.asList(tmpSplit));
+				output.bodyDescribeSdp.addAllSdpLinesAllRaw(Arrays.asList(tmpSplit));
+				output.bodyDescribeSdp.setContentLang(tmpBodyContLang);
 			}
 			case GET_PARAMETER, SET_PARAMETER -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
@@ -598,14 +607,19 @@ public final class RtspProtoLowResponseConsumer {
 				} catch (RtspLowInvalidRrException e) {
 					throw new RtspInvalidResponseException(FNC_NAME + ": Invalid body line format for " + e.getMessage());
 				}
+				if (output.messageType == RtspMessageType.GET_PARAMETER) {
+					output.bodyGetParamKv.setContentLang(tmpBodyContLang);
+				}
 			}
 			default -> throw new RtspInvalidResponseException(FNC_NAME + ": Content-Type header only allowed in " +
 					"DESCRIBE/GET_PARAMETER response");
 		}
 	}
 
-	private void parseBody_getParamLine(@NonNull String bodyLine, @NonNull RtspProtoHighMsgStructuredResponse output)
-			throws RtspLowInvalidRrException {
+	private void parseBody_getParamLine(
+				@NonNull String bodyLine,
+				@NonNull RtspProtoHighMsgStructuredResponse output
+			) throws RtspLowInvalidRrException {
 		/*
 		 * Example:
 		 *   "barparam: barstuff"
@@ -614,7 +628,7 @@ public final class RtspProtoLowResponseConsumer {
 		 */
 		if (! bodyLine.contains(":")) {
 			bodyLine = RtspLowParserHelper.helperCleanUpBodyLine(bodyLine);
-			output.bodyGetSetInvalidParams.add(bodyLine);
+			output.bodyGetSetInvalidParams.putParamName(bodyLine);
 			return;
 		}
 		if (output.messageType == RtspMessageType.SET_PARAMETER) {
@@ -655,10 +669,10 @@ public final class RtspProtoLowResponseConsumer {
 				throw new RtspInvalidResponseException("Content-Length header value is zero" + errMsgSuffix);
 			}
 		} else if (output.messageType == RtspMessageType.GET_PARAMETER || output.messageType == RtspMessageType.SET_PARAMETER) {
-			if (output.statusCode != RtspStatusCode.OK && output.bodyGetSetInvalidParams.isEmpty()) {
+			if (output.statusCode != RtspStatusCode.OK && output.bodyGetSetInvalidParams.isParamNamesEmpty()) {
 				return;
 			}
-			if (output.messageType != RtspMessageType.GET_PARAMETER || output.bodyGetParamKv.isEmpty()) {
+			if (output.messageType != RtspMessageType.GET_PARAMETER || output.bodyGetParamKv.isParamKvsEmpty()) {
 				return;
 			}
 			final String errMsgSuffix = " for " + output.messageType + " message";

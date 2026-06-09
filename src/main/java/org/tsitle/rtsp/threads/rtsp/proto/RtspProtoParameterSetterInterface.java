@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspUnknownRtspParamExcepti
 public interface RtspProtoParameterSetterInterface {
 
 	void setRtspParameter(
-			@NonNull String rtspSessionId,
+			@NonNull RtspProtoIdSession idSession,
 			@NonNull String contentLanguage,
 			@NonNull String key,
 			@NonNull String value

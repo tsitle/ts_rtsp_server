@@ -314,11 +314,18 @@ public final class RtspProtoRequestOutputSvc {
 			throw new TcpSocketClosedException();
 		}
 
+		//
+		inputDataRequ.writeProtect();
+		RtspProtoDataRequest tmpInputDataRequCopy = new RtspProtoDataRequest(inputDataRequ);
+
 		// authentication parameters
-		inputDataRequ.requAuthClient.authUser = rtspSessionInfo.permAuthClient.authUser;
-		inputDataRequ.requAuthClient.authPlainPassword = rtspSessionInfo.permAuthClient.authPlainPassword;
-		inputDataRequ.requAuthClient.authRealm = rtspSessionInfo.permAuthServer.authRealm;
-		inputDataRequ.requAuthClient.authNonce = rtspSessionInfo.permAuthServer.authNonce;
+		tmpInputDataRequCopy.requAuthClient.setAuthUser(rtspSessionInfo.permAuthClient.authUser);
+		tmpInputDataRequCopy.requAuthClient.setAuthPlainPassword(rtspSessionInfo.permAuthClient.authPlainPassword);
+		tmpInputDataRequCopy.requAuthClient.setAuthRealm(rtspSessionInfo.permAuthServer.authRealm);
+		tmpInputDataRequCopy.requAuthClient.setAuthNonce(rtspSessionInfo.permAuthServer.authNonce);
+
+		//
+		tmpInputDataRequCopy.writeProtect();
 
 		// build the outgoing message
 		RtspProtoHighMsgStructuredRequest msgStructured;
@@ -327,7 +334,7 @@ public final class RtspProtoRequestOutputSvc {
 					requestMessageType,
 					resourceUrl,
 					subStreamId,
-					inputDataRequ,
+					tmpInputDataRequCopy,
 					kmdsOutbound
 				);
 		} catch (RtspInvalidRequestException e) {

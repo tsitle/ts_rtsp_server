@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidSessionIdException;
@@ -39,6 +40,7 @@ public class RtspProtoHighResponseConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspResponseBasics processResponse(
+				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoHighMsgStructuredResponse input,
 				@NonNull RtspProtoDataResponse outputDataResp
 			) {
@@ -48,13 +50,14 @@ public class RtspProtoHighResponseConsumer {
 
 		preProcessedHeaders.clear();
 
+		currentIdSession.writeProtect();
 		outputDataResp.clear();
 
 		//
 		final String logMsgSuffix = " in response for " + input.messageType + " request";
 
 		//
-		boolean tmpPreflight = preflightChecks(FNC_NAME, logMsgSuffix, input);
+		boolean tmpPreflight = preflightChecks(FNC_NAME, logMsgSuffix, currentIdSession, input, outputDataResp);
 		if (! tmpPreflight) {
 			return RtspResponseBasics.createInternalServerError();
 		}
@@ -85,12 +88,14 @@ public class RtspProtoHighResponseConsumer {
 	private boolean preflightChecks(
 				@NonNull String fncName,
 				@NonNull String logMsgSuffix,
-				@NonNull RtspProtoHighMsgStructuredResponse input
+				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoHighMsgStructuredResponse input,
+				@NonNull RtspProtoDataResponse outputDataResp
 			) {
 		try {
 			checkRtspProtoVersion(input);
 			checkCseq(input);
-			checkSessionId(input);
+			checkSessionId(currentIdSession, input, outputDataResp);
 		} catch (RtspInvalidResponseException e) {
 			logWarn(fncName, e.getMessage() + logMsgSuffix);
 			return false;
@@ -120,26 +125,28 @@ public class RtspProtoHighResponseConsumer {
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
 	}
 
-	private void checkSessionId(@NonNull RtspProtoHighMsgStructuredResponse input)
-			throws RtspInvalidResponseException, RtspInvalidSessionIdException {
+	private void checkSessionId(
+				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoHighMsgStructuredResponse input,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) throws RtspInvalidResponseException, RtspInvalidSessionIdException {
 		if (input.messageType != RtspMessageType.SETUP) {
 			return;
 		}
-		Optional<String> tmpOptSessionId = input.getHeaderSessionId();
+		Optional<RtspProtoIdSession> tmpOptSessionId = input.getHeaderSessionId();
 		if (tmpOptSessionId.isEmpty()) {
 			throw new RtspInvalidResponseException("Missing Session header");
 		}
-		String tmpSessionId = tmpOptSessionId.get();
+		RtspProtoIdSession tmpSessionId = tmpOptSessionId.get();
 
-		if (tmpSessionId.isBlank()) {
+		if (tmpSessionId.isEmpty()) {
 			throw new RtspInvalidSessionIdException();
 		}
-		if (! rtspSessionInfo.rtspSessionId.isBlank() &&
-				! tmpSessionId.equalsIgnoreCase(rtspSessionInfo.rtspSessionId)) {
+		if (! currentIdSession.isEmpty() && ! tmpSessionId.equals(currentIdSession)) {
 			throw new RtspInvalidSessionIdException();
 		}
 		if (isResponseFromClient) {
-			rtspSessionInfo.rtspSessionId = tmpSessionId;
+			outputDataResp.respIdSession.copyFrom(tmpSessionId);
 		}
 
 		//
@@ -191,8 +198,8 @@ public class RtspProtoHighResponseConsumer {
 		if (headerEntry.hdValAuthServer.authAlgo == RtspAuthAlgo.NONE) {
 			throw new RtspInvalidResponseException("Auth(Server) Algo must be set");
 		}
-		outputDataResp.respAuthServer.authRealm = headerEntry.hdValAuthServer.authRealm;
-		outputDataResp.respAuthServer.authNonce = headerEntry.hdValAuthServer.authNonce;
+		outputDataResp.respAuthServer.setAuthRealm(headerEntry.hdValAuthServer.authRealm);
+		outputDataResp.respAuthServer.setAuthNonce(headerEntry.hdValAuthServer.authNonce);
 		//
 		rtspSessionInfo.permAuthServer.authRealm = headerEntry.hdValAuthServer.authRealm;
 		rtspSessionInfo.permAuthServer.authNonce = headerEntry.hdValAuthServer.authNonce;
@@ -412,37 +419,36 @@ public class RtspProtoHighResponseConsumer {
 				if (contentType != RtspMimeType.SDP) {
 					throw new RtspInvalidResponseException("Content-Type for DESCRIBE message must be SDP");
 				}
+				//
+				outputDataResp.respDescribeSdp.copyFrom(input.bodyDescribeSdp);
 				// Content-Base
 				if (! input.headers.containsKey(RtspHeaderKey.CONTENT_BASE)) {
 					throw new RtspInvalidResponseException("Content-Base for DESCRIBE message missing");
 				}
-				outputDataResp.respDescribeSdp.contentBase = input.headers.get(RtspHeaderKey.CONTENT_BASE)
-						.hdValContBase.contentBaseStr;
-				//
-				outputDataResp.respDescribeSdp.sdpLinesAllRaw.addAll(input.bodyDescribeSdp);
+				outputDataResp.respDescribeSdp.setContentBase(
+						input.headers.get(RtspHeaderKey.CONTENT_BASE).hdValContBase.contentBaseStr
+					);
 				break;
 			case GET_PARAMETER, SET_PARAMETER:
 				if (contentType != RtspMimeType.PARAMETERS) {
 					throw new RtspInvalidResponseException("Content-Type for GET_PARAMETER message must be PARAMETERS");
 				}
-				if (! input.bodyGetSetInvalidParams.isEmpty()) {
-					outputDataResp.respInvalidParamNames.paramNames.addAll(input.bodyGetSetInvalidParams);
+				if (! input.bodyGetSetInvalidParams.isParamNamesEmpty()) {
+					outputDataResp.respInvalidParamNames.copyFrom(input.bodyGetSetInvalidParams);
 				} else if (input.messageType == RtspMessageType.GET_PARAMETER) {
-					outputDataResp.respGetParamValues.paramKvs.putAll(input.bodyGetParamKv);
+					outputDataResp.respGetParamValues.copyFrom(input.bodyGetParamKv);
 				}
 				break;
 		}
 
 		// Content-Language
-		if (input.messageType == RtspMessageType.DESCRIBE || input.messageType == RtspMessageType.GET_PARAMETER) {
-			String tmpContLang = "";
-			if (input.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
-				tmpContLang = input.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
-			}
+		if ((input.messageType == RtspMessageType.DESCRIBE || input.messageType == RtspMessageType.GET_PARAMETER) &&
+				input.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
+			String tmpContLang = input.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
 			if (input.messageType == RtspMessageType.DESCRIBE) {
-				outputDataResp.respDescribeSdp.contentLang = tmpContLang;
+				outputDataResp.respDescribeSdp.setContentLang(tmpContLang);
 			} else {
-				outputDataResp.respGetParamValues.contentLang = tmpContLang;
+				outputDataResp.respGetParamValues.setContentLang(tmpContLang);
 			}
 		}
 	}

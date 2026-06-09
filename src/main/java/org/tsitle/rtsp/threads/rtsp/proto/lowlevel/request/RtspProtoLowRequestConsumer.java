@@ -532,6 +532,7 @@ public final class RtspProtoLowRequestConsumer {
 	private void parseBody(@NonNull String bodyValue, @NonNull RtspProtoHighMsgStructuredRequest output) {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseBody()";
 
+		// Content-Length
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 			return;
 		}
@@ -539,6 +540,11 @@ public final class RtspProtoLowRequestConsumer {
 		long contLenLong = Integer.toUnsignedLong(tmpContLenInt);
 		if (contLenLong == 0L) {
 			return;
+		}
+		// Content-Language
+		String tmpBodyContLang = "";
+		if (output.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
+			tmpBodyContLang = output.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
 		}
 
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
@@ -561,7 +567,8 @@ public final class RtspProtoLowRequestConsumer {
 					return;
 				}
 				String[] tmpSplit = bodyValue.split(RtspProtoLowMsgConstants.CRLF);
-				output.bodyAnnounceSdp.addAll(Arrays.asList(tmpSplit));
+				output.bodyAnnounceSdp.addAllSdpLinesAllRaw(Arrays.asList(tmpSplit));
+				output.bodyAnnounceSdp.setContentLang(tmpBodyContLang);
 			}
 			case GET_PARAMETER, SET_PARAMETER -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
@@ -580,6 +587,9 @@ public final class RtspProtoLowRequestConsumer {
 				} catch (RtspLowInvalidRrException e) {
 					logWarn(FNC_NAME, "Invalid body line format for " + e.getMessage());
 					output.statusCode = RtspStatusCode.BAD_REQUEST;
+				}
+				if (output.messageType == RtspMessageType.SET_PARAMETER) {
+					output.bodySetParamKv.setContentLang(tmpBodyContLang);
 				}
 			}
 			default -> {
@@ -605,7 +615,7 @@ public final class RtspProtoLowRequestConsumer {
 		if (tmpParam.isBlank()) {
 			return;
 		}
-		output.bodyGetParamKeys.add(tmpParam);
+		output.bodyGetParamNames.putParamName(tmpParam);
 	}
 
 	private void parseBody_setParamLine(@NonNull String bodyLine, @NonNull RtspProtoHighMsgStructuredRequest output)

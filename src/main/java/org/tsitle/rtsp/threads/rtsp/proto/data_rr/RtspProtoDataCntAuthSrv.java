@@ -4,14 +4,48 @@ import org.jspecify.annotations.NonNull;
 
 public final class RtspProtoDataCntAuthSrv {
 
+	private boolean isWriteProtected = false;
+
 	/** Authentication credentials: realm */
-	public @NonNull String authRealm = "";
+	private @NonNull String authRealm = "";
 	/** Authentication credentials: nonce */
-	public @NonNull String authNonce = "";
+	private @NonNull String authNonce = "";
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull String getAuthRealm() {
+		return authRealm;
+	}
+	public void setAuthRealm(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.authRealm = value;
+	}
+
+	public @NonNull String getAuthNonce() {
+		return authNonce;
+	}
+	public void setAuthNonce(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.authNonce = value;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public void clear() {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
 		authRealm = "";
 		authNonce = "";
+	}
+
+	public void writeProtect() {
+		isWriteProtected = true;
 	}
 
 }

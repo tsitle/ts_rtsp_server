@@ -153,10 +153,10 @@ public final class RtspLowBuilderHelper {
 		 *   "Session: 1234567890"
 		 *   "Session: 1234567890;timeout=60"
 		 */
-		if (hdValue.sessionIdStr.isBlank()) {
+		if (hdValue.idSession.isEmpty()) {
 			throw new RtspLowInvalidRrException("sessionIdStr cannot be blank");
 		}
-		return hdValue.sessionIdStr +
+		return hdValue.idSession.getId() +
 				(! isForRequest && hdValue.getTimeout32bit().isPresent() ?
 						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT +
 								Integer.toUnsignedString(hdValue.getTimeout32bit().get())

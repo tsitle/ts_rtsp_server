@@ -1,6 +1,10 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamNames;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
@@ -14,17 +18,42 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 	public final @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> headers = new HashMap<>();
 
 	/** Message body for 'DESCRIBE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public final @NonNull List<String> bodyDescribeSdp = new ArrayList<>();
+	public final @NonNull RtspProtoDataCntSdp bodyDescribeSdp = new RtspProtoDataCntSdp();
 	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public final @NonNull Map<@NonNull String, @NonNull String> bodyGetParamKv = new HashMap<>();
+	public final @NonNull RtspProtoDataCntGetSetParamKvs bodyGetParamKv = new RtspProtoDataCntGetSetParamKvs();
 	/** Message body for 'GET_PARAMETER'/'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public final @NonNull Set<@NonNull String> bodyGetSetInvalidParams = new HashSet<>();
+	public final @NonNull RtspProtoDataCntGetSetParamNames bodyGetSetInvalidParams = new RtspProtoDataCntGetSetParamNames();
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public RtspProtoHighMsgStructuredResponse() {
 		super();
 
 		this.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<Integer> getHeaderCseq() {
+		if (! headers.containsKey(RtspHeaderKey.CSEQ)) {
+			return Optional.empty();
+		}
+		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
+	}
+
+	public Optional<RtspProtoIdSession> getHeaderSessionId() {
+		if (! headers.containsKey(RtspHeaderKey.SESSION)) {
+			return Optional.empty();
+		}
+		if (headers.get(RtspHeaderKey.SESSION).hdValSession.idSession.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.idSession);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public @NonNull String toString() {
@@ -34,32 +63,15 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 				", headers=" + headers;
 
 		if (messageType == RtspMessageType.DESCRIBE) {
-			resS += ", bodyDescribeSdp=" + listToString(bodyDescribeSdp);
+			resS += ", bodyDescribeSdp=" + bodyDescribeSdp;
 		} else if (messageType == RtspMessageType.GET_PARAMETER || messageType == RtspMessageType.SET_PARAMETER) {
-			if (! bodyGetSetInvalidParams.isEmpty()) {
-				resS += ", bodyGetSetInvalidParams=" + setToString(bodyGetSetInvalidParams);
+			if (! bodyGetSetInvalidParams.isParamNamesEmpty()) {
+				resS += ", bodyGetSetInvalidParams=" + bodyGetSetInvalidParams;
 			} else if (messageType == RtspMessageType.GET_PARAMETER) {
-				resS += ", bodyGetParamKv=" + mapToString(bodyGetParamKv);
+				resS += ", bodyGetParamKv=" + bodyGetParamKv;
 			}
 		}
 		return resS + "]";
-	}
-
-	public Optional<Integer> getHeaderCseq() {
-		if (! headers.containsKey(RtspHeaderKey.CSEQ)) {
-			return Optional.empty();
-		}
-		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
-	}
-
-	public Optional<String> getHeaderSessionId() {
-		if (! headers.containsKey(RtspHeaderKey.SESSION)) {
-			return Optional.empty();
-		}
-		if (headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr.isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.sessionIdStr);
 	}
 
 }

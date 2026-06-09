@@ -327,19 +327,19 @@ public final class RtspProtoLowRequestProducer {
 
 		switch (input.messageType) {
 			case RtspMessageType.ANNOUNCE:
-				if (input.bodyAnnounceSdp.isEmpty()) {
+				if (input.bodyAnnounceSdp.isSdpLinesAllRawEmpty()) {
 					throw new RtspInvalidRequestException(FNC_NAME + ": bodyAnnounceSdp cannot be empty");
 				}
-				output.body = String.join(RtspProtoLowMsgConstants.CRLF, input.bodyAnnounceSdp);
+				output.body = String.join(RtspProtoLowMsgConstants.CRLF, input.bodyAnnounceSdp.getSdpLinesAllRaw());
 				if (! output.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
 					output.body += RtspProtoLowMsgConstants.CRLF;
 				}
 				outpHdValueContTp.contentType = RtspMimeType.SDP;
 				break;
 			case RtspMessageType.GET_PARAMETER:
-				if (! input.bodyGetParamKeys.isEmpty()) {
+				if (! input.bodyGetParamNames.isParamNamesEmpty()) {
 					StringBuilder sb = new StringBuilder();
-					for (String entry : input.bodyGetParamKeys) {
+					for (String entry : input.bodyGetParamNames.getParamNames()) {
 						sb.append(entry).append(RtspProtoLowMsgConstants.CRLF);
 					}
 					output.body = sb.toString();
@@ -347,9 +347,9 @@ public final class RtspProtoLowRequestProducer {
 				}
 				break;
 			case RtspMessageType.SET_PARAMETER:
-				if (! input.bodySetParamKv.isEmpty()) {
+				if (! input.bodySetParamKv.isParamKvsEmpty()) {
 					StringBuilder sb = new StringBuilder();
-					for (Map.Entry<@NonNull String, @NonNull String> entry : input.bodySetParamKv.entrySet()) {
+					for (Map.Entry<@NonNull String, @NonNull String> entry : input.bodySetParamKv.getParamKvsEntrySet()) {
 						sb.append(entry.getKey()).append(": ").append(entry.getValue()).append(RtspProtoLowMsgConstants.CRLF);
 					}
 					output.body = sb.toString();

@@ -43,6 +43,9 @@ public final class RtspProtoHighRequestProducer {
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
+		inputDataRequ.writeProtect();
+
+		//
 		RtspProtoHighMsgStructuredRequest resObj = new RtspProtoHighMsgStructuredRequest();
 
 		resObj.rtspProtoVersion = rtspSessionInfo.rtspProtoVersionToUse;
@@ -99,10 +102,10 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
-		if (inputDataRequ.requAnnouncedSdp.contentBase.isBlank()) {
+		if (inputDataRequ.requAnnouncedSdp.getContentBase().isBlank()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Content-Base is required for ANNOUNCE");
 		}
-		if (inputDataRequ.requAnnouncedSdp.sdpLinesAllRaw.isEmpty()) {
+		if (inputDataRequ.requAnnouncedSdp.isSdpLinesAllRawEmpty()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": SDP content is required for ANNOUNCE");
 		}
 
@@ -112,10 +115,10 @@ public final class RtspProtoHighRequestProducer {
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
 		// Content-Language
-		addContentLangHeader(inputDataRequ.requAnnouncedSdp.contentLang, output);
+		addContentLangHeader(inputDataRequ.requAnnouncedSdp.getContentLang(), output);
 
 		//
-		output.bodyAnnounceSdp.addAll(inputDataRequ.requAnnouncedSdp.sdpLinesAllRaw);
+		output.bodyAnnounceSdp.copyFrom(inputDataRequ.requAnnouncedSdp);
 
 		logError(FNC_NAME, "ANNOUNCE is not supported yet");
 		throw new RtspInvalidRequestException(FNC_NAME + ": ANNOUNCE is not supported yet");
@@ -164,10 +167,10 @@ public final class RtspProtoHighRequestProducer {
 		 *   "jitter"
 		 */
 
-		if (inputDataRequ.requGetParamNames.paramNames.isEmpty()) {
+		if (inputDataRequ.requGetParamNames.isParamNamesEmpty()) {
 			return;
 		}
-		output.bodyGetParamKeys.addAll(inputDataRequ.requGetParamNames.paramNames);
+		output.bodyGetParamNames.copyFrom(inputDataRequ.requGetParamNames);
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
 	}
@@ -246,12 +249,12 @@ public final class RtspProtoHighRequestProducer {
 		 */
 
 		//
-		if (! inputDataRequ.requSetParamValues.paramKvs.isEmpty()) {
-			output.bodySetParamKv.putAll(inputDataRequ.requSetParamValues.paramKvs);
+		if (! inputDataRequ.requSetParamValues.isParamKvsEmpty()) {
+			output.bodySetParamKv.copyFrom(inputDataRequ.requSetParamValues);
 			// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 			addContentTypeHeader(output);
 			// Content-Language
-			addContentLangHeader(inputDataRequ.requSetParamValues.contentLang, output);
+			addContentLangHeader(inputDataRequ.requSetParamValues.getContentLang(), output);
 		}
 
 		// set the SRTxP Key Management Data for a SET_PARAMETER request used for re-keying
@@ -348,19 +351,19 @@ public final class RtspProtoHighRequestProducer {
 		// Session
 		if (! rtspSessionInfo.rtspSessionId.isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
-			hdEntry.hdValSession.sessionIdStr = rtspSessionInfo.rtspSessionId;
+			hdEntry.hdValSession.idSession.copyFrom(inputDataRequ.requIdSession);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)
-		if (! inputDataRequ.requAuthClient.authNonce.isBlank()) {
+		if (! inputDataRequ.requAuthClient.getAuthNonce().isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
 			hdEntry.hdValAuthClient.authUri = output.resourceUrl;
-			hdEntry.hdValAuthClient.authRealm = inputDataRequ.requAuthClient.authRealm;
-			hdEntry.hdValAuthClient.authNonce = inputDataRequ.requAuthClient.authNonce;
+			hdEntry.hdValAuthClient.authRealm = inputDataRequ.requAuthClient.getAuthRealm();
+			hdEntry.hdValAuthClient.authNonce = inputDataRequ.requAuthClient.getAuthNonce();
 			try {
 				hdEntry.hdValAuthClient.authResp = RtspProtoAuthDigest.computeAuthResponse(
-						inputDataRequ.requAuthClient.authUser,
-						inputDataRequ.requAuthClient.authPlainPassword,
+						inputDataRequ.requAuthClient.getAuthUser(),
+						inputDataRequ.requAuthClient.getAuthPlainPassword(),
 						hdEntry.hdValAuthClient.authUri,
 						output.messageType,
 						hdEntry.hdValAuthClient.authRealm,

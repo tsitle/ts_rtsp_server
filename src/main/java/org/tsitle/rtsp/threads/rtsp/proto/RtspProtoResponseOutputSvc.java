@@ -19,6 +19,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseProducer;
 
+import java.util.Optional;
+
 public final class RtspProtoResponseOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -69,11 +71,25 @@ public final class RtspProtoResponseOutputSvc {
 			throw new TcpSocketClosedException();
 		}
 
+		inputDataRequ.writeProtect();
+
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
 			RtspProtoDataResponse inputDataResp = new RtspProtoDataResponse(inputDataRequ);
+			inputDataResp.respIdSession.setId(rtspSessionInfo.rtspSessionId);
+			inputDataResp.writeProtect();
+
+			//
 			msgStructured = rtspProtoHighResponseBuilder.buildResponse(rtspRequestBasics, inputDataResp);
+
+			// get new Session ID if one has been generated
+			Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
+			if (tmpOptIdSess.isPresent() && rtspSessionInfo.rtspSessionId.isEmpty() &&
+					! tmpOptIdSess.get().isEmpty()) {
+				rtspSessionInfo.rtspSessionId = tmpOptIdSess.get().getId();
+				// @TODO make rtspSessionInfo.rtspSessionId write-only
+			}
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;

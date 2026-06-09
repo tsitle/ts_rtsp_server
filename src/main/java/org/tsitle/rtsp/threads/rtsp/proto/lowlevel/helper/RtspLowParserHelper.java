@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
@@ -11,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 public final class RtspLowParserHelper {
@@ -214,7 +214,7 @@ public final class RtspLowParserHelper {
 			}
 		}
 		//
-		outputHd.sessionIdStr = rawSid.strip();
+		outputHd.idSession.setId(rawSid.strip());
 	}
 
 	public static void helperParseHeaderValue_transport(
@@ -271,7 +271,7 @@ public final class RtspLowParserHelper {
 	public static void helperParseBodyLine_keyValue(
 				@NonNull RtspMessageType messageType,
 				@NonNull String bodyLine,
-				@NonNull Map<@NonNull String, @NonNull String> outputMap
+				@NonNull RtspProtoDataCntGetSetParamKvs outputMap
 			) throws RtspLowInvalidRrException {
 		/*
 		 * Example:
@@ -292,7 +292,7 @@ public final class RtspLowParserHelper {
 		if (tmpParVal.isBlank()) {
 			throw new RtspLowInvalidRrException(messageType + ": '" + bodyLine + "'");
 		}
-		outputMap.put(tmpParKey, tmpParVal);
+		outputMap.putParamKvsEntry(tmpParKey, tmpParVal);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
