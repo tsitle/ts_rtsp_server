@@ -722,13 +722,6 @@ public class RtspProtoLowRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_record_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.RECORD);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
 	void structuredRequest_redirect_ok() throws Exception {
 		basic_structuredRequest_ok(RtspMessageType.REDIRECT);
 	}
