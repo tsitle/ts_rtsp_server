@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoIdBase {
+public class RtspProtoIdBase implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
@@ -79,6 +79,15 @@ public class RtspProtoIdBase {
 		return getClass().getSimpleName() + " [" +
 				"id='" + idStr + "'" +
 				"]";
+	}
+
+	@Override
+	public RtspProtoIdBase clone() {
+		try {
+			return (RtspProtoIdBase)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 }

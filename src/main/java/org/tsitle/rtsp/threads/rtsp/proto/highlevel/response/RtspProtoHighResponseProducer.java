@@ -34,7 +34,7 @@ public final class RtspProtoHighResponseProducer {
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
-	private final @Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface;
+	private final @Nullable RtspProtoParameterGetterInterface parameterGetterInterface;
 	private final @NonNull SdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighResponseProducer(
@@ -43,7 +43,7 @@ public final class RtspProtoHighResponseProducer {
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspSessionInfo rtspSessionInfo,
-				@Nullable RtspProtoParameterGetterInterface rtspProtoParameterGetterInterface,
+				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
 				@NonNull SdpProducerInterface sdpProducerInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -51,7 +51,7 @@ public final class RtspProtoHighResponseProducer {
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.rtspSessionInfo = rtspSessionInfo;
-		this.rtspProtoParameterGetterInterface = rtspProtoParameterGetterInterface;
+		this.parameterGetterInterface = parameterGetterInterface;
 		this.sdpProducerInterface = sdpProducerInterface;
 	}
 
@@ -64,13 +64,13 @@ public final class RtspProtoHighResponseProducer {
 			) throws RtspInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
 
-		if (inputDataResp.getRespResourceUrl().isBlank()) {
+		if (inputDataResp.getResourceUrl().isBlank()) {
 			throw new RtspInvalidResponseException(FNC_NAME + ": Resource URL must be set");
 		}
 
 		RtspProtoHighMsgStructuredResponse resObj = new RtspProtoHighMsgStructuredResponse();
 
-		resObj.rtspProtoVersion = rtspSessionInfo.rtspProtoVersionToUse;
+		resObj.rtspProtoVersion = inputDataResp.getRtspProtoVersionToUse();
 		resObj.statusCode = rtspRequestBasics.statusCode;
 		resObj.messageType = rtspRequestBasics.messageType;
 
@@ -85,7 +85,7 @@ public final class RtspProtoHighResponseProducer {
 
 		//
 		switch (rtspRequestBasics.messageType) {
-			case ANNOUNCE, PAUSE, RECORD, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
+			case ANNOUNCE, PAUSE, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
 			case DESCRIBE -> buildResponse_describe(inputDataResp, resObj);
 			case GET_PARAMETER -> buildResponse_getParameter(inputDataResp, resObj);
 			case OPTIONS -> buildResponse_options(resObj);
@@ -137,8 +137,8 @@ public final class RtspProtoHighResponseProducer {
 				// Unsupported
 				{
 					RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
-					hdEntry.hdValUnsupported.unsupportedFeatureStr = (inputDataResp.getRespUnsupportedFeatureName().isBlank()
-							? "_unknown_" : inputDataResp.getRespUnsupportedFeatureName());
+					hdEntry.hdValUnsupported.unsupportedFeatureStr = (inputDataResp.getUnsupportedFeatureName().isBlank()
+							? "_unknown_" : inputDataResp.getUnsupportedFeatureName());
 					output.headers.put(hdEntry.getHdKey(), hdEntry);
 				}
 				break;
@@ -171,8 +171,8 @@ public final class RtspProtoHighResponseProducer {
 
 		try {
 			sdpProducerInterface.buildSdpForDescribe(
-					inputDataResp.getRespIdInputSource(),
-					inputDataResp.getRespServerIpFromRscUrl(),
+					inputDataResp.getIdInputSource(),
+					inputDataResp.getServerIpFromRscUrl(),
 					output.bodyDescribeSdp
 				);
 		} catch (RtspSdpException e) {
@@ -188,7 +188,7 @@ public final class RtspProtoHighResponseProducer {
 
 		// Content-Base
 		{
-			String tmpRscUrl = inputDataResp.getRespResourceUrl();
+			String tmpRscUrl = inputDataResp.getResourceUrl();
 			if (tmpRscUrl.isBlank()) {
 				throw new RtspInvalidResponseException(FNC_NAME + ": Resource URL must be set");
 			}
@@ -231,12 +231,12 @@ public final class RtspProtoHighResponseProducer {
 			return;
 		}
 
-		if (rtspProtoParameterGetterInterface == null) {
+		if (parameterGetterInterface == null) {
 			output.statusCode = RtspStatusCode.INVALID_PARAMETER;
 			output.bodyGetSetInvalidParams.copyFrom(inputDataResp.respGetParamNames);
 		} else {
 			RtspProtoDataCntGetSetParamKvs tmpDataGsp =
-					rtspProtoParameterGetterInterface.getAllRtspParameters(inputDataResp.respIdSession.getId());
+					parameterGetterInterface.getAllRtspParameters(inputDataResp.respIdSession.getId());
 
 			Set<String> tmpMissingParams = new HashSet<>();
 			for (String requParam : inputDataResp.respGetParamNames.getParamNames()) {
@@ -276,7 +276,7 @@ public final class RtspProtoHighResponseProducer {
 		// Public
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.PUBLIC);
-			hdEntry.hdValPublic.messageTypes.addAll(RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES);
+			hdEntry.hdValPublic.messageTypes.putAllMts(RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth
@@ -430,7 +430,7 @@ public final class RtspProtoHighResponseProducer {
 			hdEntry.hdValTransport.tpIsEncr = tmpSetupSubStream.tpIsEncr;
 			hdEntry.hdValTransport.tpIsUnicast = tmpSetupSubStream.tpIsUnicast;
 			hdEntry.hdValTransport.tpIsInterleaved = tmpSetupSubStream.tpIsInterleaved;
-			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.getRespServerIpFromRscUrl();
+			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.getServerIpFromRscUrl();
 			hdEntry.hdValTransport.tpDestIpOrHost = getClientIpAddr().getHostAddress();
 			if (tmpSetupSubStream.tpIsUdp) {
 				try {
@@ -522,10 +522,10 @@ public final class RtspProtoHighResponseProducer {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
 		// CSeq
-		if (rtspSessionInfo.seqNr_requRem_lastRcvd >= 0) {
+		if (inputDataResp.getCseqNrLastRcvd() >= 0L) {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CSEQ);
 			try {
-				hdEntry.hdValCseq.setCseqNr32bit(rtspSessionInfo.seqNr_requRem_lastRcvd);
+				hdEntry.hdValCseq.setCseqNr32bit(inputDataResp.getCseqNrLastRcvd());
 			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidResponseException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
 			}
@@ -612,9 +612,7 @@ public final class RtspProtoHighResponseProducer {
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
+	@SuppressWarnings("SameParameterValue")
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
 				fncName + ": " + msg);

@@ -286,7 +286,7 @@ public final class RtspProtoLowResponseConsumer {
 			tmpOption = tmpOption.strip();
 			try {
 				RtspMessageType tmpEn = RtspMessageType.valueOf(tmpOption);
-				entry.hdValPublic.messageTypes.add(tmpEn);
+				entry.hdValPublic.messageTypes.putMt(tmpEn);
 			} catch (IllegalArgumentException e) {
 				logWarn(FNC_NAME, "Unknown option: '" + tmpOption + "'");
 			}

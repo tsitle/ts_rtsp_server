@@ -62,7 +62,6 @@ public final class RtspProtoRequestOutputSvc {
 		this.rtspProtoHighRequestProducer = new RtspProtoHighRequestProducer(
 				logMsgInterface,
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
-				rtspSessionInfo,
 				sdpProducer
 			);
 		this.rtspProtoLowRequestProducer = new RtspProtoLowRequestProducer(logMsgInterface);
@@ -145,13 +144,6 @@ public final class RtspProtoRequestOutputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
 		return internalSendRequest(FNC_NAME, RtspMessageType.PLAY, resourceUrl);
-	}
-
-	public @NonNull RtspMessageType sendRequest_record(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_record()";
-
-		return internalSendRequest(FNC_NAME, RtspMessageType.RECORD, resourceUrl);
 	}
 
 	public @NonNull RtspMessageType sendRequest_redirect(@NonNull String resourceUrl)
@@ -275,8 +267,8 @@ public final class RtspProtoRequestOutputSvc {
 		RtspStaticSessionInfo.StreamKmds tmpStreamKmds = tmpOptStreamKmds.get();
 
 		//
-		if ((tmpStreamKmds.isForLegacySdes && ! rtspSessionInfo.rhSupportedMessageTypes.contains(RtspMessageType.ANNOUNCE)) ||
-				(! tmpStreamKmds.isForLegacySdes && ! rtspSessionInfo.rhSupportedMessageTypes.contains(RtspMessageType.SET_PARAMETER))) {
+		if ((tmpStreamKmds.isForLegacySdes && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspMessageType.ANNOUNCE)) ||
+				(! tmpStreamKmds.isForLegacySdes && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspMessageType.SET_PARAMETER))) {
 			throw new RtspInvalidRequestException("remote host does not support SRTxP re-keying");
 		}
 		Objects.requireNonNull(tmpStreamKmds.kmdOutbound);
@@ -319,8 +311,6 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
-		final String FNC_NAME = getClass().getSimpleName() + ".internalSendRequest()";
-
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
@@ -328,33 +318,14 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		inputDataRequ.writeProtect();
 		RtspProtoDataRequest tmpInputDataRequCopy = new RtspProtoDataRequest(inputDataRequ);
-		tmpInputDataRequCopy.requIdSession.setId(rtspSessionInfo.rtspSessionId);
-		tmpInputDataRequCopy.setRequResourceUrl(resourceUrl);
-		if (requestMessageType == RtspMessageType.ANNOUNCE) {
-			try {
-				tmpInputDataRequCopy.setRequServerIpFromRscUrl(
-						rtspSessionInfo.findRtspIpFromResourceUrl(requestMessageType, null)
-				);
-			} catch (RtspCannotFindIpFromRscUrlException e) {
-				logError(FNC_NAME, e.getMessage());
-				return requestMessageType;
-			}
-			//
-			Optional<RtspInputSource> tmpOptIs = rtspSessionInfo.getInputSourceObjForMt_nonSetup(requestMessageType);
-			if (tmpOptIs.isEmpty()) {
-				logError(FNC_NAME, "Input Source not found");
-				return requestMessageType;
-			}
-			tmpInputDataRequCopy.setRequIdInputSource(tmpOptIs.get().getIdAsProtoId());
+
+		// load data from Session Info
+		if (! loadFromSessionInfo(fncName, requestMessageType, tmpInputDataRequCopy)) {
+			return requestMessageType;
 		}
 
-		// authentication parameters
-		tmpInputDataRequCopy.requAuthClient.setAuthUser(rtspSessionInfo.permAuthClient.authUser);
-		tmpInputDataRequCopy.requAuthClient.setAuthPlainPassword(rtspSessionInfo.permAuthClient.authPlainPassword);
-		tmpInputDataRequCopy.requAuthClient.setAuthRealm(rtspSessionInfo.permAuthServer.authRealm);
-		tmpInputDataRequCopy.requAuthClient.setAuthNonce(rtspSessionInfo.permAuthServer.authNonce);
-
 		//
+		tmpInputDataRequCopy.setResourceUrl(resourceUrl);
 		tmpInputDataRequCopy.writeProtect();
 
 		// build the outgoing message
@@ -384,9 +355,47 @@ public final class RtspProtoRequestOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(fncName, String.format("Sent request '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.messageType,
-				rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId,
+				tmpInputDataRequCopy.requIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.requIdSession.getId(),
 				msgStructured.getHeaderCseq().isPresent() ? Integer.toUnsignedString(msgStructured.getHeaderCseq().get()) : "-"));
 		return requestMessageType;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean loadFromSessionInfo(
+				@NonNull String fncName,
+				@NonNull RtspMessageType requestMessageType,
+				@NonNull RtspProtoDataRequest dataRequ
+			) {
+		dataRequ.requIdSession.setId(rtspSessionInfo.rtspSessionId);
+		dataRequ.setRtspProtoVersionToUse(rtspSessionInfo.rtspProtoVersionToUse);
+		dataRequ.setCseqNrToSend(++rtspSessionInfo.seqNr_requToRem_lastSent);
+
+		if (requestMessageType == RtspMessageType.ANNOUNCE) {
+			try {
+				dataRequ.setServerIpFromRscUrl(
+						rtspSessionInfo.findRtspIpFromResourceUrl(requestMessageType, null)
+				);
+			} catch (RtspCannotFindIpFromRscUrlException e) {
+				logError(fncName, e.getMessage());
+				return false;
+			}
+			//
+			Optional<RtspInputSource> tmpOptIs = rtspSessionInfo.getInputSourceObjForMt_nonSetup(requestMessageType);
+			if (tmpOptIs.isEmpty()) {
+				logError(fncName, "Input Source not found");
+				return false;
+			}
+			dataRequ.setIdInputSource(tmpOptIs.get().getIdAsProtoId());
+		}
+
+		// authentication parameters
+		dataRequ.requAuthClient.setAuthUser(rtspSessionInfo.permAuthClient.authUser);
+		dataRequ.requAuthClient.setAuthPlainPassword(rtspSessionInfo.permAuthClient.authPlainPassword);
+		dataRequ.requAuthClient.setAuthRealm(rtspSessionInfo.permAuthServer.authRealm);
+		dataRequ.requAuthClient.setAuthNonce(rtspSessionInfo.permAuthServer.authNonce);
+
+		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -1,14 +1,11 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
-
-import java.util.HashSet;
-import java.util.Set;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
 
 public class RtspProtoHeaderTypePublic {
 
-	public @NonNull Set<@NonNull RtspMessageType> messageTypes = new HashSet<>();
+	public @NonNull RtspProtoDataCntMessageTypes messageTypes = new RtspProtoDataCntMessageTypes();
 
 	@Override
 	public @NonNull String toString() {

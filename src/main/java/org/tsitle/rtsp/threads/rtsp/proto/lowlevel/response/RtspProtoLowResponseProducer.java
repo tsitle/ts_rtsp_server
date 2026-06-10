@@ -176,10 +176,10 @@ public final class RtspProtoLowResponseProducer {
 		if (messageType != RtspMessageType.OPTIONS) {
 			throw new RtspInvalidResponseException("Public header is only valid for OPTIONS responses");
 		}
-		if (hdValue.messageTypes.contains(RtspMessageType.UNKNOWN)) {
+		if (hdValue.messageTypes.containsMt(RtspMessageType.UNKNOWN)) {
 			throw new RtspInvalidResponseException("UNKNOWN message type in Public header");
 		}
-		List<String> tmpList = hdValue.messageTypes.stream()
+		List<String> tmpList = hdValue.messageTypes.getMts().stream()
 				.map(Enum::name)
 				.toList();
 		return String.join(", ", tmpList);

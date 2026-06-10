@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
@@ -62,11 +63,11 @@ public final class RtspSessionInfo {
 	public @NonNull String rtspSessionId = "";
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
-	public long seqNr_requRem_lastRcvd = -1L;
+	public long seqNr_requFromRem_lastRcvd = -1L;
 	/** Request from remote host: Expected RTSP message Sequence Number */
-	public long seqNr_requRem_expected = 0L;
-	/** Response from remote host: Expected RTSP message Sequence Number */
-	public long seqNr_respRem_expected = 0L;
+	public long seqNr_requFromRem_expected = 0L;
+	/** Request to remote host: Last sent RTSP message Sequence Number */
+	public long seqNr_requToRem_lastSent = 0L;
 
 	/** Playback range request value from the client */
 	public @NonNull String clientPlaybackRangeValue = "";
@@ -78,7 +79,7 @@ public final class RtspSessionInfo {
 	public @NonNull String clientUserAgent = "";
 
 	/** RTSP message types that are supported by the remote host */
-	public final @NonNull Set<@NonNull RtspMessageType> rhSupportedMessageTypes = new HashSet<>();
+	public final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	// ----------------------------------------------------------------
 

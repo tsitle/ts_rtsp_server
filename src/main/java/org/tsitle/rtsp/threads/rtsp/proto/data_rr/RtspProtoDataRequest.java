@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 public final class RtspProtoDataRequest {
 
@@ -35,6 +36,15 @@ public final class RtspProtoDataRequest {
 	/** Input Source ID */
 	private final @NonNull RtspProtoIdInputSource requIdInputSource = new RtspProtoIdInputSource();
 
+	/** RTSP protocol version */
+	private @NonNull RtspProtocolVersion requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
+
+	/** Last received RTSP message Sequence Number in request */
+	private long requCseqNrLastRcvd = -1L;
+
+	/** RTSP message Sequence Number to use for sending a request */
+	private long requCseqNrToSend = 0L;
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -55,49 +65,82 @@ public final class RtspProtoDataRequest {
 		this.requServerIpFromRscUrl = other.requServerIpFromRscUrl;
 		this.requResourceUrl = other.requResourceUrl;
 		this.requIdInputSource.copyFrom(other.requIdInputSource);
+		this.requRtspProtoVersionToUse = other.requRtspProtoVersionToUse;
+		this.requCseqNrLastRcvd = other.requCseqNrLastRcvd;
+		this.requCseqNrToSend = other.requCseqNrToSend;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull String getRequUnsupportedFeatureName() {
+	public @NonNull String getUnsupportedFeatureName() {
 		return requUnsupportedFeatureName;
 	}
-	public void setRequUnsupportedFeatureName(@NonNull String value) {
+	public void setUnsupportedFeatureName(@NonNull String value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.requUnsupportedFeatureName = value;
 	}
 
-	public @NonNull String getRequServerIpFromRscUrl() {
+	public @NonNull String getServerIpFromRscUrl() {
 		return requServerIpFromRscUrl;
 	}
-	public void setRequServerIpFromRscUrl(@NonNull String value) {
+	public void setServerIpFromRscUrl(@NonNull String value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.requServerIpFromRscUrl = value;
 	}
 
-	public @NonNull String getRequResourceUrl() {
+	public @NonNull String getResourceUrl() {
 		return requResourceUrl;
 	}
-	public void setRequResourceUrl(@NonNull String value) {
+	public void setResourceUrl(@NonNull String value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.requResourceUrl = value;
 	}
 
-	public @NonNull RtspProtoIdInputSource getRequIdInputSource() {
+	public @NonNull RtspProtoIdInputSource getIdInputSource() {
 		return requIdInputSource;
 	}
-	public void setRequIdInputSource(@NonNull RtspProtoIdInputSource value) {
+	public void setIdInputSource(@NonNull RtspProtoIdInputSource value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.requIdInputSource.copyFrom(value);
+	}
+
+	public @NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
+		return requRtspProtoVersionToUse;
+	}
+	public void setRtspProtoVersionToUse(@NonNull RtspProtocolVersion value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requRtspProtoVersionToUse = value;
+	}
+
+	public long getCseqNrLastRcvd() {
+		return requCseqNrLastRcvd;
+	}
+	public void setCseqNrLastRcvd(long value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requCseqNrLastRcvd = value;
+	}
+
+	public long getCseqNrToSend() {
+		return requCseqNrToSend;
+	}
+	public void setCseqNrToSend(long value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requCseqNrToSend = value;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -116,6 +159,9 @@ public final class RtspProtoDataRequest {
 		requServerIpFromRscUrl = "";
 		requResourceUrl = "";
 		requIdInputSource.clear();
+		requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
+		requCseqNrLastRcvd = -1L;
+		requCseqNrToSend = 0L;
 	}
 
 	public void writeProtect() {

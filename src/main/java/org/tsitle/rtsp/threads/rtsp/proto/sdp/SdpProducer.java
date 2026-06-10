@@ -77,7 +77,16 @@ public final class SdpProducer implements SdpProducerInterface {
 				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
 				@NonNull RtspProtoDataCntSdp outputSdp
 			) throws RtspSdpException {
-		// @TODO implement
+
+		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
+
+		/*
+		 * Re-keying legacy SDES key: @TODO
+		 * we need to send an ANNOUNCE request that contains the entire SDP.
+		 * Only the 'a=crypto' line must change and use a different tag.
+		 * The initial SDP would contain something like 'a=crypto:1 ...' and the new SDP
+		 * would contain something like 'a=crypto:2 ...'.
+		 */
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

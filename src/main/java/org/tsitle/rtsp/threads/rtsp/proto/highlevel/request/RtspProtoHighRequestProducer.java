@@ -7,7 +7,6 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
@@ -24,18 +23,15 @@ public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull SdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean cfgIsDebugPrintRtspSdpSent,
-				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull SdpProducerInterface sdpProducerInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
-		this.rtspSessionInfo = rtspSessionInfo;
 		this.sdpProducerInterface = sdpProducerInterface;
 	}
 
@@ -50,7 +46,7 @@ public final class RtspProtoHighRequestProducer {
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
-		if (inputDataRequ.getRequResourceUrl().isBlank()) {
+		if (inputDataRequ.getResourceUrl().isBlank()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 		}
 
@@ -59,12 +55,12 @@ public final class RtspProtoHighRequestProducer {
 		//
 		RtspProtoHighMsgStructuredRequest resObj = new RtspProtoHighMsgStructuredRequest();
 
-		resObj.rtspProtoVersion = rtspSessionInfo.rtspProtoVersionToUse;
+		resObj.rtspProtoVersion = inputDataRequ.getRtspProtoVersionToUse();
 		resObj.statusCode = RtspStatusCode.OK;
 		resObj.messageType = requestMessageType;
 
 		//
-		resObj.resourceUrl = inputDataRequ.getRequResourceUrl();
+		resObj.resourceUrl = inputDataRequ.getResourceUrl();
 
 		//
 		addCommonHeaders(inputDataRequ, resObj);
@@ -77,7 +73,6 @@ public final class RtspProtoHighRequestProducer {
 			case OPTIONS -> buildRequest_options(resObj);
 			case PAUSE -> buildRequest_pause(resObj);
 			case PLAY -> buildRequest_play(resObj);
-			case RECORD -> buildRequest_record(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
 			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, subStreamId, resObj);
 			case SETUP -> buildRequest_setup(resObj);
@@ -113,20 +108,10 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
-		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
-
-		/*
-		 * Re-keying legacy SDES key: @TODO
-		 * we need to send an ANNOUNCE request that contains the entire SDP.
-		 * Only the 'a=crypto' line must change and use a different tag.
-		 * The initial SDP would contain something like 'a=crypto:1 ...' and the new SDP
-		 * would contain something like 'a=crypto:2 ...'.
-		 */
-
 		try {
 			sdpProducerInterface.buildUpdatedSdpForAnnounce(
-					inputDataRequ.getRequIdInputSource(),
-					inputDataRequ.getRequServerIpFromRscUrl(),
+					inputDataRequ.getIdInputSource(),
+					inputDataRequ.getServerIpFromRscUrl(),
 					kmdsOutbound,
 					output.bodyAnnounceSdp
 				);
@@ -143,7 +128,7 @@ public final class RtspProtoHighRequestProducer {
 
 		// Content-Base
 		{
-			String tmpRscUrl = inputDataRequ.getRequResourceUrl();
+			String tmpRscUrl = inputDataRequ.getResourceUrl();
 			if (tmpRscUrl.isBlank()) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 			}
@@ -227,10 +212,7 @@ public final class RtspProtoHighRequestProducer {
 		/*
 		 * Example:
 		 *   "PLAY rtsp://example.com/fizzle/foo/ RTSP/1.0"
-		 *   "CSeq: 7"
-		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo/\", response=\"...\""
-		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
-		 *   "Session: 126437FE"
+		 *   ...
 		 *   "Range: npt=0.000-"
 		 */
 
@@ -240,12 +222,26 @@ public final class RtspProtoHighRequestProducer {
 		throw new RtspInvalidRequestException(FNC_NAME + ": PLAY is not supported yet");
 	}
 
-	private void buildRequest_record(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// nothing to do
-	}
-
 	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) {
-		// nothing to do
+		/*
+		 * A redirect request informs the client that it must connect to another
+		 * server location. It contains the mandatory header Location, which
+		 * indicates that the client should issue requests for that URL. It may
+		 * contain the parameter Range, which indicates when the redirection
+		 * takes effect. If the client wants to continue to send or receive
+		 * media for this URI, the client MUST issue a TEARDOWN request for the
+		 * current session and a SETUP for the new session at the designated
+		 * host.
+		 *
+		 * This example request redirects traffic for this URI to the new server
+		 * at the given playtime:
+		 *   "REDIRECT rtsp://example.com/fizzle/foo RTSP/1.0"
+		 *   "CSeq: 732"
+		 *   "Location: rtsp://bigserver.com:8001"
+		 *   "Range: clock=19960213T143205Z-"
+		 */
+
+		// @TODO set some headers
 	}
 
 	private void buildRequest_setParameter(
@@ -354,9 +350,12 @@ public final class RtspProtoHighRequestProducer {
 
 		// CSeq
 		{
+			if (inputDataRequ.getCseqNrToSend() < 1L) {
+				throw new RtspInvalidRequestException(FNC_NAME + ": CSeq to send must be >= 1");
+			}
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
 			try {
-				hdEntry.hdValCseq.setCseqNr32bit(++rtspSessionInfo.seqNr_respRem_expected);
+				hdEntry.hdValCseq.setCseqNr32bit(inputDataRequ.getCseqNrToSend());
 			} catch (RtspNumberRangeException e) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
 			}

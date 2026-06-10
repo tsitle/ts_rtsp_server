@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 
 public final class RtspProtoDataResponse {
 
@@ -35,6 +36,15 @@ public final class RtspProtoDataResponse {
 	/** Input Source ID */
 	private final @NonNull RtspProtoIdInputSource respIdInputSource = new RtspProtoIdInputSource();
 
+	/** Supported Message Types */
+	public final @NonNull RtspProtoDataCntMessageTypes respSuppMessageTypes = new RtspProtoDataCntMessageTypes();
+
+	/** RTSP protocol version */
+	private @NonNull RtspProtocolVersion respRtspProtoVersionToUse = RtspProtocolVersion.NONE;
+
+	/** Last received RTSP message Sequence Number in request */
+	private long respCseqNrLastRcvd = -1L;
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -47,44 +57,28 @@ public final class RtspProtoDataResponse {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull String getRespUnsupportedFeatureName() {
+	public @NonNull String getUnsupportedFeatureName() {
 		return respUnsupportedFeatureName;
 	}
-	public void setRespUnsupportedFeatureName(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.respUnsupportedFeatureName = value;
-	}
 
-	public @NonNull String getRespServerIpFromRscUrl() {
+	public @NonNull String getServerIpFromRscUrl() {
 		return respServerIpFromRscUrl;
 	}
-	public void setRespServerIpFromRscUrl(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.respServerIpFromRscUrl = value;
-	}
 
-	public @NonNull String getRespResourceUrl() {
+	public @NonNull String getResourceUrl() {
 		return respResourceUrl;
 	}
-	public void setRespResourceUrl(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.respResourceUrl = value;
+
+	public @NonNull RtspProtoIdInputSource getIdInputSource() {
+		return respIdInputSource.clone();
 	}
 
-	public @NonNull RtspProtoIdInputSource getRespIdInputSource() {
-		return respIdInputSource;
+	public @NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
+		return respRtspProtoVersionToUse;
 	}
-	public void setRespIdInputSource(@NonNull RtspProtoIdInputSource value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.respIdInputSource.copyFrom(value);
+
+	public long getCseqNrLastRcvd() {
+		return respCseqNrLastRcvd;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -103,6 +97,9 @@ public final class RtspProtoDataResponse {
 		respServerIpFromRscUrl = "";
 		respResourceUrl = "";
 		respIdInputSource.clear();
+		respSuppMessageTypes.clear();
+		respRtspProtoVersionToUse = RtspProtocolVersion.NONE;
+		respCseqNrLastRcvd = -1L;
 	}
 
 	public void copyFrom(@NonNull RtspProtoDataRequest inputDataRequ) {
@@ -112,10 +109,12 @@ public final class RtspProtoDataResponse {
 		respIdSession.copyFrom(inputDataRequ.requIdSession);
 		respGetParamNames.copyFrom(inputDataRequ.requGetParamNames);
 		respInvalidParamNames.copyFrom(inputDataRequ.requInvalidParamNames);
-		respUnsupportedFeatureName = inputDataRequ.getRequUnsupportedFeatureName();
-		respResourceUrl = inputDataRequ.getRequResourceUrl();
-		respServerIpFromRscUrl = inputDataRequ.getRequServerIpFromRscUrl();
-		respIdInputSource.copyFrom(inputDataRequ.getRequIdInputSource());
+		respUnsupportedFeatureName = inputDataRequ.getUnsupportedFeatureName();
+		respResourceUrl = inputDataRequ.getResourceUrl();
+		respServerIpFromRscUrl = inputDataRequ.getServerIpFromRscUrl();
+		respIdInputSource.copyFrom(inputDataRequ.getIdInputSource());
+		respRtspProtoVersionToUse = inputDataRequ.getRtspProtoVersionToUse();
+		respCseqNrLastRcvd = inputDataRequ.getCseqNrLastRcvd();
 	}
 
 	public void writeProtect() {
@@ -128,6 +127,7 @@ public final class RtspProtoDataResponse {
 		respInvalidParamNames.writeProtect();
 		respDescribeSdp.writeProtect();
 		respIdInputSource.writeProtect();
+		respSuppMessageTypes.writeProtect();
 	}
 
 }

@@ -17,8 +17,6 @@ public enum RtspMessageType {
 	PAUSE,
 	/** Start playback of stream. (RFC-2326 Section 10.5) */
 	PLAY,
-	/** Initiates recording a range of media data. (RFC-2326 Section 10.11) */
-	RECORD,
 	/** Inform the client that it must connect to another server location. (RFC-2326 Section 10.10) */
 	REDIRECT,
 	/** Receive one or more parameter values for the session. (RFC-2326 Section 10.9) */

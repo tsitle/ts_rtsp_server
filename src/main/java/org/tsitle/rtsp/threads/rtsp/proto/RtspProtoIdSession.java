@@ -12,4 +12,12 @@ public final class RtspProtoIdSession extends RtspProtoIdBase {
 		super(sessionId);
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public RtspProtoIdSession clone() {
+		return (RtspProtoIdSession)super.clone();
+	}
+
 }

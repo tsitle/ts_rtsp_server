@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.exceptions.InputStreamNotReadyException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
@@ -9,6 +10,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
@@ -18,6 +20,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseConsumer;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpConsumer;
 
 public final class RtspProtoResponseInputSvc {
 
@@ -34,11 +37,16 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
-				boolean isResponseFromClient
+				boolean isResponseFromClient,
+				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
+				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+
+		//
+		SdpConsumer sdpConsumer = new SdpConsumer();
 
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
@@ -49,8 +57,10 @@ public final class RtspProtoResponseInputSvc {
 		this.rtspProtoLowResponseConsumer = new RtspProtoLowResponseConsumer(logMsgInterface);
 		this.rtspProtoHighResponseConsumer = new RtspProtoHighResponseConsumer(
 				logMsgInterface,
-				rtspSessionInfo,
-				isResponseFromClient
+				isResponseFromClient,
+				sdpConsumer,
+				parameterNotifyInvalidInterface,
+				parameterNotifyRcvdInterface
 			);
 	}
 
@@ -79,21 +89,25 @@ public final class RtspProtoResponseInputSvc {
 			return RtspResponseBasics.createInternalServerError();
 		}
 
+		// load data from Session Info
+		RtspProtoIdSession currentIdSession = new RtspProtoIdSession();
+		RtspProtoDataCntCseqRespInp cseqRespInp = new RtspProtoDataCntCseqRespInp();
+		loadFromSessionInfo(currentIdSession, cseqRespInp);
+
 		// process the response
 		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
-		RtspProtoIdSession currentIdSession = new RtspProtoIdSession(rtspSessionInfo.rtspSessionId);
-		currentIdSession.writeProtect();
 		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(
 				currentIdSession,
+				cseqRespInp,
 				msgStructured,
 				outputDataResp
 			);
 
-		// authentication parameters
-		if (! outputDataResp.respAuthServer.getAuthRealm().isEmpty()) {
-			rtspSessionInfo.permAuthServer.authRealm = outputDataResp.respAuthServer.getAuthRealm();
-			rtspSessionInfo.permAuthServer.authNonce = outputDataResp.respAuthServer.getAuthNonce();
-		}
+		//
+		outputDataResp.writeProtect();
+
+		// update data in Session Info
+		updateSessionInfo(outputDataResp);
 
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",
@@ -105,6 +119,32 @@ public final class RtspProtoResponseInputSvc {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void loadFromSessionInfo(
+				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp
+			) {
+		currentIdSession.setId(rtspSessionInfo.rtspSessionId);
+		currentIdSession.writeProtect();
+
+		cseqRespInp.setCseqNrExpected(rtspSessionInfo.seqNr_requToRem_lastSent);
+		cseqRespInp.writeProtect();
+	}
+
+	private void updateSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
+		rtspSessionInfo.permAuthServer.authRealm = dataResp.respAuthServer.getAuthRealm();
+		rtspSessionInfo.permAuthServer.authNonce = dataResp.respAuthServer.getAuthNonce();
+
+		//
+		if (! dataResp.respIdSession.isEmpty()) {
+			rtspSessionInfo.rtspSessionId = dataResp.respIdSession.getId();
+		}
+
+		//
+		rtspSessionInfo.rhSupportedMessageTypes.copyFrom(dataResp.respSuppMessageTypes);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {

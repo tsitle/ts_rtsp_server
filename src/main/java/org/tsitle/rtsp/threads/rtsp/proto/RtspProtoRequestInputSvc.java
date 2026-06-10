@@ -11,6 +11,7 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspRequAuthSvc;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntCseqRequInp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
@@ -22,6 +23,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpConsumer;
 
 import java.util.Optional;
 
@@ -49,6 +51,9 @@ public final class RtspProtoRequestInputSvc {
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
+		SdpConsumer sdpConsumer = new SdpConsumer();
+
+		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,
@@ -60,7 +65,8 @@ public final class RtspProtoRequestInputSvc {
 				rtspConfig,
 				rtspSessionInfo,
 				isRequestFromClient,
-				null
+				sdpConsumer,
+				null  // @TODO
 			);
 
 		//
@@ -77,6 +83,9 @@ public final class RtspProtoRequestInputSvc {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
+
+		//
+		outputDataRequ.clear();
 
 		// read the raw request from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
@@ -102,50 +111,55 @@ public final class RtspProtoRequestInputSvc {
 			return resObj;
 		}
 
+		// load data from Session Info
+		RtspProtoIdSession currentIdSession = new RtspProtoIdSession();
+		RtspProtoDataCntCseqRequInp cseqRequIo = new RtspProtoDataCntCseqRequInp();
+		loadFromSessionInfo(currentIdSession, cseqRequIo);
+
 		// process the request - without checking authentication
-		RtspProtoIdSession currentIdSession = new RtspProtoIdSession(rtspSessionInfo.rtspSessionId);
-		currentIdSession.writeProtect();
 		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(
 				currentIdSession,
+				cseqRequIo,
 				msgStructured,
 				outputDataRequ
 			);
+
+		// update data in Session Info
+		updateSessionInfo_immediate(outputDataRequ, cseqRequIo);
+
+		//
 		if (! resObj.isValid()) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
 					resObj.messageType, resObj.statusCode,
-					Long.toUnsignedString(rtspSessionInfo.seqNr_requRem_lastRcvd)));
+					Long.toUnsignedString(cseqRequIo.getCseqNrLastRcvd())));
 			return resObj;
 		}
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
 		rtspRequAuthSvc.checkAuthorization(resObj, outputDataRequ.requAuthClient);
 
-		//
+		// store additional request data
 		try {
-			// store the Input Source ID
 			storeInputSourceId(msgStructured, outputDataRequ);
-			// store the Resource URL
 			storeResourceUrl(msgStructured, outputDataRequ);
-			// store the Server's IP address
 			storeServerIp(msgStructured, outputDataRequ, resObj);
 		} catch (RtspInvalidRequestException e) {
-			RtspRequestBasics locResObj = RtspRequestBasics.createKnownWithError(
-					msgStructured.messageType,
-					RtspStatusCode.INTERNAL_SERVER_ERROR
-				);
+			resObj.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
 			logWarn(FNC_NAME, String.format("%s for RTSP request message (rt=%s), rejecting it with code %s",
-					e.getMessage(), locResObj.messageType, locResObj.statusCode));
-			return locResObj;
+					e.getMessage(), resObj.messageType, resObj.statusCode));
 		}
 
 		//
 		outputDataRequ.writeProtect();
 
-		//
-		if (resObj.isValid()) {
-			logDebug(FNC_NAME, String.format("Received %s request (CSeq=%s)",
-					resObj.messageType, Long.toUnsignedString(rtspSessionInfo.seqNr_requRem_lastRcvd)));
+		// update data in Session Info
+		if (! (resObj.isValid() && updateSessionInfo_success(resObj))) {
+			return resObj;
 		}
+
+		//
+		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%s)",
+				resObj.messageType, Long.toUnsignedString(cseqRequIo.getCseqNrLastRcvd())));
 		return resObj;
 	}
 
@@ -163,14 +177,14 @@ public final class RtspProtoRequestInputSvc {
 		if (tmpOptIs.isEmpty()) {
 			throw new RtspInvalidRequestException("Input Source not found");
 		}
-		outputDataRequ.setRequIdInputSource(tmpOptIs.get().getIdAsProtoId());
+		outputDataRequ.setIdInputSource(tmpOptIs.get().getIdAsProtoId());
 	}
 
 	private void storeResourceUrl(
 				RtspProtoHighMsgStructuredRequest msgStructured,
 				@NonNull RtspProtoDataRequest outputDataRequ
 			) {
-		outputDataRequ.setRequResourceUrl(msgStructured.resourceUrl);
+		outputDataRequ.setResourceUrl(msgStructured.resourceUrl);
 	}
 
 	private void storeServerIp(
@@ -186,12 +200,55 @@ public final class RtspProtoRequestInputSvc {
 				}
 				tmpSubStreamId = requBasics.requestUrlInputOrStreamSource.subStreamId;
 			}
-			outputDataRequ.setRequServerIpFromRscUrl(
+			outputDataRequ.setServerIpFromRscUrl(
 					rtspSessionInfo.findRtspIpFromResourceUrl(msgStructured.messageType, tmpSubStreamId)
 				);
 		} catch (RtspCannotFindIpFromRscUrlException e) {
 			throw new RtspInvalidRequestException(e.getMessage());
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void loadFromSessionInfo(
+				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoDataCntCseqRequInp cseqRequIo
+			) {
+		currentIdSession.setId(rtspSessionInfo.rtspSessionId);
+		currentIdSession.writeProtect();
+
+		//
+		cseqRequIo.setCseqNrLastRcvd(rtspSessionInfo.seqNr_requFromRem_lastRcvd);
+		cseqRequIo.setCseqNrExpected(rtspSessionInfo.seqNr_requFromRem_expected);
+	}
+
+	private void updateSessionInfo_immediate(
+				@NonNull RtspProtoDataRequest dataRequ,
+				@NonNull RtspProtoDataCntCseqRequInp cseqRequIo
+			) {
+		rtspSessionInfo.rtspProtoVersionToUse = dataRequ.getRtspProtoVersionToUse();
+
+		//
+		rtspSessionInfo.seqNr_requFromRem_lastRcvd = cseqRequIo.getCseqNrLastRcvd();
+		rtspSessionInfo.seqNr_requFromRem_expected = cseqRequIo.getCseqNrExpected();
+	}
+
+	private boolean updateSessionInfo_success(@NonNull RtspRequestBasics requBasics) {
+		final String FNC_NAME = getClass().getSimpleName() + ".updateSessionInfo_success()";
+
+		if (requBasics.messageType != RtspMessageType.SETUP) {
+			return true;
+		}
+		if (requBasics.requestUrlInputOrStreamSource == null || requBasics.requestUrlInputOrStreamSource.subStreamId == null) {
+			requBasics.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+			logWarn(FNC_NAME, String.format("No Sub-Stream ID for RTSP request message (rt=%s), rejecting it with code %s",
+					requBasics.messageType, requBasics.statusCode));
+			return false;
+		}
+		// add Sub-Stream ID to session info
+		rtspSessionInfo.subStreamIdsSetup.add(requBasics.requestUrlInputOrStreamSource.subStreamId);
+
+		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

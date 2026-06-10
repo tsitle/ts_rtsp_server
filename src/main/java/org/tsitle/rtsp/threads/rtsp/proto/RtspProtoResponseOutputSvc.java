@@ -79,35 +79,37 @@ public final class RtspProtoResponseOutputSvc {
 			throw new TcpSocketClosedException();
 		}
 
+		//
 		inputDataRequ.writeProtect();
 
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
 			RtspProtoDataResponse inputDataResp = new RtspProtoDataResponse(inputDataRequ);
-			inputDataResp.respIdSession.setId(rtspSessionInfo.rtspSessionId);
+
+			// load data from Session Info
+			loadFromSessionInfo(inputDataResp);
+
+			//
+			inputDataResp.writeProtect();
+
+			//
 			if (rtspRequestBasics.messageType == RtspMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspStatusCode.OK) {
-				if (inputDataResp.getRespServerIpFromRscUrl().isEmpty()) {
+				if (inputDataResp.getServerIpFromRscUrl().isEmpty()) {
 					logError(FNC_NAME, "Server IP from Resource URL must be set");
 					return;
 				}
-				if (inputDataResp.getRespIdInputSource().isEmpty()) {
+				if (inputDataResp.getIdInputSource().isEmpty()) {
 					logError(FNC_NAME, "Input Source ID must be set");
 					return;
 				}
 			}
-			inputDataResp.writeProtect();
 
 			//
 			msgStructured = rtspProtoHighResponseProducer.buildResponse(rtspRequestBasics, inputDataResp);
 
-			// get new Session ID if one has been generated
-			Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
-			if (tmpOptIdSess.isPresent() && rtspSessionInfo.rtspSessionId.isEmpty() &&
-					! tmpOptIdSess.get().isEmpty()) {
-				rtspSessionInfo.rtspSessionId = tmpOptIdSess.get().getId();
-				// @TODO make rtspSessionInfo.rtspSessionId write-only
-			}
+			// update data in Session Info
+			updateSessionInfo(msgStructured);
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;
@@ -131,6 +133,21 @@ public final class RtspProtoResponseOutputSvc {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void loadFromSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
+		dataResp.respIdSession.setId(rtspSessionInfo.rtspSessionId);
+	}
+
+	private void updateSessionInfo(@NonNull RtspProtoHighMsgStructuredResponse msgStructured) {
+		// store new Session ID if one has been generated
+		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
+		if (tmpOptIdSess.isPresent() && rtspSessionInfo.rtspSessionId.isEmpty() &&
+				! tmpOptIdSess.get().isEmpty()) {
+			rtspSessionInfo.rtspSessionId = tmpOptIdSess.get().getId();
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
