@@ -1,15 +1,12 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInputSourceIdNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSubStreamIdNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 import java.net.InetAddress;
 import java.util.Optional;
@@ -47,19 +44,19 @@ final class ResourceUrlProcessor {
 				@NonNull ResourceUrlParsingVars resourceUrlParsingVars,
 				@NonNull InetAddress clientIpAddr,
 				@NonNull RtspConfig rtspConfig
-			) throws RtspSubStreamIdNotFoundException {
+			) throws RtspIdSubStreamNotFoundException {
 		Optional<RtspStaticSessionInfo.SdpSubStreamInfo> tmpSdpSubStream = RtspStaticSessionInfo.getSdpSubStream(
 				clientIpAddr,
 				resourceUrlParsingVars.subStreamId
 			);
 		if (tmpSdpSubStream.isEmpty()) {
-			throw new RtspSubStreamIdNotFoundException("Sub-Stream ID='" + resourceUrlParsingVars.subStreamId + "'");
+			throw new RtspIdSubStreamNotFoundException("Sub-Stream ID='" + resourceUrlParsingVars.subStreamId + "'");
 		}
 		//
 		resourceUrlParsingVars.streamSourceObjPtr = rtspConfig.getStreamSourceObj(tmpSdpSubStream.get().streamSourceId())
 				.orElse(null);
 		if (resourceUrlParsingVars.streamSourceObjPtr == null) {  // sanity check
-			throw new RtspSubStreamIdNotFoundException("Non-existing Stream Source ID in Sub-Stream ID " +
+			throw new RtspIdSubStreamNotFoundException("Non-existing Stream Source ID in Sub-Stream ID " +
 					"'" + resourceUrlParsingVars.subStreamId + "'");
 		}
 	}
@@ -67,13 +64,13 @@ final class ResourceUrlProcessor {
 	static void createSetupSubStreamRecord(
 				@NonNull ResourceUrlParsingVars resourceUrlParsingVars,
 				@NonNull InetAddress clientIpAddr
-			) throws RtspInvalidUriException, RtspSubStreamIdNotFoundException {
+			) throws RtspInvalidUriException, RtspIdSubStreamNotFoundException {
 		if (resourceUrlParsingVars.subStreamId.isBlank()) {  // sanity check
 			throw new RtspInvalidUriException("Missing Sub-Stream ID in URL path: '" +
 					resourceUrlParsingVars.rscUrlPathOrg + "'");
 		}
 		if (resourceUrlParsingVars.streamSourceObjPtr == null) {  // sanity check
-			throw new RtspSubStreamIdNotFoundException("Missing Stream Source object");
+			throw new RtspIdSubStreamNotFoundException("Missing Stream Source object");
 		}
 		//
 		final String tmpErrMsgSsid = resourceUrlParsingVars.subStreamId;
@@ -131,17 +128,17 @@ final class ResourceUrlProcessor {
 	static @NonNull RtspInputSource findInputSourceObjectForNonSetupRequests(
 				@NonNull ResourceUrlParsingVars resourceUrlParsingVars,
 				@NonNull RtspConfig rtspConfig
-			) throws RtspInputSourceIdNotFoundException {
+			) throws RtspIdInputSourceNotFoundException {
 		if (resourceUrlParsingVars.rscUrlPathMod.endsWith("/")) {
 			resourceUrlParsingVars.rscUrlPathMod = resourceUrlParsingVars.rscUrlPathMod
 					.substring(0, resourceUrlParsingVars.rscUrlPathMod.length() - 1);
 		}
 		Optional<RtspInputSource> optInputSource = rtspConfig.getInputSourceObj(resourceUrlParsingVars.rscUrlPathMod);
 		if (optInputSource.isEmpty()) {
-			throw new RtspInputSourceIdNotFoundException("URL path: '" + resourceUrlParsingVars.rscUrlPathMod + "'");
+			throw new RtspIdInputSourceNotFoundException("URL path: '" + resourceUrlParsingVars.rscUrlPathMod + "'");
 		}
 		if (! optInputSource.get().getEnabled()) {
-			throw new RtspInputSourceIdNotFoundException("Disabled Input Source used in URL path: '" +
+			throw new RtspIdInputSourceNotFoundException("Disabled Input Source used in URL path: '" +
 					resourceUrlParsingVars.rscUrlPathMod + "'");
 		}
 		return optInputSource.get();

@@ -2,11 +2,10 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 import java.net.URI;
 
@@ -14,17 +13,17 @@ final class ResourceUrlParsingVars {
 
 	final @NonNull RtspMessageType requestType;
 	final @NonNull String fullRscUrl;
-	final @NonNull String rscUrlPathOrg;
+	final @NonNull String rscUrlStrPathOrg;
 
-	@NonNull String rscUrlPathMod;
-	@NonNull String subStreamId = "";
+	@NonNull String rscUrlStrPathMod;
+	@NonNull String subStreamIdStr = "";
 	@Nullable RtspStreamSource streamSourceObjPtr = null;
 
-	ResourceUrlParsingVars(@NonNull RtspMessageType requestType, @NonNull String fullRscUrl) throws RtspInvalidUriException {
+	ResourceUrlParsingVars(@NonNull RtspMessageType requestType, @NonNull String fullRscUrlStr) throws RtspInvalidUriException {
 		this.requestType = requestType;
-		this.fullRscUrl = fullRscUrl;
-		this.rscUrlPathOrg = extractResourceUrlPath(fullRscUrl);
-		this.rscUrlPathMod = this.rscUrlPathOrg;
+		this.fullRscUrl = fullRscUrlStr;
+		this.rscUrlStrPathOrg = extractResourceUrlPath(fullRscUrlStr);
+		this.rscUrlStrPathMod = this.rscUrlStrPathOrg;
 	}
 
 	/**
