@@ -6,10 +6,10 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
@@ -921,7 +921,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
-		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getId());
+		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getIdStr());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());

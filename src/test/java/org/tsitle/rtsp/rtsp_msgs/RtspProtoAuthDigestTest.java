@@ -2,7 +2,7 @@ package org.tsitle.rtsp.rtsp_msgs;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
