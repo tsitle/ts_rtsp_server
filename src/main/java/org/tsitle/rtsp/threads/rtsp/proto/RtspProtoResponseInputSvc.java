@@ -26,7 +26,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConsumer;
 public final class RtspProtoResponseInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
@@ -37,7 +37,7 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
 				boolean cfgIsDebugPrintRtspRcvd,
-				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
 				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface

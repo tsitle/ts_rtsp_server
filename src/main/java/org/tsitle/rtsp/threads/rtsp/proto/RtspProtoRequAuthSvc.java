@@ -24,7 +24,7 @@ public class RtspProtoRequAuthSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpLogLevel rtxpLogLevel;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtspProtoUserAuthInterface userAuthInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
@@ -32,7 +32,7 @@ public class RtspProtoRequAuthSvc {
 	public RtspProtoRequAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpLogLevel rtxpLogLevel,
-				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface

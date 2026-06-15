@@ -16,7 +16,7 @@ import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdStreamSourceNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSessionInfoException;
@@ -66,7 +66,7 @@ final class RtspChildThreadMng {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
 	private final int clientConnectionNr;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final @NonNull RtspChildThreadsCallbackInterface rctcb;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
@@ -89,7 +89,7 @@ final class RtspChildThreadMng {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				int clientConnectionNr,
-				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspChildThreadsCallbackInterface rctcb,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface

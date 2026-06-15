@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoRequestOutputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoResponseInputSvc;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
@@ -27,7 +27,7 @@ import java.util.Optional;
 final class SrtxpRekeySvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtspChildThreadMng rtspChildThreadMng;
 
 	private final @NonNull RtspProtoRequestOutputSvc rtspProtoRequestOutputSvc;
@@ -37,7 +37,7 @@ final class SrtxpRekeySvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
-				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadMng rtspChildThreadMng,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspAvailableStreamsSvc availableStreamsSvc,

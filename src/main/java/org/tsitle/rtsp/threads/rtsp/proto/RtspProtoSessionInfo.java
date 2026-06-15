@@ -28,7 +28,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class RtspSessionInfo {
+public final class RtspProtoSessionInfo {
 
 	/** Authentication-related info from the server */
 	final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();

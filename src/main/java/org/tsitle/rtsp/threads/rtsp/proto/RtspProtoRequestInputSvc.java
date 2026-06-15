@@ -29,7 +29,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConsumer;
 public final class RtspProtoRequestInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
 	private final RtspProtoRequAuthSvc requAuthSvc;
@@ -44,7 +44,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
-				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,

@@ -39,7 +39,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private final boolean fromCtorIsRtspsConnection;
 
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
-	private final @NonNull RtspSessionInfo rtspSessionInfo = new RtspSessionInfo();
+	private final @NonNull RtspProtoSessionInfo rtspSessionInfo = new RtspProtoSessionInfo();
 	private final @NonNull RtspChildThreadMng rtspChildThreadMng;
 	private final @NonNull RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final @NonNull RtspProtoResponseOutputSvc rtspProtoResponseOutputSvc;
