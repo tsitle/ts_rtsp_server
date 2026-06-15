@@ -6,6 +6,8 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -152,16 +154,16 @@ public class RtspConfig {
 	private @NonNull Map<@NonNull String, @NonNull String> remoteMqServerSslCertificates;
 	/** Map of Stream Sources (the map keys are unique Stream Source identifiers) */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull RtspStreamSource> streamSources;
+	private @NonNull Map<@NonNull String, @NonNull RtspConfigStreamSource> streamSources;
 	/** Map of Input Sources (the map keys are unique Input Source identifiers) */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull RtspInputSource> inputSources;
+	private @NonNull Map<@NonNull String, @NonNull RtspConfigInputSource> inputSources;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
 	/** Internal use: Map of Stream Sources (the map keys are unique Stream Source identifiers) */
 	@GsonAnnoExclude
-	private @NonNull Map<@NonNull Integer, @NonNull RtspStreamSource> internalStreamSources;
+	private @NonNull Map<@NonNull Integer, @NonNull RtspConfigStreamSource> internalStreamSources;
 	/** Internal use: Map internal to external Stream Source IDs */
 	@GsonAnnoExclude
 	private @NonNull Map<@NonNull Integer, @NonNull String> internalMapStreamSourceIdIntToExt;
@@ -250,13 +252,19 @@ public class RtspConfig {
 
 	/**
 	 * Get usernames that are allowed to access the given RTSP Input Source.
-	 * @param inputSource RTSP Input Source
+	 * @param idInputSource Input Source ID
 	 * @return Usernames that are allowed to access the RTSP Input Source
 	 */
-	public @NonNull Set<String> getUsersAllowedToAccessInputSource(@NonNull RtspInputSource inputSource) {
+	public @NonNull Set<String> getUsersAllowedToAccessInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
 		checkPostProcessed();
+		//
+		Optional<RtspConfigInputSource> tmpOptIsObj = getInputSourceObj(idInputSource);
+		if (tmpOptIsObj.isEmpty()) {
+			return Collections.emptySet();
+		}
+		//
 		Set<String> resSet = new HashSet<>();
-		for (String tmpUag : inputSource.getAllowedUserAccountGroups()) {
+		for (String tmpUag : tmpOptIsObj.get().getAllowedUserAccountGroups()) {
 			if (! userAccountGroups.containsKey(tmpUag)) {
 				continue;
 			}
@@ -320,10 +328,26 @@ public class RtspConfig {
 	 * @param streamSourceId Stream Source ID
 	 * @return Stream Source
 	 */
-	public Optional<RtspStreamSource> getStreamSourceObj(int streamSourceId) {
+	public Optional<RtspConfigStreamSource> getStreamSourceObj(int streamSourceId) {
 		checkPostProcessed();
 		//noinspection OptionalOfNullableMisuse,DataFlowIssue
 		return Optional.ofNullable(internalStreamSources.getOrDefault(streamSourceId, null));
+	}
+
+	/**
+	 * Get Stream Source by Stream Source ID.
+	 * @param idStreamSource Stream Source ID
+	 * @return Stream Source
+	 */
+	public Optional<RtspConfigStreamSource> getStreamSourceObj(@NonNull RtspProtoIdStreamSource idStreamSource) {
+		checkPostProcessed();
+		//
+		for (RtspConfigStreamSource tmpSs : internalStreamSources.values()) {
+			if (tmpSs.getIdAsProtoId().equals(idStreamSource)) {
+				return Optional.of(tmpSs);
+			}
+		}
+		return Optional.empty();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -344,55 +368,23 @@ public class RtspConfig {
 	 * @param inputSourceId Input Source ID
 	 * @return Input Source
 	 */
-	public Optional<RtspInputSource> getInputSourceObj(@NonNull String inputSourceId) {
+	public Optional<RtspConfigInputSource> getInputSourceObj(@NonNull String inputSourceId) {
 		checkPostProcessed();
 		//noinspection OptionalOfNullableMisuse,DataFlowIssue
 		return Optional.ofNullable(inputSources.getOrDefault(inputSourceId, null));
 	}
 
 	/**
-	 * Get the first video Stream Source for the Input Source.
-	 * @param inputSourceId Input Source ID
-	 * @return Stream Source
+	 * Get Input Source by Input Source ID.
+	 * @param idInputSource Input Source ID
+	 * @return Input Source
 	 */
-	@SuppressWarnings("unused")
-	public Optional<RtspStreamSource> getInputSourcesFirstVideoStreamSourceObj(@NonNull String inputSourceId) {
-		checkPostProcessed();
-		return getInputSourcesFirstOfKindStreamSourceObj(inputSourceId, true);
-	}
-
-	/**
-	 * Get the first audio Stream Source for the Input Source.
-	 * @param inputSourceId Input Source ID
-	 * @return Stream Source
-	 */
-	@SuppressWarnings("unused")
-	public Optional<RtspStreamSource> getInputSourcesFirstAudioStreamSourceObj(@NonNull String inputSourceId) {
-		checkPostProcessed();
-		return getInputSourcesFirstOfKindStreamSourceObj(inputSourceId, false);
-	}
-
-	/**
-	 * Get the first audio or video Stream Source for the Input Source.
-	 * @param inputSourceId Input Source ID
-	 * @param isVideo Get video Stream Source if true, audio Stream Source otherwise
-	 * @return Stream Source
-	 */
-	public Optional<RtspStreamSource> getInputSourcesFirstOfKindStreamSourceObj(@NonNull String inputSourceId, boolean isVideo) {
+	public Optional<RtspConfigInputSource> getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 		checkPostProcessed();
 		//
-		Optional<RtspInputSource> optInputSource = getInputSourceObj(inputSourceId);
-		if (optInputSource.isEmpty()) {
-			return Optional.empty();
-		}
-		for (int tmpSsId : optInputSource.get().getStreamSourceIds()) {
-			Optional<RtspStreamSource> optStreamSource = getStreamSourceObj(tmpSsId);
-			if (optStreamSource.isEmpty() || ! optStreamSource.get().getEnabled()) {
-				continue;
-			}
-			if ((isVideo && optStreamSource.get().getCodec().isVideo()) ||
-					(! isVideo && optStreamSource.get().getCodec().isAudio())) {
-				return optStreamSource;
+		for (RtspConfigInputSource tmpIs : inputSources.values()) {
+			if (tmpIs.getIdAsProtoId().equals(idInputSource)) {
+				return Optional.of(tmpIs);
 			}
 		}
 		return Optional.empty();
@@ -553,14 +545,14 @@ public class RtspConfig {
 		//
 		List<Integer> tmpSsIdList = getStreamSourceIds();
 		for (int tmpSsId : tmpSsIdList) {
-			RtspStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
-			tmpSsObj.setId(tmpSsId);
+			RtspConfigStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
+			tmpSsObj.setIdAsInt(tmpSsId);
 			tmpSsObj.postProcess(getDataDirAsPath());
 		}
 		//
 		List<String> tmpIsIdList = getInputSourceIds();
 		for (String tmpIsId : tmpIsIdList) {
-			RtspInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
+			RtspConfigInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
 			tmpIsObj.setId(tmpIsId);
 			tmpIsObj.postProcess(internalMapStreamSourceIdExtToInt);
 		}
@@ -598,7 +590,7 @@ public class RtspConfig {
 		if (filename == null || filename.isBlank()) {
 			return Optional.empty();
 		}
-		String resStr = RtspStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), filename);
+		String resStr = RtspConfigStreamSource.dataFilenameToAbsolutePath(getDataDirAsPath(), filename);
 		Path tmpPathObj = Paths.get(resStr);
 		if (! tmpPathObj.toFile().exists()) {
 			throw new ConfigInvalidException(errMsg + ": file '" + resStr + "' not found");
@@ -724,7 +716,7 @@ public class RtspConfig {
 			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found in configuration");
 		}
 		for (int tmpSsId : tmpSsIdList) {
-			RtspStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
+			RtspConfigStreamSource tmpSsObj = getStreamSourceObj(tmpSsId).orElseThrow();
 			tmpSsObj.validate(internalMapStreamSourceIdIntToExt);
 			//
 			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getEnabled()) {
@@ -745,7 +737,7 @@ public class RtspConfig {
 			throw new ConfigInvalidException(FNC_NAME + ": No Input Sources found in configuration");
 		}
 		for (String tmpIsId : tmpIsIdList) {
-			RtspInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
+			RtspConfigInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
 			if (tmpIsObj.getEnabled()) {
 				tmpIsObj.validate(
 						internalStreamSources,
@@ -810,7 +802,7 @@ public class RtspConfig {
 		}
 
 		int idCounter = 0;
-		for (Map.Entry<String, RtspStreamSource> entry : streamSources.entrySet()) {
+		for (Map.Entry<String, RtspConfigStreamSource> entry : streamSources.entrySet()) {
 			if (entry.getKey() == null || entry.getValue() == null) {
 				continue;
 			}

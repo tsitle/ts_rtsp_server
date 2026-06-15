@@ -5,26 +5,27 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 public abstract class AvStreamIncomingBase implements AutoCloseable {
 
 	protected final @Nullable LogMsgInterface logMsgInterface;
-	protected final int streamSourceId;
+	protected final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
 
 	protected boolean haveEos = false;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	protected AvStreamIncomingBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				int streamSourceId
+				@NonNull RtspProtoIdStreamSource idStreamSource
 			) throws AvCannotOpenInputException {
 		this.logMsgInterface = logMsgInterface;
-		this.streamSourceId = streamSourceId;
+		this.idStreamSource.copyFrom(idStreamSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

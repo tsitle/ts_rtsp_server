@@ -1,9 +1,10 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdInputSource;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
 public final class RtspProtoDataRequest {
 
@@ -28,13 +29,10 @@ public final class RtspProtoDataRequest {
 	private @NonNull String requUnsupportedFeatureName = "";
 
 	/** Server IP address as resolved from Resource URL */
-	private @NonNull String requServerIpFromRscUrl = "";
+	public final @NonNull RtspProtoIpAddr requServerIpFromRscUrl = new RtspProtoIpAddr();
 
 	/** Resource URL that the request was made for */
-	private @NonNull String requResourceUrl = "";
-
-	/** Input Source ID */
-	private final @NonNull RtspProtoIdInputSource requIdInputSource = new RtspProtoIdInputSource();
+	public final @NonNull RtspProtoRscUrl requRscUrl = new RtspProtoRscUrl();
 
 	/** RTSP protocol version */
 	private @NonNull RtspProtocolVersion requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
@@ -44,6 +42,21 @@ public final class RtspProtoDataRequest {
 
 	/** RTSP message Sequence Number to use for sending a request */
 	private long requCseqNrToSend = 0L;
+
+	/** Main transport parameters */
+	public final @NonNull RtspProtoDataCntStreamTpMain requStreamTpMain = new RtspProtoDataCntStreamTpMain();
+
+	/** Client's Useragent */
+	private @NonNull String requClientUa = "";
+
+	/** Client's IP address */
+	public final @NonNull RtspProtoIpAddr requClientIpAddr = new RtspProtoIpAddr();
+
+	/** RTSP session state */
+	public final @NonNull RtspProtoDataCntSessionState requRtspSessionState = new RtspProtoDataCntSessionState();
+
+	/** Playback range value */
+	private @NonNull String requPlaybackRangeValue = "";
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -62,12 +75,16 @@ public final class RtspProtoDataRequest {
 		this.requInvalidParamNames.copyFrom(other.requInvalidParamNames);
 		this.requAnnouncedSdp.copyFrom(other.requAnnouncedSdp);
 		this.requUnsupportedFeatureName = other.requUnsupportedFeatureName;
-		this.requServerIpFromRscUrl = other.requServerIpFromRscUrl;
-		this.requResourceUrl = other.requResourceUrl;
-		this.requIdInputSource.copyFrom(other.requIdInputSource);
+		this.requServerIpFromRscUrl.copyFrom(other.requServerIpFromRscUrl);
+		this.requRscUrl.copyFrom(other.requRscUrl);
 		this.requRtspProtoVersionToUse = other.requRtspProtoVersionToUse;
 		this.requCseqNrLastRcvd = other.requCseqNrLastRcvd;
 		this.requCseqNrToSend = other.requCseqNrToSend;
+		this.requStreamTpMain.copyFrom(other.requStreamTpMain);
+		this.requClientUa = other.requClientUa;
+		this.requClientIpAddr.copyFrom(other.requClientIpAddr);
+		this.requRtspSessionState.copyFrom(other.requRtspSessionState);
+		this.requPlaybackRangeValue = other.requPlaybackRangeValue;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -81,36 +98,6 @@ public final class RtspProtoDataRequest {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.requUnsupportedFeatureName = value;
-	}
-
-	public @NonNull String getServerIpFromRscUrl() {
-		return requServerIpFromRscUrl;
-	}
-	public void setServerIpFromRscUrl(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.requServerIpFromRscUrl = value;
-	}
-
-	public @NonNull String getResourceUrl() {
-		return requResourceUrl;
-	}
-	public void setResourceUrl(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.requResourceUrl = value;
-	}
-
-	public @NonNull RtspProtoIdInputSource getIdInputSource() {
-		return requIdInputSource;
-	}
-	public void setIdInputSource(@NonNull RtspProtoIdInputSource value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.requIdInputSource.copyFrom(value);
 	}
 
 	public @NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
@@ -143,6 +130,26 @@ public final class RtspProtoDataRequest {
 		this.requCseqNrToSend = value;
 	}
 
+	public @NonNull String getClientUa() {
+		return requClientUa;
+	}
+	public void setClientUa(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requClientUa = value;
+	}
+
+	public @NonNull String getPlaybackRangeValue() {
+		return requPlaybackRangeValue;
+	}
+	public void setPlaybackRangeValue(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requPlaybackRangeValue = value;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void clear() {
@@ -156,12 +163,16 @@ public final class RtspProtoDataRequest {
 		requInvalidParamNames.clear();
 		requAnnouncedSdp.clear();
 		requUnsupportedFeatureName = "";
-		requServerIpFromRscUrl = "";
-		requResourceUrl = "";
-		requIdInputSource.clear();
+		requServerIpFromRscUrl.clear();
+		requRscUrl.clear();
 		requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
 		requCseqNrLastRcvd = -1L;
 		requCseqNrToSend = 0L;
+		requStreamTpMain.clear();
+		requClientUa = "";
+		requClientIpAddr.clear();
+		requRtspSessionState.clear();
+		requPlaybackRangeValue = "";
 	}
 
 	public void writeProtect() {
@@ -173,7 +184,9 @@ public final class RtspProtoDataRequest {
 		requSetParamValues.writeProtect();
 		requInvalidParamNames.writeProtect();
 		requAnnouncedSdp.writeProtect();
-		requIdInputSource.writeProtect();
+		requRscUrl.writeProtect();
+		requStreamTpMain.writeProtect();
+		requRtspSessionState.writeProtect();
 	}
 
 }

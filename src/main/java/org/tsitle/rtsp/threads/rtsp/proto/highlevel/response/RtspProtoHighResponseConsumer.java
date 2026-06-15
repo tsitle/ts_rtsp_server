@@ -4,9 +4,10 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoParameterNotifyInvalidInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoParameterNotifyRcvdInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoParameterNotifyInvalidInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoParameterNotifyRcvdInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
@@ -16,7 +17,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpConsumerInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoSdpConsumerInterface;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class RtspProtoHighResponseConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isResponseFromClient;
-	private final @NonNull SdpConsumerInterface sdpConsumerInterface;
+	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
 	private final @Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface;
 	private final @Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface;
 
@@ -36,7 +37,7 @@ public class RtspProtoHighResponseConsumer {
 	public RtspProtoHighResponseConsumer(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
-				@NonNull SdpConsumerInterface sdpConsumerInterface,
+				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
 				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
 				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface
 			) {

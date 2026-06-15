@@ -7,7 +7,11 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
@@ -15,7 +19,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducerInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoSdpProducerInterface;
 
 import java.util.Optional;
 
@@ -23,12 +27,12 @@ public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
-	private final @NonNull SdpProducerInterface sdpProducerInterface;
+	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean cfgIsDebugPrintRtspSdpSent,
-				@NonNull SdpProducerInterface sdpProducerInterface
+				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
@@ -40,13 +44,13 @@ public final class RtspProtoHighRequestProducer {
 
 	public @NonNull RtspProtoHighMsgStructuredRequest buildRequest(
 				@NonNull RtspMessageType requestMessageType,
-				@Nullable String subStreamId,
+				@Nullable RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound
+				@Nullable RtspProtoKmdsStream kmdsOutbound
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
-		if (inputDataRequ.getResourceUrl().isBlank()) {
+		if (inputDataRequ.requRscUrl.isEmpty()) {
 			throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 		}
 
@@ -60,7 +64,7 @@ public final class RtspProtoHighRequestProducer {
 		resObj.messageType = requestMessageType;
 
 		//
-		resObj.resourceUrl = inputDataRequ.getResourceUrl();
+		resObj.resourceUrl = inputDataRequ.requRscUrl.getUrlStr();
 
 		//
 		addCommonHeaders(inputDataRequ, resObj);
@@ -74,7 +78,7 @@ public final class RtspProtoHighRequestProducer {
 			case PAUSE -> buildRequest_pause(resObj);
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, subStreamId, resObj);
+			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, idSubStream, resObj);
 			case SETUP -> buildRequest_setup(resObj);
 			case TEARDOWN -> buildRequest_teardown();
 			default -> throw new RtspInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
@@ -91,7 +95,7 @@ public final class RtspProtoHighRequestProducer {
 
 	private void buildRequest_announce(
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
+				@Nullable RtspProtoKmdsStream kmdsOutbound,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_announce()";
@@ -108,10 +112,17 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
+		if (inputDataRequ.requClientIpAddr.isEmpty()) {
+			throw new RtspInvalidRequestException(FNC_NAME + ": Client IP address must be set");
+		}
+
 		try {
 			sdpProducerInterface.buildUpdatedSdpForAnnounce(
-					inputDataRequ.getIdInputSource(),
-					inputDataRequ.getServerIpFromRscUrl(),
+					inputDataRequ.requStreamTpMain.isSrtpRequired(),
+					inputDataRequ.requRscUrl.idInputSource,
+					inputDataRequ.requServerIpFromRscUrl,
+					inputDataRequ.getClientUa(),
+					inputDataRequ.requClientIpAddr,
 					kmdsOutbound,
 					output.bodyAnnounceSdp
 				);
@@ -128,7 +139,7 @@ public final class RtspProtoHighRequestProducer {
 
 		// Content-Base
 		{
-			String tmpRscUrl = inputDataRequ.getResourceUrl();
+			String tmpRscUrl = inputDataRequ.requRscUrl.getUrlStr();
 			if (tmpRscUrl.isBlank()) {
 				throw new RtspInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 			}
@@ -147,13 +158,16 @@ public final class RtspProtoHighRequestProducer {
 		/*
 		 * Example:
 		 *   "DESCRIBE rtsp://example.com/fizzle/foo RTSP/1.0"
-		 *   "CSeq: 4"
-		 *   "Authorization: Digest username=\"...\", realm=\"...\", nonce=\"...\", uri=\"rtsp://example.com/fizzle/foo\", response=\"...\""
-		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   ...
 		 *   "Accept: application/sdp"
 		 */
 
-		// nothing to do
+		// Accept
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.ACCEPT);
+			hdEntry.hdValAccept.rtspMimeType = RtspMimeType.SDP;
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 	}
 
 	private void buildRequest_getParameter(
@@ -246,8 +260,8 @@ public final class RtspProtoHighRequestProducer {
 
 	private void buildRequest_setParameter(
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspKeymgmtKmdsOutbound kmdsOutbound,
-				@Nullable String subStreamId,
+				@Nullable RtspProtoKmdsStream kmdsOutbound,
+				@Nullable RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
@@ -276,11 +290,11 @@ public final class RtspProtoHighRequestProducer {
 		if (kmdsOutbound == null) {
 			return;
 		}
-		if (subStreamId == null) {
-			throw new IllegalArgumentException(FNC_NAME + ": subStreamId must not be null when " +
+		if (idSubStream == null) {
+			throw new IllegalArgumentException(FNC_NAME + ": idSubStream must not be null when " +
 					"setting SRTxP key management data for SET_PARAMETER request");
 		}
-		Optional<SrtxpKmd> tmpOptKmd = kmdsOutbound.getKmdForSubStream(subStreamId);
+		Optional<SrtxpKmd> tmpOptKmd = kmdsOutbound.getKmdBySubStreamId(idSubStream);
 		if (tmpOptKmd.isEmpty()) {
 			throw new IllegalArgumentException(FNC_NAME + ": KMD for Sub-Stream not found");
 		}

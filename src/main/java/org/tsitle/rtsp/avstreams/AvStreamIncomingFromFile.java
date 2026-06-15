@@ -6,6 +6,7 @@ import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.io.*;
 import java.net.URI;
@@ -18,30 +19,30 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 
 	/**
 	 * Constructor.
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromFile(
-				int streamSourceId,
+				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		this(null, streamSourceId, inputUri);
+		this(null, idStreamSource, inputUri);
 	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromFile(
 				@Nullable LogMsgInterface logMsgInterface,
-				int streamSourceId,
+				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		super(logMsgInterface, streamSourceId);
+		super(logMsgInterface, idStreamSource);
 
 		if (inputUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");

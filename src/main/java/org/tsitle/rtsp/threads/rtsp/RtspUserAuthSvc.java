@@ -2,39 +2,46 @@ package org.tsitle.rtsp.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.config.RtspInputSource;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoUserAuthInterface;
 
-import java.net.InetAddress;
 import java.util.Optional;
 import java.util.Set;
 
 /**
  * RTSP User Authentication and Authorization Service
  */
-public class RtspUserAuthSvc {
+public final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
-				@NonNull RtspSessionInfo rtspSessionInfo
+				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
+		this.availableStreamsInterface = availableStreamsInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
 	public boolean authenticate(
 				@NonNull RtspProtoDataCntAuthClient requAuthClient,
 				@NonNull RtspMessageType messageType
@@ -52,14 +59,14 @@ public class RtspUserAuthSvc {
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.permAuthServer.authRealm)) {
+				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.permAuthServer.getAuthRealm())) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.permAuthServer.authNonce) &&
+				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.permAuthServer.getAuthNonce()) &&
 						RtspStaticSessionInfo.existsAuthServerNonce(
-								getClientIpAddr(rtspSessionInfo), rtspSessionInfo.permAuthServer.authNonce
+								rtspSessionInfo.clientIpAddr, rtspSessionInfo.permAuthServer.getAuthNonce()
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;
@@ -97,18 +104,25 @@ public class RtspUserAuthSvc {
 		return true;
 	}
 
+	@Override
 	public boolean checkAccessToInputSource(
 				@NonNull RtspProtoDataCntAuthClient requAuthClient,
-				@NonNull RtspInputSource inputSource
+				@NonNull RtspProtoIdInputSource idInputSource
 			) {
-		if (! inputSource.getEnabled()) {
+		RtspProtoInputSource tmpIsObj;
+		try {
+			tmpIsObj = availableStreamsInterface.getInputSourceObj(idInputSource);
+		} catch (RtspIdInputSourceNotFoundException e) {
 			return false;
 		}
-		if (! inputSource.getNeedsAuthentication()) {
+		if (! tmpIsObj.getEnabled()) {
+			return false;
+		}
+		if (! tmpIsObj.getNeedsAuthentication()) {
 			return true;
 		}
 
-		Set<String> tmpUsers = rtspConfig.getUsersAllowedToAccessInputSource(inputSource);
+		Set<String> tmpUsers = rtspConfig.getUsersAllowedToAccessInputSource(idInputSource);
 		if (tmpUsers.isEmpty()) {
 			return false;
 		}
@@ -116,12 +130,6 @@ public class RtspUserAuthSvc {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private @NonNull InetAddress getClientIpAddr(@NonNull RtspSessionInfo rtspSessionInfo) {
-		return rtspSessionInfo.getClientIpAddr().orElseThrow(() -> new IllegalStateException("Client IP address is not set"));
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {

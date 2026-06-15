@@ -1,12 +1,15 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 import java.util.Set;
 
 public final class RtspProtoHighConstants {
 
 	private RtspProtoHighConstants() { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/** URL Query Parameter for forcing the usage of SRTP/SRTCP (if the parameter value is '1') */
 	public static final String URL_QUERY_PARAM_SRTP = "srtp";
@@ -17,16 +20,17 @@ public final class RtspProtoHighConstants {
 	/** RTSP Authorization Realm */
 	public static final String DEFAULT_RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
 
-	/** Supported RTSP message types of the local host */
-	public static final Set<RtspMessageType> LH_SUPPORTED_MESSAGE_TYPES = Set.of(
-			RtspMessageType.SETUP,
-			RtspMessageType.PLAY,
-			RtspMessageType.PAUSE,
-			RtspMessageType.TEARDOWN,
+	/** RTSP message types that the local host supports for incoming requests */
+	public static final Set<RtspMessageType> LH_SUPPORTED_MESSAGE_TYPES_INCOMING = Set.of(
 			RtspMessageType.DESCRIBE,
-			RtspMessageType.OPTIONS,
 			RtspMessageType.GET_PARAMETER,
-			RtspMessageType.SET_PARAMETER
+			RtspMessageType.OPTIONS,
+			RtspMessageType.PAUSE,
+			RtspMessageType.PLAY,
+			RtspMessageType.REDIRECT,
+			RtspMessageType.SET_PARAMETER,
+			RtspMessageType.SETUP,
+			RtspMessageType.TEARDOWN
 		);
 
 	/**

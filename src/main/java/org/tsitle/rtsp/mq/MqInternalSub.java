@@ -1,8 +1,10 @@
 package org.tsitle.rtsp.mq;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.zeromq.ZMQ;
 
 /**
@@ -13,20 +15,20 @@ public class MqInternalSub extends MqReceiverSubBase {
 	private static final boolean DO_VALIDATE_PAYLOAD = false;
 	private static final boolean DO_PRINT_DEBUG_STATS = false;
 
-	private final int streamSourceId;
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 */
 	public MqInternalSub(
 				@Nullable LogMsgInterface logMsgInterface,
-				int streamSourceId
+				@NonNull RtspProtoIdStreamSource idStreamSource
 			) {
 		super(logMsgInterface, DO_VALIDATE_PAYLOAD, DO_PRINT_DEBUG_STATS);
 
-		this.streamSourceId = streamSourceId;
+		this.idStreamSource.copyFrom(idStreamSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -39,7 +41,7 @@ public class MqInternalSub extends MqReceiverSubBase {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(streamSourceId);
+		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
 		int chanId = MqChannelBus.getChannelId(chanName);
 		zmqSocket = MqChannelBus.createSubscriber(chanId, zmqContext);
 		//

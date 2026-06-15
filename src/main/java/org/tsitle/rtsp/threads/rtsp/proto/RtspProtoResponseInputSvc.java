@@ -2,7 +2,6 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.exceptions.InputStreamNotReadyException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
@@ -12,15 +11,18 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseConsumer;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoParameterNotifyInvalidInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoParameterNotifyRcvdInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseConsumer;
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpConsumer;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConsumer;
 
 public final class RtspProtoResponseInputSvc {
 
@@ -34,10 +36,10 @@ public final class RtspProtoResponseInputSvc {
 
 	public RtspProtoResponseInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
+				boolean isResponseFromClient,
+				boolean cfgIsDebugPrintRtspRcvd,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
-				boolean isResponseFromClient,
 				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
 				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface
 			) {
@@ -46,13 +48,13 @@ public final class RtspProtoResponseInputSvc {
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
 		//
-		SdpConsumer sdpConsumer = new SdpConsumer();
+		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
 
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,
-				rtspConfig.getIsDebugPrintRtspRcvd()
+				cfgIsDebugPrintRtspRcvd
 			);
 		this.rtspProtoLowResponseConsumer = new RtspProtoLowResponseConsumer(logMsgInterface);
 		this.rtspProtoHighResponseConsumer = new RtspProtoHighResponseConsumer(
@@ -125,7 +127,7 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp
 			) {
-		currentIdSession.setId(rtspSessionInfo.rtspSessionId);
+		currentIdSession.copyFrom(rtspSessionInfo.idSession);
 		currentIdSession.writeProtect();
 
 		cseqRespInp.setCseqNrExpected(rtspSessionInfo.seqNr_requToRem_lastSent);
@@ -133,12 +135,11 @@ public final class RtspProtoResponseInputSvc {
 	}
 
 	private void updateSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
-		rtspSessionInfo.permAuthServer.authRealm = dataResp.respAuthServer.getAuthRealm();
-		rtspSessionInfo.permAuthServer.authNonce = dataResp.respAuthServer.getAuthNonce();
+		rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
 
 		//
 		if (! dataResp.respIdSession.isEmpty()) {
-			rtspSessionInfo.rtspSessionId = dataResp.respIdSession.getId();
+			rtspSessionInfo.idSession.copyFrom(dataResp.respIdSession);
 		}
 
 		//

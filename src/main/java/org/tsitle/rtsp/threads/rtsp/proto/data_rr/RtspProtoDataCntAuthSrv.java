@@ -36,6 +36,14 @@ public final class RtspProtoDataCntAuthSrv {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFrom(@NonNull RtspProtoDataCntAuthSrv other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		authRealm = other.authRealm;
+		authNonce = other.authNonce;
+	}
+
 	public void clear() {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");

@@ -7,6 +7,7 @@ import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.BitReaderEosException;
 import org.tsitle.rtsp.helpers.BitReaderHelper;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConstants;
 
 /**
  * RTP Packet Payload for AAC.<br />
@@ -18,17 +19,17 @@ public class RtpPacketAac extends RtpPacketCodecBase {
 	 * AU-header field AU-Size length in bits.<br />
 	 * See RFC-3640 Section 3.3.6
 	 */
-	public static final int HEADER_FLD_SIZE_LENGTH_BITS = 13;
+	public static final int HEADER_FLD_SIZE_LENGTH_BITS = RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS;
 	/**
 	 * AU-header field AU-Index length in bits.<br />
 	 * See RFC-3640 Section 3.3.6
 	 */
-	public static final int HEADER_FLD_INDEX_LENGTH_BITS = 3;
+	public static final int HEADER_FLD_INDEX_LENGTH_BITS = RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS;
 	/**
 	 * AU-header field AU-IndexDelta length in bits.<br />
 	 * See RFC-3640 Section 3.3.6
 	 */
-	public static final int HEADER_FLD_INDEXDELTA_LENGTH_BITS = 0;
+	public static final int HEADER_FLD_INDEXDELTA_LENGTH_BITS = RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS;
 
 	/** Size of the entire AAC Access Unit in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
 	private short hdInnAuSize;

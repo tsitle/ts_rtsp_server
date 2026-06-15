@@ -1,10 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.config.RtspConfig;
-import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 import org.tsitle.rtsp.exceptions.TcpSocketClosedException;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.exceptions.UdpSocketIoException;
@@ -12,23 +8,34 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseProducer;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseProducer;
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpProducer;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfosStream;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpProducer;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
 
 import java.util.Optional;
 
 public final class RtspProtoResponseOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final boolean isResponseFromClient;
 
 	private final RtspProtoHighResponseProducer rtspProtoHighResponseProducer;
 	private final RtspProtoLowResponseProducer rtspProtoLowResponseProducer;
@@ -36,33 +43,57 @@ public final class RtspProtoResponseOutputSvc {
 
 	public RtspProtoResponseOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
+				boolean isResponseFromClient,
 				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgContentLanguage,
+				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
+				boolean cfgIsDebugPrintRtspSdpSent,
+				boolean cfgIsDebugPrintRtspSent,
+				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
+		this.cfgSupportedMessageTypes.writeProtect();
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.isResponseFromClient = isResponseFromClient;
+
+		// check if the supported message types are valid
+		for (RtspMessageType tmpMt : this.cfgSupportedMessageTypes.getMts()) {
+			if (! RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES_INCOMING.contains(tmpMt)) {
+				throw new IllegalArgumentException("Unsupported request type " + tmpMt);
+			}
+		}
 
 		//
-		SdpProducer sdpProducer = new SdpProducer(rtspConfig, cfgServerNameAndVersion, rtspSessionInfo);
+		RtspProtoSdpProducer sdpProducer = new RtspProtoSdpProducer(
+				cfgServerNameAndVersion,
+				cfgContentLanguage,
+				availableStreamsInterface,
+				staticSessionDataInterface
+			);
 
 		//
 		this.rtspProtoHighResponseProducer = new RtspProtoHighResponseProducer(
 				logMsgInterface,
+				isResponseFromClient,
 				cfgServerNameAndVersion,
-				rtspConfig.getIsDebugPrintRtspSdpSent(),
-				rtspConfig.getIsDebugDisableTransportUdp(),
-				rtspSessionInfo,
-				null,
-				sdpProducer
+				cfgIsDebugPrintRtspSdpSent,
+				cfgIsDebugDisableTransportUdp,
+				sdpProducer,
+				availableStreamsInterface,
+				staticSessionDataInterface,
+				null
 			);
 		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
 				this.rtxpTcpReadWrite,
-				rtspConfig.getIsDebugPrintRtspSent()
+				cfgIsDebugPrintRtspSent
 			);
 	}
 
@@ -85,31 +116,32 @@ public final class RtspProtoResponseOutputSvc {
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
-			RtspProtoDataResponse inputDataResp = new RtspProtoDataResponse(inputDataRequ);
+			RtspProtoDataResponse ioDataResp = new RtspProtoDataResponse(inputDataRequ);
+			RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
 
 			// load data from Session Info
-			loadFromSessionInfo(inputDataResp);
+			loadFromSessionInfo(ioSetupInfosStream, ioDataResp);
 
 			//
-			inputDataResp.writeProtect();
+			ioDataResp.respSuppMessageTypes.copyFrom(cfgSupportedMessageTypes);
 
 			//
 			if (rtspRequestBasics.messageType == RtspMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspStatusCode.OK) {
-				if (inputDataResp.getServerIpFromRscUrl().isEmpty()) {
+				if (ioDataResp.respServerIpFromRscUrl.isEmpty()) {
 					logError(FNC_NAME, "Server IP from Resource URL must be set");
 					return;
 				}
-				if (inputDataResp.getIdInputSource().isEmpty()) {
+				if (ioDataResp.respRscUrl.idInputSource.isEmpty()) {
 					logError(FNC_NAME, "Input Source ID must be set");
 					return;
 				}
 			}
 
 			//
-			msgStructured = rtspProtoHighResponseProducer.buildResponse(rtspRequestBasics, inputDataResp);
+			msgStructured = rtspProtoHighResponseProducer.buildResponse(rtspRequestBasics, ioSetupInfosStream, ioDataResp);
 
 			// update data in Session Info
-			updateSessionInfo(msgStructured);
+			updateSessionInfo(ioSetupInfosStream, ioDataResp, msgStructured);
 		} catch (RtspInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;
@@ -128,24 +160,43 @@ public final class RtspProtoResponseOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.statusCode,
-				rtspSessionInfo.rtspSessionId.isEmpty() ? "-" : rtspSessionInfo.rtspSessionId,
+				rtspSessionInfo.idSession.isEmpty() ? "-" : rtspSessionInfo.idSession.getIdStr(),
 				msgStructured.getHeaderCseq().isPresent() ? Integer.toUnsignedString(msgStructured.getHeaderCseq().get()) : "-"));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void loadFromSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
-		dataResp.respIdSession.setId(rtspSessionInfo.rtspSessionId);
+	private void loadFromSessionInfo(
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull RtspProtoDataResponse dataResp
+			) {
+		dataResp.respIdSession.copyFrom(rtspSessionInfo.idSession);
+		//
+		dataResp.respAuthServer.copyFrom(rtspSessionInfo.permAuthServer);
+		//
+		dataResp.respStreamTpMain.copyFrom(rtspSessionInfo.streamTpMain);
+		//
+		ioSetupInfosStream.copyFrom(rtspSessionInfo.descrSetupInfosStream);
 	}
 
-	private void updateSessionInfo(@NonNull RtspProtoHighMsgStructuredResponse msgStructured) {
+	private void updateSessionInfo(
+				@NonNull RtspProtoSetupInfosStream setupInfosStream,
+				@NonNull RtspProtoDataResponse dataResp,
+				@NonNull RtspProtoHighMsgStructuredResponse msgStructured
+			) {
 		// store new Session ID if one has been generated
 		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
-		if (tmpOptIdSess.isPresent() && rtspSessionInfo.rtspSessionId.isEmpty() &&
+		if (tmpOptIdSess.isPresent() && rtspSessionInfo.idSession.isEmpty() &&
 				! tmpOptIdSess.get().isEmpty()) {
-			rtspSessionInfo.rtspSessionId = tmpOptIdSess.get().getId();
+			rtspSessionInfo.idSession.copyFrom(tmpOptIdSess.get());
 		}
+		// store permanent Auth data
+		if (! isResponseFromClient) {
+			rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
+		}
+		//
+		rtspSessionInfo.descrSetupInfosStream.copyFrom(setupInfosStream);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

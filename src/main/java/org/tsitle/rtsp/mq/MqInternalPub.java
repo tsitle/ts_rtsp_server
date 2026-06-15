@@ -6,6 +6,7 @@ import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MqInternalPub implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
-	private final int streamSourceId;
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
 
 	private final @NonNull ZContext zmqContext;
 	private ZMQ.@Nullable Socket zmqSocket;
@@ -31,14 +32,14 @@ public class MqInternalPub implements AutoCloseable {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 */
 	public MqInternalPub(
 				@Nullable LogMsgInterface logMsgInterface,
-				int streamSourceId
+				@NonNull RtspProtoIdStreamSource idStreamSource
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.streamSourceId = streamSourceId;
+		this.idStreamSource.copyFrom(idStreamSource);
 
 		//
 		this.zmqContext = MqContextHelper.openMqContext();
@@ -58,7 +59,7 @@ public class MqInternalPub implements AutoCloseable {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(streamSourceId);
+		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
 		int chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
 		final ZMQ.Poller zmqPollerObj = zmqContext.createPoller(1);

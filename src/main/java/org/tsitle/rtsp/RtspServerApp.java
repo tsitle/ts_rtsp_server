@@ -2,8 +2,8 @@ package org.tsitle.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.rtsp.config.RtspConfigStreamSource;
 import org.tsitle.rtsp.config.RtspSsMq;
-import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.exceptions.SslException;
@@ -15,6 +15,7 @@ import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -179,7 +180,7 @@ public class RtspServerApp {
 	private static List<Integer> findMqStreamSources() {
 		List<Integer> resL = new ArrayList<>();
 		for (Integer streamSourceId : rtspConfig.getStreamSourceIds()) {
-			Optional<RtspStreamSource> optSs = rtspConfig.getStreamSourceObj(streamSourceId);
+			Optional<RtspConfigStreamSource> optSs = rtspConfig.getStreamSourceObj(streamSourceId);
 			if (optSs.isEmpty()) {
 				continue;
 			}
@@ -196,23 +197,23 @@ public class RtspServerApp {
 		assert poolMqE2I != null;
 
 		for (Integer streamSourceId : streamSourceIds) {
-			RtspStreamSource ss = rtspConfig.getStreamSourceObj(streamSourceId).orElseThrow();
+			RtspConfigStreamSource tmpSs = rtspConfig.getStreamSourceObj(streamSourceId).orElseThrow();
 			Optional<String> tmpSslCertPath;
 			try {
-				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(ss.getInputUri());
+				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(tmpSs.getInputUri());
 			} catch (ConfigInvalidException e) {
 				// should never happen
 				throw new IllegalStateException(e);
 			}
-			RtspSsMq mqSetts = ss.getInputMqSettings().orElseThrow();
+			RtspSsMq mqSetts = tmpSs.getInputMqSettings().orElseThrow();
 			logDebug(FNC_NAME, "Starting MqE2I for '" +
 					mqSetts.getHost() + ":" + mqSetts.getPort() + ":" +
 					mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,
 					cancelToken,
-					(int cbArgStreamSourceId, @NonNull MqCodecSettings cbArgCodecSettings) -> {
-							RtspStreamSource tmpCbSs = rtspConfig.getStreamSourceObj(cbArgStreamSourceId).orElseThrow();
+					(@NonNull RtspProtoIdStreamSource cbArgIdStreamSource, @NonNull MqCodecSettings cbArgCodecSettings) -> {
+							RtspConfigStreamSource tmpCbSs = rtspConfig.getStreamSourceObj(cbArgIdStreamSource).orElseThrow();
 							if (cbArgCodecSettings.codec != null) {
 								tmpCbSs.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
 							}
@@ -226,7 +227,7 @@ public class RtspServerApp {
 								tmpCbSs.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
 							}
 						},
-					streamSourceId,
+					tmpSs.getIdAsProtoId(),
 					mqSetts,
 					tmpSslCertPath.orElse("")
 				);

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,6 +16,7 @@ public final class RtspProtoDataCntMessageTypes {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public boolean isMtsEmpty() {
 		return mts.isEmpty();
 	}

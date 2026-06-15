@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 
 public final class RtspResponseBasics {
 

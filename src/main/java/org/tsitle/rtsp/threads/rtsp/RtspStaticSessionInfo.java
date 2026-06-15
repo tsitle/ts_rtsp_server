@@ -1,14 +1,14 @@
 package org.tsitle.rtsp.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.RtspStreamSource;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.RandomHelper;
-import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -19,117 +19,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public final class RtspStaticSessionInfo {
 
-	public static class StreamKmds {
-		public final int rtspSsrcId;
-		public boolean isForLegacySdes = false;
-		public @Nullable SrtxpKmd kmdInbound = null;
-		public @Nullable SrtxpKmd kmdOutbound = null;
-		public @Nullable SrtxpKmd nextKmdInbound = null;
-
-		public StreamKmds(int rtspSsrcId) {
-			this.rtspSsrcId = rtspSsrcId;
-		}
-	}
+	public record SubStreamResolve(
+			@NonNull String clientIpAddrStr,
+			@NonNull RtspProtoIdInputSource idInputSource,
+			@NonNull RtspProtoIdStreamSource idStreamSource
+		) { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static class SetupSubStreamInfo {
-		/** Stream Source object */
-		@Nullable RtspStreamSource rtspStreamSource = null;
-
-		/** URL of the Stream Source as requested from the client per SETUP */
-		public @NonNull String inputSourceUrlSetup = "";
-
-		/** RTSP Synchronization Source Identifier (random number. one per session/client and per stream) */
-		public int rtspSsrcId;
-		/** Initial RTP Sequence Number within the session (random number, 16 bits unsigned) */
-		public short rtspRtpSeqNrT0 = 0;
-		/** Initial RTP Timestamp within the session (random number) */
-		public int rtspRtpTimestampT0 = 0;
-		/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
-		public long rtspRtpGenTsT0Ns = 0L;
-
-		/** Client's UDP port for inbound RTP packets, provided by the RTSP Client */
-		public int tpClientUdpPortRtp = 0;
-		/** Client's UDP port for inbound/outbound RTCP packets, provided by the RTSP Client */
-		public int tpClientUdpPortRtcp = 0;
-		/** Server's UDP socket for outbound RTP packets */
-		public @Nullable DatagramSocket tpServerUdpSocketRtp = null;
-		/** Server's UDP socket for inbound/outbound RTCP packets */
-		public @Nullable DatagramSocket tpServerUdpSocketRtcp = null;
-		/** Client's TCP channel for inbound RTP packets, provided by the RTSP Client */
-		public int tpClientTcpChannRtp = -1;
-		/** Client's TCP channel for inbound/outbound RTCP packets, provided by the RTSP Client */
-		public int tpClientTcpChannRtcp = -1;
-		/** Requested transport type protocol (true: UDP, false: TCP) */
-		public boolean tpIsUdp = false;
-		/** Requested transport delivery type (true: unicast, false: multicast) */
-		public boolean tpIsUnicast = false;
-		/** Requested transport interleaved mode (true: interleaved (requires TCP), false: separate (requires UDP)) */
-		public boolean tpIsInterleaved = true;
-		/** Requested transport encryption type (true: SRTP/SRTCP, false: plain RTP/RTCP) */
-		public boolean tpIsEncr = false;
-
-		public RtspStaticSessionInfo.@NonNull StreamKmds streamKmds;
-
-		public void isTransportValid(
-					boolean needsEncryption,
-					boolean forceEncryption,
-					boolean isRtspsConnection,
-					boolean isTransportUdpDisabled
-				) throws Exception {
-			if (! tpIsEncr && ((needsEncryption && ! isRtspsConnection) || forceEncryption)) {
-				throw new Exception("Client requested unencrypted transport, but encryption is required");
-			}
-			if (tpIsEncr && ! (needsEncryption || forceEncryption)) {
-				throw new Exception("Client requested encrypted transport, but encryption is disabled");
-			}
-			if (! tpIsUnicast) {
-				throw new Exception("Multicast is not supported");
-			}
-			if (tpIsUdp) {
-				if (tpIsInterleaved) {
-					throw new Exception("Interleaved mode is not supported for UDP");
-				}
-				if (tpClientUdpPortRtp <= 0 || tpClientUdpPortRtcp <= 0) {
-					throw new Exception("Client UDP ports not set");
-				}
-				if (isRtspsConnection && ! tpIsEncr) {
-					throw new Exception("UDP cannot be used with RTSPS w/o SRTP");
-				}
-				if (isTransportUdpDisabled) {
-					throw new Exception("UDP is disabled");
-				}
-				return;
-			}
-			if (! tpIsInterleaved) {
-				throw new Exception("Interleaved mode must be used for TCP");
-			}
-			if (tpClientTcpChannRtp < 0 || tpClientTcpChannRtcp < 0) {
-				throw new Exception("Client TCP channel IDs not set");
-			}
-			if (tpClientTcpChannRtp == tpClientTcpChannRtcp) {
-				throw new Exception("Client TCP channel IDs for RTP and RTCP cannot be the same");
-			}
-		}
-
-		public SetupSubStreamInfo(RtspStaticSessionInfo.@NonNull StreamKmds streamKmds) {
-			this.streamKmds = streamKmds;
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public record SdpSubStreamInfo(@NonNull String clientIpAddrStr, @NonNull String inputSourceId, int streamSourceId) { }
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static final int MAX_SUB_STREAM_INFOS = 10_000;
+	private static final int MAX_SUB_STREAM_IDS = 10_000;
 	private static final int MAX_AUTH_SERVER_NONCES = 10_000;
-	private static final int MAX_STREAM_INFOS_AND_KMDS = MAX_AUTH_SERVER_NONCES * 2;
 	private static final int MAX_UNAUTHORIZED_ENTRIES = 1_000_000;
 	private static final int HASH_LEN = 8;
 
@@ -137,16 +37,10 @@ public final class RtspStaticSessionInfo {
 	private static final Lock theReadLock = theLock.readLock();
 	private static final Lock theWriteLock = theLock.writeLock();
 
-	private static final List<@NonNull String> sdpSubStreamIds = new ArrayList<>();
-	private static final Map<@NonNull String, @NonNull SdpSubStreamInfo> sdpSubStreamInfoMap = new HashMap<>();
+	private static final List<@NonNull RtspProtoIdSubStream> subStreamIds = new ArrayList<>();
+	private static final Map<@NonNull RtspProtoIdSubStream, @NonNull SubStreamResolve> subStreamResolveMap = new HashMap<>();
 
 	private static final List<@NonNull String> authServerNonceList = new ArrayList<>();
-
-	private static final List<@NonNull String> streamKmdsIds = new ArrayList<>();
-	private static final Map<@NonNull String, @NonNull StreamKmds> streamKmdsMap = new HashMap<>();
-
-	private static final List<@NonNull String> setupSubStreamIds = new ArrayList<>();
-	private static final @NonNull Map<@NonNull String, @NonNull SetupSubStreamInfo> setupSubStreamInfoMap = new HashMap<>();
 
 	private static final List<@NonNull String> unauthorizedIds = new ArrayList<>();
 	private static final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
@@ -160,65 +54,103 @@ public final class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Adds a new Sub-Stream ID.<br />
+	 * Create a new Sub-Stream ID.<br />
 	 * A Sub-Stream ID is unique per DESCRIBE request per Stream Source. Even if the same client makes multiple DESCRIBE
 	 * requests for the same Input and Stream Source, the Sub-Stream ID will change every time.
 	 * @param clientIpAddr Client's IP address
-	 * @param inputSourceId Input Source ID as requested from the client per DESCRIBE request
-	 * @param streamSourceId Stream Source ID as requested from the client per DESCRIBE request
+	 * @param idInputSource Input Source ID as requested from the client per DESCRIBE request
+	 * @param idStreamSource Stream Source ID as requested from the client per DESCRIBE request
 	 * @return Unique Sub-Stream ID
 	 */
-	public static @NonNull String addSdpSubStream(
-				@NonNull InetAddress clientIpAddr,
-				@NonNull String inputSourceId,
-				int streamSourceId
+	public static @NonNull RtspProtoIdSubStream createSubStreamId(
+				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIdStreamSource idStreamSource
 			) {
-		final String ipStr = getIpStr(clientIpAddr);
+		if (clientIpAddr.isEmpty()) {
+			throw new IllegalArgumentException("Client IP address must be set");
+		}
+		if (idInputSource.isEmpty()) {
+			throw new IllegalArgumentException("Input Source ID must be set");
+		}
+		if (idStreamSource.isEmpty()) {
+			throw new IllegalArgumentException("Stream Source ID must be set");
+		}
+
+		//
+		final String ipStr = clientIpAddr.getIpAddrStr().orElseThrow();
 		final String ipHash = getIpHash(clientIpAddr);
 
 		theWriteLock.lock();
 		try {
-			String subStreamId;
+			RtspProtoIdSubStream tmpIdSub = new RtspProtoIdSubStream();
 			do {
-				subStreamId = ipHash + "_" + HashMd5Helper.hashOfString(
-						String.format("%s : %05d : %08X", inputSourceId, streamSourceId, RandomHelper.getRandomUint32(false)),
+				String tmpIdStr = ipHash + "_" + HashMd5Helper.hashOfString(
+						String.format("%s : %5s : %08X",
+								idInputSource.getIdStr(), idStreamSource.getIdStr(),
+								RandomHelper.getRandomUint32(false)),
 						false
 					).substring(0, HASH_LEN);
-			} while (sdpSubStreamIds.contains(subStreamId));
-			sdpSubStreamIds.add(subStreamId);
-			sdpSubStreamInfoMap.put(subStreamId, new SdpSubStreamInfo(ipStr, inputSourceId, streamSourceId));
+				tmpIdSub.setIdStr(tmpIdStr);
+			} while (subStreamIds.contains(tmpIdSub));
+			tmpIdSub.writeProtect();
+			subStreamIds.add(tmpIdSub);
 			//
-			if (sdpSubStreamInfoMap.size() > MAX_SUB_STREAM_INFOS) {
+			RtspProtoIdInputSource tmpIdIs = new RtspProtoIdInputSource();
+			tmpIdIs.copyFrom(idInputSource);
+			tmpIdIs.writeProtect();
+			RtspProtoIdStreamSource tmpIdSs = new RtspProtoIdStreamSource();
+			tmpIdSs.copyFrom(idStreamSource);
+			tmpIdSs.writeProtect();
+			subStreamResolveMap.put(tmpIdSub, new SubStreamResolve(ipStr, tmpIdIs, tmpIdSs));
+			//
+			if (subStreamIds.size() > MAX_SUB_STREAM_IDS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
-				sdpSubStreamInfoMap.remove(sdpSubStreamIds.getFirst());
-				sdpSubStreamIds.removeFirst();
+				subStreamResolveMap.remove(subStreamIds.getFirst());
+				subStreamIds.removeFirst();
 			}
-			return subStreamId;
+			return tmpIdSub;
 		} finally {
 			theWriteLock.unlock();
 		}
 	}
 
-	public static Optional<SdpSubStreamInfo> getSdpSubStream(@NonNull InetAddress clientIpAddr, @NonNull String subStreamId) {
-		theReadLock.lock();
-		try {
-			Optional<SdpSubStreamInfo> optRes = Optional.ofNullable(sdpSubStreamInfoMap.get(subStreamId));
-			if (optRes.isEmpty()) {
-				return Optional.empty();
-			}
-			final String ipStr = getIpStr(clientIpAddr);
-			if (! optRes.get().clientIpAddrStr.equals(ipStr)) {
-				return Optional.empty();
-			}
-			return optRes;
-		} finally {
-			theReadLock.unlock();
-		}
+	/**
+	 * Get Input Source ID by Sub-Stream ID.
+	 * @param idSubStream Sub-Stream ID
+	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
+	 * @return Input Source ID
+	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 */
+	public static @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
+				@NonNull RtspProtoIdSubStream idSubStream,
+				@NonNull RtspProtoIpAddr clientIpAddr
+			) throws RtspIdSubStreamNotFoundException {
+		return getResolveBySubStreamId(idSubStream, clientIpAddr).idInputSource;
+	}
+
+	/**
+	 * Get Stream Source ID by Sub-Stream ID.
+	 * @param idSubStream Sub-Stream ID
+	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
+	 * @return Stream Source ID
+	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 */
+	public static @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
+				@NonNull RtspProtoIdSubStream idSubStream,
+				@NonNull RtspProtoIpAddr clientIpAddr
+			) throws RtspIdSubStreamNotFoundException {
+		return getResolveBySubStreamId(idSubStream, clientIpAddr).idStreamSource;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull String addAuthServerNonce(@NonNull InetAddress clientIpAddr) {
+	/**
+	 * Create a new Auth Server Nonce.
+	 * @param clientIpAddr Client's IP address
+	 * @return Nonce
+	 */
+	public static @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String nonce = HashMd5Helper.hashOfString(
 				String.format("%s : %08X", UUID.randomUUID(), RandomHelper.getRandomUint32(false)),
@@ -239,7 +171,7 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static boolean existsAuthServerNonce(@NonNull InetAddress clientIpAddr, @NonNull String nonce) {
+	public static boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
 		final String ipHash = getIpHash(clientIpAddr);
 
 		theReadLock.lock();
@@ -252,117 +184,9 @@ public final class RtspStaticSessionInfo {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull StreamKmds getOrAddStreamKmds(
-				@NonNull InetAddress clientIpAddr,
-				@NonNull String subStreamId,
-				int rtspSsrcId
-			) {
-		if (Integer.toUnsignedLong(rtspSsrcId) == 0L) {
-			throw new IllegalArgumentException("rtspSsrcId must not be 0");
-		}
-		Optional<StreamKmds> optStreamKmds = getStreamKmds(clientIpAddr, subStreamId);
-		if (optStreamKmds.isPresent()) {
-			return optStreamKmds.get();
-		}
-		//
+	public static int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
-		final String skId = String.format("%s : %s", ipHash, subStreamId);
-
-		theWriteLock.lock();
-		try {
-			streamKmdsIds.add(skId);
-			streamKmdsMap.put(skId, new StreamKmds(rtspSsrcId));
-			//
-			if (streamKmdsMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
-				// we simply remove the first one. Maybe it is still in use, but we don't care
-				streamKmdsMap.remove(streamKmdsIds.getFirst());
-				streamKmdsIds.removeFirst();
-			}
-			return streamKmdsMap.get(skId);
-		} finally {
-			theWriteLock.unlock();
-		}
-	}
-
-	public static Optional<StreamKmds> getStreamKmds(
-				@NonNull InetAddress clientIpAddr,
-				@NonNull String subStreamId
-			) {
-		final String ipHash = getIpHash(clientIpAddr);
-		final String skId = String.format("%s : %s", ipHash, subStreamId);
-
-		theReadLock.lock();
-		try {
-			if (! streamKmdsMap.containsKey(skId)) {
-				return Optional.empty();
-			}
-			return Optional.of(streamKmdsMap.get(skId));
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("UnusedReturnValue")
-	public static @NonNull SetupSubStreamInfo addSetupSubStream(
-				@NonNull String subStreamId,
-				RtspStaticSessionInfo.@NonNull StreamKmds streamKmds,
-				@NonNull RtspStreamSource rtspStreamSource,
-				@NonNull String resourceUrl
-			) {
-		if (Integer.toUnsignedLong(streamKmds.rtspSsrcId) == 0L) {
-			throw new IllegalArgumentException("streamKmds.rtspSsrcId must not be 0");
-		}
-		theWriteLock.lock();
-		try {
-			SetupSubStreamInfo resObj = new SetupSubStreamInfo(streamKmds);
-			resObj.rtspSsrcId = streamKmds.rtspSsrcId;
-			resObj.rtspStreamSource = rtspStreamSource;
-			resObj.inputSourceUrlSetup = resourceUrl;
-			resObj.rtspRtpSeqNrT0 = RandomHelper.getRandomUint16();
-			resObj.rtspRtpTimestampT0 = RandomHelper.getRandomUint32(true);
-			resObj.rtspRtpGenTsT0Ns = System.nanoTime();
-			setupSubStreamIds.add(subStreamId);
-			setupSubStreamInfoMap.put(subStreamId, resObj);
-			//
-			if (setupSubStreamInfoMap.size() > MAX_STREAM_INFOS_AND_KMDS) {
-				// we simply remove the first one. Maybe it is still in use, but we don't care
-				setupSubStreamInfoMap.remove(setupSubStreamIds.getFirst());
-				setupSubStreamIds.removeFirst();
-			}
-			return resObj;
-		} finally {
-			theWriteLock.unlock();
-		}
-	}
-
-	public static @NonNull SetupSubStreamInfo getSetupSubStreamOrThrow(@NonNull String fncName, @NonNull String subStreamId) {
-		theReadLock.lock();
-		try {
-			if (! setupSubStreamInfoMap.containsKey(subStreamId)) {
-				throw new IllegalStateException(fncName + ": Stream info not found for Sub-Stream ID: " + subStreamId);
-			}
-			return setupSubStreamInfoMap.get(subStreamId);
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-
-	public static boolean existsSetupSubStream(@NonNull String subStreamId) {
-		theReadLock.lock();
-		try {
-			return setupSubStreamInfoMap.containsKey(subStreamId);
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public static int addUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
-		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
 
 		theWriteLock.lock();
@@ -387,9 +211,9 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static void resetUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
+	public static void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
 
 		theWriteLock.lock();
@@ -403,9 +227,9 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static int getUnauthorized(@NonNull InetAddress clientIpAddr, @NonNull String inputSourceId) {
+	public static int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(inputSourceId, false)
+		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
 
 		theReadLock.lock();
@@ -422,12 +246,40 @@ public final class RtspStaticSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String getIpStr(@NonNull InetAddress clientIpAddr) {
-		return clientIpAddr.getHostAddress();
+	private static @NonNull String getIpHash(@NonNull RtspProtoIpAddr clientIpAddr) {
+		if (clientIpAddr.isEmpty()) {
+			throw new IllegalArgumentException("Client IP address must be set");
+		}
+		final String ipStr = clientIpAddr.getIpAddrStr().orElseThrow();
+
+		return HashMd5Helper.hashOfString(ipStr, false).substring(0, HASH_LEN);
 	}
 
-	private static @NonNull String getIpHash(@NonNull InetAddress clientIpAddr) {
-		return HashMd5Helper.hashOfString(getIpStr(clientIpAddr), false).substring(0, HASH_LEN);
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull SubStreamResolve getResolveBySubStreamId(
+				@NonNull RtspProtoIdSubStream idSubStream,
+				@NonNull RtspProtoIpAddr clientIpAddr
+			) throws RtspIdSubStreamNotFoundException {
+		if (clientIpAddr.isEmpty()) {
+			throw new IllegalArgumentException("Client IP address must be set");
+		}
+		final String ipStr = clientIpAddr.getIpAddrStr().orElseThrow();
+
+		theReadLock.lock();
+		try {
+			if (! subStreamResolveMap.containsKey(idSubStream)) {
+				throw new RtspIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' not found");
+			}
+			SubStreamResolve tmpSsr = subStreamResolveMap.get(idSubStream);
+			if (! tmpSsr.clientIpAddrStr.equalsIgnoreCase(ipStr)) {
+				throw new RtspIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
+						"belongs to a different IP address");
+			}
+			return tmpSsr;
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 }

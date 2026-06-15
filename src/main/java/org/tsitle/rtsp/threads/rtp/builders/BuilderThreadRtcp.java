@@ -7,9 +7,13 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.time.Instant;
 import java.util.function.Consumer;
 
@@ -24,19 +28,19 @@ public class BuilderThreadRtcp {
 		// Fluent setters
 		public Builder logMsgInterface(@NonNull LogMsgInterface v) { this.threadParams.setLogMsgInterface(v); return this; }
 
-		public Builder debugSessionId(@NonNull String v) { this.threadParams.setDebugSessionId(v); return this; }
+		public Builder debugSessionId(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
 
-		public Builder streamSourceId(int v) { this.threadParams.setStreamSourceId(v); return this; }
+		public Builder idStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParams.setIdStreamSource(v); return this; }
 
 		public Builder rtspSsrcId(int v) { this.threadParams.setRtspSsrcId(v); return this; }
 
-		public Builder tpClientIpAddr(@NonNull InetAddress v) { this.threadParams.setTpClientIpAddr(v); return this; }
-		public Builder tpClientDestUdpPortRtcp(int v) { this.threadParams.setTpClientDestUdpPort(v); return this; }
+		public Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
+		public Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
 		public Builder tpSocketUdpRtcp(@NonNull DatagramSocket v) { this.threadParams.setTpSocketUdp(v); return this; }
-		public Builder tpClientDestTcpIf(RtxpTcpReadWrite v) { this.threadParams.setTpClientDestTcpIf(v); return this; }
+		public Builder tpClientDestTcpIf(@NonNull RtxpTcpReadWrite v) { this.threadParams.setTpClientDestTcpIf(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
-		public Builder tpClientDestTcpChannRtcp(int v) { this.threadParams.setTpClientDestTcpChann(v); return this; }
+		public Builder tpClientDestTcpChannRtcp(@NonNull RtspProtoTcpChannelNr v) { this.threadParams.setTpClientDestTcpChann(v); return this; }
 
 		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
 		public Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }

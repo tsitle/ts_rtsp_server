@@ -8,9 +8,13 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.URI;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -27,19 +31,19 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B logMsgInterface(@NonNull LogMsgInterface v) { this.threadParamsCommon.setLogMsgInterface(v); return self(); }
 
-	public B comDebugSessionId(@NonNull String v) { this.threadParamsCommon.setDebugSessionId(v); return self(); }
+	public B comDebugSessionId(@NonNull RtspProtoIdSession v) { this.threadParamsCommon.setDebugSessionId(v); return self(); }
 
-	public B comStreamSourceId(int v) { this.threadParamsCommon.setStreamSourceId(v); return self(); }
+	public B comIdStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParamsCommon.setIdStreamSource(v); return self(); }
 
 	public B comRtspSsrcId(int v) { this.threadParamsCommon.setRtspSsrcId(v); return self(); }
 
-	public B comTpClientIpAddr(@NonNull InetAddress v) { this.threadParamsCommon.setTpClientIpAddr(v); return self(); }
-	public B comTpClientDestUdpPortRtp(int v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return self(); }
+	public B comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return self(); }
+	public B comTpClientDestUdpPortRtp(@NonNull RtspProtoSocketPortNr v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return self(); }
 	@SuppressWarnings("UnusedReturnValue")
 	public B comTpSocketUdpRtp(@NonNull DatagramSocket v) { this.threadParamsCommon.setTpSocketUdp(v); return self(); }
 	public B comTpClientDestTcpIf(RtxpTcpReadWrite v) { this.threadParamsCommon.setTpClientDestTcpIf(v); return self(); }
 	@SuppressWarnings("UnusedReturnValue")
-	public B comTpClientDestTcpChannRtp(int v) { this.threadParamsCommon.setTpClientDestTcpChann(v); return self(); }
+	public B comTpClientDestTcpChannRtp(@NonNull RtspProtoTcpChannelNr v) { this.threadParamsCommon.setTpClientDestTcpChann(v); return self(); }
 
 	public B comCryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParamsCommon.setCryptoIsRtxpEncryptionEnabled(v); return self(); }
 	public B comCryptoKmdOutboundRtp(@Nullable SrtxpKmd v) { this.threadParamsCommon.setCryptoKmdOutbound(v); return self(); }
@@ -56,7 +60,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comXsrcBlockEntry(@NonNull RtcpInnerXsrcBlock v) { this.threadParamsCommon.setXsrcBlockEntry(v); return self(); }
 	public B comCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> v) { this.threadParamsCommon.setCbRtcpAppendToOutgoingQueue(v); return self(); }
 
-	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull Integer> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
+	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdStreamSource> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }
 
 	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }

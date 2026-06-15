@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 
 import java.util.Optional;
@@ -31,7 +31,7 @@ public class RtspProtoHeaderTypeSession {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"idSession='" + idSession.getId() + "', " +
+				"idSession='" + idSession.getIdStr() + "', " +
 				optionalIntToStr("timeout", getTimeout32bit()) +
 				"]";
 	}

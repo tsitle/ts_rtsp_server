@@ -12,13 +12,14 @@ import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.util.Optional;
 
 public class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
-	private final int streamSourceId;
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
 	private final @NonNull RtspSsMq mqSettings;
 	private final @NonNull String mqSslCertPath;
 
@@ -34,7 +35,7 @@ public class ThreadMqE2I extends RunnableBase {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
@@ -42,7 +43,7 @@ public class ThreadMqE2I extends RunnableBase {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
-				int streamSourceId,
+				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull RtspSsMq mqSettings,
 				@NonNull String mqSslCertPath
 			) {
@@ -50,16 +51,16 @@ public class ThreadMqE2I extends RunnableBase {
 
 		//
 		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
-		this.streamSourceId = streamSourceId;
+		this.idStreamSource.copyFrom(idStreamSource);
 		//
 		this.mqSettings = mqSettings.clone();
 		this.mqSslCertPath = mqSslCertPath;
 
-		this.threadName = String.format("MQE2I#ss%d#%s:%s:%s",
-				streamSourceId, mqSettings.getHost(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
+		this.threadName = String.format("MQE2I#ss%s#%s:%s:%s",
+				idStreamSource.getIdStr(), mqSettings.getHost(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
 
 		//
-		mqInternalPub = new MqInternalPub(logMsgInterface, streamSourceId);
+		mqInternalPub = new MqInternalPub(logMsgInterface, idStreamSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -163,7 +164,7 @@ public class ThreadMqE2I extends RunnableBase {
 			haveChanges = true;
 		}
 		if (haveChanges) {
-			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(streamSourceId, cacheCodecSettings);
+			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(idStreamSource, cacheCodecSettings);
 		}
 		//
 		mqInternalPub.sendMessageAv(packet);

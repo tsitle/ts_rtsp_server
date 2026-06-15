@@ -196,7 +196,7 @@ public abstract class ThreadRtpSenderBase<
 			if (srtpVarsOutbound.ctxObj == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
-			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" + paramsCommon.getStreamSourceId() +
+			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" + paramsCommon.getIdStreamSource().getIdStr() +
 					", MKI=" + Long.toUnsignedString(kmd.mki().value()) + ")");
 			try {
 				srtpVarsOutbound.ctxUpdatePending.set(true);
@@ -234,7 +234,7 @@ public abstract class ThreadRtpSenderBase<
 		try (AVSTRIC tmpAvStreamInc = AvStreamIncomingFactory.createAvStreamIncoming(
 					avStreamIncomingType,
 					paramsCommon.getLogMsgInterface().orElse(null),
-					paramsCommon.getStreamSourceId(),
+					paramsCommon.getIdStreamSource(),
 					tmpAvStreamIncomingUri
 				)) {
 			avStreamIncomingObj = tmpAvStreamInc;
@@ -519,7 +519,7 @@ public abstract class ThreadRtpSenderBase<
 	private void waitForParallelThreadToStart() throws InterruptedException, RtpThreadsDidNotStartException {
 		final String FNC_NAME = getClass().getSimpleName() + ".waitForParallelThreadToStart()";
 
-		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getStreamSourceId());
+		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getIdStreamSource());
 		//logDebug(FNC_NAME, "Parallel thread notified");
 
 		int timeoutCnt = 0;
@@ -731,8 +731,8 @@ public abstract class ThreadRtpSenderBase<
 			DatagramPacket sendDp = new DatagramPacket(
 					curPacketContainer.getPacketBufferPtr().getBaPtr(),
 					curPacketContainer.getPacketSize(),
-					paramsCommon.getTpClientIpAddr().orElseThrow(),
-					paramsCommon.getTpClientDestUdpPort()
+					paramsCommon.getTpClientIpAddr().getIpAddrObj().orElseThrow(),
+					paramsCommon.getTpClientDestUdpPort().getPort16bit().orElseThrow()
 				);
 			try {
 				parComRtpSocketUdp.send(sendDp);

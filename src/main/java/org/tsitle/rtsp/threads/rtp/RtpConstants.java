@@ -1,13 +1,13 @@
 package org.tsitle.rtsp.threads.rtp;
 
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.SdpConstants;
+import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConstants;
 
 public final class RtpConstants {
 
 	private RtpConstants() { }
 
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
-	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = SdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
+	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = RtspProtoSdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
 	/** Samples per frame for AAC-LC audio -- Default Type 2 */

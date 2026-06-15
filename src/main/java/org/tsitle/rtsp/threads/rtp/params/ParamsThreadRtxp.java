@@ -5,47 +5,44 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Optional;
 
 public abstract class ParamsThreadRtxp implements Cloneable {
 
 	public static class Transport implements Cloneable {
 		/** Client IP address */
-		private InetAddress clientIpAddr;
+		private @NonNull RtspProtoIpAddr clientIpAddr = new RtspProtoIpAddr();
 		private boolean isSetClientIpAddr;
 
 		/** Destination UDP port for RTxP packets (audio and video), provided by the RTSP Client */
-		private int clientDestUdpPort;
+		private @NonNull RtspProtoSocketPortNr clientDestUdpPort = new RtspProtoSocketPortNr();
 		private boolean isSetClientDestUdpPort;
 		/** UDP socket for outgoing RTxP packets */
-		private DatagramSocket socketUdp;
+		private @Nullable DatagramSocket socketUdp;
 		private boolean isSetSocketUdp;
 
 		/** Destination TCP read/write interface for RTxP packets (audio and video) */
-		private RtxpTcpReadWrite clientDestTcpIf;
+		private @Nullable RtxpTcpReadWrite clientDestTcpIf;
 		private boolean isSetClientDestTcpIf;
 		/** Destination TCP channel for RTxP packets (audio and video), provided by the RTSP Client */
-		private int clientDestTcpChann;
+		private @NonNull RtspProtoTcpChannelNr clientDestTcpChann = new RtspProtoTcpChannelNr();
 		private boolean isSetClientDestTcpChann;
 
 		@Override
 		public @NonNull Transport clone() {
 			try {
-				Transport clone = (Transport)super.clone();
-				//
-				try {
-					if (clientIpAddr != null) {
-						clone.clientIpAddr = InetAddress.getByAddress(clientIpAddr.getAddress());
-					}
-				} catch (UnknownHostException e) {
-					// this should never happen
-					throw new RuntimeException(e);
-				}
-				return clone;
+				Transport cloned = (Transport)super.clone();
+				cloned.clientIpAddr = clientIpAddr.clone();
+				cloned.clientDestUdpPort = clientDestUdpPort.clone();
+				cloned.clientDestTcpChann = clientDestTcpChann.clone();
+				return cloned;
 			} catch (CloneNotSupportedException e) {
 				throw new AssertionError();
 			}
@@ -61,10 +58,10 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		private boolean isSetIsRtxpEncryptionEnabled;
 
 		/** SRTxP KMD for inbound messages */
-		private SrtxpKmd srtxpKmdInbound;
+		private @Nullable SrtxpKmd srtxpKmdInbound;
 		private boolean isSetSrtxpKmdInbound;
 		/** SRTxP KMD for outbound messages */
-		private SrtxpKmd srtxpKmdOutbound;
+		private @Nullable SrtxpKmd srtxpKmdOutbound;
 		private boolean isSetSrtxpKmdOutbound;
 
 		@Override
@@ -89,26 +86,26 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** Logging interface */
-	private LogMsgInterface logMsgInterface;
+	private @Nullable LogMsgInterface logMsgInterface = null;
 	private boolean isSetLogMsgInterface;
 
 	/** Session ID */
-	private String debugSessionId;
+	private @NonNull RtspProtoIdSession debugSessionId = new RtspProtoIdSession();
 	private boolean isSetDebugSessionId;
 
 	/** Stream ID - not the SSRC */
-	private int streamSourceId;
-	private boolean isSetStreamSourceId;
+	private @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	private boolean isSetIdStreamSource;
 
 	/** RTSP Synchronization Source Identifier of the stream */
 	private int rtspSsrcId;
 	private boolean isSetRtspSsrcId;
 
 	/** RTxP UDP/TCP transport parameters */
-	private final Transport transport = new Transport();
+	private @NonNull Transport transport = new Transport();
 
 	/** RTxP encryption parameters */
-	private final Crypto crypto = new Crypto();
+	private @NonNull Crypto crypto = new Crypto();
 
 	protected ParamsThreadRtxp(boolean needInboundParams, boolean needOutboundParams) {
 		this.crypto.needInboundParams = needInboundParams;
@@ -125,36 +122,42 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	}
 
 	@SuppressWarnings("unused")
-	public Optional<String> getDebugSessionId() { return Optional.ofNullable(debugSessionId); }
-	public void setDebugSessionId(@NonNull String debugSessionId) {
-		this.debugSessionId = debugSessionId;
+	public @NonNull RtspProtoIdSession getDebugSessionId() {
+		return debugSessionId.clone();
+	}
+	public void setDebugSessionId(@NonNull RtspProtoIdSession debugSessionId) {
+		this.debugSessionId.copyFrom(debugSessionId);
+		this.debugSessionId.writeProtect();
 		this.isSetDebugSessionId = true;
 	}
 
-	@SuppressWarnings("unused")
-	public int getStreamSourceId() { return streamSourceId; }
-	public void setStreamSourceId(int streamSourceId) {
-		this.streamSourceId = streamSourceId;
-		this.isSetStreamSourceId = true;
+	public @NonNull RtspProtoIdStreamSource getIdStreamSource() { return idStreamSource; }
+	public void setIdStreamSource(@NonNull RtspProtoIdStreamSource idStreamSource) {
+		this.idStreamSource.copyFrom(idStreamSource);
+		this.idStreamSource.writeProtect();
+		this.isSetIdStreamSource = true;
 	}
 
-	@SuppressWarnings("unused")
 	public int getRtspSsrcId() { return rtspSsrcId; }
 	public void setRtspSsrcId(int rtspSsrcId) {
 		this.rtspSsrcId = rtspSsrcId;
 		this.isSetRtspSsrcId = true;
 	}
 
-	public Optional<InetAddress> getTpClientIpAddr() { return Optional.ofNullable(transport.clientIpAddr); }
-	public void setTpClientIpAddr(@NonNull InetAddress clientIpAddr) {
-		this.transport.clientIpAddr = clientIpAddr;
-		this.transport.isSetClientIpAddr = true;
+	public @NonNull RtspProtoIpAddr getTpClientIpAddr() {
+		return transport.clientIpAddr.clone();
+	}
+	public void setTpClientIpAddr(@NonNull RtspProtoIpAddr clientIpAddr) {
+		transport.clientIpAddr.copyFrom(clientIpAddr);
+		transport.clientIpAddr.writeProtect();
+		transport.isSetClientIpAddr = true;
 	}
 
-	public int getTpClientDestUdpPort() { return transport.clientDestUdpPort; }
-	public void setTpClientDestUdpPort(int value) {
-		this.transport.clientDestUdpPort = value;
-		this.transport.isSetClientDestUdpPort = true;
+	public @NonNull RtspProtoSocketPortNr getTpClientDestUdpPort() { return transport.clientDestUdpPort; }
+	public void setTpClientDestUdpPort(@NonNull RtspProtoSocketPortNr value) {
+		transport.clientDestUdpPort.copyFrom(value);
+		transport.clientDestUdpPort.writeProtect();
+		transport.isSetClientDestUdpPort = true;
 	}
 
 	public Optional<DatagramSocket> getTpSocketUdp() { return Optional.ofNullable(transport.socketUdp); }
@@ -169,10 +172,11 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		this.transport.isSetClientDestTcpIf = true;
 	}
 
-	public int getTpClientDestTcpChann() { return transport.clientDestTcpChann; }
-	public void setTpClientDestTcpChann(int value) {
-		this.transport.clientDestTcpChann = value;
-		this.transport.isSetClientDestTcpChann = true;
+	public @NonNull RtspProtoTcpChannelNr getTpClientDestTcpChann() { return transport.clientDestTcpChann; }
+	public void setTpClientDestTcpChann(@NonNull RtspProtoTcpChannelNr value) {
+		transport.clientDestTcpChann.copyFrom(value);
+		transport.clientDestTcpChann.writeProtect();
+		transport.isSetClientDestTcpChann = true;
 	}
 
 	public boolean getCryptoIsRtxpEncryptionEnabled() { return crypto.isRtxpEncryptionEnabled; }
@@ -205,8 +209,10 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		try {
 			ParamsThreadRtxp clone = (ParamsThreadRtxp)super.clone();
 			//
-			//noinspection StringOperationCanBeSimplified
-			clone.debugSessionId = new String(debugSessionId);
+			clone.debugSessionId = debugSessionId.clone();
+			clone.idStreamSource = idStreamSource.clone();
+			clone.transport = transport.clone();
+			clone.crypto = crypto.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -219,7 +225,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	private void checkAllParamsSet() {
 		requireIsSet(isSetLogMsgInterface, "logMsgInterface");
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
-		requireIsSet(isSetStreamSourceId, "streamSourceId");
+		requireIsSet(isSetIdStreamSource, "streamSourceId");
 
 		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
 
@@ -252,14 +258,14 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 
 		requireNonNull(transport.clientIpAddr, "transport.clientIpAddr");
 		if (transport.isSetClientDestUdpPort) {
-			if (transport.clientDestUdpPort <= 0 || transport.clientDestUdpPort > 65535) {
-				throw new IllegalArgumentException(errPrefix + "transport.clientDestUdpPort must be > 0 and <= 65535");
+			if (transport.clientDestUdpPort.isEmpty()) {
+				throw new IllegalArgumentException(errPrefix + "transport.clientDestUdpPort must be set");
 			}
 			requireNonNull(transport.socketUdp, "transport.socketUdp");
 		} else {
 			requireNonNull(transport.clientDestTcpIf, "transport.clientDestTcpIf");
-			if (transport.clientDestTcpChann < 0 || transport.clientDestTcpChann > 255) {
-				throw new IllegalArgumentException(errPrefix + "transport.clientDestTcpChann must be >= 0 and <= 255");
+			if (transport.clientDestTcpChann.isEmpty()) {
+				throw new IllegalArgumentException(errPrefix + "transport.clientDestTcpChann must be set");
 			}
 		}
 	}

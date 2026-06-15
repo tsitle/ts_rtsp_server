@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.net.URI;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean isSetCbRtcpAppendToOutgoingQueue;
 
 	/** Callback for notifying the parent thread that the child thread is ready to start */
-	private Consumer<Integer> cbNotifyThreadReady;
+	private Consumer<@NonNull RtspProtoIdStreamSource> cbNotifyThreadReady;
 	private boolean isSetCbNotifyThreadReady;
 	/** Callback for checking if the child thread may start playback */
 	private Supplier<Boolean> cbThreadMayStartPlayback;
@@ -115,8 +116,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetCbRtcpAppendToOutgoingQueue = true;
 	}
 
-	public Optional<Consumer<Integer>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
-	public void setCbNotifyThreadReady(@NonNull Consumer<@NonNull Integer> cbNotifyThreadReady) {
+	public Optional<Consumer<RtspProtoIdStreamSource>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
+	public void setCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdStreamSource> cbNotifyThreadReady) {
 		this.cbNotifyThreadReady = cbNotifyThreadReady;
 		this.isSetCbNotifyThreadReady = true;
 	}

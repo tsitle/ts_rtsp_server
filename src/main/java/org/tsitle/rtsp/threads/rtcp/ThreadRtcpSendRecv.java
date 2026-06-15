@@ -111,7 +111,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".appendByePacketToSendQueue()";
 
 		logDebug(FNC_NAME, String.format(
-				"Sending BYE packet (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
+				"Sending BYE packet (ss=%s, SSRC=0x%08X)", params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendBye_buildRtcpCompound(packetCompoundBuf);
 		//
@@ -132,7 +132,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			if (srtcpVarsInbound.ctxObjCur == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
-			logDebug(FNC_NAME, "Setting next SRTCP inbound KMD (ss=" + params.getStreamSourceId() +
+			logDebug(FNC_NAME, "Setting next SRTCP inbound KMD (ss=" + params.getIdStreamSource().getIdStr() +
 					", MKI=" + Long.toUnsignedString(kmd.mki().value()) + ")");
 			try {
 				srtcpVarsInbound.ctxUpdatePending.set(true);
@@ -161,7 +161,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			if (srtcpVarsOutbound.ctxObj == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
-			logDebug(FNC_NAME, "Setting next SRTCP outbound KMD (ss=" + params.getStreamSourceId() +
+			logDebug(FNC_NAME, "Setting next SRTCP outbound KMD (ss=" + params.getIdStreamSource().getIdStr() +
 					", MKI=" + Long.toUnsignedString(kmd.mki().value()) + ")");
 			try {
 				srtcpVarsOutbound.ctxUpdatePending.set(true);
@@ -327,8 +327,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			DatagramPacket sendDp = new DatagramPacket(
 					outpPacketPtr.getBaPtr(),
 					outpPacketPtr.getUsed(),
-					params.getTpClientIpAddr().orElseThrow(),
-					params.getTpClientDestUdpPort()
+					params.getTpClientIpAddr().getIpAddrObj().orElseThrow(),
+					params.getTpClientDestUdpPort().getPort16bit().orElseThrow()
 				);
 			try {
 				parRtcpSocketUdp.send(sendDp);
@@ -506,7 +506,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		if (rtcpPktHd.getItemsCount() == 0) {
 			logDebug(FNC_NAME, String.format(
-					"RTCP packet without items (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
+					"RTCP packet without items (ss=%s, SSRC=0x%08X)",
+					params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
 			return;
 		}
 		// read and validate the packet
@@ -551,7 +552,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		if (rtcpPktHd.getItemsCount() == 0) {
 			logDebug(FNC_NAME, String.format(
-					"RTCP packet without items (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
+					"RTCP packet without items (ss=%s, SSRC=0x%08X)",
+					params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
 			return;
 		}
 		// read and validate the packet
@@ -570,7 +572,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			return;  // only for the linter
 		}
 		logDebug(FNC_NAME, String.format(
-				"received BYE (ss=%d, SSRC=0x%08X)", params.getStreamSourceId(), params.getRtspSsrcId()));
+				"received BYE (ss=%s, SSRC=0x%08X)", params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
 	}
 
 }

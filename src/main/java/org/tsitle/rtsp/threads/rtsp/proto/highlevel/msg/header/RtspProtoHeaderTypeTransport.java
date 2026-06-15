@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
 
@@ -8,26 +9,7 @@ import java.util.Optional;
 
 public class RtspProtoHeaderTypeTransport {
 
-	/** Client's UDP port for inbound RTP packets */
-	private int tpClientUdpPortRtp = -1;
-	/** Client's UDP port for inbound/outbound RTCP packets */
-	private int tpClientUdpPortRtcp = -1;
-	/** Server's UDP port for outbound RTP packets */
-	private int tpServerUdpPortRtp = -1;
-	/** Server's UDP port for inbound/outbound RTCP packets */
-	private int tpServerUdpPortRtcp = -1;
-	/** Client's TCP channel for inbound RTP packets */
-	private int tpClientTcpChannRtp = -1;
-	/** Client's TCP channel for inbound/outbound RTCP packets */
-	private int tpClientTcpChannRtcp = -1;
-	/** Transport type protocol (true: UDP, false: TCP) */
-	public boolean tpIsUdp = false;
-	/** Transport delivery type (true: unicast, false: multicast) */
-	public boolean tpIsUnicast = false;
-	/** Transport interleaved mode (true: interleaved (requires TCP), false: separate (requires UDP)) */
-	public boolean tpIsInterleaved = false;
-	/** Transport encryption type (true: SRTP/SRTCP, false: plain RTP/RTCP) */
-	public boolean tpIsEncr = false;
+	public @NonNull RtspProtoDataCntSubStreamTp tpSubStream = new RtspProtoDataCntSubStreamTp();
 
 	/** Destination IP address or hostname */
 	public @NonNull String tpDestIpOrHost = "";
@@ -40,69 +22,13 @@ public class RtspProtoHeaderTypeTransport {
 	/** Mode (either PLAY or RECORD) */
 	public @NonNull RtspTransportMode tpMode = RtspTransportMode.NONE;
 
-	public void setClientUdpPortRtp16bit(int portNumber16bit) throws RtspNumberRangeException {
-		validatePortNumber("tpClientUdpPortRtp", portNumber16bit);
-		this.tpClientUdpPortRtp = portNumber16bit;
-	}
-
-	public Optional<Short> getClientUdpPortRtp16bit() {
-		return (tpClientUdpPortRtp < 0L ? Optional.empty() : Optional.of((short)tpClientUdpPortRtp));
-	}
-
-	public void setClientUdpPortRtcp16bit(int portNumber16bit) throws RtspNumberRangeException {
-		validatePortNumber("tpClientUdpPortRtcp", portNumber16bit);
-		this.tpClientUdpPortRtcp = portNumber16bit;
-	}
-
-	public Optional<Short> getClientUdpPortRtcp16bit() {
-		return (tpClientUdpPortRtcp < 0L ? Optional.empty() : Optional.of((short)tpClientUdpPortRtcp));
-	}
-
-	public void setServerUdpPortRtp16bit(int portNumber16bit) throws RtspNumberRangeException {
-		validatePortNumber("tpServerUdpPortRtp", portNumber16bit);
-		this.tpServerUdpPortRtp = portNumber16bit;
-	}
-
-	public Optional<Short> getServerUdpPortRtp16bit() {
-		return (tpServerUdpPortRtp < 0L ? Optional.empty() : Optional.of((short)tpServerUdpPortRtp));
-	}
-
-	public void setServerUdpPortRtcp16bit(int portNumber16bit) throws RtspNumberRangeException {
-		validatePortNumber("tpServerUdpPortRtcp", portNumber16bit);
-		this.tpServerUdpPortRtcp = portNumber16bit;
-	}
-
-	public Optional<Short> getServerUdpPortRtcp16bit() {
-		return (tpServerUdpPortRtcp < 0L ? Optional.empty() : Optional.of((short)tpServerUdpPortRtcp));
-	}
-
-	public void setClientTcpChannRtp16bit(int tcpChann16bit) throws RtspNumberRangeException {
-		validateTcpChannel("tpClientTcpChannRtp", tcpChann16bit);
-		this.tpClientTcpChannRtp = tcpChann16bit;
-	}
-
-	public Optional<Short> getClientTcpChannRtp16bit() {
-		return (tpClientTcpChannRtp < 0L ? Optional.empty() : Optional.of((short)tpClientTcpChannRtp));
-	}
-
-	public void setClientTcpChannRtcp16bit(int tcpChann16bit) throws RtspNumberRangeException {
-		validateTcpChannel("tpClientTcpChannRtcp", tcpChann16bit);
-		this.tpClientTcpChannRtcp = tcpChann16bit;
-	}
-
-	public Optional<Short> getClientTcpChannRtcp16bit() {
-		return (tpClientTcpChannRtcp < 0L ? Optional.empty() : Optional.of((short)tpClientTcpChannRtcp));
-	}
-
 	public void setSsrcId32bit(long ssrc32bit) throws RtspNumberRangeException {
 		validateSsrc("tpSsrcId32bit", ssrc32bit);
 		this.tpSsrcId32bit = ssrc32bit;
 	}
-
 	public void clearSsrcId() {
 		this.tpSsrcId32bit = -1L;
 	}
-
 	public Optional<Integer> getSsrcId32bit() {
 		return (tpSsrcId32bit < 0L ? Optional.empty() : Optional.of((int)tpSsrcId32bit));
 	}
@@ -110,32 +36,11 @@ public class RtspProtoHeaderTypeTransport {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"tpIsUdp=" + tpIsUdp +
-				(tpIsUdp ? ", " + optionalShortToStr("tpClientUdpPortRtp", getClientUdpPortRtp16bit()) : "") +
-				(tpIsUdp ? ", " + optionalShortToStr("tpClientUdpPortRtcp", getClientUdpPortRtcp16bit()) : "") +
-				(tpIsUdp ? ", " + optionalShortToStr("tpServerUdpPortRtp", getServerUdpPortRtp16bit()) : "") +
-				(tpIsUdp ? ", " + optionalShortToStr("tpServerUdpPortRtcp", getServerUdpPortRtcp16bit()) : "") +
-				(tpIsUdp ? "" : ", " + optionalShortToStr("tpClientTcpChannRtp", getClientTcpChannRtp16bit())) +
-				(tpIsUdp ? "" : ", " + optionalShortToStr("tpClientTcpChannRtcp", getClientTcpChannRtcp16bit())) +
-				", tpIsUnicast=" + tpIsUnicast +
-				(tpIsUdp ? "" : ", tpIsInterleaved=" + tpIsInterleaved) +
-				", tpIsEncr=" + tpIsEncr +
+				"tpSubStream=" + tpSubStream +
 				", tpDestIpOrHost='" + tpDestIpOrHost + "'" +
 				", tpSourceIpOrHost='" + tpSourceIpOrHost + "'" +
 				", " + optionalIntToStr("tpSsrcId", getSsrcId32bit()) +
 				"]";
-	}
-
-	private static void validatePortNumber(@NonNull String desc, int port) throws RtspNumberRangeException {
-		if (port < 1 || port > 65535) {
-			throw new RtspNumberRangeException(desc + " must be between 1 and 65535, got: " + port);
-		}
-	}
-
-	private static void validateTcpChannel(@NonNull String desc, int channel) throws RtspNumberRangeException {
-		if (channel < 0 || channel > 65535) {
-			throw new RtspNumberRangeException(desc + " must be between 0 and 65535, got: " + channel);
-		}
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -143,11 +48,6 @@ public class RtspProtoHeaderTypeTransport {
 		if (ssrc < 1L || ssrc > 0xFFFFFFFFL) {
 			throw new RtspNumberRangeException(desc + " must be between 1 and 0xFFFFFFFF, got: " + ssrc);
 		}
-	}
-
-	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-	private static @NonNull String optionalShortToStr(@NonNull String desc, @NonNull Optional<Short> value) {
-		return desc + "=" + (value.isPresent() ? Short.toUnsignedInt(value.get()) : "unset");
 	}
 
 	@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "SameParameterValue"})

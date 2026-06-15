@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.mq;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -20,11 +21,11 @@ public class MqChannelBus {
 
 	/**
 	 * Build a channel name for a stream source identifier.
-	 * @param streamSourceId Stream source identifier
+	 * @param idStreamSource Stream source identifier
 	 * @return Channel name
 	 */
-	public static String buildChannelNameForStreamSourceId(int streamSourceId) {
-		return String.format("internal#%04d", streamSourceId);
+	public static String buildChannelNameForStreamSourceId(@NonNull RtspProtoIdStreamSource idStreamSource) {
+		return String.format("internal#%s#", idStreamSource.getIdStr());
 	}
 
 	/**

@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 
 /**
  * Utility class for handling RTSP Digest Authentication.
@@ -10,6 +10,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMessageType;
 public final class RtspProtoAuthDigest {
 
 	private RtspProtoAuthDigest() { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Compute the authentication response based on provided parameters.

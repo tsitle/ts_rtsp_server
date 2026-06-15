@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -269,41 +270,45 @@ public class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean canReadRtcp(int channId) throws TcpSocketIoException {
+	public boolean canReadRtcp(@NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();  // restore flag
 		}
 		try {
-			if (mapQueueRtpRtcpDataRcvd.containsKey(channId) && ! mapQueueRtpRtcpDataRcvd.get(channId).isEmpty()) {
+			if (channNr.isEmpty()) {
+				return false;
+			}
+			final int tmpChannInt = channNr.getChannel8bit().orElseThrow();
+			if (mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) && ! mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
 				return true;
 			}
 			if (doStop.get() || socketTcp.isClosed()) {
 				return false;
 			}
 			internalReadSocket();
-			if (! mapQueueRtpRtcpDataRcvd.containsKey(channId)) {
+			if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt)) {
 				return false;
 			}
-			return (! (doStop.get() || mapQueueRtpRtcpDataRcvd.get(channId).isEmpty()));
+			return (! (doStop.get() || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()));
 		} finally {
 			blockedState.unblock(Flag.QUEUE_RTP_RTCP_RCVD);
 		}
 	}
 
-	public boolean readRtcpBinary(@NonNull BufferExt buf, int channId) throws TcpSocketIoException {
-		return internalReadRtpRtcpBinary(buf, channId);
+	public boolean readRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
+		return internalReadRtpRtcpBinary(buf, channNr);
 	}
 
-	public void writeRtcpBinary(@NonNull BufferView bufView, int channId) throws TcpSocketIoException {
-		internalWriteRtpRtcpBinary(bufView, channId);
+	public void writeRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
+		internalWriteRtpRtcpBinary(bufView, channNr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void writeRtpBinary(@NonNull BufferView bufView, int channId) throws TcpSocketIoException {
-		internalWriteRtpRtcpBinary(bufView, channId);
+	public void writeRtpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
+		internalWriteRtpRtcpBinary(bufView, channNr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -482,7 +487,7 @@ public class RtxpTcpReadWrite {
 		queueRtspLinesRcvd.add(tmpStr);
 	}
 
-	private boolean internalReadRtpRtcpBinary(@NonNull BufferExt buf, int channId) throws TcpSocketIoException {
+	private boolean internalReadRtpRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
 		} catch (InterruptedException e) {
@@ -492,13 +497,17 @@ public class RtxpTcpReadWrite {
 			if (doStop.get() || socketTcp.isClosed()) {
 				return false;
 			}
-			if (! mapQueueRtpRtcpDataRcvd.containsKey(channId) || mapQueueRtpRtcpDataRcvd.get(channId).isEmpty()) {
+			if (channNr.isEmpty()) {
+				return false;
+			}
+			final int tmpChannInt = channNr.getChannel8bit().orElseThrow();
+			if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
 				internalReadSocket();
-				if (! mapQueueRtpRtcpDataRcvd.containsKey(channId) || mapQueueRtpRtcpDataRcvd.get(channId).isEmpty()) {
+				if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
 					return false;
 				}
 			}
-			BufferExt tmpBuf = mapQueueRtpRtcpDataRcvd.get(channId).poll();
+			BufferExt tmpBuf = mapQueueRtpRtcpDataRcvd.get(tmpChannInt).poll();
 			if (tmpBuf == null) {
 				return false;
 			}
@@ -533,7 +542,7 @@ public class RtxpTcpReadWrite {
 		}
 	}
 
-	private void internalWriteRtpRtcpBinary(@NonNull BufferView bufView, int channId) throws TcpSocketIoException {
+	private void internalWriteRtpRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalWriteRtpRtcpBinary()";
 
 		try {
@@ -545,9 +554,13 @@ public class RtxpTcpReadWrite {
 			if (doStop.get() || socketTcp.isClosed()) {
 				return;
 			}
+			if (channNr.isEmpty()) {
+				return;
+			}
+			final int tmpChannInt = channNr.getChannel8bit().orElseThrow();
 			byte[] tmpBa = new byte[4];
 			tmpBa[0] = (byte)'$';
-			tmpBa[1] = (byte)channId;
+			tmpBa[1] = (byte)tmpChannInt;
 			tmpBa[2] = (byte)((bufView.getLength() >> 8) & 0xFF);
 			tmpBa[3] = (byte)(bufView.getLength() & 0xFF);
 			socketOs.write(tmpBa, 0, 4);
