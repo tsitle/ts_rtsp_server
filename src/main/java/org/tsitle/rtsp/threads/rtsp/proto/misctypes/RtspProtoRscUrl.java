@@ -78,7 +78,7 @@ public final class RtspProtoRscUrl implements Cloneable {
 			cloned.idSubStream = idSubStream.clone();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException(e);
+			throw new AssertionError();
 		}
 	}
 

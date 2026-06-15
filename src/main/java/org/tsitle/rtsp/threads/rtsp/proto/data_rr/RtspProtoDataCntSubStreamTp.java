@@ -5,22 +5,22 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidTpSettingsExcept
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
-public final class RtspProtoDataCntSubStreamTp {
+public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
 	/** Client's UDP port for inbound RTP packets */
-	public final @NonNull RtspProtoSocketPortNr tpClientUdpPortRtp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtp = new RtspProtoSocketPortNr();
 	/** Client's UDP port for inbound/outbound RTCP packets */
-	public final @NonNull RtspProtoSocketPortNr tpClientUdpPortRtcp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtcp = new RtspProtoSocketPortNr();
 	/** Server's UDP port for outbound RTP packets */
-	public final @NonNull RtspProtoSocketPortNr tpServerUdpPortRtp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtp = new RtspProtoSocketPortNr();
 	/** Server's UDP port for inbound/outbound RTCP packets */
-	public final @NonNull RtspProtoSocketPortNr tpServerUdpPortRtcp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtcp = new RtspProtoSocketPortNr();
 	/** Client's TCP channel for inbound RTP packets */
-	public final @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtp = new RtspProtoTcpChannelNr();
+	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtp = new RtspProtoTcpChannelNr();
 	/** Client's TCP channel for inbound/outbound RTCP packets */
-	public final @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtcp = new RtspProtoTcpChannelNr();
+	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtcp = new RtspProtoTcpChannelNr();
 	/** Transport type protocol (true: UDP, false: TCP) */
 	private boolean tpIsUdp = false;
 	/** Transport delivery type (true: unicast, false: multicast) */
@@ -32,6 +32,28 @@ public final class RtspProtoDataCntSubStreamTp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+
+	public @NonNull RtspProtoSocketPortNr getClientUdpPortRtpPtr() {
+		return tpClientUdpPortRtp;
+	}
+	public @NonNull RtspProtoSocketPortNr getClientUdpPortRtcpPtr() {
+		return tpClientUdpPortRtcp;
+	}
+
+	public @NonNull RtspProtoSocketPortNr getServerUdpPortRtpPtr() {
+		return tpServerUdpPortRtp;
+	}
+	public @NonNull RtspProtoSocketPortNr getServerUdpPortRtcpPtr() {
+		return tpServerUdpPortRtcp;
+	}
+
+	public @NonNull RtspProtoTcpChannelNr getClientTcpChannRtpPtr() {
+		return tpClientTcpChannRtp;
+	}
+	public @NonNull RtspProtoTcpChannelNr getClientTcpChannRtcpPtr() {
+		return tpClientTcpChannRtcp;
+	}
 
 	public boolean getIsUdp() {
 		return tpIsUdp;
@@ -158,7 +180,16 @@ public final class RtspProtoDataCntSubStreamTp {
 
 	public void writeProtect() {
 		isWriteProtected = true;
+
+		tpClientUdpPortRtp.writeProtect();
+		tpClientUdpPortRtcp.writeProtect();
+		tpServerUdpPortRtp.writeProtect();
+		tpServerUdpPortRtcp.writeProtect();
+		tpClientTcpChannRtp.writeProtect();
+		tpClientTcpChannRtcp.writeProtect();
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public @NonNull String toString() {
@@ -174,6 +205,22 @@ public final class RtspProtoDataCntSubStreamTp {
 				(tpIsUdp ? "" : ", tpIsInterleaved=" + (tpIsInterleaved ? "T" : "F")) +
 				", tpIsEncr=" + (tpIsEncr ? "T" : "F") +
 				"]";
+	}
+
+	@Override
+	public RtspProtoDataCntSubStreamTp clone() {
+		try {
+			RtspProtoDataCntSubStreamTp cloned = (RtspProtoDataCntSubStreamTp)super.clone();
+			cloned.tpClientUdpPortRtp = tpClientUdpPortRtp.clone();
+			cloned.tpClientUdpPortRtcp = tpClientUdpPortRtcp.clone();
+			cloned.tpServerUdpPortRtp = tpServerUdpPortRtp.clone();
+			cloned.tpServerUdpPortRtcp = tpServerUdpPortRtcp.clone();
+			cloned.tpClientTcpChannRtp = tpClientTcpChannRtp.clone();
+			cloned.tpClientTcpChannRtcp = tpClientTcpChannRtcp.clone();
+			return cloned;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 }

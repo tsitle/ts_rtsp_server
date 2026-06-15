@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * RTSP User Authentication and Authorization Service
  */
-public final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
+final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
@@ -64,14 +64,14 @@ public final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.permAuthServer.getAuthRealm())) {
+				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.getPermAuthServerRealm())) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.permAuthServer.getAuthNonce()) &&
+				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.getPermAuthServerNonce()) &&
 						globalSessionInfoInterface.existsAuthServerNonce(
-								rtspSessionInfo.clientIpAddr, rtspSessionInfo.permAuthServer.getAuthNonce()
+								rtspSessionInfo.getClientIpAddr(), rtspSessionInfo.getPermAuthServerNonce()
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;

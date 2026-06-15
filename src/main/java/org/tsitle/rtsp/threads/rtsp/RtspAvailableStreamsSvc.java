@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface {
+final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface {
 
 	private final @NonNull RtspConfig rtspConfig;
 

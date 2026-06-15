@@ -167,7 +167,7 @@ public final class RtspProtoResponseOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void loadFromSessionInfo(
-				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
 		dataResp.respIdSession.copyFrom(rtspSessionInfo.idSession);
@@ -176,7 +176,7 @@ public final class RtspProtoResponseOutputSvc {
 		//
 		dataResp.respStreamTpMain.copyFrom(rtspSessionInfo.streamTpMain);
 		//
-		ioSetupInfosStream.copyFrom(rtspSessionInfo.descrSetupInfosStream);
+		setupInfosStream.copyFrom(rtspSessionInfo.descrSetupInfosStream);
 	}
 
 	private void updateSessionInfo(
@@ -187,12 +187,14 @@ public final class RtspProtoResponseOutputSvc {
 		// store new Session ID if one has been generated
 		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
 		if (tmpOptIdSess.isPresent() && rtspSessionInfo.idSession.isEmpty() &&
-				! tmpOptIdSess.get().isEmpty()) {
+				! tmpOptIdSess.get().isEmpty() && ! rtspSessionInfo.idSession.isReadOnly()) {
 			rtspSessionInfo.idSession.copyFrom(tmpOptIdSess.get());
+			rtspSessionInfo.idSession.writeProtect();
 		}
 		// store permanent Auth data
-		if (! isResponseFromClient) {
+		if (! (isResponseFromClient || rtspSessionInfo.permAuthServer.isReadOnly() || dataResp.respAuthServer.isEmpty())) {
 			rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
+			rtspSessionInfo.permAuthServer.writeProtect();
 		}
 		//
 		rtspSessionInfo.descrSetupInfosStream.copyFrom(setupInfosStream);

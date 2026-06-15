@@ -9,14 +9,22 @@ import java.util.Optional;
 
 public final class RtspProtoKmdForSubStream implements Cloneable {
 
+	private boolean writeProtected = false;
+
 	private boolean isKmdForLegacySdes = false;
 	private @Nullable SrtxpKmd kmd = null;
-	private final @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
+	private @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isKmdSet() {
 		return (kmd != null);
 	}
 	public void setKmd(@NonNull SrtxpKmd kmd, @NonNull RtspProtoIdSubStream idSubStream) {
+		if (writeProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
 		if (idSubStream.isEmpty()) {
 			throw new IllegalArgumentException("idSubStream cannot be empty");
 		}
@@ -48,7 +56,16 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void writeProtect() {
+		writeProtected = true;
+
+		idSubStream.writeProtect();
+	}
+
 	public void clear() {
+		if (writeProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
 		isKmdForLegacySdes = false;
 		kmd = null;
 		idSubStream.clear();
@@ -57,8 +74,17 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoKmdForSubStream clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException();
+	public RtspProtoKmdForSubStream clone() {
+		try {
+			RtspProtoKmdForSubStream cloned = (RtspProtoKmdForSubStream)super.clone();
+			if (kmd != null) {
+				cloned.kmd = kmd.clone();
+			}
+			cloned.idSubStream = idSubStream.clone();
+			return cloned;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 }

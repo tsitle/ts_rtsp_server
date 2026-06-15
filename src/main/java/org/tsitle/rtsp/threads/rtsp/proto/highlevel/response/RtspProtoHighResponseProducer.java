@@ -8,6 +8,7 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
+import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -384,7 +385,7 @@ public final class RtspProtoHighResponseProducer {
 			int tmpSubStreamNr = 1;
 			for (RtspProtoSetupInfoForSubStream tmpSiSs : inputSetupInfosStream.getSis()) {
 				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
-				tmpStreamInfoOutput.urlStr = tmpSiSs.rscUrlSubStream.getUrlStr();
+				tmpStreamInfoOutput.urlStr = tmpSiSs.getRscUrlSubStreamPtr().getUrlStr();
 				try {
 					tmpStreamInfoOutput.setSeqNr16bit(tmpSiSs.rtspRtpSeqNrT0);
 				} catch (RtspNumberRangeException e) {
@@ -482,27 +483,29 @@ public final class RtspProtoHighResponseProducer {
 
 		// Transport
 		{
+			RtspProtoDataCntSubStreamTp tmpInpSubStreamTpPtr = tmpSiSs.getSubStreamTpPtr();
+
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
-			hdEntry.hdValTransport.tpSubStream.setIsUdp(tmpSiSs.subStreamTp.getIsUdp());
-			hdEntry.hdValTransport.tpSubStream.setIsEncr(tmpSiSs.subStreamTp.getIsEncr());
-			hdEntry.hdValTransport.tpSubStream.setIsUnicast(tmpSiSs.subStreamTp.getIsUnicast());
-			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(tmpSiSs.subStreamTp.getIsInterleaved());
+			hdEntry.hdValTransport.tpSubStream.setIsUdp(tmpInpSubStreamTpPtr.getIsUdp());
+			hdEntry.hdValTransport.tpSubStream.setIsEncr(tmpInpSubStreamTpPtr.getIsEncr());
+			hdEntry.hdValTransport.tpSubStream.setIsUnicast(tmpInpSubStreamTpPtr.getIsUnicast());
+			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(tmpInpSubStreamTpPtr.getIsInterleaved());
 			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.respServerIpFromRscUrl.getIpAddrStr().orElseThrow();
 			hdEntry.hdValTransport.tpDestIpOrHost = getClientIpAddr(inputDataResp).getHostAddress();
-			if (tmpSiSs.subStreamTp.getIsUdp()) {
-				hdEntry.hdValTransport.tpSubStream.tpClientUdpPortRtp.copyFrom(tmpSiSs.subStreamTp.tpClientUdpPortRtp);
-				hdEntry.hdValTransport.tpSubStream.tpClientUdpPortRtcp.copyFrom(tmpSiSs.subStreamTp.tpClientUdpPortRtcp);
+			if (tmpInpSubStreamTpPtr.getIsUdp()) {
+				hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientUdpPortRtpPtr());
+				hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientUdpPortRtcpPtr());
 				try {
-					Objects.requireNonNull(tmpSiSs.tpServerUdpSocketRtp);
-					Objects.requireNonNull(tmpSiSs.tpServerUdpSocketRtcp);
-					hdEntry.hdValTransport.tpSubStream.tpServerUdpPortRtp.setPort16bit(tmpSiSs.tpServerUdpSocketRtp.getLocalPort());
-					hdEntry.hdValTransport.tpSubStream.tpServerUdpPortRtcp.setPort16bit(tmpSiSs.tpServerUdpSocketRtcp.getLocalPort());
+					Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtpPtr());
+					Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtcpPtr());
+					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(tmpSiSs.getServerUdpSocketRtpPtr().getLocalPort());
+					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(tmpSiSs.getServerUdpSocketRtcpPtr().getLocalPort());
 				} catch (RtspNumberRangeException e) {
 					throw new RtspInvalidResponseException(FNC_NAME + ": Setting Server UDP ports failed: " + e.getMessage());
 				}
 			} else {
-				hdEntry.hdValTransport.tpSubStream.tpClientTcpChannRtp.copyFrom(tmpSiSs.subStreamTp.tpClientTcpChannRtp);
-				hdEntry.hdValTransport.tpSubStream.tpClientTcpChannRtcp.copyFrom(tmpSiSs.subStreamTp.tpClientTcpChannRtcp);
+				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtpPtr());
+				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtcpPtr());
 			}
 			try {
 				hdEntry.hdValTransport.setSsrcId32bit(tmpSiSs.rtspSsrcId);
@@ -513,7 +516,7 @@ public final class RtspProtoHighResponseProducer {
 		}
 
 		//
-		tmpSiSs.haveSetup = true;
+		tmpSiSs.setHaveSetup(true);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -525,26 +528,34 @@ public final class RtspProtoHighResponseProducer {
 			throws UdpSocketIoException, RtspInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
 
-		if (! siSs.subStreamTp.getIsUdp()) {
+		if (! siSs.getSubStreamTpPtr().getIsUdp()) {
 			return;
 		}
+
+		if (siSs.getServerUdpSocketRtpPtr() != null) {
+			siSs.getServerUdpSocketRtpPtr().close();
+		}
+		if (siSs.getServerUdpSocketRtcpPtr() != null) {
+			siSs.getServerUdpSocketRtcpPtr().close();
+		}
+
+		//
+		DatagramSocket tmpSocketRtp = null;
+		DatagramSocket tmpSocketRtcp = null;
 
 		int loopCnt = 0;
 		boolean isOk = false;
 		while (++loopCnt <= 1000) {
-			if (siSs.tpServerUdpSocketRtp != null) {
-				siSs.tpServerUdpSocketRtp.close();
-			}
-			if (siSs.tpServerUdpSocketRtcp != null) {
-				siSs.tpServerUdpSocketRtcp.close();
+			if (tmpSocketRtp != null) {
+				tmpSocketRtp.close();
 			}
 			try {
-				siSs.tpServerUdpSocketRtp = new DatagramSocket();
-				if (siSs.tpServerUdpSocketRtp.getLocalPort() % 2 != 0) {
+				tmpSocketRtp = new DatagramSocket();
+				if (tmpSocketRtp.getLocalPort() % 2 != 0) {
 					continue;
 				}
-				siSs.tpServerUdpSocketRtcp = new DatagramSocket(
-						siSs.tpServerUdpSocketRtp.getLocalPort() + 1
+				tmpSocketRtcp = new DatagramSocket(
+						tmpSocketRtp.getLocalPort() + 1
 					);
 				isOk = true;
 				break;
@@ -556,13 +567,16 @@ public final class RtspProtoHighResponseProducer {
 			throw new RtspInvalidResponseException(FNC_NAME + ": Could not find proper UDP sockets");
 		}
 		try {
-			siSs.tpServerUdpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
-			siSs.tpServerUdpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
-			siSs.tpServerUdpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
-			siSs.tpServerUdpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
+			tmpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
+			tmpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
+			tmpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
+			tmpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
 		} catch (SocketException e) {
 			throw new UdpSocketIoException(FNC_NAME + ": Could not configure UDP sockets: " + e.getMessage());
 		}
+
+		siSs.setServerUdpSocketRtpPtr(tmpSocketRtp);
+		siSs.setServerUdpSocketRtcpPtr(tmpSocketRtcp);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -81,7 +81,7 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 		try {
 			return (RtspProtoTcpChannelNr)super.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException(e);
+			throw new AssertionError();
 		}
 	}
 

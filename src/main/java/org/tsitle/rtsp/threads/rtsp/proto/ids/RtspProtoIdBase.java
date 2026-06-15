@@ -50,6 +50,9 @@ public class RtspProtoIdBase implements Cloneable {
 		idStr = other.idStr;
 	}
 
+	public boolean isReadOnly() {
+		return isWriteProtected;
+	}
 	public void writeProtect() {
 		isWriteProtected = true;
 	}

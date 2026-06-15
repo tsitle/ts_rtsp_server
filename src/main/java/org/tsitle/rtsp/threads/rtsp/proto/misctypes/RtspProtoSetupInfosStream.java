@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 
 import java.util.HashSet;
@@ -59,7 +60,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				System.nanoTime()
 			);
 		if (tmpKmd != null) {
-			resObj.kmdOutbound.setKmd(tmpKmd, rscUrlSubStream.idSubStream);
+			resObj.getKmdOutboundPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);
 		}
 		//
 		putInfoForSubStream(resObj);
@@ -78,10 +79,10 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean haveSetupForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1) && siSsPtr1 != null) {
-			return siSsPtr1.haveSetup;
+			return siSsPtr1.getHaveSetup();
 		}
 		if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2) && siSsPtr2 != null) {
-			return siSsPtr2.haveSetup;
+			return siSsPtr2.getHaveSetup();
 		}
 		return false;
 	}
@@ -105,14 +106,30 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		}
 		RtspProtoRscUrl resObj = null;
 		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
-			resObj = (siSsPtr1 == null ? null : siSsPtr1.rscUrlSubStream);
+			resObj = (siSsPtr1 == null ? null : siSsPtr1.getRscUrlSubStreamPtr());
 		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
-			resObj = (siSsPtr2 == null ? null : siSsPtr2.rscUrlSubStream);
+			resObj = (siSsPtr2 == null ? null : siSsPtr2.getRscUrlSubStreamPtr());
 		}
 		if (resObj == null) {
 			return Optional.empty();
 		}
 		return Optional.of(resObj.clone());
+	}
+
+	public Optional<Integer> getSsrcBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+		if (idSubStream.isEmpty()) {
+			return Optional.empty();
+		}
+		Integer resObj = null;
+		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
+			resObj = (siSsPtr1 == null ? null : siSsPtr1.rtspSsrcId);
+		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
+			resObj = (siSsPtr2 == null ? null : siSsPtr2.rtspSsrcId);
+		}
+		if (resObj == null) {
+			return Optional.empty();
+		}
+		return Optional.of(resObj);
 	}
 
 	@SuppressWarnings("unused")
@@ -128,6 +145,28 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		}
 		if (! idSubStream2.isEmpty()) {
 			resSet.add(idSubStream2);
+		}
+		return resSet;
+	}
+
+	public @NonNull Set<@NonNull RtspProtoIdStreamSource> getStreamSourceIds() {
+		Set<@NonNull RtspProtoIdStreamSource> resSet = new HashSet<>();
+		if (! idSubStream1.isEmpty() && siSsPtr1 != null) {
+			resSet.add(siSsPtr1.getRscUrlSubStreamPtr().idStreamSource.clone());
+		}
+		if (! idSubStream2.isEmpty() && siSsPtr2 != null) {
+			resSet.add(siSsPtr2.getRscUrlSubStreamPtr().idStreamSource.clone());
+		}
+		return resSet;
+	}
+
+	public @NonNull Set<RtspProtoRscUrl> getRscUrls() {
+		Set<@NonNull RtspProtoRscUrl> resSet = new HashSet<>();
+		if (! idSubStream1.isEmpty() && siSsPtr1 != null) {
+			resSet.add(siSsPtr1.getRscUrlSubStreamPtr().clone());
+		}
+		if (! idSubStream2.isEmpty() && siSsPtr2 != null) {
+			resSet.add(siSsPtr2.getRscUrlSubStreamPtr().clone());
 		}
 		return resSet;
 	}
@@ -183,23 +222,23 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void putInfoForSubStream(@NonNull RtspProtoSetupInfoForSubStream siForSs) {
-		if (siForSs.rscUrlSubStream.idSubStream.isEmpty()) {
+		if (siForSs.getRscUrlSubStreamPtr().idSubStream.isEmpty()) {
 			throw new IllegalArgumentException("idSubStream cannot be empty");
 		}
 		boolean isTrg1;
-		if (! idSubStream1.isEmpty() && idSubStream1.equals(siForSs.rscUrlSubStream.idSubStream)) {
+		if (! idSubStream1.isEmpty() && idSubStream1.equals(siForSs.getRscUrlSubStreamPtr().idSubStream)) {
 			isTrg1 = true;
-		} else if (! idSubStream2.isEmpty() && idSubStream2.equals(siForSs.rscUrlSubStream.idSubStream)) {
+		} else if (! idSubStream2.isEmpty() && idSubStream2.equals(siForSs.getRscUrlSubStreamPtr().idSubStream)) {
 			isTrg1 = false;
 		} else {
 			isTrg1 = idSubStream1.isEmpty();
 		}
 		if (isTrg1) {
 			siSsPtr1 = siForSs;
-			idSubStream1.copyFrom(siForSs.rscUrlSubStream.idSubStream);
+			idSubStream1.copyFrom(siForSs.getRscUrlSubStreamPtr().idSubStream);
 		} else {
 			siSsPtr2 = siForSs;
-			idSubStream2.copyFrom(siForSs.rscUrlSubStream.idSubStream);
+			idSubStream2.copyFrom(siForSs.getRscUrlSubStreamPtr().idSubStream);
 		}
 	}
 

@@ -607,27 +607,27 @@ public final class RtspProtoHighRequestConsumer {
 		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
 
 		// copy settings
-		tmpSiSs.subStreamTp.copyFrom(headerEntry.hdValTransport.tpSubStream);
-		if (tmpSiSs.subStreamTp.getIsUdp()) {
-			if (tmpSiSs.subStreamTp.tpClientUdpPortRtp.isEmpty()) {
+		tmpSiSs.getSubStreamTpPtr().copyFrom(headerEntry.hdValTransport.tpSubStream);
+		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
+			if (tmpSiSs.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty()) {
 				throw new RtspInvalidRequestException("No client UDP RTP port in SETUP request");
 			}
-			if (tmpSiSs.subStreamTp.tpClientUdpPortRtcp.isEmpty()) {
+			if (tmpSiSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty()) {
 				throw new RtspInvalidRequestException("No client UDP RTCP port in SETUP request");
 			}
 		} else {
-			if (tmpSiSs.subStreamTp.tpClientTcpChannRtp.isEmpty()) {
+			if (tmpSiSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty()) {
 				throw new RtspInvalidRequestException("No client TCP RTP channel in SETUP request");
 			}
-			if (tmpSiSs.subStreamTp.tpClientTcpChannRtcp.isEmpty()) {
+			if (tmpSiSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty()) {
 				throw new RtspInvalidRequestException("No client TCP RTCP channel in SETUP request");
 			}
 		}
 
 		//
-		if (ioStreamTpMain.getForceRtpRtcpEncryption() && ! tmpSiSs.subStreamTp.getIsEncr()) {
+		if (ioStreamTpMain.getForceRtpRtcpEncryption() && ! tmpSiSs.getSubStreamTpPtr().getIsEncr()) {
 			logWarn(FNC_NAME, "Client requested unencrypted Transport but server will force encryption");
-			tmpSiSs.subStreamTp.setIsEncr(true);
+			tmpSiSs.getSubStreamTpPtr().setIsEncr(true);
 		}
 
 		//
@@ -642,10 +642,10 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspUnsupportedTransportException("Invalid Transport: " + e.getMessage());
 		}
 
-		if (tmpSiSs.subStreamTp.getIsUdp()) {  // only update one-way
+		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {  // only update one-way
 			ioStreamTpMain.setIsTransportUdp(true);
 		}
-		if (tmpSiSs.subStreamTp.getIsEncr()) {  // only update one-way
+		if (tmpSiSs.getSubStreamTpPtr().getIsEncr()) {  // only update one-way
 			ioStreamTpMain.setIsTransportSrtpSrtcp(true);
 		}
 	}
@@ -731,19 +731,19 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		if (isSetup) {
-			tmpSiSs.kmdInboundCur.setKmd(kmdToUse, rscUrlObj.idSubStream);
-		} else if (! tmpSiSs.kmdInboundCur.isKmdSet()) {
+			tmpSiSs.getKmdInboundCurPtr().setKmd(kmdToUse, rscUrlObj.idSubStream);
+		} else if (! tmpSiSs.getKmdInboundCurPtr().isKmdSet()) {
 			logWarn(FNC_NAME, "received new inbound KMD but had no previous KMD - ignoring new KMD");
-		} else if (tmpSiSs.kmdInboundCur.getKmd().orElseThrow().mki().isEmpty()) {
+		} else if (tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().isEmpty()) {
 			logWarn(FNC_NAME, "received new inbound KMD but previous KMD had no MKI - ignoring new KMD");
 		} else if (kmdToUse.mki().isEmpty()) {
 			logWarn(FNC_NAME, "received new inbound KMD but it has no MKI - ignoring new KMD");
-		} else if (kmdToUse.mki().value() == tmpSiSs.kmdInboundCur.getKmd().orElseThrow().mki().value()) {
+		} else if (kmdToUse.mki().value() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().value()) {
 			logWarn(FNC_NAME, "received new inbound KMD but MKI is unchanged - ignoring new KMD");
-		} else if (kmdToUse.ssrcId() != tmpSiSs.kmdInboundCur.getKmd().orElseThrow().ssrcId()) {
+		} else if (kmdToUse.ssrcId() != tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId()) {
 			logWarn(FNC_NAME, "received new inbound KMD but SSRC has been modified - ignoring new KMD");
 		} else {
-			tmpSiSs.kmdInboundNext.setKmd(kmdToUse, rscUrlObj.idSubStream);
+			tmpSiSs.getKmdInboundNextPtr().setKmd(kmdToUse, rscUrlObj.idSubStream);
 		}
 	}
 

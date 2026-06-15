@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class RtspProtoIpAddr implements Cloneable {
@@ -83,6 +84,28 @@ public final class RtspProtoIpAddr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof RtspProtoIpAddr that)) {
+			return false;
+		}
+		if (ipAddrObj == null && that.ipAddrObj == null) {
+			return true;
+		}
+		if (ipAddrObj == null || that.ipAddrObj == null) {
+			return false;
+		}
+		return getIpAddrStr().orElseThrow().equals(that.getIpAddrStr().orElseThrow());
+	}
+
+	@Override
+	public int hashCode() {
+		if (ipAddrObj == null) {
+			return 0;
+		}
+		return Objects.hashCode(getIpAddrStr().orElseThrow());
+	}
+
+	@Override
 	public RtspProtoIpAddr clone() {
 		try {
 			RtspProtoIpAddr cloned = (RtspProtoIpAddr)super.clone();
@@ -96,7 +119,7 @@ public final class RtspProtoIpAddr implements Cloneable {
 			}
 			return cloned;
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException(e);
+			throw new AssertionError();
 		}
 	}
 

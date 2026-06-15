@@ -64,6 +64,7 @@ public final class RtspProtoInputSource {
 		this.needsAuthentication = needsAuthentication;
 	}
 
+	@SuppressWarnings("unused")
 	public @NonNull Set<@NonNull String> getAllowedUserAccountGroups() {
 		return Set.copyOf(allowedUserAccountGroups);
 	}

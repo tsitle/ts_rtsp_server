@@ -479,8 +479,8 @@ public final class RtspLowParserHelper {
 					"expected two ports");
 		}
 		try {
-			outputHd.tpSubStream.tpClientUdpPortRtp.setPort16bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.tpClientUdpPortRtcp.setPort16bit(Integer.parseInt(tmpPorts[1]));
+			outputHd.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
+			outputHd.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					"cannot parse ports, invalid format");
@@ -504,8 +504,8 @@ public final class RtspLowParserHelper {
 					"expected two channels");
 		}
 		try {
-			outputHd.tpSubStream.tpClientTcpChannRtp.setChannel8bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.tpClientTcpChannRtcp.setChannel8bit(Integer.parseInt(tmpPorts[1]));
+			outputHd.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(Integer.parseInt(tmpPorts[0]));
+			outputHd.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					"cannot parse channels, invalid format");
@@ -536,8 +536,8 @@ public final class RtspLowParserHelper {
 					"expected two ports");
 		}
 		try {
-			outputHd.tpSubStream.tpServerUdpPortRtp.setPort16bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.tpServerUdpPortRtcp.setPort16bit(Integer.parseInt(tmpPorts[1]));
+			outputHd.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
+			outputHd.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					"cannot parse ports, invalid format");

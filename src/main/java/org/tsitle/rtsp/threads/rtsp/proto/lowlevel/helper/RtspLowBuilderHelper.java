@@ -219,52 +219,52 @@ public final class RtspLowBuilderHelper {
 		}
 
 		if (hdValue.tpSubStream.getIsUdp()) {
-			if (hdValue.tpSubStream.tpClientUdpPortRtp.isEmpty()) {
+			if (hdValue.tpSubStream.getClientUdpPortRtpPtr().isEmpty()) {
 				throw new RtspLowInvalidRrException("Transport Client RTP UDP port must be set");
 			}
-			if (hdValue.tpSubStream.tpClientUdpPortRtcp.isEmpty()) {
+			if (hdValue.tpSubStream.getClientUdpPortRtcpPtr().isEmpty()) {
 				throw new RtspLowInvalidRrException("Transport Client RTCP UDP port must be set");
 			}
-			if (hdValue.tpSubStream.tpClientUdpPortRtp.equals(hdValue.tpSubStream.tpClientUdpPortRtcp)) {
+			if (hdValue.tpSubStream.getClientUdpPortRtpPtr().equals(hdValue.tpSubStream.getClientUdpPortRtcpPtr())) {
 				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP UDP ports must be different");
 			}
 			sb
 					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.tpClientUdpPortRtp.getPort16bit().orElseThrow()))
+					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientUdpPortRtpPtr().getPort16bit().orElseThrow()))
 					.append("-")
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.tpClientUdpPortRtcp.getPort16bit().orElseThrow()));
+					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientUdpPortRtcpPtr().getPort16bit().orElseThrow()));
 			if (! isForRequest) {
 				sb.append(";");
-				if (hdValue.tpSubStream.tpServerUdpPortRtp.isEmpty()) {
+				if (hdValue.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
 					throw new RtspLowInvalidRrException("Transport Server RTP UDP port must be set");
 				}
-				if (hdValue.tpSubStream.tpServerUdpPortRtcp.isEmpty()) {
+				if (hdValue.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
 					throw new RtspLowInvalidRrException("Transport Server RTCP UDP port must be set");
 				}
-				if (hdValue.tpSubStream.tpServerUdpPortRtp.equals(hdValue.tpSubStream.tpServerUdpPortRtcp)) {
+				if (hdValue.tpSubStream.getServerUdpPortRtpPtr().equals(hdValue.tpSubStream.getServerUdpPortRtcpPtr())) {
 					throw new RtspLowInvalidRrException("Transport Server RTP and RTCP UDP ports must be different");
 				}
 				sb
 						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT)
-						.append(Integer.toUnsignedString(hdValue.tpSubStream.tpServerUdpPortRtp.getPort16bit().orElseThrow()))
+						.append(Integer.toUnsignedString(hdValue.tpSubStream.getServerUdpPortRtpPtr().getPort16bit().orElseThrow()))
 						.append("-")
-						.append(Integer.toUnsignedString(hdValue.tpSubStream.tpServerUdpPortRtcp.getPort16bit().orElseThrow()));
+						.append(Integer.toUnsignedString(hdValue.tpSubStream.getServerUdpPortRtcpPtr().getPort16bit().orElseThrow()));
 			}
 		} else {
-			if (hdValue.tpSubStream.tpClientTcpChannRtp.isEmpty()) {
+			if (hdValue.tpSubStream.getClientTcpChannRtpPtr().isEmpty()) {
 				throw new RtspLowInvalidRrException("Transport Client RTP TCP channel must be set");
 			}
-			if (hdValue.tpSubStream.tpClientTcpChannRtcp.isEmpty()) {
+			if (hdValue.tpSubStream.getClientTcpChannRtcpPtr().isEmpty()) {
 				throw new RtspLowInvalidRrException("Transport Client RTCP TCP channel must be set");
 			}
-			if (hdValue.tpSubStream.tpClientTcpChannRtp.equals(hdValue.tpSubStream.tpClientTcpChannRtcp)) {
+			if (hdValue.tpSubStream.getClientTcpChannRtpPtr().equals(hdValue.tpSubStream.getClientTcpChannRtcpPtr())) {
 				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP TCP channels must be different");
 			}
 			sb
 					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.tpClientTcpChannRtp.getChannel8bit().orElseThrow()))
+					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientTcpChannRtpPtr().getChannel8bit().orElseThrow()))
 					.append("-")
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.tpClientTcpChannRtcp.getChannel8bit().orElseThrow()));
+					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()));
 		}
 
 		if (! isForRequest && hdValue.tpSubStream.getIsUnicast() && hdValue.getSsrcId32bit().isPresent()) {

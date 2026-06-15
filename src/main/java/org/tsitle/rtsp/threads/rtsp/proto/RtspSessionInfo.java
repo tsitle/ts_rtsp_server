@@ -3,18 +3,22 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
+import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthSrv;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntStreamTpMain;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSessionInfoException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfosStream;
 
 import java.net.InetAddress;
@@ -26,68 +30,201 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class RtspSessionInfo {
 
-	public final static class PermDataCntAuthClient {
-		/** Authentication credentials: username */
-		public @NonNull String authUser = "";
-		/** Authentication credentials: password */
-		public @NonNull String authPlainPassword = "";
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
 	/** Authentication-related info from the server */
-	public final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();
-	/** Authentication-related info for the client */
-	public final @NonNull PermDataCntAuthClient permAuthClient = new PermDataCntAuthClient();
+	final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();
 
 	/** Client IP address */
-	public final @NonNull RtspProtoIpAddr clientIpAddr = new RtspProtoIpAddr();
+	final @NonNull RtspProtoIpAddr clientIpAddr = new RtspProtoIpAddr();
 
 	/** Main stream transport info */
-	public @NonNull RtspProtoDataCntStreamTpMain streamTpMain = new RtspProtoDataCntStreamTpMain();
+	final @NonNull RtspProtoDataCntStreamTpMain streamTpMain = new RtspProtoDataCntStreamTpMain();
+	private boolean haveSetIsRtspsConnection = false;
 
 	/** RTSP Session ID */
-	public @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
+	final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
-	public long seqNr_requFromRem_lastRcvd = -1L;
+	long seqNr_requFromRem_lastRcvd = -1L;
 	/** Request from remote host: Expected RTSP message Sequence Number */
-	public long seqNr_requFromRem_expected = 0L;
+	long seqNr_requFromRem_expected = 0L;
 	/** Request to remote host: Last sent RTSP message Sequence Number */
-	public long seqNr_requToRem_lastSent = 0L;
+	long seqNr_requToRem_lastSent = 0L;
 
 	/** Playback range request value from the client */
-	public @NonNull String clientPlaybackRangeValue = "";
+	@NonNull String clientPlaybackRangeValue = "";
 
 	/** RTSP protocol version to be used */
-	public @NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
+	@NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
 
 	/** Client's User-Agent */
-	public @NonNull String clientUserAgent = "";
+	@NonNull String clientUserAgent = "";
 
 	/** RTSP message types that are supported by the remote host */
-	public final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	// ----------------------------------------------------------------
 
 	/** Stream info from DESCRIBE/SETUP responses */
-	public final @NonNull RtspProtoSetupInfosStream descrSetupInfosStream = new RtspProtoSetupInfosStream();
+	final @NonNull RtspProtoSetupInfosStream descrSetupInfosStream = new RtspProtoSetupInfosStream();
+
+	// ----------------------------------------------------------------
+
+	/** Current state of the RTSP session */
+	@NonNull RtspSessionState sessionState = RtspSessionState.INIT;
 
 	// ----------------------------------------------------------------
 
 	/** Resource URL per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
 	private final @NonNull Map<@NonNull RtspMessageType, @NonNull RtspProtoRscUrl> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
-	// ----------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
-	/** Current state of the RTSP session */
-	public @NonNull RtspSessionState sessionState = RtspSessionState.INIT;
+	public @NonNull String getPermAuthServerRealm() {
+		return permAuthServer.getAuthRealm();
+	}
+
+	public @NonNull String getPermAuthServerNonce() {
+		return permAuthServer.getAuthNonce();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspProtoIpAddr getClientIpAddr() {
+		return clientIpAddr.clone();
+	}
+	public void setClientIpAddr(@NonNull RtspProtoIpAddr value) throws RtspSessionInfoException {
+		if (clientIpAddr.equals(value)) {
+			return;
+		}
+		if (! clientIpAddr.isEmpty()) {
+			throw new RtspSessionInfoException("Client IP address already set to '" + clientIpAddr.getIpAddrStr().orElseThrow() +
+					"' (attempted to change it to '" + value.getIpAddrStr().orElseThrow() + "')");
+		}
+		clientIpAddr.copyFrom(value);
+		clientIpAddr.writeProtect();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean getIsRtspsConnection() {
+		return streamTpMain.getIsRtspsConnection();
+	}
+	public void setIsRtspsConnection(boolean value) throws RtspSessionInfoException {
+		if (haveSetIsRtspsConnection && value == streamTpMain.getIsRtspsConnection()) {
+			return;
+		}
+		if (haveSetIsRtspsConnection) {
+			throw new RtspSessionInfoException("IsRtspsConnection already set to " +
+					(streamTpMain.getIsRtspsConnection() ? "T" : "F") + " (attempted to change it to " +
+					(value ? "T" : "F") + ")");
+		}
+		streamTpMain.setIsRtspsConnection(value);
+		haveSetIsRtspsConnection = true;
+	}
+
+	public boolean getIsTransportSrtpSrtcp() {
+		return streamTpMain.getIsTransportSrtpSrtcp();
+	}
+
+	public boolean getIsTransportUdp() {
+		return streamTpMain.getIsTransportUdp();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspProtoIdSession getIdSession() {
+		return idSession.clone();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull Set<RtspProtoIdStreamSource> getDescrSetupInfoStreamSourceIds() {
+		return descrSetupInfosStream.getStreamSourceIds();
+	}
+
+	public @NonNull Set<RtspProtoRscUrl> getDescrSetupInfoRscUrls() {
+		return descrSetupInfosStream.getRscUrls();
+	}
+
+	public @NonNull RtspProtoSetupInfoForSubStream getDescrSetupInfoBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
+			throws RtspSessionInfoException {
+		RtspProtoSetupInfoForSubStream tmpSi = descrSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow(() ->
+				new RtspSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+			);
+		RtspProtoSetupInfoForSubStream resObj = tmpSi.clone();
+		resObj.writeProtect();
+		return resObj;
+	}
+
+	public int getDescrSetupInfoSsrcBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
+			throws RtspSessionInfoException {
+		return descrSetupInfosStream.getSsrcBySubStreamId(idSubStream).orElseThrow(() ->
+				new RtspSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+			);
+	}
+
+	public boolean getDescrSetupInfoHaveSetupForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+		return descrSetupInfosStream.haveSetupForSubStreamId(idSubStream);
+	}
+
+	public Optional<SrtxpKmd> getDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+		Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
+		if (tmpOptSiSs.isEmpty()) {
+			return Optional.empty();
+		}
+		return tmpOptSiSs.get().getKmdInboundNextPtr().getKmd();
+	}
+
+	public void clearDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+		Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
+		if (tmpOptSiSs.isEmpty()) {
+			return;
+		}
+		tmpOptSiSs.get().getKmdInboundNextPtr().clear();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspSessionState getSessionState() {
+		return sessionState;
+	}
+
+	/**
+	 * Moves to the next Session State after a successful request based on the given message type.
+	 * @param messageType The type of the last successful request.
+	 * @return True if the Session State was changed, false otherwise.
+	 */
+	public boolean moveToNextSessionState(@NonNull RtspMessageType messageType) {
+		RtspSessionState nextState = sessionState;
+		switch (messageType) {
+			case RtspMessageType.SETUP, RtspMessageType.PAUSE -> nextState = RtspSessionState.READY;
+			case RtspMessageType.PLAY -> nextState = RtspSessionState.PLAYING;
+			case RtspMessageType.TEARDOWN -> nextState = RtspSessionState.INIT;
+		}
+		if (sessionState == nextState) {
+			return false;
+		}
+		sessionState = nextState;
+		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void clearAfterTeardown() {
+		boolean isRtsps = streamTpMain.getIsRtspsConnection();
+		streamTpMain.clear();
+		streamTpMain.setIsRtspsConnection(isRtsps);
+
+		descrSetupInfosStream.clear();
+		resourceUrlPerMtMap_nonSetup.clear();
+		sessionState = RtspSessionState.INIT;
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void putResourceUrlForMt_nonSetup(@NonNull RtspMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
+	void putResourceUrlForMt_nonSetup(@NonNull RtspMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
 		RtspProtoRscUrl tmpObj = rscUrl.clone();
 		tmpObj.writeProtect();
 		resourceUrlPerMtMap_nonSetup.put(mt, tmpObj);
@@ -107,7 +244,7 @@ public final class RtspSessionInfo {
 		return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
 	}
 
-	public @NonNull RtspProtoIpAddr findRtspIpFromResourceUrl(@NonNull RtspProtoRscUrl rscUrl)
+	@NonNull RtspProtoIpAddr findRtspIpFromResourceUrl(@NonNull RtspProtoRscUrl rscUrl)
 			throws RtspCannotFindIpFromRscUrlException {
 		final String FNC_NAME = getClass().getSimpleName() + ".findRtspIpFromResourceUrl()";
 
@@ -142,12 +279,6 @@ public final class RtspSessionInfo {
 		} catch (UnknownHostException | SocketException e) {
 			throw new RtspCannotFindIpFromRscUrlException(FNC_NAME + ": Unknown RTSP hostname '" + tmpRtspHostname + "'");
 		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public void clearAfterTeardown() {
-		descrSetupInfosStream.clear();
 	}
 
 }

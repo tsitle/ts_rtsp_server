@@ -103,7 +103,7 @@ public record DynInteger(long value, int sizeBytes) implements Cloneable {
 		try {
 			return (DynInteger)super.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new AssertionError(e);
+			throw new AssertionError();
 		}
 	}
 

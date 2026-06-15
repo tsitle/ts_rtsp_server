@@ -81,7 +81,7 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 		try {
 			return (RtspProtoSocketPortNr)super.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException(e);
+			throw new AssertionError();
 		}
 	}
 

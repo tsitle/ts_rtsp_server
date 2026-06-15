@@ -201,7 +201,7 @@ public final class RtspConfigInputSource implements Cloneable {
 			clone.internalStreamSourceIds = new HashSet<>(internalStreamSourceIds);
 			return clone;
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException("CloneNotSupportedException", e);
+			throw new AssertionError();
 		}
 	}
 

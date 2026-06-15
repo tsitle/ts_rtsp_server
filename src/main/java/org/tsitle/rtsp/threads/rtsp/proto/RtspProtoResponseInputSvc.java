@@ -134,15 +134,21 @@ public final class RtspProtoResponseInputSvc {
 	}
 
 	private void updateSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
-		rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
-
-		//
-		if (! dataResp.respIdSession.isEmpty()) {
-			rtspSessionInfo.idSession.copyFrom(dataResp.respIdSession);
+		if (! (rtspSessionInfo.permAuthServer.isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
+			rtspSessionInfo.permAuthServer.writeProtect();
 		}
 
 		//
-		rtspSessionInfo.rhSupportedMessageTypes.copyFrom(dataResp.respSuppMessageTypes);
+		if (! (rtspSessionInfo.idSession.isReadOnly() || dataResp.respIdSession.isEmpty())) {
+			rtspSessionInfo.idSession.copyFrom(dataResp.respIdSession);
+			rtspSessionInfo.idSession.writeProtect();
+		}
+
+		//
+		if (! dataResp.respSuppMessageTypes.isMtsEmpty()) {
+			rtspSessionInfo.rhSupportedMessageTypes.copyFrom(dataResp.respSuppMessageTypes);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
