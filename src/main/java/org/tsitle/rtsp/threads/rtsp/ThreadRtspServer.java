@@ -369,7 +369,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				logInfo(FNC_NAME, String.format(
 						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
 						isPlaybackPaused ? "Resuming" : "Starting",
-						tmpIdIs,
+						tmpIdIs.getIdStr(),
 						rtspSessionInfo.getIsTransportSrtpSrtcp() ? "" : "o",
 						rtspSessionInfo.getIsTransportUdp() ? "UDP" : "TCP",
 						rtspSessionInfo.getIsRtspsConnection() ? "" : "o"));
@@ -388,7 +388,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				}
 				break;
 			case RtspProtoMessageType.PAUSE:
-				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIdIs));
+				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIdIs.getIdStr()));
 				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				rtspChildThreadMng.pauseOrStopChildThreads(true);
