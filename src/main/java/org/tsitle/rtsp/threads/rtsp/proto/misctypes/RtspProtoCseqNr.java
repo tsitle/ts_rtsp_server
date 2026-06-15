@@ -6,48 +6,59 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
-public final class RtspProtoTcpChannelNr implements Cloneable {
+public final class RtspProtoCseqNr implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
-	/** TCP channel */
-	private int channelNr = -1;
+	/** CSeq number */
+	private long cseqNr = -1;
 
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
+	public RtspProtoCseqNr() { }
 
-	public Optional<Integer> getChannel8bit() {
-		return (channelNr < 0 ? Optional.empty() : Optional.of(channelNr));
+	public RtspProtoCseqNr(long value32bit) {
+		try {
+			validateCseq(value32bit);
+			this.cseqNr = value32bit;
+		} catch (RtspProtoNumberRangeException e) {
+			// ignore
+		}
 	}
-	public void setChannel8bit(int value8bit) throws RtspProtoNumberRangeException {
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<Long> getCseq32bit() {
+		return (cseqNr < 0 ? Optional.empty() : Optional.of(cseqNr));
+	}
+	public void setCseq32bit(long value32bit) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validateChannelNumber(value8bit);
-		this.channelNr = value8bit;
+		validateCseq(value32bit);
+		this.cseqNr = value32bit;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
-		return (channelNr < 0);
+		return (cseqNr < 0);
 	}
 
 	public void clear() {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		channelNr = -1;
+		cseqNr = -1;
 	}
 
-	public void copyFrom(@NonNull RtspProtoTcpChannelNr other) {
+	public void copyFrom(@NonNull RtspProtoCseqNr other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		if (other == this) {
 			return;
 		}
-		channelNr = other.channelNr;
+		cseqNr = other.cseqNr;
 	}
 
 	public void writeProtect() {
@@ -58,28 +69,28 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspProtoTcpChannelNr that)) {
+		if (! (o instanceof RtspProtoCseqNr that)) {
 			return false;
 		}
-		return (channelNr == that.channelNr);
+		return (cseqNr == that.cseqNr);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(channelNr);
+		return Objects.hashCode(cseqNr);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"channelNr=" + channelToStr() +
+				"cseqNr=" + cseqNrToStr() +
 				"]";
 	}
 
 	@Override
-	public RtspProtoTcpChannelNr clone() {
+	public RtspProtoCseqNr clone() {
 		try {
-			return (RtspProtoTcpChannelNr)super.clone();
+			return (RtspProtoCseqNr)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -88,14 +99,14 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validateChannelNumber(int channelNr) throws RtspProtoNumberRangeException {
-		if (channelNr < 0 || channelNr > 255) {
-			throw new RtspProtoNumberRangeException("Channel must be between 0 and 255, got: " + channelNr);
+	private static void validateCseq(long value) throws RtspProtoNumberRangeException {
+		if (value < 0L || value > 0xFFFFFFFFL) {
+			throw new RtspProtoNumberRangeException("CSeq must be non-negative and within 32-bit range");
 		}
 	}
 
-	private @NonNull String channelToStr() {
-		return (channelNr >= 0 ? Integer.toUnsignedString(channelNr) : "unset");
+	private @NonNull String cseqNrToStr() {
+		return (cseqNr >= 0 ? Long.toUnsignedString(cseqNr) : "unset");
 	}
 
 }

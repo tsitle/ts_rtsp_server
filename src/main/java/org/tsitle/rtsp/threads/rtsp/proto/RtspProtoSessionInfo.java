@@ -16,10 +16,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfoForSubStream;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfosStream;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.*;
 
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -27,50 +24,57 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class RtspProtoSessionInfo {
 
+	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
+	private final Lock theReadLock = theLock.readLock();
+	private final Lock theWriteLock = theLock.writeLock();
+
 	/** Authentication-related info from the server */
-	final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();
+	private final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();
 
 	/** Client IP address */
-	final @NonNull RtspProtoIpAddr clientIpAddr = new RtspProtoIpAddr();
+	private final @NonNull RtspProtoIpAddr clientIpAddr = new RtspProtoIpAddr();
 
 	/** Main stream transport info */
-	final @NonNull RtspProtoDataCntStreamTpMain streamTpMain = new RtspProtoDataCntStreamTpMain();
+	private final @NonNull RtspProtoDataCntStreamTpMain streamTpMain = new RtspProtoDataCntStreamTpMain();
 	private boolean haveSetIsRtspsConnection = false;
 
 	/** RTSP Session ID */
-	final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
+	private final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
-	long seqNr_requFromRem_lastRcvd = -1L;
+	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_lastRcvd = new RtspProtoCseqNr();
 	/** Request from remote host: Expected RTSP message Sequence Number */
-	long seqNr_requFromRem_expected = 0L;
+	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_expected = new RtspProtoCseqNr(0L);
 	/** Request to remote host: Last sent RTSP message Sequence Number */
-	long seqNr_requToRem_lastSent = 0L;
+	private final @NonNull RtspProtoCseqNr cseqNr_requToRem_lastSent = new RtspProtoCseqNr(0L);
 
 	/** Playback range request value from the client */
-	@NonNull String clientPlaybackRangeValue = "";
+	private @NonNull String clientPlaybackRangeValue = "";
 
 	/** RTSP protocol version to be used */
-	@NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
+	private @NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
 
 	/** Client's User-Agent */
-	@NonNull String clientUserAgent = "";
+	private @NonNull String clientUserAgent = "";
 
 	/** RTSP message types that are supported by the remote host */
-	final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	private final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	// ----------------------------------------------------------------
 
 	/** Stream info from DESCRIBE/SETUP responses */
-	final @NonNull RtspProtoSetupInfosStream descrSetupInfosStream = new RtspProtoSetupInfosStream();
+	private final @NonNull RtspProtoSetupInfosStream descrSetupInfosStream = new RtspProtoSetupInfosStream();
 
 	// ----------------------------------------------------------------
 
 	/** Current state of the RTSP session */
-	@NonNull RtspProtoSessionState sessionState = RtspProtoSessionState.INIT;
+	private @NonNull RtspProtoSessionState sessionState = RtspProtoSessionState.INIT;
 
 	// ----------------------------------------------------------------
 
@@ -81,113 +85,210 @@ public final class RtspProtoSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull String getPermAuthServerRealm() {
-		return permAuthServer.getAuthRealm();
+		theReadLock.lock();
+		try {
+			return permAuthServer.getAuthRealm();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public @NonNull String getPermAuthServerNonce() {
-		return permAuthServer.getAuthNonce();
+		theReadLock.lock();
+		try {
+			return permAuthServer.getAuthNonce();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoIpAddr getClientIpAddr() {
-		return clientIpAddr.clone();
+		theReadLock.lock();
+		try {
+			return clientIpAddr.clone();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 	public void setClientIpAddr(@NonNull RtspProtoIpAddr value) throws RtspProtoSessionInfoException {
-		if (clientIpAddr.equals(value)) {
-			return;
+		theWriteLock.lock();
+		try {
+			if (clientIpAddr.equals(value)) {
+				return;
+			}
+			if (! clientIpAddr.isEmpty()) {
+				throw new RtspProtoSessionInfoException("Client IP address already set to '" + clientIpAddr.getIpAddrStr().orElseThrow() +
+						"' (attempted to change it to '" + value.getIpAddrStr().orElseThrow() + "')");
+			}
+			clientIpAddr.copyFrom(value);
+			clientIpAddr.writeProtect();
+		} finally {
+			theWriteLock.unlock();
 		}
-		if (! clientIpAddr.isEmpty()) {
-			throw new RtspProtoSessionInfoException("Client IP address already set to '" + clientIpAddr.getIpAddrStr().orElseThrow() +
-					"' (attempted to change it to '" + value.getIpAddrStr().orElseThrow() + "')");
-		}
-		clientIpAddr.copyFrom(value);
-		clientIpAddr.writeProtect();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean getIsRtspsConnection() {
-		return streamTpMain.getIsRtspsConnection();
+		theReadLock.lock();
+		try {
+			return streamTpMain.getIsRtspsConnection();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 	public void setIsRtspsConnection(boolean value) throws RtspProtoSessionInfoException {
-		if (haveSetIsRtspsConnection && value == streamTpMain.getIsRtspsConnection()) {
-			return;
+		theWriteLock.lock();
+		try {
+			if (haveSetIsRtspsConnection && value == streamTpMain.getIsRtspsConnection()) {
+				return;
+			}
+			if (haveSetIsRtspsConnection) {
+				throw new RtspProtoSessionInfoException("IsRtspsConnection already set to " +
+						(streamTpMain.getIsRtspsConnection() ? "T" : "F") + " (attempted to change it to " +
+						(value ? "T" : "F") + ")");
+			}
+			streamTpMain.setIsRtspsConnection(value);
+			haveSetIsRtspsConnection = true;
+		} finally {
+			theWriteLock.unlock();
 		}
-		if (haveSetIsRtspsConnection) {
-			throw new RtspProtoSessionInfoException("IsRtspsConnection already set to " +
-					(streamTpMain.getIsRtspsConnection() ? "T" : "F") + " (attempted to change it to " +
-					(value ? "T" : "F") + ")");
-		}
-		streamTpMain.setIsRtspsConnection(value);
-		haveSetIsRtspsConnection = true;
 	}
 
 	public boolean getIsTransportSrtpSrtcp() {
-		return streamTpMain.getIsTransportSrtpSrtcp();
+		theReadLock.lock();
+		try {
+			return streamTpMain.getIsTransportSrtpSrtcp();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public boolean getIsTransportUdp() {
-		return streamTpMain.getIsTransportUdp();
+		theReadLock.lock();
+		try {
+			return streamTpMain.getIsTransportUdp();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoIdSession getIdSession() {
-		return idSession.clone();
+		theReadLock.lock();
+		try {
+			return idSession.clone();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull String getClientPlaybackRangeValue() {
+		theReadLock.lock();
+		try {
+			return clientPlaybackRangeValue;
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull Set<RtspProtoIdStreamSource> getDescrSetupInfoStreamSourceIds() {
-		return descrSetupInfosStream.getStreamSourceIds();
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getStreamSourceIds();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public @NonNull Set<RtspProtoRscUrl> getDescrSetupInfoRscUrls() {
-		return descrSetupInfosStream.getRscUrls();
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getRscUrls();
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public @NonNull RtspProtoSetupInfoForSubStream getDescrSetupInfoBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
-		RtspProtoSetupInfoForSubStream tmpSi = descrSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow(() ->
-				new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
-			);
-		RtspProtoSetupInfoForSubStream resObj = tmpSi.clone();
-		resObj.writeProtect();
-		return resObj;
+		theReadLock.lock();
+		try {
+			RtspProtoSetupInfoForSubStream tmpSi = descrSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow(() ->
+					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+				);
+			RtspProtoSetupInfoForSubStream resObj = tmpSi.clone();
+			resObj.writeProtect();
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public int getDescrSetupInfoSsrcBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
-		return descrSetupInfosStream.getSsrcBySubStreamId(idSubStream).orElseThrow(() ->
-				new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
-			);
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getSsrcBySubStreamId(idSubStream).orElseThrow(() ->
+					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+				);
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public boolean getDescrSetupInfoHaveSetupForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		return descrSetupInfosStream.haveSetupForSubStreamId(idSubStream);
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.haveSetupForSubStreamId(idSubStream);
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public Optional<SrtxpKmd> getDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
-		if (tmpOptSiSs.isEmpty()) {
-			return Optional.empty();
+		theReadLock.lock();
+		try {
+			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
+			if (tmpOptSiSs.isEmpty()) {
+				return Optional.empty();
+			}
+			return tmpOptSiSs.get().getKmdInboundNextPtr().getKmd();
+		} finally {
+			theReadLock.unlock();
 		}
-		return tmpOptSiSs.get().getKmdInboundNextPtr().getKmd();
 	}
 
 	public void clearDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
-		if (tmpOptSiSs.isEmpty()) {
-			return;
+		theWriteLock.lock();
+		try {
+			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
+			if (tmpOptSiSs.isEmpty()) {
+				return;
+			}
+			tmpOptSiSs.get().getKmdInboundNextPtr().clear();
+		} finally {
+			theWriteLock.unlock();
 		}
-		tmpOptSiSs.get().getKmdInboundNextPtr().clear();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoSessionState getSessionState() {
-		return sessionState;
+		theReadLock.lock();
+		try {
+			return sessionState;
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	/**
@@ -196,39 +297,25 @@ public final class RtspProtoSessionInfo {
 	 * @return True if the Session State was changed, false otherwise.
 	 */
 	public boolean moveToNextSessionState(@NonNull RtspProtoMessageType messageType) {
-		RtspProtoSessionState nextState = sessionState;
-		switch (messageType) {
-			case RtspProtoMessageType.SETUP, RtspProtoMessageType.PAUSE -> nextState = RtspProtoSessionState.READY;
-			case RtspProtoMessageType.PLAY -> nextState = RtspProtoSessionState.PLAYING;
-			case RtspProtoMessageType.TEARDOWN -> nextState = RtspProtoSessionState.INIT;
+		theWriteLock.lock();
+		try {
+			RtspProtoSessionState nextState = sessionState;
+			switch (messageType) {
+				case RtspProtoMessageType.SETUP, RtspProtoMessageType.PAUSE -> nextState = RtspProtoSessionState.READY;
+				case RtspProtoMessageType.PLAY -> nextState = RtspProtoSessionState.PLAYING;
+				case RtspProtoMessageType.TEARDOWN -> nextState = RtspProtoSessionState.INIT;
+			}
+			if (sessionState == nextState) {
+				return false;
+			}
+			sessionState = nextState;
+			return true;
+		} finally {
+			theWriteLock.unlock();
 		}
-		if (sessionState == nextState) {
-			return false;
-		}
-		sessionState = nextState;
-		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public void clearAfterTeardown() {
-		boolean isRtsps = streamTpMain.getIsRtspsConnection();
-		streamTpMain.clear();
-		streamTpMain.setIsRtspsConnection(isRtsps);
-
-		descrSetupInfosStream.clear();
-		resourceUrlPerMtMap_nonSetup.clear();
-		sessionState = RtspProtoSessionState.INIT;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	void putResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
-		RtspProtoRscUrl tmpObj = rscUrl.clone();
-		tmpObj.writeProtect();
-		resourceUrlPerMtMap_nonSetup.put(mt, tmpObj);
-	}
 
 	public Optional<RtspProtoRscUrl> getResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt) {
 		if (mt == RtspProtoMessageType.UNKNOWN) {
@@ -237,16 +324,265 @@ public final class RtspProtoSessionInfo {
 		if (mt == RtspProtoMessageType.SETUP) {
 			throw new IllegalArgumentException("Cannot get Resource URL for SETUP message type");
 		}
-		return Optional.ofNullable(this.resourceUrlPerMtMap_nonSetup.get(mt));
+		theReadLock.lock();
+		try {
+			if (! this.resourceUrlPerMtMap_nonSetup.containsKey(mt)) {
+				return Optional.empty();
+			}
+			return Optional.of(this.resourceUrlPerMtMap_nonSetup.get(mt).clone());
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	public Optional<RtspProtoRscUrl> getResourceUrlForMt_onlySetup(@NonNull RtspProtoIdSubStream idSubStream) {
-		return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
-	@NonNull RtspProtoIpAddr findRtspIpFromResourceUrl(@NonNull RtspProtoRscUrl rscUrl)
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void clearAfterTeardown() {
+		theWriteLock.lock();
+		try {
+			boolean isRtsps = streamTpMain.getIsRtspsConnection();
+			streamTpMain.clear();
+			streamTpMain.setIsRtspsConnection(isRtsps);
+
+			descrSetupInfosStream.clear();
+			resourceUrlPerMtMap_nonSetup.clear();
+			sessionState = RtspProtoSessionState.INIT;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@NonNull RtspProtoDataCntAuthSrv getPermAuthServer() {
+		theReadLock.lock();
+		try {
+			return permAuthServer.clone();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setPermAuthServer(@NonNull RtspProtoDataCntAuthSrv value) {
+		theWriteLock.lock();
+		try {
+			permAuthServer.copyFrom(value);
+			permAuthServer.writeProtect();
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoDataCntStreamTpMain getStreamTpMain() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataCntStreamTpMain resObj = new RtspProtoDataCntStreamTpMain();
+			resObj.copyFrom(streamTpMain);
+			resObj.writeProtect();
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setStreamTpMainForceRtpRtcpEncryption() {
+		theWriteLock.lock();
+		try {
+			streamTpMain.setForceRtpRtcpEncryption(true);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+	void setStreamTpMainRtpRtcpEncryptionRequired() {
+		theWriteLock.lock();
+		try {
+			streamTpMain.setRtpRtcpEncryptionRequired(true);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+	void setStreamTpMainIsTransportUdp() {
+		theWriteLock.lock();
+		try {
+			streamTpMain.setIsTransportUdp(true);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+	void setStreamTpMainIsTransportSrtpSrtcp() {
+		theWriteLock.lock();
+		try {
+			streamTpMain.setIsTransportSrtpSrtcp(true);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setSessionId(@NonNull RtspProtoIdSession value) {
+		theWriteLock.lock();
+		try {
+			idSession.copyFrom(value);
+			idSession.writeProtect();
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoCseqNr getCseqNr_requFromRem_lastRcvd() {
+		theReadLock.lock();
+		try {
+			return cseqNr_requFromRem_lastRcvd.clone();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setCseqNr_requFromRem_lastRcvd(@NonNull RtspProtoCseqNr value) {
+		theWriteLock.lock();
+		try {
+			cseqNr_requFromRem_lastRcvd.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoCseqNr getCseqNr_requFromRem_expected() {
+		theReadLock.lock();
+		try {
+			return cseqNr_requFromRem_expected.clone();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setCseqNr_requFromRem_expected(@NonNull RtspProtoCseqNr value) {
+		theWriteLock.lock();
+		try {
+			cseqNr_requFromRem_expected.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoCseqNr getCseqNr_requToRem_lastSent() {
+		theReadLock.lock();
+		try {
+			return cseqNr_requToRem_lastSent.clone();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setCseqNr_requToRem_lastSent(@NonNull RtspProtoCseqNr value) {
+		theWriteLock.lock();
+		try {
+			cseqNr_requToRem_lastSent.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setClientPlaybackRangeValue(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			clientPlaybackRangeValue = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
+		theReadLock.lock();
+		try {
+			return rtspProtoVersionToUse;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setRtspProtoVersionToUse(@NonNull RtspProtocolVersion value) {
+		theWriteLock.lock();
+		try {
+			rtspProtoVersionToUse = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull String getClientUserAgent() {
+		theReadLock.lock();
+		try {
+			return clientUserAgent;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setClientUserAgent(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			clientUserAgent = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoDataCntMessageTypes getRhSupportedMessageTypes() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataCntMessageTypes resObj = new RtspProtoDataCntMessageTypes();
+			resObj.copyFrom(rhSupportedMessageTypes);
+			resObj.writeProtect();
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setRhSupportedMessageTypes(@NonNull RtspProtoDataCntMessageTypes value) {
+		theWriteLock.lock();
+		try {
+			rhSupportedMessageTypes.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoSetupInfosStream getDescrSetupInfosStream() {
+		theReadLock.lock();
+		try {
+			RtspProtoSetupInfosStream resObj = new RtspProtoSetupInfosStream();
+			resObj.copyFrom(descrSetupInfosStream);
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setDescrSetupInfosStream(@NonNull RtspProtoSetupInfosStream value) {
+		theWriteLock.lock();
+		try {
+			descrSetupInfosStream.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void putResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
+		theWriteLock.lock();
+		try {
+			RtspProtoRscUrl tmpObj = rscUrl.clone();
+			tmpObj.writeProtect();
+			resourceUrlPerMtMap_nonSetup.put(mt, tmpObj);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	static @NonNull RtspProtoIpAddr findRtspIpFromResourceUrl(@NonNull RtspProtoRscUrl rscUrl)
 			throws RtspProtoCannotFindIpFromRscUrlException {
-		final String FNC_NAME = getClass().getSimpleName() + ".findRtspIpFromResourceUrl()";
+		final String FNC_NAME = RtspProtoSessionInfo.class.getSimpleName() + ".findRtspIpFromResourceUrl()";
 
 		if (rscUrl.getUrlStr().isBlank()) {
 			throw new RtspProtoCannotFindIpFromRscUrlException(FNC_NAME + ": No Resource URL set");

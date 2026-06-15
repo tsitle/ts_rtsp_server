@@ -366,11 +366,9 @@ public final class RtspProtoHighResponseProducer {
 		/*
 		 * Example:
 		 *   "RTSP/1.0 200 OK"
-		 *   "Date: Sat, 6 Jun 2026 18:27:45 GMT"
 		 *   "Range: npt=0.000-"
-		 *   "Server: TS RTSP Server/1.0"
 		 *   "RTP-Info: url=rtsp://...;seq=2786;rtptime=1380770927,url=...;seq=22526;rtptime=257277163"
-		 *   "CSeq: 7"
+		 *   ...
 		 */
 
 		// Range
@@ -590,17 +588,11 @@ public final class RtspProtoHighResponseProducer {
 	private void addCommonHeaders(
 				@NonNull RtspProtoDataResponse inputDataResp,
 				@NonNull RtspProtoHighMsgStructuredResponse output
-			) throws RtspProtoInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
-
+			) {
 		// CSeq
-		if (inputDataResp.getCseqNrLastRcvd() >= 0L) {
+		if (! inputDataResp.respCseqNrLastRcvd.isEmpty()) {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CSEQ);
-			try {
-				hdEntry.hdValCseq.setCseqNr32bit(inputDataResp.getCseqNrLastRcvd());
-			} catch (RtspProtoNumberRangeException e) {
-				throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
-			}
+			hdEntry.hdValCseq.cseqNr.copyFrom(inputDataResp.respCseqNrLastRcvd);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date

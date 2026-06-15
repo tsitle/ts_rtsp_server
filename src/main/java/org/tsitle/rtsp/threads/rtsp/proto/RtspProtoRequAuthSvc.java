@@ -101,7 +101,7 @@ public class RtspProtoRequAuthSvc {
 		//
 		if (wasAuthentificationOk) {
 			// check if Client IP Address is blocked
-			int tmpUnauthCnt = globalSessionInfoInterface.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
+			int tmpUnauthCnt = globalSessionInfoInterface.getUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIdIs);
 			if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
 				// reject Client IP Address even if user credentials are OK
 				wasAuthentificationOk = false;
@@ -117,9 +117,9 @@ public class RtspProtoRequAuthSvc {
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
 					ioRequestBasics.messageType, tmpIdIs.getIdStr(),
 					requAuthClient.getAuthUser(),
-					rtspSessionInfo.clientIpAddr.getIpAddrStr().orElseThrow());
+					rtspSessionInfo.getClientIpAddr().getIpAddrStr().orElseThrow());
 			logDebug(FNC_NAME, logMsg);
-			globalSessionInfoInterface.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
+			globalSessionInfoInterface.resetUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIdIs);
 			return;
 		}
 
@@ -133,7 +133,7 @@ public class RtspProtoRequAuthSvc {
 	private void rejectWithUnauthorized(@NonNull RtspRequestBasics rtspRequestBasics, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String FNC_NAME = getClass().getSimpleName() + ".rejectWithUnauthorized()";
 
-		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(rtspSessionInfo.clientIpAddr, idInputSource);
+		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(rtspSessionInfo.getClientIpAddr(), idInputSource);
 		//
 		rtspRequestBasics.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
 		//
@@ -141,7 +141,7 @@ public class RtspProtoRequAuthSvc {
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
 				rtspRequestBasics.messageType, idInputSource.getIdStr(),
 				rtspRequestBasics.statusCode, unauthCnt,
-				rtspSessionInfo.clientIpAddr.getIpAddrStr().orElseThrow());
+				rtspSessionInfo.getClientIpAddr().getIpAddrStr().orElseThrow());
 		if (unauthCnt > 1) {
 			/*
 			 * One rejection is normal due to the way RTSP clients detect the necessity of authentication.

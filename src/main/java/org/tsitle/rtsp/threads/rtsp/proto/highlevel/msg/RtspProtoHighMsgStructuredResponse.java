@@ -36,11 +36,11 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<Integer> getHeaderCseq() {
+	public Optional<Long> getHeaderCseq() {
 		if (! headers.containsKey(RtspHeaderKey.CSEQ)) {
 			return Optional.empty();
 		}
-		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.getCseqNr32bit();
+		return headers.get(RtspHeaderKey.CSEQ).hdValCseq.cseqNr.getCseq32bit();
 	}
 
 	public Optional<RtspProtoIdSession> getHeaderSessionId() {

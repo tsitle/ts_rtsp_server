@@ -244,19 +244,25 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoHighMsgStructuredRequest input,
 				@NonNull RtspProtoDataRequest outputDataRequ
 			) throws RtspProtoInvalidRequestException {
-		Optional<Integer> tmpOptCseq = input.getHeaderCseq();
+		Optional<Long> tmpOptCseq = input.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("Missing CSeq header");
 		}
-		cseqRequIo.setCseqNrLastRcvd(Integer.toUnsignedLong(tmpOptCseq.get()));
-		if (cseqRequIo.getCseqNrLastRcvd() > cseqRequIo.getCseqNrExpected()) {
-			cseqRequIo.setCseqNrExpected(cseqRequIo.getCseqNrLastRcvd());
-		} else if (cseqRequIo.getCseqNrLastRcvd() < cseqRequIo.getCseqNrExpected()) {
+		try {
+			cseqRequIo.cseqNr_lastRcvd.setCseq32bit(tmpOptCseq.get());
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
+		final long tmpLast = cseqRequIo.cseqNr_lastRcvd.getCseq32bit().orElse(-1L);
+		final long tmpExp = cseqRequIo.cseqNr_expected.getCseq32bit().orElse(-1L);
+		if (tmpLast > tmpExp) {
+			cseqRequIo.cseqNr_expected.copyFrom(cseqRequIo.cseqNr_lastRcvd);
+		} else if (tmpLast < tmpExp) {
 			throw new RtspProtoInvalidRequestException("Invalid CSeq value");
 		}
 
 		//
-		outputDataRequ.setCseqNrLastRcvd(cseqRequIo.getCseqNrLastRcvd());
+		outputDataRequ.setCseqNrLastRcvd(cseqRequIo.cseqNr_lastRcvd);
 
 		//
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);

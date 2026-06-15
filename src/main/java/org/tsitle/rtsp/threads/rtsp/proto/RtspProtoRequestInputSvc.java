@@ -155,9 +155,9 @@ public final class RtspProtoRequestInputSvc {
 
 		//
 		if (! resObj.isValid()) {
-			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%s)",
+			logWarn(FNC_NAME, String.format("Received invalid RTSP request (rt=%s), rejecting it with code %s (CSeq=%d)",
 					resObj.messageType, resObj.statusCode,
-					Long.toUnsignedString(ioCseqRequ.getCseqNrLastRcvd())));
+					ioCseqRequ.cseqNr_lastRcvd.getCseq32bit().orElse(-1L)));
 			return resObj;
 		}
 
@@ -190,8 +190,8 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		//
-		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%s)",
-				resObj.messageType, Long.toUnsignedString(ioCseqRequ.getCseqNrLastRcvd())));
+		logDebug(FNC_NAME, String.format("Received %s request (CSeq=%d)",
+				resObj.messageType, ioCseqRequ.cseqNr_lastRcvd.getCseq32bit().orElse(-1L)));
 		return resObj;
 	}
 
@@ -215,7 +215,7 @@ public final class RtspProtoRequestInputSvc {
 				throw new RtspProtoInvalidRequestException("Sub-Stream ID is empty");
 			}
 			outputDataRequ.requServerIpFromRscUrl.copyFrom(
-					rtspSessionInfo.findRtspIpFromResourceUrl(requBasics.rscUrl)
+					RtspProtoSessionInfo.findRtspIpFromResourceUrl(requBasics.rscUrl)
 				);
 		} catch (RtspProtoCannotFindIpFromRscUrlException e) {
 			throw new RtspProtoInvalidRequestException(e.getMessage());
@@ -231,31 +231,31 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataCntSessionState sessionState
 			) {
-		currentIdSession.copyFrom(rtspSessionInfo.idSession);
+		currentIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		currentIdSession.writeProtect();
 
 		//
-		cseqRequ.setCseqNrLastRcvd(rtspSessionInfo.seqNr_requFromRem_lastRcvd);
-		cseqRequ.setCseqNrExpected(rtspSessionInfo.seqNr_requFromRem_expected);
+		cseqRequ.cseqNr_lastRcvd.copyFrom(rtspSessionInfo.getCseqNr_requFromRem_lastRcvd());
+		cseqRequ.cseqNr_expected.copyFrom(rtspSessionInfo.getCseqNr_requFromRem_expected());
 		//
-		streamTpMain.copyFrom(rtspSessionInfo.streamTpMain);
+		streamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
 		//
-		ioSetupInfosStream.copyFrom(rtspSessionInfo.descrSetupInfosStream);
+		ioSetupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
 		//
-		sessionState.setSessionState(rtspSessionInfo.sessionState);
+		sessionState.setSessionState(rtspSessionInfo.getSessionState());
 	}
 
 	private void updateSessionInfo_immediate(
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoDataCntCseqRequInp cseqRequ
 			) {
-		rtspSessionInfo.rtspProtoVersionToUse = dataRequ.getRtspProtoVersionToUse();
+		rtspSessionInfo.setRtspProtoVersionToUse(dataRequ.getRtspProtoVersionToUse());
 		//
-		rtspSessionInfo.seqNr_requFromRem_lastRcvd = cseqRequ.getCseqNrLastRcvd();
-		rtspSessionInfo.seqNr_requFromRem_expected = cseqRequ.getCseqNrExpected();
+		rtspSessionInfo.setCseqNr_requFromRem_lastRcvd(cseqRequ.cseqNr_lastRcvd);
+		rtspSessionInfo.setCseqNr_requFromRem_expected(cseqRequ.cseqNr_expected);
 		//
-		rtspSessionInfo.clientUserAgent = dataRequ.getClientUa();
-		rtspSessionInfo.clientPlaybackRangeValue = dataRequ.getPlaybackRangeValue();
+		rtspSessionInfo.setClientUserAgent(dataRequ.getClientUa());
+		rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
 	}
 
 	private boolean updateSessionInfo_success(
@@ -264,19 +264,19 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream
 			) {
 		if (streamTpMain.getForceRtpRtcpEncryption()) {  // only update one-way
-			rtspSessionInfo.streamTpMain.setForceRtpRtcpEncryption(true);
+			rtspSessionInfo.setStreamTpMainForceRtpRtcpEncryption();
 		}
 		if (streamTpMain.getRtpRtcpEncryptionRequired()) {  // only update one-way
-			rtspSessionInfo.streamTpMain.setRtpRtcpEncryptionRequired(true);
+			rtspSessionInfo.setStreamTpMainRtpRtcpEncryptionRequired();
 		}
 		if (streamTpMain.getIsTransportUdp()) {  // only update one-way
-			rtspSessionInfo.streamTpMain.setIsTransportUdp(true);
+			rtspSessionInfo.setStreamTpMainIsTransportUdp();
 		}
 		if (streamTpMain.getIsTransportSrtpSrtcp()) {  // only update one-way
-			rtspSessionInfo.streamTpMain.setIsTransportSrtpSrtcp(true);
+			rtspSessionInfo.setStreamTpMainIsTransportSrtpSrtcp();
 		}
 		//
-		rtspSessionInfo.descrSetupInfosStream.copyFrom(setupInfosStream);
+		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
 		//
 		if (requBasics.messageType != RtspProtoMessageType.SETUP) {
 			rtspSessionInfo.putResourceUrlForMt_nonSetup(requBasics.messageType, requBasics.rscUrl);

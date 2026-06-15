@@ -65,7 +65,7 @@ public final class RtspProtoLowRequestConsumer {
 		}
 
 		// check CSeq
-		Optional<Integer> tmpOptCseq = resObj.getHeaderCseq();
+		Optional<Long> tmpOptCseq = resObj.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			logWarn(FNC_NAME, "Missing CSeq header in request");
 			resObj.statusCode = RtspProtoStatusCode.BAD_REQUEST;

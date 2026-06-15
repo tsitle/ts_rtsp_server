@@ -1,8 +1,10 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoCseqNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
@@ -38,10 +40,10 @@ public final class RtspProtoDataRequest {
 	private @NonNull RtspProtocolVersion requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
 
 	/** Last received RTSP message Sequence Number in request */
-	private long requCseqNrLastRcvd = -1L;
+	private final @NonNull RtspProtoCseqNr requCseqNrLastRcvd = new RtspProtoCseqNr();
 
 	/** RTSP message Sequence Number to use for sending a request */
-	private long requCseqNrToSend = 0L;
+	private final @NonNull RtspProtoCseqNr requCseqNrToSend = new RtspProtoCseqNr(0L);
 
 	/** Main transport parameters */
 	public final @NonNull RtspProtoDataCntStreamTpMain requStreamTpMain = new RtspProtoDataCntStreamTpMain();
@@ -78,8 +80,8 @@ public final class RtspProtoDataRequest {
 		this.requServerIpFromRscUrl.copyFrom(other.requServerIpFromRscUrl);
 		this.requRscUrl.copyFrom(other.requRscUrl);
 		this.requRtspProtoVersionToUse = other.requRtspProtoVersionToUse;
-		this.requCseqNrLastRcvd = other.requCseqNrLastRcvd;
-		this.requCseqNrToSend = other.requCseqNrToSend;
+		this.requCseqNrLastRcvd.copyFrom(other.requCseqNrLastRcvd);
+		this.requCseqNrToSend.copyFrom(other.requCseqNrToSend);
 		this.requStreamTpMain.copyFrom(other.requStreamTpMain);
 		this.requClientUa = other.requClientUa;
 		this.requClientIpAddr.copyFrom(other.requClientIpAddr);
@@ -110,24 +112,34 @@ public final class RtspProtoDataRequest {
 		this.requRtspProtoVersionToUse = value;
 	}
 
-	public long getCseqNrLastRcvd() {
-		return requCseqNrLastRcvd;
+	public @NonNull RtspProtoCseqNr getCseqNrLastRcvd() {
+		return requCseqNrLastRcvd.clone();
 	}
-	public void setCseqNrLastRcvd(long value) {
+	public void setCseqNrLastRcvd(@NonNull RtspProtoCseqNr value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		this.requCseqNrLastRcvd = value;
+		this.requCseqNrLastRcvd.copyFrom(value);
 	}
 
-	public long getCseqNrToSend() {
-		return requCseqNrToSend;
+	public @NonNull RtspProtoCseqNr getCseqNrToSend() {
+		return requCseqNrToSend.clone();
 	}
-	public void setCseqNrToSend(long value) {
+	public void copyAndIncrementCseqNrToSend(@NonNull RtspProtoCseqNr value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		this.requCseqNrToSend = value;
+		long tmpVal = value.getCseq32bit().orElse(-1L) + 1L;
+		try {
+			this.requCseqNrToSend.setCseq32bit(tmpVal);
+		} catch (RtspProtoNumberRangeException e) {
+			// overflow
+			try {
+				this.requCseqNrToSend.setCseq32bit(0L);
+			} catch (RtspProtoNumberRangeException ex) {
+				// this will never happen
+			}
+		}
 	}
 
 	public @NonNull String getClientUa() {
@@ -166,8 +178,13 @@ public final class RtspProtoDataRequest {
 		requServerIpFromRscUrl.clear();
 		requRscUrl.clear();
 		requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
-		requCseqNrLastRcvd = -1L;
-		requCseqNrToSend = 0L;
+		requCseqNrLastRcvd.clear();
+		requCseqNrToSend.clear();
+		try {
+			requCseqNrToSend.setCseq32bit(0L);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		requStreamTpMain.clear();
 		requClientUa = "";
 		requClientIpAddr.clear();
@@ -184,8 +201,12 @@ public final class RtspProtoDataRequest {
 		requSetParamValues.writeProtect();
 		requInvalidParamNames.writeProtect();
 		requAnnouncedSdp.writeProtect();
+		requServerIpFromRscUrl.writeProtect();
 		requRscUrl.writeProtect();
+		requCseqNrLastRcvd.writeProtect();
+		requCseqNrToSend.writeProtect();
 		requStreamTpMain.writeProtect();
+		requClientIpAddr.writeProtect();
 		requRtspSessionState.writeProtect();
 	}
 

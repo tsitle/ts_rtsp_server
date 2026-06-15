@@ -105,10 +105,10 @@ public final class RtspLowBuilderHelper {
 		 *   "CSeq: 1234"
 		 * Specifies the sequence number of the request or response
 		 */
-		if (hdValue.getCseqNr32bit().isEmpty()) {
+		if (hdValue.cseqNr.isEmpty()) {
 			throw new RtspLowInvalidRrException("CSeq must be set");
 		}
-		return Integer.toUnsignedString(hdValue.getCseqNr32bit().get());
+		return Long.toUnsignedString(hdValue.cseqNr.getCseq32bit().orElseThrow());
 	}
 
 	public static @NonNull String helperBuildHeaderValue_date(@NonNull RtspProtoHeaderTypeDate hdValue) {

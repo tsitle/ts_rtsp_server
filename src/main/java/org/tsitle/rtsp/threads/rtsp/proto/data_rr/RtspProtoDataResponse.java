@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoCseqNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
@@ -41,7 +42,7 @@ public final class RtspProtoDataResponse {
 	private @NonNull RtspProtocolVersion respRtspProtoVersionToUse = RtspProtocolVersion.NONE;
 
 	/** Last received RTSP message Sequence Number in request */
-	private long respCseqNrLastRcvd = -1L;
+	public final @NonNull RtspProtoCseqNr respCseqNrLastRcvd = new RtspProtoCseqNr();
 
 	/** Main transport parameters */
 	public final @NonNull RtspProtoDataCntStreamTpMain respStreamTpMain = new RtspProtoDataCntStreamTpMain();
@@ -68,7 +69,7 @@ public final class RtspProtoDataResponse {
 		respRscUrl.copyFrom(inputDataRequ.requRscUrl);
 		respServerIpFromRscUrl.copyFrom(inputDataRequ.requServerIpFromRscUrl);
 		respRtspProtoVersionToUse = inputDataRequ.getRtspProtoVersionToUse();
-		respCseqNrLastRcvd = inputDataRequ.getCseqNrLastRcvd();
+		respCseqNrLastRcvd.copyFrom(inputDataRequ.getCseqNrLastRcvd());
 		respStreamTpMain.copyFrom(inputDataRequ.requStreamTpMain);
 		respClientUa = inputDataRequ.getClientUa();
 		respClientIpAddr.copyFrom(inputDataRequ.requClientIpAddr);
@@ -84,10 +85,6 @@ public final class RtspProtoDataResponse {
 
 	public @NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
 		return respRtspProtoVersionToUse;
-	}
-
-	public long getCseqNrLastRcvd() {
-		return respCseqNrLastRcvd;
 	}
 
 	public @NonNull String getClientUa() {
@@ -115,7 +112,7 @@ public final class RtspProtoDataResponse {
 		respRscUrl.clear();
 		respSuppMessageTypes.clear();
 		respRtspProtoVersionToUse = RtspProtocolVersion.NONE;
-		respCseqNrLastRcvd = -1L;
+		respCseqNrLastRcvd.clear();
 		respStreamTpMain.clear();
 		respClientUa = "";
 		respClientIpAddr.clear();
@@ -131,7 +128,12 @@ public final class RtspProtoDataResponse {
 		respGetParamValues.writeProtect();
 		respInvalidParamNames.writeProtect();
 		respDescribeSdp.writeProtect();
+		respServerIpFromRscUrl.writeProtect();
+		respRscUrl.writeProtect();
 		respSuppMessageTypes.writeProtect();
+		respCseqNrLastRcvd.writeProtect();
+		respStreamTpMain.writeProtect();
+		respClientIpAddr.writeProtect();
 	}
 
 }

@@ -113,7 +113,7 @@ public final class RtspProtoResponseInputSvc {
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",
 				requestMessageType,
-				msgStructured.getHeaderCseq().isPresent() ? Integer.toUnsignedString(msgStructured.getHeaderCseq().get()) : "-",
+				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-",
 				resObj.statusCode.getIntValue()
 			));
 		return resObj;
@@ -126,28 +126,26 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp
 			) {
-		currentIdSession.copyFrom(rtspSessionInfo.idSession);
+		currentIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		currentIdSession.writeProtect();
 
-		cseqRespInp.setCseqNrExpected(rtspSessionInfo.seqNr_requToRem_lastSent);
+		cseqRespInp.cseqNr_expected.copyFrom(rtspSessionInfo.getCseqNr_requToRem_lastSent());
 		cseqRespInp.writeProtect();
 	}
 
 	private void updateSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
-		if (! (rtspSessionInfo.permAuthServer.isReadOnly() || dataResp.respAuthServer.isEmpty())) {
-			rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
-			rtspSessionInfo.permAuthServer.writeProtect();
+		if (! (rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
 
 		//
-		if (! (rtspSessionInfo.idSession.isReadOnly() || dataResp.respIdSession.isEmpty())) {
-			rtspSessionInfo.idSession.copyFrom(dataResp.respIdSession);
-			rtspSessionInfo.idSession.writeProtect();
+		if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataResp.respIdSession.isEmpty())) {
+			rtspSessionInfo.setSessionId(dataResp.respIdSession);
 		}
 
 		//
 		if (! dataResp.respSuppMessageTypes.isMtsEmpty()) {
-			rtspSessionInfo.rhSupportedMessageTypes.copyFrom(dataResp.respSuppMessageTypes);
+			rtspSessionInfo.setRhSupportedMessageTypes(dataResp.respSuppMessageTypes);
 		}
 	}
 

@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
 
-public final class RtspProtoDataCntAuthSrv {
+public final class RtspProtoDataCntAuthSrv implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
@@ -61,6 +61,17 @@ public final class RtspProtoDataCntAuthSrv {
 	}
 	public void writeProtect() {
 		isWriteProtected = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public RtspProtoDataCntAuthSrv clone() {
+		try {
+			return (RtspProtoDataCntAuthSrv)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 }

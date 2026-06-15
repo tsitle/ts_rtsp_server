@@ -159,8 +159,8 @@ public final class RtspProtoResponseOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.statusCode,
-				rtspSessionInfo.idSession.isEmpty() ? "-" : rtspSessionInfo.idSession.getIdStr(),
-				msgStructured.getHeaderCseq().isPresent() ? Integer.toUnsignedString(msgStructured.getHeaderCseq().get()) : "-"));
+				rtspSessionInfo.getIdSession().isEmpty() ? "-" : rtspSessionInfo.getIdSession().getIdStr(),
+				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -170,13 +170,13 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
-		dataResp.respIdSession.copyFrom(rtspSessionInfo.idSession);
+		dataResp.respIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		//
-		dataResp.respAuthServer.copyFrom(rtspSessionInfo.permAuthServer);
+		dataResp.respAuthServer.copyFrom(rtspSessionInfo.getPermAuthServer());
 		//
-		dataResp.respStreamTpMain.copyFrom(rtspSessionInfo.streamTpMain);
+		dataResp.respStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
 		//
-		setupInfosStream.copyFrom(rtspSessionInfo.descrSetupInfosStream);
+		setupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
 	}
 
 	private void updateSessionInfo(
@@ -186,18 +186,16 @@ public final class RtspProtoResponseOutputSvc {
 			) {
 		// store new Session ID if one has been generated
 		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
-		if (tmpOptIdSess.isPresent() && rtspSessionInfo.idSession.isEmpty() &&
-				! tmpOptIdSess.get().isEmpty() && ! rtspSessionInfo.idSession.isReadOnly()) {
-			rtspSessionInfo.idSession.copyFrom(tmpOptIdSess.get());
-			rtspSessionInfo.idSession.writeProtect();
+		if (tmpOptIdSess.isPresent() && rtspSessionInfo.getIdSession().isEmpty() &&
+				! tmpOptIdSess.get().isEmpty() && ! rtspSessionInfo.getIdSession().isReadOnly()) {
+			rtspSessionInfo.setSessionId(tmpOptIdSess.get());
 		}
 		// store permanent Auth data
-		if (! (isResponseFromClient || rtspSessionInfo.permAuthServer.isReadOnly() || dataResp.respAuthServer.isEmpty())) {
-			rtspSessionInfo.permAuthServer.copyFrom(dataResp.respAuthServer);
-			rtspSessionInfo.permAuthServer.writeProtect();
+		if (! (isResponseFromClient || rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
 		//
-		rtspSessionInfo.descrSetupInfosStream.copyFrom(setupInfosStream);
+		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

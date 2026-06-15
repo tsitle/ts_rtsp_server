@@ -14,7 +14,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidRequestException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
@@ -364,15 +363,11 @@ public final class RtspProtoHighRequestProducer {
 
 		// CSeq
 		{
-			if (inputDataRequ.getCseqNrToSend() < 1L) {
+			if (inputDataRequ.getCseqNrToSend().getCseq32bit().orElse(-1L) < 1L) {
 				throw new RtspProtoInvalidRequestException(FNC_NAME + ": CSeq to send must be >= 1");
 			}
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
-			try {
-				hdEntry.hdValCseq.setCseqNr32bit(inputDataRequ.getCseqNrToSend());
-			} catch (RtspProtoNumberRangeException e) {
-				throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting CSeq failed: " + e.getMessage());
-			}
+			hdEntry.hdValCseq.cseqNr.copyFrom(inputDataRequ.getCseqNrToSend());
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date

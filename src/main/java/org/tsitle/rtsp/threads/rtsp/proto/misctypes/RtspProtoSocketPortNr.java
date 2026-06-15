@@ -19,12 +19,12 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	public Optional<Integer> getPort16bit() {
 		return (portNr < 1 ? Optional.empty() : Optional.of(portNr));
 	}
-	public void setPort16bit(int portNr) throws RtspProtoNumberRangeException {
+	public void setPort16bit(int value16bit) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validatePortNumber(portNr);
-		this.portNr = portNr;
+		validatePortNumber(value16bit);
+		this.portNr = value16bit;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

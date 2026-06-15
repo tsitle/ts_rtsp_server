@@ -145,12 +145,13 @@ public class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp,
 				@NonNull RtspProtoHighMsgStructuredResponse input
 			) throws RtspProtoInvalidResponseException {
-		Optional<Integer> tmpOptCseq = input.getHeaderCseq();
+		Optional<Long> tmpOptCseq = input.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("Missing CSeq header");
 		}
-		if (Integer.toUnsignedLong(tmpOptCseq.get()) != cseqRespInp.getCseqNrExpected()) {
-			throw new RtspProtoInvalidResponseException("Invalid CSeq");
+		long tmpExp = cseqRespInp.cseqNr_expected.getCseq32bit().orElse(-1L);
+		if (! tmpOptCseq.get().equals(tmpExp)) {
+			throw new RtspProtoInvalidResponseException("Invalid CSeq (is=" + tmpOptCseq.get() + ", exp=" + tmpExp + ")");
 		}
 
 		//

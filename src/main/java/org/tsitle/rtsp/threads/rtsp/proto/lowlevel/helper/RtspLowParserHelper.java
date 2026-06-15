@@ -123,7 +123,7 @@ public final class RtspLowParserHelper {
 		 * Specifies the sequence number of the request or response
 		 */
 		try {
-			outputHd.setCseqNr32bit(Long.parseLong(hdValue));
+			outputHd.cseqNr.setCseq32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid CSeq format: '" + hdValue + "'");
 		} catch (RtspProtoNumberRangeException e) {
