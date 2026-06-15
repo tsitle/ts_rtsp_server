@@ -275,7 +275,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());
@@ -327,7 +327,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		assertEquals(3, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(Arrays.asList(expBodyStr.split("\\r\\n")), msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw());
@@ -389,7 +389,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		System.out.println(msgStructured);
 	}
@@ -439,7 +439,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 	}
 
 	@Test
@@ -490,7 +490,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 	}
 
 	@Test
@@ -538,7 +538,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());
@@ -594,7 +594,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(3, msgStructured.bodyGetParamNames.getParamNames().size());
@@ -654,7 +654,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 	}
 
 	@Test
@@ -700,7 +700,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		System.out.println(msgStructured);
 	}
@@ -762,7 +762,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());
@@ -824,7 +824,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 		assertEquals(expQueryParams, msgStructured.queryParams);
 		assertEquals(expAuthUser, msgStructured.authUser);
 		assertEquals(expAuthPlainPw, msgStructured.authPlainPassword);
@@ -920,7 +920,7 @@ public class RtspProtoLowRequestConsumerTest {
 		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
-		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
+		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
 		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getIdStr());
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
