@@ -6,10 +6,10 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestConsumer;
@@ -66,8 +66,8 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
-		assertEquals(RtspMessageType.UNKNOWN, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoMessageType.UNKNOWN, msgStructured.messageType);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 	}
 
 	@Test
@@ -99,13 +99,13 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
-		assertEquals(RtspMessageType.UNKNOWN, msgStructured.messageType);
-		assertEquals(RtspStatusCode.METHOD_NOT_ALLOWED, msgStructured.statusCode);
+		assertEquals(RtspProtoMessageType.UNKNOWN, msgStructured.messageType);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_ALLOWED, msgStructured.statusCode);
 	}
 
 	@Test
 	void structuredRequest_generic_mainLine_fail3() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.OPTIONS;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expMainLine = expMsgType.name() + " http://some.com/stream RTSP/1.0";  // <-- wrong URL-Protocol
 
 		@SuppressWarnings("TextBlockMigration")
@@ -134,14 +134,14 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_generic_cseq_fail1() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.OPTIONS;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expMainLine = expMsgType.name() + " rtsp://some.com/stream RTSP/1.0";
 
 		@SuppressWarnings("TextBlockMigration")
@@ -165,12 +165,12 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 	}
 
 	@Test
 	void structuredRequest_generic_cseq_fail2() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.OPTIONS;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expMainLine = expMsgType.name() + " rtsp://some.com/stream RTSP/1.0";
 
 		@SuppressWarnings("TextBlockMigration")
@@ -195,12 +195,12 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 	}
 
 	@Test
 	void structuredRequest_generic_cseq_ok() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expMainLine = expMsgType.name() + " rtsps://some.com/stream RTSP/2.0";
 
 		@SuppressWarnings("TextBlockMigration")
@@ -225,7 +225,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 
 		System.out.println(msgStructured);
 	}
@@ -234,7 +234,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_announce_wrongContType() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.ANNOUNCE;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.ANNOUNCE;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE * 2L;
@@ -272,7 +272,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -284,7 +284,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_announce_ok() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.ANNOUNCE;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.ANNOUNCE;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE * 2L;
@@ -324,7 +324,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -341,14 +341,14 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_describe_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.DESCRIBE);
+		basic_structuredRequest_ok(RtspProtoMessageType.DESCRIBE);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_getParam_ok_wrongContTypeButNoContLength() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -386,7 +386,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -396,7 +396,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_getParam_missingContType() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -436,7 +436,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -444,7 +444,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_getParam_wrongContType() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -487,7 +487,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.BAD_REQUEST, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -495,7 +495,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_getParam_ok_no_keys() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -535,7 +535,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -549,7 +549,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_getParam_ok_with_keys() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.GET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
 		final String expRequUrl = "rtsps://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -591,7 +591,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -608,7 +608,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_options_ok_bodyNotAllowed() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.OPTIONS;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -651,7 +651,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -659,7 +659,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_options_ok() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.OPTIONS;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
@@ -697,7 +697,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -709,28 +709,28 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_pause_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.PAUSE);
+		basic_structuredRequest_ok(RtspProtoMessageType.PAUSE);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_play_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.PLAY);
+		basic_structuredRequest_ok(RtspProtoMessageType.PLAY);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_redirect_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.REDIRECT);
+		basic_structuredRequest_ok(RtspProtoMessageType.REDIRECT);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_setParam_ok_noKeys() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.SET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -759,7 +759,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -773,7 +773,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_setParam_ok_withKeys() throws Exception {
-		final RtspMessageType expMsgType = RtspMessageType.SET_PARAMETER;
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -821,7 +821,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));
@@ -841,14 +841,14 @@ public class RtspProtoLowRequestConsumerTest {
 
 	@Test
 	void structuredRequest_setup_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.SETUP);
+		basic_structuredRequest_ok(RtspProtoMessageType.SETUP);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void structuredRequest_teardown_ok() throws Exception {
-		basic_structuredRequest_ok(RtspMessageType.TEARDOWN);
+		basic_structuredRequest_ok(RtspProtoMessageType.TEARDOWN);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -884,7 +884,7 @@ public class RtspProtoLowRequestConsumerTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	void basic_structuredRequest_ok(@NonNull RtspMessageType expMsgType) throws Exception {
+	void basic_structuredRequest_ok(@NonNull RtspProtoMessageType expMsgType) throws Exception {
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE * 2L;
@@ -917,7 +917,7 @@ public class RtspProtoLowRequestConsumerTest {
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
-		assertEquals(RtspStatusCode.OK, msgStructured.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, msgStructured.statusCode);
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, Integer.toUnsignedLong(msgStructured.getHeaderCseq().orElseThrow()));

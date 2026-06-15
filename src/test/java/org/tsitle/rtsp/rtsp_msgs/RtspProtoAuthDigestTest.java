@@ -2,7 +2,7 @@ package org.tsitle.rtsp.rtsp_msgs;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -21,7 +21,7 @@ public class RtspProtoAuthDigestTest {
 				"admin",
 				"ABCDEFGH",
 				"rtsp://localhost:1151/buerrow-av.stream",
-				RtspMessageType.DESCRIBE,
+				RtspProtoMessageType.DESCRIBE,
 				"Realm_A1B2C3D4E5F6_G7H8I9_J10K11",
 				"362e04b16faee54441fc9d536a04ed40"
 			);
