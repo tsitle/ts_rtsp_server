@@ -1,9 +1,9 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
@@ -91,7 +91,7 @@ public final class RtspLowParserHelper {
 			outputHd.setContentLen32bit((int)Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid Content-Length format: '" + hdValue + "'");
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid Content-Length value: " + e.getMessage());
 		}
 	}
@@ -126,7 +126,7 @@ public final class RtspLowParserHelper {
 			outputHd.setCseqNr32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid CSeq format: '" + hdValue + "'");
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid CSeq value: " + e.getMessage());
 		}
 	}
@@ -209,7 +209,7 @@ public final class RtspLowParserHelper {
 			} catch (NumberFormatException e) {
 				throw new RtspLowInvalidRrException("Invalid Session timeout parameter: '" + rawTimeout + "' - " +
 						"invalid format");
-			} catch (RtspNumberRangeException e) {
+			} catch (RtspProtoNumberRangeException e) {
 				throw new RtspLowInvalidRrException("Invalid Session parameter: '" + rawTimeout + "' - " +
 						e.getMessage());
 			}
@@ -270,7 +270,7 @@ public final class RtspLowParserHelper {
 	}
 
 	public static void helperParseBodyLine_keyValue(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String bodyLine,
 				@NonNull RtspProtoDataCntGetSetParamKvs outputMap
 			) throws RtspLowInvalidRrException {
@@ -484,7 +484,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					"cannot parse ports, invalid format");
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					e.getMessage());
 		}
@@ -509,7 +509,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					"cannot parse channels, invalid format");
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					e.getMessage());
 		}
@@ -541,7 +541,7 @@ public final class RtspLowParserHelper {
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					"cannot parse ports, invalid format");
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					e.getMessage());
 		}
@@ -587,7 +587,7 @@ public final class RtspLowParserHelper {
 			outputHd.setSsrcId32bit(
 					helperParseHexStringIntoLong(fieldDesc, rawSsrc)
 				);
-		} catch (RtspNumberRangeException e) {
+		} catch (RtspProtoNumberRangeException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawSsrc + "' - " +
 					e.getMessage());
 		}

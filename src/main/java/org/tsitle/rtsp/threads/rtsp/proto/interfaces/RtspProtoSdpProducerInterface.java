@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
 
@@ -24,7 +24,7 @@ public interface RtspProtoSdpProducerInterface {
 	 * @param outputSdp Output for the SDP lines
 	 * @param outputAdStreamSett Output for the stream settings
 	 * @param outputKmdsOutbound Output for the KMDs
-	 * @throws RtspSdpException If an error occurs during SDP generation
+	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void buildSdpForDescribe(
 			boolean requireSrtp,
@@ -35,7 +35,7 @@ public interface RtspProtoSdpProducerInterface {
 			@NonNull RtspProtoDataCntSdp outputSdp,
 			@NonNull RtspProtoDataCntAdStreamSett outputAdStreamSett,
 			@NonNull RtspProtoKmdsStream outputKmdsOutbound
-		) throws RtspSdpException;
+		) throws RtspProtoSdpException;
 
 	/**
 	 * Builds an updated Session Description (SDP) for an ANNOUNCE request.<br />
@@ -49,7 +49,7 @@ public interface RtspProtoSdpProducerInterface {
 	 * @param clientIpAddr Remote host's IP address
 	 * @param inputKmdsOutbound Optional Key Management Data for outbound RTP/SRTP packets
 	 * @param outputSdp Output for the SDP lines
-	 * @throws RtspSdpException If an error occurs during SDP generation
+	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void buildUpdatedSdpForAnnounce(
 			boolean requireSrtp,
@@ -59,6 +59,6 @@ public interface RtspProtoSdpProducerInterface {
 			@NonNull RtspProtoIpAddr clientIpAddr,
 			@Nullable RtspProtoKmdsStream inputKmdsOutbound,
 			@NonNull RtspProtoDataCntSdp outputSdp
-		) throws RtspSdpException;
+		) throws RtspProtoSdpException;
 
 }

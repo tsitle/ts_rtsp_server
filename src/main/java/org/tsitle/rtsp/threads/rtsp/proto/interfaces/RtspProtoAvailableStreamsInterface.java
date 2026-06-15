@@ -6,8 +6,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdStreamSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdStreamSourceNotFoundException;
 
 import java.net.URI;
 import java.util.Optional;
@@ -25,10 +25,10 @@ public interface RtspProtoAvailableStreamsInterface {
 	 * Get the Input Source object for the given ID.
 	 * @param idInputSource Input Source ID
 	 * @return Input Source
-	 * @throws RtspIdInputSourceNotFoundException If the Input Source ID is not found
+	 * @throws RtspProtoIdInputSourceNotFoundException If the Input Source ID is not found
 	 */
 	@NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
-			throws RtspIdInputSourceNotFoundException;
+			throws RtspProtoIdInputSourceNotFoundException;
 
 	/**
 	 * Get the first (enabled) video Stream Source for the Input Source.
@@ -67,19 +67,19 @@ public interface RtspProtoAvailableStreamsInterface {
 	 * Get information about the given Stream Source.
 	 * @param idStreamSource Stream Source ID
 	 * @return Stream Source information
-	 * @throws RtspIdStreamSourceNotFoundException If the Stream Source ID is not found
+	 * @throws RtspProtoIdStreamSourceNotFoundException If the Stream Source ID is not found
 	 */
 	@NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspIdStreamSourceNotFoundException;
+			throws RtspProtoIdStreamSourceNotFoundException;
 
 	/**
 	 * Get audio samples per frame (matching the video frame rate) as required for RTP for the given audio Stream Source.
 	 * @param idStreamSource Stream Source ID
 	 * @param videoFps Stream Source ID
 	 * @return Samples per frame
-	 * @throws RtspIdStreamSourceNotFoundException If the Stream Source ID is not found
+	 * @throws RtspProtoIdStreamSourceNotFoundException If the Stream Source ID is not found
 	 */
 	int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-			throws RtspIdStreamSourceNotFoundException;
+			throws RtspProtoIdStreamSourceNotFoundException;
 
 }

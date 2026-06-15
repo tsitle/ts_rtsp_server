@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -19,7 +19,7 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	public Optional<Integer> getPort16bit() {
 		return (portNr < 1 ? Optional.empty() : Optional.of(portNr));
 	}
-	public void setPort16bit(int portNr) throws RtspNumberRangeException {
+	public void setPort16bit(int portNr) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -88,9 +88,9 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validatePortNumber(int portNr) throws RtspNumberRangeException {
+	private static void validatePortNumber(int portNr) throws RtspProtoNumberRangeException {
 		if (portNr < 1 || portNr > 65535) {
-			throw new RtspNumberRangeException("Socket Port must be between 1 and 65535, got: " + portNr);
+			throw new RtspProtoNumberRangeException("Socket Port must be between 1 and 65535, got: " + portNr);
 		}
 	}
 

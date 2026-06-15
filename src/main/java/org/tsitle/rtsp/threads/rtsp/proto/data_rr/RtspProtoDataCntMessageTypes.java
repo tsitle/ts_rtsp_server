@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,7 +11,7 @@ public final class RtspProtoDataCntMessageTypes {
 	private boolean isWriteProtected = false;
 
 	/** Message types */
-	private final @NonNull Set<@NonNull RtspMessageType> mts = new HashSet<>();
+	private final @NonNull Set<@NonNull RtspProtoMessageType> mts = new HashSet<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -20,22 +20,22 @@ public final class RtspProtoDataCntMessageTypes {
 	public boolean isMtsEmpty() {
 		return mts.isEmpty();
 	}
-	public @NonNull Set<@NonNull RtspMessageType> getMts() {
+	public @NonNull Set<@NonNull RtspProtoMessageType> getMts() {
 		return new HashSet<>(mts);
 	}
-	public void putAllMts(@NonNull Set<@NonNull RtspMessageType> value) {
+	public void putAllMts(@NonNull Set<@NonNull RtspProtoMessageType> value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.mts.addAll(value);
 	}
-	public void putMt(@NonNull RtspMessageType value) {
+	public void putMt(@NonNull RtspProtoMessageType value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		this.mts.add(value);
 	}
-	public boolean containsMt(@NonNull RtspMessageType value) {
+	public boolean containsMt(@NonNull RtspProtoMessageType value) {
 		return mts.contains(value);
 	}
 
@@ -63,11 +63,11 @@ public final class RtspProtoDataCntMessageTypes {
 		isWriteProtected = true;
 	}
 
-	private static @NonNull String setToString(@NonNull Set<@NonNull RtspMessageType> input) {
+	private static @NonNull String setToString(@NonNull Set<@NonNull RtspProtoMessageType> input) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("{");
 		boolean isFirst = true;
-		for (RtspMessageType tmpEntry : input) {
+		for (RtspProtoMessageType tmpEntry : input) {
 			if (! isFirst) {
 				sb.append(", ");
 			}

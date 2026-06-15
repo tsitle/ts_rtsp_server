@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp.proto.enums;
 
-public enum RtspSessionState {
+public enum RtspProtoSessionState {
 
 	INIT,
 	READY,

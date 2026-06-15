@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.util.Optional;
 
@@ -9,9 +9,9 @@ public class RtspProtoHeaderTypeContLen {
 
 	private long contentLen32bit = -1L;
 
-	public void setContentLen32bit(long contentLen32bit) throws RtspNumberRangeException {
+	public void setContentLen32bit(long contentLen32bit) throws RtspProtoNumberRangeException {
 		if (contentLen32bit < 0L || contentLen32bit > 0xFFFFFFFFL) {
-			throw new RtspNumberRangeException("contentLen32bit must be non-negative and within 32-bit range");
+			throw new RtspProtoNumberRangeException("contentLen32bit must be non-negative and within 32-bit range");
 		}
 		this.contentLen32bit = contentLen32bit;
 	}

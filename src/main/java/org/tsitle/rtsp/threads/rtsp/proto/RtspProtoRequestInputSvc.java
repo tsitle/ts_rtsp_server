@@ -8,10 +8,10 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.*;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoCannotFindIpFromRscUrlException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
@@ -115,13 +115,13 @@ public final class RtspProtoRequestInputSvc {
 
 		// parse the raw request
 		RtspProtoHighMsgStructuredRequest msgStructured = rtspProtoLowRequestConsumer.parseMessage(lowInputRaw);
-		if (msgStructured.messageType == RtspMessageType.UNKNOWN) {
+		if (msgStructured.messageType == RtspProtoMessageType.UNKNOWN) {
 			RtspRequestBasics resObj = RtspRequestBasics.createUnknown();
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message, rejecting it with code %s",
 					resObj.statusCode));
 			return resObj;
 		}
-		if (msgStructured.statusCode != RtspStatusCode.OK) {
+		if (msgStructured.statusCode != RtspProtoStatusCode.OK) {
 			RtspRequestBasics resObj = RtspRequestBasics.createKnownWithError(msgStructured.messageType, msgStructured.statusCode);
 			logWarn(FNC_NAME, String.format("Received invalid RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));
@@ -168,8 +168,8 @@ public final class RtspProtoRequestInputSvc {
 		try {
 			storeResourceUrl(resObj, outputDataRequ);
 			storeServerIp(msgStructured, resObj, outputDataRequ);
-		} catch (RtspInvalidRequestException e) {
-			resObj.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+		} catch (RtspProtoInvalidRequestException e) {
+			resObj.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 			logWarn(FNC_NAME, String.format("%s for RTSP request message (rt=%s), rejecting it with code %s",
 					e.getMessage(), resObj.messageType, resObj.statusCode));
 		}
@@ -178,8 +178,8 @@ public final class RtspProtoRequestInputSvc {
 		outputDataRequ.writeProtect();
 
 		//
-		if (resObj.messageType == RtspMessageType.SETUP && resObj.rscUrl.idSubStream.isEmpty()) {
-			resObj.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+		if (resObj.messageType == RtspProtoMessageType.SETUP && resObj.rscUrl.idSubStream.isEmpty()) {
+			resObj.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 			logWarn(FNC_NAME, String.format("No Sub-Stream ID for RTSP request message (rt=%s), rejecting it with code %s",
 					resObj.messageType, resObj.statusCode));
 		}
@@ -209,16 +209,16 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoHighMsgStructuredRequest msgStructured,
 				@NonNull RtspRequestBasics requBasics,
 				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws RtspInvalidRequestException {
+			) throws RtspProtoInvalidRequestException {
 		try {
-			if (msgStructured.messageType == RtspMessageType.SETUP && requBasics.rscUrl.idSubStream.isEmpty()) {
-				throw new RtspInvalidRequestException("Sub-Stream ID is empty");
+			if (msgStructured.messageType == RtspProtoMessageType.SETUP && requBasics.rscUrl.idSubStream.isEmpty()) {
+				throw new RtspProtoInvalidRequestException("Sub-Stream ID is empty");
 			}
 			outputDataRequ.requServerIpFromRscUrl.copyFrom(
 					rtspSessionInfo.findRtspIpFromResourceUrl(requBasics.rscUrl)
 				);
-		} catch (RtspCannotFindIpFromRscUrlException e) {
-			throw new RtspInvalidRequestException(e.getMessage());
+		} catch (RtspProtoCannotFindIpFromRscUrlException e) {
+			throw new RtspProtoInvalidRequestException(e.getMessage());
 		}
 	}
 
@@ -278,7 +278,7 @@ public final class RtspProtoRequestInputSvc {
 		//
 		rtspSessionInfo.descrSetupInfosStream.copyFrom(setupInfosStream);
 		//
-		if (requBasics.messageType != RtspMessageType.SETUP) {
+		if (requBasics.messageType != RtspProtoMessageType.SETUP) {
 			rtspSessionInfo.putResourceUrlForMt_nonSetup(requBasics.messageType, requBasics.rscUrl);
 		}
 

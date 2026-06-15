@@ -1,12 +1,12 @@
 package org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidResponseException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowBuilderHelper;
@@ -31,11 +31,11 @@ public final class RtspProtoLowResponseProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoLowMsgRaw buildMessage(@NonNull RtspProtoHighMsgStructuredResponse input)
-			throws RtspInvalidResponseException {
+			throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildMessage()";
 
 		if (input.rtspProtoVersion == RtspProtocolVersion.NONE) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": rtspProtoVersion cannot be NONE");
+			throw new RtspProtoInvalidResponseException(FNC_NAME + ": rtspProtoVersion cannot be NONE");
 		}
 
 		RtspProtoLowMsgRaw resObj = new RtspProtoLowMsgRaw();
@@ -48,12 +48,12 @@ public final class RtspProtoLowResponseProducer {
 		try {
 			buildAllHeaders(input, resObj);
 		} catch (RtspLowInvalidRrException e) {
-			throw new RtspInvalidResponseException(FNC_NAME + ": " + e.getMessage());
+			throw new RtspProtoInvalidResponseException(FNC_NAME + ": " + e.getMessage());
 		}
 
 		// set body
-		if (input.messageType == RtspMessageType.DESCRIBE ||
-				input.messageType == RtspMessageType.GET_PARAMETER || input.messageType == RtspMessageType.SET_PARAMETER) {
+		if (input.messageType == RtspProtoMessageType.DESCRIBE ||
+				input.messageType == RtspProtoMessageType.GET_PARAMETER || input.messageType == RtspProtoMessageType.SET_PARAMETER) {
 			buildBody(input, resObj);
 		}
 
@@ -66,7 +66,7 @@ public final class RtspProtoLowResponseProducer {
 	private void buildAllHeaders(
 				@NonNull RtspProtoHighMsgStructuredResponse input,
 				@NonNull RtspProtoLowMsgRaw output
-			) throws RtspInvalidResponseException, RtspLowInvalidRrException {
+			) throws RtspProtoInvalidResponseException, RtspLowInvalidRrException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildAllHeaders()";
 
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : input.headers.entrySet()) {
@@ -87,7 +87,7 @@ public final class RtspProtoLowResponseProducer {
 					case SESSION -> buildHeaderValue_com_session(entry.getValue().hdValSession);
 					case TRANSPORT -> buildHeaderValue_setup_transport(input.messageType, entry.getValue().hdValTransport);
 					case UNSUPPORTED -> buildHeaderValue_com_unsupported(entry.getValue().hdValUnsupported);
-					default -> throw new RtspInvalidResponseException(FNC_NAME + ": Unknown header key: " + entry.getKey());
+					default -> throw new RtspProtoInvalidResponseException(FNC_NAME + ": Unknown header key: " + entry.getKey());
 				};
 			if (tmpHdVal.isBlank()) {
 				continue;
@@ -99,19 +99,19 @@ public final class RtspProtoLowResponseProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String buildHeaderValue_com_auth_server(@NonNull RtspProtoHeaderTypeAuthServer hdValue)
-			throws RtspInvalidResponseException {
+			throws RtspProtoInvalidResponseException {
 		/*
 		 * Example:
 		 *   "WWW-Authenticate: Digest realm=\"Abcdef Some\", nonce=\"xxx\", algorithm=\"MD5\""
 		 */
 		if (hdValue.authRealm.isBlank()) {
-			throw new RtspInvalidResponseException("Auth Realm cannot be blank");
+			throw new RtspProtoInvalidResponseException("Auth Realm cannot be blank");
 		}
 		if (hdValue.authNonce.isBlank()) {
-			throw new RtspInvalidResponseException("Auth Nonce cannot be blank");
+			throw new RtspProtoInvalidResponseException("Auth Nonce cannot be blank");
 		}
 		if (hdValue.authAlgo == RtspAuthAlgo.NONE) {
-			throw new RtspInvalidResponseException("Auth Algo must be set");
+			throw new RtspProtoInvalidResponseException("Auth Algo must be set");
 		}
 		return RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX +
 				RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_REALM + "\"" + hdValue.authRealm + "\", " +
@@ -125,39 +125,39 @@ public final class RtspProtoLowResponseProducer {
 	}
 
 	private static @NonNull String buildHeaderValue_describe_contbase(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeContBase hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidResponseException {
-		if (messageType != RtspMessageType.DESCRIBE) {
-			throw new RtspInvalidResponseException("Content-Base header is only valid for DESCRIBE responses");
+			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.DESCRIBE) {
+			throw new RtspProtoInvalidResponseException("Content-Base header is only valid for DESCRIBE responses");
 		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contbase(hdValue);
 	}
 
 	private static @NonNull String buildHeaderValue_com_contenc(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeContEnc hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidResponseException {
+			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
 		allowOnlyDescribeGetParameter("Content-Encoding", messageType);
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contenc(hdValue);
 	}
 
 	private static @NonNull String buildHeaderValue_com_contlang(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeContLang hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidResponseException {
+			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
 		allowOnlyDescribeGetParameter("Content-Language", messageType);
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contlang(hdValue);
 	}
 
-	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspMessageType messageType)
-			throws RtspInvalidResponseException {
+	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoMessageType messageType)
+			throws RtspProtoInvalidResponseException {
 		allowOnlyDescribeGetParameter("Content-Length", messageType);
 		return "";  // add this header when adding the body
 	}
 
-	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspMessageType messageType)
-			throws RtspInvalidResponseException {
+	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoMessageType messageType)
+			throws RtspProtoInvalidResponseException {
 		allowOnlyDescribeGetParameter("Content-Type", messageType);
 		return "";  // add this header when adding the body
 	}
@@ -172,14 +172,14 @@ public final class RtspProtoLowResponseProducer {
 	}
 
 	private static @NonNull String buildHeaderValue_options_public(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypePublic hdValue
-			) throws RtspInvalidResponseException {
-		if (messageType != RtspMessageType.OPTIONS) {
-			throw new RtspInvalidResponseException("Public header is only valid for OPTIONS responses");
+			) throws RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.OPTIONS) {
+			throw new RtspProtoInvalidResponseException("Public header is only valid for OPTIONS responses");
 		}
-		if (hdValue.messageTypes.containsMt(RtspMessageType.UNKNOWN)) {
-			throw new RtspInvalidResponseException("UNKNOWN message type in Public header");
+		if (hdValue.messageTypes.containsMt(RtspProtoMessageType.UNKNOWN)) {
+			throw new RtspProtoInvalidResponseException("UNKNOWN message type in Public header");
 		}
 		List<String> tmpList = hdValue.messageTypes.getMts().stream()
 				.map(Enum::name)
@@ -188,27 +188,27 @@ public final class RtspProtoLowResponseProducer {
 	}
 
 	private static @NonNull String buildHeaderValue_play_range(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeRange hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidResponseException {
-		if (messageType != RtspMessageType.PLAY) {
-			throw new RtspInvalidResponseException("Range header is only valid for PLAY responses");
+			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.PLAY) {
+			throw new RtspProtoInvalidResponseException("Range header is only valid for PLAY responses");
 		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_range(hdValue);
 	}
 
 	private static @NonNull String buildHeaderValue_play_rtpinfo(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeRtpinfo hdValue,
 				@NonNull RtspProtocolVersion rtspProtocolVersion
-			) throws RtspInvalidResponseException {
-		if (messageType != RtspMessageType.PLAY) {
-			throw new RtspInvalidResponseException("RTP-Info header is only valid for PLAY responses");
+			) throws RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.PLAY) {
+			throw new RtspProtoInvalidResponseException("RTP-Info header is only valid for PLAY responses");
 		}
 		Optional<RtspProtoHeaderTypeRtpinfo.SubStream> tmpSs1 = hdValue.getSubStream1();
 		Optional<RtspProtoHeaderTypeRtpinfo.SubStream> tmpSs2 = hdValue.getSubStream2();
 		if (tmpSs1.isEmpty()) {
-			throw new RtspInvalidResponseException("substream 1 is missing");
+			throw new RtspProtoInvalidResponseException("substream 1 is missing");
 		}
 
 		String resS = addRtpInfoForSubStream(tmpSs1.get(), rtspProtocolVersion);
@@ -222,7 +222,7 @@ public final class RtspProtoLowResponseProducer {
 	private static @NonNull String addRtpInfoForSubStream(
 				RtspProtoHeaderTypeRtpinfo.@NonNull SubStream subStreamInfo,
 				@NonNull RtspProtocolVersion rtspProtocolVersion
-			) throws RtspInvalidResponseException {
+			) throws RtspProtoInvalidResponseException {
 		/*
 		 * Example:
 		 *   RTSP v1 (see https://datatracker.ietf.org/doc/html/rfc2326#section-12.33):
@@ -234,7 +234,7 @@ public final class RtspProtoLowResponseProducer {
 		StringBuilder tmpSb = new StringBuilder();
 
 		if (subStreamInfo.urlStr.isBlank()) {
-			throw new RtspInvalidResponseException("urlStr cannot be blank");
+			throw new RtspProtoInvalidResponseException("urlStr cannot be blank");
 		}
 		tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_URL);
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2) {
@@ -244,7 +244,7 @@ public final class RtspProtoLowResponseProducer {
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2) {
 			tmpSb.append("\" ");
 			if (subStreamInfo.getSsrcId32bit().isEmpty()) {
-				throw new RtspInvalidResponseException("ssrcId must be set for RTSP v2.0");
+				throw new RtspProtoInvalidResponseException("ssrcId must be set for RTSP v2.0");
 			}
 			tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC)
 					.append(RtspLowBuilderHelper.helperBuildHexString(subStreamInfo.getSsrcId32bit().get()));
@@ -253,10 +253,10 @@ public final class RtspProtoLowResponseProducer {
 			tmpSb.append(";");
 		}
 		if (subStreamInfo.getSeqNr16bit().isEmpty()) {
-			throw new RtspInvalidResponseException("seqNr must be set");
+			throw new RtspProtoInvalidResponseException("seqNr must be set");
 		}
 		if (subStreamInfo.getRtpTimestamp32bit().isEmpty()) {
-			throw new RtspInvalidResponseException("rtpTimestamp must be set");
+			throw new RtspProtoInvalidResponseException("rtpTimestamp must be set");
 		}
 		tmpSb
 				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ)
@@ -268,9 +268,9 @@ public final class RtspProtoLowResponseProducer {
 	}
 
 	private static @NonNull String buildHeaderValue_com_server(@NonNull RtspProtoHeaderTypeServer hdValue)
-			throws RtspInvalidResponseException {
+			throws RtspProtoInvalidResponseException {
 		if (hdValue.serverStr.isBlank()) {
-			throw new RtspInvalidResponseException("serverStr cannot be blank");
+			throw new RtspProtoInvalidResponseException("serverStr cannot be blank");
 		}
 		return hdValue.serverStr;
 	}
@@ -281,29 +281,29 @@ public final class RtspProtoLowResponseProducer {
 	}
 
 	private static @NonNull String buildHeaderValue_setup_transport(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeTransport hdValue
-			) throws RtspLowInvalidRrException, RtspInvalidResponseException {
-		if (messageType != RtspMessageType.SETUP) {
-			throw new RtspInvalidResponseException("Transport header is only valid for SETUP responses");
+			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.SETUP) {
+			throw new RtspProtoInvalidResponseException("Transport header is only valid for SETUP responses");
 		}
 		return RtspLowBuilderHelper.helperBuildHeaderValue_transport(hdValue, false);
 	}
 
 	private static @NonNull String buildHeaderValue_com_unsupported(@NonNull RtspProtoHeaderTypeUnsupported hdValue)
-			throws RtspInvalidResponseException {
+			throws RtspProtoInvalidResponseException {
 		if (hdValue.unsupportedFeatureStr.isBlank()) {
-			throw new RtspInvalidResponseException("unsupportedFeatureStr cannot be blank");
+			throw new RtspProtoInvalidResponseException("unsupportedFeatureStr cannot be blank");
 		}
 		return hdValue.unsupportedFeatureStr;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void allowOnlyDescribeGetParameter(@NonNull String hdDesc, @NonNull RtspMessageType messageType)
-			throws RtspInvalidResponseException {
-		if (messageType != RtspMessageType.DESCRIBE && messageType != RtspMessageType.GET_PARAMETER) {
-			throw new RtspInvalidResponseException(hdDesc + " header is only valid for " +
+	private static void allowOnlyDescribeGetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
+			throws RtspProtoInvalidResponseException {
+		if (messageType != RtspProtoMessageType.DESCRIBE && messageType != RtspProtoMessageType.GET_PARAMETER) {
+			throw new RtspProtoInvalidResponseException(hdDesc + " header is only valid for " +
 					"DESCRIBE/GET_PARAMETER responses");
 		}
 	}
@@ -313,18 +313,18 @@ public final class RtspProtoLowResponseProducer {
 	private void buildBody(
 				@NonNull RtspProtoHighMsgStructuredResponse input,
 				@NonNull RtspProtoLowMsgRaw output
-			) throws RtspInvalidResponseException {
+			) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildBody()";
 
 		RtspProtoHeaderTypeContType outpHdValueContTp = new RtspProtoHeaderTypeContType();
 
 		switch (input.messageType) {
 			case DESCRIBE:
-				if (input.statusCode != RtspStatusCode.OK) {
+				if (input.statusCode != RtspProtoStatusCode.OK) {
 					return;
 				}
 				if (input.bodyDescribeSdp.isSdpLinesAllRawEmpty()) {
-					throw new RtspInvalidResponseException(FNC_NAME + ": bodyDescribeSdp cannot be empty");
+					throw new RtspProtoInvalidResponseException(FNC_NAME + ": bodyDescribeSdp cannot be empty");
 				}
 				output.body = String.join(RtspProtoLowMsgConstants.CRLF, input.bodyDescribeSdp.getSdpLinesAllRaw());
 				if (! output.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
@@ -339,7 +339,7 @@ public final class RtspProtoLowResponseProducer {
 					for (String entryKey : input.bodyGetSetInvalidParams.getParamNames()) {
 						sb.append(entryKey).append(RtspProtoLowMsgConstants.CRLF);
 					}
-				} else if (input.messageType == RtspMessageType.GET_PARAMETER && ! input.bodyGetParamKv.isParamKvsEmpty()) {
+				} else if (input.messageType == RtspProtoMessageType.GET_PARAMETER && ! input.bodyGetParamKv.isParamKvsEmpty()) {
 					for (Map.Entry<@NonNull String, @NonNull String> entry : input.bodyGetParamKv.getParamKvsEntrySet()) {
 						sb.append(entry.getKey()).append(": ").append(entry.getValue()).append(RtspProtoLowMsgConstants.CRLF);
 					}
@@ -361,7 +361,7 @@ public final class RtspProtoLowResponseProducer {
 			try {
 				tmpHdVal = RtspLowBuilderHelper.helperBuildHeaderValue_conttype(outpHdValueContTp);
 			} catch (RtspLowInvalidRrException e) {
-				throw new RtspInvalidResponseException(FNC_NAME + ": body Content-Type: " + e.getMessage());
+				throw new RtspProtoInvalidResponseException(FNC_NAME + ": body Content-Type: " + e.getMessage());
 			}
 			output.headerLines.add(RtspHeaderKey.CONTENT_TYPE.getStrValue() + ": " + tmpHdVal);
 		}
@@ -370,14 +370,14 @@ public final class RtspProtoLowResponseProducer {
 			RtspProtoHeaderTypeContLen hdValue = new RtspProtoHeaderTypeContLen();
 			try {
 				hdValue.setContentLen32bit(output.body.length());
-			} catch (RtspNumberRangeException e) {
-				throw new RtspInvalidResponseException(FNC_NAME + ": body length out of range: " + e.getMessage());
+			} catch (RtspProtoNumberRangeException e) {
+				throw new RtspProtoInvalidResponseException(FNC_NAME + ": body length out of range: " + e.getMessage());
 			}
 			String tmpHdVal;
 			try {
 				tmpHdVal = RtspLowBuilderHelper.helperBuildHeaderValue_contlen(hdValue);
 			} catch (RtspLowInvalidRrException e) {
-				throw new RtspInvalidResponseException(e.getMessage());
+				throw new RtspProtoInvalidResponseException(e.getMessage());
 			}
 			output.headerLines.add(RtspHeaderKey.CONTENT_LEN.getStrValue() + ": " + tmpHdVal);
 		}

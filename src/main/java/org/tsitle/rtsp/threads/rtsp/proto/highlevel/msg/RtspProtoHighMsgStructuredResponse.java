@@ -7,8 +7,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamNam
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspHeaderKey;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 
 import java.util.*;
 
@@ -30,7 +30,7 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 	public RtspProtoHighMsgStructuredResponse() {
 		super();
 
-		this.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+		this.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -62,12 +62,12 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 				internalToStringFirstPart() +
 				", headers=" + headers;
 
-		if (messageType == RtspMessageType.DESCRIBE) {
+		if (messageType == RtspProtoMessageType.DESCRIBE) {
 			resS += ", bodyDescribeSdp=" + bodyDescribeSdp;
-		} else if (messageType == RtspMessageType.GET_PARAMETER || messageType == RtspMessageType.SET_PARAMETER) {
+		} else if (messageType == RtspProtoMessageType.GET_PARAMETER || messageType == RtspProtoMessageType.SET_PARAMETER) {
 			if (! bodyGetSetInvalidParams.isParamNamesEmpty()) {
 				resS += ", bodyGetSetInvalidParams=" + bodyGetSetInvalidParams;
-			} else if (messageType == RtspMessageType.GET_PARAMETER) {
+			} else if (messageType == RtspProtoMessageType.GET_PARAMETER) {
 				resS += ", bodyGetParamKv=" + bodyGetParamKv;
 			}
 		}

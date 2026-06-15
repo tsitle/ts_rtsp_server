@@ -1,15 +1,15 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 
 public final class RtspResponseBasics {
 
-	public @NonNull RtspStatusCode statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 
 	private RtspResponseBasics() { }
 
-	public static @NonNull RtspResponseBasics createDefault(@NonNull RtspStatusCode statusCode) {
+	public static @NonNull RtspResponseBasics createDefault(@NonNull RtspProtoStatusCode statusCode) {
 		RtspResponseBasics resObj = new RtspResponseBasics();
 		resObj.statusCode = statusCode;
 		return resObj;

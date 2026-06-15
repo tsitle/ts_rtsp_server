@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidTpSettingsException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidTpSettingsException;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
@@ -102,42 +102,42 @@ public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 				boolean forceEncryption,
 				boolean isRtspsConnection,
 				boolean isTransportUdpDisabled
-			) throws RtspInvalidTpSettingsException {
+			) throws RtspProtoInvalidTpSettingsException {
 		if (! tpIsEncr && ((needsEncryption && ! isRtspsConnection) || forceEncryption)) {
-			throw new RtspInvalidTpSettingsException("Client requested unencrypted transport, but encryption is required");
+			throw new RtspProtoInvalidTpSettingsException("Client requested unencrypted transport, but encryption is required");
 		}
 		if (tpIsEncr && ! (needsEncryption || forceEncryption)) {
-			throw new RtspInvalidTpSettingsException("Client requested encrypted transport, but encryption is disabled");
+			throw new RtspProtoInvalidTpSettingsException("Client requested encrypted transport, but encryption is disabled");
 		}
 		if (! tpIsUnicast) {
-			throw new RtspInvalidTpSettingsException("Multicast is not supported");
+			throw new RtspProtoInvalidTpSettingsException("Multicast is not supported");
 		}
 		if (tpIsUdp) {
 			if (tpIsInterleaved) {
-				throw new RtspInvalidTpSettingsException("Interleaved mode is not supported for UDP");
+				throw new RtspProtoInvalidTpSettingsException("Interleaved mode is not supported for UDP");
 			}
 			if (tpClientUdpPortRtp.isEmpty() || tpClientUdpPortRtcp.isEmpty()) {
-				throw new RtspInvalidTpSettingsException("Client UDP ports not set");
+				throw new RtspProtoInvalidTpSettingsException("Client UDP ports not set");
 			}
 			if (tpClientUdpPortRtp.equals(tpClientUdpPortRtcp)) {
-				throw new RtspInvalidTpSettingsException("Client UDP ports for RTP and RTCP cannot be the same");
+				throw new RtspProtoInvalidTpSettingsException("Client UDP ports for RTP and RTCP cannot be the same");
 			}
 			if (isRtspsConnection && ! tpIsEncr) {
-				throw new RtspInvalidTpSettingsException("UDP cannot be used with RTSPS w/o SRTP");
+				throw new RtspProtoInvalidTpSettingsException("UDP cannot be used with RTSPS w/o SRTP");
 			}
 			if (isTransportUdpDisabled) {
-				throw new RtspInvalidTpSettingsException("UDP is disabled");
+				throw new RtspProtoInvalidTpSettingsException("UDP is disabled");
 			}
 			return;
 		}
 		if (! tpIsInterleaved) {
-			throw new RtspInvalidTpSettingsException("Interleaved mode must be used for TCP");
+			throw new RtspProtoInvalidTpSettingsException("Interleaved mode must be used for TCP");
 		}
 		if (tpClientTcpChannRtp.isEmpty() || tpClientTcpChannRtcp.isEmpty()) {
-			throw new RtspInvalidTpSettingsException("Client TCP channel IDs not set");
+			throw new RtspProtoInvalidTpSettingsException("Client TCP channel IDs not set");
 		}
 		if (tpClientTcpChannRtp.equals(tpClientTcpChannRtcp)) {
-			throw new RtspInvalidTpSettingsException("Client TCP channel IDs for RTP and RTCP cannot be the same");
+			throw new RtspProtoInvalidTpSettingsException("Client TCP channel IDs for RTP and RTCP cannot be the same");
 		}
 	}
 

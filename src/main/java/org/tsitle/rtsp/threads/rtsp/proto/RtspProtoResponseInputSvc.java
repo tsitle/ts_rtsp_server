@@ -10,8 +10,8 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseConsumer;
@@ -68,7 +68,7 @@ public final class RtspProtoResponseInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspResponseBasics receiveResponse(@NonNull RtspMessageType requestMessageType)
+	public @NonNull RtspResponseBasics receiveResponse(@NonNull RtspProtoMessageType requestMessageType)
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
 
@@ -85,7 +85,7 @@ public final class RtspProtoResponseInputSvc {
 
 		// parse the raw response
 		RtspProtoHighMsgStructuredResponse msgStructured = rtspProtoLowResponseConsumer.parseMessage(requestMessageType, lowInputRaw);
-		if (msgStructured.statusCode == RtspStatusCode.INTERNAL_SERVER_ERROR) {
+		if (msgStructured.statusCode == RtspProtoStatusCode.INTERNAL_SERVER_ERROR) {
 			logWarn(FNC_NAME, String.format("Received invalid RTSP response message for request '%s'", requestMessageType));
 			return RtspResponseBasics.createInternalServerError();
 		}

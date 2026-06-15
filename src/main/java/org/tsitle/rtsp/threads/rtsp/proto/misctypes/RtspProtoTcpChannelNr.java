@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -19,7 +19,7 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	public Optional<Integer> getChannel8bit() {
 		return (channelNr < 0 ? Optional.empty() : Optional.of(channelNr));
 	}
-	public void setChannel8bit(int channelNr) throws RtspNumberRangeException {
+	public void setChannel8bit(int channelNr) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -88,9 +88,9 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validateChannelNumber(int channelNr) throws RtspNumberRangeException {
+	private static void validateChannelNumber(int channelNr) throws RtspProtoNumberRangeException {
 		if (channelNr < 0 || channelNr > 255) {
-			throw new RtspNumberRangeException("Channel must be between 0 and 255, got: " + channelNr);
+			throw new RtspProtoNumberRangeException("Channel must be between 0 and 255, got: " + channelNr);
 		}
 	}
 

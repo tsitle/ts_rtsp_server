@@ -5,10 +5,10 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -55,7 +55,7 @@ public class RtspProtoRequAuthSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkAuthorization()";
 
 		if (ioRequestBasics.rscUrl.idInputSource.isEmpty()) {
-			ioRequestBasics.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+			ioRequestBasics.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 			logError(FNC_NAME, String.format(
 					"Input Source ID is empty, rejecting request with code %s", ioRequestBasics.statusCode));
 			return;
@@ -65,15 +65,15 @@ public class RtspProtoRequAuthSvc {
 		RtspProtoInputSource tmpIsObj;
 		try {
 			tmpIsObj = availableStreamsInterface.getInputSourceObj(ioRequestBasics.rscUrl.idInputSource);
-		} catch (RtspIdInputSourceNotFoundException e) {
-			ioRequestBasics.statusCode = RtspStatusCode.INTERNAL_SERVER_ERROR;
+		} catch (RtspProtoIdInputSourceNotFoundException e) {
+			ioRequestBasics.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 			logError(FNC_NAME, String.format(
 					"Input Source not found, rejecting request with code %s", ioRequestBasics.statusCode));
 			return;
 		}
 
 		final boolean couldNeedAuthentification = switch (ioRequestBasics.messageType) {
-				case RtspMessageType.UNKNOWN, RtspMessageType.OPTIONS -> false;
+				case RtspProtoMessageType.UNKNOWN, RtspProtoMessageType.OPTIONS -> false;
 				default -> true;
 			};
 		boolean wasAuthentificationOk;
@@ -135,7 +135,7 @@ public class RtspProtoRequAuthSvc {
 
 		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(rtspSessionInfo.clientIpAddr, idInputSource);
 		//
-		rtspRequestBasics.statusCode = RtspStatusCode.UNAUTHORIZED;
+		rtspRequestBasics.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
 		//
 		final String logMsg = String.format(
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",

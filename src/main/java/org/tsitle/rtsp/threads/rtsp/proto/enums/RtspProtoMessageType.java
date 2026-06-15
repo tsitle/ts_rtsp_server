@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.enums;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspMessageType {
+public enum RtspProtoMessageType {
 
 	UNKNOWN,
 	/** Announce a new SDP. (RFC-2326 Section 10.3) */
@@ -26,8 +26,8 @@ public enum RtspMessageType {
 	/** Stop playback of stream and tear the session down. (RFC-2326 Section 10.7) */
 	TEARDOWN;
 
-	public static @NonNull RtspMessageType of(@NonNull String value) {
-		for (RtspMessageType entry : values()) {
+	public static @NonNull RtspProtoMessageType of(@NonNull String value) {
+		for (RtspProtoMessageType entry : values()) {
 			if (entry == UNKNOWN) {
 				continue;
 			}

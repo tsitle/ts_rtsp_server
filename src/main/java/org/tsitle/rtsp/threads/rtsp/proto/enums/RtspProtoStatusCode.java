@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.enums;
 
 import org.jspecify.annotations.NonNull;
 
-public enum RtspStatusCode {
+public enum RtspProtoStatusCode {
 
 	OK(200),
 	BAD_REQUEST(400),
@@ -22,7 +22,7 @@ public enum RtspStatusCode {
 
 	private final int value;
 
-	RtspStatusCode(int value) {
+	RtspProtoStatusCode(int value) {
 		this.value = value;
 	}
 
@@ -50,8 +50,8 @@ public enum RtspStatusCode {
 			};
 	}
 
-	public static @NonNull RtspStatusCode of(int value) {
-		for (RtspStatusCode entry : values()) {
+	public static @NonNull RtspProtoStatusCode of(int value) {
+		for (RtspProtoStatusCode entry : values()) {
 			if (entry.value == value) {
 				return entry;
 			}

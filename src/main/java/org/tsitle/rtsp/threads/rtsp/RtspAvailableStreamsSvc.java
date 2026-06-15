@@ -9,8 +9,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdStreamSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdStreamSourceNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -82,9 +82,9 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 
 	@Override
 	public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
-			throws RtspIdInputSourceNotFoundException {
+			throws RtspProtoIdInputSourceNotFoundException {
 		if (! inputSourceMap.containsKey(idInputSource)) {
-			throw new RtspIdInputSourceNotFoundException(idInputSource.toString());
+			throw new RtspProtoIdInputSourceNotFoundException(idInputSource.toString());
 		}
 		return inputSourceMap.get(idInputSource);
 	}
@@ -107,7 +107,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 
 	@Override
 	public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspIdStreamSourceNotFoundException {
+			throws RtspProtoIdStreamSourceNotFoundException {
 		RtspConfigStreamSource tmpCfgSs = getConfigStreamSourceObj(idStreamSource);
 
 		try {
@@ -124,19 +124,19 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getVideoFps()
 				);
 		} catch (IllegalStateException e) {
-			throw new RtspIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr() + "': " + e.getMessage());
+			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr() + "': " + e.getMessage());
 		}
 	}
 
 	@Override
 	public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-			throws RtspIdStreamSourceNotFoundException {
+			throws RtspProtoIdStreamSourceNotFoundException {
 		RtspConfigStreamSource tmpCfgSs = getConfigStreamSourceObj(idStreamSource);
 
 		try {
 			return tmpCfgSs.getRtpAudioSamplesPerFrame(videoFps);
 		} catch (IllegalStateException e) {
-			throw new RtspIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr() + "': " + e.getMessage());
+			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr() + "': " + e.getMessage());
 		}
 	}
 
@@ -156,7 +156,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 		RtspProtoInputSource tmpInputSource;
 		try {
 			tmpInputSource = getInputSourceObj(idInputSource);
-		} catch (RtspIdInputSourceNotFoundException e) {
+		} catch (RtspProtoIdInputSourceNotFoundException e) {
 			return Optional.empty();
 		}
 		for (RtspProtoIdStreamSource tmpSsId : tmpInputSource.getStreamSourceIds()) {
@@ -166,7 +166,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 			RtspConfigStreamSource streamSourceObj;
 			try {
 				streamSourceObj = getConfigStreamSourceObj(tmpSsId);
-			} catch (RtspIdStreamSourceNotFoundException e) {
+			} catch (RtspProtoIdStreamSourceNotFoundException e) {
 				return Optional.empty();
 			}
 			if (! streamSourceObj.getEnabled()) {
@@ -183,13 +183,13 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull RtspConfigStreamSource getConfigStreamSourceObj(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspIdStreamSourceNotFoundException {
+			throws RtspProtoIdStreamSourceNotFoundException {
 		if (! streamSourceMap.containsKey(idStreamSource)) {
-			throw new RtspIdStreamSourceNotFoundException(idStreamSource.getIdStr());
+			throw new RtspProtoIdStreamSourceNotFoundException(idStreamSource.getIdStr());
 		}
 		Optional<RtspConfigStreamSource> tmpOptCfgSs = rtspConfig.getStreamSourceObj(idStreamSource);
 		if (tmpOptCfgSs.isEmpty()) {
-			throw new RtspIdStreamSourceNotFoundException(idStreamSource.getIdStr());
+			throw new RtspProtoIdStreamSourceNotFoundException(idStreamSource.getIdStr());
 		}
 		return tmpOptCfgSs.get();
 	}

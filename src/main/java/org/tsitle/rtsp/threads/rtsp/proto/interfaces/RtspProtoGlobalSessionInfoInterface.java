@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto.interfaces;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -31,24 +31,24 @@ public interface RtspProtoGlobalSessionInfoInterface {
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
 	 * @return Input Source ID
-	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
 	@NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException;
+			) throws RtspProtoIdSubStreamNotFoundException;
 
 	/**
 	 * Get Stream Source ID by Sub-Stream ID.
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
 	 * @return Stream Source ID
-	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
 	@NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException;
+			) throws RtspProtoIdSubStreamNotFoundException;
 
 	// -----------------------------------------------------------------------------------------------------------------
 

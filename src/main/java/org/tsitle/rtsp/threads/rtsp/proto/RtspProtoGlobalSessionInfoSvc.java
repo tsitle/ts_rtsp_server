@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -35,7 +35,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	public @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException {
+			) throws RtspProtoIdSubStreamNotFoundException {
 		return globalSessionInfo.getInputSourceIdBySubStreamId(idSubStream, clientIpAddr);
 	}
 
@@ -43,7 +43,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException {
+			) throws RtspProtoIdSubStreamNotFoundException {
 		return globalSessionInfo.getStreamSourceIdBySubStreamId(idSubStream, clientIpAddr);
 	}
 

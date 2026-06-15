@@ -17,9 +17,9 @@ import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp.threads.rtp.builders.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdStreamSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSessionInfoException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -153,7 +153,7 @@ final class RtspChildThreadMng {
 		//
 		String cnameHostname;
 		try {
-			String tmpIsUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspMessageType.PLAY).orElseThrow().getUrlStr();
+			String tmpIsUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspProtoMessageType.PLAY).orElseThrow().getUrlStr();
 			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(tmpIsUrl);
 			cnameHostname = tmpIsUri.getHost();
 		} catch (HostnameHelperInvalidUriException e) {
@@ -186,7 +186,7 @@ final class RtspChildThreadMng {
 				startSendRtp_oneStream(ctfos, cnameHostname);
 				startRtcp_oneStream(ctfos);
 			}
-		} catch (RtspIdStreamSourceNotFoundException e) {
+		} catch (RtspProtoIdStreamSourceNotFoundException e) {
 			throw new IllegalStateException(FNC_NAME + ": Could not find SSI: " + e.getMessage());
 		}
 	}
@@ -264,14 +264,14 @@ final class RtspChildThreadMng {
 		RtspProtoSetupInfoForSubStream tmpSiSs;
 		try {
 			tmpSiSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(ctfos.idSubStream);
-		} catch (RtspSessionInfoException e) {
+		} catch (RtspProtoSessionInfoException e) {
 			throw new IllegalStateException(FNC_NAME + ": idSubStream not found");
 		}
 		//
 		RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi;
 		try {
 			tmpAvSsi = availableStreamsInterface.getStreamSourceInfo(tmpSiSs.getRscUrlSubStreamPtr().idStreamSource);
-		} catch (RtspIdStreamSourceNotFoundException e) {
+		} catch (RtspProtoIdStreamSourceNotFoundException e) {
 			throw new IllegalStateException(FNC_NAME + ": idStreamSource not found");
 		}
 		//
@@ -371,7 +371,7 @@ final class RtspChildThreadMng {
 	}
 
 	private void startSendRtp_oneStream(@NonNull ChildThreadsForOneStream ctfos, @NonNull String cnameHostname)
-			throws RtspIdStreamSourceNotFoundException {
+			throws RtspProtoIdStreamSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".startSendRtp_oneStream()";
 
 		stopChildThread(ctfos.rtpThreadSender);
@@ -379,7 +379,7 @@ final class RtspChildThreadMng {
 		RtspProtoSetupInfoForSubStream tmpSiSs;
 		try {
 			tmpSiSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(ctfos.idSubStream);
-		} catch (RtspSessionInfoException e) {
+		} catch (RtspProtoSessionInfoException e) {
 			throw new IllegalStateException(FNC_NAME + ": idSubStream not found");
 		}
 		//
@@ -401,7 +401,7 @@ final class RtspChildThreadMng {
 		RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi;
 		try {
 			tmpAvSsi = availableStreamsInterface.getStreamSourceInfo(tmpSiSs.getRscUrlSubStreamPtr().idStreamSource);
-		} catch (RtspIdStreamSourceNotFoundException e) {
+		} catch (RtspProtoIdStreamSourceNotFoundException e) {
 			throw new IllegalStateException(FNC_NAME + ": idStreamSource not found");
 		}
 		//

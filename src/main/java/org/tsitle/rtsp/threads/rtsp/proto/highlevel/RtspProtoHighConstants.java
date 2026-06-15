@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 
 import java.util.Set;
 
@@ -21,16 +21,16 @@ public final class RtspProtoHighConstants {
 	public static final String DEFAULT_RTSP_AUTH_REALM = "Realm_A1B2C3D4E5F6_G7H8I9_J10K11";
 
 	/** RTSP message types that the local host supports for incoming requests */
-	public static final Set<RtspMessageType> LH_SUPPORTED_MESSAGE_TYPES_INCOMING = Set.of(
-			RtspMessageType.DESCRIBE,
-			RtspMessageType.GET_PARAMETER,
-			RtspMessageType.OPTIONS,
-			RtspMessageType.PAUSE,
-			RtspMessageType.PLAY,
-			RtspMessageType.REDIRECT,
-			RtspMessageType.SET_PARAMETER,
-			RtspMessageType.SETUP,
-			RtspMessageType.TEARDOWN
+	public static final Set<RtspProtoMessageType> LH_SUPPORTED_MESSAGE_TYPES_INCOMING = Set.of(
+			RtspProtoMessageType.DESCRIBE,
+			RtspProtoMessageType.GET_PARAMETER,
+			RtspProtoMessageType.OPTIONS,
+			RtspProtoMessageType.PAUSE,
+			RtspProtoMessageType.PLAY,
+			RtspProtoMessageType.REDIRECT,
+			RtspProtoMessageType.SET_PARAMETER,
+			RtspProtoMessageType.SETUP,
+			RtspProtoMessageType.TEARDOWN
 		);
 
 	/**

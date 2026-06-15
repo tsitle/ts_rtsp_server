@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSubStreamTp;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidTpSettingsException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidTpSettingsException;
 
 import java.net.DatagramSocket;
 
@@ -113,7 +113,7 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 				boolean forceEncryption,
 				boolean isRtspsConnection,
 				boolean isTransportUdpDisabled
-			) throws RtspInvalidTpSettingsException {
+			) throws RtspProtoInvalidTpSettingsException {
 		subStreamTp.isTransportValid(needsEncryption, forceEncryption, isRtspsConnection, isTransportUdpDisabled);
 	}
 

@@ -12,9 +12,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdStreamSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSdpException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
@@ -64,7 +64,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoDataCntSdp outputSdp,
 				@NonNull RtspProtoDataCntAdStreamSett outputAdStreamSett,
 				@NonNull RtspProtoKmdsStream outputKmdsOutbound
-			) throws RtspSdpException {
+			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForDescribe()";
 
 		outputAdStreamSett.clear();
@@ -73,11 +73,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		RtspProtoInputSource inputSourceObj;
 		try {
 			inputSourceObj = availableStreamsInterface.getInputSourceObj(idInputSource);
-		} catch (RtspIdInputSourceNotFoundException e) {
-			throw new RtspSdpException(FNC_NAME + ": Input Source not found");
+		} catch (RtspProtoIdInputSourceNotFoundException e) {
+			throw new RtspProtoSdpException(FNC_NAME + ": Input Source not found");
 		}
 		if (! checkStreamsForInputSource(inputSourceObj)) {
-			throw new RtspSdpException(FNC_NAME + ": No valid Stream Source found for Input Source '" +
+			throw new RtspProtoSdpException(FNC_NAME + ": No valid Stream Source found for Input Source '" +
 					idInputSource.getIdStr() + "'");
 		}
 
@@ -113,7 +113,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
 				@NonNull RtspProtoDataCntSdp outputSdp
-			) throws RtspSdpException {
+			) throws RtspProtoSdpException {
 
 		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
 
@@ -125,7 +125,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		 * would contain something like 'a=crypto:2 ...'.
 		 */
 
-		throw new RtspSdpException("Not implemented yet");
+		throw new RtspProtoSdpException("Not implemented yet");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	 * @param ioAdStreamSett ANNOUNCE/DESCRIBE Stream Settings
 	 * @param ioKmdsOutbound Optional outbound KMDs
 	 * @return SDP lines
-	 * @throws RtspSdpException If an error occurs during SDP generation
+	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	private @NonNull List<@NonNull String> buildSdpLines(
 				boolean requireSrtp,
@@ -164,11 +164,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoDataCntAdStreamSett ioAdStreamSett,
 				@Nullable RtspProtoKmdsStream ioKmdsOutbound
-			) throws RtspSdpException {
+			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpLines()";
 
 		if (serverIpOrName.isEmpty()) {
-			throw new RtspSdpException(FNC_NAME + ": Server IP address must be set");
+			throw new RtspProtoSdpException(FNC_NAME + ": Server IP address must be set");
 		}
 
 		List<@NonNull String> resL = new ArrayList<>();
@@ -226,8 +226,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 					false,
 					resL
 				);
-		} catch (RtspIdStreamSourceNotFoundException e) {
-			throw new RtspSdpException(FNC_NAME + ": " + e.getMessage());
+		} catch (RtspProtoIdStreamSourceNotFoundException e) {
+			throw new RtspProtoSdpException(FNC_NAME + ": " + e.getMessage());
 		}
 
 		return resL;
@@ -244,7 +244,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoDataCntAdStreamSett ioAdStreamSett,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
-			) throws RtspSdpException, RtspIdStreamSourceNotFoundException {
+			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream()";
 
 		Optional<RtspProtoStreamSource> tmpOptSsObj;
@@ -302,7 +302,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		if (requireSrtp) {
 			if (ioKmdsOutbound == null) {
-				throw new RtspSdpException(FNC_NAME + ": ioKmdsOutbound is null");
+				throw new RtspProtoSdpException(FNC_NAME + ": ioKmdsOutbound is null");
 			}
 			SrtxpKmd kmdOutboundForSs;
 			boolean isNewKmd = false;
@@ -357,7 +357,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull String urlSubPathForSubStream,
 				@NonNull List<@NonNull String> outputList
-			) throws RtspSdpException, RtspIdStreamSourceNotFoundException {
+			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream_output()";
 
 		final RtspProtoAvailableStreamsInterface.StreamSourceInfo ssInfo = availableStreamsInterface.getStreamSourceInfo(idStreamSource);
@@ -365,7 +365,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		try {
 			ssVideoRtpClockRate = (useVideo ? ssInfo.codec().getVideoCodecRtpClockrate() : 0);
 		} catch (IllegalStateException e) {
-			throw new RtspSdpException(FNC_NAME + ": " + e.getMessage());
+			throw new RtspProtoSdpException(FNC_NAME + ": " + e.getMessage());
 		}
 
 		// m: Media Description with available codec(s)
@@ -458,7 +458,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	private void addCryptoParams(
 				@NonNull List<@NonNull String> outputList,
 				@NonNull SrtxpKmd kmdOutboundForSs
-			) throws RtspSdpException {
+			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCryptoParams()";
 
 		//System.out.println(">>>>>>>>>>>>>>>> " + kmdOutboundForSs);
@@ -490,7 +490,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				outputList.add(tmpOutpLine);
 			}
 		} catch (SrtxpSecurityException e) {
-			throw new RtspSdpException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
+			throw new RtspProtoSdpException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
 		}
 	}
 

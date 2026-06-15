@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.util.Optional;
 
@@ -14,9 +14,9 @@ public class RtspProtoHeaderTypeRtpinfo {
 		private long rtpTimestamp32bit = -1L;
 		private long ssrcId32bit = -1L;
 
-		public void setSeqNr16bit(int seqNr16bit) throws RtspNumberRangeException {
+		public void setSeqNr16bit(int seqNr16bit) throws RtspProtoNumberRangeException {
 			if (seqNr16bit < 0 || seqNr16bit > 0xFFFF) {
-				throw new RtspNumberRangeException("seqNr16bit must be non-negative and within 16-bit range");
+				throw new RtspProtoNumberRangeException("seqNr16bit must be non-negative and within 16-bit range");
 			}
 			this.seqNr16bit = seqNr16bit;
 		}
@@ -25,9 +25,9 @@ public class RtspProtoHeaderTypeRtpinfo {
 			return (seqNr16bit < 0 ? Optional.empty() : Optional.of((short)seqNr16bit));
 		}
 
-		public void setRtpTimestamp32bit(long rtpTimestamp32bit) throws RtspNumberRangeException {
+		public void setRtpTimestamp32bit(long rtpTimestamp32bit) throws RtspProtoNumberRangeException {
 			if (rtpTimestamp32bit < 0L || rtpTimestamp32bit > 0xFFFFFFFFL) {
-				throw new RtspNumberRangeException("rtpTimestamp32bit must be non-negative and within 32-bit range");
+				throw new RtspProtoNumberRangeException("rtpTimestamp32bit must be non-negative and within 32-bit range");
 			}
 			this.rtpTimestamp32bit = rtpTimestamp32bit;
 		}
@@ -36,9 +36,9 @@ public class RtspProtoHeaderTypeRtpinfo {
 			return (rtpTimestamp32bit < 0L ? Optional.empty() : Optional.of((int)rtpTimestamp32bit));
 		}
 
-		public void setSsrcId32bit(long ssrc32bit) throws RtspNumberRangeException {
+		public void setSsrcId32bit(long ssrc32bit) throws RtspProtoNumberRangeException {
 			if (ssrc32bit < 1L || ssrc32bit > 0xFFFFFFFFL) {
-				throw new RtspNumberRangeException("ssrc32bit must be between 1 and 0xFFFFFFFF, got: " + ssrc32bit);
+				throw new RtspProtoNumberRangeException("ssrc32bit must be between 1 and 0xFFFFFFFF, got: " + ssrc32bit);
 			}
 			this.ssrcId32bit = ssrc32bit;
 		}

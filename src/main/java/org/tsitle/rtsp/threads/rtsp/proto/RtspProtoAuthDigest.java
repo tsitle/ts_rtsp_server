@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 
 /**
  * Utility class for handling RTSP Digest Authentication.
@@ -29,7 +29,7 @@ public final class RtspProtoAuthDigest {
 				@NonNull String authUserName,
 				@NonNull String authUserPwPlain,
 				@NonNull String authUri,
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String authRealmServer,
 				@NonNull String authNonce
 			) throws IllegalArgumentException {
@@ -42,7 +42,7 @@ public final class RtspProtoAuthDigest {
 		if (authUri.isBlank()) {
 			throw new IllegalArgumentException("Auth URI cannot be blank");
 		}
-		if (messageType == RtspMessageType.UNKNOWN) {
+		if (messageType == RtspProtoMessageType.UNKNOWN) {
 			throw new IllegalArgumentException("MethodType cannot be UNKNOWN");
 		}
 		if (authRealmServer.isBlank()) {

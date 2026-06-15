@@ -22,9 +22,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpProducer;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataResponse;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidResponseException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidResponseException;
 
 import java.util.Optional;
 
@@ -62,7 +62,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.isResponseFromClient = isResponseFromClient;
 
 		// check if the supported message types are valid
-		for (RtspMessageType tmpMt : this.cfgSupportedMessageTypes.getMts()) {
+		for (RtspProtoMessageType tmpMt : this.cfgSupportedMessageTypes.getMts()) {
 			if (! RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES_INCOMING.contains(tmpMt)) {
 				throw new IllegalArgumentException("Unsupported request type " + tmpMt);
 			}
@@ -125,7 +125,7 @@ public final class RtspProtoResponseOutputSvc {
 			ioDataResp.respSuppMessageTypes.copyFrom(cfgSupportedMessageTypes);
 
 			//
-			if (rtspRequestBasics.messageType == RtspMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspStatusCode.OK) {
+			if (rtspRequestBasics.messageType == RtspProtoMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspProtoStatusCode.OK) {
 				if (ioDataResp.respServerIpFromRscUrl.isEmpty()) {
 					logError(FNC_NAME, "Server IP from Resource URL must be set");
 					return;
@@ -141,7 +141,7 @@ public final class RtspProtoResponseOutputSvc {
 
 			// update data in Session Info
 			updateSessionInfo(ioSetupInfosStream, ioDataResp, msgStructured);
-		} catch (RtspInvalidResponseException e) {
+		} catch (RtspProtoInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
 			return;
 		}
@@ -150,7 +150,7 @@ public final class RtspProtoResponseOutputSvc {
 		RtspProtoLowMsgRaw msgRaw;
 		try {
 			msgRaw = rtspProtoLowResponseProducer.buildMessage(msgStructured);
-		} catch (RtspInvalidResponseException e) {
+		} catch (RtspProtoInvalidResponseException e) {
 			logError(FNC_NAME, "Failed to build LL response: " + e.getMessage());
 			return;
 		}

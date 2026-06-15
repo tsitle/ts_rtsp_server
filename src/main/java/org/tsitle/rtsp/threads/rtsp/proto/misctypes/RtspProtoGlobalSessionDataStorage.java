@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
 import org.tsitle.rtsp.helpers.RandomHelper;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -119,12 +119,12 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
 	 * @return Input Source ID
-	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
 	public @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException {
+			) throws RtspProtoIdSubStreamNotFoundException {
 		return getResolveBySubStreamId(idSubStream, clientIpAddr).idInputSource;
 	}
 
@@ -133,12 +133,12 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
 	 * @return Stream Source ID
-	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
+	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
 	public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException {
+			) throws RtspProtoIdSubStreamNotFoundException {
 		return getResolveBySubStreamId(idSubStream, clientIpAddr).idStreamSource;
 	}
 
@@ -282,7 +282,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 	private @NonNull SubStreamResolve getResolveBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspIdSubStreamNotFoundException {
+			) throws RtspProtoIdSubStreamNotFoundException {
 		if (clientIpAddr.isEmpty()) {
 			throw new IllegalArgumentException("Client IP address must be set");
 		}
@@ -291,11 +291,11 @@ public final class RtspProtoGlobalSessionDataStorage {
 		theReadLock.lock();
 		try {
 			if (! subStreamResolveMap.containsKey(idSubStream)) {
-				throw new RtspIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' not found");
+				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' not found");
 			}
 			SubStreamResolve tmpSsr = subStreamResolveMap.get(idSubStream);
 			if (! tmpSsr.clientIpAddrStr.equalsIgnoreCase(ipStr)) {
-				throw new RtspIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
+				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
 						"belongs to a different IP address");
 			}
 			return tmpSsr;

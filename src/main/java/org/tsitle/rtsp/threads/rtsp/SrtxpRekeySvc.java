@@ -14,10 +14,10 @@ import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoRequestOutputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoResponseInputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoSessionState;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspResponseBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
@@ -74,7 +74,7 @@ final class SrtxpRekeySvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	void srtxpRekeyInbound() {
-		if (rtspSessionInfo.getSessionState() != RtspSessionState.PLAYING) {
+		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;  // we're not ready yet
 		}
 		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
@@ -93,7 +93,7 @@ final class SrtxpRekeySvc {
 	boolean srtxpRekeyOutbound() throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound()";
 
-		if (rtspSessionInfo.getSessionState() != RtspSessionState.PLAYING) {
+		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return true;  // we're not ready yet
 		}
 
@@ -142,7 +142,7 @@ final class SrtxpRekeySvc {
 			SrtxpKmd tmpNextKmdOutbound;
 			try {
 				tmpNextKmdOutbound = rtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(ctfos.idSubStream);
-			} catch (RtspInvalidRequestException e) {
+			} catch (RtspProtoInvalidRequestException e) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed: " + e.getMessage());
 				return false;  // shutdown the session
 			}
@@ -215,9 +215,9 @@ final class SrtxpRekeySvc {
 		final String resourceUrlForSs = tmpOptRscUrl.get().getUrlStr();
 
 		{
-			RtspMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
-			RtspStatusCode requStatCode = recvResponseFromClient(tmpMt);
-			if (requStatCode != RtspStatusCode.OK) {
+			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
 				return false;
 			}
@@ -234,17 +234,17 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			RtspMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
+			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
 					resourceUrlForSs,
 					ctfos.idSubStream,
 					tmpNextKmdOutbound
 				);
-			RtspStatusCode requStatCode = recvResponseFromClient(tmpMt);
-			if (requStatCode == RtspStatusCode.METHOD_NOT_ALLOWED) {
+			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
 				return false;
 			}
-			if (requStatCode != RtspStatusCode.OK) {
+			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed (" + requStatCode + ")");
 				return false;
 			}
@@ -261,7 +261,7 @@ final class SrtxpRekeySvc {
 			) throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_sdes()";
 
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspMessageType.PLAY);
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspProtoMessageType.PLAY);
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, "SRTxP re-keying failed - no Resource URL found");
 			return false;
@@ -269,9 +269,9 @@ final class SrtxpRekeySvc {
 		final String resourceUrl = tmpOptRscUrl.get().getUrlStr();
 
 		{
-			RtspMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
-			RtspStatusCode requStatCode = recvResponseFromClient(tmpMt);
-			if (requStatCode != RtspStatusCode.OK) {
+			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
 				return false;
 			}
@@ -279,13 +279,13 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			RtspMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
-			RtspStatusCode requStatCode = recvResponseFromClient(tmpMt);
-			if (requStatCode == RtspStatusCode.METHOD_NOT_ALLOWED) {
+			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");
 				return false;
 			}
-			if (requStatCode != RtspStatusCode.OK) {
+			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, "SRTxP re-keying failed (" + requStatCode + ")");
 				return false;
 			}
@@ -307,7 +307,7 @@ final class SrtxpRekeySvc {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspStatusCode recvResponseFromClient(@NonNull RtspMessageType requestMessageType)
+	private @NonNull RtspProtoStatusCode recvResponseFromClient(@NonNull RtspProtoMessageType requestMessageType)
 			throws TcpSocketClosedException, TcpSocketIoException {
 		int timeoutCnt = 0;
 		RtspResponseBasics respBasics = null;

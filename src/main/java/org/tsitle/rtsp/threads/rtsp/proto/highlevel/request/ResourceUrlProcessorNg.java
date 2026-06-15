@@ -3,9 +3,9 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.request;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdSubStreamNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
@@ -36,7 +36,7 @@ final class ResourceUrlProcessorNg {
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull String fullRscUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws RtspInvalidUriException, RtspIdSubStreamNotFoundException, RtspIdInputSourceNotFoundException {
+			) throws RtspProtoInvalidUriException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdInputSourceNotFoundException {
 		RtspProtoRscUrl resObj = new RtspProtoRscUrl();
 		resObj.setUrlStr(fullRscUrlStr);
 
@@ -85,7 +85,7 @@ final class ResourceUrlProcessorNg {
 					globalSessionInfoInterface.getInputSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
 				);
 			if (! resObj.idInputSource.isEmpty() && ! tmpIdIs.equals(resObj.idInputSource)) {
-				throw new RtspInvalidUriException("Input Source ID resolved from Sub-Stream ID does not match");
+				throw new RtspProtoInvalidUriException("Input Source ID resolved from Sub-Stream ID does not match");
 			}
 			resObj.idInputSource.copyFrom(tmpIdIs);
 			resObj.idStreamSource.copyFrom(
@@ -94,10 +94,10 @@ final class ResourceUrlProcessorNg {
 		}
 
 		if (resObj.idInputSource.isEmpty()) {
-			throw new RtspInvalidUriException("Input Source ID is missing");
+			throw new RtspProtoInvalidUriException("Input Source ID is missing");
 		}
 		if (! availableStreamsInterface.existsInputSourceId(resObj.idInputSource)) {
-			throw new RtspIdInputSourceNotFoundException("Input Source ID is invalid");
+			throw new RtspProtoIdInputSourceNotFoundException("Input Source ID is invalid");
 		}
 
 		return resObj;
@@ -109,14 +109,14 @@ final class ResourceUrlProcessorNg {
 	/**
 	 * Extract the Resource URL Path from the given (full) Resource URL.
 	 * @return The Resource URL Path (e.g. 'movie.stream/streamid0')
-	 * @throws RtspInvalidUriException If the Resource URL is invalid
+	 * @throws RtspProtoInvalidUriException If the Resource URL is invalid
 	 */
-	private @NonNull String extractResourceUrlPath() throws RtspInvalidUriException {
+	private @NonNull String extractResourceUrlPath() throws RtspProtoInvalidUriException {
 		URI rscUriObj;
 		try {
 			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(fullRscUrlStr);
 		} catch (HostnameHelperInvalidUriException e) {
-			throw new RtspInvalidUriException(e.getMessage());
+			throw new RtspProtoInvalidUriException(e.getMessage());
 		}
 		String tmpPath = rscUriObj.getPath();
 		tmpPath = tmpPath.strip();
@@ -124,10 +124,10 @@ final class ResourceUrlProcessorNg {
 			tmpPath = tmpPath.substring(1).strip();
 		}
 		if (tmpPath.startsWith("../") || tmpPath.contains("/../")) {
-			throw new RtspInvalidUriException("Path contains '../'");
+			throw new RtspProtoInvalidUriException("Path contains '../'");
 		}
 		if (tmpPath.isBlank()) {
-			throw new RtspInvalidUriException("Empty path");
+			throw new RtspProtoInvalidUriException("Empty path");
 		}
 		return tmpPath;
 	}

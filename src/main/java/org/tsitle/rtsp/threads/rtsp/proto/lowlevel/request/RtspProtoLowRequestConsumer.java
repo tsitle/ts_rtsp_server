@@ -5,11 +5,11 @@ import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSkippedHeaderException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidUriException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSkippedHeaderException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowInvalidRrException;
@@ -43,24 +43,24 @@ public final class RtspProtoLowRequestConsumer {
 		// read messageType from the requestLine
 		try {
 			parseMessageTypeAndProtoVers(input.mainLine, resObj);
-		} catch (RtspInvalidRequestException e) {
+		} catch (RtspProtoInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage());
-			resObj.messageType = RtspMessageType.UNKNOWN;
+			resObj.messageType = RtspProtoMessageType.UNKNOWN;
 			return resObj;
 		}
 
 		//
-		resObj.statusCode = RtspStatusCode.OK;
+		resObj.statusCode = RtspProtoStatusCode.OK;
 
 		// read resource URL from the requestLine
 		parseRequestResourceUrl(input.mainLine, resObj);
-		if (resObj.statusCode != RtspStatusCode.OK) {
+		if (resObj.statusCode != RtspProtoStatusCode.OK) {
 			return resObj;
 		}
 
 		// parse header lines
 		parseHeaderLines(input.headerLines, resObj);
-		if (resObj.statusCode != RtspStatusCode.OK) {
+		if (resObj.statusCode != RtspProtoStatusCode.OK) {
 			return resObj;
 		}
 
@@ -68,7 +68,7 @@ public final class RtspProtoLowRequestConsumer {
 		Optional<Integer> tmpOptCseq = resObj.getHeaderCseq();
 		if (tmpOptCseq.isEmpty()) {
 			logWarn(FNC_NAME, "Missing CSeq header in request");
-			resObj.statusCode = RtspStatusCode.BAD_REQUEST;
+			resObj.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			return resObj;
 		}
 
@@ -84,15 +84,15 @@ public final class RtspProtoLowRequestConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void parseMessageTypeAndProtoVers(@NonNull String requestLine, @NonNull RtspProtoHighMsgStructuredRequest output)
-			throws RtspInvalidRequestException {
+			throws RtspProtoInvalidRequestException {
 		try {
 			StringTokenizer tokens = new StringTokenizer(requestLine);
 			String requestTypeStr = tokens.nextToken();
 			//
-			output.messageType = RtspMessageType.of(requestTypeStr);
-			if (output.messageType == RtspMessageType.UNKNOWN) {
-				output.statusCode = RtspStatusCode.METHOD_NOT_ALLOWED;
-				throw new RtspInvalidRequestException("Unknown request type in requestLine '" + requestLine + "'");
+			output.messageType = RtspProtoMessageType.of(requestTypeStr);
+			if (output.messageType == RtspProtoMessageType.UNKNOWN) {
+				output.statusCode = RtspProtoStatusCode.METHOD_NOT_ALLOWED;
+				throw new RtspProtoInvalidRequestException("Unknown request type in requestLine '" + requestLine + "'");
 			}
 			tokens.nextToken();  // URL
 			// we shall be tolerant here and ignore a missing PROTOCOL/VERSION token
@@ -102,12 +102,12 @@ public final class RtspProtoLowRequestConsumer {
 			String tmpProtoStr = tokens.nextToken();
 			output.rtspProtoVersion = RtspProtocolVersion.of(tmpProtoStr);
 			if (output.rtspProtoVersion == RtspProtocolVersion.NONE) {
-				output.statusCode = RtspStatusCode.BAD_REQUEST;
-				throw new RtspInvalidRequestException("Invalid protocol/version '" + tmpProtoStr + "'");
+				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+				throw new RtspProtoInvalidRequestException("Invalid protocol/version '" + tmpProtoStr + "'");
 			}
 		} catch (NoSuchElementException e) {
-			output.statusCode = RtspStatusCode.BAD_REQUEST;
-			throw new RtspInvalidRequestException("Missing element in request line '" + requestLine + "'");
+			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+			throw new RtspProtoInvalidRequestException("Missing element in request line '" + requestLine + "'");
 		}
 	}
 
@@ -122,7 +122,7 @@ public final class RtspProtoLowRequestConsumer {
 			boolean isRtsps = currentUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://");
 			if (! (currentUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://") || isRtsps)) {
 				logWarn(FNC_NAME, "invalid protocol in URL '" + currentUrl + "'");
-				output.statusCode = RtspStatusCode.BAD_REQUEST;
+				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 				return;
 			}
 			// rewrite the URL to get rid of any query parameters, fragments and userinfo (username + password)
@@ -138,8 +138,8 @@ public final class RtspProtoLowRequestConsumer {
 			if (tmpUri.getQuery() != null) {
 				try {
 					extractResourceUrlQueryParam(currentUrl + "?" + tmpUri.getQuery(), output);
-				} catch (RtspInvalidUriException e) {
-					output.statusCode = RtspStatusCode.BAD_REQUEST;
+				} catch (RtspProtoInvalidUriException e) {
+					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 					return;
 				}
 			}
@@ -148,7 +148,7 @@ public final class RtspProtoLowRequestConsumer {
 			if (currentUrl.length() > RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH) {
 				logWarn(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
 						currentUrl.length(), RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH));
-				output.statusCode = RtspStatusCode.URI_TOO_LONG;
+				output.statusCode = RtspProtoStatusCode.URI_TOO_LONG;
 				return;
 			}
 
@@ -156,19 +156,19 @@ public final class RtspProtoLowRequestConsumer {
 			output.resourceUrl = currentUrl;
 		} catch (NoSuchElementException e) {
 			logWarn(FNC_NAME, "Missing element in request line '" + requestLine + "'");
-			output.statusCode = RtspStatusCode.BAD_REQUEST;
+			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 		}
 	}
 
 	private static void extractResourceUrlQueryParam(
 				@NonNull String resourceUrlStr,
 				@NonNull RtspProtoHighMsgStructuredRequest output
-			) throws RtspInvalidUriException {
+			) throws RtspProtoInvalidUriException {
 		URI rscUriObj;
 		try {
 			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
 		} catch (HostnameHelperInvalidUriException e) {
-			throw new RtspInvalidUriException(e.getMessage());
+			throw new RtspProtoInvalidUriException(e.getMessage());
 		}
 		String tmpQuery = rscUriObj.getQuery();
 		if (tmpQuery == null) {
@@ -211,11 +211,11 @@ public final class RtspProtoLowRequestConsumer {
 			}
 			try {
 				parseHeaderLines_oneLine(tmpHeaderKeyStr, tmpHeaderVal, output);
-			} catch (RtspInvalidRequestException | RtspLowInvalidRrException e) {
+			} catch (RtspProtoInvalidRequestException | RtspLowInvalidRrException e) {
 				logWarn(FNC_NAME, e.getMessage());
-				output.statusCode = RtspStatusCode.BAD_REQUEST;
+				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 				return;
-			} catch (RtspSkippedHeaderException e) {
+			} catch (RtspProtoSkippedHeaderException e) {
 				logWarn(FNC_NAME, "Skipped header: " + e.getMessage());
 			}
 		}
@@ -225,7 +225,7 @@ public final class RtspProtoLowRequestConsumer {
 				@NonNull String hdKeyStr,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHighMsgStructuredRequest output
-			) throws RtspInvalidRequestException, RtspLowInvalidRrException, RtspSkippedHeaderException {
+			) throws RtspProtoInvalidRequestException, RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderLines_oneLine()";
 
 		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest();
@@ -260,26 +260,26 @@ public final class RtspProtoLowRequestConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void parseHeaderValue_describe_accept(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspInvalidRequestException, RtspSkippedHeaderException {
-		if (messageType != RtspMessageType.DESCRIBE) {
-			throw new RtspSkippedHeaderException("Accept header only allowed in DESCRIBE requests");
+			) throws RtspProtoInvalidRequestException, RtspProtoSkippedHeaderException {
+		if (messageType != RtspProtoMessageType.DESCRIBE) {
+			throw new RtspProtoSkippedHeaderException("Accept header only allowed in DESCRIBE requests");
 		}
 		entry.hdValAccept.rtspMimeType = RtspMimeType.of(hdValue);
 		if (entry.hdValAccept.rtspMimeType == RtspMimeType.NONE) {
-			throw new RtspInvalidRequestException("Invalid Accept value: '" + hdValue + "'");
+			throw new RtspProtoInvalidRequestException("Invalid Accept value: '" + hdValue + "'");
 		}
 		if (entry.hdValAccept.rtspMimeType != RtspMimeType.SDP) {
-			throw new RtspInvalidRequestException("Unsupported Accept value: " + entry.hdValAccept.rtspMimeType);
+			throw new RtspProtoInvalidRequestException("Unsupported Accept value: " + entry.hdValAccept.rtspMimeType);
 		}
 	}
 
 	private void parseHeaderValue_com_auth_client(
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspInvalidRequestException {
+			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_auth_client()";
 
 		/*
@@ -290,7 +290,7 @@ public final class RtspProtoLowRequestConsumer {
 		 */
 		if (! hdValue.toLowerCase()
 				.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.toLowerCase())) {
-			throw new RtspInvalidRequestException("Invalid Auth header prefix");
+			throw new RtspProtoInvalidRequestException("Invalid Auth header prefix");
 		}
 		hdValue = hdValue.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_XXX_AUTH_DIGEST_PREFIX.length()).strip();
 		StringTokenizer tokens = new StringTokenizer(hdValue, ",");
@@ -329,7 +329,7 @@ public final class RtspProtoLowRequestConsumer {
 						extractKeyValue(curTokenAsIs, RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_XXX_AUTH_ALGO);
 				RtspAuthAlgo tmpAlgoEn = RtspAuthAlgo.of(tmpAlgoStr);
 				if (tmpAlgoEn == RtspAuthAlgo.NONE) {
-					throw new RtspInvalidRequestException("Invalid Auth Algo '" + tmpAlgoStr + "'");
+					throw new RtspProtoInvalidRequestException("Invalid Auth Algo '" + tmpAlgoStr + "'");
 				}
 			} else {
 				logWarn(FNC_NAME, "Unknown Auth parameter: '" + curTokenAsIs + "'");
@@ -337,7 +337,7 @@ public final class RtspProtoLowRequestConsumer {
 		}
 
 		if (! (haveUser && haveRealm && haveNonce && haveUri && haveResp)) {
-			throw new RtspInvalidRequestException("Missing required Auth parameters");
+			throw new RtspProtoInvalidRequestException("Missing required Auth parameters");
 		}
 	}
 
@@ -347,48 +347,48 @@ public final class RtspProtoLowRequestConsumer {
 	}
 
 	private void parseHeaderValue_announce_contbase(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspSkippedHeaderException {
-		if (messageType != RtspMessageType.ANNOUNCE) {
-			throw new RtspSkippedHeaderException("Content-Base header only allowed in ANNOUNCE requests");
+			) throws RtspProtoSkippedHeaderException {
+		if (messageType != RtspProtoMessageType.ANNOUNCE) {
+			throw new RtspProtoSkippedHeaderException("Content-Base header only allowed in ANNOUNCE requests");
 		}
 		RtspLowParserHelper.helperParseHeaderValue_contbase(hdValue, entry.hdValContBase);
 	}
 
 	private void parseHeaderValue_com_contenc(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		allowOnlyAnnounceGetOrSetParameter("Content-Encoding", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contenc(hdValue, entry.hdValContEnc);
 	}
 
 	private void parseHeaderValue_com_contlang(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspSkippedHeaderException {
+			) throws RtspProtoSkippedHeaderException {
 		allowOnlyAnnounceGetOrSetParameter("Content-Language", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contlang(hdValue, entry.hdValContLang);
 	}
 
 	private void parseHeaderValue_com_contlen(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		allowOnlyAnnounceGetOrSetParameter("Content-Length", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contlen(hdValue, entry.hdValContLen);
 	}
 
 	private void parseHeaderValue_com_conttype(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		allowOnlyAnnounceGetOrSetParameter("Content-Type", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_conttype(hdValue, entry.hdValContType);
 	}
@@ -404,15 +404,15 @@ public final class RtspProtoLowRequestConsumer {
 	}
 
 	private void parseHeaderValue_com_keymgmt(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspInvalidRequestException, RtspSkippedHeaderException {
+			) throws RtspProtoInvalidRequestException, RtspProtoSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_com_keymgmt()";
 
-		if (messageType != RtspMessageType.SETUP && messageType != RtspMessageType.SET_PARAMETER) {
-			throw new RtspSkippedHeaderException("Keymgmt header only allowed in SETUP/SET_PARAMETER requests");
+		if (messageType != RtspProtoMessageType.SETUP && messageType != RtspProtoMessageType.SET_PARAMETER) {
+			throw new RtspProtoSkippedHeaderException("Keymgmt header only allowed in SETUP/SET_PARAMETER requests");
 		}
 		/*
 		 * Example:
@@ -440,15 +440,15 @@ public final class RtspProtoLowRequestConsumer {
 		}
 
 		if (rawProt.isBlank()) {
-			throw new RtspInvalidRequestException("Keymgmt Protocol must be set");
+			throw new RtspProtoInvalidRequestException("Keymgmt Protocol must be set");
 		}
 		entry.hdValKeymgmt.proto = RtspKeymgmtProto.of(rawProt);
 		if (entry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
-			throw new RtspInvalidRequestException("Invalid Keymgmt Protocol value: '" + rawProt + "'");
+			throw new RtspProtoInvalidRequestException("Invalid Keymgmt Protocol value: '" + rawProt + "'");
 		}
 		entry.hdValKeymgmt.uriStr = (rawUri.isBlank() ? resourceUrl : rawUri);
 		if (rawData.isBlank()) {
-			throw new RtspInvalidRequestException("Keymgmt Data must be set");
+			throw new RtspProtoInvalidRequestException("Keymgmt Data must be set");
 		}
 		entry.hdValKeymgmt.dataStr = rawData;
 	}
@@ -458,12 +458,12 @@ public final class RtspProtoLowRequestConsumer {
 	}
 
 	private void parseHeaderValue_play_range(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspSkippedHeaderException {
-		if (messageType != RtspMessageType.PLAY) {
-			throw new RtspSkippedHeaderException("Range header only allowed in PLAY requests");
+			) throws RtspProtoSkippedHeaderException {
+		if (messageType != RtspProtoMessageType.PLAY) {
+			throw new RtspProtoSkippedHeaderException("Range header only allowed in PLAY requests");
 		}
 		RtspLowParserHelper.helperParseHeaderValue_range(hdValue, entry.hdValRange);
 	}
@@ -489,14 +489,14 @@ public final class RtspProtoLowRequestConsumer {
 	}
 
 	private void parseHeaderValue_setup_transport(
-				@NonNull RtspMessageType messageType,
+				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspLowInvalidRrException, RtspSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseHeaderValue_setup_transport()";
 
-		if (messageType != RtspMessageType.SETUP) {
-			throw new RtspSkippedHeaderException("Transport header only allowed in SETUP requests");
+		if (messageType != RtspProtoMessageType.SETUP) {
+			throw new RtspProtoSkippedHeaderException("Transport header only allowed in SETUP requests");
 		}
 
 		List<@NonNull String> outputWarnings = new ArrayList<>();
@@ -529,11 +529,11 @@ public final class RtspProtoLowRequestConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void allowOnlyAnnounceGetOrSetParameter(@NonNull String hdDesc, @NonNull RtspMessageType messageType)
-			throws RtspSkippedHeaderException {
-		if (messageType != RtspMessageType.ANNOUNCE &&
-				messageType != RtspMessageType.GET_PARAMETER && messageType != RtspMessageType.SET_PARAMETER) {
-			throw new RtspSkippedHeaderException(hdDesc + " header is only valid for " +
+	private static void allowOnlyAnnounceGetOrSetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
+			throws RtspProtoSkippedHeaderException {
+		if (messageType != RtspProtoMessageType.ANNOUNCE &&
+				messageType != RtspProtoMessageType.GET_PARAMETER && messageType != RtspProtoMessageType.SET_PARAMETER) {
+			throw new RtspProtoSkippedHeaderException(hdDesc + " header is only valid for " +
 					"ANNOUNCE/GET_PARAMETER/SET_PARAMETER requests");
 		}
 	}
@@ -560,13 +560,13 @@ public final class RtspProtoLowRequestConsumer {
 
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_TYPE)) {
 			logWarn(FNC_NAME, "Missing Content-Type header");
-			output.statusCode = RtspStatusCode.BAD_REQUEST;
+			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			return;
 		}
 		if (output.headers.containsKey(RtspHeaderKey.CONTENT_ENC) &&
 				output.headers.get(RtspHeaderKey.CONTENT_ENC).hdValContEnc.contentEnc != RtspContentEncoding.NONE) {
 			logWarn(FNC_NAME, "No other Content-Encoding than NONE is supported");
-			output.statusCode = RtspStatusCode.NOT_ACCEPTABLE;
+			output.statusCode = RtspProtoStatusCode.NOT_ACCEPTABLE;
 			return;
 		}
 
@@ -574,7 +574,7 @@ public final class RtspProtoLowRequestConsumer {
 			case ANNOUNCE -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.SDP) {
 					logWarn(FNC_NAME, "Invalid Content-Type header value");
-					output.statusCode = RtspStatusCode.BAD_REQUEST;
+					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 					return;
 				}
 				String[] tmpSplit = bodyValue.split(RtspProtoLowMsgConstants.CRLF);
@@ -584,12 +584,12 @@ public final class RtspProtoLowRequestConsumer {
 			case GET_PARAMETER, SET_PARAMETER -> {
 				if (output.headers.get(RtspHeaderKey.CONTENT_TYPE).hdValContType.contentType != RtspMimeType.PARAMETERS) {
 					logWarn(FNC_NAME, "Invalid Content-Type header value");
-					output.statusCode = RtspStatusCode.BAD_REQUEST;
+					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 					return;
 				}
 				try {
 					for (String tmpBdLine : bodyValue.split(RtspProtoLowMsgConstants.CRLF)) {
-						if (output.messageType == RtspMessageType.GET_PARAMETER) {
+						if (output.messageType == RtspProtoMessageType.GET_PARAMETER) {
 							parseBody_getParamLine(tmpBdLine, output);
 						} else {
 							parseBody_setParamLine(tmpBdLine, output);
@@ -597,15 +597,15 @@ public final class RtspProtoLowRequestConsumer {
 					}
 				} catch (RtspLowInvalidRrException e) {
 					logWarn(FNC_NAME, "Invalid body line format for " + e.getMessage());
-					output.statusCode = RtspStatusCode.BAD_REQUEST;
+					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 				}
-				if (output.messageType == RtspMessageType.SET_PARAMETER) {
+				if (output.messageType == RtspProtoMessageType.SET_PARAMETER) {
 					output.bodySetParamKv.setContentLang(tmpBodyContLang);
 				}
 			}
 			default -> {
 				logWarn(FNC_NAME, "Content-Type header only allowed in ANNOUNCE/GET_PARAMETER/SET_PARAMETER request");
-				output.statusCode = RtspStatusCode.BAD_REQUEST;
+				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 			}
 		}
 	}
@@ -640,7 +640,7 @@ public final class RtspProtoLowRequestConsumer {
 		 *   ""
 		 *   "barparam: barstuff"
 		 */
-		RtspLowParserHelper.helperParseBodyLine_keyValue(RtspMessageType.SET_PARAMETER, bodyLine, output.bodySetParamKv);
+		RtspLowParserHelper.helperParseBodyLine_keyValue(RtspProtoMessageType.SET_PARAMETER, bodyLine, output.bodySetParamKv);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

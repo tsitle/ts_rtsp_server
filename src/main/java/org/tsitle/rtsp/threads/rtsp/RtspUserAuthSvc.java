@@ -9,8 +9,8 @@ import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdInputSourceNotFoundException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoUserAuthInterface;
@@ -49,7 +49,7 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 	@Override
 	public boolean authenticate(
 				@NonNull RtspProtoDataCntAuthClient requAuthClient,
-				@NonNull RtspMessageType messageType
+				@NonNull RtspProtoMessageType messageType
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".authenticate()";
 
@@ -117,7 +117,7 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 		RtspProtoInputSource tmpIsObj;
 		try {
 			tmpIsObj = availableStreamsInterface.getInputSourceObj(idInputSource);
-		} catch (RtspIdInputSourceNotFoundException e) {
+		} catch (RtspProtoIdInputSourceNotFoundException e) {
 			return false;
 		}
 		if (! tmpIsObj.getEnabled()) {

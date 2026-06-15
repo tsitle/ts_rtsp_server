@@ -12,9 +12,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamKvs
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntGetSetParamNames;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspCannotFindIpFromRscUrlException;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidRequestException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoCannotFindIpFromRscUrlException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestProducer;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
@@ -81,7 +81,7 @@ public final class RtspProtoRequestOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspMessageType sendRequest_announce(
+	public @NonNull RtspProtoMessageType sendRequest_announce(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoDataCntSdp announceSdp
@@ -97,7 +97,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		return internalSendRequest(
 				FNC_NAME,
-				RtspMessageType.ANNOUNCE,
+				RtspProtoMessageType.ANNOUNCE,
 				dummyClientCredentials,
 				null,
 				inputDataRequ,
@@ -105,25 +105,25 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	public @NonNull RtspMessageType sendRequest_describe(
+	public @NonNull RtspProtoMessageType sendRequest_describe(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_describe()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.DESCRIBE, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.DESCRIBE, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_getParameter(
+	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.GET_PARAMETER, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.GET_PARAMETER, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_getParameter(
+	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
@@ -136,7 +136,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		return internalSendRequest(
 				FNC_NAME,
-				RtspMessageType.GET_PARAMETER,
+				RtspProtoMessageType.GET_PARAMETER,
 				clientCredentials,
 				null,
 				inputDataRequ,
@@ -144,50 +144,50 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	public @NonNull RtspMessageType sendRequest_options(@NonNull String resourceUrl)
+	public @NonNull RtspProtoMessageType sendRequest_options(@NonNull String resourceUrl)
 			throws TcpSocketClosedException, TcpSocketIoException {
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
 		return sendRequest_options(resourceUrl, dummyClientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_options(
+	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_options()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.OPTIONS, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.OPTIONS, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_pause(
+	public @NonNull RtspProtoMessageType sendRequest_pause(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_pause()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.PAUSE, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PAUSE, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_play(
+	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.PLAY, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PLAY, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_redirect(
+	public @NonNull RtspProtoMessageType sendRequest_redirect(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_redirect()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.REDIRECT, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.REDIRECT, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_setParameter(
+	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
@@ -200,7 +200,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		return internalSendRequest(
 				FNC_NAME,
-				RtspMessageType.SET_PARAMETER,
+				RtspProtoMessageType.SET_PARAMETER,
 				clientCredentials,
 				null,
 				inputDataRequ,
@@ -208,16 +208,16 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	public @NonNull RtspMessageType sendRequest_setup(
+	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setup()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.SETUP, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.SETUP, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspMessageType sendRequest_srtxpRekeyOutboundMikey(
+	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
 				@NonNull String resourceUrlForSubStream,
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull SrtxpKmd kmdOutbound
@@ -238,7 +238,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		return internalSendRequest(
 				FNC_NAME,
-				RtspMessageType.SET_PARAMETER,
+				RtspProtoMessageType.SET_PARAMETER,
 				dummyClientCredentials,
 				idSubStream,
 				inputDataRequ,
@@ -246,7 +246,7 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	public @NonNull RtspMessageType sendRequest_srtxpRekeyOutboundSdes(
+	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
@@ -266,7 +266,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		return internalSendRequest(
 				FNC_NAME,
-				RtspMessageType.ANNOUNCE,
+				RtspProtoMessageType.ANNOUNCE,
 				dummyClientCredentials,
 				null,
 				inputDataRequ,
@@ -274,13 +274,13 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	public @NonNull RtspMessageType sendRequest_teardown(
+	public @NonNull RtspProtoMessageType sendRequest_teardown(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_teardown()";
 
-		return internalSendRequest(FNC_NAME, RtspMessageType.TEARDOWN, resourceUrl, clientCredentials);
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.TEARDOWN, resourceUrl, clientCredentials);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -291,33 +291,33 @@ public final class RtspProtoRequestOutputSvc {
 	 * and that there already exists a valid KMD for the specified sub-stream.
 	 * @param idSubStream Sub-Stream identifier
 	 * @return Key Management Data (either for MIKEY or SDES)
-	 * @throws RtspInvalidRequestException If the remote host does not support re-keying or no previous KMD exists
+	 * @throws RtspProtoInvalidRequestException If the remote host does not support re-keying or no previous KMD exists
 	 */
 	public @NonNull SrtxpKmd generateNewOutboundKmdForRekeying(@NonNull RtspProtoIdSubStream idSubStream)
-			throws RtspInvalidRequestException {
+			throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".generateNewOutboundKmdForRekeying()";
 
 		Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = rtspSessionInfo.descrSetupInfosStream.getSiBySubStreamId(idSubStream);
 		if (tmpOptSiSs.isEmpty()) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": No Sub-Stream Info found for " +
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": No Sub-Stream Info found for " +
 					"Sub-Stream ID '" + idSubStream.getIdStr() + "'");
 		}
 		RtspProtoSetupInfoForSubStream tmpSiSs = tmpOptSiSs.get();
 
 		// get the SrtxpKmd object
 		if (! tmpSiSs.getKmdOutboundPtr().isKmdSet()) {
-			throw new RtspInvalidRequestException(FNC_NAME + ": Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
 					"has no previous outbound KMD");
 		}
 		SrtxpKmd tmpSrtxpKmd = tmpSiSs.getKmdOutboundPtr().getKmd().orElseThrow();
 
 		//
-		if ((tmpSrtxpKmd.isForLegacySdes() && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspMessageType.ANNOUNCE)) ||
-				(! tmpSrtxpKmd.isForLegacySdes() && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspMessageType.SET_PARAMETER))) {
-			throw new RtspInvalidRequestException("remote host does not support SRTxP re-keying");
+		if ((tmpSrtxpKmd.isForLegacySdes() && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspProtoMessageType.ANNOUNCE)) ||
+				(! tmpSrtxpKmd.isForLegacySdes() && ! rtspSessionInfo.rhSupportedMessageTypes.containsMt(RtspProtoMessageType.SET_PARAMETER))) {
+			throw new RtspProtoInvalidRequestException("remote host does not support SRTxP re-keying");
 		}
 		if (tmpSrtxpKmd.mki().isEmpty()) {
-			throw new RtspInvalidRequestException("cannot re-key when initial KMD had no MKI");
+			throw new RtspProtoInvalidRequestException("cannot re-key when initial KMD had no MKI");
 		}
 
 		// generate the new Key Management Data
@@ -331,9 +331,9 @@ public final class RtspProtoRequestOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspMessageType internalSendRequest(
+	private @NonNull RtspProtoMessageType internalSendRequest(
 				@NonNull String fncName,
-				@NonNull RtspMessageType requestMessageType,
+				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
@@ -349,9 +349,9 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
-	private @NonNull RtspMessageType internalSendRequest(
+	private @NonNull RtspProtoMessageType internalSendRequest(
 				@NonNull String fncName,
-				@NonNull RtspMessageType requestMessageType,
+				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@Nullable RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoDataRequest inputDataRequ,
@@ -364,7 +364,7 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		inputDataRequ.writeProtect();
 
-		if (requestMessageType == RtspMessageType.ANNOUNCE && inputDataRequ.requRscUrl.idInputSource.isEmpty()) {
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && inputDataRequ.requRscUrl.idInputSource.isEmpty()) {
 			logError(fncName, "Input Source not found");
 			return requestMessageType;
 		}
@@ -389,7 +389,7 @@ public final class RtspProtoRequestOutputSvc {
 					tmpInputDataRequCopy,
 					kmdsOutbound
 				);
-		} catch (RtspInvalidRequestException e) {
+		} catch (RtspProtoInvalidRequestException e) {
 			logError(fncName, "Failed to build HL request: " + e.getMessage());
 			return requestMessageType;
 		}
@@ -398,7 +398,7 @@ public final class RtspProtoRequestOutputSvc {
 		RtspProtoLowMsgRaw msgRaw;
 		try {
 			msgRaw = rtspProtoLowRequestProducer.buildMessage(msgStructured);
-		} catch (RtspInvalidRequestException e) {
+		} catch (RtspProtoInvalidRequestException e) {
 			logError(fncName, "Failed to build LL request: " + e.getMessage());
 			return requestMessageType;
 		}
@@ -416,7 +416,7 @@ public final class RtspProtoRequestOutputSvc {
 
 	private boolean loadFromSessionInfo(
 				@NonNull String fncName,
-				@NonNull RtspMessageType requestMessageType,
+				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataRequest dataRequ
 			) {
@@ -428,12 +428,12 @@ public final class RtspProtoRequestOutputSvc {
 			dataRequ.requClientIpAddr.copyFrom(rtspSessionInfo.clientIpAddr);
 		}
 
-		if (requestMessageType == RtspMessageType.ANNOUNCE) {
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE) {
 			try {
 				dataRequ.requServerIpFromRscUrl.copyFrom(
 						rtspSessionInfo.findRtspIpFromResourceUrl(dataRequ.requRscUrl)
 					);
-			} catch (RtspCannotFindIpFromRscUrlException e) {
+			} catch (RtspProtoCannotFindIpFromRscUrlException e) {
 				logError(fncName, e.getMessage());
 				return false;
 			}

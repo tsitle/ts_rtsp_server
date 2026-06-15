@@ -1,27 +1,27 @@
 package org.tsitle.rtsp.threads.rtsp.proto.data_rr;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoSessionState;
 
 public final class RtspProtoDataCntSessionState {
 
 	private boolean isWriteProtected = false;
 
-	private @NonNull RtspSessionState sessionState = RtspSessionState.INIT;
+	private @NonNull RtspProtoSessionState sessionState = RtspProtoSessionState.INIT;
 
 	public RtspProtoDataCntSessionState() { }
 
-	public RtspProtoDataCntSessionState(@NonNull RtspSessionState sessionState) {
+	public RtspProtoDataCntSessionState(@NonNull RtspProtoSessionState sessionState) {
 		this.sessionState = sessionState;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspSessionState getSessionState() {
+	public @NonNull RtspProtoSessionState getSessionState() {
 		return sessionState;
 	}
-	public void setSessionState(@NonNull RtspSessionState value) {
+	public void setSessionState(@NonNull RtspProtoSessionState value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -34,7 +34,7 @@ public final class RtspProtoDataCntSessionState {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		sessionState = RtspSessionState.INIT;
+		sessionState = RtspProtoSessionState.INIT;
 	}
 
 	public void copyFrom(@NonNull RtspProtoDataCntSessionState other) {

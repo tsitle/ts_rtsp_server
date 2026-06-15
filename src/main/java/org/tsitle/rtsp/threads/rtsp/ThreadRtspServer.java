@@ -10,15 +10,15 @@ import org.tsitle.rtsp.threads.*;
 import org.tsitle.rtsp.threads.rtsp.proto.*;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataRequest;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspSessionInfoException;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoSessionState;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
-import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
@@ -169,7 +169,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		try {
 			rtspSessionInfo.setClientIpAddr(fromCtorClientIpAddr);
 			rtspSessionInfo.setIsRtspsConnection(fromCtorIsRtspsConnection);
-		} catch (RtspSessionInfoException e) {
+		} catch (RtspProtoSessionInfoException e) {
 			logError(FNC_NAME, "RtspSessionInfoException: " + e.getMessage());
 			return;
 		}
@@ -245,7 +245,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					if (rtspSessionInfo.getDescrSetupInfoSsrcBySubStreamsId(tmpRscUrl.idSubStream) != ssrcId) {
 						continue;
 					}
-				} catch (RtspSessionInfoException e) {
+				} catch (RtspProtoSessionInfoException e) {
 					continue;
 				}
 				ctfosToUse = rtspChildThreadMng.getCtfosMapValue(tmpRscUrl.idStreamSource);
@@ -308,7 +308,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	}
 
 	private void updateCongestionLevel() {
-		if (rtspSessionInfo.getSessionState() != RtspSessionState.PLAYING) {
+		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;
 		}
 		for (RtspProtoIdStreamSource tmpIdSs : rtspSessionInfo.getDescrSetupInfoStreamSourceIds()) {
@@ -351,7 +351,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		switch (rtspRequestBasics.messageType) {
-			case RtspMessageType.SETUP:
+			case RtspProtoMessageType.SETUP:
 				isPlaybackPaused = false;
 				//
 				final RtspProtoIdSubStream tmpIdSubStream = rtspRequestBasics.rscUrl.idSubStream;
@@ -365,7 +365,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					return false;  // tear down the session
 				}
 				break;
-			case RtspMessageType.PLAY:
+			case RtspProtoMessageType.PLAY:
 				logInfo(FNC_NAME, String.format(
 						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
 						isPlaybackPaused ? "Resuming" : "Starting",
@@ -387,14 +387,14 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					rtspChildThreadMng.startChildThreads(tmpIdIs);
 				}
 				break;
-			case RtspMessageType.PAUSE:
+			case RtspProtoMessageType.PAUSE:
 				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIdIs));
 				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				rtspChildThreadMng.pauseOrStopChildThreads(true);
 				isPlaybackPaused = true;
 				break;
-			case RtspMessageType.TEARDOWN:
+			case RtspProtoMessageType.TEARDOWN:
 				isPlaybackPaused = false;
 				//
 				rtspSessionInfo.clearAfterTeardown();
@@ -403,7 +403,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		if (rtspSessionInfo.moveToNextSessionState(rtspRequestBasics.messageType)) {
-			if (rtspSessionInfo.getSessionState() == RtspSessionState.INIT) {
+			if (rtspSessionInfo.getSessionState() == RtspProtoSessionState.INIT) {
 				return false;  // tear down the session
 			}
 			logDebug(FNC_NAME, "RTSP state is now " + rtspSessionInfo.getSessionState());
@@ -440,7 +440,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		try {
 			RtspRequestBasics rtspRequestBasics = receiveClientRequestAndRespond();
 			rtspTimeoutLastRequ = Instant.now();
-			if (rtspRequestBasics.statusCode != RtspStatusCode.OK) {
+			if (rtspRequestBasics.statusCode != RtspProtoStatusCode.OK) {
 				return true;
 			}
 			return handleSuccessfulRequest(rtspRequestBasics);

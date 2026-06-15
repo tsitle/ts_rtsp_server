@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSubStreamTp;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspTransportMode;
 
 import java.util.Optional;
@@ -22,7 +22,7 @@ public class RtspProtoHeaderTypeTransport {
 	/** Mode (either PLAY or RECORD) */
 	public @NonNull RtspTransportMode tpMode = RtspTransportMode.NONE;
 
-	public void setSsrcId32bit(long ssrc32bit) throws RtspNumberRangeException {
+	public void setSsrcId32bit(long ssrc32bit) throws RtspProtoNumberRangeException {
 		validateSsrc("tpSsrcId32bit", ssrc32bit);
 		this.tpSsrcId32bit = ssrc32bit;
 	}
@@ -44,9 +44,9 @@ public class RtspProtoHeaderTypeTransport {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private static void validateSsrc(@NonNull String desc, long ssrc) throws RtspNumberRangeException {
+	private static void validateSsrc(@NonNull String desc, long ssrc) throws RtspProtoNumberRangeException {
 		if (ssrc < 1L || ssrc > 0xFFFFFFFFL) {
-			throw new RtspNumberRangeException(desc + " must be between 1 and 0xFFFFFFFF, got: " + ssrc);
+			throw new RtspProtoNumberRangeException(desc + " must be between 1 and 0xFFFFFFFF, got: " + ssrc);
 		}
 	}
 
