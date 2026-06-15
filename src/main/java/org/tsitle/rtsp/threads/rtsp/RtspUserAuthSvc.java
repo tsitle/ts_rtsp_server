@@ -5,6 +5,8 @@ import org.tsitle.rtsp.config.RtspConfig;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspStaticSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;

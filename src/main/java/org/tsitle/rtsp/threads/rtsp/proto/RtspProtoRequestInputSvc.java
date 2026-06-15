@@ -7,7 +7,6 @@ import org.tsitle.rtsp.exceptions.TcpSocketIoException;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.RtspSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.*;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;

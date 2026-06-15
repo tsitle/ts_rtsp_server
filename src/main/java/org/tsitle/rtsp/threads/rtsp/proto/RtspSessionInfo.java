@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;

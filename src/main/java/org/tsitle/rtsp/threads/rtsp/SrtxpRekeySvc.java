@@ -12,6 +12,8 @@ import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoRequestOutputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoResponseInputSvc;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspStaticSessionDataSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
