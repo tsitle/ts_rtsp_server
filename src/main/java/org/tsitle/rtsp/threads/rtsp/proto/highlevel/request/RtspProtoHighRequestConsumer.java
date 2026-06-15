@@ -17,7 +17,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
@@ -37,7 +37,7 @@ public final class RtspProtoHighRequestConsumer {
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @Nullable RtspProtoParameterSetterInterface parameterSetterInterface;
 
 	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
@@ -48,7 +48,7 @@ public final class RtspProtoHighRequestConsumer {
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -57,7 +57,7 @@ public final class RtspProtoHighRequestConsumer {
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
-		this.staticSessionDataInterface = staticSessionDataInterface;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 		this.parameterSetterInterface = parameterSetterInterface;
 
 		// check if the supported message types are valid
@@ -347,7 +347,7 @@ public final class RtspProtoHighRequestConsumer {
 		//
 		RtspProtoRscUrl resObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
 				availableStreamsInterface,
-				staticSessionDataInterface,
+				globalSessionInfoInterface,
 				resourceUrlStr,
 				clientIpAddr
 			);

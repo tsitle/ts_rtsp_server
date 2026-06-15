@@ -15,6 +15,7 @@ import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import javax.net.ssl.SSLContext;
@@ -280,6 +281,8 @@ public class RtspServerApp {
 
 		final String cfgServerNameAndVersion = getAppNameAndVersion();
 
+		final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
+
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
 			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspConfig.getServerTcpPortRtsp()) : null)) {
 				if (listenSocketRtsps != null) {
@@ -325,6 +328,7 @@ public class RtspServerApp {
 							cancelToken,
 							rtspConfig,
 							cfgServerNameAndVersion,
+							globalSessionInfoSvc,
 							++clientConnectionCount,
 							socketRtspTcp,
 							isRtspsConn

@@ -20,7 +20,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoSdpProducerInterface;
@@ -40,7 +40,7 @@ public final class RtspProtoHighResponseProducer {
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @Nullable RtspProtoParameterGetterInterface parameterGetterInterface;
 	private final boolean isResponseFromClient;
 
@@ -52,7 +52,7 @@ public final class RtspProtoHighResponseProducer {
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -61,7 +61,7 @@ public final class RtspProtoHighResponseProducer {
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpProducerInterface = sdpProducerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
-		this.staticSessionDataInterface = staticSessionDataInterface;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 		this.parameterGetterInterface = parameterGetterInterface;
 		this.isResponseFromClient = isResponseFromClient;
 	}
@@ -622,7 +622,7 @@ public final class RtspProtoHighResponseProducer {
 		}
 		if (ioDataResp.respAuthServer.getAuthNonce().isBlank()) {
 			ioDataResp.respAuthServer.setAuthNonce(
-					staticSessionDataInterface.createAuthServerNonce(ioDataResp.respClientIpAddr)
+					globalSessionInfoInterface.createAuthServerNonce(ioDataResp.respClientIpAddr)
 				);
 		}
 		if (ioDataResp.respAuthServer.getAuthRealm().isBlank()) {

@@ -9,7 +9,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspInvalidUriException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
@@ -33,7 +33,7 @@ final class ResourceUrlProcessorNg {
 
 	public static @NonNull RtspProtoRscUrl parseUrlIntoRscUrlObject(
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull String fullRscUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspInvalidUriException, RtspIdSubStreamNotFoundException, RtspIdInputSourceNotFoundException {
@@ -82,14 +82,14 @@ final class ResourceUrlProcessorNg {
 			RtspProtoIdInputSource tmpIdIs = new RtspProtoIdInputSource();
 			tmpIdIs.copyFrom(
 					// this also checks if the Sub-Stream ID exists
-					staticSessionDataInterface.getInputSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
+					globalSessionInfoInterface.getInputSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
 				);
 			if (! resObj.idInputSource.isEmpty() && ! tmpIdIs.equals(resObj.idInputSource)) {
 				throw new RtspInvalidUriException("Input Source ID resolved from Sub-Stream ID does not match");
 			}
 			resObj.idInputSource.copyFrom(tmpIdIs);
 			resObj.idStreamSource.copyFrom(
-					staticSessionDataInterface.getStreamSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
+					globalSessionInfoInterface.getStreamSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
 				);
 		}
 

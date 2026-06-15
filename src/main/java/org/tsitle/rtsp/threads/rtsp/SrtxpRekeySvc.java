@@ -13,7 +13,7 @@ import org.tsitle.rtsp.threads.rtp.RtpConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoRequestOutputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoResponseInputSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspStaticSessionDataSvc;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspSessionState;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
@@ -42,7 +42,7 @@ final class SrtxpRekeySvc {
 				@NonNull RtspChildThreadMng rtspChildThreadMng,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspAvailableStreamsSvc availableStreamsSvc,
-				@NonNull RtspStaticSessionDataSvc staticSessionDataSvc
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -58,7 +58,7 @@ final class SrtxpRekeySvc {
 				rtspSessionInfo,
 				rtxpTcpReadWrite,
 				availableStreamsSvc,
-				staticSessionDataSvc
+				globalSessionInfoInterface
 			);
 		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
 				logMsgInterface,

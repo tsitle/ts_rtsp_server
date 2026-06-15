@@ -12,7 +12,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspRequestBasics;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.response.RtspProtoHighResponseProducer;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
@@ -51,7 +51,7 @@ public final class RtspProtoResponseOutputSvc {
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -73,7 +73,7 @@ public final class RtspProtoResponseOutputSvc {
 				cfgServerNameAndVersion,
 				cfgContentLanguage,
 				availableStreamsInterface,
-				staticSessionDataInterface
+				globalSessionInfoInterface
 			);
 
 		//
@@ -85,7 +85,7 @@ public final class RtspProtoResponseOutputSvc {
 				cfgIsDebugDisableTransportUdp,
 				sdpProducer,
 				availableStreamsInterface,
-				staticSessionDataInterface,
+				globalSessionInfoInterface,
 				null
 			);
 		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);

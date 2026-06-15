@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto;
+package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.HashMd5Helper;
@@ -7,7 +7,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundExce
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -15,11 +14,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Static RTSP session information storage.
+ * Storage for global RTSP Session Information.
  */
-public final class RtspStaticSessionInfo {
+public final class RtspProtoGlobalSessionDataStorage {
 
-	public record SubStreamResolve(
+	private record SubStreamResolve(
 			@NonNull String clientIpAddrStr,
 			@NonNull RtspProtoIdInputSource idInputSource,
 			@NonNull RtspProtoIdStreamSource idStreamSource
@@ -33,22 +32,22 @@ public final class RtspStaticSessionInfo {
 	private static final int MAX_UNAUTHORIZED_ENTRIES = 1_000_000;
 	private static final int HASH_LEN = 8;
 
-	private static final ReadWriteLock theLock = new ReentrantReadWriteLock();
-	private static final Lock theReadLock = theLock.readLock();
-	private static final Lock theWriteLock = theLock.writeLock();
+	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
+	private final Lock theReadLock = theLock.readLock();
+	private final Lock theWriteLock = theLock.writeLock();
 
-	private static final List<@NonNull RtspProtoIdSubStream> subStreamIds = new ArrayList<>();
-	private static final Map<@NonNull RtspProtoIdSubStream, @NonNull SubStreamResolve> subStreamResolveMap = new HashMap<>();
+	private final List<@NonNull RtspProtoIdSubStream> subStreamIds = new ArrayList<>();
+	private final Map<@NonNull RtspProtoIdSubStream, @NonNull SubStreamResolve> subStreamResolveMap = new HashMap<>();
 
-	private static final List<@NonNull String> authServerNonceList = new ArrayList<>();
+	private final List<@NonNull String> authServerNonceList = new ArrayList<>();
 
-	private static final List<@NonNull String> unauthorizedIds = new ArrayList<>();
-	private static final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
+	private final List<@NonNull String> unauthorizedIds = new ArrayList<>();
+	private final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private RtspStaticSessionInfo() { }
+	public RtspProtoGlobalSessionDataStorage() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -62,7 +61,7 @@ public final class RtspStaticSessionInfo {
 	 * @param idStreamSource Stream Source ID as requested from the client per DESCRIBE request
 	 * @return Unique Sub-Stream ID
 	 */
-	public static @NonNull RtspProtoIdSubStream createSubStreamId(
+	public @NonNull RtspProtoIdSubStream createSubStreamId(
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdStreamSource idStreamSource
@@ -122,7 +121,7 @@ public final class RtspStaticSessionInfo {
 	 * @return Input Source ID
 	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
-	public static @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
+	public @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspIdSubStreamNotFoundException {
@@ -136,7 +135,7 @@ public final class RtspStaticSessionInfo {
 	 * @return Stream Source ID
 	 * @throws RtspIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
-	public static @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
+	public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspIdSubStreamNotFoundException {
@@ -150,7 +149,7 @@ public final class RtspStaticSessionInfo {
 	 * @param clientIpAddr Client's IP address
 	 * @return Nonce
 	 */
-	public static @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
+	public @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String nonce = HashMd5Helper.hashOfString(
 				String.format("%s : %08X", UUID.randomUUID(), RandomHelper.getRandomUint32(false)),
@@ -171,7 +170,13 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
+	/**
+	 * Check if the given Auth Server Nonce exists for the given client IP address.
+	 * @param clientIpAddr Client's IP address
+	 * @param nonce Nonce
+	 * @return True if the nonce exists, false otherwise
+	 */
+	public boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
 		final String ipHash = getIpHash(clientIpAddr);
 
 		theReadLock.lock();
@@ -184,7 +189,13 @@ public final class RtspStaticSessionInfo {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
+	/**
+	 * Increment the number of unauthorized attempts for the given client IP address and Input Source ID.
+	 * @param clientIpAddr Client's IP address
+	 * @param idInputSource Input source ID
+	 * @return The new number of unauthorized attempts
+	 */
+	public int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
@@ -211,7 +222,12 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
+	/**
+	 * Reset the number of unauthorized attempts for the given client IP address and Input Source ID.
+	 * @param clientIpAddr Client's IP address
+	 * @param idInputSource Input source ID
+	 */
+	public void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
@@ -227,7 +243,13 @@ public final class RtspStaticSessionInfo {
 		}
 	}
 
-	public static int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
+	/**
+	 * Get the number of unauthorized attempts for the given client IP address and Input Source ID.
+	 * @param clientIpAddr Client's IP address
+	 * @param idInputSource Input source ID
+	 * @return The number of unauthorized attempts
+	 */
+	public int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
 				.substring(0, HASH_LEN);
@@ -257,7 +279,7 @@ public final class RtspStaticSessionInfo {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull SubStreamResolve getResolveBySubStreamId(
+	private @NonNull SubStreamResolve getResolveBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspIdSubStreamNotFoundException {

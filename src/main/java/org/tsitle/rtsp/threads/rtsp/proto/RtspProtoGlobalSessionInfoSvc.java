@@ -5,12 +5,15 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspIdSubStreamNotFoundExce
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoGlobalSessionDataStorage;
 
-public final class RtspStaticSessionDataSvc implements RtspProtoStaticSessionDataInterface {
+public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessionInfoInterface {
 
-	public RtspStaticSessionDataSvc() { }
+	private final RtspProtoGlobalSessionDataStorage globalSessionInfo = new RtspProtoGlobalSessionDataStorage();
+
+	public RtspProtoGlobalSessionInfoSvc() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -21,7 +24,7 @@ public final class RtspStaticSessionDataSvc implements RtspProtoStaticSessionDat
 				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) {
-		return RtspStaticSessionInfo.createSubStreamId(
+		return globalSessionInfo.createSubStreamId(
 				clientIpAddr,
 				idInputSource,
 				idStreamSource
@@ -33,7 +36,7 @@ public final class RtspStaticSessionDataSvc implements RtspProtoStaticSessionDat
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspIdSubStreamNotFoundException {
-		return RtspStaticSessionInfo.getInputSourceIdBySubStreamId(idSubStream, clientIpAddr);
+		return globalSessionInfo.getInputSourceIdBySubStreamId(idSubStream, clientIpAddr);
 	}
 
 	@Override
@@ -41,31 +44,36 @@ public final class RtspStaticSessionDataSvc implements RtspProtoStaticSessionDat
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspIdSubStreamNotFoundException {
-		return RtspStaticSessionInfo.getStreamSourceIdBySubStreamId(idSubStream, clientIpAddr);
+		return globalSessionInfo.getStreamSourceIdBySubStreamId(idSubStream, clientIpAddr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
-		return RtspStaticSessionInfo.createAuthServerNonce(clientIpAddr);
+		return globalSessionInfo.createAuthServerNonce(clientIpAddr);
+	}
+
+	@Override
+	public boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
+		return globalSessionInfo.existsAuthServerNonce(clientIpAddr, nonce);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
 	public int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		return RtspStaticSessionInfo.incrementUnauthorized(clientIpAddr, idInputSource);
+		return globalSessionInfo.incrementUnauthorized(clientIpAddr, idInputSource);
 	}
 
 	@Override
 	public void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		RtspStaticSessionInfo.resetUnauthorized(clientIpAddr, idInputSource);
+		globalSessionInfo.resetUnauthorized(clientIpAddr, idInputSource);
 	}
 
 	@Override
 	public int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		return RtspStaticSessionInfo.getUnauthorized(clientIpAddr, idInputSource);
+		return globalSessionInfo.getUnauthorized(clientIpAddr, idInputSource);
 	}
 
 }

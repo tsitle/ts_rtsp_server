@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoAuthDigest;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspSessionInfo;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspStaticSessionInfo;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
@@ -27,17 +27,20 @@ public final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspSessionInfo rtspSessionInfo,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface
+				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.availableStreamsInterface = availableStreamsInterface;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -67,7 +70,7 @@ public final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
 				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.permAuthServer.getAuthNonce()) &&
-						RtspStaticSessionInfo.existsAuthServerNonce(
+						globalSessionInfoInterface.existsAuthServerNonce(
 								rtspSessionInfo.clientIpAddr, rtspSessionInfo.permAuthServer.getAuthNonce()
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");

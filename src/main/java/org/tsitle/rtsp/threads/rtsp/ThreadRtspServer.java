@@ -55,6 +55,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
 	 * @param rtspConfig RTSP configuration
+	 * @param cfgServerNameAndVersion RTSP server software name and version
+	 * @param globalSessionInfoSvc Global Session Info service
 	 * @param clientConnectionNr Client connection number
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
 	 * @param isRtspsConnection True if the RTSP connection is over TLS/SSL
@@ -64,6 +66,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc,
 				int clientConnectionNr,
 				@NonNull Socket rtspSocketTcp,
 				boolean isRtspsConnection
@@ -99,14 +102,12 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		cfgServerSupportedMessageTypes.writeProtect();
 
 		//
-		RtspStaticSessionDataSvc staticSessionDataSvc = new RtspStaticSessionDataSvc();
-
-		//
 		RtspUserAuthSvc userAuthSvc = new RtspUserAuthSvc(
 				logMsgInterface,
 				rtspConfig,
 				rtspSessionInfo,
-				availableStreamsSvc
+				availableStreamsSvc,
+				globalSessionInfoSvc
 			);
 
 		//
@@ -119,7 +120,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				this.rtspSessionInfo,
 				userAuthSvc,
 				availableStreamsSvc,
-				staticSessionDataSvc,
+				globalSessionInfoSvc,
 				this.rtxpTcpReadWrite
 			);
 		this.rtspProtoResponseOutputSvc = new RtspProtoResponseOutputSvc(
@@ -133,7 +134,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				rtspConfig.getIsDebugDisableTransportUdp(),
 				this.rtspSessionInfo,
 				availableStreamsSvc,
-				staticSessionDataSvc,
+				globalSessionInfoSvc,
 				this.rtxpTcpReadWrite
 			);
 
@@ -146,7 +147,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				rtspChildThreadMng,
 				rtxpTcpReadWrite,
 				availableStreamsSvc,
-				staticSessionDataSvc
+				globalSessionInfoSvc
 			);
 	}
 

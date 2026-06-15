@@ -20,7 +20,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequest
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.request.RtspProtoLowRequestProducer;
@@ -49,7 +49,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -60,7 +60,7 @@ public final class RtspProtoRequestOutputSvc {
 				cfgServerNameAndVersion,
 				cfgContentLanguage,
 				availableStreamsInterface,
-				staticSessionDataInterface
+				globalSessionInfoInterface
 			);
 
 		//

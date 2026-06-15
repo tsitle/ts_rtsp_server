@@ -22,7 +22,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoSdpProducerInterface;
 
 import java.util.ArrayList;
@@ -34,13 +34,13 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull String cfgContentLanguage;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspProtoSdpProducer(
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		if (cfgServerNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
@@ -48,7 +48,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.cfgContentLanguage = cfgContentLanguage;
 		this.availableStreamsInterface = availableStreamsInterface;
-		this.staticSessionDataInterface = staticSessionDataInterface;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			tmpOutRtspSsrcId = tmpInpAdSubStreamSetts.get().getRtspSsrcId();
 		} else {
 			// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
-			tmpOutSubStreamId = staticSessionDataInterface.createSubStreamId(
+			tmpOutSubStreamId = globalSessionInfoInterface.createSubStreamId(
 					inputSourceObj.getIdInputSource(),
 					ssId,
 					clientIpAddr

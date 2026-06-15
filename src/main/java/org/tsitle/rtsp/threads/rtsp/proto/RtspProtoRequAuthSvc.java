@@ -11,7 +11,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspStatusCode;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoStaticSessionDataInterface;
+import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoUserAuthInterface;
 
 /**
@@ -27,7 +27,7 @@ public class RtspProtoRequAuthSvc {
 	private final @NonNull RtspSessionInfo rtspSessionInfo;
 	private final @NonNull RtspProtoUserAuthInterface userAuthInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspProtoRequAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -35,14 +35,14 @@ public class RtspProtoRequAuthSvc {
 				@NonNull RtspSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoStaticSessionDataInterface staticSessionDataInterface
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtxpLogLevel = rtxpLogLevel;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.userAuthInterface = userAuthInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
-		this.staticSessionDataInterface = staticSessionDataInterface;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ public class RtspProtoRequAuthSvc {
 		//
 		if (wasAuthentificationOk) {
 			// check if Client IP Address is blocked
-			int tmpUnauthCnt = staticSessionDataInterface.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
+			int tmpUnauthCnt = globalSessionInfoInterface.getUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
 			if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
 				// reject Client IP Address even if user credentials are OK
 				wasAuthentificationOk = false;
@@ -119,7 +119,7 @@ public class RtspProtoRequAuthSvc {
 					requAuthClient.getAuthUser(),
 					rtspSessionInfo.clientIpAddr.getIpAddrStr().orElseThrow());
 			logDebug(FNC_NAME, logMsg);
-			staticSessionDataInterface.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
+			globalSessionInfoInterface.resetUnauthorized(rtspSessionInfo.clientIpAddr, tmpIdIs);
 			return;
 		}
 
@@ -133,7 +133,7 @@ public class RtspProtoRequAuthSvc {
 	private void rejectWithUnauthorized(@NonNull RtspRequestBasics rtspRequestBasics, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String FNC_NAME = getClass().getSimpleName() + ".rejectWithUnauthorized()";
 
-		final int unauthCnt = staticSessionDataInterface.incrementUnauthorized(rtspSessionInfo.clientIpAddr, idInputSource);
+		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(rtspSessionInfo.clientIpAddr, idInputSource);
 		//
 		rtspRequestBasics.statusCode = RtspStatusCode.UNAUTHORIZED;
 		//

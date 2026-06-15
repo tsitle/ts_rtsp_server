@@ -7,7 +7,10 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 
-public interface RtspProtoStaticSessionDataInterface {
+/**
+ * Interface for global RTSP Session Information.
+ */
+public interface RtspProtoGlobalSessionInfoInterface {
 
 	/**
 	 * Create a new Sub-Stream ID.<br />
@@ -55,6 +58,14 @@ public interface RtspProtoStaticSessionDataInterface {
 	 * @return Nonce
 	 */
 	@NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr);
+
+	/**
+	 * Check if the given Auth Server Nonce exists for the given client IP address.
+	 * @param clientIpAddr Client's IP address
+	 * @param nonce Nonce
+	 * @return True if the nonce exists, false otherwise
+	 */
+	boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce);
 
 	// -----------------------------------------------------------------------------------------------------------------
 
