@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -41,7 +42,8 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected void buildIvForRtp(long packetIndex, int ssrc, @NonNull BufferExt curIvBuf) throws SrtxpSecurityException {
+	protected void buildIvForRtp(long packetIndex, @NonNull RtspProtoIdXsrc ssrc, @NonNull BufferExt curIvBuf)
+			throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {
 			throw new SrtxpSecurityException("Session Keys not set");
 		}
@@ -63,7 +65,7 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 		 */
 		ByteBuffer buf = ByteBuffer.wrap(tmpIvBytes).order(ByteOrder.BIG_ENDIAN);
 		buf.putInt(0);
-		buf.putInt(ssrc);
+		buf.putInt(ssrc.getId32bit().orElse(0L).intValue());
 		/*buf.put((byte)((packetIndex >>> 40) & 0xFF));
 		buf.put((byte)((packetIndex >>> 32) & 0xFF));
 		buf.put((byte)((packetIndex >>> 24) & 0xFF));

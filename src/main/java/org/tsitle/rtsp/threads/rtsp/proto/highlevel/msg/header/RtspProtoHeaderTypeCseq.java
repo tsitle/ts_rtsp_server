@@ -5,7 +5,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoCseqNr;
 
 import java.util.Optional;
 
-public class RtspProtoHeaderTypeCseq {
+public final class RtspProtoHeaderTypeCseq {
 
 	public RtspProtoCseqNr cseqNr = new RtspProtoCseqNr();
 

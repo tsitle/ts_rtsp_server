@@ -417,7 +417,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		cacheParamsBase.reset();
-		cacheParamsBase.rtspSsrcId = paramsCommon.getRtspSsrcId();
+		cacheParamsBase.ssrcId.copyFrom(paramsCommon.getSsrcId());
 		cacheParamsBase.sequenceNumber = getRtpSequNr();
 		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(
 				curFragmentData.fragmentOffset(),
@@ -797,7 +797,7 @@ public abstract class ThreadRtpSenderBase<
 			logDebug(FNC_NAME, "siBlock=" + siBlock);
 		}*/
 		RtcpPacketSR packetSrObj = new RtcpPacketSR(
-				paramsCommon.getRtspSsrcId(),
+				paramsCommon.getSsrcId(),
 				siBlock,
 				List.of()
 			);
@@ -829,7 +829,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		paramsCommon.getCbRtcpAppendToOutgoingQueue().orElseThrow()
-				.accept(paramsCommon.getRtspSsrcId(), packetCompoundBuf);
+				.accept(paramsCommon.getSsrcId(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();
 	}

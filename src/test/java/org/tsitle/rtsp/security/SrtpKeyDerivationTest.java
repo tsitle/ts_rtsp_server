@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -16,8 +18,8 @@ class SrtpKeyDerivationTest {
 
 	@SuppressWarnings("ConstantValue")
 	@Test
-	void rfc3711_rtp_vector_should_match() throws SrtxpSecurityException {
-		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(0xABCDEF12);
+	void rfc3711_rtp_vector_should_match() throws SrtxpSecurityException, RtspProtoNumberRangeException {
+		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(RtspProtoIdXsrc.of(0xABCDEF12L));
 
 		final BufferExt expectedEncKey_128 = BufferExt.decodeHexString("0xC61E7A93744F39EE10734AFE3FF7A087");
 		final BufferExt expectedEncKey_256 = BufferExt.decodeHexString("0x163E3C392D9CD97AC1B621097628F62BDE51B3E6540F74036094F0B8243BAFCA");
@@ -45,8 +47,8 @@ class SrtpKeyDerivationTest {
 
 	@SuppressWarnings("ConstantValue")
 	@Test
-	void rfc3711_rtcp_vector_should_match() throws SrtxpSecurityException {
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(0xABCDEF12);
+	void rfc3711_rtcp_vector_should_match() throws SrtxpSecurityException, RtspProtoNumberRangeException {
+		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(RtspProtoIdXsrc.of(0xABCDEF12L));
 
 		final BufferExt expectedEncKey_128 = BufferExt.decodeHexString("4C1AA45A81F73D61C800BBB00FBB1EAA");
 		final BufferExt expectedEncKey_256 = BufferExt.decodeHexString("2D3D918C03825CF2C091ABA8EAFBC090F2609985446270ED3F610C22B479291B");
@@ -80,7 +82,7 @@ class SrtpKeyDerivationTest {
 		new SecureRandom().nextBytes(masterSalt);
 
 		//
-		final int ssrcId = 0xABCDEF12;
+		final RtspProtoIdXsrc ssrcId = RtspProtoIdXsrc.of(0xABCDEF12L);
 		SessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(
 				new BufferExt(masterKey),
 				new BufferExt(masterSalt),

@@ -3,16 +3,17 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.Optional;
 
-public class RtspProtoHeaderTypeRtpinfo {
+public final class RtspProtoHeaderTypeRtpinfo {
 
 	public static class SubStream {
 		public @NonNull String urlStr = "";
 		private int seqNr16bit = -1;
 		private long rtpTimestamp32bit = -1L;
-		private long ssrcId32bit = -1L;
+		private final @NonNull RtspProtoIdXsrc ssrcId = new RtspProtoIdXsrc();
 
 		public void setSeqNr16bit(int seqNr16bit) throws RtspProtoNumberRangeException {
 			if (seqNr16bit < 0 || seqNr16bit > 0xFFFF) {
@@ -36,35 +37,22 @@ public class RtspProtoHeaderTypeRtpinfo {
 			return (rtpTimestamp32bit < 0L ? Optional.empty() : Optional.of((int)rtpTimestamp32bit));
 		}
 
-		public void setSsrcId32bit(long ssrc32bit) throws RtspProtoNumberRangeException {
-			if (ssrc32bit < 1L || ssrc32bit > 0xFFFFFFFFL) {
-				throw new RtspProtoNumberRangeException("ssrc32bit must be between 1 and 0xFFFFFFFF, got: " + ssrc32bit);
-			}
-			this.ssrcId32bit = ssrc32bit;
+		public void setSsrcId(@NonNull RtspProtoIdXsrc value) {
+			ssrcId.copyFrom(value);
 		}
 
-		public Optional<Integer> getSsrcId32bit() {
-			return (ssrcId32bit < 0L ? Optional.empty() : Optional.of((int)ssrcId32bit));
+		public @NonNull RtspProtoIdXsrc getSsrcId() {
+			return ssrcId.clone();
 		}
 
 		@Override
 		public @NonNull String toString() {
 			return "[" +
-					"urlStr='" + urlStr + "', " +
-					optionalShortToStr("seqNr", getSeqNr16bit()) + ", " +
-					optionalIntToStr("rtpTimestamp", getRtpTimestamp32bit()) + ", " +
-					optionalIntToStr("ssrcId", getSsrcId32bit()) +
+					"urlStr='" + urlStr + "'" +
+					", seqNr=" + (getSeqNr16bit().isPresent() ? Integer.toUnsignedString(seqNr16bit) : "unset") +
+					", rtpTimestamp=" + (getRtpTimestamp32bit().isPresent() ? Long.toUnsignedString(rtpTimestamp32bit) : "unset") +
+					", ssrcId=" + (ssrcId.isEmpty() ? "unset" : ssrcId.toHexString(true)) +
 					"]";
-		}
-
-		@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "SameParameterValue"})
-		private static @NonNull String optionalShortToStr(@NonNull String desc, @NonNull Optional<Short> value) {
-			return desc + "=" + (value.isPresent() ? Short.toUnsignedInt(value.get()) : "unset");
-		}
-
-		@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "SameParameterValue"})
-		private static @NonNull String optionalIntToStr(@NonNull String desc, @NonNull Optional<Integer> value) {
-			return desc + "=" + value.map(Integer::toUnsignedString).orElse("unset");
 		}
 	}
 

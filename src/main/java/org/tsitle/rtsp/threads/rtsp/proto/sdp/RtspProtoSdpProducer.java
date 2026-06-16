@@ -8,6 +8,8 @@ import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.DynInteger;
 import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
@@ -261,11 +263,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		//
 		final RtspProtoIdSubStream tmpOutSubStreamId;
-		final int tmpOutRtspSsrcId;
+		final long tmpOutRtspSsrcId;
 		Optional<RtspProtoDataCntAdStreamSett.SubStream> tmpInpAdSubStreamSetts = ioAdStreamSett.getSettingsByStreamSourceId(ssId);
 		if (tmpInpAdSubStreamSetts.isPresent()) {
 			tmpOutSubStreamId = tmpInpAdSubStreamSetts.get().idSubStream;
-			tmpOutRtspSsrcId = tmpInpAdSubStreamSetts.get().getRtspSsrcId();
+			tmpOutRtspSsrcId = tmpInpAdSubStreamSetts.get().ssrcId.getId32bit().orElse(-1L);
 		} else {
 			// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
 			tmpOutSubStreamId = globalSessionInfoInterface.createSubStreamId(
@@ -274,7 +276,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 					clientIpAddr
 				);
 			// generate SSRC ID
-			tmpOutRtspSsrcId = RandomHelper.getRandomUint32(false);
+			tmpOutRtspSsrcId = Integer.toUnsignedLong(RandomHelper.getRandomUint32(false));
 		}
 		tmpOutSubStreamId.writeProtect();
 
@@ -285,7 +287,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		RtspProtoDataCntAdStreamSett.SubStream settSubStream = new RtspProtoDataCntAdStreamSett.SubStream();
 		settSubStream.idStreamSource.copyFrom(ssId);
 		settSubStream.idSubStream.copyFrom(tmpOutSubStreamId);
-		settSubStream.setRtspSsrcId(tmpOutRtspSsrcId);
+		try {
+			settSubStream.ssrcId.setId32bit(tmpOutRtspSsrcId);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		settSubStream.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
 
 		// ----------------------------------------
@@ -307,7 +313,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			SrtxpKmd kmdOutboundForSs;
 			boolean isNewKmd = false;
 			if (! ioKmdsOutbound.containsKmdForSubStreamId(tmpOutSubStreamId)) {
-				kmdOutboundForSs = generateKmdsOutbound(clientUserAgent, settSubStream.getRtspSsrcId());
+				kmdOutboundForSs = generateKmdsOutbound(clientUserAgent, settSubStream.ssrcId);
 				isNewKmd = true;
 			} else {
 				kmdOutboundForSs = ioKmdsOutbound.getKmdBySubStreamId(tmpOutSubStreamId).orElseThrow();
@@ -325,7 +331,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		ioAdStreamSett.putSettingsForSubStream(settSubStream);
 	}
 
-	private @NonNull SrtxpKmd generateKmdsOutbound(@NonNull String clientUserAgent, int rtspSsrcId) {
+	private @NonNull SrtxpKmd generateKmdsOutbound(@NonNull String clientUserAgent, @NonNull RtspProtoIdXsrc ssrcId) {
 		boolean isForLegacySdes = clientUserAgent.startsWith("Lavf");
 
 		if (! isForLegacySdes) {
@@ -339,16 +345,16 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
 						DynInteger.createEmpty(),  // <-- no MKI
-						rtspSsrcId
+						ssrcId
 					);
 			}
-			return SrtxpKmd.createWithDefaults(1L, rtspSsrcId);
+			return SrtxpKmd.createWithDefaults(1L, ssrcId);
 		}
 		/*
 		 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
 		 * Similarly, it will always request RTP/AVP transport in the SETUP request.
 		 */
-		return SrtxpKmd.createForLegacySdes(rtspSsrcId);
+		return SrtxpKmd.createForLegacySdes(ssrcId);
 	}
 
 	private void buildSdpForSubStream_output(

@@ -10,6 +10,7 @@ import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
@@ -35,7 +36,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comIdStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParamsCommon.setIdStreamSource(v); return self(); }
 
-	public B comRtspSsrcId(int v) { this.threadParamsCommon.setRtspSsrcId(v); return self(); }
+	public B comSsrcId(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcId(v); return self(); }
 
 	public B comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return self(); }
 	public B comTpClientDestUdpPortRtp(@NonNull RtspProtoSocketPortNr v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return self(); }
@@ -58,7 +59,10 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comRtpTimestampT0(ParamsThreadRtpSenderCommon.@NonNull RtpTsT0 v) { this.threadParamsCommon.setRtpTimestampT0(v); return self(); }
 
 	public B comXsrcBlockEntry(@NonNull RtcpInnerXsrcBlock v) { this.threadParamsCommon.setXsrcBlockEntry(v); return self(); }
-	public B comCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> v) { this.threadParamsCommon.setCbRtcpAppendToOutgoingQueue(v); return self(); }
+	public B comCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> v) {
+		this.threadParamsCommon.setCbRtcpAppendToOutgoingQueue(v);
+		return self();
+	}
 
 	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdStreamSource> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }

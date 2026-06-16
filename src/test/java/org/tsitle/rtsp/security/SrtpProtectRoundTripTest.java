@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +14,7 @@ class SrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
 		final short hdSeqNr = 0x1234;
-		final int hdSsrc = 0x11223344;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		// Arrange
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
@@ -42,7 +43,7 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protectAndUnprotect_should_handle_roc_wrap_from_seq_ffff_to_0000() throws Exception {
-		final int hdSsrc = 0x11223344;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
@@ -92,7 +93,7 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void unprotectSrtp_should_reject_replay_after_roc_wrap() throws Exception {
-		final int hdSsrc = 0xABCD1234;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xABCD1234L);
 
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
@@ -152,7 +153,7 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void unprotectSrtp_should_reject_replay_for_old_seqnr() throws Exception {
-		final int hdSsrc = 0x11223344;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
@@ -195,7 +196,7 @@ class SrtpProtectRoundTripTest {
 	@Test
 	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
 		final short hdSeqNrDoesntWrap = (short)0x0FFF;
-		final int hdSenderSsrc = 0x10203040;
+		final RtspProtoIdXsrc hdSenderSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp(hdSenderSsrc);
 

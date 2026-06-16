@@ -3,20 +3,22 @@ package org.tsitle.rtsp.packets.rtp;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.security.*;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DebugRtpPacketTest {
 
 	@Test
-	public void debugRtpPacket1() {
+	public void debugRtpPacket1() throws RtspProtoNumberRangeException {
 		final BufferExt tmpBufferExt = BufferExt.decodeHexString("80 00 bf 65 a8 9f ed 09 f2 3d d9 09");
 		RtpBaseContainerInfo rbci = RtpPacketContainerBase.parsePacketHeader(tmpBufferExt);
 		RtpPacketContainerBase tmpRtpPacket = new RtpPacketContainerBase(rbci.payloadType(), tmpBufferExt);
 
 		System.out.println("RTP packet header: " + tmpRtpPacket);
 
-		assertEquals(0xF23DD909, tmpRtpPacket.getSsrcId());
+		assertEquals(RtspProtoIdXsrc.of(0xF23DD909L), tmpRtpPacket.getSsrcId());
 	}
 
 	private void decryptPacketBuffer(

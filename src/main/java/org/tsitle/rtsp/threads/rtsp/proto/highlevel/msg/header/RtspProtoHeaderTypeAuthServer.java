@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspAuthAlgo;
 
-public class RtspProtoHeaderTypeAuthServer {
+public final class RtspProtoHeaderTypeAuthServer {
 
 	/** Authentication credentials: realm */
 	public @NonNull String authRealm = "";

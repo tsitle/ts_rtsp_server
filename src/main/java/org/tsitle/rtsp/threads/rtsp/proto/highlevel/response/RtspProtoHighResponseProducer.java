@@ -230,7 +230,7 @@ public final class RtspProtoHighResponseProducer {
 
 				outputSetupInfosStream.createAndAddSetupSubStream(
 						tmpRscUrlSs,
-						tmpAvSs.getRtspSsrcId(),
+						tmpAvSs.ssrcId,
 						tmpProtoKmdOutbound
 					);
 			}
@@ -394,11 +394,7 @@ public final class RtspProtoHighResponseProducer {
 				} catch (RtspProtoNumberRangeException e) {
 					throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting RTP timestamp failed: " + e.getMessage());
 				}
-				try {
-					tmpStreamInfoOutput.setSsrcId32bit(tmpSiSs.rtspSsrcId);
-				} catch (RtspProtoNumberRangeException e) {
-					throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
-				}
+				tmpStreamInfoOutput.setSsrcId(tmpSiSs.getSsrcIdPtr());
 				if (tmpSubStreamNr == 1) {
 					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
 				} else if (tmpSubStreamNr == 2) {
@@ -505,11 +501,7 @@ public final class RtspProtoHighResponseProducer {
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtpPtr());
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtcpPtr());
 			}
-			try {
-				hdEntry.hdValTransport.setSsrcId32bit(tmpSiSs.rtspSsrcId);
-			} catch (RtspProtoNumberRangeException e) {
-				throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting SSRC ID failed: " + e.getMessage());
-			}
+			hdEntry.hdValTransport.tpSsrcId.copyFrom(tmpSiSs.getSsrcIdPtr());
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 

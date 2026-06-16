@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.Objects;
 
@@ -33,7 +34,7 @@ public final class SrtxpKmd implements Cloneable {
 	/** Master Key Identifier */
 	private @NonNull DynInteger mki;
 	/** SSRC ID */
-	private final int ssrcId;
+	private @NonNull RtspProtoIdXsrc ssrcId;
 	/**
 	 * Key Derivation Rate for Session Keys (in packets).<br />
 	 * 0^=derive once from master key/salt; >0^=derive every N packets.<br />
@@ -62,7 +63,7 @@ public final class SrtxpKmd implements Cloneable {
 				int authKeyLen,
 				int authTagLen,
 				@NonNull DynInteger mki,
-				int ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull DynInteger kdr
 			) {
 		this.isForLegacySdes = isForLegacySdes;
@@ -72,7 +73,8 @@ public final class SrtxpKmd implements Cloneable {
 		this.authKeyLen = authKeyLen;
 		this.authTagLen = authTagLen;
 		this.mki = mki.clone();
-		this.ssrcId = ssrcId;
+		this.ssrcId = ssrcId.clone();
+		this.ssrcId.writeProtect();
 		this.kdr = (kdr.isEmpty() || kdr.value() == 0L ? DynInteger.createEmpty() : kdr.clone());
 	}
 
@@ -85,7 +87,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(long mkiValue, int ssrcId) {
+	public static SrtxpKmd createWithDefaults(long mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
 		return createWithDefaults(
 				mkiValue,
 				ssrcId,
@@ -100,7 +102,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(long mkiValue, int ssrcId, @NonNull DynInteger kdr) {
+	public static SrtxpKmd createWithDefaults(long mkiValue, @NonNull RtspProtoIdXsrc ssrcId, @NonNull DynInteger kdr) {
 		return createWithCustomKeySizes(
 				false,
 				DEFAULT_ENCR_KEY_LEN,
@@ -119,7 +121,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createForLegacySdes(int ssrcId) {
+	public static SrtxpKmd createForLegacySdes(@NonNull RtspProtoIdXsrc ssrcId) {
 		return createWithCustomKeySizes(
 				true,
 				DEFAULT_ENCR_KEY_LEN,
@@ -147,7 +149,7 @@ public final class SrtxpKmd implements Cloneable {
 				int authKeyLen,
 				int authTagLen,
 				@NonNull DynInteger mki,
-				int ssrcId
+				@NonNull RtspProtoIdXsrc ssrcId
 			) {
 		return createWithCustomKeySizes(
 				isForLegacySdes,
@@ -177,7 +179,7 @@ public final class SrtxpKmd implements Cloneable {
 				int authKeyLen,
 				int authTagLen,
 				@NonNull DynInteger mki,
-				int ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull DynInteger kdr
 			) {
 		SrtxpKmd resObj = new SrtxpKmd(
@@ -212,6 +214,7 @@ public final class SrtxpKmd implements Cloneable {
 			clone.masterKey = this.masterKey.clone();
 			clone.masterSalt = this.masterSalt.clone();
 			clone.mki = this.mki.clone();
+			clone.ssrcId = this.ssrcId.clone();
 			clone.kdr = this.kdr.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -255,8 +258,8 @@ public final class SrtxpKmd implements Cloneable {
 		return mki.clone();
 	}
 
-	public int ssrcId() {
-		return ssrcId;
+	public @NonNull RtspProtoIdXsrc ssrcId() {
+		return ssrcId.clone();
 	}
 
 	public @NonNull DynInteger kdr() {
@@ -279,7 +282,7 @@ public final class SrtxpKmd implements Cloneable {
 				this.authKeyLen == that.authKeyLen &&
 				this.authTagLen == that.authTagLen &&
 				Objects.equals(this.mki, that.mki) &&
-				this.ssrcId == that.ssrcId &&
+				Objects.equals(this.ssrcId, that.ssrcId) &&
 				Objects.equals(this.kdr, that.kdr));
 	}
 
@@ -298,7 +301,7 @@ public final class SrtxpKmd implements Cloneable {
 				", authKeyLen=" + authKeyLen +
 				", authTagLen=" + authTagLen +
 				", mki=" + mki +
-				", ssrcId=" + String.format("0x%08X", ssrcId) +
+				", ssrcId=" + ssrcId +
 				", kdr=" + kdr +
 				"]";
 	}

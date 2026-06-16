@@ -11,7 +11,7 @@ import java.util.Optional;
  * RTCP Reception Report Block.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.4.1">RFC-3550 Section 6.4.1</a>
  */
-public class RtcpInnerRecpReportBlock implements Cloneable {
+public final class RtcpInnerRecpReportBlock implements Cloneable {
 
 	/** Size of the RTCP packet payload */
 	public static final int PAYLOAD_SIZE = 24;

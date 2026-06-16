@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 
 import java.util.Optional;
 
-public class RtspProtoHeaderTypeSession {
+public final class RtspProtoHeaderTypeSession {
 
 	public final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
 

@@ -14,6 +14,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSessionInfoExcepti
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspProtocolVersion;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.*;
@@ -233,7 +234,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	public int getDescrSetupInfoSsrcBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
+	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
 		theReadLock.lock();
 		try {

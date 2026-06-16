@@ -577,14 +577,14 @@ public final class RtspLowParserHelper {
 			return;
 		}
 		if (rawSsrc.isBlank()) {
-			outputHd.clearSsrcId();  // can be empty
+			outputHd.tpSsrcId.clear();  // can be empty
 			return;
 		}
 		if (! outputHd.tpSubStream.getIsUnicast()) {
 			throw new RtspLowInvalidRrException(fieldDesc + " is only valid for Unicast");
 		}
 		try {
-			outputHd.setSsrcId32bit(
+			outputHd.tpSsrcId.setId32bit(
 					helperParseHexStringIntoLong(fieldDesc, rawSsrc)
 				);
 		} catch (RtspProtoNumberRangeException e) {

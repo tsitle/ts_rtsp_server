@@ -7,6 +7,7 @@ import org.tsitle.rtsp.packets.rtp.ParamsContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -49,7 +50,7 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull SrtxpKmd createSrtxpKmdDefault(int ssrcId) {
+	private static @NonNull SrtxpKmd createSrtxpKmdDefault(@NonNull RtspProtoIdXsrc ssrcId) {
 		// sanity checks
 		if (KeySizes.AES_KEY_SIZE_128 != 16) { throw new AssertionError("Invalid AES Key size"); }
 		if (KeySizes.AES_KEY_SIZE_256 != 32) { throw new AssertionError("Invalid AES Key size"); }
@@ -72,33 +73,33 @@ class Common {
 			);
 	}
 
-	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtpContextInbound createSrtpCtxInboundDefault(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextInbound(kmd);
 	}
 
-	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtpContextOutbound createSrtpCtxOutboundDefault(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtpContextOutbound(kmd);
 	}
 
-	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtcpContextInbound createSrtcpCtxInboundDefault(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextInbound(kmd);
 	}
 
-	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtcpContextOutbound createSrtcpCtxOutboundDefault(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return new SrtcpContextOutbound(kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtp(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtcp(int ssrcId) throws SrtxpSecurityException {
+	static @NonNull SessionKeys createSessionKeysDefaultRtcp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
@@ -112,7 +113,7 @@ class Common {
 				@NonNull BufferExt ms,
 				int authKeyLen,
 				int authTagLen,
-				int ssrcId
+				@NonNull RtspProtoIdXsrc ssrcId
 			) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = new SrtxpKmd(
@@ -135,7 +136,7 @@ class Common {
 				@NonNull BufferExt ms,
 				int authKeyLen,
 				int authTagLen,
-				int ssrcId
+				@NonNull RtspProtoIdXsrc ssrcId
 			) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = new SrtxpKmd(
@@ -202,7 +203,7 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static byte[] buildRtpPacket(short hdSeqNr, int hdSsrc, byte[] payload) {
+	static byte[] buildRtpPacket(short hdSeqNr, @NonNull RtspProtoIdXsrc hdSsrc, byte[] payload) {
 		RtpPacketContainerBase rtpPktCb = RtpPacketContainerBase.createPacketHeader(
 				RtpPacketType.V_JPEG,
 				new ParamsContainerBase(
@@ -225,7 +226,7 @@ class Common {
 				byte[] plainRtpPacket,
 				@NonNull SessionKeys rtpKeys,
 				short seqNr,
-				int ssrc,
+				RtspProtoIdXsrc ssrc,
 				long stateRoc
 			) throws Exception {
 		int headerLen = 12;
@@ -234,7 +235,7 @@ class Common {
 		byte[] iv = new byte[KeySizes.IV_SIZE];
 		ByteBuffer ivByBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivByBuf.putInt(0);
-		ivByBuf.putInt(ssrc);
+		ivByBuf.putInt(ssrc.getId32bit().orElse(0L).intValue());
 		ivByBuf.put((byte)((packetIndex >>> 40) & 0xFF));
 		ivByBuf.put((byte)((packetIndex >>> 32) & 0xFF));
 		ivByBuf.put((byte)((packetIndex >>> 24) & 0xFF));
@@ -273,14 +274,14 @@ class Common {
 	static byte[] buildExpectedSrtcpPacket(
 				byte[] plainRtcpPacket,
 				SessionKeys rtcpSessionKeys,
-				int ssrc,
+				RtspProtoIdXsrc ssrc,
 				int stateIndexOnly,
 				int rtcpSrRrExtendedHeaderLen
 			) throws Exception {
 		byte[] iv = new byte[KeySizes.IV_SIZE];
 		ByteBuffer ivBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
 		ivBuf.putInt(0);
-		ivBuf.putInt(ssrc);
+		ivBuf.putInt(ssrc.getId32bit().orElse(0L).intValue());
 		ivBuf.putShort((short)0);
 		ivBuf.putInt(stateIndexOnly);
 		ivBuf.putShort((short)0);

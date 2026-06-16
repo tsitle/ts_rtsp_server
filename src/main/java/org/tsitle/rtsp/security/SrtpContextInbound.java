@@ -7,6 +7,7 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 /**
  * Context for inbound SRTP packet decryption according to RFC-3711 Section 3.1
@@ -64,7 +65,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 	public void unprotectSrtp(
 				@NonNull BufferExt srtpPacketBuf,
 				short hdSeqNr,
-				int hdSsrcId,
+				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
 		final BufferView encrPktView = new BufferView(srtpPacketBuf);
@@ -84,7 +85,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 	public void unprotectSrtp(
 				@NonNull BufferView srtpPacketBufView,
 				short hdSeqNr,
-				int hdSsrcId,
+				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {

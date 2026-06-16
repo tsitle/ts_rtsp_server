@@ -3,6 +3,7 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -14,7 +15,7 @@ class JitsiSrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v1() throws Exception {
 		final short hdSeqNr = 0x1289;
-		final int hdSsrc = 0xAB12CD34;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xAB12CD34L);
 
 		// derive RTP session keys
 		SrtpContextOutbound ctx = Common.createSrtpCtxOutboundDefault(hdSsrc);
@@ -43,7 +44,7 @@ class JitsiSrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v2() throws Exception {
 		final short hdSeqNr = 0x1234;
-		final int hdSsrc = 0x11223344;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		// derive RTP session keys using Jitsi KDF
 		SessionKeys jitsiRtpKeys = JitsiCommon.jitsiCreateSessionKeysDefaultRtp();
@@ -76,7 +77,7 @@ class JitsiSrtpProtectRoundTripTest {
 	private static byte[] jitsiDecryptSrtp(
 				@SuppressWarnings("SameParameterValue") @NonNull BufferExt masterKey,
 				@SuppressWarnings("SameParameterValue") @NonNull BufferExt masterSalt,
-				int ssrc,
+				@NonNull RtspProtoIdXsrc ssrc,
 				byte[] srtpPacket
 			) throws Exception {
 		org.jitsi.srtp.SrtpPolicy policyObj = JitsiCommon.jitsiCreateSrtpPolicy();
@@ -91,7 +92,8 @@ class JitsiSrtpProtectRoundTripTest {
 				loggerObj
 			);
 
-		org.jitsi.srtp.SrtpCryptoContext cryptoContext = factoryObj.deriveContext(ssrc, 0);
+		int tmpSsrcInt = ssrc.getId32bit().orElse(0L).intValue();
+		org.jitsi.srtp.SrtpCryptoContext cryptoContext = factoryObj.deriveContext(tmpSsrcInt, 0);
 
 		org.jitsi.utils.ByteArrayBuffer pktBab = new JitsiSimpleByteArrayBuffer(srtpPacket);
 		org.jitsi.srtp.SrtpErrorStatus ret = cryptoContext.reverseTransformPacket(pktBab, false);

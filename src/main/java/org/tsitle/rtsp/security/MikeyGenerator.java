@@ -40,7 +40,7 @@ public final class MikeyGenerator {
 		ByteBuffer msgBb = ByteBuffer.wrap(tmpBe.getBaPtr()).order(ByteOrder.BIG_ENDIAN);
 
 		// ---- Common Header ----
-		writeCommonHeader(msgBb, MikeyMsgPayloadType.MMPT_T, kmd.ssrcId());
+		writeCommonHeader(msgBb, MikeyMsgPayloadType.MMPT_T, kmd.ssrcId().getId32bit().orElse(0L).intValue());
 
 		// ---- MIKEY payloads ----
 		writePtTimestamp(msgBb, MikeyMsgPayloadType.MMPT_RAND);

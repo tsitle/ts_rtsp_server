@@ -3,6 +3,8 @@ package org.tsitle.rtsp.packets.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -12,15 +14,15 @@ import java.util.List;
  * RTCP Goodbye Packet.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.6">RFC-3550 Section 6.6</a>
  */
-public class RtcpPacketBYE {
+public final class RtcpPacketBYE {
 
 	/** Size of one SSRC/CSRC */
 	public static final int XSRC_ENTRY_SIZE = 4;
 
 	/** Sender Synchronization/Contributing Source Identifiers that are unsubscribing from the stream (32 bits each) */
-	private final List<Integer> bdXsrcList = new ArrayList<>();
+	private final List<@NonNull RtspProtoIdXsrc> bdXsrcList = new ArrayList<>();
 	/** Optional Reason for Leaving (UTF-8 encoded string, max. 255 bytes) */
-	private final String bdReasonForLeaving;
+	private final @NonNull String bdReasonForLeaving;
 
 	/** Packet header */
 	private final RtcpPacketHeader mainPktHd;
@@ -32,8 +34,7 @@ public class RtcpPacketBYE {
 	 * @param xsrcList Sender Synchronization/Contributing Source Identifiers that are unsubscribing from the stream (can be empty)
 	 * @param optionalReasonForLeaving Optional reason for leaving the session (UTF-8 encoded string, max. 255 bytes)
 	 */
-	@SuppressWarnings("unused")
-	public RtcpPacketBYE(@Nullable List<@NonNull Integer> xsrcList, @Nullable String optionalReasonForLeaving) {
+	public RtcpPacketBYE(@Nullable List<@NonNull RtspProtoIdXsrc> xsrcList, @Nullable String optionalReasonForLeaving) {
 		final int lenRfl = (optionalReasonForLeaving == null ? 0 : optionalReasonForLeaving.length());
 		if (optionalReasonForLeaving != null && lenRfl > 255) {
 			throw new IllegalArgumentException("Invalid Reason-for-Leaving: max. 255 bytes");
@@ -55,14 +56,14 @@ public class RtcpPacketBYE {
 		if (xsrcList != null) {
 			bdXsrcList.addAll(xsrcList);
 		}
-		this.bdReasonForLeaving = optionalReasonForLeaving;
+		this.bdReasonForLeaving = (optionalReasonForLeaving == null ? "" : optionalReasonForLeaving);
 
 		// Construct the bitstream
 		byte[] tmpBuf = new byte[allItemsPayloadSize + additionalPayloadSize];
 		ByteBuffer bb = ByteBuffer.wrap(tmpBuf);  // big-endian by default
 		if (xsrcList != null) {
-			for (Integer xsrc : xsrcList) {
-				bb.putInt(xsrc);
+			for (RtspProtoIdXsrc xsrc : xsrcList) {
+				bb.putInt(xsrc.getId32bit().orElse(0L).intValue());
 			}
 		}
 		if (additionalPayloadSize > 0) {
@@ -82,7 +83,6 @@ public class RtcpPacketBYE {
 	 * @param mainPacketHeader Packet header
 	 * @param packet Raw packet bitstream which contains the main RTCP header and may contain zero or more SSRC/CSRC entries
 	 */
-	@SuppressWarnings("unused")
 	public RtcpPacketBYE(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.BYE) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
@@ -99,7 +99,13 @@ public class RtcpPacketBYE {
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
 		int totalBytesRead = RtcpPacketHeader.HEADER_SIZE;
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
-			this.bdXsrcList.add(bb.getInt());
+			RtspProtoIdXsrc tmpSsrc = new RtspProtoIdXsrc();
+			try {
+				tmpSsrc.setId32bit(Integer.toUnsignedLong(bb.getInt()));
+			} catch (RtspProtoNumberRangeException e) {
+				// this will never happen
+			}
+			this.bdXsrcList.add(tmpSsrc);
 			totalBytesRead += XSRC_ENTRY_SIZE;
 		}
 		String tmpRflStr = "";
@@ -123,7 +129,6 @@ public class RtcpPacketBYE {
 	 * Copies the header and payload of the RTCP packet into the given buffer.
 	 * @param packetBuf Buffer to copy the raw packet data into
 	 */
-	@SuppressWarnings("unused")
 	public void copyRawPacketDataInto(@NonNull BufferExt packetBuf) {
 		// construct the packet = header + payload
 		mainPktHd.copyRawPacketHeaderDataInto(packetBuf);
@@ -134,7 +139,6 @@ public class RtcpPacketBYE {
 	 * Returns the total length of the raw RTCP packet, including the header and payload.
 	 * @return Size of the raw packet
 	 */
-	@SuppressWarnings("unused")
 	public int getRawPacketSize() {
 		int tmpLenRfl = bdReasonForLeaving.length();
 		if (tmpLenRfl != 0) {
@@ -151,8 +155,12 @@ public class RtcpPacketBYE {
 	 * @return SSRC/CSRCs
 	 */
 	@SuppressWarnings("unused")
-	public @NonNull List<@NonNull Integer> getXsrcList() {
-		return new ArrayList<>(bdXsrcList);
+	public @NonNull List<@NonNull RtspProtoIdXsrc> getXsrcList() {
+		List<RtspProtoIdXsrc> resL = new ArrayList<>();
+		for (RtspProtoIdXsrc xsrc : bdXsrcList) {
+			resL.add(xsrc.clone());
+		}
+		return resL;
 	}
 
 	/**
@@ -168,8 +176,7 @@ public class RtcpPacketBYE {
 	public @NonNull String toString() {
 		String tmpXsrcs = String.join(", ",
 				bdXsrcList.stream()
-						.mapToInt(Integer::intValue)
-						.mapToObj(x -> String.format("0x%08X", x))
+						.map(xsrc -> (xsrc.isEmpty() ? "unset" : xsrc.toHexString(true)))
 						.toArray(String[]::new)
 			);
 		return getClass().getSimpleName() + " [" +

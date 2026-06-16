@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketSR;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -16,7 +17,7 @@ public class SrtxpContextTest {
 	@Test
 	void protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
 		final short hdSeqNr = 0x1234;
-		final int hdSsrc = 0xDEC0ADDE;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEC0ADDEL);
 
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
@@ -53,7 +54,7 @@ public class SrtxpContextTest {
 
 	@Test
 	void protectRtcpSrCompound_should_encrypt_payload_and_append_index_and_auth_tag() throws Exception {
-		final int hdSsrc = 0xDEC0ADDE;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEC0ADDEL);
 
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
@@ -109,7 +110,7 @@ public class SrtxpContextTest {
 
 			//
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
-			final int rndSsrcRtp = rnd.nextInt();
+			final RtspProtoIdXsrc rndSsrcRtp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 
 			final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(rndSsrcRtp);
 			final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(rndSsrcRtp);
@@ -149,7 +150,7 @@ public class SrtxpContextTest {
 			Common.srtcpCtxOutboundInjectStateRtcpIndex(rtcpCtx, 0);
 			Common.srtcpCtxInjectKeys(rtcpCtx, rtcpKeys);
 
-			final int rndSsrcRtcp = rnd.nextInt();
+			final RtspProtoIdXsrc rndSsrcRtcp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
 			final int rndRtcpPayloadLen = rnd.nextInt(1, 300);
 
@@ -195,7 +196,7 @@ public class SrtxpContextTest {
 
 			//
 			final short rndSeqNr = (short)rnd.nextInt(0x10000);
-			final int rndSsrcRtp = rnd.nextInt();
+			final RtspProtoIdXsrc rndSsrcRtp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 
 			final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(rndSsrcRtp);
 			final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(rndSsrcRtp);
@@ -237,7 +238,7 @@ public class SrtxpContextTest {
 			Common.srtcpCtxOutboundInjectStateRtcpIndex(rtcpCtx, rndStateStartIndex);
 			Common.srtcpCtxInjectKeys(rtcpCtx, rtcpKeys);
 
-			final int rndSsrcRtcp = rnd.nextInt();
+			final RtspProtoIdXsrc rndSsrcRtcp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 			final int rtcpHdrLen = RtcpPacketHeader.HEADER_SIZE + RtcpPacketSR.INNER_HEADER_SIZE;
 			final int rndRtcpPayloadLen = rnd.nextInt(1, 300);
 
@@ -270,7 +271,7 @@ public class SrtxpContextTest {
 
 	@Test
 	void rtcp_index_should_wrap_at_31_bits_boundary() throws Exception {
-		final int hdSsrc = 0x55667788;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x55667788L);
 
 		final SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 

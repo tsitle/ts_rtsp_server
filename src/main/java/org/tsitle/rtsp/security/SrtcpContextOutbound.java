@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -38,7 +39,7 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 	@SuppressWarnings("unused")
 	public void protectRtcpRrCompound(
 				@NonNull BufferExt rtcpPacketBuf,
-				int ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtxpSecurityException {
 		protectRtcpSrCompound(rtcpPacketBuf, ssrcId, outputEncryptedPacketBuf);
@@ -53,7 +54,7 @@ public class SrtcpContextOutbound extends SrtcpContextBase {
 	 */
 	public void protectRtcpSrCompound(
 				@NonNull BufferExt rtcpPacketBuf,
-				int ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtcp == null) {

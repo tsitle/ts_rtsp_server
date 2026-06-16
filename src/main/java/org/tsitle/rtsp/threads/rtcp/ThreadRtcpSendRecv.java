@@ -110,8 +110,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	public synchronized void appendByePacketToSendQueue() {
 		final String FNC_NAME = getClass().getSimpleName() + ".appendByePacketToSendQueue()";
 
-		logDebug(FNC_NAME, String.format(
-				"Sending BYE packet (ss=%s, SSRC=0x%08X)", params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
+		logDebug(FNC_NAME, String.format("Sending BYE packet (ss=%s, SSRC=%s)",
+				params.getIdStreamSource().getIdStr(), params.getSsrcId().toHexString(true)));
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendBye_buildRtcpCompound(packetCompoundBuf);
 		//
@@ -300,12 +300,12 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			srtcpVarsOutbound.ctxReadLock.lock();
 			try {
 				if (srtcpVarsOutbound.ctxObj != null) {
-					if (srtcpVarsOutbound.ctxObj.getSsrcId() != params.getRtspSsrcId()) {
+					if (! srtcpVarsOutbound.ctxObj.getSsrcId().equals(params.getSsrcId())) {
 						throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
 					}
 					srtcpVarsOutbound.ctxObj.protectRtcpSrCompound(
 							plainPktBuf,
-							params.getRtspSsrcId(),
+							params.getSsrcId(),
 							encrPktBuf
 						);
 					outpPacketPtr = encrPktBuf;
@@ -349,7 +349,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private void sendBye_buildEmptyRtcpSr(BufferExt packetSrBuf) {
 		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(0L, 0, 0, 0);
-		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getRtspSsrcId(), siBlock, List.of());
+		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getSsrcId(), siBlock, List.of());
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
 	}
 
@@ -365,7 +365,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		// SR packet
 		sendBye_buildEmptyRtcpSr(packetCompoundBuf);
 		// BYE packet
-		RtcpPacketBYE packetByeObj = new RtcpPacketBYE(List.of(params.getRtspSsrcId()), null);
+		RtcpPacketBYE packetByeObj = new RtcpPacketBYE(List.of(params.getSsrcId()), null);
 		BufferExt packetByeBuf = new BufferExt();
 		packetByeObj.copyRawPacketDataInto(packetByeBuf);
 		// Compound packet
@@ -505,9 +505,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, String.format(
-					"RTCP packet without items (ss=%s, SSRC=0x%08X)",
-					params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
+			logDebug(FNC_NAME, String.format("RTCP packet without items (ss=%s, SSRC=%s)",
+					params.getIdStreamSource().getIdStr(), params.getSsrcId().toHexString(true)));
 			return;
 		}
 		// read and validate the packet
@@ -551,9 +550,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketSDES()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, String.format(
-					"RTCP packet without items (ss=%s, SSRC=0x%08X)",
-					params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
+			logDebug(FNC_NAME, String.format("RTCP packet without items (ss=%s, SSRC=%s)",
+					params.getIdStreamSource().getIdStr(), params.getSsrcId().toHexString(true)));
 			return;
 		}
 		// read and validate the packet
@@ -571,8 +569,8 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			return;  // only for the linter
 		}
-		logDebug(FNC_NAME, String.format(
-				"received BYE (ss=%s, SSRC=0x%08X)", params.getIdStreamSource().getIdStr(), params.getRtspSsrcId()));
+		logDebug(FNC_NAME, String.format("received BYE (ss=%s, SSRC=%s)",
+				params.getIdStreamSource().getIdStr(), params.getSsrcId().toHexString(true)));
 	}
 
 }

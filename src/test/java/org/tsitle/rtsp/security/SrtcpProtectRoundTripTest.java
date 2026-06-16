@@ -6,6 +6,7 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,7 +19,7 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtcp_compound_sr_should_restore_original_packet() throws Exception {
-		final int hdSsrc = 0x11223344;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
@@ -88,7 +89,7 @@ class SrtcpProtectRoundTripTest {
 			rnd.nextBytes(mkiBa);
 		}
 
-		final int hdSsrc = rnd.nextInt();
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 
 		SrtxpKmd rtcpKmd = new SrtxpKmd(
 				false,
@@ -115,7 +116,7 @@ class SrtcpProtectRoundTripTest {
 				final SrtcpContextOutbound senderCtx,
 				final SrtcpContextInbound receiverCtx,
 				final int roundNr,
-				final int hdSsrc
+				final RtspProtoIdXsrc hdSsrc
 			) throws Exception {
 		long ntpMsw = Integer.toUnsignedLong(rnd.nextInt());
 		long ntpLsw = Integer.toUnsignedLong(rnd.nextInt());
@@ -150,7 +151,7 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void unprotect_should_fail_when_encrypted_packet_is_tampered() throws Exception {
-		final int hdSsrc = 0x55667788;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x55667788L);
 
 		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
@@ -192,7 +193,7 @@ class SrtcpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtcp_compound_sr_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
-		final int hdSsrc = 0x10203040;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
 		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
@@ -246,12 +247,13 @@ class SrtcpProtectRoundTripTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static byte[] buildCompoundRtcpSrPlusBye(int senderSsrc) {
+	private static byte[] buildCompoundRtcpSrPlusBye(RtspProtoIdXsrc senderSsrc) {
+		int tmpSsrcInt = senderSsrc.getId32bit().orElse(0L).intValue();
 		// RTCP SR (RC=0): 28 bytes total (length=6)
 		byte[] sr = new byte[] {
 				(byte) 0x80, (byte) 0xC8, 0x00, 0x06,                         // V=2, PT=SR(200), length=6
-				(byte) (senderSsrc >>> 24), (byte) (senderSsrc >>> 16),
-				(byte) (senderSsrc >>> 8), (byte) senderSsrc,                 // sender SSRC
+				(byte) (tmpSsrcInt >>> 24), (byte) (tmpSsrcInt >>> 16),
+				(byte) (tmpSsrcInt >>> 8), (byte) tmpSsrcInt,                 // sender SSRC
 				0x01, 0x02, 0x03, 0x04,                                       // NTP MSW
 				0x05, 0x06, 0x07, 0x08,                                       // NTP LSW
 				0x11, 0x22, 0x33, 0x44,                                       // RTP timestamp
@@ -262,8 +264,8 @@ class SrtcpProtectRoundTripTest {
 		// RTCP BYE (SC=1): 8 bytes total (length=1)
 		byte[] bye = new byte[] {
 				(byte) 0x81, (byte) 0xCB, 0x00, 0x01,                         // V=2, PT=BYE(203), length=1
-				(byte) (senderSsrc >>> 24), (byte) (senderSsrc >>> 16),
-				(byte) (senderSsrc >>> 8), (byte) senderSsrc
+				(byte) (tmpSsrcInt >>> 24), (byte) (tmpSsrcInt >>> 16),
+				(byte) (tmpSsrcInt >>> 8), (byte) tmpSsrcInt
 		};
 
 		byte[] compound = new byte[sr.length + bye.length];
@@ -273,17 +275,19 @@ class SrtcpProtectRoundTripTest {
 	}
 
 	private static byte[] buildCompoundRtcpSrPlusBye(
-				int senderSsrc,
+				RtspProtoIdXsrc senderSsrc,
 				long ntpMsw,
 				long ntpLsw,
 				long rtpTs,
 				long pktCount,
 				long octetCount
 			) {
+		int tmpSsrcInt = senderSsrc.getId32bit().orElse(0L).intValue();
+
 		byte[] sr = new byte[28];
 		ByteBuffer srBuf = ByteBuffer.wrap(sr).order(ByteOrder.BIG_ENDIAN);
 		srBuf.put((byte) 0x80).put((byte) 0xC8).putShort((short) 0x0006);
-		srBuf.putInt(senderSsrc);
+		srBuf.putInt(tmpSsrcInt);
 		srBuf.putInt((int) ntpMsw);
 		srBuf.putInt((int) ntpLsw);
 		srBuf.putInt((int) rtpTs);
@@ -293,7 +297,7 @@ class SrtcpProtectRoundTripTest {
 		byte[] bye = new byte[8];
 		ByteBuffer byeBuf = ByteBuffer.wrap(bye).order(ByteOrder.BIG_ENDIAN);
 		byeBuf.put((byte) 0x81).put((byte) 0xCB).putShort((short) 0x0001);
-		byeBuf.putInt(senderSsrc);
+		byeBuf.putInt(tmpSsrcInt);
 
 		byte[] compound = new byte[sr.length + bye.length];
 		System.arraycopy(sr, 0, compound, 0, sr.length);

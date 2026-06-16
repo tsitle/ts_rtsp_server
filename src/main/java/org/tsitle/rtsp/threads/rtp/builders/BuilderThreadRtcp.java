@@ -9,6 +9,7 @@ import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
@@ -32,7 +33,7 @@ public class BuilderThreadRtcp {
 
 		public Builder idStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParams.setIdStreamSource(v); return this; }
 
-		public Builder rtspSsrcId(int v) { this.threadParams.setRtspSsrcId(v); return this; }
+		public Builder ssrcId(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
 
 		public Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
 		public Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }

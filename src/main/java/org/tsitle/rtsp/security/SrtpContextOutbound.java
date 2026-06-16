@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 /**
  * Context for outbound RTP packet encryption
@@ -40,7 +41,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 				boolean hasCsrcList,
 				boolean hasHeaderExtension,
 				short hdSeqNr,
-				int hdSsrcId,
+				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtxpSecurityException {
 		if (ctxSessionKeysRtp == null) {

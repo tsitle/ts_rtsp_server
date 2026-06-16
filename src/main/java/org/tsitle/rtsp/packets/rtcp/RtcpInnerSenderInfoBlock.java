@@ -6,7 +6,7 @@ import org.tsitle.rtsp.helpers.NtpTimestampHelper;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
-public class RtcpInnerSenderInfoBlock implements Cloneable {
+public final class RtcpInnerSenderInfoBlock implements Cloneable {
 
 	/** Size of the RTCP packet payload */
 	public static final int PAYLOAD_SIZE = 20;

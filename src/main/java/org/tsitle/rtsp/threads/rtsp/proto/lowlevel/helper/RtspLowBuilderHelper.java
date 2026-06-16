@@ -267,11 +267,11 @@ public final class RtspLowBuilderHelper {
 					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()));
 		}
 
-		if (! isForRequest && hdValue.tpSubStream.getIsUnicast() && hdValue.getSsrcId32bit().isPresent()) {
+		if (! isForRequest && hdValue.tpSubStream.getIsUnicast() && ! hdValue.tpSsrcId.isEmpty()) {
 			sb
 					.append(";")
 					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
-					.append(RtspLowBuilderHelper.helperBuildHexString(hdValue.getSsrcId32bit().get()));
+					.append(hdValue.tpSsrcId.toHexString(false));
 		}
 
 		if (isForRequest && hdValue.tpMode != RtspTransportMode.NONE) {
@@ -282,12 +282,6 @@ public final class RtspLowBuilderHelper {
 		}
 
 		return sb.toString();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public static @NonNull String helperBuildHexString(int value) {
-		return String.format("%08X", value);
 	}
 
 }

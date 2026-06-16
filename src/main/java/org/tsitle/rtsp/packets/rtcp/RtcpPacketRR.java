@@ -3,6 +3,8 @@ package org.tsitle.rtsp.packets.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.*;
 import java.util.ArrayList;
@@ -13,13 +15,13 @@ import java.util.Optional;
  * RTCP Receiver Report Packet.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.4.2">RFC-3550 Section 6.4.2</a>
  */
-public class RtcpPacketRR {
+public final class RtcpPacketRR {
 
 	/** Size of the inner RTCP header */
 	public static final int INNER_HEADER_SIZE = 4;
 
 	/** Synchronization Source Identifier of sender (32 bits) */
-	private final int hdSsrcSender;
+	private final @NonNull RtspProtoIdXsrc hdSsrcSender;
 	/** Reception Report Blocks */
 	private final List<RtcpInnerRecpReportBlock> recpReportBlocks = new ArrayList<>();
 
@@ -34,7 +36,7 @@ public class RtcpPacketRR {
 	 * @param recpReportBlocks Reception Report Blocks (can be empty)
 	 */
 	@SuppressWarnings("unused")
-	public RtcpPacketRR(int ssrcSender, @Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks) {
+	public RtcpPacketRR(@NonNull RtspProtoIdXsrc ssrcSender, @Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks) {
 		if (recpReportBlocks != null && recpReportBlocks.size() > 255) {
 			throw new IllegalArgumentException("Invalid RTCP RR packet: invalid number of RRBs");
 		}
@@ -52,12 +54,12 @@ public class RtcpPacketRR {
 				(byte)this.recpReportBlocks.size(),
 				INNER_HEADER_SIZE + allItemsPayloadSize
 			);
-		this.hdSsrcSender = ssrcSender;
+		this.hdSsrcSender = ssrcSender.clone();
 
 		// Construct the bitstream
 		byte[] tmpBuf = new byte[INNER_HEADER_SIZE + allItemsPayloadSize];
 		ByteBuffer bb = ByteBuffer.wrap(tmpBuf);  // big-endian by default
-		bb.putInt(this.hdSsrcSender);
+		bb.putInt(this.hdSsrcSender.getId32bit().orElse(0L).intValue());
 		if (recpReportBlocks != null) {
 			for (RtcpInnerRecpReportBlock block : recpReportBlocks) {
 				block.appendToBuffer(bb);
@@ -71,7 +73,6 @@ public class RtcpPacketRR {
 	 * @param mainPacketHeader Packet header
 	 * @param packet Raw packet bitstream which contains the main RTCP header and may contain zero or more RRBs
 	 */
-	@SuppressWarnings("unused")
 	public RtcpPacketRR(@NonNull RtcpPacketHeader mainPacketHeader, @NonNull BufferExt packet) {
 		if (mainPacketHeader.getPayloadType() != RtcpPacketType.RR) {
 			throw new IllegalArgumentException("Invalid RTCP packet type");
@@ -85,7 +86,12 @@ public class RtcpPacketRR {
 
 		// Parse payload fields
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
-		this.hdSsrcSender = bb.getInt();
+		this.hdSsrcSender = new RtspProtoIdXsrc();
+		try {
+			this.hdSsrcSender.setId32bit(Integer.toUnsignedLong(bb.getInt()));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			RtcpInnerRecpReportBlock block = RtcpInnerRecpReportBlock.decodeFromBuffer(i, bb);
 			this.recpReportBlocks.add(block);
@@ -120,9 +126,8 @@ public class RtcpPacketRR {
 	 * Get the SSRC of the sender of the RTCP packet.
 	 * @return SSRC of the sender
 	 */
-	@SuppressWarnings("unused")
-	public int getSsrcSender() {
-		return hdSsrcSender;
+	public @NonNull RtspProtoIdXsrc getSsrcSender() {
+		return hdSsrcSender.clone();
 	}
 
 	/**
@@ -153,7 +158,7 @@ public class RtcpPacketRR {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				mainPktHd.toString(true) +
-				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +
+				", SSRC Sender: " + hdSsrcSender.toHexString(true) +
 				", RRB Count: " + recpReportBlocks.size() +
 				", " + recpReportBlocks +
 				"]";

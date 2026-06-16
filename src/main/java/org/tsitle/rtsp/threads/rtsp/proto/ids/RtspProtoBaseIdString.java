@@ -2,7 +2,10 @@ package org.tsitle.rtsp.threads.rtsp.proto.ids;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoIdBase implements Cloneable {
+/**
+ * Base class for string-based IDs
+ */
+public class RtspProtoBaseIdString implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
@@ -11,9 +14,9 @@ public class RtspProtoIdBase implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected RtspProtoIdBase() { }
+	protected RtspProtoBaseIdString() { }
 
-	protected RtspProtoIdBase(@NonNull String idStr) {
+	protected RtspProtoBaseIdString(@NonNull String idStr) {
 		this.idStr = idStr;
 	}
 
@@ -40,7 +43,7 @@ public class RtspProtoIdBase implements Cloneable {
 		idStr = "";
 	}
 
-	public void copyFrom(@NonNull RtspProtoIdBase other) {
+	public void copyFrom(@NonNull RtspProtoBaseIdString other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -71,7 +74,7 @@ public class RtspProtoIdBase implements Cloneable {
 		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		RtspProtoIdBase that = (RtspProtoIdBase)obj;
+		RtspProtoBaseIdString that = (RtspProtoBaseIdString)obj;
 		return idStr.equals(that.idStr);
 	}
 
@@ -88,9 +91,9 @@ public class RtspProtoIdBase implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoIdBase clone() {
+	public RtspProtoBaseIdString clone() {
 		try {
-			return (RtspProtoIdBase)super.clone();
+			return (RtspProtoBaseIdString)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}

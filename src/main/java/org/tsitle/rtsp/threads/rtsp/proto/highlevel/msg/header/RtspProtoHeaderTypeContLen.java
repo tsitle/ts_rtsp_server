@@ -5,7 +5,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 
 import java.util.Optional;
 
-public class RtspProtoHeaderTypeContLen {
+public final class RtspProtoHeaderTypeContLen {
 
 	private long contentLen32bit = -1L;
 

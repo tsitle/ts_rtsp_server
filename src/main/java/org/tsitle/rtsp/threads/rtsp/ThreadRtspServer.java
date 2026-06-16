@@ -19,6 +19,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoStatusCode;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRscUrl;
 
@@ -47,7 +48,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	private @Nullable Instant rtspTimeoutLastRequ = null;
 
-	private final Map<@NonNull Integer, RtspChildThreadMng.@NonNull ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
+	private final Map<@NonNull RtspProtoIdXsrc, RtspChildThreadMng.@NonNull ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
 
 	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
 	private final @NonNull Map<@NonNull RtspProtoIdStreamSource, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
@@ -230,7 +231,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public synchronized void cbSendRtcpPackets(int ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
+	public synchronized void cbSendRtcpPackets(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpPackets()";
 
 		RtspChildThreadMng.ChildThreadsForOneStream ctfosToUse = null;
@@ -242,14 +243,14 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					continue;
 				}
 				try {
-					if (rtspSessionInfo.getDescrSetupInfoSsrcBySubStreamsId(tmpRscUrl.idSubStream) != ssrcId) {
+					if (! rtspSessionInfo.getDescrSetupInfoSsrcBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
 						continue;
 					}
 				} catch (RtspProtoSessionInfoException e) {
 					continue;
 				}
 				ctfosToUse = rtspChildThreadMng.getCtfosMapValue(tmpRscUrl.idStreamSource);
-				childThreadsPerSsrcMap.put(ssrcId, ctfosToUse);
+				childThreadsPerSsrcMap.put(ssrcId.clone(), ctfosToUse);
 				break;
 			}
 		}

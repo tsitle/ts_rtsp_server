@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
+package org.tsitle.rtsp.threads.rtsp.proto.ids;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
@@ -6,48 +6,61 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
-public final class RtspProtoTcpChannelNr implements Cloneable {
+/**
+ * SSRC/CSRC ID
+ */
+public final class RtspProtoIdXsrc implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
-	/** TCP channel */
-	private int channelNr = -1;
+	/** SSRC/CSRC ID */
+	private long xsrc = -1L;
+
+	public RtspProtoIdXsrc() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<Integer> getChannel8bit() {
-		return (channelNr < 0 ? Optional.empty() : Optional.of(channelNr));
+	public static @NonNull RtspProtoIdXsrc of(long value32bit) throws RtspProtoNumberRangeException {
+		RtspProtoIdXsrc resObj = new RtspProtoIdXsrc();
+		resObj.setId32bit(value32bit);
+		return resObj;
 	}
-	public void setChannel8bit(int value8bit) throws RtspProtoNumberRangeException {
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<Long> getId32bit() {
+		return (xsrc < 0 ? Optional.empty() : Optional.of(xsrc));
+	}
+	public void setId32bit(long value32bit) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validateNonNeg8bit(value8bit);
-		this.channelNr = value8bit;
+		validateNonNeg32bit(value32bit);
+		this.xsrc = value32bit;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
-		return (channelNr < 0);
+		return (xsrc < 0);
 	}
 
 	public void clear() {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		channelNr = -1;
+		xsrc = -1;
 	}
 
-	public void copyFrom(@NonNull RtspProtoTcpChannelNr other) {
+	public void copyFrom(@NonNull RtspProtoIdXsrc other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		if (other == this) {
 			return;
 		}
-		channelNr = other.channelNr;
+		xsrc = other.xsrc;
 	}
 
 	public void writeProtect() {
@@ -58,28 +71,35 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspProtoTcpChannelNr that)) {
+		if (! (o instanceof RtspProtoIdXsrc that)) {
 			return false;
 		}
-		return (channelNr == that.channelNr);
+		return (xsrc == that.xsrc);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(channelNr);
+		return Objects.hashCode(xsrc);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"channelNr=" + (channelNr >= 0 ? Integer.toUnsignedString(channelNr) : "unset") +
+				"xsrc=" + (xsrc >= 0 ? toHexString(true) : "unset") +
 				"]";
 	}
 
+	public @NonNull String toHexString(boolean withPrefix) {
+		if (isEmpty()) {
+			return "";
+		}
+		return String.format("%s%08X", withPrefix ? "0x" : "", xsrc);
+	}
+
 	@Override
-	public RtspProtoTcpChannelNr clone() {
+	public RtspProtoIdXsrc clone() {
 		try {
-			return (RtspProtoTcpChannelNr)super.clone();
+			return (RtspProtoIdXsrc)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -88,11 +108,11 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validateNonNeg8bit(int value) throws RtspProtoNumberRangeException {
-		final String FNC_NAME = RtspProtoTcpChannelNr.class.getSimpleName() + ".validateNonNeg8bit()";
+	private static void validateNonNeg32bit(long value) throws RtspProtoNumberRangeException {
+		final String FNC_NAME = RtspProtoIdXsrc.class.getSimpleName() + ".validateNonNeg32bit()";
 
-		if (value < 0 || value > 255) {
-			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be between 0 and 255 (is=" + value + ")");
+		if (value < 0L || value > 0xFFFFFFFFL) {
+			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be non-negative and within 32-bit range (is=" + value + ")");
 		}
 	}
 

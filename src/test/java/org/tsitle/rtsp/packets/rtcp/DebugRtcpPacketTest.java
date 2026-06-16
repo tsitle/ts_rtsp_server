@@ -6,6 +6,7 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
 import org.tsitle.rtsp.security.SrtxpKmd;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,7 +25,7 @@ public class DebugRtcpPacketTest {
 
 	@Test
 	public void testDebugRtcpPacketInbound() throws Exception {
-		final int hdSsrc = 0xDEADBEEF;
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
 		final String sdesCname = "some-cname-" + hdSsrc;
 
 		SrtxpKmd kmdNr1 = SrtxpKmd.createWithDefaults(1L, hdSsrc);
@@ -87,7 +88,7 @@ public class DebugRtcpPacketTest {
 	@SuppressWarnings("SameParameterValue")
 	private static ParseCompoundResult parseRawCompoundBuffer(
 				BufferExt rawCompoundBuf,
-				int expectedSsrcId,
+				RtspProtoIdXsrc expectedSsrcId,
 				String expectedCname
 			) {
 		ParseCompoundResult resObj = new ParseCompoundResult();
@@ -122,17 +123,19 @@ public class DebugRtcpPacketTest {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private static byte[] buildCompoundRtcpRrPlusSdes(int senderSsrc, String cname) {
+	private static byte[] buildCompoundRtcpRrPlusSdes(RtspProtoIdXsrc senderSsrc, String cname) {
 		byte[] cnameBytes = cname.getBytes(StandardCharsets.UTF_8);
 		if (cnameBytes.length == 0 || cnameBytes.length > 255) {
 			throw new IllegalArgumentException("SDES CNAME length must be in range [1..255]");
 		}
 
+		int tmpSsrcInt = senderSsrc.getId32bit().orElse(0L).intValue();
+
 		// RTCP RR (RC=0): 8 bytes total (length=1)
 		byte[] rr = new byte[8];
 		ByteBuffer rrBuf = ByteBuffer.wrap(rr).order(ByteOrder.BIG_ENDIAN);
 		rrBuf.put((byte) 0x80).put((byte) 0xC9).putShort((short) 0x0001);  // V=2, PT=RR(201), length=1
-		rrBuf.putInt(senderSsrc);                                          // reporter SSRC
+		rrBuf.putInt(tmpSsrcInt);                                          // reporter SSRC
 
 		// RTCP SDES (SC=1), one chunk with one CNAME item, padded to 32-bit boundary
 		int chunkNoPadLen = 4 + 2 + cnameBytes.length + 1;                 // SSRC + (type,len) + cname + END(0)
@@ -142,7 +145,7 @@ public class DebugRtcpPacketTest {
 
 		short sdesLengthField = (short) ((sdes.length / 4) - 1);             // RTCP length in 32-bit words minus 1
 		sdesBuf.put((byte) 0x81).put((byte) 0xCA).putShort(sdesLengthField); // V=2, SC=1, PT=SDES(202)
-		sdesBuf.putInt(senderSsrc);                                          // chunk SSRC/CSRC
+		sdesBuf.putInt(tmpSsrcInt);                                          // chunk SSRC/CSRC
 		sdesBuf.put((byte) 0x01);                                            // SDES item type: CNAME
 		sdesBuf.put((byte) (cnameBytes.length & 0xFF));                      // CNAME length
 		sdesBuf.put(cnameBytes);

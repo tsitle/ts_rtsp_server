@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoHeaderTypeContBase {
+public final class RtspProtoHeaderTypeContBase {
 
 	public @NonNull String contentBaseStr = "";
 

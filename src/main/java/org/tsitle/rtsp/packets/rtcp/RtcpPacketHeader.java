@@ -7,7 +7,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
  * RTCP Packet Header.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.1">RFC-3550 Section 6.1</a>
  */
-public class RtcpPacketHeader implements Cloneable {
+public final class RtcpPacketHeader implements Cloneable {
 
 	/** Size of the RTCP header */
 	public static final int HEADER_SIZE = 4;

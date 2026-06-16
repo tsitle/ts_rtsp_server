@@ -2,7 +2,10 @@ package org.tsitle.rtsp.threads.rtsp.proto.ids;
 
 import org.jspecify.annotations.NonNull;
 
-public final class RtspProtoIdStreamSource extends RtspProtoIdBase implements Cloneable {
+/**
+ * Stream Source ID
+ */
+public final class RtspProtoIdStreamSource extends RtspProtoBaseIdString implements Cloneable {
 
 	public RtspProtoIdStreamSource() {
 		super();

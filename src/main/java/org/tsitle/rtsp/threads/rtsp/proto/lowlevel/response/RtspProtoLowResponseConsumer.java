@@ -11,6 +11,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSkippedHeaderExcep
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowInvalidRrException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowParserHelper;
@@ -433,9 +434,11 @@ public final class RtspProtoLowResponseConsumer {
 			}
 			final String fieldDesc = "RTP-Info parameter value for SSRC";
 			try {
-				resObj.setSsrcId32bit(
+				RtspProtoIdXsrc tmpIdXsrc = new RtspProtoIdXsrc();
+				tmpIdXsrc.setId32bit(
 						RtspLowParserHelper.helperParseHexStringIntoLong(fieldDesc, rawSsrcHexStr)
 					);
+				resObj.setSsrcId(tmpIdXsrc);
 			} catch (RtspLowInvalidRrException e) {
 				throw new RtspProtoInvalidResponseException(e.getMessage());
 			} catch (RtspProtoNumberRangeException e) {

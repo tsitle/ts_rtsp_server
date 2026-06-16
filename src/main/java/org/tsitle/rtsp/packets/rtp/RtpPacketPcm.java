@@ -9,7 +9,7 @@ import org.tsitle.rtsp.buffers.BufferView;
  * RTP Packet Payload for PCMU/LinearPCM.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3551">RFC-3551</a>
  */
-public class RtpPacketPcm extends RtpPacketCodecBase {
+public final class RtpPacketPcm extends RtpPacketCodecBase {
 
 	/** Size of the main payload-specific RTP header */
 	@SuppressWarnings("unused")

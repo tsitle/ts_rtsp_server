@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -19,18 +20,8 @@ public final class RtspProtoDataCntAdStreamSett {
 
 		public @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
 		public @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
-		private int rtspSsrcId = 0;
+		public @NonNull RtspProtoIdXsrc ssrcId = new RtspProtoIdXsrc();
 		private @NonNull String urlSubPathForSubStream = "";
-
-		public int getRtspSsrcId() {
-			return rtspSsrcId;
-		}
-		public void setRtspSsrcId(int rtspSsrcId) {
-			if (isWriteProtected) {
-				throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-			}
-			this.rtspSsrcId = rtspSsrcId;
-		}
 
 		public @NonNull String getUrlSubPathForSubStream() {
 			return urlSubPathForSubStream;
@@ -48,7 +39,7 @@ public final class RtspProtoDataCntAdStreamSett {
 			}
 			idStreamSource.clear();
 			idSubStream.clear();
-			rtspSsrcId = 0;
+			ssrcId.clear();
 			urlSubPathForSubStream = "";
 		}
 
@@ -57,6 +48,7 @@ public final class RtspProtoDataCntAdStreamSett {
 
 			idStreamSource.writeProtect();
 			idSubStream.writeProtect();
+			ssrcId.writeProtect();
 		}
 
 		public void copyFrom(@NonNull SubStream other) {
@@ -68,7 +60,7 @@ public final class RtspProtoDataCntAdStreamSett {
 			}
 			idStreamSource.copyFrom(other.idStreamSource);
 			idSubStream.copyFrom(other.idSubStream);
-			rtspSsrcId = other.rtspSsrcId;
+			ssrcId.copyFrom(other.ssrcId);
 			urlSubPathForSubStream = other.urlSubPathForSubStream;
 		}
 
@@ -78,6 +70,7 @@ public final class RtspProtoDataCntAdStreamSett {
 				SubStream cloned = (SubStream)super.clone();
 				cloned.idStreamSource = idStreamSource.clone();
 				cloned.idSubStream = idSubStream.clone();
+				cloned.ssrcId = ssrcId.clone();
 				return cloned;
 			} catch (CloneNotSupportedException e) {
 				throw new AssertionError();
@@ -89,7 +82,7 @@ public final class RtspProtoDataCntAdStreamSett {
 			return "[" +
 					"idStreamSource=" + (idStreamSource.isEmpty() ? "-" : "'" + idStreamSource.getIdStr() + "'") +
 					", idSubStream=" + (idSubStream.isEmpty() ? "-" : "'" + idSubStream.getIdStr() + "'") +
-					", rtspSsrcId=" + String.format("0x%08x", rtspSsrcId) +
+					", ssrcId=" + (ssrcId.isEmpty() ? "-" : ssrcId.toHexString(true)) +
 					", urlSubPathForSubStream='" + urlSubPathForSubStream + "'" +
 					"]";
 		}

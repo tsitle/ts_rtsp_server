@@ -6,6 +6,7 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	public void createAndAddSetupSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
-				int ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull RtspProtoKmdForSubStream kmdOutbound
 			) {
 		if (rscUrlSubStream.getUrlStr().isEmpty()) {
@@ -38,18 +39,18 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		if (rscUrlSubStream.idSubStream.isEmpty()) {
 			throw new IllegalArgumentException("Sub-Stream ID must be set");
 		}
-		if (ssrcId == 0) {
-			throw new IllegalArgumentException("ssrcId must not be 0");
+		if (ssrcId.isEmpty()) {
+			throw new IllegalArgumentException("ssrcId must be set");
 		}
 
 		SrtxpKmd tmpKmd = null;
 		if (kmdOutbound.isKmdSet()) {
 			tmpKmd = kmdOutbound.getKmd().orElseThrow();
 		}
-		if (tmpKmd != null && tmpKmd.ssrcId() == 0) {
-			throw new IllegalArgumentException("kmdOutbound.ssrcId must not be 0");
+		if (tmpKmd != null && tmpKmd.ssrcId().isEmpty()) {
+			throw new IllegalArgumentException("kmdOutbound.ssrcId must be set");
 		}
-		if (tmpKmd != null && tmpKmd.ssrcId() != ssrcId) {
+		if (tmpKmd != null && ! tmpKmd.ssrcId().equals(ssrcId)) {
 			throw new IllegalArgumentException("kmdOutbound.ssrcId must match ssrcId");
 		}
 		RtspProtoSetupInfoForSubStream resObj = new RtspProtoSetupInfoForSubStream(
@@ -116,20 +117,20 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return Optional.of(resObj.clone());
 	}
 
-	public Optional<Integer> getSsrcBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+	public Optional<RtspProtoIdXsrc> getSsrcBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		if (idSubStream.isEmpty()) {
 			return Optional.empty();
 		}
-		Integer resObj = null;
+		RtspProtoIdXsrc resObj = null;
 		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
-			resObj = (siSsPtr1 == null ? null : siSsPtr1.rtspSsrcId);
+			resObj = (siSsPtr1 == null ? null : siSsPtr1.getSsrcIdPtr());
 		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
-			resObj = (siSsPtr2 == null ? null : siSsPtr2.rtspSsrcId);
+			resObj = (siSsPtr2 == null ? null : siSsPtr2.getSsrcIdPtr());
 		}
 		if (resObj == null) {
 			return Optional.empty();
 		}
-		return Optional.of(resObj);
+		return Optional.of(resObj.clone());
 	}
 
 	@SuppressWarnings("unused")

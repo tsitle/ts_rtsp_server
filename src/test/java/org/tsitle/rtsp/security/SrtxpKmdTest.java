@@ -2,16 +2,18 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SrtxpKmdTest {
 
 	@Test
-	void simpleCloneMikey() {
+	void simpleCloneMikey() throws RtspProtoNumberRangeException {
 		SrtxpKmd kmd = SrtxpKmd.createWithDefaults(
 				1001L,
-				0xDEADBEEF,
+				RtspProtoIdXsrc.of(0xDEADBEEFL),
 				DynInteger.createWithAutoSize(2002L)
 			);
 
@@ -19,8 +21,8 @@ public class SrtxpKmdTest {
 	}
 
 	@Test
-	void simpleCloneSdes() {
-		SrtxpKmd kmd = SrtxpKmd.createForLegacySdes(0x874301FA);
+	void simpleCloneSdes() throws RtspProtoNumberRangeException {
+		SrtxpKmd kmd = SrtxpKmd.createForLegacySdes(RtspProtoIdXsrc.of(0x874301FAL));
 
 		compareKmds(kmd);
 	}

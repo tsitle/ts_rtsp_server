@@ -11,13 +11,13 @@ public final class RtspProtoCseqNr implements Cloneable {
 	private boolean isWriteProtected = false;
 
 	/** CSeq number */
-	private long cseqNr = -1;
+	private long cseqNr = -1L;
 
 	public RtspProtoCseqNr() { }
 
 	public RtspProtoCseqNr(long value32bit) {
 		try {
-			validateCseq(value32bit);
+			validateNonNeg32bit(value32bit);
 			this.cseqNr = value32bit;
 		} catch (RtspProtoNumberRangeException e) {
 			// ignore
@@ -34,7 +34,7 @@ public final class RtspProtoCseqNr implements Cloneable {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validateCseq(value32bit);
+		validateNonNeg32bit(value32bit);
 		this.cseqNr = value32bit;
 	}
 
@@ -83,7 +83,7 @@ public final class RtspProtoCseqNr implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"cseqNr=" + cseqNrToStr() +
+				"cseqNr=" + (cseqNr >= 0 ? Long.toUnsignedString(cseqNr) : "unset") +
 				"]";
 	}
 
@@ -99,14 +99,12 @@ public final class RtspProtoCseqNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validateCseq(long value) throws RtspProtoNumberRangeException {
-		if (value < 0L || value > 0xFFFFFFFFL) {
-			throw new RtspProtoNumberRangeException("CSeq must be non-negative and within 32-bit range");
-		}
-	}
+	private static void validateNonNeg32bit(long value) throws RtspProtoNumberRangeException {
+		final String FNC_NAME = RtspProtoCseqNr.class.getSimpleName() + ".validateNonNeg32bit()";
 
-	private @NonNull String cseqNrToStr() {
-		return (cseqNr >= 0 ? Long.toUnsignedString(cseqNr) : "unset");
+		if (value < 0L || value > 0xFFFFFFFFL) {
+			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be non-negative and within 32-bit range (is=" + value + ")");
+		}
 	}
 
 }

@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.net.URI;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
 	private boolean isSetXsrcBlockEntry;
 	/** Callback for appending RTCP packets to the outgoing queue */
-	private BiConsumer<Integer, BufferExt> cbRtcpAppendToOutgoingQueue;
+	private BiConsumer<RtspProtoIdXsrc, BufferExt> cbRtcpAppendToOutgoingQueue;
 	private boolean isSetCbRtcpAppendToOutgoingQueue;
 
 	/** Callback for notifying the parent thread that the child thread is ready to start */
@@ -110,8 +111,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetXsrcBlockEntry = true;
 	}
 
-	public Optional<BiConsumer<@NonNull Integer, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueue() { return Optional.ofNullable(cbRtcpAppendToOutgoingQueue); }
-	public void setCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull Integer, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue) {
+	public Optional<BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueue() {
+		return Optional.ofNullable(cbRtcpAppendToOutgoingQueue);
+	}
+	public void setCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue) {
 		this.cbRtcpAppendToOutgoingQueue = cbRtcpAppendToOutgoingQueue;
 		this.isSetCbRtcpAppendToOutgoingQueue = true;
 	}

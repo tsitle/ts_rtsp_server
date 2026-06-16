@@ -13,7 +13,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConstants;
  * RTP Packet Payload for AAC.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3640">RFC-3640</a>
  */
-public class RtpPacketAac extends RtpPacketCodecBase {
+public final class RtpPacketAac extends RtpPacketCodecBase {
 
 	/**
 	 * AU-header field AU-Size length in bits.<br />

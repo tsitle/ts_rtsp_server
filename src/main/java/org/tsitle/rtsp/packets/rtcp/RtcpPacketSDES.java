@@ -12,7 +12,7 @@ import java.util.Optional;
  * RTCP Source Description Packet.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.5">RFC-3550 Section 6.5</a>
  */
-public class RtcpPacketSDES {
+public final class RtcpPacketSDES {
 
 	/** SSRC/CSRC Blocks */
 	private final List<RtcpInnerXsrcBlock> xsrcBlocks = new ArrayList<>();

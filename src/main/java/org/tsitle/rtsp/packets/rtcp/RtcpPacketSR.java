@@ -3,6 +3,8 @@ package org.tsitle.rtsp.packets.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ public class RtcpPacketSR {
 	public static final int INNER_HEADER_SIZE = 4;
 
 	/** Synchronization Source Identifier of sender (32 bits) */
-	private final int hdSsrcSender;
+	private final @NonNull RtspProtoIdXsrc hdSsrcSender;
 	/** Sender Info Block */
 	private final RtcpInnerSenderInfoBlock senderInfoBlock;
 	/** Reception Report Blocks */
@@ -37,7 +39,7 @@ public class RtcpPacketSR {
 	 * @param recpReportBlocks Reception Report Blocks (can be empty)
 	 */
 	public RtcpPacketSR(
-				int ssrcSender,
+				@NonNull RtspProtoIdXsrc ssrcSender,
 				@NonNull RtcpInnerSenderInfoBlock senderInfoBlock,
 				@Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks
 			) {
@@ -46,7 +48,7 @@ public class RtcpPacketSR {
 		}
 
 		//
-		this.hdSsrcSender = ssrcSender;
+		this.hdSsrcSender = ssrcSender.clone();
 
 		//
 		this.senderInfoBlock = senderInfoBlock.clone();
@@ -68,7 +70,7 @@ public class RtcpPacketSR {
 		// Construct the bitstream
 		byte[] tmpBuf = new byte[INNER_HEADER_SIZE + allItemsPayloadSize];
 		ByteBuffer bb = ByteBuffer.wrap(tmpBuf);  // big-endian by default
-		bb.putInt(this.hdSsrcSender);
+		bb.putInt(this.hdSsrcSender.getId32bit().orElse(0L).intValue());
 		senderInfoBlock.appendToBuffer(bb);
 		if (recpReportBlocks != null) {
 			for (RtcpInnerRecpReportBlock block : recpReportBlocks) {
@@ -99,7 +101,12 @@ public class RtcpPacketSR {
 
 		// Parse payload fields
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
-		this.hdSsrcSender = bb.getInt();
+		this.hdSsrcSender = new RtspProtoIdXsrc();
+		try {
+			this.hdSsrcSender.setId32bit(Integer.toUnsignedLong(bb.getInt()));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		this.senderInfoBlock = RtcpInnerSenderInfoBlock.decodeFromBuffer(bb);
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			RtcpInnerRecpReportBlock block = RtcpInnerRecpReportBlock.decodeFromBuffer(i, bb);
@@ -136,8 +143,8 @@ public class RtcpPacketSR {
 	 * @return SSRC of the sender
 	 */
 	@SuppressWarnings("unused")
-	public int getSsrcSender() {
-		return hdSsrcSender;
+	public @NonNull RtspProtoIdXsrc getSsrcSender() {
+		return hdSsrcSender.clone();
 	}
 
 	/**
@@ -178,7 +185,7 @@ public class RtcpPacketSR {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				mainPktHd.toString(true) +
-				", SSRC Sender: 0x" + String.format("%08X", hdSsrcSender) +
+				", SSRC Sender: " + hdSsrcSender.toHexString(true) +
 				", " + senderInfoBlock +
 				", RRB Count: " + recpReportBlocks.size() +
 				", " + recpReportBlocks +

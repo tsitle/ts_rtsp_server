@@ -8,6 +8,7 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -77,6 +78,9 @@ public abstract class SrtxpContextBase {
 		if (kmd.authTagLen() > KeySizes.SHA1_SIZE_160) {  // Auth Tag cannot be longer than what SHA1-160 can output
 			throw new SrtxpSecurityException("Auth Tag length must be <= " + KeySizes.SHA1_SIZE_160 + " bytes");
 		}
+		if (kmd.ssrcId().isEmpty()) {
+			throw new SrtxpSecurityException("ssrcId must be set");
+		}
 
 		//
 		sessionKeysRederivation(isRtp, 0L);
@@ -92,8 +96,8 @@ public abstract class SrtxpContextBase {
 	 * Get the SSRC from the Key Management Data
 	 * @return SSRC
 	 */
-	public int getSsrcId() {
-		return ctxKmd.ssrcId();
+	public @NonNull RtspProtoIdXsrc getSsrcId() {
+		return ctxKmd.ssrcId().clone();
 	}
 
 	/**

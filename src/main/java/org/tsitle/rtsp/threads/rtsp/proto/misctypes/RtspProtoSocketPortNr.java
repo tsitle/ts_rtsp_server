@@ -23,7 +23,7 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validatePortNumber(value16bit);
+		validatePos16bit(value16bit);
 		this.portNr = value16bit;
 	}
 
@@ -72,7 +72,7 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"portNr=" + portToStr() +
+				"portNr=" + (portNr >= 1 ? Integer.toUnsignedString(portNr) : "unset") +
 				"]";
 	}
 
@@ -88,14 +88,12 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validatePortNumber(int portNr) throws RtspProtoNumberRangeException {
-		if (portNr < 1 || portNr > 65535) {
-			throw new RtspProtoNumberRangeException("Socket Port must be between 1 and 65535, got: " + portNr);
-		}
-	}
+	private static void validatePos16bit(int value) throws RtspProtoNumberRangeException {
+		final String FNC_NAME = RtspProtoSocketPortNr.class.getSimpleName() + ".validatePos16bit()";
 
-	private @NonNull String portToStr() {
-		return (portNr >= 1 ? Integer.toUnsignedString(portNr) : "unset");
+		if (value < 1 || value > 65535) {
+			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be between 1 and 65535 (is=" + value + ")");
+		}
 	}
 
 }

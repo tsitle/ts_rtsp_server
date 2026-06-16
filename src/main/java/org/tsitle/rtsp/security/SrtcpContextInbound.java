@@ -7,6 +7,8 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 /**
  * Context for inbound SRTCP packet decryption
@@ -14,7 +16,7 @@ import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 public class SrtcpContextInbound extends SrtcpContextBase {
 
 	/** For SRTCP decryption: Sender SSRC */
-	private int ctxStateSrtcpSsrc = 0;
+	private final @NonNull RtspProtoIdXsrc ctxStateSrtcpSsrc = new RtspProtoIdXsrc();
 	/** For SRTCP decryption: Last packet index */
 	private int ctxStateSrtcpLastIndex = -1;
 
@@ -94,15 +96,19 @@ public class SrtcpContextInbound extends SrtcpContextBase {
 
 		// validate Sender SSRC
 		encrPktView.setOffset(RtcpPacketHeader.HEADER_SIZE);
-		int tmpSenderSsrc = encrPktView.getIntFromBigEndian(false);
-		if (ctxStateSrtcpSsrc != 0 && tmpSenderSsrc != ctxStateSrtcpSsrc) {
+		int tmpSenderSsrcInt = encrPktView.getIntFromBigEndian(false);
+		if (! ctxStateSrtcpSsrc.isEmpty() && Integer.toUnsignedLong(tmpSenderSsrcInt) != ctxStateSrtcpSsrc.getId32bit().orElseThrow()) {
 			throw new SrtxpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
-					String.format("is=0x%08X, expected=0x%08X", tmpSenderSsrc, ctxStateSrtcpSsrc));
+					String.format("is=0x%08X, expected=%s", tmpSenderSsrcInt, ctxStateSrtcpSsrc.toHexString(true)));
 		}
-		ctxStateSrtcpSsrc = tmpSenderSsrc;
+		try {
+			ctxStateSrtcpSsrc.setId32bit(Integer.toUnsignedLong(tmpSenderSsrcInt));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 
 		// build IV
-		buildIvForRtcp(tmpIndexOnly, tmpSenderSsrc, cacheIvBuf);
+		buildIvForRtcp(tmpIndexOnly, ctxStateSrtcpSsrc, cacheIvBuf);
 
 		// decrypt RTCP payload
 		encrPktView.setOffset(0);

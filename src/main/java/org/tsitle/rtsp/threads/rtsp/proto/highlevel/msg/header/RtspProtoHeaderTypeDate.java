@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.Instant;
 
-public class RtspProtoHeaderTypeDate {
+public final class RtspProtoHeaderTypeDate {
 
 	public @NonNull Instant dateObj = Instant.now();
 

@@ -3,7 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.RtspMimeType;
 
-public class RtspProtoHeaderTypeAccept {
+public final class RtspProtoHeaderTypeAccept {
 
 	public @NonNull RtspMimeType rtspMimeType = RtspMimeType.NONE;
 

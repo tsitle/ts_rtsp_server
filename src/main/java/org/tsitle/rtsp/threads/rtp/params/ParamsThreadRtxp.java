@@ -7,6 +7,7 @@ import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
@@ -98,8 +99,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	private boolean isSetIdStreamSource;
 
 	/** RTSP Synchronization Source Identifier of the stream */
-	private int rtspSsrcId;
-	private boolean isSetRtspSsrcId;
+	private @NonNull RtspProtoIdXsrc ssrcId = new RtspProtoIdXsrc();
+	private boolean isSetSsrcId;
 
 	/** RTxP UDP/TCP transport parameters */
 	private @NonNull Transport transport = new Transport();
@@ -138,10 +139,11 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		this.isSetIdStreamSource = true;
 	}
 
-	public int getRtspSsrcId() { return rtspSsrcId; }
-	public void setRtspSsrcId(int rtspSsrcId) {
-		this.rtspSsrcId = rtspSsrcId;
-		this.isSetRtspSsrcId = true;
+	public @NonNull RtspProtoIdXsrc getSsrcId() { return ssrcId.clone(); }
+	public void setSsrcId(@NonNull RtspProtoIdXsrc value) {
+		this.ssrcId.copyFrom(value);
+		this.ssrcId.writeProtect();
+		this.isSetSsrcId = true;
 	}
 
 	public @NonNull RtspProtoIpAddr getTpClientIpAddr() {
@@ -211,6 +213,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 			//
 			clone.debugSessionId = debugSessionId.clone();
 			clone.idStreamSource = idStreamSource.clone();
+			clone.ssrcId = ssrcId.clone();
 			clone.transport = transport.clone();
 			clone.crypto = crypto.clone();
 			return clone;
@@ -227,7 +230,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
 		requireIsSet(isSetIdStreamSource, "streamSourceId");
 
-		requireIsSet(isSetRtspSsrcId, "rtspSsrcId");
+		requireIsSet(isSetSsrcId, "ssrcId");
 
 		requireIsSet(transport.isSetClientIpAddr, "transport.clientIpAddr");
 		if (transport.isSetClientDestUdpPort) {
@@ -254,6 +257,10 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		requireNonNull(debugSessionId, "debugSessionId");
 		if (debugSessionId.isEmpty()) {
 			throw new IllegalArgumentException(errPrefix + "debugSessionId must not be empty");
+		}
+
+		if (ssrcId.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "ssrcId must be set");
 		}
 
 		requireNonNull(transport.clientIpAddr, "transport.clientIpAddr");

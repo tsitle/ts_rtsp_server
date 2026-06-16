@@ -7,7 +7,7 @@ import org.tsitle.rtsp.security.SrtpContextOutbound;
 /**
  * RTP Encrypted Packet.
  */
-public class RtpEncryptedPacket extends RtpPacketContainerBase {
+public final class RtpEncryptedPacket extends RtpPacketContainerBase {
 
 	private final @NonNull SrtpContextOutbound srtpCtx;
 

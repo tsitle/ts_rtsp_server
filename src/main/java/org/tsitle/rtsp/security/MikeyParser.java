@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.*;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -66,6 +68,12 @@ public final class MikeyParser {
 			throw new SrtxpSecurityException(FNC_NAME + ": " + errMsg);
 		}
 		//
+		RtspProtoIdXsrc tmpSsrc = new RtspProtoIdXsrc();
+		try {
+			tmpSsrc.setId32bit(Integer.toUnsignedLong(mikeyData.hdCsIdMapInfoSsrcArr[0]));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		return new SrtxpKmd(
 				false,
 				mikeyData.spEncrKeyLen,
@@ -74,7 +82,7 @@ public final class MikeyParser {
 				mikeyData.spAuthKeyLen,
 				mikeyData.spAuthTagLen,
 				mikeyData.kemacKvDataSpiOrMki,
-				mikeyData.hdCsIdMapInfoSsrcArr[0],
+				tmpSsrc,
 				mikeyData.spKdr
 			);
 	}

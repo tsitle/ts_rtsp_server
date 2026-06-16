@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
 
-public class RtspProtoHeaderTypeAuthClient {
+public final class RtspProtoHeaderTypeAuthClient {
 
 	/** Authentication credentials: username */
 	public @NonNull String authUser = "";

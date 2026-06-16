@@ -3,6 +3,8 @@ package org.tsitle.rtsp.packets.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 /**
  * RTP Packet Container base class.<br />
@@ -32,7 +34,7 @@ public class RtpPacketContainerBase {
 	/** Timestamp (32 bits) */
 	private int hdBaseTimestamp;
 	/** Synchronization Source Identifier (identifies the server) (32 bits) */
-	private final int hdBaseSsrc;
+	private final @NonNull RtspProtoIdXsrc hdBaseSsrc;
 
 	/** RTP header and payload */
 	protected final BufferExt packetBuf = new BufferExt();
@@ -51,7 +53,7 @@ public class RtpPacketContainerBase {
 		this.hdBasePadding = false;
 		this.hdBaseExtension = false;
 		this.hdBaseCsrcCount = 0;
-		this.hdBaseSsrc = paramsBase.rtspSsrcId;
+		this.hdBaseSsrc = paramsBase.ssrcId.clone();
 
 		// set dynamic header fields
 		this.hdBasePayloadType = payloadType;
@@ -85,8 +87,14 @@ public class RtpPacketContainerBase {
 		this.hdBaseSequenceNumber = (short)(((this.packetBuf.get(3) & 0xFF) | ((this.packetBuf.get(2) & 0xFF) << 8)) & 0xFFFF);
 		this.hdBaseTimestamp = (this.packetBuf.get(7) & 0xFF) | ((this.packetBuf.get(6) & 0xFF) << 8) |
 				((this.packetBuf.get(5) & 0xFF) << 16) | ((this.packetBuf.get(4) & 0xFF) << 24);
-		this.hdBaseSsrc = (this.packetBuf.get(11) & 0xFF) | ((this.packetBuf.get(10) & 0xFF) << 8) |
+		int tmpSsrcInt = (this.packetBuf.get(11) & 0xFF) | ((this.packetBuf.get(10) & 0xFF) << 8) |
 				((this.packetBuf.get(9) & 0xFF) << 16) | ((this.packetBuf.get(8) & 0xFF) << 24);
+		this.hdBaseSsrc = new RtspProtoIdXsrc();
+		try {
+			this.hdBaseSsrc.setId32bit(Integer.toUnsignedLong(tmpSsrcInt));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 	}
 
 	/**
@@ -204,8 +212,8 @@ public class RtpPacketContainerBase {
 	 * Returns the SSRC ID of the RTP packet.
 	 * @return SSRC ID
 	 */
-	public int getSsrcId() {
-		return hdBaseSsrc;
+	public @NonNull RtspProtoIdXsrc getSsrcId() {
+		return hdBaseSsrc.clone();
 	}
 
 	/**
@@ -241,7 +249,7 @@ public class RtpPacketContainerBase {
 				", PayloadType: " + hdBasePayloadType + " (o=" + getOrgPayloadType() + ")" +
 				", SequenceNumber: " + Short.toUnsignedInt(hdBaseSequenceNumber) +
 				", TimeStamp: " + Integer.toUnsignedString(hdBaseTimestamp) +
-				", SSRC: " + String.format("0x%08X", hdBaseSsrc) +
+				", SSRC: " + hdBaseSsrc.toHexString(true) +
 				(skipClassName ? "" : "]");
 	}
 
@@ -311,10 +319,11 @@ public class RtpPacketContainerBase {
 		tmpHeader[5] = (byte)(hdBaseTimestamp >> 16);
 		tmpHeader[6] = (byte)(hdBaseTimestamp >> 8);
 		tmpHeader[7] = (byte)(hdBaseTimestamp & 0xFF);
-		tmpHeader[8] = (byte)(hdBaseSsrc >> 24);
-		tmpHeader[9] = (byte)(hdBaseSsrc >> 16);
-		tmpHeader[10] = (byte)(hdBaseSsrc >> 8);
-		tmpHeader[11] = (byte)(hdBaseSsrc & 0xFF);
+		int tmpSsrcInt = hdBaseSsrc.getId32bit().orElse(0L).intValue();
+		tmpHeader[8] = (byte)(tmpSsrcInt >> 24);
+		tmpHeader[9] = (byte)(tmpSsrcInt >> 16);
+		tmpHeader[10] = (byte)(tmpSsrcInt >> 8);
+		tmpHeader[11] = (byte)(tmpSsrcInt & 0xFF);
 
 		packetBuf.copyOf(tmpHeader);
 	}

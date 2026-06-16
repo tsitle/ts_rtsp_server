@@ -243,11 +243,11 @@ public final class RtspProtoLowResponseProducer {
 		tmpSb.append(subStreamInfo.urlStr);
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2) {
 			tmpSb.append("\" ");
-			if (subStreamInfo.getSsrcId32bit().isEmpty()) {
+			if (subStreamInfo.getSsrcId().isEmpty()) {
 				throw new RtspProtoInvalidResponseException("ssrcId must be set for RTSP v2.0");
 			}
 			tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC)
-					.append(RtspLowBuilderHelper.helperBuildHexString(subStreamInfo.getSsrcId32bit().get()));
+					.append(subStreamInfo.getSsrcId().toHexString(false));
 			tmpSb.append(":");
 		} else {
 			tmpSb.append(";");
