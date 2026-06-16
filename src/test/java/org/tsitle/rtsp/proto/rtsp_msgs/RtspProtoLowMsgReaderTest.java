@@ -1,4 +1,4 @@
-package org.tsitle.rtsp.rtsp_msgs;
+package org.tsitle.rtsp.proto.rtsp_msgs;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
