@@ -10,17 +10,17 @@ public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 	private boolean isWriteProtected = false;
 
 	/** Client's UDP port for inbound RTP packets */
-	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtp = RtspProtoSocketPortNr.ofEmpty();
 	/** Client's UDP port for inbound/outbound RTCP packets */
-	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtcp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpClientUdpPortRtcp = RtspProtoSocketPortNr.ofEmpty();
 	/** Server's UDP port for outbound RTP packets */
-	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtp = RtspProtoSocketPortNr.ofEmpty();
 	/** Server's UDP port for inbound/outbound RTCP packets */
-	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtcp = new RtspProtoSocketPortNr();
+	private @NonNull RtspProtoSocketPortNr tpServerUdpPortRtcp = RtspProtoSocketPortNr.ofEmpty();
 	/** Client's TCP channel for inbound RTP packets */
-	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtp = new RtspProtoTcpChannelNr();
+	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtp = RtspProtoTcpChannelNr.ofEmpty();
 	/** Client's TCP channel for inbound/outbound RTCP packets */
-	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtcp = new RtspProtoTcpChannelNr();
+	private @NonNull RtspProtoTcpChannelNr tpClientTcpChannRtcp = RtspProtoTcpChannelNr.ofEmpty();
 	/** Transport type protocol (true: UDP, false: TCP) */
 	private boolean tpIsUdp = false;
 	/** Transport delivery type (true: unicast, false: multicast) */

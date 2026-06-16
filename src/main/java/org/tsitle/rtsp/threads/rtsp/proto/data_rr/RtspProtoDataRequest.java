@@ -40,10 +40,10 @@ public final class RtspProtoDataRequest {
 	private @NonNull RtspProtocolVersion requRtspProtoVersionToUse = RtspProtocolVersion.NONE;
 
 	/** Last received RTSP message Sequence Number in request */
-	private final @NonNull RtspProtoCseqNr requCseqNrLastRcvd = new RtspProtoCseqNr();
+	private final @NonNull RtspProtoCseqNr requCseqNrLastRcvd = RtspProtoCseqNr.ofEmpty();
 
 	/** RTSP message Sequence Number to use for sending a request */
-	private final @NonNull RtspProtoCseqNr requCseqNrToSend = new RtspProtoCseqNr(0L);
+	private final @NonNull RtspProtoCseqNr requCseqNrToSend = RtspProtoCseqNr.ofZero();
 
 	/** Main transport parameters */
 	public final @NonNull RtspProtoDataCntStreamTpMain requStreamTpMain = new RtspProtoDataCntStreamTpMain();

@@ -42,7 +42,7 @@ public final class RtspProtoDataResponse {
 	private @NonNull RtspProtocolVersion respRtspProtoVersionToUse = RtspProtocolVersion.NONE;
 
 	/** Last received RTSP message Sequence Number in request */
-	public final @NonNull RtspProtoCseqNr respCseqNrLastRcvd = new RtspProtoCseqNr();
+	public final @NonNull RtspProtoCseqNr respCseqNrLastRcvd = RtspProtoCseqNr.ofEmpty();
 
 	/** Main transport parameters */
 	public final @NonNull RtspProtoDataCntStreamTpMain respStreamTpMain = new RtspProtoDataCntStreamTpMain();

@@ -16,6 +16,12 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static RtspProtoTcpChannelNr ofEmpty() {
+		return new RtspProtoTcpChannelNr();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public Optional<Integer> getChannel8bit() {
 		return (channelNr < 0 ? Optional.empty() : Optional.of(channelNr));
 	}

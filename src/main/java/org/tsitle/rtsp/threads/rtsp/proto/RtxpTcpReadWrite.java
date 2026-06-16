@@ -369,8 +369,8 @@ public final class RtxpTcpReadWrite {
 	private int internalReadSocket_binary() throws IOException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_binary()";
 
-		int channIdInt = -1;
-		RtspProtoTcpChannelNr channIdObj = new RtspProtoTcpChannelNr();
+		int channIdInt;
+		RtspProtoTcpChannelNr channIdObj = RtspProtoTcpChannelNr.ofEmpty();
 		int packetLen = 4;  // we need at least 3 more bytes
 		int packetRd = 1;
 		BufferExt payloadBe = new BufferExt();

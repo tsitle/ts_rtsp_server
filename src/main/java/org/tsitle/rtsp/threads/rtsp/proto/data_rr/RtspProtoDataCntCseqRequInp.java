@@ -8,9 +8,9 @@ public final class RtspProtoDataCntCseqRequInp {
 	private boolean isWriteProtected = false;
 
 	/** Last received RTSP message Sequence Number in request */
-	public RtspProtoCseqNr cseqNr_lastRcvd = new RtspProtoCseqNr();
+	public RtspProtoCseqNr cseqNr_lastRcvd = RtspProtoCseqNr.ofEmpty();
 	/** Expected RTSP message Sequence Number in request */
-	public RtspProtoCseqNr cseqNr_expected = new RtspProtoCseqNr(0L);
+	public RtspProtoCseqNr cseqNr_expected = RtspProtoCseqNr.ofZero();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

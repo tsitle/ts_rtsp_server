@@ -49,11 +49,11 @@ public final class RtspProtoSessionInfo {
 	private final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
-	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_lastRcvd = new RtspProtoCseqNr();
+	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_lastRcvd = RtspProtoCseqNr.ofEmpty();
 	/** Request from remote host: Expected RTSP message Sequence Number */
-	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_expected = new RtspProtoCseqNr(0L);
+	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_expected = RtspProtoCseqNr.ofZero();
 	/** Request to remote host: Last sent RTSP message Sequence Number */
-	private final @NonNull RtspProtoCseqNr cseqNr_requToRem_lastSent = new RtspProtoCseqNr(0L);
+	private final @NonNull RtspProtoCseqNr cseqNr_requToRem_lastSent = RtspProtoCseqNr.ofZero();
 
 	/** Playback range request value from the client */
 	private @NonNull String clientPlaybackRangeValue = "";

@@ -2,57 +2,44 @@ package org.tsitle.rtsp.threads.rtsp.proto.ids;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoNumberNonNeg32bitBase;
 
-import java.util.Objects;
 import java.util.Optional;
 
 /**
  * SSRC/CSRC ID
  */
-public final class RtspProtoIdXsrc implements Cloneable {
+public final class RtspProtoIdXsrc extends RtspProtoNumberNonNeg32bitBase<RtspProtoIdXsrc> implements Cloneable {
 
-	private boolean isWriteProtected = false;
-
-	/** SSRC/CSRC ID */
-	private long xsrc = -1L;
-
-	public RtspProtoIdXsrc() { }
+	public RtspProtoIdXsrc() {
+		super();
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull RtspProtoIdXsrc of(long value32bit) throws RtspProtoNumberRangeException {
+	public static RtspProtoIdXsrc ofEmpty() {
+		return new RtspProtoIdXsrc();
+	}
+
+	public static RtspProtoIdXsrc of(long value32bit) throws RtspProtoNumberRangeException {
 		RtspProtoIdXsrc resObj = new RtspProtoIdXsrc();
-		resObj.setId32bit(value32bit);
+		resObj.setNumber32bit(value32bit);
 		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<Long> getId32bit() {
-		return (xsrc < 0 ? Optional.empty() : Optional.of(xsrc));
+		return getNumber32bit();
 	}
 	public void setId32bit(long value32bit) throws RtspProtoNumberRangeException {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		validateNonNeg32bit(value32bit);
-		this.xsrc = value32bit;
+		setNumber32bit(value32bit);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean isEmpty() {
-		return (xsrc < 0);
-	}
-
-	public void clear() {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		xsrc = -1;
-	}
-
+	@Override
 	public void copyFrom(@NonNull RtspProtoIdXsrc other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
@@ -60,11 +47,7 @@ public final class RtspProtoIdXsrc implements Cloneable {
 		if (other == this) {
 			return;
 		}
-		xsrc = other.xsrc;
-	}
-
-	public void writeProtect() {
-		isWriteProtected = true;
+		theNumber = other.theNumber;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -74,18 +57,13 @@ public final class RtspProtoIdXsrc implements Cloneable {
 		if (! (o instanceof RtspProtoIdXsrc that)) {
 			return false;
 		}
-		return (xsrc == that.xsrc);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(xsrc);
+		return super.equalsOnlyValue(that);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"xsrc=" + (xsrc >= 0 ? toHexString(true) : "unset") +
+				"xsrc=" + toStringOnlyValue() +
 				"]";
 	}
 
@@ -93,27 +71,18 @@ public final class RtspProtoIdXsrc implements Cloneable {
 		if (isEmpty()) {
 			return "";
 		}
-		return String.format("%s%08X", withPrefix ? "0x" : "", xsrc);
+		return String.format("%s%08X", withPrefix ? "0x" : "", theNumber);
 	}
 
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
 	public RtspProtoIdXsrc clone() {
-		try {
-			return (RtspProtoIdXsrc)super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
+		RtspProtoIdXsrc cloned = new RtspProtoIdXsrc();
+		cloned.copyFrom(this);
+		if (isWriteProtected) {
+			cloned.writeProtect();
 		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private static void validateNonNeg32bit(long value) throws RtspProtoNumberRangeException {
-		final String FNC_NAME = RtspProtoIdXsrc.class.getSimpleName() + ".validateNonNeg32bit()";
-
-		if (value < 0L || value > 0xFFFFFFFFL) {
-			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be non-negative and within 32-bit range (is=" + value + ")");
-		}
+		return cloned;
 	}
 
 }

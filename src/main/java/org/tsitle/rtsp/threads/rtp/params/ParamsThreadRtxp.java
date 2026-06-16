@@ -33,7 +33,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		private @Nullable RtxpTcpReadWrite clientDestTcpIf;
 		private boolean isSetClientDestTcpIf;
 		/** Destination TCP channel for RTxP packets (audio and video), provided by the RTSP Client */
-		private @NonNull RtspProtoTcpChannelNr clientDestTcpChann = new RtspProtoTcpChannelNr();
+		private @NonNull RtspProtoTcpChannelNr clientDestTcpChann = RtspProtoTcpChannelNr.ofEmpty();
 		private boolean isSetClientDestTcpChann;
 
 		@Override

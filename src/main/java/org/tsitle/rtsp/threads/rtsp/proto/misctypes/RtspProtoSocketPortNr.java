@@ -16,6 +16,12 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static RtspProtoSocketPortNr ofEmpty() {
+		return new RtspProtoSocketPortNr();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public Optional<Integer> getPort16bit() {
 		return (portNr < 1 ? Optional.empty() : Optional.of(portNr));
 	}

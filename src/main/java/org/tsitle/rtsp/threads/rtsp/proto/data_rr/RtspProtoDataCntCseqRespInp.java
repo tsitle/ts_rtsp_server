@@ -8,7 +8,7 @@ public final class RtspProtoDataCntCseqRespInp {
 	private boolean isWriteProtected = false;
 
 	/** Expected RTSP message Sequence Number in response */
-	public @NonNull RtspProtoCseqNr cseqNr_expected = new RtspProtoCseqNr(0L);
+	public @NonNull RtspProtoCseqNr cseqNr_expected = RtspProtoCseqNr.ofZero();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
