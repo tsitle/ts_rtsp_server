@@ -8,6 +8,9 @@ import java.net.UnknownHostException;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Container for IP addresses.
+ */
 public final class RtspProtoIpAddr implements Cloneable {
 
 	private boolean isWriteProtected = false;

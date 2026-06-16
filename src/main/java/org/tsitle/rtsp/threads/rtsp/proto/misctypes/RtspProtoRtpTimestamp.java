@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Optional;
 
 /**
- * RTP Timestamp
+ * Container for an RTP Timestamp
  */
 public final class RtspProtoRtpTimestamp extends RtspProtoBaseNumberNonNeg32bit<RtspProtoRtpTimestamp> implements Cloneable {
 

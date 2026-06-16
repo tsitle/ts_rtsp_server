@@ -7,6 +7,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 
 import java.util.Optional;
 
+/**
+ * Container for SRTxP-KMD for a Sub-Stream.
+ */
 public final class RtspProtoKmdForSubStream implements Cloneable {
 
 	private boolean writeProtected = false;

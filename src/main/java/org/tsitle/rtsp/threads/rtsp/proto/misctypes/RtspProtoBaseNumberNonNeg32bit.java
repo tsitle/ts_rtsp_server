@@ -6,6 +6,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Base class for 32-bit non-negative numbers.
+ */
 public abstract class RtspProtoBaseNumberNonNeg32bit<T extends RtspProtoBaseNumberNonNeg32bit<T>> {
 
 	protected boolean isWriteProtected = false;

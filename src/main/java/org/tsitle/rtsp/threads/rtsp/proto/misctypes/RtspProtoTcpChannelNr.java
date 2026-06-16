@@ -6,6 +6,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Container for a TCP channel number.
+ */
 public final class RtspProtoTcpChannelNr implements Cloneable {
 
 	private boolean isWriteProtected = false;

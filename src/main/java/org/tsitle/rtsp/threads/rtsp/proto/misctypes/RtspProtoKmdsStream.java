@@ -7,6 +7,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 
 import java.util.Optional;
 
+/**
+ * Container for SRTxP-KMDs for a Stream (with up to two Sub-Streams).
+ */
 public final class RtspProtoKmdsStream implements Cloneable {
 
 	private @Nullable Boolean areKmdsForLegacySdes = null;

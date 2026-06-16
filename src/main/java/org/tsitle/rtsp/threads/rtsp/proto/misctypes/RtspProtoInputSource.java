@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Input Source for RTSP streams.
+ * Container for an Input Source for RTSP streams.
  */
 public final class RtspProtoInputSource {
 

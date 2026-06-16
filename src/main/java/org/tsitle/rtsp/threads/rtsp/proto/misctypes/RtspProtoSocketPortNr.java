@@ -6,6 +6,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Container for a TCP/UDP port number.
+ */
 public final class RtspProtoSocketPortNr implements Cloneable {
 
 	private boolean isWriteProtected = false;

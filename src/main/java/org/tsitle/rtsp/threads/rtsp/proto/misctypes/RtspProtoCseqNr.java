@@ -6,7 +6,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Optional;
 
 /**
- * CSeq number for RTSP messages
+ * Container for a CSeq number for RTSP messages.
  */
 public final class RtspProtoCseqNr extends RtspProtoBaseNumberNonNeg32bit<RtspProtoCseqNr> implements Cloneable {
 

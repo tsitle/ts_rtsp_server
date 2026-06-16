@@ -13,6 +13,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Container for SETUP information for a Stream (with up to two Sub-Streams).
+ */
 public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	private final @NonNull RtspProtoIdSubStream idSubStream1 = new RtspProtoIdSubStream();

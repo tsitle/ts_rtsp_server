@@ -6,6 +6,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Container for an RTP Sequence Number.
+ */
 public final class RtspProtoRtpSeqNr implements Cloneable {
 
 	private boolean isWriteProtected = false;

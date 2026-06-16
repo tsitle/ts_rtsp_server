@@ -5,6 +5,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 
+/**
+ * Container for Resource URLs and the respective Input Source ID, Stream Source ID, and Sub-Stream ID.
+ */
 public final class RtspProtoRscUrl implements Cloneable {
 
 	private boolean isWriteProtected = false;

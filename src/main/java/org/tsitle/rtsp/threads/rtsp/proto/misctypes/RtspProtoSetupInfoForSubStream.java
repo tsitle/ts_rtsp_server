@@ -9,6 +9,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.net.DatagramSocket;
 
+/**
+ * Container for SETUP information for a Sub-Stream.
+ */
 public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 
 	private boolean writeProtected = false;

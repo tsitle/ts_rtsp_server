@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 /**
- * Stream Source within an Input Source for RTSP streams.
+ * Container for a Stream Source within an Input Source for RTSP streams.
  */
 public final class RtspProtoStreamSource {
 
