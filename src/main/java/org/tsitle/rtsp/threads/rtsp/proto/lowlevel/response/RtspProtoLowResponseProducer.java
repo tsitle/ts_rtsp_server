@@ -243,27 +243,27 @@ public final class RtspProtoLowResponseProducer {
 		tmpSb.append(subStreamInfo.urlStr);
 		if (rtspProtocolVersion == RtspProtocolVersion.RTSP_V2) {
 			tmpSb.append("\" ");
-			if (subStreamInfo.getSsrcId().isEmpty()) {
+			if (subStreamInfo.ssrcId.isEmpty()) {
 				throw new RtspProtoInvalidResponseException("ssrcId must be set for RTSP v2.0");
 			}
 			tmpSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SSRC)
-					.append(subStreamInfo.getSsrcId().toHexString(false));
+					.append(subStreamInfo.ssrcId.toHexString(false));
 			tmpSb.append(":");
 		} else {
 			tmpSb.append(";");
 		}
-		if (subStreamInfo.getSeqNr16bit().isEmpty()) {
+		if (subStreamInfo.seqNr.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("seqNr must be set");
 		}
-		if (subStreamInfo.getRtpTimestamp32bit().isEmpty()) {
+		if (subStreamInfo.rtpTimestamp.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("rtpTimestamp must be set");
 		}
 		tmpSb
 				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_SEQ)
-						.append(Short.toUnsignedInt(subStreamInfo.getSeqNr16bit().get()))
+						.append(Integer.toUnsignedString(subStreamInfo.seqNr.getSeqNr16bit().orElseThrow()))
 				.append(";")
 				.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_PLA_RI_RTPTIME)
-						.append(Integer.toUnsignedString(subStreamInfo.getRtpTimestamp32bit().get()));
+						.append(Long.toUnsignedString(subStreamInfo.rtpTimestamp.getTs32bit().orElseThrow()));
 		return tmpSb.toString();
 	}
 

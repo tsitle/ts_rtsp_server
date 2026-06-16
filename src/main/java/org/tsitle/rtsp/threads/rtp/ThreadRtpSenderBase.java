@@ -18,6 +18,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.rtsp.helpers.TimestampEpochNs;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -65,16 +68,16 @@ public abstract class ThreadRtpSenderBase<
 	/** RTP packet type */
 	protected final RtpPacketType rtpPacketType;
 	/** Adjusted RTP timestamp T0 */
-	private int rtpTsT0Adj = 0;
+	private final @NonNull RtspProtoRtpTimestamp rtpTsT0Adj = RtspProtoRtpTimestamp.ofZero();
 	/** System.nanoTime when the RTP timestamp T0 was adjusted (in nanoseconds) */
 	@SuppressWarnings("FieldCanBeLocal")
-	private long rtpTsT0GenAdj = 0;
+	private final @NonNull TimestampEpochNs rtpTsT0GenAdj = TimestampEpochNs.ofEmpty();
 	/** Current RTP timestamp */
-	private int rtpTsCurrent = 0;
+	private final @NonNull RtspProtoRtpTimestamp rtpTsCurrent = RtspProtoRtpTimestamp.ofZero();
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(-1);
-	private short rtpSequNr;
+	private final @NonNull RtspProtoRtpSeqNr rtpSequNr = new RtspProtoRtpSeqNr();
 	protected int debugStreamOffset = 0;
 	private boolean isFirstPktOfFrame = true;
 
@@ -133,7 +136,7 @@ public abstract class ThreadRtpSenderBase<
 		}
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
-		this.rtpSequNr = paramsCommon.getRtpSeqNrT0();
+		this.rtpSequNr.copyFrom(paramsCommon.getRtpSeqNrT0().orElseThrow());
 		this.rtpPacketType = rtpPacketType;
 
 		//
@@ -255,12 +258,14 @@ public abstract class ThreadRtpSenderBase<
 			timeNtpTsInfo.timeSessionStartMonoNs = System.nanoTime();
 
 			// adjust RTP timestamp T0
-			rtpTsT0GenAdj = System.nanoTime();
-			rtpTsT0Adj = getRtpTimestampAsInt_t0org_forNow(rtpTsT0GenAdj);
+			rtpTsT0GenAdj.setEpochNsUnsigned64bit(System.nanoTime());
+			rtpTsT0GenAdj.writeProtect();
+			rtpTsT0Adj.copyFrom(getRtpTimestampAsInt_t0org_forNow(rtpTsT0GenAdj));
+			rtpTsT0Adj.writeProtect();
 
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp(rtpTsT0GenAdj);
-			siStats.rtpTimestamp = rtpTsT0Adj;
+			siStats.rtpTimestamp.copyFrom(rtpTsT0Adj);
 			sendSenderReport();
 
 			//
@@ -418,12 +423,12 @@ public abstract class ThreadRtpSenderBase<
 		//
 		cacheParamsBase.reset();
 		cacheParamsBase.ssrcId.copyFrom(paramsCommon.getSsrcId());
-		cacheParamsBase.sequenceNumber = getRtpSequNr();
+		cacheParamsBase.sequenceNumber.copyFrom(getRtpSequNr());
 		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(
 				curFragmentData.fragmentOffset(),
 				curFragmentData.isLastFragment()
 			);
-		cacheParamsBase.rtpTimestamp = curFragmentData.frameRtpTimestamp();
+		cacheParamsBase.rtpTimestamp.copyFrom(curFragmentData.frameRtpTimestamp());
 	}
 
 	protected abstract @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData);
@@ -463,12 +468,12 @@ public abstract class ThreadRtpSenderBase<
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected short getRtpSequNr() {
-		return rtpSequNr;
+	protected @NonNull RtspProtoRtpSeqNr getRtpSequNr() {
+		return rtpSequNr.clone();
 	}
 
 	protected void incrRtpSequNr() {
-		++rtpSequNr;
+		rtpSequNr.increment();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -569,20 +574,22 @@ public abstract class ThreadRtpSenderBase<
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private int getRtpTimestampAsInt_t0adj_forFrameNr(long rtpFrameNr) {
-		return rtpTsT0Adj + (int)((rtpFrameNr - 1) * rtpTicksPerFrame);
+	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0adj_forFrameNr(long rtpFrameNr) {
+		return rtpTsT0Adj.add((rtpFrameNr - 1) * rtpTicksPerFrame);
 	}
 
-	private int getRtpTimestampAsInt_t0adj_forNow(long currentSysNanos) {
-		long elapsedNs = currentSysNanos - rtpTsT0GenAdj;
+	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0adj_forNow(@NonNull TimestampEpochNs currentSysNanos) {
+		long elapsedNs = currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) - rtpTsT0GenAdj.getEpochNsUnsigned64bit().orElse(0L);
 		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
-		return rtpTsT0Adj + (int)elapsedTicks;
+		return rtpTsT0Adj.add(elapsedTicks);
 	}
 
-	private int getRtpTimestampAsInt_t0org_forNow(long currentSysNanos) {
-		long elapsedNs = currentSysNanos - paramsCommon.getRtpTimestampT0().orElseThrow().rtpGenTsT0Ns();
+	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0org_forNow(@NonNull TimestampEpochNs currentSysNanos) {
+		ParamsThreadRtpSenderCommon.RtpTsT0WithEpoch tmpRtpTsT0WithEpoch = paramsCommon.getRtpTimestampT0WithEpoch().orElseThrow();
+		long elapsedNs = currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) -
+				tmpRtpTsT0WithEpoch.rtpGenTsT0Ns().getEpochNsUnsigned64bit().orElse(0L);
 		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
-		return paramsCommon.getRtpTimestampT0().orElseThrow().rtpTsT0() + (int)elapsedTicks;
+		return tmpRtpTsT0WithEpoch.rtpTsT0().add(elapsedTicks);
 	}
 
 	private boolean sendFrame()
@@ -617,15 +624,15 @@ public abstract class ThreadRtpSenderBase<
 				adaptiveScheduler.waitForNextFrame();
 			}
 			//
-			long tmpCurSysNanos = System.nanoTime();
+			TimestampEpochNs tmpCurSysNanos = TimestampEpochNs.ofNow();
 			if (paramsCommon.getIsStreamSourceFromFile()) {
-				rtpTsCurrent = getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr);
+				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 			} else {
-				rtpTsCurrent = getRtpTimestampAsInt_t0adj_forNow(tmpCurSysNanos);
+				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurSysNanos));
 			}
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock = getNtpTimestamp(tmpCurSysNanos);
-			siStats.rtpTimestamp = rtpTsCurrent;
+			siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
 			//
 			isFirstPktOfFrame = false;
 		}
@@ -770,11 +777,11 @@ public abstract class ThreadRtpSenderBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private long getNtpTimestamp() {
-		return getNtpTimestamp(System.nanoTime());
+		return getNtpTimestamp(TimestampEpochNs.ofNow());
 	}
 
-	private long getNtpTimestamp(long currentSysNanos) {
-		long deltaMono = (currentSysNanos - timeNtpTsInfo.timeSessionStartMonoNs);
+	private long getNtpTimestamp(@NonNull TimestampEpochNs currentSysNanos) {
+		long deltaMono = (currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) - timeNtpTsInfo.timeSessionStartMonoNs);
 		return NtpTimestampHelper.addNanosToNtpTimestamp(timeNtpTsInfo.timeSessionStartNtpWc, deltaMono);
 	}
 

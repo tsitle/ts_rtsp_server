@@ -3,6 +3,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.misctypes;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.helpers.RandomHelper;
+import org.tsitle.rtsp.helpers.TimestampEpochNs;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -53,12 +54,14 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		if (tmpKmd != null && ! tmpKmd.ssrcId().equals(ssrcId)) {
 			throw new IllegalArgumentException("kmdOutbound.ssrcId must match ssrcId");
 		}
+		RtspProtoRtpSeqNr tmpSeq = RtspProtoRtpSeqNr.withOverflow(RandomHelper.getRandomUint16());
+		RtspProtoRtpTimestamp tmpTimestamp = RtspProtoRtpTimestamp.withOverflow(RandomHelper.getRandomUint32(true));
 		RtspProtoSetupInfoForSubStream resObj = new RtspProtoSetupInfoForSubStream(
 				rscUrlSubStream,
 				ssrcId,
-				RandomHelper.getRandomUint16(),
-				RandomHelper.getRandomUint32(true),
-				System.nanoTime()
+				tmpSeq,
+				tmpTimestamp,
+				TimestampEpochNs.ofNow()
 			);
 		if (tmpKmd != null) {
 			resObj.getKmdOutboundPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);

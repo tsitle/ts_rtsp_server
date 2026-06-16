@@ -7,6 +7,8 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -55,9 +57,9 @@ public class AacParserTest {
 		RtpPacketAac packetOne = new RtpPacketAac(
 				new ParamsContainerBase(
 						RtspProtoIdXsrc.of(0x12345678L),
-						(short)0x1234,
+						RtspProtoRtpSeqNr.of(0x1234),
 						true,
-						0xABCDEF01
+						RtspProtoRtpTimestamp.of(0xABCDEF01L)
 					),
 				(byte)0,
 				aacInfoOrg,

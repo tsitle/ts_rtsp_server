@@ -6,6 +6,7 @@ import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketSR;
 import org.tsitle.rtsp.security.constants.KeySizes;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -16,7 +17,7 @@ public class SrtxpContextTest {
 
 	@Test
 	void protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {
-		final short hdSeqNr = 0x1234;
+		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1234);
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEC0ADDEL);
 
 		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
@@ -109,7 +110,7 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			//
-			final short rndSeqNr = (short)rnd.nextInt(0x10000);
+			final RtspProtoRtpSeqNr rndSeqNr = RtspProtoRtpSeqNr.withOverflow(rnd.nextInt(0x10000));
 			final RtspProtoIdXsrc rndSsrcRtp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 
 			final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(rndSsrcRtp);
@@ -195,7 +196,7 @@ public class SrtxpContextTest {
 			rnd.nextBytes(rndMasterSalt);
 
 			//
-			final short rndSeqNr = (short)rnd.nextInt(0x10000);
+			final RtspProtoRtpSeqNr rndSeqNr = RtspProtoRtpSeqNr.withOverflow(rnd.nextInt(0x10000));
 			final RtspProtoIdXsrc rndSsrcRtp = RtspProtoIdXsrc.of(Integer.toUnsignedLong(rnd.nextInt()));
 
 			final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(rndSsrcRtp);

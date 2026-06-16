@@ -2,14 +2,14 @@ package org.tsitle.rtsp.threads.rtsp.proto.ids;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoNumberNonNeg32bitBase;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoBaseNumberNonNeg32bit;
 
 import java.util.Optional;
 
 /**
  * SSRC/CSRC ID
  */
-public final class RtspProtoIdXsrc extends RtspProtoNumberNonNeg32bitBase<RtspProtoIdXsrc> implements Cloneable {
+public final class RtspProtoIdXsrc extends RtspProtoBaseNumberNonNeg32bit<RtspProtoIdXsrc> implements Cloneable {
 
 	public RtspProtoIdXsrc() {
 		super();
@@ -63,7 +63,7 @@ public final class RtspProtoIdXsrc extends RtspProtoNumberNonNeg32bitBase<RtspPr
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"xsrc=" + toStringOnlyValue() +
+				"xsrc=" + (isEmpty() ? "unset" : toHexString(true)) +
 				"]";
 	}
 

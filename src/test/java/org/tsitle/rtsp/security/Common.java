@@ -7,7 +7,10 @@ import org.tsitle.rtsp.packets.rtp.ParamsContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.constants.KeySizes;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -203,14 +206,21 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static byte[] buildRtpPacket(short hdSeqNr, @NonNull RtspProtoIdXsrc hdSsrc, byte[] payload) {
+	static byte[] buildRtpPacket(@NonNull RtspProtoRtpSeqNr hdSeqNr, @NonNull RtspProtoIdXsrc hdSsrc, byte[] payload) {
+		RtspProtoRtpTimestamp tmpRtpTs;
+		try {
+			tmpRtpTs = RtspProtoRtpTimestamp.of(0x01020304L);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+			throw new RuntimeException(e);
+		}
 		RtpPacketContainerBase rtpPktCb = RtpPacketContainerBase.createPacketHeader(
 				RtpPacketType.V_JPEG,
 				new ParamsContainerBase(
 						hdSsrc,
 						hdSeqNr,
 						false,
-						0x01020304
+						tmpRtpTs
 					)
 			);
 		final byte[] originalHd = new byte[rtpPktCb.getPacketSize()];
@@ -225,12 +235,13 @@ class Common {
 	static byte[] buildExpectedSrtpPacket(
 				byte[] plainRtpPacket,
 				@NonNull SessionKeys rtpKeys,
-				short seqNr,
-				RtspProtoIdXsrc ssrc,
+				@NonNull RtspProtoRtpSeqNr seqNr,
+				@NonNull RtspProtoIdXsrc ssrc,
 				long stateRoc
 			) throws Exception {
 		int headerLen = 12;
-		long packetIndex = (stateRoc << 16) | ((long)seqNr & 0xFFFFL);
+		long tmpSeqLong = (long)seqNr.getSeqNr16bit().orElse(0);
+		long packetIndex = (stateRoc << 16) | (tmpSeqLong & 0xFFFFL);
 
 		byte[] iv = new byte[KeySizes.IV_SIZE];
 		ByteBuffer ivByBuf = ByteBuffer.wrap(iv).order(ByteOrder.BIG_ENDIAN);
@@ -273,8 +284,8 @@ class Common {
 	@SuppressWarnings("SameParameterValue")
 	static byte[] buildExpectedSrtcpPacket(
 				byte[] plainRtcpPacket,
-				SessionKeys rtcpSessionKeys,
-				RtspProtoIdXsrc ssrc,
+				@NonNull SessionKeys rtcpSessionKeys,
+				@NonNull RtspProtoIdXsrc ssrc,
 				int stateIndexOnly,
 				int rtcpSrRrExtendedHeaderLen
 			) throws Exception {

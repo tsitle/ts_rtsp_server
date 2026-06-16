@@ -2,6 +2,8 @@ package org.tsitle.rtsp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.NtpTimestampHelper;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -16,7 +18,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	/** NTP timestamp - least significant word (seconds relative to 0h UTC on 1 January 1900, fractional part, 32 bits) */
 	private final int bdNtpTsLsw;
 	/** RTP timestamp (32 bits) */
-	private final int bdRtpTs;
+	private @NonNull RtspProtoRtpTimestamp bdRtpTs;
 	/** Sender's packet count (32 bits) */
 	private final int bdSendersPktCount;
 	/** Sender's octet count (32 bits) */
@@ -31,7 +33,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	 */
 	public RtcpInnerSenderInfoBlock(
 				long ntpTsFull,
-				int rtpTs,
+				@NonNull RtspProtoRtpTimestamp rtpTs,
 				int sendersPktCount,
 				int sendersOctCount
 			) {
@@ -55,13 +57,13 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	public RtcpInnerSenderInfoBlock(
 				int ntpTsMsw,
 				int ntpTsLsw,
-				int rtpTs,
+				@NonNull RtspProtoRtpTimestamp rtpTs,
 				int sendersPktCount,
 				int sendersOctCount
 			) {
 		this.bdNtpTsMsw = ntpTsMsw;
 		this.bdNtpTsLsw = ntpTsLsw;
-		this.bdRtpTs = rtpTs;
+		this.bdRtpTs = rtpTs.clone();
 		this.bdSendersPktCount = sendersPktCount;
 		this.bdSendersOctCount = sendersOctCount;
 	}
@@ -77,7 +79,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public @NonNull Instant getNtpTsAsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
 	@SuppressWarnings("unused")
-	public int getRtpTs() { return bdRtpTs; }
+	public @NonNull RtspProtoRtpTimestamp getRtpTs() { return bdRtpTs.clone(); }
 	@SuppressWarnings("unused")
 	public int getSendersPktCount() { return bdSendersPktCount; }
 	@SuppressWarnings("unused")
@@ -86,16 +88,23 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	public void appendToBuffer(@NonNull ByteBuffer bb) {
 		bb.putInt(bdNtpTsMsw);
 		bb.putInt(bdNtpTsLsw);
-		bb.putInt(bdRtpTs);
+		bb.putInt(bdRtpTs.getTs32bit().orElse(0L).intValue());
 		bb.putInt(bdSendersPktCount);
 		bb.putInt(bdSendersOctCount);
 	}
 
 	public static @NonNull RtcpInnerSenderInfoBlock decodeFromBuffer(@NonNull ByteBuffer bb) {
+		RtspProtoRtpTimestamp tmpTs;
+		try {
+			tmpTs = RtspProtoRtpTimestamp.of(Integer.toUnsignedLong(bb.getInt()));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+			tmpTs = RtspProtoRtpTimestamp.ofZero();
+		}
 		return new RtcpInnerSenderInfoBlock(
 				bb.getInt(),  // ntpTsMsw
 				bb.getInt(),  // ntpTsLsw
-				bb.getInt(),  // rtpTs
+				tmpTs,  // rtpTs
 				bb.getInt(),  // sendersPktCount
 				bb.getInt()  // sendersOctCount
 			);
@@ -105,7 +114,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"NTPTS: " + NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()) +
-				", RTPTS: " + Integer.toUnsignedString(bdRtpTs) +
+				", RTPTS: " + bdRtpTs +
 				", SendersPktCount: " + Integer.toUnsignedString(bdSendersPktCount) +
 				", SendersOctCount: " + Integer.toUnsignedString(bdSendersOctCount) +
 				"]";
@@ -114,7 +123,9 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	@Override
 	public @NonNull RtcpInnerSenderInfoBlock clone() {
 		try {
-			return (RtcpInnerSenderInfoBlock)super.clone();
+			RtcpInnerSenderInfoBlock cloned = (RtcpInnerSenderInfoBlock)super.clone();
+			cloned.bdRtpTs = bdRtpTs.clone();
+			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}

@@ -6,13 +6,13 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
-public abstract class RtspProtoNumberNonNeg32bitBase<T extends RtspProtoNumberNonNeg32bitBase<T>> {
+public abstract class RtspProtoBaseNumberNonNeg32bit<T extends RtspProtoBaseNumberNonNeg32bit<T>> {
 
 	protected boolean isWriteProtected = false;
 
 	protected long theNumber = -1L;
 
-	protected RtspProtoNumberNonNeg32bitBase() { }
+	protected RtspProtoBaseNumberNonNeg32bit() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

@@ -11,7 +11,6 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSkippedHeaderExcep
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowInvalidRrException;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.helper.RtspLowParserHelper;
@@ -419,7 +418,7 @@ public final class RtspProtoLowResponseConsumer {
 		{
 			final String fieldDesc = "RTP-Info parameter value for SeqNr";
 			try {
-				resObj.setSeqNr16bit(Integer.parseInt(rawSeqNrStr.strip()));
+				resObj.seqNr.setSeqNr16bit(Integer.parseInt(rawSeqNrStr.strip()));
 			} catch (NumberFormatException e) {
 				throw new RtspProtoInvalidResponseException("Cannot parse " + fieldDesc + ": '" + rawSeqNrStr + "'");
 			} catch (RtspProtoNumberRangeException e) {
@@ -434,11 +433,9 @@ public final class RtspProtoLowResponseConsumer {
 			}
 			final String fieldDesc = "RTP-Info parameter value for SSRC";
 			try {
-				RtspProtoIdXsrc tmpIdXsrc = new RtspProtoIdXsrc();
-				tmpIdXsrc.setId32bit(
+				resObj.ssrcId.setId32bit(
 						RtspLowParserHelper.helperParseHexStringIntoLong(fieldDesc, rawSsrcHexStr)
 					);
-				resObj.setSsrcId(tmpIdXsrc);
 			} catch (RtspLowInvalidRrException e) {
 				throw new RtspProtoInvalidResponseException(e.getMessage());
 			} catch (RtspProtoNumberRangeException e) {
@@ -453,7 +450,7 @@ public final class RtspProtoLowResponseConsumer {
 		{
 			final String fieldDesc = "RTP-Info parameter value for RtpTimestamp";
 			try {
-				resObj.setRtpTimestamp32bit(Long.parseLong(rawTimeStr.strip()));
+				resObj.rtpTimestamp.setTs32bit(Long.parseLong(rawTimeStr.strip()));
 			} catch (NumberFormatException e) {
 				throw new RtspProtoInvalidResponseException("Cannot parse " + fieldDesc + ": '" + rawTimeStr + "'");
 			} catch (RtspProtoNumberRangeException e) {

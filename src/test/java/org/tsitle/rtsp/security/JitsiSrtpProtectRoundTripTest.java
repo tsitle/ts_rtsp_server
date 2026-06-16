@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -14,7 +15,7 @@ class JitsiSrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v1() throws Exception {
-		final short hdSeqNr = 0x1289;
+		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1289);
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xAB12CD34L);
 
 		// derive RTP session keys
@@ -43,7 +44,7 @@ class JitsiSrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_jitsi_decrypt_should_restore_original_packet_v2() throws Exception {
-		final short hdSeqNr = 0x1234;
+		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1234);
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		// derive RTP session keys using Jitsi KDF

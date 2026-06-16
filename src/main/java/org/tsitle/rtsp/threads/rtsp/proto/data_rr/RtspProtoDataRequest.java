@@ -129,17 +129,8 @@ public final class RtspProtoDataRequest {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		long tmpVal = value.getCseq32bit().orElse(-1L) + 1L;
-		try {
-			this.requCseqNrToSend.setCseq32bit(tmpVal);
-		} catch (RtspProtoNumberRangeException e) {
-			// overflow
-			try {
-				this.requCseqNrToSend.setCseq32bit(0L);
-			} catch (RtspProtoNumberRangeException ex) {
-				// this will never happen
-			}
-		}
+		this.requCseqNrToSend.copyFrom(value);
+		this.requCseqNrToSend.increment();
 	}
 
 	public @NonNull String getClientUa() {

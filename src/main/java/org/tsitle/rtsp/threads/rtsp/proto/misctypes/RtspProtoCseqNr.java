@@ -8,7 +8,7 @@ import java.util.Optional;
 /**
  * CSeq number for RTSP messages
  */
-public final class RtspProtoCseqNr extends RtspProtoNumberNonNeg32bitBase<RtspProtoCseqNr> implements Cloneable {
+public final class RtspProtoCseqNr extends RtspProtoBaseNumberNonNeg32bit<RtspProtoCseqNr> implements Cloneable {
 
 	public RtspProtoCseqNr() {
 		super();
@@ -34,6 +34,17 @@ public final class RtspProtoCseqNr extends RtspProtoNumberNonNeg32bitBase<RtspPr
 	}
 	public void setCseq32bit(long value32bit) throws RtspProtoNumberRangeException {
 		setNumber32bit(value32bit);
+	}
+	public void increment() {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		try {
+			setCseq32bit(theNumber + 1L);
+		} catch (RtspProtoNumberRangeException e) {
+			// overflow
+			theNumber = 0L;
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

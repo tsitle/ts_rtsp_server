@@ -6,8 +6,12 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.rtsp.helpers.TimestampEpochNs;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -15,16 +19,55 @@ import java.util.function.Supplier;
 
 public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implements Cloneable {
 
-	public record RtpTsT0(int rtpTsT0, long rtpGenTsT0Ns) implements Cloneable {
+	public static final class RtpTsT0WithEpoch implements Cloneable {
+		private @NonNull RtspProtoRtpTimestamp rtpTsT0;
+		private @NonNull TimestampEpochNs rtpGenTsT0Ns;
+
+		public RtpTsT0WithEpoch(@NonNull RtspProtoRtpTimestamp rtpTsT0, @NonNull TimestampEpochNs rtpGenTsT0Ns) {
+			this.rtpTsT0 = rtpTsT0.clone();
+			this.rtpGenTsT0Ns = rtpGenTsT0Ns.clone();
+		}
+
+		public boolean isEmpty() {
+			return (rtpTsT0.isEmpty() || rtpGenTsT0Ns.isEmpty());
+		}
+
 		@Override
-		public @NonNull RtpTsT0 clone() {
+		public @NonNull RtpTsT0WithEpoch clone() {
 			try {
-				return (RtpTsT0)super.clone();
+				RtpTsT0WithEpoch cloned = (RtpTsT0WithEpoch) super.clone();
+				cloned.rtpTsT0 = rtpTsT0.clone();
+				cloned.rtpGenTsT0Ns = rtpGenTsT0Ns.clone();
+				return cloned;
 			} catch (CloneNotSupportedException e) {
 				throw new AssertionError();
 			}
 		}
+
+		public @NonNull RtspProtoRtpTimestamp rtpTsT0() { return rtpTsT0.clone(); }
+
+		public @NonNull TimestampEpochNs rtpGenTsT0Ns() { return rtpGenTsT0Ns.clone(); }
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) {
+				return true;
+			}
+			if (obj == null || obj.getClass() != this.getClass()) {
+				return false;
+			}
+			var that = (RtpTsT0WithEpoch)obj;
+			return Objects.equals(this.rtpTsT0, that.rtpTsT0) && Objects.equals(this.rtpGenTsT0Ns, that.rtpGenTsT0Ns);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(rtpTsT0, rtpGenTsT0Ns);
+		}
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/** Debugging: Rewind media files? */
 	private boolean debugRewindMediaFiles;
@@ -39,28 +82,28 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean isSetAvFramesPerSecond;
 
 	/** Sequence number for RTP packets (16 bits unsigned) */
-	private short rtpSeqNrT0;
+	private @Nullable RtspProtoRtpSeqNr rtpSeqNrT0 = null;
 	private boolean isSetRtpSeqNrT0;
 	/** Initial RTP Timestamp within the session */
-	private RtpTsT0 rtpTimestampT0;
-	private boolean isSetRtpTimestampT0;
+	private @Nullable RtpTsT0WithEpoch rtpTimestampT0WithEpoch = null;
+	private boolean isSetRtpTimestampT0WithEpoch;
 
 	/** XSRC block for SDES RTCP packets (for communicating which streams belong to the same session) */
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
 	private boolean isSetXsrcBlockEntry;
 	/** Callback for appending RTCP packets to the outgoing queue */
-	private BiConsumer<RtspProtoIdXsrc, BufferExt> cbRtcpAppendToOutgoingQueue;
+	private @Nullable BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue = null;
 	private boolean isSetCbRtcpAppendToOutgoingQueue;
 
 	/** Callback for notifying the parent thread that the child thread is ready to start */
-	private Consumer<@NonNull RtspProtoIdStreamSource> cbNotifyThreadReady;
+	private @Nullable Consumer<@NonNull RtspProtoIdStreamSource> cbNotifyThreadReady = null;
 	private boolean isSetCbNotifyThreadReady;
 	/** Callback for checking if the child thread may start playback */
-	private Supplier<Boolean> cbThreadMayStartPlayback;
+	private @Nullable Supplier<@NonNull Boolean> cbThreadMayStartPlayback = null;
 	private boolean isSetCbThreadMayStartPlayback;
 
 	/** Incoming A/V stream URI */
-	private URI avStreamIncomingUri;
+	private @Nullable URI avStreamIncomingUri = null;
 	private boolean isSetAvStreamIncomingUri;
 
 	public ParamsThreadRtpSenderCommon() {
@@ -88,16 +131,16 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetAvFramesPerSecond = true;
 	}
 
-	public short getRtpSeqNrT0() { return rtpSeqNrT0; }
-	public void setRtpSeqNrT0(short rtpSeqNrT0) {
-		this.rtpSeqNrT0 = rtpSeqNrT0;
+	public Optional<RtspProtoRtpSeqNr> getRtpSeqNrT0() { return Optional.ofNullable(rtpSeqNrT0); }
+	public void setRtpSeqNrT0(@NonNull RtspProtoRtpSeqNr rtpSeqNrT0) {
+		this.rtpSeqNrT0 = rtpSeqNrT0.clone();
 		this.isSetRtpSeqNrT0 = true;
 	}
 
-	public Optional<RtpTsT0> getRtpTimestampT0() { return Optional.ofNullable(rtpTimestampT0); }
-	public void setRtpTimestampT0(@NonNull RtpTsT0 value) {
-		this.rtpTimestampT0 = value;
-		this.isSetRtpTimestampT0 = true;
+	public Optional<RtpTsT0WithEpoch> getRtpTimestampT0WithEpoch() { return Optional.ofNullable(rtpTimestampT0WithEpoch); }
+	public void setRtpTimestampT0WithEpoch(@NonNull RtpTsT0WithEpoch value) {
+		this.rtpTimestampT0WithEpoch = value.clone();
+		this.isSetRtpTimestampT0WithEpoch = true;
 	}
 
 	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() {
@@ -119,13 +162,13 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetCbRtcpAppendToOutgoingQueue = true;
 	}
 
-	public Optional<Consumer<RtspProtoIdStreamSource>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
+	public Optional<Consumer<@NonNull RtspProtoIdStreamSource>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
 	public void setCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdStreamSource> cbNotifyThreadReady) {
 		this.cbNotifyThreadReady = cbNotifyThreadReady;
 		this.isSetCbNotifyThreadReady = true;
 	}
 
-	public Optional<Supplier<Boolean>> getCbThreadMayStartPlayback() { return Optional.ofNullable(cbThreadMayStartPlayback); }
+	public Optional<Supplier<@NonNull Boolean>> getCbThreadMayStartPlayback() { return Optional.ofNullable(cbThreadMayStartPlayback); }
 	public void setCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> cbThreadMayStartPlayback) {
 		this.cbThreadMayStartPlayback = cbThreadMayStartPlayback;
 		this.isSetCbThreadMayStartPlayback = true;
@@ -149,8 +192,12 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	public @NonNull ParamsThreadRtpSenderCommon clone() {
 		ParamsThreadRtpSenderCommon clone = (ParamsThreadRtpSenderCommon)super.clone();
 		//
-		if (rtpTimestampT0 != null) {
-			clone.rtpTimestampT0 = rtpTimestampT0.clone();
+		if (rtpSeqNrT0 != null) {
+			clone.rtpSeqNrT0 = rtpSeqNrT0.clone();
+		}
+		//
+		if (rtpTimestampT0WithEpoch != null) {
+			clone.rtpTimestampT0WithEpoch = rtpTimestampT0WithEpoch.clone();
 		}
 		//
 		if (xsrcBlockEntry != null) {
@@ -170,7 +217,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetAvFramesPerSecond, "avFramesPerSecond");
 
 		requireIsSet(isSetRtpSeqNrT0, "rtpSeqNrT0");
-		requireIsSet(isSetRtpTimestampT0, "rtpTimestampT0");
+		requireIsSet(isSetRtpTimestampT0WithEpoch, "rtpTimestampT0WithEpoch");
 
 		requireIsSet(isSetXsrcBlockEntry, "xsrcBlockEntries");
 		requireIsSet(isSetCbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");
@@ -188,7 +235,14 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be > 0.1 and <= 100.0");
 		}
 
-		requireNonNull(rtpTimestampT0, "rtpTimestampT0");
+		requireNonNull(rtpSeqNrT0, "rtpSeqNrT0");
+		if (rtpSeqNrT0.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "rtpSeqNrT0 must not be empty");
+		}
+		requireNonNull(rtpTimestampT0WithEpoch, "rtpTimestampT0WithEpoch");
+		if (rtpTimestampT0WithEpoch.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "rtpTimestampT0WithEpoch must not be empty");
+		}
 
 		requireNonNull(xsrcBlockEntry, "xsrcBlockEntry");
 		requireNonNull(cbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");

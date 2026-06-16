@@ -6,6 +6,7 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +14,7 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
-		final short hdSeqNr = 0x1234;
+		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1234);
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
 		// Arrange
@@ -54,7 +55,7 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys);
 
 		// Packet 1: sequence at wrap boundary (0xFFFF)
-		final short hdSeqNr1 = (short)0xFFFF;
+		final RtspProtoRtpSeqNr hdSeqNr1 = RtspProtoRtpSeqNr.of(0xFFFF);
 		final byte[] payload1 = Common.HEX.parseHex("0102030405060708090A0B0C0D0E0F10");
 		final byte[] pkt1 = Common.buildRtpPacket(hdSeqNr1, hdSsrc, payload1);
 
@@ -74,7 +75,7 @@ class SrtpProtectRoundTripTest {
 		assertEquals(1, Common.srtpCtxInboundReadStateSrtpRocInbound(receiverCtx), "Receiver ROC should increment after SEQ wrap");
 
 		// Packet 2: post-wrap sequence (0x0000), must use ROC=1
-		final short hdSeqNr2 = 0x0000;
+		final RtspProtoRtpSeqNr hdSeqNr2 = RtspProtoRtpSeqNr.of(0x0000);
 		final byte[] payload2 = Common.HEX.parseHex("A1A2A3A4A5A6A7A8A9AAABACADAEAFB0");
 		final byte[] pkt2 = Common.buildRtpPacket(hdSeqNr2, hdSsrc, payload2);
 
@@ -104,7 +105,7 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys);
 
 		// First packet at wrap boundary
-		final short hdSeqNrWrap = (short)0xFFFF;
+		final RtspProtoRtpSeqNr hdSeqNrWrap = RtspProtoRtpSeqNr.of(0xFFFF);
 		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
 		final byte[] pktWrap = Common.buildRtpPacket(hdSeqNrWrap, hdSsrc, payload1);
 
@@ -121,7 +122,7 @@ class SrtpProtectRoundTripTest {
 		assertArrayEquals(pktWrap, decWrapBytes, "Wrap-boundary packet should decrypt correctly");
 
 		// Second packet after wrap
-		final short hdSeqNrAfterWrap = 0x0000;
+		final RtspProtoRtpSeqNr hdSeqNrAfterWrap = RtspProtoRtpSeqNr.of(0x0000);
 		final byte[] payload2 = Common.HEX.parseHex("2122232425262728292A2B2C2D2E2F30");
 		final byte[] pktAfterWrap = Common.buildRtpPacket(hdSeqNrAfterWrap, hdSsrc, payload2);
 
@@ -164,7 +165,7 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys);
 
 		// First packet far from wrap-boundary
-		final short hdSeqNrDoesntWrap = (short)0x0FFF;
+		final RtspProtoRtpSeqNr hdSeqNrDoesntWrap = RtspProtoRtpSeqNr.of(0x0FFF);
 		final byte[] payload1 = Common.HEX.parseHex("1112131415161718191A1B1C1D1E1F20");
 		final byte[] pktDoesntWrap = Common.buildRtpPacket(hdSeqNrDoesntWrap, hdSsrc, payload1);
 
@@ -195,7 +196,7 @@ class SrtpProtectRoundTripTest {
 
 	@Test
 	void protect_then_unprotect_srtp_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
-		final short hdSeqNrDoesntWrap = (short)0x0FFF;
+		final RtspProtoRtpSeqNr hdSeqNrDoesntWrap = RtspProtoRtpSeqNr.of(0x0FFF);
 		final RtspProtoIdXsrc hdSenderSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
 		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp(hdSenderSsrc);

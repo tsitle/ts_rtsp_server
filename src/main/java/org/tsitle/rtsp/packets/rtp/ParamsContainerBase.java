@@ -2,23 +2,27 @@ package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 public final class ParamsContainerBase {
 
 	/** RTSP Synchronization Source Identifier */
 	public @NonNull RtspProtoIdXsrc ssrcId;
 	/** Sequence number of the packet (16 bits unsigned) */
-	public short sequenceNumber;
+	public @NonNull RtspProtoRtpSeqNr sequenceNumber;
 	/** Set marker flag? */
 	public boolean doSetMarker;
 	/** RTP timestamp of the packet */
-	public int rtpTimestamp;
+	public @NonNull RtspProtoRtpTimestamp rtpTimestamp;
 
 	/**
 	 * Constructor.
 	 */
 	public ParamsContainerBase() {
 		this.ssrcId = new RtspProtoIdXsrc();
+		this.sequenceNumber = new RtspProtoRtpSeqNr();
+		this.rtpTimestamp = new RtspProtoRtpTimestamp();
 		reset();
 	}
 
@@ -31,21 +35,21 @@ public final class ParamsContainerBase {
 	 */
 	public ParamsContainerBase(
 				@NonNull RtspProtoIdXsrc ssrcId,
-				short sequenceNumber,
+				@NonNull RtspProtoRtpSeqNr sequenceNumber,
 				boolean doSetMarker,
-				int rtpTimestamp
+				@NonNull RtspProtoRtpTimestamp rtpTimestamp
 			) {
 		this.ssrcId = ssrcId.clone();
-		this.sequenceNumber = sequenceNumber;
+		this.sequenceNumber = sequenceNumber.clone();
 		this.doSetMarker = doSetMarker;
-		this.rtpTimestamp = rtpTimestamp;
+		this.rtpTimestamp = rtpTimestamp.clone();
 	}
 
 	public void reset() {
 		ssrcId.clear();
-		sequenceNumber = 0;
+		sequenceNumber.clear();
 		doSetMarker = false;
-		rtpTimestamp = 0;
+		rtpTimestamp.clear();
 	}
 
 }

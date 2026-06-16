@@ -5,6 +5,8 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 /**
  * RTP Packet Container base class.<br />
@@ -30,9 +32,9 @@ public class RtpPacketContainerBase {
 	/** Original Payload type as byte */
 	private final byte orgPayloadTypeByte;
 	/** Sequence number (16 bits unsigned) */
-	private short hdBaseSequenceNumber;
+	private final @NonNull RtspProtoRtpSeqNr hdBaseSequenceNumber = RtspProtoRtpSeqNr.ofEmpty();
 	/** Timestamp (32 bits) */
-	private int hdBaseTimestamp;
+	private final @NonNull RtspProtoRtpTimestamp hdBaseTimestamp = RtspProtoRtpTimestamp.ofEmpty();
 	/** Synchronization Source Identifier (identifies the server) (32 bits) */
 	private final @NonNull RtspProtoIdXsrc hdBaseSsrc;
 
@@ -84,9 +86,19 @@ public class RtpPacketContainerBase {
 		this.hdBaseMarker = ((byte)(((this.packetBuf.get(1) & 0x80) >>> 7) & 0x01) == 1);
 		this.orgPayloadTypeByte = (byte)(this.packetBuf.get(1) & 0x7F);
 		this.hdBasePayloadType = RtpPacketType.of(this.orgPayloadTypeByte);
-		this.hdBaseSequenceNumber = (short)(((this.packetBuf.get(3) & 0xFF) | ((this.packetBuf.get(2) & 0xFF) << 8)) & 0xFFFF);
-		this.hdBaseTimestamp = (this.packetBuf.get(7) & 0xFF) | ((this.packetBuf.get(6) & 0xFF) << 8) |
+		short tmpSeqNrShort = (short)(((this.packetBuf.get(3) & 0xFF) | ((this.packetBuf.get(2) & 0xFF) << 8)) & 0xFFFF);
+		try {
+			this.hdBaseSequenceNumber.setSeqNr16bit(Short.toUnsignedInt(tmpSeqNrShort));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
+		int tmpTsInt = (this.packetBuf.get(7) & 0xFF) | ((this.packetBuf.get(6) & 0xFF) << 8) |
 				((this.packetBuf.get(5) & 0xFF) << 16) | ((this.packetBuf.get(4) & 0xFF) << 24);
+		try {
+			this.hdBaseTimestamp.setTs32bit(tmpTsInt);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
 		int tmpSsrcInt = (this.packetBuf.get(11) & 0xFF) | ((this.packetBuf.get(10) & 0xFF) << 8) |
 				((this.packetBuf.get(9) & 0xFF) << 16) | ((this.packetBuf.get(8) & 0xFF) << 24);
 		this.hdBaseSsrc = new RtspProtoIdXsrc();
@@ -195,8 +207,8 @@ public class RtpPacketContainerBase {
 	 * Returns the sequence number of the RTP packet.
 	 * @return Sequence number (16 bits unsigned)
 	 */
-	public short getSequenceNumber() {
-		return hdBaseSequenceNumber;
+	public @NonNull RtspProtoRtpSeqNr getSequenceNumber() {
+		return hdBaseSequenceNumber.clone();
 	}
 
 	/**
@@ -204,8 +216,8 @@ public class RtpPacketContainerBase {
 	 * @return Timestamp
 	 */
 	@SuppressWarnings("unused")
-	public int getTimestamp() {
-		return hdBaseTimestamp;
+	public @NonNull RtspProtoRtpTimestamp getTimestamp() {
+		return hdBaseTimestamp.clone();
 	}
 
 	/**
@@ -247,8 +259,8 @@ public class RtpPacketContainerBase {
 				", CC: " + hdBaseCsrcCount +
 				", Marker: " + hdBaseMarker +
 				", PayloadType: " + hdBasePayloadType + " (o=" + getOrgPayloadType() + ")" +
-				", SequenceNumber: " + Short.toUnsignedInt(hdBaseSequenceNumber) +
-				", TimeStamp: " + Integer.toUnsignedString(hdBaseTimestamp) +
+				", SequenceNumber: " + hdBaseSequenceNumber +
+				", TimeStamp: " + hdBaseTimestamp +
 				", SSRC: " + hdBaseSsrc.toHexString(true) +
 				(skipClassName ? "" : "]");
 	}
@@ -294,8 +306,8 @@ public class RtpPacketContainerBase {
 	protected void updatePacketHeader(@NonNull ParamsContainerBase paramsBase) {
 		// set dynamic header fields
 		hdBaseMarker = paramsBase.doSetMarker;
-		hdBaseSequenceNumber = paramsBase.sequenceNumber;
-		hdBaseTimestamp = paramsBase.rtpTimestamp;
+		hdBaseSequenceNumber.copyFrom(paramsBase.sequenceNumber);
+		hdBaseTimestamp.copyFrom(paramsBase.rtpTimestamp);
 
 		// build the header bistream
 		packetBuf.clear();
@@ -313,12 +325,14 @@ public class RtpPacketContainerBase {
 		tmpHeader[0] = (byte)((hdBaseVersion & 0x03) << 6 | tmpPadd << 5 | tmpExt << 4 | (hdBaseCsrcCount & 0x0F));
 		byte tmpMarker = (byte)(hdBaseMarker ? 1 : 0);
 		tmpHeader[1] = (byte)(tmpMarker << 7 | (hdBasePayloadType.getValue() & 0x7F));
-		tmpHeader[2] = (byte)((hdBaseSequenceNumber & 0xFF00) >> 8);
-		tmpHeader[3] = (byte)(hdBaseSequenceNumber & 0xFF);
-		tmpHeader[4] = (byte)(hdBaseTimestamp >> 24);
-		tmpHeader[5] = (byte)(hdBaseTimestamp >> 16);
-		tmpHeader[6] = (byte)(hdBaseTimestamp >> 8);
-		tmpHeader[7] = (byte)(hdBaseTimestamp & 0xFF);
+		short tmpSeqShort = hdBaseSequenceNumber.getSeqNr16bit().orElse(0).shortValue();
+		tmpHeader[2] = (byte)((tmpSeqShort & 0xFF00) >> 8);
+		tmpHeader[3] = (byte)(tmpSeqShort & 0xFF);
+		int tmpTsInt = hdBaseTimestamp.getTs32bit().orElse(0L).intValue();
+		tmpHeader[4] = (byte)(tmpTsInt >> 24);
+		tmpHeader[5] = (byte)(tmpTsInt >> 16);
+		tmpHeader[6] = (byte)(tmpTsInt >> 8);
+		tmpHeader[7] = (byte)(tmpTsInt & 0xFF);
 		int tmpSsrcInt = hdBaseSsrc.getId32bit().orElse(0L).intValue();
 		tmpHeader[8] = (byte)(tmpSsrcInt >> 24);
 		tmpHeader[9] = (byte)(tmpSsrcInt >> 16);

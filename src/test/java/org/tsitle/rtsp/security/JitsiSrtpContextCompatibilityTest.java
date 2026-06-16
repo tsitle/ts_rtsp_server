@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketSR;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +14,7 @@ public class JitsiSrtpContextCompatibilityTest {
 
 	@Test
 	void rtp_should_match_when_keys_are_derived_by_jitsi_kdf() throws Exception {
-		final short hdSeqNr = 0x1234;
+		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1234);
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
 		// derive keys via Jitsi reflection

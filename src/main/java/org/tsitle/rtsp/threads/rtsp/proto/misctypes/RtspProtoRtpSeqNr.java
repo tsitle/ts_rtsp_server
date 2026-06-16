@@ -6,60 +6,78 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeExcepti
 import java.util.Objects;
 import java.util.Optional;
 
-public final class RtspProtoSocketPortNr implements Cloneable {
+public final class RtspProtoRtpSeqNr implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
-	/** TCP/UDP port */
-	private int portNr = -1;
+	/** RTP Sequence Number */
+	private int seqNr = -1;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoSocketPortNr ofEmpty() {
-		return new RtspProtoSocketPortNr();
+	public static RtspProtoRtpSeqNr ofEmpty() {
+		return new RtspProtoRtpSeqNr();
 	}
 
-	public static RtspProtoSocketPortNr of(int value16bit) throws RtspProtoNumberRangeException {
-		RtspProtoSocketPortNr resObj = new RtspProtoSocketPortNr();
-		resObj.setPort16bit(value16bit);
+	public static RtspProtoRtpSeqNr of(int value16bit) throws RtspProtoNumberRangeException {
+		RtspProtoRtpSeqNr resObj = new RtspProtoRtpSeqNr();
+		resObj.setSeqNr16bit(value16bit);
+		return resObj;
+	}
+
+	public static RtspProtoRtpSeqNr withOverflow(int value32bit) {
+		RtspProtoRtpSeqNr resObj = new RtspProtoRtpSeqNr();
+		short tmpShort = (short)value32bit;
+		resObj.seqNr = Short.toUnsignedInt(tmpShort);
 		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<Integer> getPort16bit() {
-		return (portNr < 1 ? Optional.empty() : Optional.of(portNr));
+	public Optional<Integer> getSeqNr16bit() {
+		return (seqNr < 0 ? Optional.empty() : Optional.of(seqNr));
 	}
-	public void setPort16bit(int value16bit) throws RtspProtoNumberRangeException {
+	public void setSeqNr16bit(int value16bit) throws RtspProtoNumberRangeException {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		validatePos16bit(value16bit);
-		this.portNr = value16bit;
+		validateNonNeg16bit(value16bit);
+		this.seqNr = value16bit;
+	}
+	public void increment() {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		try {
+			setSeqNr16bit(seqNr + 1);
+		} catch (RtspProtoNumberRangeException e) {
+			// overflow
+			seqNr = 0;
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
-		return (portNr < 1);
+		return (seqNr < 0);
 	}
 
 	public void clear() {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		portNr = -1;
+		seqNr = -1;
 	}
 
-	public void copyFrom(@NonNull RtspProtoSocketPortNr other) {
+	public void copyFrom(@NonNull RtspProtoRtpSeqNr other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		if (other == this) {
 			return;
 		}
-		portNr = other.portNr;
+		seqNr = other.seqNr;
 	}
 
 	public void writeProtect() {
@@ -70,28 +88,28 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspProtoSocketPortNr that)) {
+		if (! (o instanceof RtspProtoRtpSeqNr that)) {
 			return false;
 		}
-		return (portNr == that.portNr);
+		return (seqNr == that.seqNr);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(portNr);
+		return Objects.hashCode(seqNr);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"portNr=" + (portNr >= 1 ? Integer.toUnsignedString(portNr) : "unset") +
+				"seqNr=" + (seqNr >= 0 ? Integer.toUnsignedString(seqNr) : "unset") +
 				"]";
 	}
 
 	@Override
-	public RtspProtoSocketPortNr clone() {
+	public RtspProtoRtpSeqNr clone() {
 		try {
-			return (RtspProtoSocketPortNr)super.clone();
+			return (RtspProtoRtpSeqNr)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -100,11 +118,11 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validatePos16bit(int value) throws RtspProtoNumberRangeException {
-		final String FNC_NAME = RtspProtoSocketPortNr.class.getSimpleName() + ".validatePos16bit()";
+	private static void validateNonNeg16bit(int value) throws RtspProtoNumberRangeException {
+		final String FNC_NAME = RtspProtoRtpSeqNr.class.getSimpleName() + ".validateNonNeg16bit()";
 
-		if (value < 1 || value > 65535) {
-			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be between 1 and 65535 (is=" + value + ")");
+		if (value < 0 || value > 65535) {
+			throw new RtspProtoNumberRangeException(FNC_NAME + ": value must be between 0 and 65535 (is=" + value + ")");
 		}
 	}
 

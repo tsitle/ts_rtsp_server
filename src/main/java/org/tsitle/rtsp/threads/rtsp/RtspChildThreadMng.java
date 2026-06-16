@@ -334,9 +334,12 @@ final class RtspChildThreadMng {
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comIsStreamSourceFromFile(avSsi.isSourceFromFile())
 				.comAvFps(avFps)
-				.comRtpSeqNrT0(streamInfo.rtspRtpSeqNrT0)
+				.comRtpSeqNrT0(streamInfo.getRtpSeqNrT0Ptr())
 				.comRtpTimestampT0(
-						new ParamsThreadRtpSenderCommon.RtpTsT0(streamInfo.rtspRtpTimestampT0, streamInfo.rtspRtpGenTsT0Ns)
+						new ParamsThreadRtpSenderCommon.RtpTsT0WithEpoch(
+								streamInfo.getRtpTimestampT0Ptr(),
+								streamInfo.getRtpGenTsT0EpochNsPtr()
+							)
 					)
 				.comXsrcBlockEntry(xsrcBlock)
 				.comCbRtcpAppendToOutgoingQueue(rctcb::cbSendRtcpPackets)

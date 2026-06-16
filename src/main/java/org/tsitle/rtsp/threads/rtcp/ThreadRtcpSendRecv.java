@@ -12,6 +12,7 @@ import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -27,19 +28,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
-	private final ParamsThreadRtcp params;
+	private final @NonNull ParamsThreadRtcp params;
 	private final @Nullable DatagramSocket parRtcpSocketUdp;
 	private final @Nullable RtxpTcpReadWrite parRtcpRwIfTcp;
 
 	private final AtomicInteger targetCongestionLevel = new AtomicInteger(0);
-	private final DatagramPacket cacheDpRecv;
+	private final @NonNull DatagramPacket cacheDpRecv;
 	private final BufferExt cacheRecvBuf1 = new BufferExt();
 	private final BufferExt cacheRecvBuf2 = new BufferExt();
 	private final BufferExt cacheRecvBuf3 = new BufferExt();
 	@SuppressWarnings("FieldCanBeLocal")
-	private Instant lastRtcpPacketReceived = null;
+	private @Nullable Instant lastRtcpPacketReceived = null;
 
-	private final Queue<BufferExt> queueSend = new ConcurrentLinkedQueue<>();
+	private final Queue<@NonNull BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
 	private final SrtcpVarsInbound srtcpVarsInbound = new SrtcpVarsInbound();
 	private final SrtcpVarsOutbound srtcpVarsOutbound = new SrtcpVarsOutbound();
@@ -101,7 +102,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public synchronized void appendToSendQueue(BufferExt rtcpPacketsBuf) {
+	public synchronized void appendToSendQueue(@NonNull BufferExt rtcpPacketsBuf) {
 		BufferExt tmpBuf = new BufferExt();
 		tmpBuf.copyOf(rtcpPacketsBuf);
 		queueSend.add(tmpBuf);
@@ -347,13 +348,18 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendBye_buildEmptyRtcpSr(BufferExt packetSrBuf) {
-		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(0L, 0, 0, 0);
+	private void sendBye_buildEmptyRtcpSr(@NonNull BufferExt packetSrBuf) {
+		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(
+				0L,
+				RtspProtoRtpTimestamp.ofZero(),
+				0,
+				0
+			);
 		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getSsrcId(), siBlock, List.of());
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
 	}
 
-	private void sendBye_buildRtcpCompound(BufferExt packetCompoundBuf) {
+	private void sendBye_buildRtcpCompound(@NonNull BufferExt packetCompoundBuf) {
 		/*
 		 * We need to send a compound RTCP packet that contains two RTCP packets:
 		 *   1. Sender Report (SR) packet

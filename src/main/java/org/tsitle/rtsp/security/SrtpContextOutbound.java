@@ -5,6 +5,7 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 /**
  * Context for outbound RTP packet encryption
@@ -40,7 +41,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 				@NonNull BufferExt rtpPacketBuf,
 				boolean hasCsrcList,
 				boolean hasHeaderExtension,
-				short hdSeqNr,
+				@NonNull RtspProtoRtpSeqNr hdSeqNr,
 				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputEncryptedPacketBuf
 			) throws SrtxpSecurityException {
@@ -61,7 +62,8 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = (((long)ctxStateRtpRocOutbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		long tmpSeqLong = (long)hdSeqNr.getSeqNr16bit().orElse(0);
+		final long srtpPacketIndex = (((long)ctxStateRtpRocOutbound << 16) | (tmpSeqLong & 0xFFFFL));
 
 		// Session keys re-derivation
 		sessionKeysRederivation(true, srtpPacketIndex);
@@ -90,7 +92,7 @@ public class SrtpContextOutbound extends SrtpContextBase {
 		outputEncryptedPacketBuf.append(cacheAuthTagBuf);
 
 		// update ROC if sequence wrapped
-		if (hdSeqNr == (short)0xFFFF) {
+		if (tmpSeqLong == 0xFFFFL) {
 			ctxStateRtpRocOutbound++;
 		}
 	}

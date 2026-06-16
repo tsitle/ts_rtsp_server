@@ -8,6 +8,7 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 /**
  * Context for inbound SRTP packet decryption according to RFC-3711 Section 3.1
@@ -64,7 +65,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 */
 	public void unprotectSrtp(
 				@NonNull BufferExt srtpPacketBuf,
-				short hdSeqNr,
+				@NonNull RtspProtoRtpSeqNr hdSeqNr,
 				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
@@ -84,7 +85,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 	 */
 	public void unprotectSrtp(
 				@NonNull BufferView srtpPacketBufView,
-				short hdSeqNr,
+				@NonNull RtspProtoRtpSeqNr hdSeqNr,
 				@NonNull RtspProtoIdXsrc hdSsrcId,
 				@NonNull BufferExt outputDecryptedPacketBuf
 			) throws SrtxpInvalidAuthTagException, SrtxpInvalidMkiException, SrtxpSecurityException {
@@ -98,7 +99,8 @@ public class SrtpContextInbound extends SrtpContextBase {
 		}
 
 		// SRTP packet index
-		final long srtpPacketIndex = (((long)ctxStateSrtpRocInbound << 16) | ((long)hdSeqNr & 0xFFFFL));
+		long tmpSeqLong = (long)hdSeqNr.getSeqNr16bit().orElse(0);
+		final long srtpPacketIndex = (((long)ctxStateSrtpRocInbound << 16) | (tmpSeqLong & 0xFFFFL));
 		if (srtpPacketIndex <= ctxStateSrtpLastIndex) {
 			throw new SrtxpSecurityException("Invalid SRTP packet index: " + srtpPacketIndex + " <= " + ctxStateSrtpLastIndex);
 		}
@@ -137,7 +139,7 @@ public class SrtpContextInbound extends SrtpContextBase {
 			);
 
 		// update ROC if sequence wrapped
-		if (hdSeqNr == (short)0xFFFF) {
+		if (tmpSeqLong == 0xFFFFL) {
 			ctxStateSrtpRocInbound++;
 		}
 	}

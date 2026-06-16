@@ -384,17 +384,9 @@ public final class RtspProtoHighResponseProducer {
 			for (RtspProtoSetupInfoForSubStream tmpSiSs : inputSetupInfosStream.getSis()) {
 				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
 				tmpStreamInfoOutput.urlStr = tmpSiSs.getRscUrlSubStreamPtr().getUrlStr();
-				try {
-					tmpStreamInfoOutput.setSeqNr16bit(tmpSiSs.rtspRtpSeqNrT0);
-				} catch (RtspProtoNumberRangeException e) {
-					throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting RTP sequence number failed: " + e.getMessage());
-				}
-				try {
-					tmpStreamInfoOutput.setRtpTimestamp32bit(tmpSiSs.rtspRtpTimestampT0);
-				} catch (RtspProtoNumberRangeException e) {
-					throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting RTP timestamp failed: " + e.getMessage());
-				}
-				tmpStreamInfoOutput.setSsrcId(tmpSiSs.getSsrcIdPtr());
+				tmpStreamInfoOutput.seqNr.copyFrom(tmpSiSs.getRtpSeqNrT0Ptr());
+				tmpStreamInfoOutput.rtpTimestamp.copyFrom(tmpSiSs.getRtpTimestampT0Ptr());
+				tmpStreamInfoOutput.ssrcId.copyFrom(tmpSiSs.getSsrcIdPtr());
 				if (tmpSubStreamNr == 1) {
 					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
 				} else if (tmpSubStreamNr == 2) {

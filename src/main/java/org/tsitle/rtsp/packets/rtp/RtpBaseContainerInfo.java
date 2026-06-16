@@ -2,6 +2,8 @@ package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 /**
  * RTP Base Container info.
@@ -16,7 +18,7 @@ public record RtpBaseContainerInfo(
 		@NonNull RtpPacketType payloadType,
 		byte orgPayloadTypeByte,
 		@NonNull RtspProtoIdXsrc ssrcId,
-		short sequenceNumber,
+		@NonNull RtspProtoRtpSeqNr sequenceNumber,
 		boolean isMarkerSet,
-		int rtpTimestamp
+		@NonNull RtspProtoRtpTimestamp rtpTimestamp
 	) { }
