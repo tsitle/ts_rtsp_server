@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.*;
+import org.tsitle.rtsp.helpers.NtpTimestamp;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
@@ -350,7 +351,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private void sendBye_buildEmptyRtcpSr(@NonNull BufferExt packetSrBuf) {
 		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(
-				0L,
+				NtpTimestamp.ofNow(),
 				RtspProtoRtpTimestamp.ofZero(),
 				0,
 				0

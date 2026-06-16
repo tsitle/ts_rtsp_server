@@ -3,13 +3,12 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
-import org.tsitle.rtsp.helpers.NtpTimestampHelper;
+import org.tsitle.rtsp.helpers.NtpTimestamp;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.time.Instant;
 
 /**
  * Generator for MIKEY messages.<br />
@@ -101,8 +100,8 @@ public final class MikeyGenerator {
 		// timestamp type
 		msgBb.put(MikeyMsgTimestampType.MMTST_NTP_UTC.getValue());
 		// timestamp value 64-bits
-		long tmpTsVal = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
-		msgBb.putLong(tmpTsVal);
+		NtpTimestamp tmpTsVal = NtpTimestamp.ofNow();
+		msgBb.putLong(tmpTsVal.getTsAsUnsigned64bit().orElseThrow());
 	}
 
 	/**

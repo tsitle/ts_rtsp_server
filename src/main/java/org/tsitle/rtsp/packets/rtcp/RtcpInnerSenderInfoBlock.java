@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.helpers.NtpTimestampHelper;
+import org.tsitle.rtsp.helpers.NtpTimestamp;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
@@ -32,14 +32,14 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	 * @param sendersOctCount Sender's octet count
 	 */
 	public RtcpInnerSenderInfoBlock(
-				long ntpTsFull,
+				@NonNull NtpTimestamp ntpTsFull,
 				@NonNull RtspProtoRtpTimestamp rtpTs,
 				int sendersPktCount,
 				int sendersOctCount
 			) {
 		this(
-				(int)(ntpTsFull >>> 32),
-				(int)(ntpTsFull & 0xFFFF_FFFFL),
+				ntpTsFull.getSeconds32bit().orElseThrow().intValue(),
+				ntpTsFull.getFraction32bit().orElseThrow().intValue(),
 				rtpTs,
 				sendersPktCount,
 				sendersOctCount
@@ -75,9 +75,14 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	public int getNtpTsMsw() { return bdNtpTsMsw; }
 	@SuppressWarnings("unused")
 	public int getNtpTsLsw() { return bdNtpTsLsw; }
-	public long getNtpTsFull() { return (((long)bdNtpTsMsw << 32) | (long)bdNtpTsLsw & 0xFFFF_FFFFL); }
+	public @NonNull NtpTimestamp getNtpTsFull() {
+		return NtpTimestamp.withOverflow(
+				Integer.toUnsignedLong(bdNtpTsMsw),
+				Integer.toUnsignedLong(bdNtpTsLsw)
+			);
+	}
 	@SuppressWarnings("unused")
-	public @NonNull Instant getNtpTsAsInstant() { return NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()); }
+	public @NonNull Instant getNtpTsAsInstant() { return getNtpTsFull().toInstant(); }
 	@SuppressWarnings("unused")
 	public @NonNull RtspProtoRtpTimestamp getRtpTs() { return bdRtpTs.clone(); }
 	@SuppressWarnings("unused")
@@ -113,7 +118,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"NTPTS: " + NtpTimestampHelper.ntpTimestampToInstant(getNtpTsFull()) +
+				"NTPTS: " + getNtpTsFull().toInstant() +
 				", RTPTS: " + bdRtpTs +
 				", SendersPktCount: " + Integer.toUnsignedString(bdSendersPktCount) +
 				", SendersOctCount: " + Integer.toUnsignedString(bdSendersOctCount) +

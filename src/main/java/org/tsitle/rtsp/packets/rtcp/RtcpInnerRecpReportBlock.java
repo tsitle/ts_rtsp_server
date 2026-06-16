@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.helpers.NtpTimestampHelper;
+import org.tsitle.rtsp.helpers.NtpTimestamp;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -119,7 +119,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		 *
 		 * RTT = A − LSR − DLSR
 		 */
-		long rcvdAtNtp32b = NtpTimestampHelper.instantTo32bitNtpTimestamp(receivedAt);
+		long rcvdAtNtp32b = instantTo32bitNtpTimestamp(receivedAt);
 
 		long lsrLong = Integer.toUnsignedLong(bdLsr);
 		long dlsrLong = Integer.toUnsignedLong(bdDlsr);
@@ -186,6 +186,30 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * This is only for use in RTCP packets, where the 32-bit timestamp is used.
+	 * @param javaTs Instant
+	 * @return 32-bit NTP timestamp (top 16 bits: integer seconds, bottom 16 bits: fractional seconds)
+	 */
+	private static long instantTo32bitNtpTimestamp(@NonNull Instant javaTs) {
+		long unixSeconds = javaTs.getEpochSecond();
+		long ntpSeconds = unixSeconds + NtpTimestamp.NTP_EPOCH_OFFSET_SECONDS;
+
+		// NTP fractional part: 32-bit fraction of a second
+		long nanos = javaTs.getNano();
+		long ntpFraction32 = (nanos * 0x1_0000_0000L) / 1_000_000_000L;
+
+		// Middle 32 bits = (low 16 bits of the seconds) << 16 | (high 16 bits of the fraction)
+		long middle32 =
+				((ntpSeconds & 0xFFFFL) << 16) |
+						((ntpFraction32 >>> 16) & 0xFFFFL);
+
+		return middle32 & 0xFFFF_FFFFL;
 	}
 
 }

@@ -9,7 +9,7 @@ import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.*;
-import org.tsitle.rtsp.helpers.NtpTimestampHelper;
+import org.tsitle.rtsp.helpers.NtpTimestamp;
 import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
@@ -254,8 +254,8 @@ public abstract class ThreadRtpSenderBase<
 			waitForParallelThreadToStart();
 
 			//
-			timeNtpTsInfo.timeSessionStartNtpWc = NtpTimestampHelper.instantToNtpTimestamp(Instant.now());
-			timeNtpTsInfo.timeSessionStartMonoNs = System.nanoTime();
+			timeNtpTsInfo.timeSessionStartNtpWc.copyFrom(NtpTimestamp.ofNow());
+			timeNtpTsInfo.timeSessionStartMonoNs.setEpochNsUnsigned64bit(System.nanoTime());
 
 			// adjust RTP timestamp T0
 			rtpTsT0GenAdj.setEpochNsUnsigned64bit(System.nanoTime());
@@ -264,7 +264,7 @@ public abstract class ThreadRtpSenderBase<
 			rtpTsT0Adj.writeProtect();
 
 			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock = getNtpTimestamp(rtpTsT0GenAdj);
+			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(rtpTsT0GenAdj));
 			siStats.rtpTimestamp.copyFrom(rtpTsT0Adj);
 			sendSenderReport();
 
@@ -559,7 +559,7 @@ public abstract class ThreadRtpSenderBase<
 				return false;
 			}
 		} else {
-			if (siStats.timestampNtpWallclock != null &&
+			if (! siStats.timestampNtpWallclock.isEmpty() &&
 					(siStats.lastSenderInfoSent == null ||
 							Duration.between(siStats.lastSenderInfoSent, Instant.now()).toMillis() >= SEND_SR_INTERVAL_MS)) {
 				sendSenderReport();
@@ -631,7 +631,7 @@ public abstract class ThreadRtpSenderBase<
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurSysNanos));
 			}
 			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock = getNtpTimestamp(tmpCurSysNanos);
+			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(tmpCurSysNanos));
 			siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
 			//
 			isFirstPktOfFrame = false;
@@ -690,7 +690,7 @@ public abstract class ThreadRtpSenderBase<
 			isFirstPktOfFrame = true;
 			isMainLoopStateA = false;
 			//
-			long tmpDeltaSendFrameNs = NtpTimestampHelper.diffNanos(siStats.timestampNtpWallclock, getNtpTimestamp());
+			long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(getNtpTimestamp());
 			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
 				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
@@ -776,22 +776,23 @@ public abstract class ThreadRtpSenderBase<
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private long getNtpTimestamp() {
+	private @NonNull NtpTimestamp getNtpTimestamp() {
 		return getNtpTimestamp(TimestampEpochNs.ofNow());
 	}
 
-	private long getNtpTimestamp(@NonNull TimestampEpochNs currentSysNanos) {
-		long deltaMono = (currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) - timeNtpTsInfo.timeSessionStartMonoNs);
-		return NtpTimestampHelper.addNanosToNtpTimestamp(timeNtpTsInfo.timeSessionStartNtpWc, deltaMono);
+	private @NonNull NtpTimestamp getNtpTimestamp(@NonNull TimestampEpochNs currentSysNanos) {
+		long deltaMono = (currentSysNanos.getEpochNsUnsigned64bit().orElseThrow() -
+				timeNtpTsInfo.timeSessionStartMonoNs.getEpochNsUnsigned64bit().orElseThrow());
+		return timeNtpTsInfo.timeSessionStartNtpWc.addNanos(deltaMono);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendSenderReport_buildRtcpSr(BufferExt packetSrBuf) {
+	private void sendSenderReport_buildRtcpSr(@NonNull BufferExt packetSrBuf) {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendSenderReport_buildRtcpSr()";
 
-		if (siStats.timestampNtpWallclock == null) {
-			throw new IllegalStateException(FNC_NAME + ": timestampNtpWallclock is null");
+		if (siStats.timestampNtpWallclock.isEmpty()) {
+			throw new IllegalStateException(FNC_NAME + ": timestampNtpWallclock is empty");
 		}
 
 		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(
@@ -811,7 +812,7 @@ public abstract class ThreadRtpSenderBase<
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
 	}
 
-	private void sendSenderReport_buildRtcpCompound(BufferExt packetCompoundBuf) {
+	private void sendSenderReport_buildRtcpCompound(@NonNull BufferExt packetCompoundBuf) {
 		/*
 		 * We need to send a compound RTCP packet that contains two RTCP packets:
 		 *   1. Sender Report (SR) packet
