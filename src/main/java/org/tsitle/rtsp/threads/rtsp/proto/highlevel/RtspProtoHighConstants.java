@@ -1,5 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp.proto.highlevel;
 
+import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 
 import java.util.Set;
@@ -35,7 +36,7 @@ public final class RtspProtoHighConstants {
 
 	/**
 	 * RTSP Session Timeout in seconds -- this value will be announced to the client.<br />
-	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link org.tsitle.rtsp.threads.RtxpTcpReadWrite}
+	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link RtxpTcpReadWrite}
 	 * instance will check for a timeout.
 	 */
 	public static final int DEFAULT_RTSP_SESSION_TIMEOUT = 20;

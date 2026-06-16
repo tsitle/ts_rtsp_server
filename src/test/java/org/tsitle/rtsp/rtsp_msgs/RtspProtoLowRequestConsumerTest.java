@@ -3,7 +3,7 @@ package org.tsitle.rtsp.rtsp_msgs;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
+import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;

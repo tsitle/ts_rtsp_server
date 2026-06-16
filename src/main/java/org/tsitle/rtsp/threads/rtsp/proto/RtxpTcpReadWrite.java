@@ -1,9 +1,10 @@
-package org.tsitle.rtsp.threads;
+package org.tsitle.rtsp.threads.rtsp.proto;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.TcpSocketIoException;
+import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <br />
  * See <a href="https://datatracker.ietf.org/doc/html//rfc2326.html#section-10.12">RFC-2326 Section 10.12</a> for more information.
  */
-public class RtxpTcpReadWrite {
+public final class RtxpTcpReadWrite {
 
 	private enum Flag { SOCKET_READ, SOCKET_WRITE, QUEUE_RTSP_RCVD, QUEUE_RTP_RTCP_RCVD}
 
@@ -127,7 +128,7 @@ public class RtxpTcpReadWrite {
 	private final AtomicInteger tcpActivityTimeout = new AtomicInteger((int)TCP_ACTIVITY_TIMEOUT_SECS_DEF);
 
 	private final Queue<String> queueRtspLinesRcvd = new ConcurrentLinkedDeque<>();
-	private final Map<@NonNull Integer, @NonNull Queue<@NonNull BufferExt>> mapQueueRtpRtcpDataRcvd = new ConcurrentHashMap<>();
+	private final Map<@NonNull RtspProtoTcpChannelNr, @NonNull Queue<@NonNull BufferExt>> mapQueueRtpRtcpDataRcvd = new ConcurrentHashMap<>();
 
 	private final BlockedState blockedState = new BlockedState();
 
@@ -280,18 +281,17 @@ public class RtxpTcpReadWrite {
 			if (channNr.isEmpty()) {
 				return false;
 			}
-			final int tmpChannInt = channNr.getChannel8bit().orElseThrow();
-			if (mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) && ! mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
+			if (mapQueueRtpRtcpDataRcvd.containsKey(channNr) && ! mapQueueRtpRtcpDataRcvd.get(channNr).isEmpty()) {
 				return true;
 			}
 			if (doStop.get() || socketTcp.isClosed()) {
 				return false;
 			}
 			internalReadSocket();
-			if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt)) {
+			if (! mapQueueRtpRtcpDataRcvd.containsKey(channNr)) {
 				return false;
 			}
-			return (! (doStop.get() || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()));
+			return (! (doStop.get() || mapQueueRtpRtcpDataRcvd.get(channNr).isEmpty()));
 		} finally {
 			blockedState.unblock(Flag.QUEUE_RTP_RTCP_RCVD);
 		}
@@ -369,7 +369,8 @@ public class RtxpTcpReadWrite {
 	private int internalReadSocket_binary() throws IOException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_binary()";
 
-		int channId = -1;
+		int channIdInt = -1;
+		RtspProtoTcpChannelNr channIdObj = new RtspProtoTcpChannelNr();
 		int packetLen = 4;  // we need at least 3 more bytes
 		int packetRd = 1;
 		BufferExt payloadBe = new BufferExt();
@@ -379,8 +380,8 @@ public class RtxpTcpReadWrite {
 		while (! doStop.get() && packetRd < packetLen) {
 			if (packetRd == 1) {
 				try {
-					channId = socketIs.read();  // blocks for setSoTimeout() value
-					if (channId == -1) {
+					channIdInt = socketIs.read();  // blocks for setSoTimeout() value
+					if (channIdInt == -1) {
 						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
 					readTimeoutCnt = 0;
@@ -390,8 +391,13 @@ public class RtxpTcpReadWrite {
 					}
 					continue;
 				}
-				if (! mapQueueRtpRtcpDataRcvd.containsKey(channId)) {
-					mapQueueRtpRtcpDataRcvd.put(channId, new ConcurrentLinkedDeque<>());
+				try {
+					channIdObj.setChannel8bit(channIdInt);
+				} catch (RtspProtoNumberRangeException e) {
+					// this will never happen
+				}
+				if (! mapQueueRtpRtcpDataRcvd.containsKey(channIdObj)) {
+					mapQueueRtpRtcpDataRcvd.put(channIdObj, new ConcurrentLinkedDeque<>());
 				}
 			} else if (packetRd == 2 || packetRd == 3) {
 				int tmpVal;
@@ -436,8 +442,11 @@ public class RtxpTcpReadWrite {
 			++packetRd;
 		}
 		payloadBe.setUsed(payloadLen);
-		mapQueueRtpRtcpDataRcvd.get(channId).add(payloadBe);
-		return mapQueueRtpRtcpDataRcvd.get(channId).size();
+		if (channIdObj.isEmpty()) {
+			return 0;
+		}
+		mapQueueRtpRtcpDataRcvd.get(channIdObj).add(payloadBe);
+		return mapQueueRtpRtcpDataRcvd.get(channIdObj).size();
 	}
 
 	private static String listToString(ArrayList<Character> list) {
@@ -500,14 +509,13 @@ public class RtxpTcpReadWrite {
 			if (channNr.isEmpty()) {
 				return false;
 			}
-			final int tmpChannInt = channNr.getChannel8bit().orElseThrow();
-			if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
+			if (! mapQueueRtpRtcpDataRcvd.containsKey(channNr) || mapQueueRtpRtcpDataRcvd.get(channNr).isEmpty()) {
 				internalReadSocket();
-				if (! mapQueueRtpRtcpDataRcvd.containsKey(tmpChannInt) || mapQueueRtpRtcpDataRcvd.get(tmpChannInt).isEmpty()) {
+				if (! mapQueueRtpRtcpDataRcvd.containsKey(channNr) || mapQueueRtpRtcpDataRcvd.get(channNr).isEmpty()) {
 					return false;
 				}
 			}
-			BufferExt tmpBuf = mapQueueRtpRtcpDataRcvd.get(tmpChannInt).poll();
+			BufferExt tmpBuf = mapQueueRtpRtcpDataRcvd.get(channNr).poll();
 			if (tmpBuf == null) {
 				return false;
 			}

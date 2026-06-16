@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
+import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSession;

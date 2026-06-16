@@ -8,7 +8,7 @@ import org.tsitle.rtsp.helpers.HostnameHelper;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.RtxpTcpReadWrite;
+import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtcp.ThreadRtcpSendRecv;
