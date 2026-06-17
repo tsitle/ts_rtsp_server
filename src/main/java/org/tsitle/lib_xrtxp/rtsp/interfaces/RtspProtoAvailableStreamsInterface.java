@@ -19,6 +19,7 @@ public interface RtspProtoAvailableStreamsInterface {
 	 * @param idInputSource Input Source ID
 	 * @return True if the Input Source ID exists, false otherwise
 	 */
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource);
 
 	/**

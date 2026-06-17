@@ -1,7 +1,6 @@
 package org.tsitle.lib_xrtxp.common.helpers;
 
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Duration;

@@ -2,8 +2,6 @@ package org.tsitle.lib_xrtxp.kmd;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
-import org.tsitle.lib_xrtxp.kmd.MikeyParser;
 import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;

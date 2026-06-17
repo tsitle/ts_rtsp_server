@@ -31,6 +31,7 @@ public final class RtspProtoDataCntSdp {
 		this.contentLang = value;
 	}
 
+	@SuppressWarnings("unused")
 	public @NonNull String getContentBase() {
 		return contentBase;
 	}
