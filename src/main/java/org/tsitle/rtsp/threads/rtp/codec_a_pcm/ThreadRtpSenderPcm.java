@@ -2,11 +2,11 @@ package org.tsitle.rtsp.threads.rtp.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.rtsp.packets.rtp.RtpPacketPcm;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketPcm;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcmFromFile;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvPcmFromMq;

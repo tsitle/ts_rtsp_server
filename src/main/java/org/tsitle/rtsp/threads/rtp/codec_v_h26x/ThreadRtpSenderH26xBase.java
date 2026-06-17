@@ -2,11 +2,11 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.avdata.CodecInfoH26xBase;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoH26xBase;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
-import org.tsitle.rtsp.exceptions.InputStreamEosException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.FrameData;
 import org.tsitle.rtsp.threads.rtp.ThreadRtpSenderBase;

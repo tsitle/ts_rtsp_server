@@ -1,14 +1,14 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingFromMqBase;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromFile;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, AvStreamOutgoingFromMqBase> {
 

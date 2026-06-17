@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
-import org.tsitle.rtsp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 
 import java.util.ArrayList;
 import java.util.List;

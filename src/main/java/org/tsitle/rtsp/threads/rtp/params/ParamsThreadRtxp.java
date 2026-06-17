@@ -2,15 +2,15 @@ package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.security.SrtxpKmd;
-import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.lib.rtsp.proto.RtxpTcpReadWrite;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdSession;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoIpAddr;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoSocketPortNr;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoTcpChannelNr;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import java.net.DatagramSocket;
 import java.util.Optional;

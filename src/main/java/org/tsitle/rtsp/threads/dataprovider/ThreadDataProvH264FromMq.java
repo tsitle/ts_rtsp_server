@@ -2,17 +2,17 @@ package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.avdata.VideoH264Info;
-import org.tsitle.rtsp.avdata.VideoH264Parser;
-import org.tsitle.rtsp.avdata.subinfo.H264PictureBoundaryInfo;
-import org.tsitle.rtsp.avdata.subinfo.H264PpsContext;
-import org.tsitle.rtsp.avdata.subinfo.H264SpsContext;
+import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
+import org.tsitle.lib_xrtxp.avdata.VideoH264Parser;
+import org.tsitle.lib_xrtxp.avdata.subinfo.H264PictureBoundaryInfo;
+import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
+import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromMq;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromFile;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromMq;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 import java.util.HashMap;

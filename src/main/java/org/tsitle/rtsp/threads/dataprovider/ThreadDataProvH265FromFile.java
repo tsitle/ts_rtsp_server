@@ -1,12 +1,13 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.*;
+import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.VideoH265Parser;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingH26xFromFile;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 public class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase<VideoH265Info> {

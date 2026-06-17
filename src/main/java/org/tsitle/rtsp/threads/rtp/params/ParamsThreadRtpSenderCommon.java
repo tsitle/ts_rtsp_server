@@ -2,13 +2,13 @@ package org.tsitle.rtsp.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
-import org.tsitle.rtsp.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 
 import java.net.URI;
 import java.util.Objects;

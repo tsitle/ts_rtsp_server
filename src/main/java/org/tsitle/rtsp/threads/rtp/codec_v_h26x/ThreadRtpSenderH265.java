@@ -3,9 +3,9 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.rtsp.packets.rtp.RtpPacketH265;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketH265;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265FromFile;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvH265FromMq;
@@ -13,7 +13,7 @@ import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.rtsp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
 
 import java.util.Objects;
 

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 
 /**
  * A Frame Fragment is the current part of a frame that is being sent over the wire.

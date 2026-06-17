@@ -1,13 +1,13 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.AudioPcmInfo;
-import org.tsitle.rtsp.avdata.AudioPcmParser;
+import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.avdata.AudioPcmParser;
 import org.tsitle.rtsp.avstreams.AudioStreamOutgoingPcmFromFile;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 

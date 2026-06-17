@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.threads.rtp.builders;
 
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 

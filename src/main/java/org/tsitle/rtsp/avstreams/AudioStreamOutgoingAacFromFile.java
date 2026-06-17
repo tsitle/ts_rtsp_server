@@ -1,12 +1,12 @@
 package org.tsitle.rtsp.avstreams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.AudioAacParser;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public class AudioStreamOutgoingAacFromFile extends AvStreamOutgoingFromFileBase {
 

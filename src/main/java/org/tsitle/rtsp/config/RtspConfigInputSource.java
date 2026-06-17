@@ -3,7 +3,7 @@ package org.tsitle.rtsp.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 
 import java.util.HashSet;
 import java.util.Map;

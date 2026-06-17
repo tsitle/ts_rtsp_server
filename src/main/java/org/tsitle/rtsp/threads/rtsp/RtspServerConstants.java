@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtsp;
 
-import org.tsitle.lib.rtsp.proto.enums.RtspProtoMessageType;
+import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 
 import java.util.Set;
 

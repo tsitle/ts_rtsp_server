@@ -1,16 +1,16 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.ImageReencoder;
-import org.tsitle.rtsp.avdata.VideoJpegInfo;
-import org.tsitle.rtsp.avdata.VideoJpegParser;
+import org.tsitle.lib_xrtxp.avdata.ImageReencoder;
+import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
 import org.tsitle.rtsp.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp.avstreams.VideoStreamOutgoingMjpegFromFile;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp.exceptions.ImageReencoderIoException;
-import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
 import java.io.IOException;

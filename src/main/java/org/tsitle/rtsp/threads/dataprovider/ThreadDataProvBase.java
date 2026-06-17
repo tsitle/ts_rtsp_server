@@ -1,11 +1,11 @@
 package org.tsitle.rtsp.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp.avstreams.AvStreamOutgoingBase;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.InputStreamEosException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.ThreadBase;
 
 import java.util.concurrent.locks.Condition;

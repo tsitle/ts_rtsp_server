@@ -1,6 +1,7 @@
 package org.tsitle.rtsp.threads.rtp;
 
-import org.tsitle.lib.rtsp.proto.sdp.RtspProtoSdpConstants;
+import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
+import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConstants;
 
 public final class RtpConstants {
 
@@ -14,7 +15,7 @@ public final class RtpConstants {
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 960;
 	/**
 	 * Samples per frame for AAC-LC audio -- Low Delay<br />
-	 * See note in {@link org.tsitle.rtsp.avdata.AudioAacInfo}
+	 * See note in {@link AudioAacInfo}
 	 */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
 

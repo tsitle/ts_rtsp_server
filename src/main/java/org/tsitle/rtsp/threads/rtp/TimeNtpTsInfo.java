@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.helpers.NtpTimestamp;
-import org.tsitle.rtsp.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 
 final class TimeNtpTsInfo {
 

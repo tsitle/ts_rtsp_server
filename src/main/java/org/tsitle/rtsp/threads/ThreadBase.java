@@ -2,7 +2,8 @@ package org.tsitle.rtsp.threads;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

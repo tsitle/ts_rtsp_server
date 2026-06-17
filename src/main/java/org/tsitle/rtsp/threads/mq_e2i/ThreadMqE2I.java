@@ -3,16 +3,16 @@ package org.tsitle.rtsp.threads.mq_e2i;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.config.RtspSsMq;
-import org.tsitle.rtsp.mq.MqExternalSub;
-import org.tsitle.rtsp.mq.MqInternalPub;
-import org.tsitle.rtsp.mq.mqdata.MqCodecSettings;
-import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
-import org.tsitle.rtsp.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.mq.client.MqExternalSub;
+import org.tsitle.lib_xrtxp.mq.common.MqInternalPub;
+import org.tsitle.lib_xrtxp.mq.common.mqdata.MqCodecSettings;
+import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.MqException;
-import org.tsitle.rtsp.helpers.CancelToken;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.rtsp.threads.CancelToken;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
 import java.util.Optional;
 

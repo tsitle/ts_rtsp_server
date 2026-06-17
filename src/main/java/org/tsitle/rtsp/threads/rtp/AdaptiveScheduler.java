@@ -1,8 +1,8 @@
 package org.tsitle.rtsp.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 import java.util.concurrent.locks.LockSupport;
 

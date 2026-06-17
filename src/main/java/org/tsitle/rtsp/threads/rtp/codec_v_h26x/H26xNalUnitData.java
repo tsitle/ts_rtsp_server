@@ -2,9 +2,9 @@ package org.tsitle.rtsp.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.avdata.CodecInfoInterface;
-import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.buffers.BufferView;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 

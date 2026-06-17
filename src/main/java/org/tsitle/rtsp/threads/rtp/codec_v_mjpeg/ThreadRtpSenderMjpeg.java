@@ -3,16 +3,16 @@ package org.tsitle.rtsp.threads.rtp.codec_v_mjpeg;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.avstreams.*;
-import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.rtsp.packets.rtp.RtpPacketMjpeg;
-import org.tsitle.rtsp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvMjpegFromFile;
 import org.tsitle.rtsp.threads.rtp.*;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.rtsp.avdata.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
 
 import java.util.Objects;
 

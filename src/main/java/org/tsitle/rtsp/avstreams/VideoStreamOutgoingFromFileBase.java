@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.avstreams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public abstract class VideoStreamOutgoingFromFileBase extends AvStreamOutgoingFromFileBase {
 

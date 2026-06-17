@@ -3,10 +3,10 @@ package org.tsitle.rtsp.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.AvCannotOpenInputException;
-import org.tsitle.rtsp.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp.exceptions.InputStreamIoException;
-import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
 import java.io.*;
 import java.net.URI;
