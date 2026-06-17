@@ -271,7 +271,7 @@ public class RtspProtoHighRequestConsumerTest {
 		}
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LEN);
-			hdEntry.hdValContLen.setContentLen32bit(1000L);
+			hdEntry.hdValContLen.contentLen.setLen32bit(1000L);
 			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 

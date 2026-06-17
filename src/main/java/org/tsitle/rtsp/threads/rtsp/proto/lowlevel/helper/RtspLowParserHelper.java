@@ -88,7 +88,7 @@ public final class RtspLowParserHelper {
 		 * Specifies the length of the entity body
 		 */
 		try {
-			outputHd.setContentLen32bit((int)Long.parseLong(hdValue));
+			outputHd.contentLen.setLen32bit(Long.parseLong(hdValue));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid Content-Length format: '" + hdValue + "'");
 		} catch (RtspProtoNumberRangeException e) {

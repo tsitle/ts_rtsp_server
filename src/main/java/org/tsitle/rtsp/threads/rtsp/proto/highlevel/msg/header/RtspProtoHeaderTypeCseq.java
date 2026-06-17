@@ -10,7 +10,7 @@ public final class RtspProtoHeaderTypeCseq {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"cseqNr=" + (cseqNr.isEmpty() ? "unset" : Long.toUnsignedString(cseqNr.getCseq32bit().orElse(-1L))) +
+				"cseqNr=" + (cseqNr.isEmpty() ? "unset" : Long.toUnsignedString(cseqNr.getCseq32bit().orElseThrow())) +
 				"]";
 	}
 

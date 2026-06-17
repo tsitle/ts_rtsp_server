@@ -821,8 +821,7 @@ public final class RtspProtoHighRequestConsumer {
 			}
 			return;
 		}
-		int contentLengthInt = input.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
-		long contentLengthLong = Integer.toUnsignedLong(contentLengthInt);
+		long contentLengthLong = input.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 		if (contentLengthLong == 0L) {
 			if (input.messageType == RtspProtoMessageType.ANNOUNCE) {
 				throw new RtspProtoInvalidRequestException("Body for ANNOUNCE message missing");

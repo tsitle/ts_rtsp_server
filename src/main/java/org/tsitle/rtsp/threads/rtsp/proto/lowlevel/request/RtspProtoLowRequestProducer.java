@@ -381,7 +381,7 @@ public final class RtspProtoLowRequestProducer {
 		{
 			RtspProtoHeaderTypeContLen hdValue = new RtspProtoHeaderTypeContLen();
 			try {
-				hdValue.setContentLen32bit(output.body.length());
+				hdValue.contentLen.setLen32bit(Integer.toUnsignedLong(output.body.length()));
 			} catch (RtspProtoNumberRangeException e) {
 				throw new RtspProtoInvalidRequestException(FNC_NAME + ": body length out of range: " + e.getMessage());
 			}

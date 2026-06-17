@@ -444,8 +444,7 @@ public class RtspProtoHighResponseConsumer {
 			}
 			return;
 		}
-		int contentLengthInt = input.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
-		long contentLengthLong = Integer.toUnsignedLong(contentLengthInt);
+		long contentLengthLong = input.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 		if (contentLengthLong == 0L) {
 			if (input.messageType == RtspProtoMessageType.DESCRIBE) {
 				throw new RtspProtoInvalidResponseException("Body for DESCRIBE message missing");

@@ -547,8 +547,7 @@ public final class RtspProtoLowRequestConsumer {
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 			return;
 		}
-		int tmpContLenInt = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
-		long contLenLong = Integer.toUnsignedLong(tmpContLenInt);
+		long contLenLong = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 		if (contLenLong == 0L) {
 			return;
 		}

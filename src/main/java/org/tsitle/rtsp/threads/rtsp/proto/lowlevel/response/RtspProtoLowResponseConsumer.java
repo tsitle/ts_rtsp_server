@@ -569,8 +569,7 @@ public final class RtspProtoLowResponseConsumer {
 		if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 			return;
 		}
-		int tmpContLenInt = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
-		long contLenLong = Integer.toUnsignedLong(tmpContLenInt);
+		long contLenLong = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 		if (contLenLong == 0L) {
 			return;
 		}
@@ -665,8 +664,7 @@ public final class RtspProtoLowResponseConsumer {
 			if (! output.headers.containsKey(RtspHeaderKey.CONTENT_LEN)) {
 				throw new RtspProtoInvalidResponseException("Missing Content-Length header" + errMsgSuffix);
 			}
-			int contentLengthInt = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.getContentLen32bit().orElseThrow();
-			long contentLengthLong = Integer.toUnsignedLong(contentLengthInt);
+			long contentLengthLong = output.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 			if (contentLengthLong == 0L) {
 				throw new RtspProtoInvalidResponseException("Content-Length header value is zero" + errMsgSuffix);
 			}

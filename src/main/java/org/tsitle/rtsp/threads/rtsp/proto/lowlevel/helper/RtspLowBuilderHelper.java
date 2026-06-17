@@ -80,10 +80,10 @@ public final class RtspLowBuilderHelper {
 		 *   "Content-Length: 1234"
 		 * Specifies the length of the entity body
 		 */
-		if (hdValue.getContentLen32bit().isEmpty()) {
+		if (hdValue.contentLen.isEmpty()) {
 			throw new RtspLowInvalidRrException("Content-Length must be set");
 		}
-		return Integer.toUnsignedString(hdValue.getContentLen32bit().get());
+		return Long.toUnsignedString(hdValue.contentLen.getLen32bit().orElseThrow());
 	}
 
 	public static @NonNull String helperBuildHeaderValue_conttype(@NonNull RtspProtoHeaderTypeContType hdValue)
