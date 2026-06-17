@@ -20,6 +20,24 @@ public final class RtspProtoIpAddr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static @NonNull RtspProtoIpAddr ofLoopback() {
+		RtspProtoIpAddr resObj = new RtspProtoIpAddr();
+		resObj.ipAddrObj = InetAddress.getLoopbackAddress();
+		return resObj;
+	}
+
+	public static @NonNull RtspProtoIpAddr of(@NonNull InetAddress value) {
+		RtspProtoIpAddr resObj = new RtspProtoIpAddr();
+		try {
+			resObj.ipAddrObj = InetAddress.getByAddress(value.getAddress());
+		} catch (UnknownHostException e) {
+			// silently fail
+		}
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public Optional<InetAddress> getIpAddrObj() {
 		if (ipAddrObj == null) {
 			return Optional.empty();
@@ -68,14 +86,12 @@ public final class RtspProtoIpAddr implements Cloneable {
 		if (other == this) {
 			return;
 		}
-		if (other.ipAddrObj == null) {
-			ipAddrObj = null;
-		} else {
+		ipAddrObj = null;
+		if (other.ipAddrObj != null) {
 			try {
 				ipAddrObj = InetAddress.getByAddress(other.ipAddrObj.getAddress());
 			} catch (UnknownHostException e) {
 				// silently fail
-				ipAddrObj = null;
 			}
 		}
 	}
@@ -106,6 +122,13 @@ public final class RtspProtoIpAddr implements Cloneable {
 			return 0;
 		}
 		return Objects.hashCode(getIpAddrStr().orElseThrow());
+	}
+
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				"ipAddr=" + (isEmpty() ? "unset" : getIpAddrStr().orElseThrow()) +
+				"]";
 	}
 
 	@Override

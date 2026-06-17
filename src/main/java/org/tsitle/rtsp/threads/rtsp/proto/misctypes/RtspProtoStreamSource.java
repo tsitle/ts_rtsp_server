@@ -11,7 +11,7 @@ public final class RtspProtoStreamSource {
 	private boolean writeProtected = false;
 
 	/** Stream Source ID */
-	private final @NonNull RtspProtoIdStreamSource id = new RtspProtoIdStreamSource();
+	private final @NonNull RtspProtoIdStreamSource id = RtspProtoIdStreamSource.ofEmpty();
 	/** Is this Stream Source enabled? (default: true) */
 	private boolean enabled = true;
 

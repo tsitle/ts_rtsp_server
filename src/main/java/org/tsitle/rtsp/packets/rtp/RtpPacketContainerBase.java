@@ -101,7 +101,7 @@ public class RtpPacketContainerBase {
 		}
 		int tmpSsrcInt = (this.packetBuf.get(11) & 0xFF) | ((this.packetBuf.get(10) & 0xFF) << 8) |
 				((this.packetBuf.get(9) & 0xFF) << 16) | ((this.packetBuf.get(8) & 0xFF) << 24);
-		this.hdBaseSsrc = new RtspProtoIdXsrc();
+		this.hdBaseSsrc = RtspProtoIdXsrc.ofEmpty();
 		try {
 			this.hdBaseSsrc.setId32bit(Integer.toUnsignedLong(tmpSsrcInt));
 		} catch (RtspProtoNumberRangeException e) {

@@ -18,9 +18,9 @@ import java.util.Set;
  */
 public final class RtspProtoSetupInfosStream implements Cloneable {
 
-	private final @NonNull RtspProtoIdSubStream idSubStream1 = new RtspProtoIdSubStream();
+	private final @NonNull RtspProtoIdSubStream idSubStream1 = RtspProtoIdSubStream.ofEmpty();
 	private @Nullable RtspProtoSetupInfoForSubStream siSsPtr1 = null;  // store pointer since it contains UDP sockets
-	private final @NonNull RtspProtoIdSubStream idSubStream2 = new RtspProtoIdSubStream();
+	private final @NonNull RtspProtoIdSubStream idSubStream2 = RtspProtoIdSubStream.ofEmpty();
 	private @Nullable RtspProtoSetupInfoForSubStream siSsPtr2 = null;  // store pointer since it contains UDP sockets
 
 	// -----------------------------------------------------------------------------------------------------------------

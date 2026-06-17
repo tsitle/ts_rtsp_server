@@ -61,7 +61,7 @@ public final class RtspConfigInputSource implements Cloneable {
 		return (id == null ? "" : id.strip());
 	}
 	public @NonNull RtspProtoIdInputSource getIdAsProtoId() {
-		RtspProtoIdInputSource resObj = new RtspProtoIdInputSource(getIdAsStr());
+		RtspProtoIdInputSource resObj = RtspProtoIdInputSource.of(getIdAsStr());
 		resObj.writeProtect();
 		return resObj;
 	}

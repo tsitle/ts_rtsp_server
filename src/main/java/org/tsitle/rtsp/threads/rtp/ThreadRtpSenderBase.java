@@ -77,7 +77,7 @@ public abstract class ThreadRtpSenderBase<
 
 	/** Current RTP 'frame' number for RTP timestamps, either video frames or audio samples (64 bits unsigned) */
 	private final AtomicLong rtpTsFrameNr = new AtomicLong(-1);
-	private final @NonNull RtspProtoRtpSeqNr rtpSequNr = new RtspProtoRtpSeqNr();
+	private final @NonNull RtspProtoRtpSeqNr rtpSequNr = RtspProtoRtpSeqNr.ofEmpty();
 	protected int debugStreamOffset = 0;
 	private boolean isFirstPktOfFrame = true;
 

@@ -40,7 +40,7 @@ final class H26xAccessUnit<I extends CodecInfoInterface<I>> {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[" +
+		return getClass().getSimpleName() + " [" +
 				"name=" + AU_NAME +
 				", arrCount=" + arrNalUnitCount + " (sz=" + arrNalUnitData.size() + ")" +
 				", arrIx=" + arrNalUnitIx +

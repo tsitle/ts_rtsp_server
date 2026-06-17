@@ -68,7 +68,7 @@ public final class MikeyParser {
 			throw new SrtxpSecurityException(FNC_NAME + ": " + errMsg);
 		}
 		//
-		RtspProtoIdXsrc tmpSsrc = new RtspProtoIdXsrc();
+		RtspProtoIdXsrc tmpSsrc = RtspProtoIdXsrc.ofEmpty();
 		try {
 			tmpSsrc.setId32bit(Integer.toUnsignedLong(mikeyData.hdCsIdMapInfoSsrcArr[0]));
 		} catch (RtspProtoNumberRangeException e) {

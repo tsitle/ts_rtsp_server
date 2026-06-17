@@ -4,9 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
+import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoSessionInfo;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.*;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
+import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
@@ -20,18 +22,17 @@ import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.RtspProtoHighMsgStructur
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.*;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.interfaces.RtspProtoSdpConsumerInterface;
 
-import java.net.InetAddress;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RtspProtoHighRequestConsumerTest {
 
@@ -49,12 +50,19 @@ public class RtspProtoHighRequestConsumerTest {
 
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return false;
+			return idInputSource.getIdStr().equals("existing_stream");
 		}
 
 		@Override
-		public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource) throws RtspProtoIdInputSourceNotFoundException {
-			return null;
+		public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
+				throws RtspProtoIdInputSourceNotFoundException {
+			if (! existsInputSourceId(idInputSource)) {
+				throw new RtspProtoIdInputSourceNotFoundException("");
+			}
+			RtspProtoInputSource resObj = new RtspProtoInputSource();
+			resObj.setIdInputSource(idInputSource);
+			resObj.setEnabled(true);
+			return resObj;
 		}
 
 		@Override
@@ -68,69 +76,80 @@ public class RtspProtoHighRequestConsumerTest {
 		}
 
 		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource) throws RtspProtoIdStreamSourceNotFoundException {
-			return null;
+		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
+				throws RtspProtoIdStreamSourceNotFoundException {
+			throw new RtspProtoIdStreamSourceNotFoundException("");
 		}
 
 		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps) throws RtspProtoIdStreamSourceNotFoundException {
-			return 0;
+		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
+				throws RtspProtoIdStreamSourceNotFoundException {
+			throw new RtspProtoIdStreamSourceNotFoundException("");
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static class StaticData implements RtspProtoGlobalSessionInfoInterface {
+	private RtspProtoIdSubStream generatedSubStreamId = RtspProtoIdSubStream.ofEmpty();
+	private final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = buildGlobalSessionInfoSvc();
 
-		@Override
-		public @NonNull RtspProtoIdSubStream createSubStreamId(@NonNull RtspProtoIdInputSource idInputSource, @NonNull RtspProtoIdStreamSource idStreamSource, @NonNull RtspProtoIpAddr clientIpAddr) {
-			return null;
-		}
-
-		@Override
-		public @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream, @NonNull RtspProtoIpAddr clientIpAddr) throws RtspProtoIdSubStreamNotFoundException {
-			return null;
-		}
-
-		@Override
-		public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream, @NonNull RtspProtoIpAddr clientIpAddr) throws RtspProtoIdSubStreamNotFoundException {
-			return null;
-		}
-
-		@Override
-		public @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
-			return "";
-		}
-
-		@Override
-		public boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
-			return false;
-		}
-
-		@Override
-		public int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-			return 0;
-		}
-
-		@Override
-		public void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-
-		}
-
-		@Override
-		public int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-			return 0;
-		}
-	}
+	public RtspProtoHighRequestConsumerTest() throws RtspProtoSessionInfoException { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_options_missingCseq() throws RtspProtoSessionInfoException {
-		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
-		final String expRequUrl = "rtsp://some.com/stream";
+	void structuredRequest_announce_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_describe_wrongCseq() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.DESCRIBE;
+		final String expRequUrl = "rtsp://some.com/existing_stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(101L);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataCntCseqRequInp ioCseqRequ = new RtspProtoDataCntCseqRequInp();
+		ioCseqRequ.cseqNr_expected.setCseq32bit(102L);  // <-- CSeq is higher than the value in the message
+		ioCseqRequ.cseqNr_lastRcvd.clear();  // <-- this is not an input value
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of("doesnt matter when cseq is wrong"),
+				ioCseqRequ,
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.BAD_REQUEST, requBasics.statusCode);
+
+		assertTrue(outputDataRequ.rrCseqNrLastRcvd.getCseq32bit().isEmpty());
+	}
+
+	@Test
+	void structuredRequest_describe_ok_higherCseq() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.DESCRIBE;
+		final String expRequUrl = "rtsp://some.com/existing_stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final String expSessionId = "some-session-id";
 
@@ -141,29 +160,221 @@ public class RtspProtoHighRequestConsumerTest {
 		msgStructured.resourceUrl = expRequUrl;
 		msgStructured.rtspProtoVersion = expProtoVer;
 
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(101L);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.setIdStr(expSessionId);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataCntCseqRequInp ioCseqRequ = new RtspProtoDataCntCseqRequInp();
+		ioCseqRequ.cseqNr_expected.setCseq32bit(71L);  // <-- CSeq is lower than the value in the message
+		ioCseqRequ.cseqNr_lastRcvd.clear();  // <-- this is not an input value
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				ioCseqRequ,
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertEquals(101L, outputDataRequ.rrCseqNrLastRcvd.getCseq32bit().orElseThrow());
+	}
+
+	@Test
+	void structuredRequest_describe_ok() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.DESCRIBE;
+		final String expRequUrl = "rtsp://some.com/existing_stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataCntCseqRequInp ioCseqRequ = new RtspProtoDataCntCseqRequInp();
+		ioCseqRequ.cseqNr_expected.setCseq32bit(expCseqLong);  // <-- CSeq is equal to the value in the message
+		ioCseqRequ.cseqNr_lastRcvd.clear();  // <-- this is not an input value
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(""),
+				ioCseqRequ,
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
+
+		assertEquals(expCseqLong, outputDataRequ.rrCseqNrLastRcvd.getCseq32bit().orElseThrow());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_getParam_ok_unknownParam() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
+		final String expRequUrl = "rtsp://some.com/existing_stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
+		final String expSessionId = "some-session-id";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.setIdStr(expSessionId);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_TYPE);
+			hdEntry.hdValContType.contentType = RtspMimeType.PARAMETERS;
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LEN);
+			hdEntry.hdValContLen.setContentLen32bit(1000L);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		msgStructured.bodyGetParamNames.putParamName("strange_param");
+		msgStructured.bodyGetParamNames.putParamName("weird");
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertEquals(Set.of("strange_param", "weird"), outputDataRequ.rrGetParamNames.getParamNames());
+	}
+
+	@Test
+	void structuredRequest_getParam_ok() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.GET_PARAMETER;
+		final String expRequUrl = "rtsp://some.com/existing_stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
+		final String expSessionId = "some-session-id";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.setIdStr(expSessionId);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_options_missingCseq() throws RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
+		final String expRequUrl = "rtsp://some.com/stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final String expSessionId = "";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.setIdStr("this is a different session id but it will not be stored");
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
 		// --------------------------------
 
 		//
-		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo();
-		RtspProtoDataCntStreamTpMain ioStreamTpMain = new RtspProtoDataCntStreamTpMain();
-		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
-		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics requBasics = proc.processRequest(
-				buildRtspProtoIdSession(expSessionId),
-				sessionInfo.getClientIpAddr(),
-				buildRtspProtoDataCntCseqRequInp(sessionInfo),
-				ioStreamTpMain,
-				ioSetupInfosStream,
-				new RtspProtoDataCntSessionState(sessionInfo.getSessionState()),
+		RtspRequestBasics requBasics = wrapperProcessRequest(
 				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.requIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
 	}
 
 	@Test
@@ -181,42 +392,39 @@ public class RtspProtoHighRequestConsumerTest {
 		msgStructured.resourceUrl = expRequUrl;
 		msgStructured.rtspProtoVersion = expProtoVer;
 
-		RtspProtoHeaderEntryRequest entryCseq = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
-		entryCseq.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
-		msgStructured.headers.put(RtspHeaderKey.CSEQ, entryCseq);
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
+			hdEntry.hdValSession.idSession.setIdStr(expSessionId);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 
 		// --------------------------------
 
-		//
-		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo();
-		RtspProtoDataCntStreamTpMain ioStreamTpMain = new RtspProtoDataCntStreamTpMain();
-		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
-		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics requBasics = proc.processRequest(
-				buildRtspProtoIdSession(expSessionId),
-				sessionInfo.getClientIpAddr(),
-				buildRtspProtoDataCntCseqRequInp(sessionInfo),
-				ioStreamTpMain,
-				ioSetupInfosStream,
-				new RtspProtoDataCntSessionState(sessionInfo.getSessionState()),
+		RtspRequestBasics requBasics = wrapperProcessRequest(
 				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.requIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
 	}
 
 	@Test
 	void structuredRequest_options_featureNotSupp() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
-		final String expRequUrl = "rtsp://existing.mil/stream";
+		final String expRequUrl = "rtsp://existing.mil/existing_stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
-		final String expSessionId = "some-session-id";
 
 		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
 
@@ -240,33 +448,26 @@ public class RtspProtoHighRequestConsumerTest {
 
 		// --------------------------------
 
-		//
-		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo();
-		RtspProtoDataCntStreamTpMain ioStreamTpMain = new RtspProtoDataCntStreamTpMain();
-		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
-		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics requBasics = proc.processRequest(
-				buildRtspProtoIdSession(expSessionId),
-				sessionInfo.getClientIpAddr(),
-				buildRtspProtoDataCntCseqRequInp(sessionInfo),
-				ioStreamTpMain,
-				ioSetupInfosStream,
-				new RtspProtoDataCntSessionState(sessionInfo.getSessionState()),
+		RtspRequestBasics requBasics = wrapperProcessRequest(
 				msgStructured,
+				RtspProtoIdSession.of(""),
+				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.requIdSession.getIdStr());
+		assertTrue(outputDataRequ.rrIdSession.isEmpty());
+
+		assertEquals("this_does_not_exist", outputDataRequ.getUnsupportedFeatureName());
 	}
 
 	@Test
 	void structuredRequest_options_ok() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
-		final String expRequUrl = "rtsp://some.com/stream";
+		final String expRequUrl = "rtsp://some.com/existing_stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
 		final String expSessionId = "some-session-id";
@@ -278,36 +479,278 @@ public class RtspProtoHighRequestConsumerTest {
 		msgStructured.resourceUrl = expRequUrl;
 		msgStructured.rtspProtoVersion = expProtoVer;
 
-		RtspProtoHeaderEntryRequest entryCseq = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
-		entryCseq.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
-		msgStructured.headers.put(RtspHeaderKey.CSEQ, entryCseq);
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 
 		// --------------------------------
 
-		//
-		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo();
-		RtspProtoDataCntStreamTpMain ioStreamTpMain = new RtspProtoDataCntStreamTpMain();
-		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
-		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics requBasics = proc.processRequest(
-				buildRtspProtoIdSession(expSessionId),
-				sessionInfo.getClientIpAddr(),
-				buildRtspProtoDataCntCseqRequInp(sessionInfo),
-				ioStreamTpMain,
-				ioSetupInfosStream,
-				new RtspProtoDataCntSessionState(sessionInfo.getSessionState()),
+		RtspRequestBasics requBasics = wrapperProcessRequest(
 				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.requIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
+		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_pause_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_play_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_redirect_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_setParam_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_setup_subStreamNotFound() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
+		final String expRequUrl = "rtsp://some.com/existing_stream/" + RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + "notexists";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = 707L;
+		final String expSessionId = "some-session-id";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertTrue(requBasics.rscUrl.isEmpty());
+		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
+		assertTrue(requBasics.rscUrl.idStreamSource.isEmpty());
+		assertTrue(requBasics.rscUrl.idSubStream.isEmpty());
+	}
+
+	@Test
+	void structuredRequest_setup_invalidSubStreamPrefix() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
+		final String expRequUrl = "rtsp://some.com/existing_stream/" + RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX;
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = 707L;
+		final String expSessionId = "some-session-id";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertTrue(requBasics.rscUrl.isEmpty());
+		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
+		assertTrue(requBasics.rscUrl.idStreamSource.isEmpty());
+		assertTrue(requBasics.rscUrl.idSubStream.isEmpty());
+	}
+
+	@Test
+	void structuredRequest_setup_ok_queryParamSrtp() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
+		final String expRequUrl = "rtsp://some.com/existing_stream/" +
+				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + generatedSubStreamId.getIdStr() +
+				"?" + RtspProtoHighConstants.URL_QUERY_PARAM_SRTP + "=1";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
+		final String expSessionId = "some-session-id";
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+		msgStructured.queryParams.put(RtspProtoHighConstants.URL_QUERY_PARAM_SRTP, "1");
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of(expSessionId),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
+
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+
+		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
+		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr());
+		assertEquals("exists_12345_streamsource", requBasics.rscUrl.idStreamSource.getIdStr());
+		assertEquals(generatedSubStreamId.getIdStr(), requBasics.rscUrl.idSubStream.getIdStr());
+		assertTrue(outputDataRequ.rrStreamTpMain.getForceRtpRtcpEncryption());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_teardown_xxx() {
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void structuredRequest_xxx_missingSessionId() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		Set<RtspProtoMessageType> mts = Set.of(
+				RtspProtoMessageType.GET_PARAMETER,
+				RtspProtoMessageType.PAUSE,
+				RtspProtoMessageType.PLAY,
+				RtspProtoMessageType.SET_PARAMETER,
+				RtspProtoMessageType.TEARDOWN
+			);
+		for (RtspProtoMessageType mt : mts) {
+			test_missingSessionId(mt, RtspProtoStatusCode.SESSION_NOT_FOUND);
+		}
+
+		mts = Set.of(
+				RtspProtoMessageType.DESCRIBE,
+				RtspProtoMessageType.OPTIONS,
+				RtspProtoMessageType.REDIRECT
+			);
+		for (RtspProtoMessageType mt : mts) {
+			test_missingSessionId(mt, RtspProtoStatusCode.OK);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	void test_missingSessionId(RtspProtoMessageType expMsgType, RtspProtoStatusCode expStatCode)
+			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+		final String expRequUrl = "rtsp://some.com/existing_stream";
+		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
+		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
+
+		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
+
+		msgStructured.messageType = expMsgType;
+		msgStructured.statusCode = RtspProtoStatusCode.OK;
+		msgStructured.resourceUrl = expRequUrl;
+		msgStructured.rtspProtoVersion = expProtoVer;
+
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
+			hdEntry.hdValCseq.cseqNr.setCseq32bit(expCseqLong);
+			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// --------------------------------
+
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
+		RtspRequestBasics requBasics = wrapperProcessRequest(
+				msgStructured,
+				RtspProtoIdSession.of("asasd"),
+				new RtspProtoDataCntCseqRequInp(),
+				outputDataRequ
+			);
+
+		assertEquals(expMsgType, requBasics.messageType);
+		assertEquals(expStatCode, requBasics.statusCode);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull RtspRequestBasics wrapperProcessRequest(
+				@NonNull RtspProtoHighMsgStructuredRequest inputMsgStructured,
+				@NonNull RtspProtoIdSession currentSessionId,
+				@NonNull RtspProtoDataCntCseqRequInp ioCseqRequ,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoSessionInfoException {
+		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo();
+		RtspProtoDataCntStreamTpMain inpStreamTpMain = new RtspProtoDataCntStreamTpMain();
+		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
+		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
+		return proc.processRequest(
+				currentSessionId,
+				new RtspProtoDataCntSessionState(sessionInfo.getSessionState()),
+				sessionInfo.getClientIpAddr(),
+				ioCseqRequ,
+				ioSetupInfosStream,
+				inpStreamTpMain,
+				inputMsgStructured,
+				outputDataRequ
+			);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull LogMsgInterface buildLogMsgIf() {
@@ -317,8 +760,7 @@ public class RtspProtoHighRequestConsumerTest {
 	private static @NonNull RtspProtoSessionInfo buildRtspSessionInfo() throws RtspProtoSessionInfoException {
 		RtspProtoSessionInfo resObj = new RtspProtoSessionInfo();
 
-		RtspProtoIpAddr tmpIp = new RtspProtoIpAddr();
-		tmpIp.setIpAddr(InetAddress.getLoopbackAddress());
+		RtspProtoIpAddr tmpIp = RtspProtoIpAddr.ofLoopback();
 		resObj.setClientIpAddr(tmpIp);
 		//
 		resObj.setIsRtspsConnection(false);
@@ -329,37 +771,34 @@ public class RtspProtoHighRequestConsumerTest {
 		return resObj;
 	}
 
-	private static @NonNull RtspProtoIdSession buildRtspProtoIdSession(@NonNull String sessionId) {
-		RtspProtoIdSession resObj = new RtspProtoIdSession(sessionId);
-		resObj.writeProtect();
-		return resObj;
-	}
-
-	private static @NonNull RtspProtoDataCntCseqRequInp buildRtspProtoDataCntCseqRequInp(@NonNull RtspProtoSessionInfo sessionInfo) {
-		RtspProtoDataCntCseqRequInp resObj = new RtspProtoDataCntCseqRequInp();
-		resObj.writeProtect();
-		return resObj;
-	}
-
 	private static @NonNull RtspProtoSdpConsumerInterface buildSdpConsumer() {
 		return new RtspProtoSdpConsumer();
 	}
 
-	private static @NonNull RtspProtoHighRequestConsumer buildRtspProtoHighRequestConsumer() {
+	private @NonNull RtspProtoGlobalSessionInfoSvc buildGlobalSessionInfoSvc() throws RtspProtoSessionInfoException {
+		RtspProtoGlobalSessionInfoSvc resObj = new RtspProtoGlobalSessionInfoSvc();
+		generatedSubStreamId = resObj.createSubStreamId(
+				RtspProtoIdInputSource.of("existing_stream"),
+				RtspProtoIdStreamSource.of("exists_12345_streamsource"),
+				buildRtspSessionInfo().getClientIpAddr()
+			);
+		return resObj;
+	}
+
+	private @NonNull RtspProtoHighRequestConsumer buildRtspProtoHighRequestConsumer() {
 		RtspProtoDataCntMessageTypes cfgServerSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cfgServerSupportedMessageTypes.putAllMts(RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES_INCOMING);
 		cfgServerSupportedMessageTypes.writeProtect();
 
 		final boolean cfgIsDebugDisableTransportUdp = false;
 
-		//
 		return new RtspProtoHighRequestConsumer(
 				buildLogMsgIf(),
 				cfgServerSupportedMessageTypes,
 				cfgIsDebugDisableTransportUdp,
 				buildSdpConsumer(),
 				new AvailableStreams(),
-				new StaticData(),
+				globalSessionInfoSvc,
 				null
 			);
 	}

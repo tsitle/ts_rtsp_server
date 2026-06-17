@@ -43,7 +43,7 @@ public class MqCodecSettings {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[" +
+		return getClass().getSimpleName() + " [" +
 				"codec=" + (codec == null ? "NULL" : codec) +
 				", videoFps=" + (videoFps == null ? "NULL" : String.format("%.2f", videoFps).replace(",", ".")) +
 				", audioSamplerate=" + (audioSamplerate == null ? "NULL" : audioSamplerate) +

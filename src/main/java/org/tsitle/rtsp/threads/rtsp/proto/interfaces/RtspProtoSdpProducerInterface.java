@@ -2,7 +2,7 @@ package org.tsitle.rtsp.threads.rtsp.proto.interfaces;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSdpException;
@@ -33,7 +33,7 @@ public interface RtspProtoSdpProducerInterface {
 			@NonNull String clientUserAgent,
 			@NonNull RtspProtoIpAddr clientIpAddr,
 			@NonNull RtspProtoDataCntSdp outputSdp,
-			@NonNull RtspProtoDataCntAdStreamSett outputAdStreamSett,
+			@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
 			@NonNull RtspProtoKmdsStream outputKmdsOutbound
 		) throws RtspProtoSdpException;
 

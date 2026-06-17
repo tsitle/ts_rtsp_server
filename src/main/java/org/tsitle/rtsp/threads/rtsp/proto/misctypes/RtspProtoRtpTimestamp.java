@@ -10,7 +10,7 @@ import java.util.Optional;
  */
 public final class RtspProtoRtpTimestamp extends RtspProtoBaseNumberNonNeg32bit<RtspProtoRtpTimestamp> implements Cloneable {
 
-	public RtspProtoRtpTimestamp() {
+	private RtspProtoRtpTimestamp() {
 		super();
 	}
 

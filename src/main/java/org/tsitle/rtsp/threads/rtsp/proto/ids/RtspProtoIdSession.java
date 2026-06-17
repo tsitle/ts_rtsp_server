@@ -7,15 +7,25 @@ import org.jspecify.annotations.NonNull;
  */
 public final class RtspProtoIdSession extends RtspProtoBaseIdString implements Cloneable {
 
-	public RtspProtoIdSession() {
+	private RtspProtoIdSession() {
 		super();
 	}
 
-	public RtspProtoIdSession(@NonNull String idStr) {
+	private RtspProtoIdSession(@NonNull String idStr) {
 		super(idStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static RtspProtoIdSession ofEmpty() {
+		return new RtspProtoIdSession();
+	}
+
+	public static RtspProtoIdSession of(@NonNull String idStr) {
+		return new RtspProtoIdSession(idStr);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

@@ -16,11 +16,19 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	/** TCP channel */
 	private int channelNr = -1;
 
+	private RtspProtoTcpChannelNr() { }
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static RtspProtoTcpChannelNr ofEmpty() {
 		return new RtspProtoTcpChannelNr();
+	}
+
+	public static RtspProtoTcpChannelNr of(int value8bit) throws RtspProtoNumberRangeException {
+		RtspProtoTcpChannelNr resObj = new RtspProtoTcpChannelNr();
+		resObj.setChannel8bit(value8bit);
+		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

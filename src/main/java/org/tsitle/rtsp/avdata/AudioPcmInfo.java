@@ -64,8 +64,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 
 	@Override
 	public @NonNull String toString() {
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				"samplesOffset=" + Integer.toUnsignedString(samplesOffset) +
 				", samplesLength=" + Integer.toUnsignedString(samplesLength) +
 				", channels=" + Integer.toUnsignedString(channels) +

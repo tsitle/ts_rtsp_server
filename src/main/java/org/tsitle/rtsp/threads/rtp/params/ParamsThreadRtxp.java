@@ -23,7 +23,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		private boolean isSetClientIpAddr;
 
 		/** Destination UDP port for RTxP packets (audio and video), provided by the RTSP Client */
-		private @NonNull RtspProtoSocketPortNr clientDestUdpPort = new RtspProtoSocketPortNr();
+		private @NonNull RtspProtoSocketPortNr clientDestUdpPort = RtspProtoSocketPortNr.ofEmpty();
 		private boolean isSetClientDestUdpPort;
 		/** UDP socket for outgoing RTxP packets */
 		private @Nullable DatagramSocket socketUdp;
@@ -91,15 +91,15 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	private boolean isSetLogMsgInterface;
 
 	/** Session ID */
-	private @NonNull RtspProtoIdSession debugSessionId = new RtspProtoIdSession();
+	private @NonNull RtspProtoIdSession debugSessionId = RtspProtoIdSession.ofEmpty();
 	private boolean isSetDebugSessionId;
 
 	/** Stream ID - not the SSRC */
-	private @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	private @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 	private boolean isSetIdStreamSource;
 
 	/** RTSP Synchronization Source Identifier of the stream */
-	private @NonNull RtspProtoIdXsrc ssrcId = new RtspProtoIdXsrc();
+	private @NonNull RtspProtoIdXsrc ssrcId = RtspProtoIdXsrc.ofEmpty();
 	private boolean isSetSsrcId;
 
 	/** RTxP UDP/TCP transport parameters */

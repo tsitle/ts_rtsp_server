@@ -20,9 +20,9 @@ public final class ParamsContainerBase {
 	 * Constructor.
 	 */
 	public ParamsContainerBase() {
-		this.ssrcId = new RtspProtoIdXsrc();
-		this.sequenceNumber = new RtspProtoRtpSeqNr();
-		this.rtpTimestamp = new RtspProtoRtpTimestamp();
+		this.ssrcId = RtspProtoIdXsrc.ofEmpty();
+		this.sequenceNumber = RtspProtoRtpSeqNr.ofEmpty();
+		this.rtpTimestamp = RtspProtoRtpTimestamp.ofEmpty();
 		reset();
 	}
 

@@ -50,6 +50,7 @@ final class SrtxpRekeySvc {
 		//
 		this.rtspProtoRequestOutputSvc = new RtspProtoRequestOutputSvc(
 				logMsgInterface,
+				false,
 				cfgServerNameAndVersion,
 				"",  // @TODO make Content-Language configurable
 				rtspConfig.getIsDebugPrintRtspSdpSent(),

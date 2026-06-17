@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 public final class RtspProtoIdXsrc extends RtspProtoBaseNumberNonNeg32bit<RtspProtoIdXsrc> implements Cloneable {
 
-	public RtspProtoIdXsrc() {
+	private RtspProtoIdXsrc() {
 		super();
 	}
 

@@ -248,8 +248,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 
 	@Override
 	public @NonNull String toString() {
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				"samplesOffset=" + Integer.toUnsignedString(samplesOffset) +
 				", samplesLength=" + Integer.toUnsignedString(samplesLength) +
 				", frameLength=" + Integer.toUnsignedString(frameLength) +

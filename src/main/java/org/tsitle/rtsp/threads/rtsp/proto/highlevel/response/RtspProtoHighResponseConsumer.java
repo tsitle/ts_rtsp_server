@@ -179,7 +179,7 @@ public class RtspProtoHighResponseConsumer {
 			throw new RtspProtoInvalidSessionIdException();
 		}
 		if (isResponseFromClient) {
-			outputDataResp.respIdSession.copyFrom(tmpSessionId);
+			outputDataResp.rrIdSession.copyFrom(tmpSessionId);
 		}
 
 		//
@@ -474,7 +474,7 @@ public class RtspProtoHighResponseConsumer {
 					throw new RtspProtoInvalidResponseException("Content-Type for GET_PARAMETER message must be PARAMETERS");
 				}
 				if (! input.bodyGetSetInvalidParams.isParamNamesEmpty()) {
-					outputDataResp.respInvalidParamNames.copyFrom(input.bodyGetSetInvalidParams);
+					outputDataResp.rrInvalidParamNames.copyFrom(input.bodyGetSetInvalidParams);
 				} else if (input.messageType == RtspProtoMessageType.GET_PARAMETER) {
 					outputDataResp.respGetParamValues.copyFrom(input.bodyGetParamKv);
 				}
@@ -504,7 +504,7 @@ public class RtspProtoHighResponseConsumer {
 				handleBody_describe(outputDataResp);
 				break;
 			case RtspProtoMessageType.GET_PARAMETER, RtspProtoMessageType.SET_PARAMETER:
-				if (! outputDataResp.respInvalidParamNames.isParamNamesEmpty()) {
+				if (! outputDataResp.rrInvalidParamNames.isParamNamesEmpty()) {
 					handleBody_invalidParam(outputDataResp);
 				} else if (messageType == RtspProtoMessageType.GET_PARAMETER) {
 					handleBody_getParam(outputDataResp);
@@ -525,8 +525,8 @@ public class RtspProtoHighResponseConsumer {
 			return;
 		}
 		parameterNotifyInvalidInterface.notifyInvalidRtspParameters(
-				outputDataResp.respIdSession,
-				outputDataResp.respInvalidParamNames
+				outputDataResp.rrIdSession,
+				outputDataResp.rrInvalidParamNames
 			);
 	}
 
@@ -541,7 +541,7 @@ public class RtspProtoHighResponseConsumer {
 			return;
 		}
 		parameterNotifyRcvdInterface.notifyReceivedRtspParameters(
-				outputDataResp.respIdSession,
+				outputDataResp.rrIdSession,
 				outputDataResp.respGetParamValues
 			);
 	}

@@ -16,7 +16,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
 public class SrtcpContextInbound extends SrtcpContextBase {
 
 	/** For SRTCP decryption: Sender SSRC */
-	private final @NonNull RtspProtoIdXsrc ctxStateSrtcpSsrc = new RtspProtoIdXsrc();
+	private final @NonNull RtspProtoIdXsrc ctxStateSrtcpSsrc = RtspProtoIdXsrc.ofEmpty();
 	/** For SRTCP decryption: Last packet index */
 	private int ctxStateSrtcpLastIndex = -1;
 

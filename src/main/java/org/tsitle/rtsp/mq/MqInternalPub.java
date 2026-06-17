@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MqInternalPub implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
-	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 
 	private final @NonNull ZContext zmqContext;
 	private ZMQ.@Nullable Socket zmqSocket;

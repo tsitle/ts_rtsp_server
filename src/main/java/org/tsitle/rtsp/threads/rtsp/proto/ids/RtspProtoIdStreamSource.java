@@ -7,15 +7,25 @@ import org.jspecify.annotations.NonNull;
  */
 public final class RtspProtoIdStreamSource extends RtspProtoBaseIdString implements Cloneable {
 
-	public RtspProtoIdStreamSource() {
+	private RtspProtoIdStreamSource() {
 		super();
 	}
 
-	public RtspProtoIdStreamSource(@NonNull String idStr) {
+	private RtspProtoIdStreamSource(@NonNull String idStr) {
 		super(idStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static RtspProtoIdStreamSource ofEmpty() {
+		return new RtspProtoIdStreamSource();
+	}
+
+	public static RtspProtoIdStreamSource of(@NonNull String idStr) {
+		return new RtspProtoIdStreamSource(idStr);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

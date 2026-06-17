@@ -15,7 +15,7 @@ public final class RtspProtoInputSource {
 	private boolean writeProtected = false;
 
 	/** Input Source ID */
-	private final @NonNull RtspProtoIdInputSource id = new RtspProtoIdInputSource();
+	private final @NonNull RtspProtoIdInputSource id = RtspProtoIdInputSource.ofEmpty();
 	/** Is this Input Source enabled? (default: true) */
 	private boolean enabled = true;
 	/** Does this Input Source need authentication? (default: true) */

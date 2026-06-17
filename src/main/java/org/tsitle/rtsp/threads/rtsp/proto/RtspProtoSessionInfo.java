@@ -46,7 +46,7 @@ public final class RtspProtoSessionInfo {
 	private boolean haveSetIsRtspsConnection = false;
 
 	/** RTSP Session ID */
-	private final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
+	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
 	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_lastRcvd = RtspProtoCseqNr.ofEmpty();
@@ -609,8 +609,7 @@ public final class RtspProtoSessionInfo {
 						tmpRtspHostname + "'");
 			}
 
-			RtspProtoIpAddr resObj = new RtspProtoIpAddr();
-			resObj.setIpAddr(optRtspHostIp.get());
+			RtspProtoIpAddr resObj = RtspProtoIpAddr.of(optRtspHostIp.get());
 			resObj.writeProtect();
 			return resObj;
 		} catch (UnknownHostException | SocketException e) {

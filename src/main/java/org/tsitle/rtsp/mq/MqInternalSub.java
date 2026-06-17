@@ -15,7 +15,7 @@ public class MqInternalSub extends MqReceiverSubBase {
 	private static final boolean DO_VALIDATE_PAYLOAD = false;
 	private static final boolean DO_PRINT_DEBUG_STATS = false;
 
-	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 
 	/**
 	 * Constructor.

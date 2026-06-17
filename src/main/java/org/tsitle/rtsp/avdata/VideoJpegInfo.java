@@ -208,8 +208,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 	@Override
 	public @NonNull String toString() {
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				"channelEncoding=" + sof0_channelEncoding +
 				", imgW=" + Integer.toUnsignedString(sof0_imgWidth) +
 				", imgH=" + sof0_imgHeight +

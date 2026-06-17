@@ -7,7 +7,7 @@ import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
-import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.rtsp.threads.rtsp.proto.enums.RtspProtoMessageType;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.*;
@@ -77,7 +77,7 @@ public final class RtspProtoHighResponseProducer {
 			) throws RtspProtoInvalidResponseException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse()";
 
-		if (rtspRequestBasics.statusCode == RtspProtoStatusCode.OK && ioDataResp.respRscUrl.isEmpty()) {
+		if (rtspRequestBasics.statusCode == RtspProtoStatusCode.OK && ioDataResp.rrRscUrl.isEmpty()) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Resource URL must be set");
 		}
 
@@ -143,7 +143,7 @@ public final class RtspProtoHighResponseProducer {
 		 */
 		switch (statusCode) {
 			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
-				output.bodyGetSetInvalidParams.copyFrom(ioDataResp.respInvalidParamNames);
+				output.bodyGetSetInvalidParams.copyFrom(ioDataResp.rrInvalidParamNames);
 				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 				addContentTypeHeader(output);
 				break;
@@ -185,27 +185,27 @@ public final class RtspProtoHighResponseProducer {
 		 */
 
 		//
-		if (inputDataResp.respRscUrl.getUrlStr().isEmpty()) {
+		if (inputDataResp.rrRscUrl.getUrlStr().isEmpty()) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Resource URL must be set");
 		}
-		if (inputDataResp.respRscUrl.idInputSource.isEmpty()) {
+		if (inputDataResp.rrRscUrl.idInputSource.isEmpty()) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Input Source ID must be set");
 		}
-		final String baseRscUrl = inputDataResp.respRscUrl.getUrlStr() +
-				(inputDataResp.respRscUrl.getUrlStr().endsWith("/") ? "" : "/");
+		final String baseRscUrl = inputDataResp.rrRscUrl.getUrlStr() +
+				(inputDataResp.rrRscUrl.getUrlStr().endsWith("/") ? "" : "/");
 
 		//
 		try {
-			RtspProtoDataCntAdStreamSett outputAdStreamSett = new RtspProtoDataCntAdStreamSett();
+			RtspProtoAdSettingsStream outputAdStreamSett = new RtspProtoAdSettingsStream();
 			RtspProtoKmdsStream outputKmdsOutbound = new RtspProtoKmdsStream();
 
 			// build SDP
 			sdpProducerInterface.buildSdpForDescribe(
-					inputDataResp.respStreamTpMain.isSrtpRequired(),
-					inputDataResp.respRscUrl.idInputSource,
-					inputDataResp.respServerIpFromRscUrl,
+					inputDataResp.rrStreamTpMain.isSrtpRequired(),
+					inputDataResp.rrRscUrl.idInputSource,
+					inputDataResp.rrServerIpFromRscUrl,
 					inputDataResp.getClientUa(),
-					inputDataResp.respClientIpAddr,
+					inputDataResp.rrClientIpAddr,
 					outputMsgResp.bodyDescribeSdp,
 					outputAdStreamSett,
 					outputKmdsOutbound
@@ -213,7 +213,7 @@ public final class RtspProtoHighResponseProducer {
 
 			// copy the stream settings and KMDs
 			for (RtspProtoIdSubStream tmpIdSs : outputAdStreamSett.getSubStreamIds()) {
-				RtspProtoDataCntAdStreamSett.SubStream tmpAvSs = outputAdStreamSett.getSettingsBySubStreamId(tmpIdSs)
+				RtspProtoAdSettingsForSubStream tmpAvSs = outputAdStreamSett.getSettingsBySubStreamId(tmpIdSs)
 						.orElseThrow();
 
 				RtspProtoKmdForSubStream tmpProtoKmdOutbound = new RtspProtoKmdForSubStream();
@@ -224,7 +224,7 @@ public final class RtspProtoHighResponseProducer {
 
 				RtspProtoRscUrl tmpRscUrlSs = new RtspProtoRscUrl();
 				tmpRscUrlSs.setUrlStr(baseRscUrl + tmpAvSs.getUrlSubPathForSubStream());
-				tmpRscUrlSs.idInputSource.copyFrom(inputDataResp.respRscUrl.idInputSource);
+				tmpRscUrlSs.idInputSource.copyFrom(inputDataResp.rrRscUrl.idInputSource);
 				tmpRscUrlSs.idStreamSource.copyFrom(tmpAvSs.idStreamSource);
 				tmpRscUrlSs.idSubStream.copyFrom(tmpIdSs);
 
@@ -280,20 +280,20 @@ public final class RtspProtoHighResponseProducer {
 		 *     "barparam"
 		 */
 
-		if (inputDataResp.respGetParamNames.isParamNamesEmpty()) {
+		if (inputDataResp.rrGetParamNames.isParamNamesEmpty()) {
 			// nothing to do
 			return;
 		}
 
 		if (parameterGetterInterface == null) {
 			output.statusCode = RtspProtoStatusCode.INVALID_PARAMETER;
-			output.bodyGetSetInvalidParams.copyFrom(inputDataResp.respGetParamNames);
+			output.bodyGetSetInvalidParams.copyFrom(inputDataResp.rrGetParamNames);
 		} else {
 			RtspProtoDataCntGetSetParamKvs tmpDataGsp =
-					parameterGetterInterface.getAllRtspParameters(inputDataResp.respIdSession);
+					parameterGetterInterface.getAllRtspParameters(inputDataResp.rrIdSession);
 
 			Set<String> tmpMissingParams = new HashSet<>();
-			for (String requParam : inputDataResp.respGetParamNames.getParamNames()) {
+			for (String requParam : inputDataResp.rrGetParamNames.getParamNames()) {
 				Optional<String> tmpRequParVal = tmpDataGsp.getParamKvsValue(requParam);
 				if (tmpRequParVal.isEmpty()) {
 					tmpMissingParams.add(requParam);
@@ -339,10 +339,10 @@ public final class RtspProtoHighResponseProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth
-		if (! ioDataResp.respRscUrl.idInputSource.isEmpty()) {
+		if (! ioDataResp.rrRscUrl.idInputSource.isEmpty()) {
 			boolean tmpNeedAuth;
 			try {
-				tmpNeedAuth = availableStreamsInterface.getInputSourceObj(ioDataResp.respRscUrl.idInputSource)
+				tmpNeedAuth = availableStreamsInterface.getInputSourceObj(ioDataResp.rrRscUrl.idInputSource)
 						.getNeedsAuthentication();
 			} catch (RtspProtoIdInputSourceNotFoundException e) {
 				throw new RtspProtoInvalidResponseException(FNC_NAME + ": " + e.getMessage());
@@ -431,9 +431,9 @@ public final class RtspProtoHighResponseProducer {
 		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
 		try {
 			tmpSiSs.isTransportValid(
-					inputDataResp.respStreamTpMain.getRtpRtcpEncryptionRequired(),
-					inputDataResp.respStreamTpMain.getForceRtpRtcpEncryption(),
-					inputDataResp.respStreamTpMain.getIsRtspsConnection(),
+					inputDataResp.rrStreamTpMain.getRtpRtcpEncryptionRequired(),
+					inputDataResp.rrStreamTpMain.getForceRtpRtcpEncryption(),
+					inputDataResp.rrStreamTpMain.getIsRtspsConnection(),
 					cfgIsDebugDisableTransportUdp
 				);
 		} catch (RtspProtoInvalidTpSettingsException e) {
@@ -447,7 +447,7 @@ public final class RtspProtoHighResponseProducer {
 		// Session ID
 		{
 			// generate RTSP Session ID if necessary
-			String tmpOutpIdSession = inputDataResp.respIdSession.getIdStr();
+			String tmpOutpIdSession = inputDataResp.rrIdSession.getIdStr();
 			if (tmpOutpIdSession.isEmpty()) {
 				tmpOutpIdSession = buildHexString(RandomHelper.getRandomUint32(false));
 				logDebug(FNC_NAME, "New RTSP session ID: " + tmpOutpIdSession);
@@ -476,7 +476,7 @@ public final class RtspProtoHighResponseProducer {
 			hdEntry.hdValTransport.tpSubStream.setIsEncr(tmpInpSubStreamTpPtr.getIsEncr());
 			hdEntry.hdValTransport.tpSubStream.setIsUnicast(tmpInpSubStreamTpPtr.getIsUnicast());
 			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(tmpInpSubStreamTpPtr.getIsInterleaved());
-			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.respServerIpFromRscUrl.getIpAddrStr().orElseThrow();
+			hdEntry.hdValTransport.tpSourceIpOrHost = inputDataResp.rrServerIpFromRscUrl.getIpAddrStr().orElseThrow();
 			hdEntry.hdValTransport.tpDestIpOrHost = getClientIpAddr(inputDataResp).getHostAddress();
 			if (tmpInpSubStreamTpPtr.getIsUdp()) {
 				hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientUdpPortRtpPtr());
@@ -574,9 +574,9 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) {
 		// CSeq
-		if (! inputDataResp.respCseqNrLastRcvd.isEmpty()) {
+		if (! inputDataResp.rrCseqNrLastRcvd.isEmpty()) {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CSEQ);
-			hdEntry.hdValCseq.cseqNr.copyFrom(inputDataResp.respCseqNrLastRcvd);
+			hdEntry.hdValCseq.cseqNr.copyFrom(inputDataResp.rrCseqNrLastRcvd);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date
@@ -591,9 +591,9 @@ public final class RtspProtoHighResponseProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
-		if (! inputDataResp.respIdSession.isEmpty()) {
+		if (! inputDataResp.rrIdSession.isEmpty()) {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SESSION);
-			hdEntry.hdValSession.idSession.copyFrom(inputDataResp.respIdSession);
+			hdEntry.hdValSession.idSession.copyFrom(inputDataResp.rrIdSession);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
@@ -612,7 +612,7 @@ public final class RtspProtoHighResponseProducer {
 		}
 		if (ioDataResp.respAuthServer.getAuthNonce().isBlank()) {
 			ioDataResp.respAuthServer.setAuthNonce(
-					globalSessionInfoInterface.createAuthServerNonce(ioDataResp.respClientIpAddr)
+					globalSessionInfoInterface.createAuthServerNonce(ioDataResp.rrClientIpAddr)
 				);
 		}
 		if (ioDataResp.respAuthServer.getAuthRealm().isBlank()) {
@@ -666,7 +666,7 @@ public final class RtspProtoHighResponseProducer {
 		if (isResponseFromClient) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": The client should not be calling this function");
 		}
-		return dataResp.respClientIpAddr.getIpAddrObj()
+		return dataResp.rrClientIpAddr.getIpAddrObj()
 				.orElseThrow(() -> new RtspProtoInvalidResponseException(FNC_NAME + ": Client IP address is not set"));
 	}
 

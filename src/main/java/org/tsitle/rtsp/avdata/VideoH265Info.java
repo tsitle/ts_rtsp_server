@@ -149,8 +149,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 
 	@Override
 	public @NonNull String toString() {
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				super.getToStringFields() +
 				", TypeEn=" + nalUnitTypeEn +
 				String.format(", LayerId=0x%02X", nuhLayerId) +
@@ -163,8 +162,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 		if (! shortOutput) {
 			return toString();
 		}
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				super.getToStringShortFields() +
 				String.format(" (en=%s)", nalUnitTypeEn) +
 				"]";

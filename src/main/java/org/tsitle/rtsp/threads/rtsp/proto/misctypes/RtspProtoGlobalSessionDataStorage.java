@@ -82,7 +82,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 
 		theWriteLock.lock();
 		try {
-			RtspProtoIdSubStream tmpIdSub = new RtspProtoIdSubStream();
+			RtspProtoIdSubStream tmpIdSub = RtspProtoIdSubStream.ofEmpty();
 			do {
 				String tmpIdStr = ipHash + "_" + HashMd5Helper.hashOfString(
 						String.format("%s : %5s : %08X",
@@ -95,10 +95,10 @@ public final class RtspProtoGlobalSessionDataStorage {
 			tmpIdSub.writeProtect();
 			subStreamIds.add(tmpIdSub);
 			//
-			RtspProtoIdInputSource tmpIdIs = new RtspProtoIdInputSource();
+			RtspProtoIdInputSource tmpIdIs = RtspProtoIdInputSource.ofEmpty();
 			tmpIdIs.copyFrom(idInputSource);
 			tmpIdIs.writeProtect();
-			RtspProtoIdStreamSource tmpIdSs = new RtspProtoIdStreamSource();
+			RtspProtoIdStreamSource tmpIdSs = RtspProtoIdStreamSource.ofEmpty();
 			tmpIdSs.copyFrom(idStreamSource);
 			tmpIdSs.writeProtect();
 			subStreamResolveMap.put(tmpIdSub, new SubStreamResolve(ipStr, tmpIdIs, tmpIdSs));

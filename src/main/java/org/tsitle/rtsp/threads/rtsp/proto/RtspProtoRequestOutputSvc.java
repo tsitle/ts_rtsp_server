@@ -26,9 +26,13 @@ import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
 import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpProducer;
 
+/**
+ * Service for sending RTSP requests over a TCP connection.
+ */
 public final class RtspProtoRequestOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
@@ -36,8 +40,22 @@ public final class RtspProtoRequestOutputSvc {
 	private final RtspProtoLowRequestProducer rtspProtoLowRequestProducer;
 	private final RtspProtoLowMsgWriter rtspProtoLowMsgWriter;
 
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Log message handling instance
+	 * @param isRequestFromClient Is this a request being sent by the client?
+	 * @param cfgServerNameAndVersion Server software name and version
+	 * @param cfgContentLanguage Content language (can be empty)
+	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent SDP data for debugging?
+	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
+	 * @param rtspSessionInfo RTSP session info
+	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param availableStreamsInterface Available streams instance
+	 * @param globalSessionInfoInterface Global session info instance
+	 */
 	public RtspProtoRequestOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
+				boolean isRequestFromClient,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				boolean cfgIsDebugPrintRtspSdpSent,
@@ -47,7 +65,12 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
+		if (cfgServerNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
+		}
+
 		this.logMsgInterface = logMsgInterface;
+		this.isRequestFromClient = isRequestFromClient;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
@@ -76,6 +99,16 @@ public final class RtspProtoRequestOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * ANNOUNCE updates the session description in real-time.<br />
+	 * <b>Note:</b> This is only allowed for Server->Client requests.
+	 * @param resourceUrl The Resource URL
+	 * @param idInputSource The Input Source ID
+	 * @param announceSdp The session description
+	 * @return The message type
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If there is an I/O exception
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_announce(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoIdInputSource idInputSource,
@@ -83,10 +116,14 @@ public final class RtspProtoRequestOutputSvc {
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
+		if (isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Server->Client requests");
+		}
+
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.requAnnouncedSdp.copyFrom(announceSdp);
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrl);
-		inputDataRequ.requRscUrl.idInputSource.copyFrom(idInputSource);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
@@ -100,15 +137,36 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
+	/**
+	 * DESCRIBE retrieves the description of a presentation or media object identified by the request URL from a server.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_describe(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_describe()";
 
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
+
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.DESCRIBE, resourceUrl, clientCredentials);
 	}
 
+	/**
+	 * GET_PARAMETER with no entity body may be used to test client or server liveness ("ping").
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
@@ -118,6 +176,16 @@ public final class RtspProtoRequestOutputSvc {
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.GET_PARAMETER, resourceUrl, clientCredentials);
 	}
 
+	/**
+	 * GET_PARAMETER request retrieves the value of a parameter of a presentation or stream specified in the URI.<br />
+	 * GET_PARAMETER with no entity body may be used to test client or server liveness ("ping").
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @param getParameterNames The names of the parameters to retrieve (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
@@ -126,8 +194,8 @@ public final class RtspProtoRequestOutputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requGetParamNames.copyFrom(getParameterNames);
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrGetParamNames.copyFrom(getParameterNames);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 
 		return internalSendRequest(
 				FNC_NAME,
@@ -139,6 +207,13 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
+	/**
+	 * OPTIONS request is used to query the server/client capabilities.
+	 * @param resourceUrl The Resource URL
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(@NonNull String resourceUrl)
 			throws TcpSocketClosedException, TcpSocketIoException {
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
@@ -146,42 +221,103 @@ public final class RtspProtoRequestOutputSvc {
 		return sendRequest_options(resourceUrl, dummyClientCredentials);
 	}
 
+	/**
+	 * OPTIONS request is used to query the server/client capabilities.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_options()";
 
+		// @TODO add Require and Proxy-Require parameters
+
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.OPTIONS, resourceUrl, clientCredentials);
 	}
 
+	/**
+	 * PAUSE request is used to pause the playback of a presentation or stream.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_pause(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_pause()";
 
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
+
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PAUSE, resourceUrl, clientCredentials);
 	}
 
+	/**
+	 * PLAY request is used to start the playback of a presentation or stream.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
+
+		// @TODO add parameter for Range
+
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PLAY, resourceUrl, clientCredentials);
 	}
 
-	public @NonNull RtspProtoMessageType sendRequest_redirect(
-				@NonNull String resourceUrl,
-				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+	/**
+	 * REDIRECT request is used to redirect the client to a new URL.<br />
+	 * <b>Note:</b> This is only allowed for Server->Client requests.
+	 * @param resourceUrl The Resource URL
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_redirect(@NonNull String resourceUrl)
+			throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_redirect()";
 
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.REDIRECT, resourceUrl, clientCredentials);
+		if (isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Server->Client requests");
+		}
+
+		// @TODO add Location and Range parameters
+
+		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
+
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.REDIRECT, resourceUrl, dummyClientCredentials);
 	}
 
+	/**
+	 * SET_PARAMETER requests to set the value of one or more parameters for a presentation or stream specified by the URI.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client credentials (can be empty)
+	 * @param setParameterKvs The key-value pairs of parameters to set
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
@@ -190,7 +326,7 @@ public final class RtspProtoRequestOutputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 		inputDataRequ.requSetParamValues.copyFrom(setParameterKvs);
 
 		return internalSendRequest(
@@ -203,15 +339,41 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
+	/**
+	 * SETUP requests to establish a media session between the client and server.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
+	 * @param clientCredentials Client credentials (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
-				@NonNull String resourceUrl,
+				@NonNull String resourceUrlForSubStream,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setup()";
 
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.SETUP, resourceUrl, clientCredentials);
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
+
+		// @TODO add parameters for Transport and KeyMgmt
+
+		return internalSendRequest(FNC_NAME, RtspProtoMessageType.SETUP, resourceUrlForSubStream, clientCredentials);
 	}
 
+	/**
+	 * Send new Key Management Data (KMD) using MIKEY for re-keying of SRTP/SRTCP.<br />
+	 * This will issue a SET_PARAMETER request.<br />
+	 * <b>Note:</b> This can only work if the remote host supports MIKEY and SET_PARAMETER.
+	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
+	 * @param idSubStream Sub-Stream identifier
+	 * @param kmdOutbound Key Management Data (KMD) for the Sub-Stream
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
 				@NonNull String resourceUrlForSubStream,
 				@NonNull RtspProtoIdSubStream idSubStream,
@@ -220,7 +382,7 @@ public final class RtspProtoRequestOutputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundMikey()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrlForSubStream);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrlForSubStream);
 
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
@@ -241,6 +403,16 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
+	/**
+	 * Send new Key Management Data (KMD) using the legacy SDES format for re-keying of SRTP/SRTCP.<br />
+	 * This will issue an ANNOUNCE request.<br />
+	 * <b>Note:</b> This can only work if the remote host supports the legacy SDES format and ANNOUNCE.
+	 * @param resourceUrl The Resource URL
+	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
@@ -248,7 +420,7 @@ public final class RtspProtoRequestOutputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
@@ -269,11 +441,26 @@ public final class RtspProtoRequestOutputSvc {
 			);
 	}
 
+	/**
+	 * The TEARDOWN request stops the stream delivery for the given URI, freeing the resources associated with it.<br />
+	 * If the URI is the presentation URI for this presentation, any RTSP session identifier
+	 * associated with the session is no longer valid.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client credentials (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
 	public @NonNull RtspProtoMessageType sendRequest_teardown(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_teardown()";
+
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
 
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.TEARDOWN, resourceUrl, clientCredentials);
 	}
@@ -335,7 +522,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 		return internalSendRequest(
 				fncName,
 				requestMessageType,
@@ -361,7 +548,7 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		inputDataRequ.writeProtect();
 
-		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && inputDataRequ.requRscUrl.idInputSource.isEmpty()) {
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && inputDataRequ.rrRscUrl.idInputSource.isEmpty()) {
 			logError(fncName, "Input Source not found");
 			return requestMessageType;
 		}
@@ -404,7 +591,7 @@ public final class RtspProtoRequestOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(fncName, String.format("Sent request '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.messageType,
-				tmpInputDataRequCopy.requIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.requIdSession.getIdStr(),
+				tmpInputDataRequCopy.rrIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.rrIdSession.getIdStr(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 
 		// update data in Session Info
@@ -422,18 +609,18 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataRequest dataRequ
 			) {
-		dataRequ.requIdSession.copyFrom(rtspSessionInfo.getIdSession());
+		dataRequ.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		dataRequ.setRtspProtoVersionToUse(rtspSessionInfo.getRtspProtoVersionToUse());
 		dataRequ.copyAndIncrementCseqNrToSend(rtspSessionInfo.getCseqNr_requToRem_lastSent());
 		dataRequ.setClientUa(rtspSessionInfo.getClientUserAgent());
 		if (! rtspSessionInfo.getClientIpAddr().isEmpty()) {
-			dataRequ.requClientIpAddr.copyFrom(rtspSessionInfo.getClientIpAddr());
+			dataRequ.rrClientIpAddr.copyFrom(rtspSessionInfo.getClientIpAddr());
 		}
 
 		if (requestMessageType == RtspProtoMessageType.ANNOUNCE) {
 			try {
-				dataRequ.requServerIpFromRscUrl.copyFrom(
-						RtspProtoSessionInfo.findRtspIpFromResourceUrl(dataRequ.requRscUrl)
+				dataRequ.rrServerIpFromRscUrl.copyFrom(
+						RtspProtoSessionInfo.findRtspIpFromResourceUrl(dataRequ.rrRscUrl)
 					);
 			} catch (RtspProtoCannotFindIpFromRscUrlException e) {
 				logError(fncName, e.getMessage());
@@ -448,7 +635,7 @@ public final class RtspProtoRequestOutputSvc {
 		dataRequ.requAuthClient.setAuthNonce(rtspSessionInfo.getPermAuthServer().getAuthNonce());
 
 		// main transport parameters
-		dataRequ.requStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
+		dataRequ.rrStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
 
 		return true;
 	}

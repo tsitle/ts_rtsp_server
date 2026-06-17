@@ -16,7 +16,7 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 
 	private boolean isKmdForLegacySdes = false;
 	private @Nullable SrtxpKmd kmd = null;
-	private @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
+	private @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

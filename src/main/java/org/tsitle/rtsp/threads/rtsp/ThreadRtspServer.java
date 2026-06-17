@@ -86,6 +86,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		this.fromCtorClientIpAddr.setIpAddr(rtspSocketTcp.getInetAddress());
+		this.fromCtorClientIpAddr.writeProtect();
 		this.fromCtorIsRtspsConnection = isRtspsConnection;
 
 		//
@@ -119,6 +120,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		//
 		this.rtspProtoRequestInputSvc = new RtspProtoRequestInputSvc(
 				logMsgInterface,
+				true,
 				rtspConfig.getLogLevel(),
 				cfgServerSupportedMessageTypes,
 				rtspConfig.getIsDebugPrintRtspRcvd(),
@@ -326,7 +328,10 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
 		RtspProtoDataRequest tmpDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequest(rtspSessionInfo.getClientIpAddr(), tmpDataRequ);
+		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient(
+				rtspSessionInfo.getClientIpAddr(),
+				tmpDataRequ
+			);
 
 		rtspProtoResponseOutputSvc.sendResponse(resObj, tmpDataRequ);
 		return resObj;

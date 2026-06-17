@@ -34,9 +34,9 @@ import java.util.*;
 final class RtspChildThreadMng {
 
 	static class ChildThreadsForOneStream {
-		final @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
-		final @NonNull RtspProtoIdInputSource idInputSource = new RtspProtoIdInputSource();
-		final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+		final @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
+		final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
+		final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 
 		ThreadRtpSenderBase<?, ?, ?, ?> rtpThreadSender;
 
@@ -74,7 +74,7 @@ final class RtspChildThreadMng {
 	private final Map<@NonNull RtspProtoIdStreamSource, @NonNull ChildThreadsForOneStream> childThreadsForOneStreamMap = new HashMap<>();
 
 	/** Input Source ID currently in use */
-	private final @NonNull RtspProtoIdInputSource usedIdInputSource = new RtspProtoIdInputSource();
+	private final @NonNull RtspProtoIdInputSource usedIdInputSource = RtspProtoIdInputSource.ofEmpty();
 
 	/**
 	 * Constructor.

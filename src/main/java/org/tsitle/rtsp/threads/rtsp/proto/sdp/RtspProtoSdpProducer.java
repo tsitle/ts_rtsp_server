@@ -10,16 +10,12 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtxpKmd;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoInputSource;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntAdStreamSett;
+import org.tsitle.rtsp.threads.rtsp.proto.misctypes.*;
 import org.tsitle.rtsp.threads.rtsp.proto.data_rr.RtspProtoDataCntSdp;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoIdStreamSourceNotFoundException;
 import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoSdpException;
 import org.tsitle.rtsp.threads.rtsp.proto.highlevel.RtspProtoHighConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoIpAddr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoKmdsStream;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdSubStream;
@@ -64,7 +60,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull String clientUserAgent,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoDataCntSdp outputSdp,
-				@NonNull RtspProtoDataCntAdStreamSett outputAdStreamSett,
+				@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
 				@NonNull RtspProtoKmdsStream outputKmdsOutbound
 			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForDescribe()";
@@ -164,7 +160,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,
 				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoDataCntAdStreamSett ioAdStreamSett,
+				@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
 				@Nullable RtspProtoKmdsStream ioKmdsOutbound
 			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpLines()";
@@ -243,7 +239,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull String clientUserAgent,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@Nullable RtspProtoKmdsStream ioKmdsOutbound,
-				@NonNull RtspProtoDataCntAdStreamSett ioAdStreamSett,
+				@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
 			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
@@ -264,7 +260,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		//
 		final RtspProtoIdSubStream tmpOutSubStreamId;
 		final long tmpOutRtspSsrcId;
-		Optional<RtspProtoDataCntAdStreamSett.SubStream> tmpInpAdSubStreamSetts = ioAdStreamSett.getSettingsByStreamSourceId(ssId);
+		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = ioAdStreamSett.getSettingsByStreamSourceId(ssId);
 		if (tmpInpAdSubStreamSetts.isPresent()) {
 			tmpOutSubStreamId = tmpInpAdSubStreamSetts.get().idSubStream;
 			tmpOutRtspSsrcId = tmpInpAdSubStreamSetts.get().ssrcId.getId32bit().orElse(-1L);
@@ -284,7 +280,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + tmpOutSubStreamId.getIdStr();
 
 		//
-		RtspProtoDataCntAdStreamSett.SubStream settSubStream = new RtspProtoDataCntAdStreamSett.SubStream();
+		RtspProtoAdSettingsForSubStream settSubStream = new RtspProtoAdSettingsForSubStream();
 		settSubStream.idStreamSource.copyFrom(ssId);
 		settSubStream.idSubStream.copyFrom(tmpOutSubStreamId);
 		try {

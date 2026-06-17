@@ -22,6 +22,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.network.RtspProtoLowMsgReader
 import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.response.RtspProtoLowResponseConsumer;
 import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConsumer;
 
+/**
+ * Service for receiving and processing RTSP responses over a TCP connection.
+ */
 public final class RtspProtoResponseInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -32,6 +35,16 @@ public final class RtspProtoResponseInputSvc {
 	private final RtspProtoLowResponseConsumer rtspProtoLowResponseConsumer;
 	private final RtspProtoHighResponseConsumer rtspProtoHighResponseConsumer;
 
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Log message handling instance
+	 * @param isResponseFromClient Is this a response sent by the client?
+	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
+	 * @param rtspSessionInfo RTSP session info
+	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param parameterNotifyInvalidInterface 'Notify invalid parameter' instance (can be null)
+	 * @param parameterNotifyRcvdInterface 'Notify received parameter' instance (can be null)
+	 */
 	public RtspProtoResponseInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
@@ -67,6 +80,14 @@ public final class RtspProtoResponseInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Receive a response.
+	 * @param requestMessageType The message type of the request that this response is for.
+	 * @return Basic response information
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws InputStreamNotReadyException If the input stream is not ready
+	 */
 	public @NonNull RtspResponseBasics receiveResponse(@NonNull RtspProtoMessageType requestMessageType)
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
@@ -90,7 +111,7 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		// load data from Session Info
-		RtspProtoIdSession currentIdSession = new RtspProtoIdSession();
+		RtspProtoIdSession currentIdSession = RtspProtoIdSession.ofEmpty();
 		RtspProtoDataCntCseqRespInp cseqRespInp = new RtspProtoDataCntCseqRespInp();
 		loadFromSessionInfo(currentIdSession, cseqRespInp);
 
@@ -138,8 +159,8 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		//
-		if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataResp.respIdSession.isEmpty())) {
-			rtspSessionInfo.setSessionId(dataResp.respIdSession);
+		if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataResp.rrIdSession.isEmpty())) {
+			rtspSessionInfo.setSessionId(dataResp.rrIdSession);
 		}
 
 		//

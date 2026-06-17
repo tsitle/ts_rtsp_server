@@ -19,7 +19,7 @@ import java.util.Optional;
 public class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
-	private final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 	private final @NonNull RtspSsMq mqSettings;
 	private final @NonNull String mqSslCertPath;
 

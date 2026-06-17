@@ -12,9 +12,9 @@ public final class RtspProtoRscUrl implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
-	public @NonNull RtspProtoIdInputSource idInputSource = new RtspProtoIdInputSource();
-	public @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
-	public @NonNull RtspProtoIdSubStream idSubStream = new RtspProtoIdSubStream();
+	public @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
+	public @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
+	public @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
 	private @NonNull String urlStr = "";
 
 	// -----------------------------------------------------------------------------------------------------------------

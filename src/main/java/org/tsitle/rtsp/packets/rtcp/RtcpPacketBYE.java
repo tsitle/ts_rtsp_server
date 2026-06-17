@@ -99,7 +99,7 @@ public final class RtcpPacketBYE {
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
 		int totalBytesRead = RtcpPacketHeader.HEADER_SIZE;
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
-			RtspProtoIdXsrc tmpSsrc = new RtspProtoIdXsrc();
+			RtspProtoIdXsrc tmpSsrc = RtspProtoIdXsrc.ofEmpty();
 			try {
 				tmpSsrc.setId32bit(Integer.toUnsignedLong(bb.getInt()));
 			} catch (RtspProtoNumberRangeException e) {

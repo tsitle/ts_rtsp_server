@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public final class RtspProtoHeaderTypeSession {
 
-	public final @NonNull RtspProtoIdSession idSession = new RtspProtoIdSession();
+	public final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 
 	/** Session timeout in seconds. -1 means no timeout. */
 	private long timeout32bit = -1L;

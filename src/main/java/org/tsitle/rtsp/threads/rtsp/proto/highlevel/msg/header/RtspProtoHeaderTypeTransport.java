@@ -15,7 +15,7 @@ public final class RtspProtoHeaderTypeTransport {
 	public @NonNull String tpSourceIpOrHost = "";
 
 	/** SSRC identifier for RTP/RTCP packets */
-	public final @NonNull RtspProtoIdXsrc tpSsrcId = new RtspProtoIdXsrc();
+	public final @NonNull RtspProtoIdXsrc tpSsrcId = RtspProtoIdXsrc.ofEmpty();
 
 	/** Mode (either PLAY or RECORD) */
 	public @NonNull RtspTransportMode tpMode = RtspTransportMode.NONE;

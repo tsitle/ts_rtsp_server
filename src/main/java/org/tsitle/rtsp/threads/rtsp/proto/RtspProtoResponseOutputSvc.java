@@ -27,6 +27,9 @@ import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoInvalidResponseExc
 
 import java.util.Optional;
 
+/**
+ * Service for sending RTSP responses over a TCP connection.
+ */
 public final class RtspProtoResponseOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -39,6 +42,21 @@ public final class RtspProtoResponseOutputSvc {
 	private final RtspProtoLowResponseProducer rtspProtoLowResponseProducer;
 	private final RtspProtoLowMsgWriter rtspProtoLowMsgWriter;
 
+	/**
+	 * Constructor.
+	 * @param logMsgInterface Log message handling instance
+	 * @param isResponseFromClient Is this a response being sent by the client?
+	 * @param cfgServerNameAndVersion Server software name and version
+	 * @param cfgContentLanguage Content language (can be empty)
+	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
+	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
+	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
+	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
+	 * @param rtspSessionInfo RTSP session info
+	 * @param availableStreamsInterface Available streams instance
+	 * @param globalSessionInfoInterface Global session info instance
+	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 */
 	public RtspProtoResponseOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
@@ -53,6 +71,10 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
+		if (cfgServerNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
+		}
+
 		this.logMsgInterface = logMsgInterface;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
@@ -98,6 +120,14 @@ public final class RtspProtoResponseOutputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Send a response.
+	 * @param rtspRequestBasics Basic information about the request that this response is for
+	 * @param inputDataRequ Input data from the request that this response is for
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws UdpSocketIoException If an I/O error occurs on the UDP socket
+	 * @throws TcpSocketIoException If an I/O error occurs on the TCP socket
+	 */
 	public void sendResponse(
 				@NonNull RtspRequestBasics rtspRequestBasics,
 				@NonNull RtspProtoDataRequest inputDataRequ
@@ -125,11 +155,11 @@ public final class RtspProtoResponseOutputSvc {
 
 			//
 			if (rtspRequestBasics.messageType == RtspProtoMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspProtoStatusCode.OK) {
-				if (ioDataResp.respServerIpFromRscUrl.isEmpty()) {
+				if (ioDataResp.rrServerIpFromRscUrl.isEmpty()) {
 					logError(FNC_NAME, "Server IP from Resource URL must be set");
 					return;
 				}
-				if (ioDataResp.respRscUrl.idInputSource.isEmpty()) {
+				if (ioDataResp.rrRscUrl.idInputSource.isEmpty()) {
 					logError(FNC_NAME, "Input Source ID must be set");
 					return;
 				}
@@ -169,11 +199,11 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
-		dataResp.respIdSession.copyFrom(rtspSessionInfo.getIdSession());
+		dataResp.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		//
 		dataResp.respAuthServer.copyFrom(rtspSessionInfo.getPermAuthServer());
 		//
-		dataResp.respStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
+		dataResp.rrStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
 		//
 		setupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
 	}

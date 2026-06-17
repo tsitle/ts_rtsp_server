@@ -104,7 +104,7 @@ public class RtspConfigStreamSource {
 		return (id == null ? -1 : id);
 	}
 	public @NonNull RtspProtoIdStreamSource getIdAsProtoId() {
-		RtspProtoIdStreamSource resObj = new RtspProtoIdStreamSource();
+		RtspProtoIdStreamSource resObj = RtspProtoIdStreamSource.ofEmpty();
 		resObj.setIdStr(Integer.toUnsignedString(getIdAsInt()));
 		resObj.writeProtect();
 		return resObj;

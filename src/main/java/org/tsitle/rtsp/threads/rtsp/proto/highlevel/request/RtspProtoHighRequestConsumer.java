@@ -71,13 +71,25 @@ public final class RtspProtoHighRequestConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Process a request.
+	 * @param currentIdSession Current Session ID
+	 * @param currentSessionState Current Session State
+	 * @param clientIpAddr Client's IP address - used for associating Sub-Stream IDs with a specific client (for requests from the server this can always be 127.0.0.1)
+	 * @param ioCseqRequ I/O for CSeq Nr.
+	 * @param ioSetupInfosStream I/O for stream setup info
+	 * @param inpStreamTpMain I/O for main stream transport settings
+	 * @param inputMsgStc Input message
+	 * @param outputDataRequ Output for request data
+	 * @return Basic request information
+	 */
 	public @NonNull RtspRequestBasics processRequest(
 				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoDataCntSessionState currentSessionState,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoDataCntCseqRequInp ioCseqRequ,
-				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
-				@NonNull RtspProtoDataCntSessionState inpSessionState,
+				@NonNull RtspProtoDataCntStreamTpMain inpStreamTpMain,
 				@NonNull RtspProtoHighMsgStructuredRequest inputMsgStc,
 				@NonNull RtspProtoDataRequest outputDataRequ
 			) {
@@ -99,8 +111,8 @@ public final class RtspProtoHighRequestConsumer {
 				FNC_NAME,
 				logMsgSuffix,
 				currentIdSession,
+				currentSessionState,
 				ioCseqRequ,
-				inpSessionState,
 				inputMsgStc,
 				outputDataRequ
 			);
@@ -109,9 +121,10 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		//
-		outputDataRequ.requIdSession.copyFrom(currentIdSession);
-		outputDataRequ.requRtspSessionState.copyFrom(inpSessionState);
-		outputDataRequ.requClientIpAddr.copyFrom(clientIpAddr);
+		outputDataRequ.rrIdSession.copyFrom(currentIdSession);
+		outputDataRequ.requRtspSessionState.copyFrom(currentSessionState);
+		outputDataRequ.rrClientIpAddr.copyFrom(clientIpAddr);
+		outputDataRequ.rrStreamTpMain.copyFrom(inpStreamTpMain);
 
 		// process resource URL
 		RtspProtoRscUrl rscUrlObj;
@@ -120,23 +133,20 @@ public final class RtspProtoHighRequestConsumer {
 					inputMsgStc.messageType,
 					inputMsgStc.resourceUrl,
 					clientIpAddr,
-					ioStreamTpMain
+					outputDataRequ.rrStreamTpMain
 				);
 		} catch (RtspProtoInvalidUriException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.FORBIDDEN);
-		} catch (RtspProtoIdInputSourceNotFoundException | RtspProtoIdStreamSourceNotFoundException |
-		         RtspProtoIdSubStreamNotFoundException e) {
+		} catch (RtspProtoInvalidRequestException | RtspProtoIdInputSourceNotFoundException |
+					RtspProtoIdStreamSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.NOT_FOUND);
-		} catch (RtspProtoInvalidRequestException e) {
-			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
-			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.INTERNAL_SERVER_ERROR);
 		}
 
 		// process resource URL query parameters
 		try {
-			processQueryParams(inputMsgStc, ioStreamTpMain);
+			processQueryParams(inputMsgStc, outputDataRequ.rrStreamTpMain);
 		} catch (RtspProtoInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.BAD_REQUEST);
@@ -147,7 +157,6 @@ public final class RtspProtoHighRequestConsumer {
 			processRemainingHeaders(
 					inputMsgStc,
 					rscUrlObj,
-					ioStreamTpMain,
 					ioSetupInfosStream,
 					outputDataRequ
 				);
@@ -177,7 +186,7 @@ public final class RtspProtoHighRequestConsumer {
 		// handle body
 		try {
 			handleBody(inputMsgStc.messageType, outputDataRequ);
-		} catch (RtspProtoUnknownRtspParamException e) {
+		} catch (RtspProtoRtspParamUnknownException e) {
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.INVALID_PARAMETER);
 		} catch (RtspProtoSdpException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
@@ -195,8 +204,8 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull String fncName,
 				@NonNull String logMsgSuffix,
 				@NonNull RtspProtoIdSession currentIdSession,
+				@NonNull RtspProtoDataCntSessionState currentSessionState,
 				@NonNull RtspProtoDataCntCseqRequInp cseqRequIo,
-				@NonNull RtspProtoDataCntSessionState inpSessionState,
 				@NonNull RtspProtoHighMsgStructuredRequest input,
 				@NonNull RtspProtoDataRequest outputDataRequ
 			) {
@@ -221,7 +230,7 @@ public final class RtspProtoHighRequestConsumer {
 		}
 		try {
 			// check whether the request is allowed in the current RTSP state
-			checkRequestTypeVsState(inpSessionState, input);
+			checkRequestTypeVsState(currentSessionState, input);
 		} catch (RtspProtoInvalidRequestException e) {
 			logWarn(fncName, e.getMessage() + logMsgSuffix);
 			return RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE;
@@ -248,21 +257,25 @@ public final class RtspProtoHighRequestConsumer {
 		if (tmpOptCseq.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("Missing CSeq header");
 		}
+		final long tmpRcvdCseq = tmpOptCseq.get();
 		try {
-			cseqRequIo.cseqNr_lastRcvd.setCseq32bit(tmpOptCseq.get());
+			cseqRequIo.cseqNr_lastRcvd.setCseq32bit(tmpRcvdCseq);
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
 		}
-		final long tmpLast = cseqRequIo.cseqNr_lastRcvd.getCseq32bit().orElse(-1L);
 		final long tmpExp = cseqRequIo.cseqNr_expected.getCseq32bit().orElse(-1L);
-		if (tmpLast > tmpExp) {
-			cseqRequIo.cseqNr_expected.copyFrom(cseqRequIo.cseqNr_lastRcvd);
-		} else if (tmpLast < tmpExp) {
+		if (tmpRcvdCseq > tmpExp) {
+			try {
+				cseqRequIo.cseqNr_expected.setCseq32bit(tmpRcvdCseq);
+			} catch (RtspProtoNumberRangeException e) {
+				// this will never happen
+			}
+		} else if (tmpRcvdCseq < tmpExp) {
 			throw new RtspProtoInvalidRequestException("Invalid CSeq value");
 		}
 
 		//
-		outputDataRequ.setCseqNrLastRcvd(cseqRequIo.cseqNr_lastRcvd);
+		outputDataRequ.rrCseqNrLastRcvd.copyFrom(cseqRequIo.cseqNr_lastRcvd);
 
 		//
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
@@ -273,9 +286,9 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoHighMsgStructuredRequest input
 			) throws RtspProtoInvalidRequestException {
 		switch (input.messageType) {
-			case RtspProtoMessageType.PLAY:
-			case RtspProtoMessageType.PAUSE:
 			case RtspProtoMessageType.GET_PARAMETER:
+			case RtspProtoMessageType.PAUSE:
+			case RtspProtoMessageType.PLAY:
 			case RtspProtoMessageType.SET_PARAMETER:
 			case RtspProtoMessageType.TEARDOWN:
 				Optional<RtspProtoIdSession> tmpOptSessionId = input.getHeaderSessionId();
@@ -302,19 +315,20 @@ public final class RtspProtoHighRequestConsumer {
 	}
 
 	private void checkRequestTypeVsState(
-				@NonNull RtspProtoDataCntSessionState inpSessionState,
+				@NonNull RtspProtoDataCntSessionState currentSessionState,
 				@NonNull RtspProtoHighMsgStructuredRequest input
 			) throws RtspProtoInvalidRequestException {
-		if (input.messageType == RtspProtoMessageType.OPTIONS ||
-				input.messageType == RtspProtoMessageType.DESCRIBE ||
-				input.messageType == RtspProtoMessageType.SETUP ||
+		if (input.messageType == RtspProtoMessageType.DESCRIBE ||
 				input.messageType == RtspProtoMessageType.GET_PARAMETER ||
-				input.messageType == RtspProtoMessageType.SET_PARAMETER) {
+				input.messageType == RtspProtoMessageType.OPTIONS ||
+				input.messageType == RtspProtoMessageType.REDIRECT ||
+				input.messageType == RtspProtoMessageType.SET_PARAMETER ||
+				input.messageType == RtspProtoMessageType.SETUP) {
 			return;
 		}
 
 		boolean wasOk = false;
-		switch (inpSessionState.getSessionState()) {
+		switch (currentSessionState.getSessionState()) {
 			case READY:
 				if (input.messageType == RtspProtoMessageType.PLAY ||
 						input.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
@@ -331,7 +345,7 @@ public final class RtspProtoHighRequestConsumer {
 
 		if (! wasOk) {
 			throw new RtspProtoInvalidRequestException(String.format("Request %s not valid for current RTSP state %s",
-					input.messageType, inpSessionState.getSessionState()));
+					input.messageType, currentSessionState.getSessionState()));
 		}
 	}
 
@@ -343,7 +357,8 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException, RtspProtoInvalidUriException,
-			RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdStreamSourceNotFoundException {
+					RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException,
+					RtspProtoIdStreamSourceNotFoundException {
 		if (ioStreamTpMain.getIsRtspsConnection() && ! resourceUrlStr.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://")) {
 			throw new RtspProtoInvalidUriException("Invalid URL for RTSPS");
 		}
@@ -380,10 +395,10 @@ public final class RtspProtoHighRequestConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void processQueryParams(
-				@NonNull RtspProtoHighMsgStructuredRequest input,
+				@NonNull RtspProtoHighMsgStructuredRequest inputMsgStc,
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException {
-		for (Map.Entry<@NonNull String, @NonNull String> entry : input.queryParams.entrySet()) {
+		for (Map.Entry<@NonNull String, @NonNull String> entry : inputMsgStc.queryParams.entrySet()) {
 			if (! entry.getKey().equalsIgnoreCase(RtspProtoHighConstants.URL_QUERY_PARAM_SRTP)) {
 				continue;
 			}
@@ -402,10 +417,10 @@ public final class RtspProtoHighRequestConsumer {
 	private void processRemainingHeaders(
 				@NonNull RtspProtoHighMsgStructuredRequest input,
 				@NonNull RtspProtoRscUrl rscUrlObj,
-				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws RtspProtoInvalidRequestException, RtspProtoUnsupportedTransportException, RtspProtoUnsupportedFeatureRequestedException {
+			) throws RtspProtoInvalidRequestException, RtspProtoUnsupportedTransportException,
+					RtspProtoUnsupportedFeatureRequestedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryRequest> entry : input.headers.entrySet()) {
@@ -434,7 +449,7 @@ public final class RtspProtoHighRequestConsumer {
 								input.messageType,
 								rscUrlObj,
 								entry.getValue(),
-								ioStreamTpMain,
+								outputDataRequ.rrStreamTpMain,
 								ioSetupInfosStream
 							);
 				case RtspHeaderKey.USERAGENT -> processHeader_com_useragent(entry.getValue(), outputDataRequ);
@@ -835,7 +850,7 @@ public final class RtspProtoHighRequestConsumer {
 				if (contentType != RtspMimeType.PARAMETERS) {
 					throw new RtspProtoInvalidRequestException("Content-Type for GET_PARAMETER message must be PARAMETERS");
 				}
-				outputDataRequ.requGetParamNames.copyFrom(input.bodyGetParamNames);
+				outputDataRequ.rrGetParamNames.copyFrom(input.bodyGetParamNames);
 				break;
 			case SET_PARAMETER:
 				if (contentType != RtspMimeType.PARAMETERS) {
@@ -862,7 +877,7 @@ public final class RtspProtoHighRequestConsumer {
 	private void handleBody(
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws RtspProtoUnknownRtspParamException, RtspProtoSdpException {
+			) throws RtspProtoRtspParamUnknownException, RtspProtoSdpException {
 		switch (messageType) {
 			case ANNOUNCE:
 				handleBody_announce(outputDataRequ);
@@ -877,30 +892,54 @@ public final class RtspProtoHighRequestConsumer {
 		sdpConsumerInterface.parseUpdatedSdpFromAnnounce(outputDataRequ.requAnnouncedSdp);
 	}
 
-	private void handleBody_setParameter(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoUnknownRtspParamException {
+	private void handleBody_setParameter(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoRtspParamUnknownException {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleBody_setParameter()";
 
 		if (outputDataRequ.requSetParamValues.isParamKvsEmpty()) {
 			return;
 		}
 		if (parameterSetterInterface == null) {
-			outputDataRequ.requInvalidParamNames.putAllParamNames(outputDataRequ.requSetParamValues.getParamKvsKeySet());
+			outputDataRequ.rrInvalidParamNames.putAllParamNames(outputDataRequ.requSetParamValues.getParamKvsKeySet());
 			logWarn(FNC_NAME, "RtspProtoParameterSetterInterface is not set");
-			throw new RtspProtoUnknownRtspParamException("all params");
+			throw new RtspProtoRtspParamUnknownException("all params");
 		}
 
+		outputDataRequ.rrInvalidParamNames.clear();
+
+		// if one of the parameters cannot be set, the entire request needs to be rejected
 		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
 			try {
-				parameterSetterInterface.setRtspParameter(
-						outputDataRequ.requIdSession,
+				parameterSetterInterface.testSettingRtspParameter(
+						outputDataRequ.rrIdSession,
 						outputDataRequ.requSetParamValues.getContentLang(),
 						entry.getKey(),
 						entry.getValue()
 					);
-			} catch (RtspProtoUnknownRtspParamException e) {
-				outputDataRequ.requInvalidParamNames.putParamName(entry.getKey());
-				logWarn(FNC_NAME, "Unknown parameter: " + entry.getKey());
-				throw new RtspProtoUnknownRtspParamException(entry.getKey());
+			} catch (RtspProtoRtspParamUnknownException e) {
+				outputDataRequ.rrInvalidParamNames.putParamName(entry.getKey());
+				logWarn(FNC_NAME, "Unknown parameter: '" + entry.getKey() + "'");
+			} catch (RtspProtoRtspParamInvalidValueException e) {
+				outputDataRequ.rrInvalidParamNames.putParamName(entry.getKey());
+				logWarn(FNC_NAME, "Invalid value for parameter key='" + entry.getKey() + "': '" + entry.getValue() + "'");
+			}
+		}
+		if (! outputDataRequ.rrInvalidParamNames.isParamNamesEmpty()) {
+			throw new RtspProtoRtspParamUnknownException(
+					String.join(", ", outputDataRequ.rrInvalidParamNames.getParamNames())
+				);
+		}
+
+		//
+		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
+			try {
+				parameterSetterInterface.setRtspParameter(
+						outputDataRequ.rrIdSession,
+						outputDataRequ.requSetParamValues.getContentLang(),
+						entry.getKey(),
+						entry.getValue()
+					);
+			} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
+				// this cannot happen
 			}
 		}
 	}

@@ -186,7 +186,7 @@ public final class RtcpInnerXsrcBlock implements Cloneable {
 	public static @NonNull RtcpInnerXsrcBlock decodeFromBuffer(int itemNr, @NonNull ByteBuffer bb) {
 		int totalBytesRead = 0;
 
-		RtspProtoIdXsrc xsrcId = new RtspProtoIdXsrc();
+		RtspProtoIdXsrc xsrcId = RtspProtoIdXsrc.ofEmpty();
 		try {
 			xsrcId.setId32bit(Integer.toUnsignedLong(bb.getInt()));
 		} catch (RtspProtoNumberRangeException e) {

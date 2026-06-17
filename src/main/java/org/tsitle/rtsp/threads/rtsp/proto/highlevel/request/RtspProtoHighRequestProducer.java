@@ -49,7 +49,7 @@ public final class RtspProtoHighRequestProducer {
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
-		if (inputDataRequ.requRscUrl.isEmpty()) {
+		if (inputDataRequ.rrRscUrl.isEmpty()) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 		}
 
@@ -63,7 +63,7 @@ public final class RtspProtoHighRequestProducer {
 		resObj.messageType = requestMessageType;
 
 		//
-		resObj.resourceUrl = inputDataRequ.requRscUrl.getUrlStr();
+		resObj.resourceUrl = inputDataRequ.rrRscUrl.getUrlStr();
 
 		//
 		addCommonHeaders(inputDataRequ, resObj);
@@ -74,7 +74,7 @@ public final class RtspProtoHighRequestProducer {
 			case DESCRIBE -> buildRequest_describe(resObj);
 			case GET_PARAMETER -> buildRequest_getParameter(inputDataRequ, resObj);
 			case OPTIONS -> buildRequest_options(resObj);
-			case PAUSE -> buildRequest_pause(resObj);
+			case PAUSE -> buildRequest_pause();
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
 			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, idSubStream, resObj);
@@ -111,17 +111,17 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
-		if (inputDataRequ.requClientIpAddr.isEmpty()) {
+		if (inputDataRequ.rrClientIpAddr.isEmpty()) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Client IP address must be set");
 		}
 
 		try {
 			sdpProducerInterface.buildUpdatedSdpForAnnounce(
-					inputDataRequ.requStreamTpMain.isSrtpRequired(),
-					inputDataRequ.requRscUrl.idInputSource,
-					inputDataRequ.requServerIpFromRscUrl,
+					inputDataRequ.rrStreamTpMain.isSrtpRequired(),
+					inputDataRequ.rrRscUrl.idInputSource,
+					inputDataRequ.rrServerIpFromRscUrl,
 					inputDataRequ.getClientUa(),
-					inputDataRequ.requClientIpAddr,
+					inputDataRequ.rrClientIpAddr,
 					kmdsOutbound,
 					output.bodyAnnounceSdp
 				);
@@ -138,7 +138,7 @@ public final class RtspProtoHighRequestProducer {
 
 		// Content-Base
 		{
-			String tmpRscUrl = inputDataRequ.requRscUrl.getUrlStr();
+			String tmpRscUrl = inputDataRequ.rrRscUrl.getUrlStr();
 			if (tmpRscUrl.isBlank()) {
 				throw new RtspProtoInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 			}
@@ -184,10 +184,10 @@ public final class RtspProtoHighRequestProducer {
 		 *   "jitter"
 		 */
 
-		if (inputDataRequ.requGetParamNames.isParamNamesEmpty()) {
+		if (inputDataRequ.rrGetParamNames.isParamNamesEmpty()) {
 			return;
 		}
-		output.bodyGetParamNames.copyFrom(inputDataRequ.requGetParamNames);
+		output.bodyGetParamNames.copyFrom(inputDataRequ.rrGetParamNames);
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
 		addContentTypeHeader(output);
 	}
@@ -196,14 +196,15 @@ public final class RtspProtoHighRequestProducer {
 		/*
 		 * Example:
 		 *   "OPTIONS rtsp://example.com/fizzle/foo RTSP/1.0"
-		 *   "CSeq: 2"
-		 *   "User-Agent: LibVLC/3.0.23 (LIVE555 Streaming Media v2020.11.05)"
+		 *   ...
+		 *   "Require: implicit-play"
+		 *   "Proxy-Require: gzipped-messages"
 		 */
 
-		// nothing to do
+		// @TODO set some headers
 	}
 
-	private void buildRequest_pause(@NonNull RtspProtoHighMsgStructuredRequest output) {
+	private void buildRequest_pause() {
 		/*
 		 * Example:
 		 *   "PAUSE rtsp://example.com/fizzle/foo/ RTSP/1.0"
@@ -235,7 +236,9 @@ public final class RtspProtoHighRequestProducer {
 		throw new RtspProtoInvalidRequestException(FNC_NAME + ": PLAY is not supported yet");
 	}
 
-	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) {
+	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_redirect()";
+
 		/*
 		 * A redirect request informs the client that it must connect to another
 		 * server location. It contains the mandatory header Location, which
@@ -255,6 +258,9 @@ public final class RtspProtoHighRequestProducer {
 		 */
 
 		// @TODO set some headers
+
+		logError(FNC_NAME, "REDIRECT is not supported yet");
+		throw new RtspProtoInvalidRequestException(FNC_NAME + ": REDIRECT is not supported yet");
 	}
 
 	private void buildRequest_setParameter(
@@ -376,9 +382,9 @@ public final class RtspProtoHighRequestProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
-		if (! inputDataRequ.requIdSession.isEmpty()) {
+		if (! inputDataRequ.rrIdSession.isEmpty()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
-			hdEntry.hdValSession.idSession.copyFrom(inputDataRequ.requIdSession);
+			hdEntry.hdValSession.idSession.copyFrom(inputDataRequ.rrIdSession);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)

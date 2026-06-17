@@ -79,7 +79,7 @@ final class ResourceUrlProcessorNg {
 		 */
 
 		if (! resObj.idSubStream.isEmpty()) {
-			RtspProtoIdInputSource tmpIdIs = new RtspProtoIdInputSource();
+			RtspProtoIdInputSource tmpIdIs = RtspProtoIdInputSource.ofEmpty();
 			tmpIdIs.copyFrom(
 					// this also checks if the Sub-Stream ID exists
 					globalSessionInfoInterface.getInputSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)

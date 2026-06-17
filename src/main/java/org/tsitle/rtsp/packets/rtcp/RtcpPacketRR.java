@@ -86,7 +86,7 @@ public final class RtcpPacketRR {
 
 		// Parse payload fields
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
-		this.hdSsrcSender = new RtspProtoIdXsrc();
+		this.hdSsrcSender = RtspProtoIdXsrc.ofEmpty();
 		try {
 			this.hdSsrcSender.setId32bit(Integer.toUnsignedLong(bb.getInt()));
 		} catch (RtspProtoNumberRangeException e) {

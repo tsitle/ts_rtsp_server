@@ -30,7 +30,7 @@ public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 	}
 
 	public @NonNull String toStringWithNUT(@NonNull String nudTypeStr) {
-		return getClass().getSimpleName() + "[" +
+		return getClass().getSimpleName() + " [" +
 				"internalId=" + Long.toUnsignedString(internalId) +
 				", nudType=" + nudTypeStr +
 				", h26xInfo=" + (h26xInfo == null ? "NULL" : h26xInfo.toString(true)) +

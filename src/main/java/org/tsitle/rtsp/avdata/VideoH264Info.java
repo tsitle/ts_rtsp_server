@@ -145,8 +145,7 @@ public final class VideoH264Info extends CodecInfoH26xBase<VideoH264Info> implem
 
 	@Override
 	public @NonNull String toString() {
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				super.getToStringFields() +
 				", TypeEn=" + nalUnitTypeEn +
 				String.format(", RefIdc=0x%02X", nuhRefIdc) +
@@ -158,8 +157,7 @@ public final class VideoH264Info extends CodecInfoH26xBase<VideoH264Info> implem
 		if (! shortOutput) {
 			return toString();
 		}
-		return getClass().getSimpleName() +
-				"[" +
+		return getClass().getSimpleName() + " [" +
 				super.getToStringShortFields() +
 				String.format(" (en=%s)", nalUnitTypeEn) +
 				"]";

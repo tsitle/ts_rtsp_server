@@ -10,7 +10,7 @@ import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
 public abstract class AvStreamIncomingBase implements AutoCloseable {
 
 	protected final @Nullable LogMsgInterface logMsgInterface;
-	protected final @NonNull RtspProtoIdStreamSource idStreamSource = new RtspProtoIdStreamSource();
+	protected final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 
 	protected boolean haveEos = false;
 
