@@ -5,7 +5,7 @@ plugins {
 	id("com.google.osdetector") version "1.7.3"  // see https://github.com/google/osdetector-gradle-plugin
 }
 
-group = "org.tsitle.rtsp"
+group = "org.tsitle.rtsp_server"
 version = "1.0"
 
 val propProjName = rootProject.name  // from 'settings.gradle.kts'
