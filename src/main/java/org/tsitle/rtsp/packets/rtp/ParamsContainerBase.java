@@ -1,9 +1,9 @@
 package org.tsitle.rtsp.packets.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 public final class ParamsContainerBase {
 

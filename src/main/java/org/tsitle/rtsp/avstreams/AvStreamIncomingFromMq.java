@@ -10,7 +10,7 @@ import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.mq.MqInternalSub;
 import org.tsitle.rtsp.mq.mqdata.MqPacketAv;
 import org.tsitle.rtsp.threads.LogMsgInterface;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.net.URI;
 import java.util.Optional;

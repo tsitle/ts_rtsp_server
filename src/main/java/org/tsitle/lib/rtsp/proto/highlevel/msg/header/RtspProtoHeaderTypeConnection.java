@@ -1,0 +1,15 @@
+package org.tsitle.lib.rtsp.proto.highlevel.msg.header;
+
+import org.jspecify.annotations.NonNull;
+import org.tsitle.lib.rtsp.proto.lowlevel.RtspConnectionPolicy;
+
+public final class RtspProtoHeaderTypeConnection {
+
+	public @NonNull RtspConnectionPolicy connectionPol = RtspConnectionPolicy.NONE;
+
+	@Override
+	public @NonNull String toString() {
+		return "[connectionPol=" + connectionPol + "]";
+	}
+
+}

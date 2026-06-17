@@ -6,9 +6,9 @@ import org.tsitle.rtsp.avdata.AudioAacParser;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

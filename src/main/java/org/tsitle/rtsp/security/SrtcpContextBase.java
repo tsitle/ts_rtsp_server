@@ -6,7 +6,7 @@ import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.rtsp.packets.rtcp.RtcpPacketSR;
 import org.tsitle.rtsp.security.constants.KeySizes;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

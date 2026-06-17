@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.security.constants.KeySizes;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;

@@ -5,8 +5,8 @@ import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import static org.junit.jupiter.api.Assertions.*;
 

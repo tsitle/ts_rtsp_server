@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.helpers;
 
 import org.tsitle.rtsp.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.rtsp.threads.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
+import org.tsitle.lib.rtsp.proto.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.net.*;
 import java.util.Arrays;

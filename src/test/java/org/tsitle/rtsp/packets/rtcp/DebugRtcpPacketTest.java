@@ -6,7 +6,7 @@ import org.tsitle.rtsp.security.MikeyGenerator;
 import org.tsitle.rtsp.security.SrtcpContextInbound;
 import org.tsitle.rtsp.security.SrtcpContextOutbound;
 import org.tsitle.rtsp.security.SrtxpKmd;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

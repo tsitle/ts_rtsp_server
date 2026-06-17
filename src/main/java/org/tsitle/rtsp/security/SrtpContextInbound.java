@@ -7,8 +7,8 @@ import org.tsitle.rtsp.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.rtsp.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.rtsp.exceptions.SrtxpSecurityException;
 import org.tsitle.rtsp.packets.rtp.RtpEncryptedPacket;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 /**
  * Context for inbound SRTP packet decryption according to RFC-3711 Section 3.1

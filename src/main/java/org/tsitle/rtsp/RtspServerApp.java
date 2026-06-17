@@ -15,8 +15,8 @@ import org.tsitle.rtsp.threads.logging.RtxpLogger;
 import org.tsitle.rtsp.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
 import org.tsitle.rtsp.threads.rtsp.ThreadRtspServer;
-import org.tsitle.rtsp.threads.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.RtspProtoGlobalSessionInfoSvc;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;

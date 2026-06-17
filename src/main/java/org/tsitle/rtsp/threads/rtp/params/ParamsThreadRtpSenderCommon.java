@@ -4,10 +4,10 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.packets.rtcp.RtcpInnerXsrcBlock;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.rtsp.helpers.TimestampEpochNs;
 
 import java.net.URI;

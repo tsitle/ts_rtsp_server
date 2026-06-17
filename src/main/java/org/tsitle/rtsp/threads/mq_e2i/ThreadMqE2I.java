@@ -12,7 +12,7 @@ import org.tsitle.rtsp.exceptions.MqException;
 import org.tsitle.rtsp.helpers.CancelToken;
 import org.tsitle.rtsp.threads.LogMsgInterface;
 import org.tsitle.rtsp.threads.RunnableBase;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.util.Optional;
 

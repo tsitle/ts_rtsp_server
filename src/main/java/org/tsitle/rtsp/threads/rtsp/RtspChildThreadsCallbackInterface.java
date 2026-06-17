@@ -2,8 +2,8 @@ package org.tsitle.rtsp.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.time.Instant;
 

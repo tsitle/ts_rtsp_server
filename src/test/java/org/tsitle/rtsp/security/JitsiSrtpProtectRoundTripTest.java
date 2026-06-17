@@ -3,8 +3,8 @@ package org.tsitle.rtsp.security;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.rtsp.buffers.BufferExt;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
 
 import java.util.Arrays;
 import java.util.logging.Level;

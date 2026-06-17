@@ -2,8 +2,8 @@ package org.tsitle.rtsp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.helpers.NtpTimestamp;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;

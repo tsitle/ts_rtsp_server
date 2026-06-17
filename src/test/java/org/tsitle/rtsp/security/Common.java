@@ -7,10 +7,10 @@ import org.tsitle.rtsp.packets.rtp.ParamsContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.rtsp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp.security.constants.KeySizes;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.helpers;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Instant;
 import java.util.Objects;

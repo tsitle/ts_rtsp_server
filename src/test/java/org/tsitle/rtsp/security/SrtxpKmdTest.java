@@ -2,8 +2,8 @@ package org.tsitle.rtsp.security;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.*;
 

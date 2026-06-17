@@ -6,8 +6,8 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp.threads.logging.RtxpLogLevel;
 import org.tsitle.rtsp.threads.rtsp.RtspServerConstants;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdInputSource;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdInputSource;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdStreamSource;
 
 import java.net.URI;
 import java.nio.file.Path;

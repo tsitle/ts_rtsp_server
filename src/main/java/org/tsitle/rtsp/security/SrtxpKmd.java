@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp.buffers.BufferExt;
 import org.tsitle.rtsp.helpers.RandomHelper;
 import org.tsitle.rtsp.security.constants.KeySizes;
-import org.tsitle.rtsp.threads.rtsp.proto.ids.RtspProtoIdXsrc;
+import org.tsitle.lib.rtsp.proto.ids.RtspProtoIdXsrc;
 
 import java.util.Objects;
 

@@ -14,12 +14,12 @@ import org.tsitle.rtsp.packets.rtcp.*;
 import org.tsitle.rtsp.packets.rtp.*;
 import org.tsitle.rtsp.security.SrtpContextOutbound;
 import org.tsitle.rtsp.security.SrtxpKmd;
-import org.tsitle.rtsp.threads.rtsp.proto.RtxpTcpReadWrite;
+import org.tsitle.lib.rtsp.proto.RtxpTcpReadWrite;
 import org.tsitle.rtsp.threads.ThreadPausableBase;
 import org.tsitle.rtsp.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
-import org.tsitle.rtsp.threads.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib.rtsp.proto.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.rtsp.helpers.TimestampEpochNs;
 
 import java.io.IOException;

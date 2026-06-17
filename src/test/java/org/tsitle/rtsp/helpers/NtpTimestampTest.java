@@ -1,7 +1,7 @@
 package org.tsitle.rtsp.helpers;
 
 import org.junit.jupiter.api.Test;
-import org.tsitle.rtsp.threads.rtsp.proto.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib.rtsp.proto.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Duration;
 import java.time.Instant;

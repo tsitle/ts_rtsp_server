@@ -7,7 +7,7 @@ import org.tsitle.rtsp.buffers.BufferView;
 import org.tsitle.rtsp.exceptions.BitReaderEosException;
 import org.tsitle.rtsp.helpers.BitReaderHelper;
 import org.tsitle.rtsp.helpers.BitWriterHelper;
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConstants;
+import org.tsitle.lib.rtsp.proto.sdp.RtspProtoSdpConstants;
 
 /**
  * RTP Packet Payload for AAC.<br />

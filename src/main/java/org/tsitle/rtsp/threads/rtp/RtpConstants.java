@@ -1,6 +1,6 @@
 package org.tsitle.rtsp.threads.rtp;
 
-import org.tsitle.rtsp.threads.rtsp.proto.sdp.RtspProtoSdpConstants;
+import org.tsitle.lib.rtsp.proto.sdp.RtspProtoSdpConstants;
 
 public final class RtpConstants {
 
