@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_rtsp_mq.common.constants.MqConstants;
 import org.tsitle.rtsp_server.exceptions.*;
 
 import java.net.URI;
@@ -9,15 +10,7 @@ import java.net.URI;
 /**
  * Message Queue settings within a Stream Source.
  */
-public class RtspSsMq implements Cloneable {
-
-	public static final String MQ_URL_PATH_PREFIX = "openMq/";
-	public static final String MQ_URL_PATH_SUFFIX = ".mq";
-
-	public static final String MQ_RSC_CHANNEL_RECV_VIDEO_LONG = "r_video";
-	public static final String MQ_RSC_CHANNEL_RECV_VIDEO_SHORT = "RV";
-	public static final String MQ_RSC_CHANNEL_RECV_AUDIO_LONG = "r_audio";
-	public static final String MQ_RSC_CHANNEL_RECV_AUDIO_SHORT = "RA";
+public final class RtspConfigSsMq implements Cloneable {
 
 	/** Username and password for the Message Queue, separated by a colon */
 	@Expose
@@ -32,7 +25,7 @@ public class RtspSsMq implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
 
-	public RtspSsMq() {
+	public RtspConfigSsMq() {
 		this.userAndPassword = "";
 		this.hostAndPort = "";
 		this.resourceGroupAndChannel = "";
@@ -45,7 +38,7 @@ public class RtspSsMq implements Cloneable {
 		checkPostProcessed();
 		String tmpRscGrpAndChan = resourceGroupAndChannel.replace(":", "/");
 		return URI.create("https://" + hostAndPort + "/" +
-				MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MQ_URL_PATH_SUFFIX);
+				MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX);
 	}
 
 	public @NonNull String getHost() {
@@ -84,8 +77,8 @@ public class RtspSsMq implements Cloneable {
 	public @NonNull String getRscChannel() {
 		checkPostProcessed();
 		return resourceGroupAndChannel.split(":")[1]
-				.replace(MQ_RSC_CHANNEL_RECV_VIDEO_LONG, MQ_RSC_CHANNEL_RECV_VIDEO_SHORT)
-				.replace(MQ_RSC_CHANNEL_RECV_AUDIO_LONG, MQ_RSC_CHANNEL_RECV_AUDIO_SHORT);
+				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_LONG, MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_SHORT)
+				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_LONG, MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_SHORT);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -163,9 +156,9 @@ public class RtspSsMq implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSsMq clone() {
+	public @NonNull RtspConfigSsMq clone() {
 		try {
-			RtspSsMq clone = (RtspSsMq)super.clone();
+			RtspConfigSsMq clone = (RtspConfigSsMq)super.clone();
 			//
 			//noinspection StringOperationCanBeSimplified
 			clone.userAndPassword = new String(userAndPassword);

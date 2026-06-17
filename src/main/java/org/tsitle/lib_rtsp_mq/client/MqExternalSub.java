@@ -1,13 +1,13 @@
-package org.tsitle.lib_xrtxp.mq.client;
+package org.tsitle.lib_rtsp_mq.client;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.mq.common.MqMsgHandlerFactory;
-import org.tsitle.rtsp.config.RtspSsMq;
-import org.tsitle.rtsp.exceptions.MqException;
-import org.tsitle.lib_xrtxp.mq.common.httpdata.HttpResponseOpenMq;
+import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.common.MqMsgHandlerFactory;
+import org.tsitle.lib_rtsp_mq.common.httpdata.HttpResponseOpenMq;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.mq.common.MqReceiverSubBase;
+import org.tsitle.lib_rtsp_mq.common.MqReceiverSubBase;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 
@@ -24,13 +24,13 @@ public class MqExternalSub extends MqReceiverSubBase {
 	private static class MqSettingsExtended {
 		boolean haveSettings = false;
 
-		final @NonNull RtspSsMq settsBasic;
+		final @NonNull MqStreamSourceSettings settsBasic;
 		@NonNull String serverEndpoint = "";
 		@NonNull String serverPublicKeyZ85 = "";
 		boolean isEncrypted = true;
 		boolean areMsgsSegmented = false;
 
-		MqSettingsExtended(@NonNull RtspSsMq mqSettingsBasic) {
+		MqSettingsExtended(@NonNull MqStreamSourceSettings mqSettingsBasic) {
 			this.settsBasic = mqSettingsBasic.clone();
 		}
 	}
@@ -54,7 +54,7 @@ public class MqExternalSub extends MqReceiverSubBase {
 	 */
 	public MqExternalSub(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspSsMq mqSettings,
+				@NonNull MqStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, DO_VALIDATE_PAYLOAD, false);
@@ -116,8 +116,8 @@ public class MqExternalSub extends MqReceiverSubBase {
 					"MQ HTTP server '" + mqHttpUrl + "': " + e.getMessage());
 		}
 
-		final String tmpMqHostOnly = mqSettingsExtended.settsBasic.getHost();
-		mqSettingsExtended.serverEndpoint = "tcp://" + tmpMqHostOnly + ":" + responseOpenMq.mqPort();
+		final String tmpMqHostOnly = mqSettingsExtended.settsBasic.getHostname();
+		mqSettingsExtended.serverEndpoint = "tcp://" + tmpMqHostOnly + ":" + Integer.toUnsignedString(responseOpenMq.mqPort());
 		mqSettingsExtended.serverPublicKeyZ85 = decodeHexString(responseOpenMq.mqServerPubKey());
 		mqSettingsExtended.isEncrypted = responseOpenMq.mqEncrypted();
 		mqSettingsExtended.areMsgsSegmented = responseOpenMq.mqMsgSegmented();

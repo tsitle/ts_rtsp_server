@@ -1,8 +1,7 @@
-package org.tsitle.rtsp_server.threads.rtsp.ssl;
+package org.tsitle.lib_xrtxp.ssl;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp_server.exceptions.SslException;
 
 import javax.net.ssl.*;
 import java.io.IOException;

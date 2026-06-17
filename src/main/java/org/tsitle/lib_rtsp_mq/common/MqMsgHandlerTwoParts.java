@@ -1,11 +1,11 @@
-package org.tsitle.lib_xrtxp.mq.common;
+package org.tsitle.lib_rtsp_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.rtsp.exceptions.MqException;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketAv;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketCodec;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.zeromq.ZMQ;
 
 import java.nio.BufferUnderflowException;

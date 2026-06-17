@@ -2,13 +2,13 @@ package org.tsitle.rtsp_server.threads.mq_e2i;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp_server.config.RtspSsMq;
-import org.tsitle.lib_xrtxp.mq.client.MqExternalSub;
-import org.tsitle.lib_xrtxp.mq.common.MqInternalPub;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqCodecSettings;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.client.MqExternalSub;
+import org.tsitle.lib_rtsp_mq.common.MqInternalPub;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqCodecSettings;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.rtsp_server.exceptions.MqException;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.RunnableBase;
@@ -20,7 +20,7 @@ public class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
 	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
-	private final @NonNull RtspSsMq mqSettings;
+	private final @NonNull MqStreamSourceSettings mqSettings;
 	private final @NonNull String mqSslCertPath;
 
 	private final String threadName;
@@ -44,7 +44,7 @@ public class ThreadMqE2I extends RunnableBase {
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
 				@NonNull RtspProtoIdStreamSource idStreamSource,
-				@NonNull RtspSsMq mqSettings,
+				@NonNull MqStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, cancelToken);
@@ -57,7 +57,7 @@ public class ThreadMqE2I extends RunnableBase {
 		this.mqSslCertPath = mqSslCertPath;
 
 		this.threadName = String.format("MQE2I#ss%s#%s:%s:%s",
-				idStreamSource.getIdStr(), mqSettings.getHost(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
+				idStreamSource.getIdStr(), mqSettings.getHostname(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
 
 		//
 		mqInternalPub = new MqInternalPub(logMsgInterface, idStreamSource);

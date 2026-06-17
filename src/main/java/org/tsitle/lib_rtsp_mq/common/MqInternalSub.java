@@ -1,9 +1,11 @@
-package org.tsitle.lib_xrtxp.mq.common;
+package org.tsitle.lib_rtsp_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.exceptions.MqException;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelId;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelName;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.zeromq.ZMQ;
 
@@ -41,8 +43,8 @@ public class MqInternalSub extends MqReceiverSubBase {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
-		int chanId = MqChannelBus.getChannelId(chanName);
+		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
+		MqChannelBusChannelId chanId = MqChannelBus.getChannelId(chanName);
 		zmqSocket = MqChannelBus.createSubscriber(chanId, zmqContext);
 		//
 		zmqPollerObj = zmqContext.createPoller(1);

@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.mq.common.httpdata;
+package org.tsitle.lib_rtsp_mq.common.httpdata;
 
 /**
  * Response for 'Open Message Queue' request.

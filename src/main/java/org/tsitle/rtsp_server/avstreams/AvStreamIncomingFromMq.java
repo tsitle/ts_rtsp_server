@@ -6,9 +6,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
-import org.tsitle.rtsp_server.exceptions.MqException;
-import org.tsitle.lib_xrtxp.mq.common.MqInternalSub;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
+import org.tsitle.lib_rtsp_mq.common.MqInternalSub;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 

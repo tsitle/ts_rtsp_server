@@ -1,11 +1,13 @@
-package org.tsitle.lib_xrtxp.mq.common;
+package org.tsitle.lib_rtsp_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.exceptions.MqException;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelId;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelName;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -59,8 +61,8 @@ public class MqInternalPub implements AutoCloseable {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		String chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
-		int chanId = MqChannelBus.registerChannel(chanName);
+		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
+		MqChannelBusChannelId chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
 		final ZMQ.Poller zmqPollerObj = zmqContext.createPoller(1);
 		final int zmqPollerIxWrite = zmqPollerObj.register(zmqSocket, ZMQ.Poller.POLLOUT);

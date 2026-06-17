@@ -1,6 +1,9 @@
-package org.tsitle.lib_xrtxp.mq.common;
+package org.tsitle.lib_rtsp_mq.common;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelId;
+import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelName;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -16,16 +19,24 @@ public class MqChannelBus {
 
 	private static final int SEND_RECV_HWM = 10;
 
-	private static final ConcurrentMap<@NonNull Integer, @NonNull String> mapIdToEndpoint = new ConcurrentHashMap<>();
-	private static final ConcurrentMap<@NonNull String, @NonNull Integer> mapNameToId = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<@NonNull MqChannelBusChannelId, @NonNull String> mapIdToEndpoint = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<@NonNull MqChannelBusChannelName, @NonNull MqChannelBusChannelId> mapNameToId = new ConcurrentHashMap<>();
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Build a channel name for a stream source identifier.
 	 * @param idStreamSource Stream source identifier
 	 * @return Channel name
 	 */
-	public static String buildChannelNameForStreamSourceId(@NonNull RtspProtoIdStreamSource idStreamSource) {
-		return String.format("internal#%s#", idStreamSource.getIdStr());
+	public static @NonNull MqChannelBusChannelName buildChannelNameForStreamSourceId(
+				@NonNull RtspProtoIdStreamSource idStreamSource
+			) {
+		if (idStreamSource.isEmpty()) {
+			throw new IllegalArgumentException("idStreamSource cannot be empty");
+		}
+		return MqChannelBusChannelName.of(String.format("internal#%s#", idStreamSource.getIdStr()));
 	}
 
 	/**
@@ -33,19 +44,30 @@ public class MqChannelBus {
 	 * @param name Channel name
 	 * @return Channel ID
 	 */
-	public synchronized static int registerChannel(@NonNull String name) {
+	public synchronized static @NonNull MqChannelBusChannelId registerChannel(@NonNull MqChannelBusChannelName name) {
+		if (name.isEmpty()) {
+			throw new IllegalArgumentException("Channel name cannot be empty");
+		}
 		if (mapNameToId.containsKey(name)) {
 			return mapNameToId.get(name);
 		}
 
-		final int id = mapIdToEndpoint.size();
+		final int tmpIdInt = mapIdToEndpoint.size();
 
-		final String endpoint = "inproc://bus/" + id;
+		final String endpoint = "inproc://bus/" + Integer.toUnsignedString(tmpIdInt);
 
-		mapIdToEndpoint.put(id, endpoint);
-		mapNameToId.put(name, id);
+		MqChannelBusChannelId tmpIdObj;
+		try {
+			tmpIdObj = MqChannelBusChannelId.of(tmpIdInt);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+			tmpIdObj = MqChannelBusChannelId.ofEmpty();
+		}
 
-		return id;
+		mapIdToEndpoint.put(tmpIdObj, endpoint);
+		mapNameToId.put(name, tmpIdObj);
+
+		return tmpIdObj;
 	}
 
 	/**
@@ -54,7 +76,7 @@ public class MqChannelBus {
 	 * @return True if the channel exists
 	 */
 	@SuppressWarnings("unused")
-	public synchronized static boolean channelExists(@NonNull String name) {
+	public synchronized static boolean channelExists(@NonNull MqChannelBusChannelName name) {
 		return mapNameToId.containsKey(name);
 	}
 
@@ -63,7 +85,7 @@ public class MqChannelBus {
 	 * @param name Channel name
 	 * @return Channel ID
 	 */
-	public synchronized static int getChannelId(@NonNull String name) {
+	public synchronized static @NonNull MqChannelBusChannelId getChannelId(@NonNull MqChannelBusChannelName name) {
 		if (! mapNameToId.containsKey(name)) {
 			throw new IllegalArgumentException("Channel not found: '" + name + "'");
 		}
@@ -75,7 +97,7 @@ public class MqChannelBus {
 	 * @param id Channel ID
 	 * @return Publisher socket
 	 */
-	public synchronized static ZMQ.@NonNull Socket createPublisher(int id, ZContext zmqContext) {
+	public synchronized static ZMQ.@NonNull Socket createPublisher(@NonNull MqChannelBusChannelId id, ZContext zmqContext) {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
@@ -105,7 +127,7 @@ public class MqChannelBus {
 	 * @param id Channel ID
 	 * @return Subscriber socket
 	 */
-	public synchronized static ZMQ.@NonNull Socket createSubscriber(int id, ZContext zmqContext) {
+	public synchronized static ZMQ.@NonNull Socket createSubscriber(@NonNull MqChannelBusChannelId id, ZContext zmqContext) {
 		check(id);
 
 		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
@@ -132,8 +154,8 @@ public class MqChannelBus {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void check(int id) {
-		if (id >= mapIdToEndpoint.size()) {
+	private static void check(@NonNull MqChannelBusChannelId id) {
+		if (! mapIdToEndpoint.containsKey(id)) {
 			throw new IllegalArgumentException("invalid channel id");
 		}
 	}

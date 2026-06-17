@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.mq.common;
+package org.tsitle.lib_rtsp_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;

@@ -2,14 +2,14 @@ package org.tsitle.rtsp_server;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
 import org.tsitle.rtsp_server.config.RtspConfigStreamSource;
-import org.tsitle.rtsp_server.config.RtspSsMq;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspConfig;
-import org.tsitle.rtsp_server.exceptions.SslException;
+import org.tsitle.lib_xrtxp.ssl.SslException;
 import org.tsitle.rtsp_server.threads.CancelToken;
-import org.tsitle.lib_xrtxp.mq.common.mqdata.MqCodecSettings;
-import org.tsitle.rtsp_server.threads.rtsp.ssl.SslContextFactory;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqCodecSettings;
+import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
 import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
@@ -206,9 +206,9 @@ public class RtspServerApp {
 				// should never happen
 				throw new IllegalStateException(e);
 			}
-			RtspSsMq mqSetts = tmpSs.getInputMqSettings().orElseThrow();
+			MqStreamSourceSettings mqSetts = tmpSs.getInputMqSettings().orElseThrow();
 			logDebug(FNC_NAME, "Starting MqE2I for '" +
-					mqSetts.getHost() + ":" + mqSetts.getPort() + ":" +
+					mqSetts.getHostname() + ":" + Integer.toUnsignedString(mqSetts.getPort().getPort16bit().orElseThrow()) + ":" +
 					mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,

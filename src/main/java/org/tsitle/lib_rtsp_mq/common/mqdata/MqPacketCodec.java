@@ -1,0 +1,66 @@
+package org.tsitle.lib_rtsp_mq.common.mqdata;
+
+import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+
+/**
+ * Codec used for the payload of A/V packets.
+ */
+public enum MqPacketCodec {
+
+	/*
+	 * Same codecs as in ConfigSsCodec.
+	 */
+
+	AACLC("AACLC"),
+	PCMU("PCMU"),
+	LPCM08U("LPCM08U"),
+	LPCM16S("LPCM16S"),
+
+	MJPEG("MJPEG"),
+	H264("H264"),
+	H265("H265");
+
+	private final @NonNull String codecName;
+
+	MqPacketCodec(@NonNull String codecName) { this.codecName = codecName; }
+
+	public @NonNull String getCodecName() { return codecName; }
+
+	public static @NonNull MqPacketCodec of(@NonNull String codecName) {
+		for (MqPacketCodec codec : MqPacketCodec.values()) {
+			if (codec.codecName.equalsIgnoreCase(codecName)) {
+				return codec;
+			}
+		}
+		throw new IllegalArgumentException("Unknown codec name: '" + codecName + "'");
+	}
+
+	public boolean isVideo() { return (this == MJPEG || this == H264 || this == H265); }
+
+	public @NonNull RtpPacketType convertToRtpPacketType(int audioSamplerateHz, byte audioChannelCount) {
+		return switch (this) {
+				case AACLC -> RtpPacketType.A_AAC;
+				case PCMU -> {
+						if (audioChannelCount == 1 && audioSamplerateHz == 8000) {
+							yield RtpPacketType.A_PCMU_8KHZ_MONO;
+						}
+						yield RtpPacketType.A_PCMU_VAR;
+					}
+				case LPCM08U -> RtpPacketType.A_LINEAR_PCM_U08_VAR;
+				case LPCM16S -> {
+						if (audioChannelCount == 1 && audioSamplerateHz == 44100) {
+							yield RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
+						}
+						if (audioChannelCount == 2 && audioSamplerateHz == 44100) {
+							yield RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
+						}
+						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
+					}
+				case MJPEG -> RtpPacketType.V_JPEG;
+				case H264 -> RtpPacketType.V_H264;
+				case H265 -> RtpPacketType.V_H265;
+			};
+	}
+
+}

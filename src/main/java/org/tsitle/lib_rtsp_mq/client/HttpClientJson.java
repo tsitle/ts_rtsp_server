@@ -1,10 +1,10 @@
-package org.tsitle.lib_xrtxp.mq.client;
+package org.tsitle.lib_rtsp_mq.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp.exceptions.SslException;
-import org.tsitle.rtsp.threads.rtsp.ssl.SslContextFactory;
+import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
+import org.tsitle.lib_xrtxp.ssl.SslException;
 
 import java.io.IOException;
 import java.lang.reflect.Type;

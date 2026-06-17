@@ -1,14 +1,13 @@
-package org.tsitle.lib_xrtxp.mq.common.mqdata;
+package org.tsitle.lib_rtsp_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp.config.ConfigSsCodec;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 /**
  * Codec settings.
  */
-public class MqCodecSettings {
+public final class MqCodecSettings {
 
 	public @Nullable MqPacketCodec codec = null;
 	public @Nullable Double videoFps = null;
@@ -19,25 +18,16 @@ public class MqCodecSettings {
 		if (codec == null) {
 			return RtpPacketType.UNKNOWN;
 		}
-		ConfigSsCodec configSsCodec = switch (codec) {
-				case AACLC -> ConfigSsCodec.AACLC;
-				case PCMU -> ConfigSsCodec.PCMU;
-				case LPCM08U -> ConfigSsCodec.LPCM08U;
-				case LPCM16S -> ConfigSsCodec.LPCM16S;
-				case MJPEG -> ConfigSsCodec.MJPEG;
-				case H264 -> ConfigSsCodec.H264;
-				case H265 -> ConfigSsCodec.H265;
-			};
 		if (codec.isVideo()) {
 			if (videoFps == null) {
 				return RtpPacketType.UNKNOWN;
 			}
-			return configSsCodec.convertToRtpPacketType(0, (byte)0);
+			return codec.convertToRtpPacketType(0, (byte)0);
 		} else {
 			if (audioSamplerate == null || audioChannels == null) {
 				return RtpPacketType.UNKNOWN;
 			}
-			return configSsCodec.convertToRtpPacketType(audioSamplerate, audioChannels);
+			return codec.convertToRtpPacketType(audioSamplerate, audioChannels);
 		}
 	}
 

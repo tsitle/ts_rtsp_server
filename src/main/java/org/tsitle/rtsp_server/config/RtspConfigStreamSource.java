@@ -3,10 +3,14 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -36,7 +40,7 @@ public class RtspConfigStreamSource {
 	private @NonNull String filePath;
 	/** Message Queue settings for the media stream -- either {@code filePath} or {@code mq} must be set, but not both. */
 	@Expose
-	private @Nullable RtspSsMq mq;
+	private @Nullable RtspConfigSsMq mq;
 	/** Codec used for the stream -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull ConfigSsCodec codec;
@@ -129,7 +133,7 @@ public class RtspConfigStreamSource {
 		return mq.getInputUri();
 	}
 
-	public Optional<RtspSsMq> getInputMqSettings() {
+	public Optional<MqStreamSourceSettings> getInputMqSettings() {
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
 			return Optional.empty();
@@ -137,7 +141,20 @@ public class RtspConfigStreamSource {
 		if (mq == null) {
 			throw new IllegalStateException("MQ is null");
 		}
-		return Optional.of(mq);
+		MqStreamSourceSettings resObj;
+		try {
+			resObj = new MqStreamSourceSettings(
+					mq.getUsername(),
+					mq.getPassword(),
+					mq.getHost(),
+					RtspProtoSocketPortNr.of(mq.getPort()),
+					mq.getRscGroup(),
+					mq.getRscChannel()
+				);
+		} catch (RtspProtoNumberRangeException e) {
+			throw new IllegalStateException("MQ Port Number is out of range");
+		}
+		return Optional.of(resObj);
 	}
 
 	public boolean getIsSourceFromFile() {
@@ -286,7 +303,19 @@ public class RtspConfigStreamSource {
 			internalCodec = RtpPacketType.UNKNOWN;
 			return;
 		}
-		internalCodec = codec.convertToRtpPacketType(getAudioSamplerateHz(), getAudioChannelCount());
+
+		MqPacketCodec tmpMqPktCodec = switch (codec) {
+				case AACLC -> MqPacketCodec.AACLC;
+				case PCMU -> MqPacketCodec.PCMU;
+				case LPCM08U -> MqPacketCodec.LPCM08U;
+				case LPCM16S -> MqPacketCodec.LPCM16S;
+				//
+				case MJPEG -> MqPacketCodec.MJPEG;
+				case H264 -> MqPacketCodec.H264;
+				case H265 -> MqPacketCodec.H265;
+			};
+
+		internalCodec = tmpMqPktCodec.convertToRtpPacketType(getAudioSamplerateHz(), getAudioChannelCount());
 	}
 
 	/**

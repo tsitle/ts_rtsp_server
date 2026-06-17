@@ -84,7 +84,7 @@ tasks.compileJava.configure {
 }
 
 application {
-	mainClass = "org.tsitle.rtsp.RtspServerApp"
+	mainClass = "org.tsitle.rtsp_server.RtspServerApp"
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-XX:+UseZGC"
@@ -93,7 +93,7 @@ application {
 
 tasks.jar {
 	manifest {
-		attributes["Main-Class"] = "org.tsitle.rtsp.RtspServerApp"
+		attributes["Main-Class"] = "org.tsitle.rtsp_server.RtspServerApp"
 	}
 }
 
