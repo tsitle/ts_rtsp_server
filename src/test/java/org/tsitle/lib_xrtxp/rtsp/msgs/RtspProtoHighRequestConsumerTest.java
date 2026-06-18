@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.msgs;
 
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
@@ -99,12 +100,13 @@ class RtspProtoHighRequestConsumerTest {
 	private RtspProtoIdSubStream generatedSubStreamId = RtspProtoIdSubStream.ofEmpty();
 	private final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = buildGlobalSessionInfoSvc();
 
-	public RtspProtoHighRequestConsumerTest() throws RtspProtoSessionInfoException { }
+	RtspProtoHighRequestConsumerTest() throws RtspProtoSessionInfoException { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_announce_xxx() {
 	}
 
@@ -512,24 +514,28 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_pause_xxx() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_play_xxx() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_redirect_xxx() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_setParam_xxx() {
 	}
 
@@ -668,6 +674,7 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	@Disabled
 	void structuredRequest_teardown_xxx() {
 	}
 

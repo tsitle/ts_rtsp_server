@@ -9,6 +9,8 @@ import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.packets.rtcp.*;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
@@ -74,7 +76,7 @@ class SrtcpProtectRoundTripTest {
 		}
 	}
 
-	void subfnc_rtcp_randomized_sub1(
+	private void subfnc_rtcp_randomized_sub1(
 				final SecureRandom rnd,
 				int mkeyLen,
 				int authKeyLen,
@@ -114,7 +116,7 @@ class SrtcpProtectRoundTripTest {
 		}
 	}
 
-	void subfnc_rtcp_randomized_sub2(
+	private void subfnc_rtcp_randomized_sub2(
 				final SecureRandom rnd,
 				final SrtcpContextOutbound senderCtx,
 				final SrtcpContextInbound receiverCtx,
@@ -225,6 +227,8 @@ class SrtcpProtectRoundTripTest {
 		decryptedBuf.copyInto(0, decrypted, 0, decrypted.length);
 		assertArrayEquals(compoundRtcp, decrypted, "SRTCP round-trip with MKI must restore original packet");
 
+		// -----------------------------------------------
+
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
 
@@ -245,6 +249,60 @@ class SrtcpProtectRoundTripTest {
 				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTCP packet"),
 				"Failure reason should indicate MKI validation"
 			);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void roundtrip_with_known_packet() throws RtspProtoNumberRangeException, SrtxpSecurityException {
+		final String mikeyMsgB64 = "AQAFADz5kKIBAADerb7vAAAAAAsA7d4+bsPm+vIKENrdvQhuG0nwXk0NIpVKWBoBAAAAHgABAQEBEAIBAQMB" +
+				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAe42MKCqTuSRR9d8pZmdL+34UEjtyJeGV8djDZHNkIBAAAAAEA";
+		final String srtcpCompoundPktB64 = "gMkAAd6tvu/bQwNBO4mNZroz0pIDXKiaIXhTuZQ48pembvOGPy6P9IAAAAAAAAABp4pKbunMezuFDQ==";
+		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
+		final String expCnameSdes = "some-cname-DEADBEEF";
+
+		SrtxpKmd kmd = MikeyParser.parseMickeyMsgIntoKmd(mikeyMsgB64);
+
+		BufferExt srtcpCompoundPktBuf = BufferExt.decodeBase64String(srtcpCompoundPktB64);
+
+		SrtcpContextInbound contextInbound = new SrtcpContextInbound(kmd);
+		BufferExt rtcpCompoundPktBuf = new BufferExt();
+		contextInbound.unprotectSrtcpCompound(srtcpCompoundPktBuf, rtcpCompoundPktBuf);
+
+		RtcpPacketHeader rtcpPacketHeader = new RtcpPacketHeader(rtcpCompoundPktBuf);
+		assertEquals(RtcpPacketType.RR, rtcpPacketHeader.getPayloadType());
+
+		BufferExt rtcpPktRrBuf = new BufferExt();
+		BufferExt rtcpPktSdesBuf = new BufferExt();
+		rtcpPktRrBuf.copyFrom(rtcpCompoundPktBuf, 0, 0, rtcpPacketHeader.getPacketSize());
+		rtcpPktSdesBuf.copyFrom(
+				rtcpCompoundPktBuf,
+				rtcpPacketHeader.getPacketSize(),
+				0,
+				rtcpCompoundPktBuf.getUsed() - rtcpPacketHeader.getPacketSize()
+			);
+
+		RtcpPacketRR rtcpPacketRr = new RtcpPacketRR(rtcpPacketHeader, rtcpPktRrBuf);
+		assertEquals(expSenderSsrc, rtcpPacketRr.getSsrcSender());
+
+		rtcpPacketHeader = new RtcpPacketHeader(rtcpPktSdesBuf);
+		assertEquals(RtcpPacketType.SDES, rtcpPacketHeader.getPayloadType());
+
+		RtcpPacketSDES rtcpPacketSdes = new RtcpPacketSDES(rtcpPacketHeader, rtcpPktSdesBuf);
+		assertEquals(1, rtcpPacketSdes.getItemsCount());
+		assertTrue(rtcpPacketSdes.getXsrcBlock(1).isPresent());
+		assertEquals(expSenderSsrc, rtcpPacketSdes.getXsrcBlock(1).orElseThrow().getXsrcId());
+		assertEquals(1, rtcpPacketSdes.getXsrcBlock(1).orElseThrow().getBlockEntries().size());
+		assertEquals(RtcpInnerXsrcBlock.BlockType.CNAME, rtcpPacketSdes.getXsrcBlock(1).orElseThrow().getBlockEntries().getFirst().getType());
+		assertEquals(expCnameSdes, rtcpPacketSdes.getXsrcBlock(1).orElseThrow().getBlockEntries().getFirst().getValue());
+
+		// -----------------------------------------------
+
+		SrtcpContextOutbound contextOutbound = new SrtcpContextOutbound(kmd);
+
+		BufferExt newlyEncrBuf = new BufferExt();
+		contextOutbound.protectRtcpSrCompound(rtcpCompoundPktBuf, expSenderSsrc, newlyEncrBuf);
+		assertEquals(srtcpCompoundPktBuf, newlyEncrBuf);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -9,14 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class TcpChannelNrTest {
 
 	@Test
-	public void testEmpty() {
+	void testEmpty() {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 		assertFalse(testObj.getChannel8bit().isPresent());
 	}
 
 	@Test
-	public void testMin() throws RtspProtoNumberRangeException {
+	void testMin() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(0);
 		assertFalse(testObj.isEmpty());
@@ -25,7 +25,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testMax() throws RtspProtoNumberRangeException {
+	void testMax() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(255);
 		assertFalse(testObj.isEmpty());
@@ -34,14 +34,14 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testOutOfRange() {
+	void testOutOfRange() {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		assertThrows(RtspProtoNumberRangeException.class, () -> testObj.setChannel8bit(-1));
 		assertThrows(RtspProtoNumberRangeException.class, () -> testObj.setChannel8bit(256));
 	}
 
 	@Test
-	public void testWriteProtect() throws RtspProtoNumberRangeException {
+	void testWriteProtect() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(77);
 		testObj.writeProtect();
@@ -53,7 +53,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testClone1() throws RtspProtoNumberRangeException {
+	void testClone1() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(77);
 		testObj.writeProtect();
@@ -65,7 +65,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testClone2() throws RtspProtoNumberRangeException {
+	void testClone2() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(77);
 
@@ -77,7 +77,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testClear() throws RtspProtoNumberRangeException {
+	void testClear() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(77);
 		assertFalse(testObj.isEmpty());
@@ -89,7 +89,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testCopyFrom1() {
+	void testCopyFrom1() {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 
@@ -99,7 +99,7 @@ class TcpChannelNrTest {
 	}
 
 	@Test
-	public void testCopyFrom2() throws RtspProtoNumberRangeException {
+	void testCopyFrom2() throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr testObj = RtspProtoTcpChannelNr.ofEmpty();
 		testObj.setChannel8bit(77);
 		assertFalse(testObj.isEmpty());

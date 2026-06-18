@@ -9,14 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class SocketPortNrTest {
 
 	@Test
-	public void testEmpty() {
+	void testEmpty() {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 		assertFalse(testObj.getPort16bit().isPresent());
 	}
 
 	@Test
-	public void testMin() throws RtspProtoNumberRangeException {
+	void testMin() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(1);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getPort16bit().isPresent());
@@ -24,7 +24,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testMax() throws RtspProtoNumberRangeException {
+	void testMax() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(0xFFFF);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getPort16bit().isPresent());
@@ -32,13 +32,13 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testOutOfRange() {
+	void testOutOfRange() {
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoSocketPortNr.of(0));
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoSocketPortNr.of(0x10000));
 	}
 
 	@Test
-	public void testWriteProtect() throws RtspProtoNumberRangeException {
+	void testWriteProtect() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(509);
 		testObj.writeProtect();
 
@@ -49,7 +49,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testClone1() throws RtspProtoNumberRangeException {
+	void testClone1() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(509);
 		testObj.writeProtect();
 
@@ -60,7 +60,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testClone2() throws RtspProtoNumberRangeException {
+	void testClone2() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(509);
 
 		RtspProtoSocketPortNr cloned = testObj.clone();
@@ -71,7 +71,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testClear() throws RtspProtoNumberRangeException {
+	void testClear() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(509);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getPort16bit().isPresent());
@@ -82,7 +82,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testCopyFrom1() {
+	void testCopyFrom1() {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 
@@ -92,7 +92,7 @@ class SocketPortNrTest {
 	}
 
 	@Test
-	public void testCopyFrom2() throws RtspProtoNumberRangeException {
+	void testCopyFrom2() throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr testObj = RtspProtoSocketPortNr.of(509);
 		assertFalse(testObj.isEmpty());
 

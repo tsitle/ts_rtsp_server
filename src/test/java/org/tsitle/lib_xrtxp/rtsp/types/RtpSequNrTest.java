@@ -9,14 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class RtpSequNrTest {
 
 	@Test
-	public void testEmpty() {
+	void testEmpty() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 		assertFalse(testObj.getSeqNr16bit().isPresent());
 	}
 
 	@Test
-	public void testOne() throws RtspProtoNumberRangeException {
+	void testOne() throws RtspProtoNumberRangeException {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.of(1);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -24,7 +24,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testMax() throws RtspProtoNumberRangeException {
+	void testMax() throws RtspProtoNumberRangeException {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.of(0xFFFF);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -32,13 +32,13 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testOutOfRange() {
+	void testOutOfRange() {
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoRtpSeqNr.of(-1));
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoRtpSeqNr.of(0x10000));
 	}
 
 	@Test
-	public void testOverflow1() {
+	void testOverflow1() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0xFFFF);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -46,7 +46,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testOverflow2() {
+	void testOverflow2() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0x10000);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -54,7 +54,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testOverflow3() {
+	void testOverflow3() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0xFFFF + 11);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -62,7 +62,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testIncrement() {
+	void testIncrement() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0xFFFF);
 		testObj.increment();
 		assertFalse(testObj.isEmpty());
@@ -71,7 +71,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testWriteProtect() {
+	void testWriteProtect() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0x10000);
 		testObj.writeProtect();
 
@@ -82,7 +82,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testClone1() {
+	void testClone1() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0x10000);
 		testObj.writeProtect();
 
@@ -93,7 +93,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testClone2() throws RtspProtoNumberRangeException {
+	void testClone2() throws RtspProtoNumberRangeException {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0x10000);
 
 		RtspProtoRtpSeqNr cloned = testObj.clone();
@@ -104,7 +104,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testClear() {
+	void testClear() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(0x10000);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getSeqNr16bit().isPresent());
@@ -115,7 +115,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testCopyFrom1() {
+	void testCopyFrom1() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 
@@ -125,7 +125,7 @@ class RtpSequNrTest {
 	}
 
 	@Test
-	public void testCopyFrom2() {
+	void testCopyFrom2() {
 		RtspProtoRtpSeqNr testObj = RtspProtoRtpSeqNr.withOverflow(1001);
 		assertFalse(testObj.isEmpty());
 

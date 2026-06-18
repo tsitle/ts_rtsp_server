@@ -23,10 +23,13 @@ class DebugRtcpPacketTest {
 		RtcpPacketSDES pktSdes;
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Test
-	public void testDebugRtcpPacketInbound() throws Exception {
+	void testDebugRtcpPacketInbound() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
-		final String sdesCname = "some-cname-" + hdSsrc;
+		final String sdesCname = "some-cname-" + hdSsrc.toHexString(false);
 
 		SrtxpKmd kmdNr1 = SrtxpKmd.createWithDefaults(1L, hdSsrc);
 		SrtxpKmd kmdNr2 = SrtxpKmd.createWithDefaults(2L, hdSsrc);

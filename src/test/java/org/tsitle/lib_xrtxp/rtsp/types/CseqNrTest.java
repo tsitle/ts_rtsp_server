@@ -9,14 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class CseqNrTest {
 
 	@Test
-	public void testEmpty() {
+	void testEmpty() {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 		assertFalse(testObj.getCseq32bit().isPresent());
 	}
 
 	@Test
-	public void testZero() {
+	void testZero() {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofZero();
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getCseq32bit().isPresent());
@@ -24,7 +24,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testOne() throws RtspProtoNumberRangeException {
+	void testOne() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(1L);
 		assertFalse(testObj.isEmpty());
@@ -33,7 +33,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testMax() throws RtspProtoNumberRangeException {
+	void testMax() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(0xFFFFFFFFL);
 		assertFalse(testObj.isEmpty());
@@ -42,14 +42,14 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testOutOfRange() {
+	void testOutOfRange() {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		assertThrows(RtspProtoNumberRangeException.class, () -> testObj.setCseq32bit(-1L));
 		assertThrows(RtspProtoNumberRangeException.class, () -> testObj.setCseq32bit(0x100000000L));
 	}
 
 	@Test
-	public void testIncrement() throws RtspProtoNumberRangeException {
+	void testIncrement() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(0xFFFFFFFFL);
 		testObj.increment();
@@ -59,7 +59,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testWriteProtect() throws RtspProtoNumberRangeException {
+	void testWriteProtect() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(9009L);
 		testObj.writeProtect();
@@ -71,7 +71,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testClone1() throws RtspProtoNumberRangeException {
+	void testClone1() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(9009L);
 		testObj.writeProtect();
@@ -83,7 +83,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testClone2() throws RtspProtoNumberRangeException {
+	void testClone2() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(9009L);
 
@@ -95,7 +95,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testClear() throws RtspProtoNumberRangeException {
+	void testClear() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(9009L);
 		assertFalse(testObj.isEmpty());
@@ -107,7 +107,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testCopyFrom1() {
+	void testCopyFrom1() {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		assertTrue(testObj.isEmpty());
 
@@ -117,7 +117,7 @@ class CseqNrTest {
 	}
 
 	@Test
-	public void testCopyFrom2() throws RtspProtoNumberRangeException {
+	void testCopyFrom2() throws RtspProtoNumberRangeException {
 		RtspProtoCseqNr testObj = RtspProtoCseqNr.ofEmpty();
 		testObj.setCseq32bit(9009L);
 		assertFalse(testObj.isEmpty());

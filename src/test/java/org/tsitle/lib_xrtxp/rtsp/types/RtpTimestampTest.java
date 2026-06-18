@@ -9,14 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class RtpTimestampTest {
 
 	@Test
-	public void testEmpty() {
+	void testEmpty() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.ofEmpty();
 		assertTrue(testObj.isEmpty());
 		assertFalse(testObj.getTs32bit().isPresent());
 	}
 
 	@Test
-	public void testZero() {
+	void testZero() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.ofZero();
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -24,7 +24,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testOne() throws RtspProtoNumberRangeException {
+	void testOne() throws RtspProtoNumberRangeException {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.of(1);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -32,7 +32,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testMax() throws RtspProtoNumberRangeException {
+	void testMax() throws RtspProtoNumberRangeException {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.of(0xFFFFFFFFL);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -40,13 +40,13 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testOutOfRange() {
+	void testOutOfRange() {
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoRtpTimestamp.of(-1L));
 		assertThrows(RtspProtoNumberRangeException.class, () -> RtspProtoRtpTimestamp.of(0x100000000L));
 	}
 
 	@Test
-	public void testOverflow1() {
+	void testOverflow1() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0xFFFFFFFFL);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -54,7 +54,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testOverflow2() {
+	void testOverflow2() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0x100000000L);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -62,7 +62,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testOverflow3() {
+	void testOverflow3() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0xFFFFFFFFL + 11L);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -70,7 +70,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testAdd1() {
+	void testAdd1() {
 		RtspProtoRtpTimestamp inpObj = RtspProtoRtpTimestamp.withOverflow(0xFFFFFFFFL);
 		RtspProtoRtpTimestamp testObj = inpObj.add(0L);
 		assertFalse(testObj.isEmpty());
@@ -80,7 +80,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testAdd2() {
+	void testAdd2() {
 		RtspProtoRtpTimestamp inpObj = RtspProtoRtpTimestamp.withOverflow(0xFFFFFFFFL);
 		RtspProtoRtpTimestamp testObj = inpObj.add(1L);
 		assertFalse(testObj.isEmpty());
@@ -89,7 +89,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testAdd3() {
+	void testAdd3() {
 		RtspProtoRtpTimestamp inpObj = RtspProtoRtpTimestamp.withOverflow(0xFFFFFFFFL);
 		RtspProtoRtpTimestamp testObj = inpObj.add(11L);
 		assertFalse(testObj.isEmpty());
@@ -99,7 +99,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testWriteProtect() {
+	void testWriteProtect() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0x100000000L);
 		testObj.writeProtect();
 
@@ -111,7 +111,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testClone1() {
+	void testClone1() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0x100000000L);
 		testObj.writeProtect();
 
@@ -122,7 +122,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testClone2() throws RtspProtoNumberRangeException {
+	void testClone2() throws RtspProtoNumberRangeException {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0x100000000L);
 
 		RtspProtoRtpTimestamp cloned = testObj.clone();
@@ -133,7 +133,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testClear() {
+	void testClear() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(0x100000000L);
 		assertFalse(testObj.isEmpty());
 		assertTrue(testObj.getTs32bit().isPresent());
@@ -144,7 +144,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testCopyFrom1() {
+	void testCopyFrom1() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.ofEmpty();
 		assertTrue(testObj.isEmpty());
 
@@ -154,7 +154,7 @@ class RtpTimestampTest {
 	}
 
 	@Test
-	public void testCopyFrom2() {
+	void testCopyFrom2() {
 		RtspProtoRtpTimestamp testObj = RtspProtoRtpTimestamp.withOverflow(1001L);
 		assertFalse(testObj.isEmpty());
 

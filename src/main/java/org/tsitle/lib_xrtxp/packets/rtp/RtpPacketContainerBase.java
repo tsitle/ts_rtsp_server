@@ -237,6 +237,14 @@ public class RtpPacketContainerBase {
 	}
 
 	/**
+	 * Checks if the RTP packet contains a marker bit.
+	 * @return True if the RTP packet contains a marker bit
+	 */
+	public boolean getIsMarkerSet() {
+		return hdBaseMarker;
+	}
+
+	/**
 	 * Checks if the RTP packet contains a header extension.
 	 * @return True if the RTP packet contains a header extension
 	 */

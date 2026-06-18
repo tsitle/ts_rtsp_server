@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class RtspProtoAuthDigestTest {
 
 	@Test
-	public void testAuthDigest() {
+	void testAuthDigest() {
 		/*
 		 * Method: DESCRIBE
 		 * Password: ABCDEFGH

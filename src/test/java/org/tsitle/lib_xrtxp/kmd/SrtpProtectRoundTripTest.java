@@ -7,8 +7,12 @@ import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.packets.rtp.*;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +21,7 @@ class SrtpProtectRoundTripTest {
 	@Test
 	void protectRtp_then_unprotectSrtp_should_restore_original_packet() throws Exception {
 		final RtspProtoRtpSeqNr hdSeqNr = RtspProtoRtpSeqNr.of(0x1234);
-		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
+		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
 
 		// Arrange
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
@@ -29,8 +33,7 @@ class SrtpProtectRoundTripTest {
 		final byte[] payload = Common.HEX.parseHex("00112233445566778899AABBCCDDEEFF");
 		final byte[] originalRtp = Common.buildRtpPacket(hdSeqNr, hdSsrc, payload);
 
-		final BufferExt plainBuf = new BufferExt();
-		plainBuf.copyOf(originalRtp);
+		final BufferExt plainBuf = new BufferExt(originalRtp);
 
 		final BufferExt encryptedBuf = new BufferExt();
 		final BufferExt decryptedBuf = new BufferExt();
@@ -251,6 +254,68 @@ class SrtpProtectRoundTripTest {
 				ex.getMessage() != null && ex.getMessage().contains("Invalid MKI in SRTP packet"),
 				"Failure reason should indicate MKI validation"
 			);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void roundtrip_with_known_packet() throws RtspProtoNumberRangeException, SrtxpSecurityException {
+		final String mikeyMsgB64 = "AQAFAB689BUBAADerb7vAAAAAAsA7d5Ie+CvLKQKEGl58Bsf8vm5EK1lNv8UYmoBAAAAHgABAQEBEAIBAQMB" +
+				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAelSS9tk6FSVy058rqi+UTmFBjpxrb6PnjjRaGBRuxBAAAAAEA";
+		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
+		final RtpPacketType expPktType = RtpPacketType.V_JPEG;
+		final RtspProtoRtpSeqNr expSeqNr = RtspProtoRtpSeqNr.of(4660);
+		final RtspProtoRtpTimestamp expTimestamp = RtspProtoRtpTimestamp.of(16909060L);
+		final boolean expIsMarkerSet = false;
+		final String plainRtpHex = "801A123401020304DEADBEEF00112233445566778899AABBCCDDEEFF";
+
+		SrtxpKmd kmd = MikeyParser.parseMickeyMsgIntoKmd(mikeyMsgB64);
+
+		SrtpContextOutbound contextOutbound = new SrtpContextOutbound(kmd);
+
+		BufferExt rtpPlainPktBuf = BufferExt.decodeHexString(plainRtpHex);
+
+		RtpBaseContainerInfo rtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(rtpPlainPktBuf);
+
+		BufferExt srtpEncrPktBuf = new BufferExt();
+
+		contextOutbound.protectRtp(
+				rtpPlainPktBuf,
+				false,
+				false,
+				rtpPktContainerInfo.sequenceNumber(),
+				rtpPktContainerInfo.ssrcId(),
+				srtpEncrPktBuf
+			);
+
+		//RtpBaseContainerInfo srtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(srtpEncrPktBuf);
+
+		assertNotEquals(srtpEncrPktBuf, rtpPlainPktBuf);
+
+		// -----------------------------------------------
+
+		SrtpContextInbound contextInbound = new SrtpContextInbound(kmd);
+
+		BufferExt newlyDecrPktBuf = new BufferExt();
+
+		contextInbound.unprotectSrtp(
+				srtpEncrPktBuf,
+				rtpPktContainerInfo.sequenceNumber(),
+				rtpPktContainerInfo.ssrcId(),
+				newlyDecrPktBuf
+			);
+
+		assertEquals(newlyDecrPktBuf, rtpPlainPktBuf);
+
+		//RtpBaseContainerInfo newlyDecrRtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(newlyDecrPktBuf);
+
+		RtpPacketMjpeg rtpPacketMjpeg = new RtpPacketMjpeg(newlyDecrPktBuf);
+
+		assertEquals(expPktType, rtpPacketMjpeg.getPayloadType());
+		assertEquals(expSenderSsrc, rtpPacketMjpeg.getSsrcId());
+		assertEquals(expSeqNr, rtpPacketMjpeg.getSequenceNumber());
+		assertEquals(expTimestamp, rtpPacketMjpeg.getTimestamp());
+		assertEquals(expIsMarkerSet, rtpPacketMjpeg.getIsMarkerSet());
 	}
 
 }

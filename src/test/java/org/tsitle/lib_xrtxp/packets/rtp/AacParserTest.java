@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class AacParserTest {
 
 	@Test
-	public void parse_aac() throws Exception {
+	void parse_aac() throws Exception {
 		BufferExt orgFrame = BufferExt.decodeHexString("""
 				fff14c802dbffc211a0fe3fcc9fdfcd5
 				d1036182a885612bc3a00ce82da43841
@@ -88,6 +88,9 @@ class AacParserTest {
 		aacInfoTwo.internalInfo.crc2Bytes[1] = (byte)0x12;
 		assertNotEquals(aacInfoOrg.hashSum(), aacInfoTwo.hashSum());
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("DanglingJavadoc")
 	private static void rewriteAdtsHeader(AudioAacInfo aacInfo, BufferExt outputAacFrame) {
