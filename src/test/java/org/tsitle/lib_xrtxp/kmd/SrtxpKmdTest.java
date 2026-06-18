@@ -16,7 +16,7 @@ class SrtxpKmdTest {
 		SrtxpKmd kmd = SrtxpKmd.createWithDefaults(
 				1001L,
 				RtspProtoIdXsrc.of(0xDEADBEEFL),
-				DynInteger.createWithAutoSize(2002L)
+				DynInteger.ofAutoSized(2002L)
 			);
 
 		compareKmds(kmd);

@@ -760,7 +760,7 @@ public final class RtspProtoHighRequestConsumer {
 			logWarn(FNC_NAME, "received new inbound KMD but previous KMD had no MKI - ignoring new KMD");
 		} else if (kmdToUse.mki().isEmpty()) {
 			logWarn(FNC_NAME, "received new inbound KMD but it has no MKI - ignoring new KMD");
-		} else if (kmdToUse.mki().value() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().value()) {
+		} else if (kmdToUse.mki().getValue() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().getValue()) {
 			logWarn(FNC_NAME, "received new inbound KMD but MKI is unchanged - ignoring new KMD");
 		} else if (kmdToUse.ssrcId() != tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId()) {
 			logWarn(FNC_NAME, "received new inbound KMD but SSRC has been modified - ignoring new KMD");

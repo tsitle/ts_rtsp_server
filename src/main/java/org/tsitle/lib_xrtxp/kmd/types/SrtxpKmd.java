@@ -75,7 +75,7 @@ public final class SrtxpKmd implements Cloneable {
 		this.mki = mki.clone();
 		this.ssrcId = ssrcId.clone();
 		this.ssrcId.writeProtect();
-		this.kdr = (kdr.isEmpty() || kdr.value() == 0L ? DynInteger.createEmpty() : kdr.clone());
+		this.kdr = (kdr.isEmpty() || kdr.getValue() == 0L ? DynInteger.ofEmpty() : kdr.clone());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -91,7 +91,21 @@ public final class SrtxpKmd implements Cloneable {
 		return createWithDefaults(
 				mkiValue,
 				ssrcId,
-				DynInteger.createWithAutoSize(DEFAULT_KDR_PACKETS)
+				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
+			);
+	}
+
+	/**
+	 * Create a new KMD object with default key sizes and random key/salt
+	 * @param mkiValue Master Key Identifier
+	 * @param ssrcId SSRC ID
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
+		return createWithDefaults(
+				mkiValue,
+				ssrcId,
+				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
 			);
 	}
 
@@ -108,7 +122,26 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				new DynInteger(mkiValue, DEFAULT_MKI_LEN),
+				DynInteger.of(mkiValue, DEFAULT_MKI_LEN),
+				ssrcId,
+				kdr
+			);
+	}
+
+	/**
+	 * Create a new KMD object with default key sizes and random key/salt
+	 * @param mkiValue Master Key Identifier
+	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId, @NonNull DynInteger kdr) {
+		return createWithCustomKeySizes(
+				false,
+				DEFAULT_ENCR_KEY_LEN,
+				DEFAULT_AUTH_KEY_LEN,
+				DEFAULT_AUTH_TAG_LEN,
+				mkiValue,
 				ssrcId,
 				kdr
 			);
@@ -127,9 +160,9 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				DynInteger.createEmpty(),
+				DynInteger.ofEmpty(),
 				ssrcId,
-				DynInteger.createEmpty()
+				DynInteger.ofEmpty()
 			);
 	}
 
@@ -158,7 +191,7 @@ public final class SrtxpKmd implements Cloneable {
 				authTagLen,
 				mki,
 				ssrcId,
-				DynInteger.createWithAutoSize(DEFAULT_KDR_PACKETS)
+				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
 			);
 	}
 

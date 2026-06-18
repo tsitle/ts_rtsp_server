@@ -58,7 +58,7 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
 
 		// SRTCP index is 31 bits + 1 E-bit (encryption flag) in the MSB
-		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
 		encrPktView.setOffset(encrPktView.getLength() - SRTCP_INDEX_FIELD_SIZE);
 		int tmpIndexField = encrPktView.getIntFromBigEndian(false);
 		int tmpIndexEbit = (tmpIndexField & 0x80000000);
@@ -73,7 +73,7 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 
 		// validate MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+			encrPktView.setOffset(encrPktView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
 			validateMki(encrPktView, "SRTCP");
 		}
 
@@ -85,7 +85,7 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 
 		// remove MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			encrPktView.increaseLength(-1 * ctxKmd.mki().sizeBytes());
+			encrPktView.increaseLength(-1 * ctxKmd.mki().getSizeBytes());
 		}
 
 		// validate and remove SRTCP index

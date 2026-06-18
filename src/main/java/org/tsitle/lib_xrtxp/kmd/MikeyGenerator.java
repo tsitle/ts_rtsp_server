@@ -205,12 +205,12 @@ public final class MikeyGenerator {
 		// -- KDR --
 		if (! kmd.kdr().isEmpty() && kmd.kdr().getValue() != 0L) {
 			msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_KDR.getValue());  // Parameter Type
-			if (kmd.kdr().sizeBytes() <= 4) {
+			if (kmd.kdr().getSizeBytes() <= 4) {
 				msgBb.put((byte)0x04);  // Parameter Length
 				msgBb.putInt(Long.valueOf(kmd.kdr().getValue()).intValue());
 			} else {
 				msgBb.put((byte)0x08);  // Parameter Length
-				msgBb.putLong(kmd.kdr().value());
+				msgBb.putLong(kmd.kdr().getValue());
 			}
 		}
 
@@ -278,7 +278,7 @@ public final class MikeyGenerator {
 		//
 		if (tmpKvType == MikeyMsgKemacKv.MMKEMKV_SPI_OR_MKI) {
 			// KV data length
-			int tmpMkiSz = kmd.mki().sizeBytes();
+			int tmpMkiSz = kmd.mki().getSizeBytes();
 			if (tmpMkiSz != 0 && tmpMkiSz != 1 && tmpMkiSz != 2 && tmpMkiSz != 4 && tmpMkiSz != 8) {
 				throw new SrtxpSecurityException(FNC_NAME + ": Invalid KV SPI/MKI length - must be 0/1/2/4/8");
 			}

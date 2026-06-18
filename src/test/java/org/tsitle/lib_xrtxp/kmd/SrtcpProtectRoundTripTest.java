@@ -101,9 +101,9 @@ class SrtcpProtectRoundTripTest {
 				new BufferExt(masterSaltBa),
 				authKeyLen,
 				authTagLen,
-				DynInteger.createFromBufferBigEndian(new BufferExt(mkiBa)),
+				DynInteger.ofBufferBigEndian(new BufferExt(mkiBa)),
 				hdSsrc,
-				DynInteger.createEmpty()
+				DynInteger.ofEmpty()
 			);
 		SrtcpContextOutbound senderCtx = new SrtcpContextOutbound(rtcpKmd);
 		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
@@ -206,7 +206,7 @@ class SrtcpProtectRoundTripTest {
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
-		DynInteger mki = new DynInteger(16909060L, 4);
+		DynInteger mki = DynInteger.of(16909060L, 4);
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 
@@ -228,7 +228,7 @@ class SrtcpProtectRoundTripTest {
 		byte[] tampered = new byte[encryptedBuf.getUsed()];
 		encryptedBuf.copyInto(0, tampered, 0, tampered.length);
 
-		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.sizeBytes();
+		int mkiStart = tampered.length - Common.AUTH_TAG_SIZE_FOR_ALL_TESTS - mki.getSizeBytes();
 		tampered[mkiStart] ^= 0x01;
 
 		BufferExt tamperedBuf = new BufferExt();

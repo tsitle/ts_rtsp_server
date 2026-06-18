@@ -340,7 +340,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						SrtxpKmd.DEFAULT_ENCR_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
-						DynInteger.createEmpty(),  // <-- no MKI
+						DynInteger.ofEmpty(),  // <-- no MKI
 						ssrcId
 					);
 			}

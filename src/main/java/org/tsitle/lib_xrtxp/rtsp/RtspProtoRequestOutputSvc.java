@@ -506,7 +506,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		// generate the new Key Management Data
 		if (! tmpSrtxpKmd.isForLegacySdes()) {
-			final long nextMki = tmpSrtxpKmd.mki().value() + 1;  // will automatically be wrapped around
+			final long nextMki = tmpSrtxpKmd.mki().getValue() + 1L;  // will automatically be wrapped around
 			return SrtxpKmd.createWithDefaults(nextMki, tmpSrtxpKmd.ssrcId());
 		}
 		return SrtxpKmd.createForLegacySdes(tmpSrtxpKmd.ssrcId());

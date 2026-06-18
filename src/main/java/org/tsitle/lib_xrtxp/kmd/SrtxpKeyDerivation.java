@@ -97,7 +97,7 @@ final class SrtxpKeyDerivation {
 		byte[] iv = buildKeyDerivationIv(
 				kmd.masterSalt(),
 				label.getValue(),
-				kmd.kdr().isEmpty() ? 0L : kmd.kdr().value(),
+				kmd.kdr().isEmpty() ? 0L : kmd.kdr().getValue(),
 				packetIndex
 			);
 

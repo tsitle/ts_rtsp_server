@@ -10,56 +10,18 @@ import java.util.Objects;
 
 /**
  * Container for integer values with dynamic size.
- * @param value Value of the integer
- * @param sizeBytes Size of the integer in bytes (0/1/2/4/8)
  */
-public record DynInteger(long value, int sizeBytes) implements Cloneable {
+public final class DynInteger implements Cloneable {
 
-	public static @NonNull DynInteger createEmpty() {
-		return new DynInteger(0L, 0);
-	}
+	private final long value;
+	private final int sizeBytes;
 
-	public static @NonNull DynInteger createWithAutoSize(long value) {
-		if (value >= 0L && value < 256L) {
-			return new DynInteger(value, 1);
-		}
-		if (value >= 0L && value < 65536L) {
-			return new DynInteger(value, 2);
-		}
-		if (value >= 0L && value < 4294967296L) {
-			return new DynInteger(value, 4);
-		}
-		return new DynInteger(value, 8);
-	}
-
-	public static @NonNull DynInteger createFromBufferBigEndian(@NonNull BufferExt buffer) throws IllegalArgumentException {
-		if (buffer.isEmpty()) {
-			return DynInteger.createEmpty();
-		}
-		ByteBuffer tmpBb = ByteBuffer
-				.wrap(buffer.getBaPtr(), 0, buffer.getUsed())
-				.order(ByteOrder.BIG_ENDIAN);
-		return createFromByteBuffer(tmpBb, buffer.getUsed());
-	}
-
-	public static @NonNull DynInteger createFromByteBuffer(@NonNull ByteBuffer input, int sizeBytes) throws IllegalArgumentException {
-		try {
-			return switch (sizeBytes) {
-					case 1 -> new DynInteger(Byte.toUnsignedLong(input.get()), 1);
-					case 2 -> new DynInteger(Short.toUnsignedLong(input.getShort()), 2);
-					case 4 -> new DynInteger(Integer.toUnsignedLong(input.getInt()), 4);
-					case 8 -> new DynInteger(input.getLong(), 8);
-					default -> throw new IllegalArgumentException();
-				};
-		} catch (BufferOverflowException ignored) {
-			throw new IllegalArgumentException("Buffer too small");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public DynInteger(long value, int sizeBytes) {
+	/**
+	 * Constructor.
+	 * @param value Value of the integer
+	 * @param sizeBytes Size of the integer in bytes (0/1/2/4/8)
+	 */
+	private DynInteger(long value, int sizeBytes) {
 		this.value = switch (sizeBytes) {
 				case 0 -> 0L;
 				case 1 -> (value % 256L);
@@ -72,6 +34,64 @@ public record DynInteger(long value, int sizeBytes) implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull DynInteger ofEmpty() {
+		return new DynInteger(0L, 0);
+	}
+
+	public static @NonNull DynInteger ofAutoSized(long value) {
+		if (value >= 0L && value < 256L) {
+			return new DynInteger(value, 1);
+		}
+		if (value >= 0L && value < 65536L) {
+			return new DynInteger(value, 2);
+		}
+		if (value >= 0L && value < 4294967296L) {
+			return new DynInteger(value, 4);
+		}
+		return new DynInteger(value, 8);
+	}
+
+	public static @NonNull DynInteger ofBufferBigEndian(@NonNull BufferExt buffer) throws IllegalArgumentException {
+		if (buffer.isEmpty()) {
+			return DynInteger.ofEmpty();
+		}
+		ByteBuffer tmpBb = ByteBuffer
+				.wrap(buffer.getBaPtr(), 0, buffer.getUsed())
+				.order(ByteOrder.BIG_ENDIAN);
+		return ofByteBuffer(tmpBb, buffer.getUsed());
+	}
+
+	public static @NonNull DynInteger ofByteBuffer(@NonNull ByteBuffer input, int sizeBytes) throws IllegalArgumentException {
+		try {
+			return switch (sizeBytes) {
+					case 0 -> new DynInteger(0, 0);
+					case 1 -> new DynInteger(Byte.toUnsignedLong(input.get()), 1);
+					case 2 -> new DynInteger(Short.toUnsignedLong(input.getShort()), 2);
+					case 4 -> new DynInteger(Integer.toUnsignedLong(input.getInt()), 4);
+					case 8 -> new DynInteger(input.getLong(), 8);
+					default -> throw new IllegalArgumentException("sizeBytes must be 0/1/2/4/8");
+				};
+		} catch (BufferOverflowException ignored) {
+			throw new IllegalArgumentException("Buffer too small");
+		}
+	}
+
+	public static @NonNull DynInteger of(long value, int sizeBytes) {
+		return new DynInteger(sizeBytes > 0 ? value : 0L, sizeBytes);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public long getValue() {
+		return value;
+	}
+
+	public int getSizeBytes() {
+		return sizeBytes;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull BufferExt toBufferExtBigEndian() {
@@ -98,6 +118,8 @@ public record DynInteger(long value, int sizeBytes) implements Cloneable {
 		return (sizeBytes == 0);
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public DynInteger clone() {
 		try {
@@ -116,7 +138,7 @@ public record DynInteger(long value, int sizeBytes) implements Cloneable {
 			return false;
 		}
 		DynInteger that = (DynInteger)o;
-		return value == that.value && sizeBytes == that.sizeBytes;
+		return (value == that.value && sizeBytes == that.sizeBytes);
 	}
 
 	public boolean equalsBufferBigEndian(@NonNull BufferExt buffer) {

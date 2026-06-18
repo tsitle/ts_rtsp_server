@@ -112,7 +112,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 
 		// validate MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			srtpPacketBufView.setOffset(srtpPacketBufView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+			srtpPacketBufView.setOffset(srtpPacketBufView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
 			validateMki(srtpPacketBufView, "SRTP");
 		}
 
@@ -124,7 +124,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 
 		// remove MKI
 		if (! ctxKmd.mki().isEmpty()) {
-			srtpPacketBufView.increaseLength(-1 * ctxKmd.mki().sizeBytes());
+			srtpPacketBufView.increaseLength(-1 * ctxKmd.mki().getSizeBytes());
 		}
 
 		// build IV

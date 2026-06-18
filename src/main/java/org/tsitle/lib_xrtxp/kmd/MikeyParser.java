@@ -383,7 +383,7 @@ public final class MikeyParser {
 				case MMSPPT_KDR:
 					try {
 						BufferExt tmpKdrBe = new BufferExt(tmpPolParamData);
-						mikeyData.spKdr = DynInteger.createFromBufferBigEndian(tmpKdrBe);
+						mikeyData.spKdr = DynInteger.ofBufferBigEndian(tmpKdrBe);
 					} catch (IllegalArgumentException e) {
 						errMsg = String.format("Unsupported MIKEY SP KDR length %d, expected 0/1/2/4/8", tmpBy);
 					}
@@ -513,7 +513,7 @@ public final class MikeyParser {
 			BufferExt tmpKvBe = new BufferExt();
 			extractBytes(FNC_NAME, "KEMAC KV SPI/MKI", buf, tmpKvLen, tmpKvBe);
 			try {
-				mikeyData.kemacKvDataSpiOrMki = DynInteger.createFromBufferBigEndian(tmpKvBe);
+				mikeyData.kemacKvDataSpiOrMki = DynInteger.ofBufferBigEndian(tmpKvBe);
 			} catch (IllegalArgumentException e) {
 				throw new SrtxpSecurityException("Unsupported KEMAC KV SPI/MKI length " + tmpKvLen + ", expected 0/1/2/4/8");
 			}

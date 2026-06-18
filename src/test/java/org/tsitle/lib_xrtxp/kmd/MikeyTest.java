@@ -20,9 +20,9 @@ class MikeyTest {
 		final BufferExt expMasterEncKey = BufferExt.decodeHexString("68FF7F2B360A05AC381A67D784AE6328");
 		final BufferExt expMasterSalt = BufferExt.decodeHexString("3D884CC40A60EBD2CA7FE01F0670");
 		final int expAuthKeyLength = KeySizes.AUTH_KEY_SIZE_160;
-		final DynInteger expMasterKeyIdentifier = new DynInteger(167395361L, 4);
+		final DynInteger expMasterKeyIdentifier = DynInteger.of(167395361L, 4);
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x048F147FL);
-		final DynInteger expKdrPackets = DynInteger.createEmpty();
+		final DynInteger expKdrPackets = DynInteger.ofEmpty();
 
 		assertEquals(expMasterEncKey, kmd.masterKey());
 		assertEquals(expMasterSalt, kmd.masterSalt());
@@ -64,7 +64,7 @@ class MikeyTest {
 				KeySizes.AES_KEY_SIZE_256,
 				KeySizes.AUTH_KEY_SIZE_080,
 				5,
-				new DynInteger(1L, SrtxpKmd.DEFAULT_MKI_LEN),
+				DynInteger.of(1L, SrtxpKmd.DEFAULT_MKI_LEN),
 				expSsrcId
 			);
 		final String outputMsgB64 = MikeyGenerator.generate(kmdExp);
@@ -76,7 +76,7 @@ class MikeyTest {
 	@Test
 	void encodeMsgRoundtrip4_notEqual1() throws Exception {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x147FAB12L);
-		final DynInteger expMasterKeyIdentifier = new DynInteger(1801278017383574705L, 8);
+		final DynInteger expMasterKeyIdentifier = DynInteger.of(1801278017383574705L, 8);
 
 		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
 
@@ -89,7 +89,7 @@ class MikeyTest {
 				kmdPre.authTagLen(),
 				expMasterKeyIdentifier,
 				expSsrcId,
-				DynInteger.createWithAutoSize(456789L)
+				DynInteger.ofAutoSized(456789L)
 			);
 		final String outputMsgB64a = MikeyGenerator.generate(kmdInpA);
 		SrtxpKmd kmdResA = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64a);
@@ -102,8 +102,8 @@ class MikeyTest {
 				kmdPre.authKeyLen(),
 				kmdPre.authTagLen(),
 				expMasterKeyIdentifier,
-				RtspProtoIdXsrc.of(expSsrcId.getId32bit().orElse(0L) + 1L),  // modify SSRC
-				DynInteger.createWithAutoSize(456789L)
+				RtspProtoIdXsrc.of(expSsrcId.getId32bit().orElse(0L) + 1L),  // <-- modify SSRC
+				DynInteger.ofAutoSized(456789L)
 			);
 		final String outputMsgB64b = MikeyGenerator.generate(kmdInpB);
 		SrtxpKmd kmdResB = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64b);
@@ -114,7 +114,7 @@ class MikeyTest {
 	@Test
 	void encodeMsgRoundtrip4_notEqual2() throws Exception {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x147FAB12L);
-		final DynInteger expMasterKeyIdentifier = new DynInteger(180127801738357470L, 8);
+		final DynInteger expMasterKeyIdentifier = DynInteger.of(180127801738357470L, 8);
 
 		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
 
@@ -127,7 +127,7 @@ class MikeyTest {
 				kmdPre.authTagLen(),
 				expMasterKeyIdentifier,
 				expSsrcId,
-				DynInteger.createWithAutoSize(Integer.MAX_VALUE - 10)
+				DynInteger.ofAutoSized(Integer.MAX_VALUE - 10)
 			);
 		final String outputMsgB64a = MikeyGenerator.generate(kmdInpA);
 		SrtxpKmd kmdResA = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64a);
@@ -141,7 +141,7 @@ class MikeyTest {
 				kmdPre.authTagLen(),
 				expMasterKeyIdentifier,
 				expSsrcId,
-				DynInteger.createWithAutoSize(Integer.MAX_VALUE - 101)  // modify KDR
+				DynInteger.ofAutoSized(Integer.MAX_VALUE - 101)  // <-- modify KDR
 			);
 		final String outputMsgB64b = MikeyGenerator.generate(kmdInpB);
 		SrtxpKmd kmdResB = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64b);
@@ -162,9 +162,9 @@ class MikeyTest {
 		final BufferExt expMasterEncKey = BufferExt.decodeHexString("8A6FEF072AF4B12B89A084EDBD860CE2");
 		final BufferExt expMasterSalt = BufferExt.decodeHexString("07D3B431A506BD6015722A09FB0C");
 		final int expAuthKeyLength = KeySizes.AUTH_KEY_SIZE_080;
-		final DynInteger expMasterKeyIdentifier = DynInteger.createEmpty();
+		final DynInteger expMasterKeyIdentifier = DynInteger.ofEmpty();
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x7F6F6CE8L);
-		final DynInteger expKdrPackets = DynInteger.createEmpty();
+		final DynInteger expKdrPackets = DynInteger.ofEmpty();
 
 		assertEquals(expMasterEncKey, kmd.masterKey());
 		assertEquals(expMasterSalt, kmd.masterSalt());
@@ -187,7 +187,7 @@ class MikeyTest {
 
 	@Test
 	void encodeMsgRoundtrip6_kdr1() throws Exception {
-		final DynInteger expKdr = new DynInteger(Integer.MAX_VALUE, 4);  // 4-byte value
+		final DynInteger expKdr = DynInteger.of(Integer.MAX_VALUE, 4);  // 4-byte value
 
 		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(1001L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
@@ -198,7 +198,7 @@ class MikeyTest {
 
 	@Test
 	void encodeMsgRoundtrip6_kdr2() throws Exception {
-		final DynInteger expKdr = new DynInteger(Long.MAX_VALUE, 8);  // 8-byte value
+		final DynInteger expKdr = DynInteger.of(Long.MAX_VALUE, 8);  // 8-byte value
 
 		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(2002L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
@@ -212,11 +212,21 @@ class MikeyTest {
 		final DynInteger expKdr = DynInteger.of(0xFFFFFFFF_FFFFFFAAL, 8);  // 8-byte value
 
 		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(2002L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
-		System.out.println(resObj);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 
 		assertEquals(expKdr, kmdActual.kdr());
+	}
+
+	@Test
+	void encodeMsgRoundtrip7_mki() throws Exception {
+		final DynInteger expMki = DynInteger.of(0xFFFFFFFF_FFFFFFAAL, 8);  // 8-byte value
+
+		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(expMki, RtspProtoIdXsrc.of(0x147FAB12L));
+		final String outputMsgB64 = MikeyGenerator.generate(resObj);
+		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
+
+		assertEquals(expMki, kmdActual.mki());
 	}
 
 }

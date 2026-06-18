@@ -37,7 +37,7 @@ public abstract class SrtpContextBase extends SrtxpContextBase {
 	 * @return Extra packet length
 	 */
 	public int getSrtpExtraPacketLength() {
-		return (ctxKmd.authTagLen() + ctxKmd.mki().sizeBytes());
+		return (ctxKmd.authTagLen() + ctxKmd.mki().getSizeBytes());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

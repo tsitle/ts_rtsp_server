@@ -112,7 +112,7 @@ public abstract class SrtxpContextBase {
 		if (ctxKmd.mki().isEmpty()) {
 			return Optional.empty();
 		}
-		return Optional.of(ctxKmd.mki().value());
+		return Optional.of(ctxKmd.mki().getValue());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -324,7 +324,7 @@ public abstract class SrtxpContextBase {
 
 		// compute Auth Tag over: encrypted RTxP packet
 		bufView.setOffset(0);
-		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().sizeBytes());
+		bufView.setLength(bufView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
 		try {
 			if (isRtpPkt) {
 				computeAuthTagForRtp(bufView, srtpRoc, cacheAuthTagActualBuf);
@@ -345,7 +345,7 @@ public abstract class SrtxpContextBase {
 
 	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpInvalidMkiException {
 		final int orgLen = bufView.getLength();
-		bufView.setLength(ctxKmd.mki().sizeBytes());
+		bufView.setLength(ctxKmd.mki().getSizeBytes());
 		bufView.copyViewIntoBe(cacheValidateMkiBuf);
 		if (! ctxKmd.mki().equalsBufferBigEndian(cacheValidateMkiBuf)) {
 			throw new SrtxpInvalidMkiException("Invalid MKI in " + packetDesc + " packet: " +
