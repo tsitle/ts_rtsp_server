@@ -203,11 +203,11 @@ public final class MikeyGenerator {
 		msgBb.put((byte)kmd.authTagLen());
 
 		// -- KDR --
-		if (! kmd.kdr().isEmpty() && kmd.kdr().value() > 0) {
+		if (! kmd.kdr().isEmpty() && kmd.kdr().getValue() != 0L) {
 			msgBb.put(MikeyMsgSecPolicyParamType.MMSPPT_KDR.getValue());  // Parameter Type
 			if (kmd.kdr().sizeBytes() <= 4) {
 				msgBb.put((byte)0x04);  // Parameter Length
-				msgBb.putInt((int)kmd.kdr().value());
+				msgBb.putInt(Long.valueOf(kmd.kdr().getValue()).intValue());
 			} else {
 				msgBb.put((byte)0x08);  // Parameter Length
 				msgBb.putLong(kmd.kdr().value());

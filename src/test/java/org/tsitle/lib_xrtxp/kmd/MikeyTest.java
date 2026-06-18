@@ -207,4 +207,16 @@ class MikeyTest {
 		assertEquals(expKdr, kmdActual.kdr());
 	}
 
+	@Test
+	void encodeMsgRoundtrip6_kdr3() throws Exception {
+		final DynInteger expKdr = DynInteger.of(0xFFFFFFFF_FFFFFFAAL, 8);  // 8-byte value
+
+		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(2002L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
+		System.out.println(resObj);
+		final String outputMsgB64 = MikeyGenerator.generate(resObj);
+		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
+
+		assertEquals(expKdr, kmdActual.kdr());
+	}
+
 }

@@ -130,8 +130,8 @@ public abstract class SrtxpContextBase {
 				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd, 0L);
 			}
 			markerNew = 0L;
-		} else if (! ctxKmd.kdr().isEmpty() && ctxKmd.kdr().value() > 0L) {
-			markerNew = packetIndex / ctxKmd.kdr().value();
+		} else if (! ctxKmd.kdr().isEmpty() && ctxKmd.kdr().getValue() != 0L) {
+			markerNew = Long.divideUnsigned(packetIndex, ctxKmd.kdr().getValue());
 			if (markerNew == markerLast) {
 				return;
 			}

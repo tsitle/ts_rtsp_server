@@ -82,9 +82,6 @@ final class SrtxpKeyDerivation {
 		if (kmd.masterSalt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtxpSecurityException("Invalid master salt length, expected " + KeySizes.SALT_SIZE + " bytes");
 		}
-		if (! kmd.kdr().isEmpty() && kmd.kdr().value() < 0L) {
-			throw new SrtxpSecurityException("Invalid KDR, must be >= 0");
-		}
 		if (packetIndex < 0L) {
 			throw new SrtxpSecurityException("Invalid packet index, must be >= 0");
 		}
@@ -134,7 +131,7 @@ final class SrtxpKeyDerivation {
 		 *   aligned so that their least significant bits agree (right-alignment).
 		 */
 
-		long r48 = (kdr == 0L ? 0L : packetIndex / kdr) & 0xFFFFFFFFFFFFL;
+		long r48 = (kdr == 0L ? 0L : Long.divideUnsigned(packetIndex, kdr)) & 0xFFFF_FFFFFFFFL;
 
 		// x is 112 bits (14 bytes), IV is always 128 bits (16 bytes) regardless of key size
 		byte[] iv = new byte[KeySizes.IV_SIZE];
