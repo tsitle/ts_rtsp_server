@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class RtspProtoLowMsgReaderTest {
+class RtspProtoLowMsgReaderTest {
 
 	static class TestLogs implements LogMsgInterface {
 		@Override

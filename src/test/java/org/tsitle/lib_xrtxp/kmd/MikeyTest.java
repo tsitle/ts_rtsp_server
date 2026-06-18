@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class MikeyTest {
+class MikeyTest {
 
 	@Test
 	void encodeMsgRoundtrip1() throws Exception {

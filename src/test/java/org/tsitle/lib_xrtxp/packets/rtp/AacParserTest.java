@@ -13,7 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class AacParserTest {
+class AacParserTest {
 
 	@Test
 	public void parse_aac() throws Exception {

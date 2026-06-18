@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TcpChannelNrTest {
+class TcpChannelNrTest {
 
 	@Test
 	public void testEmpty() {

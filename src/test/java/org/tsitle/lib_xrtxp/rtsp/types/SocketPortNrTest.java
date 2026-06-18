@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SocketPortNrTest {
+class SocketPortNrTest {
 
 	@Test
 	public void testEmpty() {

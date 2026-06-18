@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SrtxpContextTest {
+class SrtxpContextTest {
 
 	@Test
 	void protectRtp_should_encrypt_payload_and_append_valid_auth_tag() throws Exception {

@@ -45,15 +45,9 @@ class Common {
 	static final BufferExt DEFAULT_MASTER_KEY = (ENCR_KEY_SIZE_FOR_ALL_TESTS == 16 ? MASTER_KEY_128 : MASTER_KEY_256);
 	static final BufferExt DEFAULT_MASTER_SALT = BufferExt.decodeHexString("0EC675AD498AFEEBB6960B3AABE6");
 
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
+	private Common() { }
 
-	static byte[] createByteArrayFromBuffer(@NonNull BufferExt buf) {
-		byte[] data = new byte[buf.getUsed()];
-		buf.copyInto(0, data, 0, data.length);
-		return data;
-	}
-
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull SrtxpKmd createSrtxpKmdDefault(@NonNull RtspProtoIdXsrc ssrcId) {

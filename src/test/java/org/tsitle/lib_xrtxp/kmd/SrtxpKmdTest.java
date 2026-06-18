@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SrtxpKmdTest {
+class SrtxpKmdTest {
 
 	@Test
 	void simpleCloneMikey() throws RtspProtoNumberRangeException {

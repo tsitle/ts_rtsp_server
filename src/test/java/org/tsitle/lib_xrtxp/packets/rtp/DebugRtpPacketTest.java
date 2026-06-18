@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DebugRtpPacketTest {
+class DebugRtpPacketTest {
 
 	@Test
 	public void debugRtpPacket1() throws RtspProtoNumberRangeException {

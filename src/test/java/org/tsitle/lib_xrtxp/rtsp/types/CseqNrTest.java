@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoCseqNr;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CseqNrTest {
+class CseqNrTest {
 
 	@Test
 	public void testEmpty() {

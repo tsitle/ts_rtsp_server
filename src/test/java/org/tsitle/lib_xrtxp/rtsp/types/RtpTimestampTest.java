@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class RtpTimestampTest {
+class RtpTimestampTest {
 
 	@Test
 	public void testEmpty() {

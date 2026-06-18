@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RtspProtoAuthDigestTest {
+class RtspProtoAuthDigestTest {
 
 	@Test
 	public void testAuthDigest() {

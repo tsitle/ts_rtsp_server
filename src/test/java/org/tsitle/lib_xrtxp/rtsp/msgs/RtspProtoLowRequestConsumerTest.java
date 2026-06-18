@@ -24,7 +24,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RtspProtoLowRequestConsumerTest {
+class RtspProtoLowRequestConsumerTest {
 
 	static class TestLogs implements LogMsgInterface {
 		@Override

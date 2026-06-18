@@ -8,7 +8,7 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class NtpTimestampTest {
+class NtpTimestampTest {
 
 	@Test
 	void ntp_test1() {
