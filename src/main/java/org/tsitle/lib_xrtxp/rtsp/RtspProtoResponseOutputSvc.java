@@ -6,7 +6,6 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseProducer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -83,10 +82,8 @@ public final class RtspProtoResponseOutputSvc {
 		this.isResponseFromClient = isResponseFromClient;
 
 		// check if the supported message types are valid
-		for (RtspProtoMessageType tmpMt : this.cfgSupportedMessageTypes.getMts()) {
-			if (! RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES_INCOMING.contains(tmpMt)) {
-				throw new IllegalArgumentException("Unsupported request type " + tmpMt);
-			}
+		if (this.cfgSupportedMessageTypes.containsMt(RtspProtoMessageType.UNKNOWN)) {
+			throw new IllegalArgumentException("cfgSupportedMessageTypes contains UNKNOWN message type");
 		}
 
 		//

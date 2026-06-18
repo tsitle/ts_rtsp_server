@@ -61,10 +61,8 @@ public final class RtspProtoHighRequestConsumer {
 		this.parameterSetterInterface = parameterSetterInterface;
 
 		// check if the supported message types are valid
-		for (RtspProtoMessageType tmpMt : this.cfgSupportedMessageTypes.getMts()) {
-			if (! RtspProtoHighConstants.LH_SUPPORTED_MESSAGE_TYPES_INCOMING.contains(tmpMt)) {
-				throw new IllegalArgumentException("Unsupported request type " + tmpMt);
-			}
+		if (this.cfgSupportedMessageTypes.containsMt(RtspProtoMessageType.UNKNOWN)) {
+			throw new IllegalArgumentException("cfgSupportedMessageTypes contains UNKNOWN message type");
 		}
 	}
 
@@ -103,7 +101,7 @@ public final class RtspProtoHighRequestConsumer {
 		outputDataRequ.clear();
 
 		//
-		final String logMsgSuffix = " for " + inputMsgStc.messageType + " request, " +
+		final String logMsgSuffix = " (mt=" + inputMsgStc.messageType + "), " +
 				"rejecting request (URL='" + inputMsgStc.resourceUrl + "')";
 
 		//
@@ -318,7 +316,8 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoDataCntSessionState currentSessionState,
 				@NonNull RtspProtoHighMsgStructuredRequest input
 			) throws RtspProtoInvalidRequestException {
-		if (input.messageType == RtspProtoMessageType.DESCRIBE ||
+		if (input.messageType == RtspProtoMessageType.ANNOUNCE ||
+				input.messageType == RtspProtoMessageType.DESCRIBE ||
 				input.messageType == RtspProtoMessageType.GET_PARAMETER ||
 				input.messageType == RtspProtoMessageType.OPTIONS ||
 				input.messageType == RtspProtoMessageType.REDIRECT ||

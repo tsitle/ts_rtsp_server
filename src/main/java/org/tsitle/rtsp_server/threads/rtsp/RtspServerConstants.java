@@ -15,8 +15,8 @@ public final class RtspServerConstants {
 
 	public static final String SERVER_NAME = "TS RTSP Server";
 
-	/** Supported RTSP message types of the local host */
-	public static final Set<RtspProtoMessageType> SERVER_SUPPORTED_MESSAGE_TYPES = Set.of(
+	/** Supported incoming RTSP request types of the local host */
+	public static final Set<RtspProtoMessageType> SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES = Set.of(
 			RtspProtoMessageType.DESCRIBE,
 			RtspProtoMessageType.GET_PARAMETER,
 			RtspProtoMessageType.OPTIONS,

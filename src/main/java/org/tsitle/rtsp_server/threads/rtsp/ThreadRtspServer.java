@@ -108,9 +108,9 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			);
 
 		//
-		RtspProtoDataCntMessageTypes cfgServerSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
-		cfgServerSupportedMessageTypes.putAllMts(RtspServerConstants.SERVER_SUPPORTED_MESSAGE_TYPES);
-		cfgServerSupportedMessageTypes.writeProtect();
+		RtspProtoDataCntMessageTypes cfgSrvSuppIncomingMts = new RtspProtoDataCntMessageTypes();
+		cfgSrvSuppIncomingMts.putAllMts(RtspServerConstants.SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES);
+		cfgSrvSuppIncomingMts.writeProtect();
 
 		//
 		RtspUserAuthSvc userAuthSvc = new RtspUserAuthSvc(
@@ -126,7 +126,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				logMsgInterface,
 				true,
 				rtspConfig.getLogLevel(),
-				cfgServerSupportedMessageTypes,
+				cfgSrvSuppIncomingMts,
 				rtspConfig.getIsDebugPrintRtspRcvd(),
 				rtspConfig.getIsDebugDisableTransportUdp(),
 				this.rtspSessionInfo,
@@ -140,7 +140,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				false,
 				cfgServerNameAndVersion,
 				"",  // @TODO make Content-Language configurable
-				cfgServerSupportedMessageTypes,
+				cfgSrvSuppIncomingMts,
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
 				rtspConfig.getIsDebugPrintRtspSent(),
 				rtspConfig.getIsDebugDisableTransportUdp(),
