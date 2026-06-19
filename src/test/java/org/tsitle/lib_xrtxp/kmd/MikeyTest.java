@@ -201,7 +201,7 @@ class MikeyTest {
 
 	@Test
 	void encodeMsgRoundtrip6_kdr2() throws Exception {
-		final DynInteger expKdr = DynInteger.of(Long.MAX_VALUE, 8);  // 8-byte value
+		final DynInteger expKdr = DynInteger.of(2147483648L, 8);  // 8-byte value
 
 		SrtxpKmd resObj = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(2002L), RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);

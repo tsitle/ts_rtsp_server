@@ -13,8 +13,10 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 	/** RTSP message parameters to set */
 	public final @NonNull RtspProtoDataCntGetSetParamKvs requSetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
-	/** Announced SDP */
-	public final @NonNull RtspProtoDataCntSdp requAnnouncedSdp = new RtspProtoDataCntSdp();
+	/** Announced SDP in its raw form */
+	public final @NonNull RtspProtoDataCntSdpRaw requAnnouncedSdpRaw = new RtspProtoDataCntSdpRaw();
+	/** Announced SDP in its parsed form */
+	public final @NonNull RtspProtoDataCntSdpStructured requAnnouncedSdpStc = new RtspProtoDataCntSdpStructured();
 
 	/** RTSP message Sequence Number to use for sending a request */
 	private final @NonNull RtspProtoCseqNr requCseqNrToSend = RtspProtoCseqNr.ofZero();
@@ -48,7 +50,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		this.requAuthClient.copyFrom(other.requAuthClient);
 		this.requSetParamValues.copyFrom(other.requSetParamValues);
-		this.requAnnouncedSdp.copyFrom(other.requAnnouncedSdp);
+		this.requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
+		this.requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
 		this.requCseqNrToSend.copyFrom(other.requCseqNrToSend);
 		this.requRtspSessionState.copyFrom(other.requRtspSessionState);
 	}
@@ -103,7 +106,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		requAuthClient.clear();
 		requSetParamValues.clear();
-		requAnnouncedSdp.clear();
+		requAnnouncedSdpRaw.clear();
+		requAnnouncedSdpStc.clear();
 		requCseqNrToSend.clear();
 		try {
 			requCseqNrToSend.setCseq32bit(0L);
@@ -119,7 +123,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		requAuthClient.writeProtect();
 		requSetParamValues.writeProtect();
-		requAnnouncedSdp.writeProtect();
+		requAnnouncedSdpRaw.writeProtect();
+		requAnnouncedSdpStc.writeProtect();
 		requCseqNrToSend.writeProtect();
 		requRtspSessionState.writeProtect();
 	}

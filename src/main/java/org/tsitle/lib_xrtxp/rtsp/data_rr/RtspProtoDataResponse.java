@@ -10,8 +10,10 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 	/** RTSP message parameters */
 	public final @NonNull RtspProtoDataCntGetSetParamKvs respGetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
-	/** Announced SDP */
-	public final @NonNull RtspProtoDataCntSdp respDescribeSdp = new RtspProtoDataCntSdp();
+	/** Announced SDP in its raw form */
+	public final @NonNull RtspProtoDataCntSdpRaw respDescribeSdpRaw = new RtspProtoDataCntSdpRaw();
+	/** Announced SDP in its parsed form */
+	public final @NonNull RtspProtoDataCntSdpStructured respDescribeSdpStc = new RtspProtoDataCntSdpStructured();
 
 	/** Supported Message Types */
 	public final @NonNull RtspProtoDataCntMessageTypes respSuppMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -49,7 +51,8 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 
 		respAuthServer.clear();
 		respGetParamValues.clear();
-		respDescribeSdp.clear();
+		respDescribeSdpRaw.clear();
+		respDescribeSdpStc.clear();
 		respSuppMessageTypes.clear();
 	}
 
@@ -59,7 +62,8 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 
 		respAuthServer.writeProtect();
 		respGetParamValues.writeProtect();
-		respDescribeSdp.writeProtect();
+		respDescribeSdpRaw.writeProtect();
+		respDescribeSdpStc.writeProtect();
 		respSuppMessageTypes.writeProtect();
 	}
 

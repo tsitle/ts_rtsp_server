@@ -23,6 +23,9 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -189,7 +192,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
 		// s: Session Name
-		resL.add(String.format("s=%s", RtspProtoSdpConstants.SESSION_NAME));
+		resL.add(String.format("s=%s", RtspProtoSdpPrivateConstants.SESSION_NAME));
 		// i: Session Information
 		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr()));
 		// t: Time Active
@@ -374,8 +377,9 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		// m: Media Description with available codec(s)
 		final int tmpM_port = 0;
-		outputList.add(String.format("m=%s %d RTP/%sAVP %d",
-				(useVideo ? "video" : "audio"), tmpM_port, requireSrtp ? "S" : "",
+		outputList.add(String.format("m=%s %d %s %d",
+				(useVideo ? RtspProtoSdpMediaType.VIDEO.name() : RtspProtoSdpMediaType.AUDIO.name()).toLowerCase(),
+				tmpM_port, requireSrtp ? RtspProtoSdpTransport.RTP_SAVP : RtspProtoSdpTransport.RTP_AVP,
 				ssInfo.codec().getValue()));
 		// c: Connection Information (can be an IP address or a hostname)
 		//outputList.add("c=IN IP4 0.0.0.0");
@@ -434,8 +438,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
 								"constantDuration=%d",  // optional: 512/960/1024 samples per frame
 								ssInfo.codec().getValue(),
-								RtspProtoSdpConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
-								RtspProtoSdpConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
+								RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
+								RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
 								ssInfo.audioAacHexCfg(),
 								RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
 								RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
@@ -449,7 +453,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 								"a=fmtp:%d " +
 								"packetization-mode=%d",
 								ssInfo.codec().getValue(),
-								RtspProtoSdpConstants.H26xPacketizationMode.NON_INTERLEAVED.value
+								RtspProtoSdpPrivateConstants.H26xPacketizationMode.NON_INTERLEAVED.value
 					));
 				break;
 		}

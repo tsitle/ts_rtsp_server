@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 import org.tsitle.lib_xrtxp.common.helpers.BitWriterHelper;
-import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConstants;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 
 /**
  * RTP Packet Payload for AAC.<br />

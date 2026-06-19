@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp;
 
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConstants;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 
 public final class RtpConstants {
 

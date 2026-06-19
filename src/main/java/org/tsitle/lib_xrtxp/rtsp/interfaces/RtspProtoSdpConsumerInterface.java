@@ -1,7 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdp;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpStructured;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
 
 public interface RtspProtoSdpConsumerInterface {
@@ -15,7 +16,8 @@ public interface RtspProtoSdpConsumerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void parseSdpFromDescribe(
-			@NonNull RtspProtoDataCntSdp inputSdp
+			@NonNull RtspProtoDataCntSdpRaw inputSdp,
+			@NonNull RtspProtoDataCntSdpStructured outputSdp
 		) throws RtspProtoSdpException;
 
 	/**
@@ -27,7 +29,8 @@ public interface RtspProtoSdpConsumerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void parseUpdatedSdpFromAnnounce(
-			@NonNull RtspProtoDataCntSdp inputSdp
+			@NonNull RtspProtoDataCntSdpRaw inputSdp,
+			@NonNull RtspProtoDataCntSdpStructured outputSdp
 		) throws RtspProtoSdpException;
 
 }
