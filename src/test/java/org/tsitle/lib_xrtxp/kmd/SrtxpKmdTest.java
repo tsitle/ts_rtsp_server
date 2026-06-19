@@ -13,8 +13,8 @@ class SrtxpKmdTest {
 
 	@Test
 	void simpleCloneMikey() throws RtspProtoNumberRangeException {
-		SrtxpKmd kmd = SrtxpKmd.createWithDefaults(
-				1001L,
+		SrtxpKmd kmd = SrtxpKmd.createForMikeyWithDefaults(
+				DynInteger.ofAutoSized(1001L),
 				RtspProtoIdXsrc.of(0xDEADBEEFL),
 				DynInteger.ofAutoSized(2002L)
 			);
@@ -24,7 +24,7 @@ class SrtxpKmdTest {
 
 	@Test
 	void simpleCloneSdes() throws RtspProtoNumberRangeException {
-		SrtxpKmd kmd = SrtxpKmd.createForLegacySdes(RtspProtoIdXsrc.of(0x874301FAL));
+		SrtxpKmd kmd = SrtxpKmd.createForLegacySdesWithDefaults(987, RtspProtoIdXsrc.of(0x874301FAL));
 
 		compareKmds(kmd);
 	}
@@ -36,7 +36,8 @@ class SrtxpKmdTest {
 		SrtxpKmd clonedKmd = kmd.clone();
 
 		assertNotSame(kmd, clonedKmd);
-		assertEquals(kmd.isForLegacySdes(), clonedKmd.isForLegacySdes());
+		assertEquals(kmd.getMetaIsForLegacySdes(), clonedKmd.getMetaIsForLegacySdes());
+		assertEquals(kmd.getMetaTagForLegacySdes(), clonedKmd.getMetaTagForLegacySdes());
 		assertEquals(kmd.encrKeyLen(), clonedKmd.encrKeyLen());
 		assertEquals(kmd.masterKey(), clonedKmd.masterKey());
 		assertEquals(kmd.masterSalt(), clonedKmd.masterSalt());

@@ -306,7 +306,7 @@ public final class RtspProtoHighRequestProducer {
 			throw new IllegalArgumentException(FNC_NAME + ": KMD for Sub-Stream not found");
 		}
 		SrtxpKmd tmpKmd = tmpOptKmd.get();
-		if (tmpKmd.isForLegacySdes()) {
+		if (tmpKmd.getMetaIsForLegacySdes()) {
 			throw new IllegalArgumentException(FNC_NAME + ": KMD must not be for legacy SDES key management");
 		}
 		String tmpCryptoStrB64;

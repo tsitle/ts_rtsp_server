@@ -738,6 +738,7 @@ public final class RtspProtoHighRequestConsumer {
 			 */
 			kmdToUse = new SrtxpKmd(
 					false,
+					-1,
 					kmd.encrKeyLen(),
 					kmd.masterKey(),
 					kmd.masterSalt(),

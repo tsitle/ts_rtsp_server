@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.kmd.constants;
 
-public class KeySizes {
+public final class KeySizes {
+
+	private KeySizes() { }
 
 	/** Size of the AES Encryption key in bytes - for AES-CM-128 */
 	public static final int AES_KEY_SIZE_128 = 16;

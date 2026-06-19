@@ -385,7 +385,8 @@ public abstract class SrtxpContextBase {
 	/** For Unit Tests only */
 	void setKmdMasterKeyIdentifier(@NonNull DynInteger mki) {
 		ctxKmd = new SrtxpKmd(
-				false,
+				ctxKmd.getMetaIsForLegacySdes(),
+				ctxKmd.getMetaTagForLegacySdes().orElse(-1),
 				ctxKmd.encrKeyLen(),
 				ctxKmd.masterKey().clone(),
 				ctxKmd.masterSalt().clone(),

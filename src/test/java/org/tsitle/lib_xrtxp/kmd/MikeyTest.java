@@ -48,7 +48,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip2() throws Exception {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x8F147FABL);
 
-		SrtxpKmd kmdExp = SrtxpKmd.createWithDefaults(1L, expSsrcId);
+		SrtxpKmd kmdExp = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(1L), expSsrcId);
 		final String outputMsgB64 = MikeyGenerator.generate(kmdExp);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 
@@ -59,8 +59,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip3() throws Exception {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x147FAB12L);
 
-		SrtxpKmd kmdExp = SrtxpKmd.createWithCustomKeySizes(
-				false,
+		SrtxpKmd kmdExp = SrtxpKmd.createForMikeyWithCustomKeySizes(
 				KeySizes.AES_KEY_SIZE_256,
 				KeySizes.AUTH_KEY_SIZE_080,
 				5,
@@ -78,10 +77,11 @@ class MikeyTest {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x147FAB12L);
 		final DynInteger expMasterKeyIdentifier = DynInteger.of(1801278017383574705L, 8);
 
-		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
+		SrtxpKmd kmdPre = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(0L), expSsrcId);
 
 		SrtxpKmd kmdInpA = new SrtxpKmd(
 				false,
+				-1,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -96,6 +96,7 @@ class MikeyTest {
 
 		SrtxpKmd kmdInpB = new SrtxpKmd(
 				false,
+				-1,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -116,10 +117,11 @@ class MikeyTest {
 		final RtspProtoIdXsrc expSsrcId = RtspProtoIdXsrc.of(0x147FAB12L);
 		final DynInteger expMasterKeyIdentifier = DynInteger.of(180127801738357470L, 8);
 
-		SrtxpKmd kmdPre = SrtxpKmd.createWithDefaults(0L, expSsrcId);
+		SrtxpKmd kmdPre = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(0L), expSsrcId);
 
 		SrtxpKmd kmdInpA = new SrtxpKmd(
 				false,
+				-1,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -134,6 +136,7 @@ class MikeyTest {
 
 		SrtxpKmd kmdInpB = new SrtxpKmd(
 				false,
+				-1,
 				kmdPre.encrKeyLen(),
 				kmdPre.masterKey(),
 				kmdPre.masterSalt(),
@@ -189,7 +192,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip6_kdr1() throws Exception {
 		final DynInteger expKdr = DynInteger.of(Integer.MAX_VALUE, 4);  // 4-byte value
 
-		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(1001L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
+		SrtxpKmd resObj = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(1001L), RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 
@@ -200,7 +203,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip6_kdr2() throws Exception {
 		final DynInteger expKdr = DynInteger.of(Long.MAX_VALUE, 8);  // 8-byte value
 
-		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(2002L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
+		SrtxpKmd resObj = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(2002L), RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 
@@ -211,7 +214,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip6_kdr3() throws Exception {
 		final DynInteger expKdr = DynInteger.of(0xFFFFFFFF_FFFFFFAAL, 8);  // 8-byte value
 
-		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(2002L, RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
+		SrtxpKmd resObj = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(3003L), RtspProtoIdXsrc.of(0x147FAB12L), expKdr);
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 
@@ -222,7 +225,7 @@ class MikeyTest {
 	void encodeMsgRoundtrip7_mki() throws Exception {
 		final DynInteger expMki = DynInteger.of(0xFFFFFFFF_FFFFFFAAL, 8);  // 8-byte value
 
-		SrtxpKmd resObj = SrtxpKmd.createWithDefaults(expMki, RtspProtoIdXsrc.of(0x147FAB12L));
+		SrtxpKmd resObj = SrtxpKmd.createForMikeyWithDefaults(expMki, RtspProtoIdXsrc.of(0x147FAB12L));
 		final String outputMsgB64 = MikeyGenerator.generate(resObj);
 		SrtxpKmd kmdActual = MikeyParser.parseMickeyMsgIntoKmd(outputMsgB64);
 

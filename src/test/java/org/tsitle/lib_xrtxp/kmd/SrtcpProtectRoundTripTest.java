@@ -98,6 +98,7 @@ class SrtcpProtectRoundTripTest {
 
 		SrtxpKmd rtcpKmd = new SrtxpKmd(
 				false,
+				-1,
 				mkeyLen,
 				new BufferExt(masterKeyBa),
 				new BufferExt(masterSaltBa),

@@ -335,8 +335,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			// @TODO Try to fix this in GStreamer once my pending Merge Request (#11629) for the Auth Key length issue is accepted.
 			boolean isForBuggyGstreamer = clientUserAgent.startsWith("GStreamer");
 			if (isForBuggyGstreamer) {
-				return SrtxpKmd.createWithCustomKeySizes(
-						false,
+				return SrtxpKmd.createForMikeyWithCustomKeySizes(
 						SrtxpKmd.DEFAULT_ENCR_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
@@ -344,13 +343,13 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						ssrcId
 					);
 			}
-			return SrtxpKmd.createWithDefaults(1L, ssrcId);
+			return SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(1L), ssrcId);
 		}
 		/*
 		 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
 		 * Similarly, it will always request RTP/AVP transport in the SETUP request.
 		 */
-		return SrtxpKmd.createForLegacySdes(ssrcId);
+		return SrtxpKmd.createForLegacySdesWithDefaults(1, ssrcId);
 	}
 
 	private void buildSdpForSubStream_output(
@@ -465,7 +464,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		//System.out.println(">>>>>>>>>>>>>>>> " + kmdOutboundForSs);
 		try {
-			if (! kmdOutboundForSs.isForLegacySdes()) {
+			if (! kmdOutboundForSs.getMetaIsForLegacySdes()) {
 				/*
 				 * modern MIKEY key management
 				 */
@@ -477,17 +476,15 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				 */
 				String tmpSdesB64 = kmdOutboundForSs.getMasterKeyAndSaltAsBase64();
 
-				int tmpCryptoSdesTag = 1;  // @TODO increment per ANNOUNCE request
-
 				String tmpOutpLine = String.format("a=crypto:%s AES_CM_128_HMAC_SHA1_80 inline:%s",  // only MasterKey and MasterSalt
-						Integer.toUnsignedString(tmpCryptoSdesTag), tmpSdesB64);
+						Integer.toUnsignedString(kmdOutboundForSs.getMetaTagForLegacySdes().orElse(1)), tmpSdesB64);
 
-				//tmpOutpLine += String.format("|%s",  // key lifetime, format "2^DIGITS" (not supported by Lavf)
-						//RtspConstants.SRTXP_REKEYING_INTERVAL_PACKETS_EXP2_STR);
+				//tmpOutpLine += String.format("|%s",  // key lifetime, format "2^DIGITS" or "INTEGER" (not supported by Lavf)
+						//Long.toUnsignedString(kmdOutboundForSs.kdr().getValue()));
 
 				//tmpOutpLine += String.format("|%s:%d",  // MKI, format "MKI_value:MKI_length_bytes" (not supported by Lavf)
-						//Long.toUnsignedString(kmdOutboundForSs.mki().value()),
-						//kmdOutboundForSs.mki().sizeBytes());
+						//Long.toUnsignedString(kmdOutboundForSs.mki().getValue()),
+						//kmdOutboundForSs.mki().getSizeBytes());
 
 				outputList.add(tmpOutpLine);
 			}

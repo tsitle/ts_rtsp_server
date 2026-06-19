@@ -23,7 +23,7 @@ public final class RtspProtoKmdsStream implements Cloneable {
 		if (idSubStream.isEmpty()) {
 			throw new IllegalArgumentException("idSubStream cannot be empty");
 		}
-		if (areKmdsForLegacySdes != null && areKmdsForLegacySdes != kmd.isForLegacySdes()) {
+		if (areKmdsForLegacySdes != null && areKmdsForLegacySdes != kmd.getMetaIsForLegacySdes()) {
 			throw new IllegalArgumentException("Cannot mix legacy SDES and non-legacy SDES KMDs");
 		}
 		RtspProtoKmdForSubStream trg;
@@ -37,7 +37,7 @@ public final class RtspProtoKmdsStream implements Cloneable {
 			trg = kmdSs2;
 		}
 		trg.setKmd(kmd, idSubStream);
-		areKmdsForLegacySdes = kmd.isForLegacySdes();
+		areKmdsForLegacySdes = kmd.getMetaIsForLegacySdes();
 	}
 
 	public boolean containsKmdForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {

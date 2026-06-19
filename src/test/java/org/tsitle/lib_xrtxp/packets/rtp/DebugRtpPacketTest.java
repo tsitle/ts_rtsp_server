@@ -271,6 +271,7 @@ class DebugRtpPacketTest {
 		 */
 		SrtxpKmd kmdMod = new SrtxpKmd(
 				false,
+				-1,
 				kmdOrg.encrKeyLen(),
 				kmdOrg.masterKey(),
 				kmdOrg.masterSalt(),

@@ -33,7 +33,7 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 		}
 		this.kmd = kmd.clone();
 		this.idSubStream.copyFrom(idSubStream);
-		isKmdForLegacySdes = kmd.isForLegacySdes();
+		isKmdForLegacySdes = kmd.getMetaIsForLegacySdes();
 	}
 	public Optional<SrtxpKmd> getKmd() {
 		if (kmd == null) {

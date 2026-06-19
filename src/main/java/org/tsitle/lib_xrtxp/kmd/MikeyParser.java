@@ -82,6 +82,7 @@ public final class MikeyParser {
 		}
 		return new SrtxpKmd(
 				false,
+				-1,
 				mikeyData.spEncrKeyLen,
 				mikeyData.kemacMasterKey,
 				mikeyData.kemacMasterSalt,

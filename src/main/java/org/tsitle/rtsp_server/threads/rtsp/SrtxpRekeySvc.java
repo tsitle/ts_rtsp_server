@@ -24,6 +24,15 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
 import java.util.Optional;
 
+/**
+ * Re-keying service for SRTP and SRTCP encryption.<br />
+ * <br />
+ * From <a href="https://datatracker.ietf.org/doc/html/rfc4568#section-6.2.1">RFC-4568 Section 6.2.1</a>:<br />
+ * <br />
+ * SRTP allows 2^48 SRTP packets or 2^31 SRTCP packets, whichever comes first.<br />
+ * However, it is RECOMMENDED that automated key management allows easy and efficient
+ * rekeying at intervals far smaller than 2^31 packets given today's media rates or even HDTV media rates.
+ */
 final class SrtxpRekeySvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
@@ -148,7 +157,7 @@ final class SrtxpRekeySvc {
 				return false;  // shutdown the session
 			}
 			kmdsOutbound.putKmdForSubStream(tmpNextKmdOutbound, ctfos.idSubStream);
-			rekeyingProtoIsMikey = (rekeyingProtoIsMikey && ! tmpNextKmdOutbound.isForLegacySdes());
+			rekeyingProtoIsMikey = (rekeyingProtoIsMikey && ! tmpNextKmdOutbound.getMetaIsForLegacySdes());
 		}
 
 		//

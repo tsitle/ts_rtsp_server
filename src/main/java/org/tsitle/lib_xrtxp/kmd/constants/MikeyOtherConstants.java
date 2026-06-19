@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.kmd.constants;
 
-public class MikeyOtherConstants {
+public final class MikeyOtherConstants {
+
+	private MikeyOtherConstants() { }
 
 	/** Common Header: version */
 	public static final byte MOC_CHD_VERSION = (byte)0x01;

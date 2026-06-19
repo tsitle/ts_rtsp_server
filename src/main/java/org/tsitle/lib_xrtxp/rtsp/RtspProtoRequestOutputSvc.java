@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
+import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -386,7 +387,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
-		if (kmdOutbound.isForLegacySdes()) {
+		if (kmdOutbound.getMetaIsForLegacySdes()) {
 			throw new IllegalArgumentException("KMD cannot be for legacy SDES");
 		}
 
@@ -496,8 +497,8 @@ public final class RtspProtoRequestOutputSvc {
 
 		//
 		RtspProtoDataCntMessageTypes tmpRhSuppMts = rtspSessionInfo.getRhSupportedMessageTypes();
-		if ((tmpSrtxpKmd.isForLegacySdes() && ! tmpRhSuppMts.containsMt(RtspProtoMessageType.ANNOUNCE)) ||
-				(! tmpSrtxpKmd.isForLegacySdes() && ! tmpRhSuppMts.containsMt(RtspProtoMessageType.SET_PARAMETER))) {
+		if ((tmpSrtxpKmd.getMetaIsForLegacySdes() && ! tmpRhSuppMts.containsMt(RtspProtoMessageType.ANNOUNCE)) ||
+				(! tmpSrtxpKmd.getMetaIsForLegacySdes() && ! tmpRhSuppMts.containsMt(RtspProtoMessageType.SET_PARAMETER))) {
 			throw new RtspProtoInvalidRequestException("remote host does not support SRTxP re-keying");
 		}
 		if (tmpSrtxpKmd.mki().isEmpty()) {
@@ -505,11 +506,22 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// generate the new Key Management Data
-		if (! tmpSrtxpKmd.isForLegacySdes()) {
+		DynInteger tmpKmiObj;
+		if (tmpSrtxpKmd.mki().isEmpty()) {
+			tmpKmiObj = DynInteger.ofEmpty();
+		} else {
 			final long nextMki = tmpSrtxpKmd.mki().getValue() + 1L;  // will automatically be wrapped around
-			return SrtxpKmd.createWithDefaults(nextMki, tmpSrtxpKmd.ssrcId());
+			tmpKmiObj = DynInteger.of(nextMki, tmpSrtxpKmd.mki().getSizeBytes());
 		}
-		return SrtxpKmd.createForLegacySdes(tmpSrtxpKmd.ssrcId());
+		if (! tmpSrtxpKmd.getMetaIsForLegacySdes()) {
+			return SrtxpKmd.createForMikeyWithDefaults(tmpKmiObj, tmpSrtxpKmd.ssrcId());
+		}
+		return SrtxpKmd.createForLegacySdesWithDefaults(
+				tmpSrtxpKmd.getMetaTagForLegacySdes().orElse(0) + 1,
+				tmpKmiObj,
+				tmpSrtxpKmd.ssrcId(),
+				tmpSrtxpKmd.kdr()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

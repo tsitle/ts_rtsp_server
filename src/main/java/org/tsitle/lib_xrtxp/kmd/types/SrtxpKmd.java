@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * SRTxP Key Management Data
@@ -19,8 +20,15 @@ public final class SrtxpKmd implements Cloneable {
 	public static final int DEFAULT_MKI_LEN = 4;  // VLC requires 4-byte MKI
 	public static final long DEFAULT_KDR_PACKETS = 0;  // VLC requires a KDR of 0
 
+	public static final long MAX_KDR_PACKETS = 2147483648L;  // ^= 2^31
+	public static final int MAX_KDR_EXPONENT = 31;  // ^= 2^x
+
+	public static final int MAX_TAG_VALUE = 999_999_999;  // max. 9 digits per RFC
+
 	/** Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826) */
-	private final boolean isForLegacySdes;
+	private final boolean metaIsForLegacySdes;
+	/** Only for legacy SDES: Tag value (similar to MKI) */
+	private final int metaTagValueForLegacySdes;
 	/** Encryption Key length */
 	private final int encrKeyLen;
 	/** Master AES-128 key (16 bytes) */
@@ -45,7 +53,8 @@ public final class SrtxpKmd implements Cloneable {
 
 	/**
 	 * Constructor.
-	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
+	 * @param metaIsForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
+	 * @param metaTagValueForLegacySdes Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
 	 * @param encrKeyLen Encryption Key length
 	 * @param masterKey Master Key
 	 * @param masterSalt Master Salt
@@ -56,7 +65,8 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param kdr Key Derivation Rate
 	 */
 	public SrtxpKmd(
-				boolean isForLegacySdes,
+				boolean metaIsForLegacySdes,
+				int metaTagValueForLegacySdes,
 				int encrKeyLen,
 				@NonNull BufferExt masterKey,
 				@NonNull BufferExt masterSalt,
@@ -66,7 +76,17 @@ public final class SrtxpKmd implements Cloneable {
 				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull DynInteger kdr
 			) {
-		this.isForLegacySdes = isForLegacySdes;
+		if (metaTagValueForLegacySdes > SrtxpKmd.MAX_TAG_VALUE) {
+			throw new IllegalArgumentException("Tag value exceeds maximum allowed value (is=" +
+					Integer.toUnsignedString(metaTagValueForLegacySdes) + ", max=" + Integer.toUnsignedString(SrtxpKmd.MAX_TAG_VALUE) + ")");
+		}
+		if (! kdr.isEmpty() && kdr.getValue() > SrtxpKmd.MAX_KDR_PACKETS) {
+			throw new IllegalArgumentException("KDR value exceeds maximum allowed value (is=" +
+					Long.toUnsignedString(kdr.getValue()) + ", max=" + Long.toUnsignedString(SrtxpKmd.MAX_KDR_PACKETS) + ")");
+		}
+
+		this.metaIsForLegacySdes = metaIsForLegacySdes;
+		this.metaTagValueForLegacySdes = metaTagValueForLegacySdes;
 		this.encrKeyLen = encrKeyLen;
 		this.masterKey = masterKey.clone();
 		this.masterSalt = masterSalt.clone();
@@ -87,22 +107,8 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(long mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
-		return createWithDefaults(
-				mkiValue,
-				ssrcId,
-				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
-			);
-	}
-
-	/**
-	 * Create a new KMD object with default key sizes and random key/salt
-	 * @param mkiValue Master Key Identifier
-	 * @param ssrcId SSRC ID
-	 * @return New KMD object
-	 */
-	public static SrtxpKmd createWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
-		return createWithDefaults(
+	public static SrtxpKmd createForMikeyWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
+		return createForMikeyWithDefaults(
 				mkiValue,
 				ssrcId,
 				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
@@ -116,32 +122,72 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(long mkiValue, @NonNull RtspProtoIdXsrc ssrcId, @NonNull DynInteger kdr) {
-		return createWithCustomKeySizes(
-				false,
+	public static SrtxpKmd createForMikeyWithDefaults(
+				@NonNull DynInteger mkiValue,
+				@NonNull RtspProtoIdXsrc ssrcId,
+				@NonNull DynInteger kdr
+			) {
+		return createForMikeyWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				DynInteger.of(mkiValue, DEFAULT_MKI_LEN),
+				mkiValue,
 				ssrcId,
 				kdr
 			);
 	}
 
 	/**
-	 * Create a new KMD object with default key sizes and random key/salt
-	 * @param mkiValue Master Key Identifier
+	 * Create a new KMD object with custom key sizes and random key/salt
+	 * @param encrKeyLen Encryption Key length
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
+	 * @param mki Master Key Identifier
+	 * @param ssrcId SSRC ID
+	 * @return New KMD object
+	 */
+	public static SrtxpKmd createForMikeyWithCustomKeySizes(
+				int encrKeyLen,
+				int authKeyLen,
+				int authTagLen,
+				@NonNull DynInteger mki,
+				@NonNull RtspProtoIdXsrc ssrcId
+			) {
+		return createForMikeyWithCustomKeySizes(
+				encrKeyLen,
+				authKeyLen,
+				authTagLen,
+				mki,
+				ssrcId,
+				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
+			);
+	}
+
+	/**
+	 * Create a new KMD object with custom key sizes and random key/salt
+	 * @param encrKeyLen Encryption Key length
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
+	 * @param mki Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId, @NonNull DynInteger kdr) {
-		return createWithCustomKeySizes(
+	public static SrtxpKmd createForMikeyWithCustomKeySizes(
+				int encrKeyLen,
+				int authKeyLen,
+				int authTagLen,
+				@NonNull DynInteger mki,
+				@NonNull RtspProtoIdXsrc ssrcId,
+				@NonNull DynInteger kdr
+			) {
+		return createXxxWithCustomKeySizes(
 				false,
-				DEFAULT_ENCR_KEY_LEN,
-				DEFAULT_AUTH_KEY_LEN,
-				DEFAULT_AUTH_TAG_LEN,
-				mkiValue,
+				-1,
+				encrKeyLen,
+				authKeyLen,
+				authTagLen,
+				mki,
 				ssrcId,
 				kdr
 			);
@@ -151,12 +197,14 @@ public final class SrtxpKmd implements Cloneable {
 	 * Create a new KMD object with default key sizes and random key/salt for usage with the legacy SDES key management.<br />
 	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.<br />
 	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
+	 * @param metaTagValue Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createForLegacySdes(@NonNull RtspProtoIdXsrc ssrcId) {
-		return createWithCustomKeySizes(
+	public static SrtxpKmd createForLegacySdesWithDefaults(int metaTagValue, @NonNull RtspProtoIdXsrc ssrcId) {
+		return createXxxWithCustomKeySizes(
 				true,
+				metaTagValue,
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
@@ -167,74 +215,31 @@ public final class SrtxpKmd implements Cloneable {
 	}
 
 	/**
-	 * Create a new KMD object with custom key sizes and random key/salt
-	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
-	 * @param encrKeyLen Encryption Key length
-	 * @param authKeyLen Authentication Key length
-	 * @param authTagLen Authentication Tag length
-	 * @param mki Master Key Identifier
-	 * @param ssrcId SSRC ID
-	 * @return New KMD object
-	 */
-	public static SrtxpKmd createWithCustomKeySizes(
-				boolean isForLegacySdes,
-				int encrKeyLen,
-				int authKeyLen,
-				int authTagLen,
-				@NonNull DynInteger mki,
-				@NonNull RtspProtoIdXsrc ssrcId
-			) {
-		return createWithCustomKeySizes(
-				isForLegacySdes,
-				encrKeyLen,
-				authKeyLen,
-				authTagLen,
-				mki,
-				ssrcId,
-				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
-			);
-	}
-
-	/**
-	 * Create a new KMD object with custom key sizes and random key/salt
-	 * @param isForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
-	 * @param encrKeyLen Encryption Key length
-	 * @param authKeyLen Authentication Key length
-	 * @param authTagLen Authentication Tag length
+	 * Create a new KMD object with default key sizes and random key/salt for usage with the legacy SDES key management.<br />
+	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.<br />
+	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
+	 * @param metaTagValue Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
 	 * @param mki Master Key Identifier
 	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createWithCustomKeySizes(
-				boolean isForLegacySdes,
-				int encrKeyLen,
-				int authKeyLen,
-				int authTagLen,
+	public static SrtxpKmd createForLegacySdesWithDefaults(
+				int metaTagValue,
 				@NonNull DynInteger mki,
 				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull DynInteger kdr
 			) {
-		SrtxpKmd resObj = new SrtxpKmd(
-				isForLegacySdes,
-				encrKeyLen,
-				new BufferExt(),
-				new BufferExt(),
-				authKeyLen,
-				authTagLen,
+		return createXxxWithCustomKeySizes(
+				true,
+				metaTagValue,
+				DEFAULT_ENCR_KEY_LEN,
+				DEFAULT_AUTH_KEY_LEN,
+				DEFAULT_AUTH_TAG_LEN,
 				mki,
 				ssrcId,
 				kdr
 			);
-		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
-		/*for (int i = 0; i < resObj.encrKeyLen; i++) {
-			resObj.masterKey.set(i, (byte)0x01);  // only for debugging
-		}*/
-		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
-		/*for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
-			resObj.masterSalt.set(i, (byte)0x02);  // only for debugging
-		}*/
-		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -255,8 +260,15 @@ public final class SrtxpKmd implements Cloneable {
 		}
 	}
 
-	public boolean isForLegacySdes() {
-		return isForLegacySdes;
+	public boolean getMetaIsForLegacySdes() {
+		return metaIsForLegacySdes;
+	}
+
+	public Optional<Integer> getMetaTagForLegacySdes() {
+		if (metaTagValueForLegacySdes < 0) {
+			return Optional.empty();
+		}
+		return Optional.of(metaTagValueForLegacySdes);
 	}
 
 	public int encrKeyLen() {
@@ -308,7 +320,8 @@ public final class SrtxpKmd implements Cloneable {
 			return false;
 		}
 		var that = (SrtxpKmd) obj;
-		return (this.isForLegacySdes == that.isForLegacySdes &&
+		return (this.metaIsForLegacySdes == that.metaIsForLegacySdes &&
+				this.metaTagValueForLegacySdes == that.metaTagValueForLegacySdes &&
 				this.encrKeyLen == that.encrKeyLen &&
 				Objects.equals(this.masterKey, that.masterKey) &&
 				Objects.equals(this.masterSalt, that.masterSalt) &&
@@ -321,13 +334,15 @@ public final class SrtxpKmd implements Cloneable {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(isForLegacySdes, encrKeyLen, masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId, kdr);
+		return Objects.hash(metaIsForLegacySdes, metaTagValueForLegacySdes, encrKeyLen,
+				masterKey, masterSalt, authKeyLen, authTagLen, mki, ssrcId, kdr);
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"isForLegacySdes=" + (isForLegacySdes ? "T" : "F") +
+				"metaIsForLegacySdes=" + (metaIsForLegacySdes ? "T" : "F") +
+				", metaTagValue=" + (metaTagValueForLegacySdes >= 0 ? Integer.toUnsignedString(metaTagValueForLegacySdes) : "unset") +
 				", encrKeyLen=" + encrKeyLen +
 				", masterKey=" + masterKey.toHexString(true) +
 				", masterSalt=" + masterSalt.toHexString(true) +
@@ -337,6 +352,54 @@ public final class SrtxpKmd implements Cloneable {
 				", ssrcId=" + ssrcId +
 				", kdr=" + kdr +
 				"]";
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Create a new KMD object with custom key sizes and random key/salt
+	 * @param metaIsForLegacySdes Whether this KMD is for legacy SDES (RFC-4568) or for RTSP (RFC-2326/RFC-7826)
+	 * @param metaTagValue Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
+	 * @param encrKeyLen Encryption Key length
+	 * @param authKeyLen Authentication Key length
+	 * @param authTagLen Authentication Tag length
+	 * @param mki Master Key Identifier
+	 * @param ssrcId SSRC ID
+	 * @param kdr Key Derivation Rate
+	 * @return New KMD object
+	 */
+	private static SrtxpKmd createXxxWithCustomKeySizes(
+				boolean metaIsForLegacySdes,
+				int metaTagValue,
+				int encrKeyLen,
+				int authKeyLen,
+				int authTagLen,
+				@NonNull DynInteger mki,
+				@NonNull RtspProtoIdXsrc ssrcId,
+				@NonNull DynInteger kdr
+			) {
+		SrtxpKmd resObj = new SrtxpKmd(
+				metaIsForLegacySdes,
+				metaTagValue,
+				encrKeyLen,
+				new BufferExt(),
+				new BufferExt(),
+				authKeyLen,
+				authTagLen,
+				mki,
+				ssrcId,
+				kdr
+			);
+		RandomHelper.getSecureRandomBytes(resObj.encrKeyLen, resObj.masterKey);
+		/*for (int i = 0; i < resObj.encrKeyLen; i++) {
+			resObj.masterKey.set(i, (byte)0x01);  // only for debugging
+		}*/
+		RandomHelper.getSecureRandomBytes(KeySizes.SALT_SIZE, resObj.masterSalt);
+		/*for (int i = 0; i < KeySizes.SALT_SIZE; i++) {
+			resObj.masterSalt.set(i, (byte)0x02);  // only for debugging
+		}*/
+		return resObj;
 	}
 
 }
