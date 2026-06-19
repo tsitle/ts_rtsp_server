@@ -193,6 +193,27 @@ public final class BufferExt implements Cloneable {
 	}
 
 	/**
+	 * Return a slice of this buffer.
+	 * @param offset Offset from where to start the slice
+	 * @return Buffer containing the slice
+	 */
+	public @NonNull BufferExt slice(int offset) {
+		validateArgs(used, offset, 0, getUsed() - offset);
+		return slice(offset, getUsed() - offset);
+	}
+
+	/**
+	 * Return a slice of this buffer.
+	 * @param offset Offset from where to start the slice
+	 * @param len Length of the slice
+	 * @return Buffer containing the slice
+	 */
+	public @NonNull BufferExt slice(int offset, int len) {
+		validateArgs(used, offset, 0, len);
+		return new BufferExt(buf, offset, len);
+	}
+
+	/**
 	 * Increase the internal buffer size to at least {@code newSize}.
 	 * @param newSize New internal buffer size
 	 */
