@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdp;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
@@ -32,7 +32,7 @@ public interface RtspProtoSdpProducerInterface {
 			@NonNull RtspProtoIpAddr serverIpOrName,
 			@NonNull String clientUserAgent,
 			@NonNull RtspProtoIpAddr clientIpAddr,
-			@NonNull RtspProtoDataCntSdp outputSdp,
+			@NonNull RtspProtoDataCntSdpRaw outputSdp,
 			@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
 			@NonNull RtspProtoKmdsStream outputKmdsOutbound
 		) throws RtspProtoSdpException;
@@ -58,7 +58,7 @@ public interface RtspProtoSdpProducerInterface {
 			@NonNull String clientUserAgent,
 			@NonNull RtspProtoIpAddr clientIpAddr,
 			@Nullable RtspProtoKmdsStream inputKmdsOutbound,
-			@NonNull RtspProtoDataCntSdp outputSdp
+			@NonNull RtspProtoDataCntSdpRaw outputSdp
 		) throws RtspProtoSdpException;
 
 }

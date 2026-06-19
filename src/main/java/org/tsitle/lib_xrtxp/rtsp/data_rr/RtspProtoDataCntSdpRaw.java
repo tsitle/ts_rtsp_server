@@ -5,7 +5,7 @@ import org.jspecify.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class RtspProtoDataCntSdp {
+public final class RtspProtoDataCntSdpRaw {
 
 	private boolean isWriteProtected = false;
 
@@ -66,7 +66,7 @@ public final class RtspProtoDataCntSdp {
 		sdpLinesAllRaw.clear();
 	}
 
-	public void copyFrom(@NonNull RtspProtoDataCntSdp other) {
+	public void copyFrom(@NonNull RtspProtoDataCntSdpRaw other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}

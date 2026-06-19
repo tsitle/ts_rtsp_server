@@ -1,5 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.sdp;
 
+/**
+ * Constants for the Session Description Protocol (SDP) messages Producer and Consumer.
+ */
 public final class RtspProtoSdpConstants {
 
 	private RtspProtoSdpConstants() { }

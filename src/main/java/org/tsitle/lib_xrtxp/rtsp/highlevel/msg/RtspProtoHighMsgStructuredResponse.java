@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamNames;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdp;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -18,7 +18,7 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 	public final @NonNull Map<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> headers = new HashMap<>();
 
 	/** Message body for 'DESCRIBE' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
-	public final @NonNull RtspProtoDataCntSdp bodyDescribeSdp = new RtspProtoDataCntSdp();
+	public final @NonNull RtspProtoDataCntSdpRaw bodyDescribeSdp = new RtspProtoDataCntSdpRaw();
 	/** Message body for 'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */
 	public final @NonNull RtspProtoDataCntGetSetParamKvs bodyGetParamKv = new RtspProtoDataCntGetSetParamKvs();
 	/** Message body for 'GET_PARAMETER'/'GET_PARAMETER' (requires the headers 'CONTENT_TYPE' and 'CONTENT_LENGTH') */

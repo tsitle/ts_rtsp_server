@@ -113,7 +113,7 @@ public final class RtspProtoRequestOutputSvc {
 	public @NonNull RtspProtoMessageType sendRequest_announce(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoDataCntSdp announceSdp
+				@NonNull RtspProtoDataCntSdpRaw announceSdp
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
@@ -122,7 +122,7 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requAnnouncedSdp.copyFrom(announceSdp);
+		inputDataRequ.requAnnouncedSdpRaw.copyFrom(announceSdp);
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 

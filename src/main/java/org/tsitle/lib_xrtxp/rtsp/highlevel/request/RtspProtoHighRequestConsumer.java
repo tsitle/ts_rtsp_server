@@ -836,12 +836,12 @@ public final class RtspProtoHighRequestConsumer {
 					throw new RtspProtoInvalidRequestException("Content-Type for ANNOUNCE message must be SDP");
 				}
 				//
-				outputDataRequ.requAnnouncedSdp.copyFrom(input.bodyAnnounceSdp);
+				outputDataRequ.requAnnouncedSdpRaw.copyFrom(input.bodyAnnounceSdp);
 				// Content-Base
 				if (! input.headers.containsKey(RtspHeaderKey.CONTENT_BASE)) {
 					throw new RtspProtoInvalidRequestException("Content-Base for ANNOUNCE message missing");
 				}
-				outputDataRequ.requAnnouncedSdp.setContentBase(
+				outputDataRequ.requAnnouncedSdpRaw.setContentBase(
 						input.headers.get(RtspHeaderKey.CONTENT_BASE).hdValContBase.contentBaseStr
 					);
 				break;
@@ -864,7 +864,7 @@ public final class RtspProtoHighRequestConsumer {
 				input.headers.containsKey(RtspHeaderKey.CONTENT_LANG)) {
 			String tmpContLang = input.headers.get(RtspHeaderKey.CONTENT_LANG).hdValContLang.contentLangStr;
 			if (input.messageType == RtspProtoMessageType.ANNOUNCE) {
-				outputDataRequ.requAnnouncedSdp.setContentLang(tmpContLang);
+				outputDataRequ.requAnnouncedSdpRaw.setContentLang(tmpContLang);
 			} else {
 				outputDataRequ.requSetParamValues.setContentLang(tmpContLang);
 			}
@@ -888,7 +888,7 @@ public final class RtspProtoHighRequestConsumer {
 	}
 
 	private void handleBody_announce(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoSdpException {
-		sdpConsumerInterface.parseUpdatedSdpFromAnnounce(outputDataRequ.requAnnouncedSdp);
+		sdpConsumerInterface.parseUpdatedSdpFromAnnounce(outputDataRequ.requAnnouncedSdpRaw, outputDataRequ.requAnnouncedSdpStc);
 	}
 
 	private void handleBody_setParameter(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoRtspParamUnknownException {

@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
@@ -10,7 +11,7 @@ import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdp;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
@@ -27,6 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Producer for Session Description Protocol (SDP) messages (according to RFC-2327 Section 6).
+ */
 public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface {
 
 	private final @NonNull String cfgServerNameAndVersion;
@@ -59,7 +63,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,
 				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoDataCntSdp outputSdp,
+				@NonNull RtspProtoDataCntSdpRaw outputSdp,
 				@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
 				@NonNull RtspProtoKmdsStream outputKmdsOutbound
 			) throws RtspProtoSdpException {
@@ -110,7 +114,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull String clientUserAgent,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
-				@NonNull RtspProtoDataCntSdp outputSdp
+				@NonNull RtspProtoDataCntSdpRaw outputSdp
 			) throws RtspProtoSdpException {
 
 		// @TODO build complete SDP with optional KMDs if SRTxP encryption is enabled
@@ -171,14 +175,13 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		List<@NonNull String> resL = new ArrayList<>();
 
-		// SDP Specification (RFC-2327 Section 6)
 		// -------------------------------------
 		// v: Protocol Version
 		resL.add("v=0");
 		// o: Origin
 		final String tmpO_Username = "-";
-		final String tmpO_Id = "" + System.currentTimeMillis();
-		final String tmpO_Version = "1";
+		final String tmpO_Id = Long.toUnsignedString(NtpTimestamp.ofNow().getTsAsUnsigned64bit().orElseThrow());
+		final String tmpO_Version = Long.toUnsignedString(NtpTimestamp.ofNow().getTsAsUnsigned64bit().orElseThrow());
 		final String tmpO_NetworkType = "IN";
 		final String tmpO_AddressType = "IP4";
 		final String tmpO_UnicastAddress = serverIpOrName.getIpAddrStr().orElseThrow();  // can be an IP address or a hostname
