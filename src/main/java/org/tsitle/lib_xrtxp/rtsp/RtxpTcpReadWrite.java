@@ -331,6 +331,7 @@ public final class RtxpTcpReadWrite {
 			boolean localIsRtpRtcpAllowed = isRtpRtcpAllowed.get();
 			while (! doStop.get()) {
 				checkTcpActivityTimeout(FNC_NAME);
+				boolean canContinue = true;
 				boolean haveSomething = false;
 				while (! doStop.get()) {
 					int tmpInt;
@@ -346,12 +347,12 @@ public final class RtxpTcpReadWrite {
 					if (localIsRtpRtcpAllowed && tmpInt == '$') {
 						tmpQueueSize = internalReadSocket_binary();
 					} else {
-						internalReadSocket_string((char)tmpInt);
+						canContinue = internalReadSocket_string((char)tmpInt);
 						tmpQueueSize = queueRtspLinesRcvd.size();
 					}
 					haveSomething = true;
 				}
-				if (! haveSomething || tmpQueueSize >= QUEUES_MAX_SIZE) {
+				if (! haveSomething || ! canContinue || tmpQueueSize >= QUEUES_MAX_SIZE) {
 					break;
 				}
 			}
@@ -463,12 +464,13 @@ public final class RtxpTcpReadWrite {
 		return builder.toString();
 	}
 
-	private void internalReadSocket_string(char firstChar) throws IOException {
+	private boolean internalReadSocket_string(char firstChar) throws IOException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket_string()";
 
 		ArrayList<Character> tmpList = new ArrayList<>();
 		tmpList.add(firstChar);
 
+		boolean resB = true;
 		boolean haveCr = (firstChar == CRLF.charAt(0));
 		int tmpInt;
 		int readTimeoutCnt = 0;
@@ -483,6 +485,7 @@ public final class RtxpTcpReadWrite {
 			} catch (SocketTimeoutException e) {
 				//noinspection ConstantValue
 				if (++readTimeoutCnt >= READ_MAX_RETRIES) {
+					resB = false;
 					break;
 				}
 				continue;
@@ -493,15 +496,14 @@ public final class RtxpTcpReadWrite {
 			}
 			if (tmpInt == CRLF.charAt(0)) {
 				haveCr = true;
-			} else if (tmpInt == CRLF.charAt(1)) {
-				if (haveCr) {
-					break;
-				}
+			} else if (tmpInt == CRLF.charAt(1) && haveCr) {
+				break;
 			}
 		}
 
 		String tmpStr = listToString(tmpList);
 		queueRtspLinesRcvd.add(tmpStr);
+		return resB;
 	}
 
 	private boolean internalReadRtpRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
