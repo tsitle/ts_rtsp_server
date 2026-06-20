@@ -456,7 +456,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			}
 			return handleSuccessfulRequest(rtspRequestBasics);
 		} catch (InputStreamNotReadyException e1) {
-			Thread.sleep(15);
+			Thread.sleep(100 - 15);
 			return true;
 		}
 	}

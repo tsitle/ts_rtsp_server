@@ -320,7 +320,7 @@ public class RtspServerApp {
 						continue;
 					}
 					haveConn = false;
-					socketRtspTcp.setSoTimeout(50);  // only for read()
+					socketRtspTcp.setSoTimeout(10);  // only for read()
 
 					//
 					ThreadRtspServer thread = new ThreadRtspServer(
