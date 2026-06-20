@@ -20,9 +20,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
@@ -31,7 +29,6 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpConsumerInterface;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
@@ -100,6 +97,8 @@ class RtspProtoHighRequestConsumerTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private final static String TEST_SUB_STREAM_ID_PREFIX = "test_sub_stream_id_prefix";
 
 	private RtspProtoIdSubStream generatedSubStreamId = RtspProtoIdSubStream.ofEmpty();
 	private final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = buildGlobalSessionInfoSvc();
@@ -615,7 +614,7 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_options_missingCseq() throws RtspProtoSessionInfoException {
+	void structuredRequest_options_missingCseq() throws RtspProtoSessionInfoException, RtspProtoNumberRangeException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.OPTIONS;
 		final String expRequUrl = "rtsp://some.com/stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
@@ -821,7 +820,7 @@ class RtspProtoHighRequestConsumerTest {
 	@Test
 	void structuredRequest_setup_subStreamNotFound() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
-		final String expRequUrl = "rtsp://some.com/existing_stream/" + RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + "notexists";
+		final String expRequUrl = "rtsp://some.com/existing_stream/" + TEST_SUB_STREAM_ID_PREFIX + "notexists";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = 707L;
 		final String expSessionId = "some-session-id";
@@ -864,7 +863,7 @@ class RtspProtoHighRequestConsumerTest {
 	@Test
 	void structuredRequest_setup_invalidSubStreamPrefix() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
-		final String expRequUrl = "rtsp://some.com/existing_stream/" + RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX;
+		final String expRequUrl = "rtsp://some.com/existing_stream/we_have_no_proper_substreamidprefix-" + generatedSubStreamId.getIdStr();
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = 707L;
 		final String expSessionId = "some-session-id";
@@ -908,7 +907,7 @@ class RtspProtoHighRequestConsumerTest {
 	void structuredRequest_setup_ok_queryParamSrtp() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
 		final String expRequUrl = "rtsp://some.com/existing_stream/" +
-				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + generatedSubStreamId.getIdStr() +
+				TEST_SUB_STREAM_ID_PREFIX + generatedSubStreamId.getIdStr() +
 				"?" + RtspProtoHighConstants.URL_QUERY_PARAM_SRTP + "=1";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -1089,10 +1088,22 @@ class RtspProtoHighRequestConsumerTest {
 				@NonNull RtspProtoIdSession currentSessionId,
 				@NonNull RtspProtoDataCntCseqRequInp ioCseqRequ,
 				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws RtspProtoSessionInfoException {
+			) throws RtspProtoSessionInfoException, RtspProtoNumberRangeException {
 		RtspProtoSessionInfo sessionInfo = buildRtspSessionInfo(sessionState);
 		RtspProtoDataCntStreamTpMain inpStreamTpMain = new RtspProtoDataCntStreamTpMain();
 		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
+		if (! generatedSubStreamId.isEmpty()) {
+			RtspProtoRscUrl tmpRscUrlObj = new RtspProtoRscUrl();
+			tmpRscUrlObj.setUrlStr(inputMsgStructured.resourceUrl);
+			tmpRscUrlObj.idInputSource = RtspProtoIdInputSource.of("someInSo");
+			tmpRscUrlObj.idStreamSource = RtspProtoIdStreamSource.of("someStSo");
+			tmpRscUrlObj.idSubStream = generatedSubStreamId;
+			ioSetupInfosStream.createAndAddSetupSubStream(
+					tmpRscUrlObj,
+					RtspProtoIdXsrc.of(1001L),
+					new RtspProtoKmdForSubStream()
+				);
+		}
 		RtspProtoHighRequestConsumer proc = buildRtspProtoHighRequestConsumer();
 		return proc.processRequest(
 				currentSessionId,
@@ -1166,6 +1177,7 @@ class RtspProtoHighRequestConsumerTest {
 		return new RtspProtoHighRequestConsumer(
 				buildLogMsgIf(),
 				cfgSrvSuppIncomingMts,
+				TEST_SUB_STREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				buildSdpConsumer(),
 				new AvailableStreams(),

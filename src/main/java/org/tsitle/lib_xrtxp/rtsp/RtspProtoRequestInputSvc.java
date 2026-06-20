@@ -11,6 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -95,6 +96,7 @@ public final class RtspProtoRequestInputSvc {
 		this.rtspProtoHighRequestConsumer = new RtspProtoHighRequestConsumer(
 				logMsgInterface,
 				cfgSupportedMessageTypes,
+				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
 				availableStreamsInterface,

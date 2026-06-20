@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -34,6 +35,7 @@ public final class RtspProtoHighRequestConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
@@ -45,6 +47,7 @@ public final class RtspProtoHighRequestConsumer {
 	public RtspProtoHighRequestConsumer(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
+				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
@@ -54,6 +57,7 @@ public final class RtspProtoHighRequestConsumer {
 		this.logMsgInterface = logMsgInterface;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
+		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
@@ -131,6 +135,7 @@ public final class RtspProtoHighRequestConsumer {
 					inputMsgStc.messageType,
 					inputMsgStc.resourceUrl,
 					clientIpAddr,
+					ioSetupInfosStream,
 					outputDataRequ.rrStreamTpMain
 				);
 		} catch (RtspProtoInvalidUriException e) {
@@ -354,6 +359,7 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoMessageType requestType,
 				@NonNull String resourceUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException, RtspProtoInvalidUriException,
 					RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException,
@@ -366,11 +372,18 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		//
+		Set<String> sdpControlIdsInSession = new HashSet<>();
+		for (RtspProtoIdSubStream tmpIdSs : ioSetupInfosStream.getSubStreamIds()) {
+			sdpControlIdsInSession.add(cfgSubStreamIdPrefix + tmpIdSs.getIdStr());
+		}
+		//
 		RtspProtoRscUrl resObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
+				cfgSubStreamIdPrefix,
 				availableStreamsInterface,
 				globalSessionInfoInterface,
 				resourceUrlStr,
-				clientIpAddr
+				clientIpAddr,
+				sdpControlIdsInSession
 			);
 
 		// ensure that the Input Source is enabled

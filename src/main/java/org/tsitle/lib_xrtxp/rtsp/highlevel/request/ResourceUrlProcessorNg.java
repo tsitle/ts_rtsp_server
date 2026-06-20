@@ -6,7 +6,6 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidUriException;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -14,9 +13,14 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
 import java.net.URI;
+import java.util.Set;
 
 final class ResourceUrlProcessorNg {
 
+	/** SDP Control IDs (aka Sub-Stream IDs) that are available in the current session */
+	private final @NonNull Set<@NonNull String> sdpControlIdsInSession;
+	/** Prefix of Sub-Stream IDs */
+	private final @NonNull String cfgSubStreamIdPrefix;
 	/** Full Resource URL (e.g. 'rtsp://localhost:1051/movie.stream/substreamid1234') */
 	private final @NonNull String fullRscUrlStr;
 
@@ -24,7 +28,13 @@ final class ResourceUrlProcessorNg {
 	private @NonNull String rscUrlStrPathMod = "";
 	private @NonNull String subStreamIdStr = "";
 
-	private ResourceUrlProcessorNg(@NonNull String fullRscUrlStr) {
+	private ResourceUrlProcessorNg(
+				@NonNull String cfgSubStreamIdPrefix,
+				@NonNull Set<@NonNull String> sdpControlIdsInSession,
+				@NonNull String fullRscUrlStr
+			) {
+		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
+		this.sdpControlIdsInSession = sdpControlIdsInSession;
 		this.fullRscUrlStr = fullRscUrlStr;
 	}
 
@@ -32,15 +42,21 @@ final class ResourceUrlProcessorNg {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull RtspProtoRscUrl parseUrlIntoRscUrlObject(
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull String fullRscUrlStr,
-				@NonNull RtspProtoIpAddr clientIpAddr
+				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull Set<@NonNull String> sdpControlIdsInSession
 			) throws RtspProtoInvalidUriException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdInputSourceNotFoundException {
 		RtspProtoRscUrl resObj = new RtspProtoRscUrl();
 		resObj.setUrlStr(fullRscUrlStr);
 
-		ResourceUrlProcessorNg rscUrlProcObj = new ResourceUrlProcessorNg(fullRscUrlStr);
+		ResourceUrlProcessorNg rscUrlProcObj = new ResourceUrlProcessorNg(
+				cfgSubStreamIdPrefix,
+				sdpControlIdsInSession,
+				fullRscUrlStr
+			);
 
 		rscUrlProcObj.rscUrlStrPathOrg = rscUrlProcObj.extractResourceUrlPath();
 		rscUrlProcObj.rscUrlStrPathMod = rscUrlProcObj.rscUrlStrPathOrg;
@@ -69,12 +85,6 @@ final class ResourceUrlProcessorNg {
 		 *   rtsp://localhost:1051/movie.stream/substreamid1234
 		 * Output:
 		 *   rscUrlStrPathMod = "movie.stream"
-		 *   subStreamIdStr   = "1234"
-		 *
-		 * Input:
-		 *   rtsp://localhost:1051/substreamid1234
-		 * Output:
-		 *   rscUrlStrPathMod = ""
 		 *   subStreamIdStr   = "1234"
 		 */
 
@@ -141,22 +151,26 @@ final class ResourceUrlProcessorNg {
 		 *   rtsp://localhost:1051/movie.stream
 		 * For SETUP/GET_PARAMETER/SET_PARAMETER requests, the Resource URL can contain the Input Source ID and the Sub-Stream ID:
 		 *   rtsp://localhost:1051/movie.stream/substreamid1234
-		 * or it only contains the Sub-Stream ID:
-		 *   rtsp://localhost:1051/substreamid1234
-		 *
-		 * The output for "/substreamid1234" would be "1234"
 		 */
 		String tmpPath = rscUrlStrPathOrg;
-		final String tmpDefSsIdPfx = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX;
-		int tmpIdxA = tmpPath.lastIndexOf("/" + tmpDefSsIdPfx);
-		if (tmpIdxA > 0) {
-			// the Resource URL Path contains the Input Source ID and the Sub-Stream ID
-			subStreamIdStr = tmpPath.substring(tmpIdxA + 1 + tmpDefSsIdPfx.length());
-			rscUrlStrPathMod = rscUrlStrPathMod.substring(0, tmpIdxA);
-		} else if (tmpPath.startsWith(tmpDefSsIdPfx)) {
-			// the Resource URL Path contains only the Sub-Stream ID
-			subStreamIdStr = tmpPath.substring(tmpDefSsIdPfx.length());
+		int tmpIdxA = tmpPath.lastIndexOf("/");
+		if (tmpIdxA < 1) {
+			// the Resource URL Path cannot contain an SDP Control ID
+			return;
 		}
+
+		String controlIdStr = tmpPath.substring(tmpIdxA + 1);
+		if (! sdpControlIdsInSession.contains(controlIdStr)) {
+			// the Resource URL Path does not contain a valid SDP Control ID
+			return;
+		}
+		if (! controlIdStr.startsWith(cfgSubStreamIdPrefix)) {
+			// the SDP Control ID is invalid
+			return;
+		}
+		// the Resource URL Path contains the Input Source ID and the Sub-Stream ID
+		subStreamIdStr = controlIdStr.substring(cfgSubStreamIdPrefix.length());
+		rscUrlStrPathMod = rscUrlStrPathMod.substring(0, tmpIdxA);
 	}
 
 }
