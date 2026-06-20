@@ -18,6 +18,7 @@ public final class SrtxpKmd implements Cloneable {
 	public static final int DEFAULT_AUTH_KEY_LEN = KeySizes.AUTH_KEY_SIZE_160;  // VLC requires 160-bit auth key
 	public static final int DEFAULT_AUTH_TAG_LEN = 10;  // VLC requires 10-byte auth tag
 	public static final int DEFAULT_MKI_LEN = 4;  // VLC requires 4-byte MKI
+	public static final int DEFAULT_KDR_LEN = 4;  // KDR cannot exceed 4 bytes since it is limited to a 9-digit value
 	public static final long DEFAULT_KDR_PACKETS = 0;  // VLC requires a KDR of 0
 
 	public static final long MAX_KDR_PACKETS = 2147483648L;  // ^= 2^31
@@ -111,7 +112,7 @@ public final class SrtxpKmd implements Cloneable {
 		return createForMikeyWithDefaults(
 				mkiValue,
 				ssrcId,
-				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
+				DynInteger.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
 			);
 	}
 
@@ -159,7 +160,7 @@ public final class SrtxpKmd implements Cloneable {
 				authTagLen,
 				mki,
 				ssrcId,
-				DynInteger.ofAutoSized(DEFAULT_KDR_PACKETS)
+				DynInteger.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
 			);
 	}
 
