@@ -25,6 +25,7 @@ public final class RtspRequestBasics {
 
 	public static @NonNull RtspRequestBasics createUnknown() {
 		RtspRequestBasics res = new RtspRequestBasics();
+		res.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 		res.messageType = RtspProtoMessageType.UNKNOWN;
 		return res;
 	}
