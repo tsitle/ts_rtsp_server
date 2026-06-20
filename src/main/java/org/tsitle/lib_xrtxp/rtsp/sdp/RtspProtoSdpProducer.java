@@ -379,7 +379,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		final int tmpM_port = 0;
 		outputList.add(String.format("m=%s %d %s %d",
 				(useVideo ? RtspProtoSdpMediaType.VIDEO.name() : RtspProtoSdpMediaType.AUDIO.name()).toLowerCase(),
-				tmpM_port, requireSrtp ? RtspProtoSdpTransport.RTP_SAVP : RtspProtoSdpTransport.RTP_AVP,
+				tmpM_port,
+				(requireSrtp ? RtspProtoSdpTransport.RTP_SAVP : RtspProtoSdpTransport.RTP_AVP).getStrValue(),
 				ssInfo.codec().getValue()));
 		// c: Connection Information (can be an IP address or a hostname)
 		//outputList.add("c=IN IP4 0.0.0.0");
