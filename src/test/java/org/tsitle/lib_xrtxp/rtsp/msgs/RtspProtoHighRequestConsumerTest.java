@@ -54,7 +54,6 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static class AvailableStreams implements RtspProtoAvailableStreamsInterface {
-
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
 			return idInputSource.getIdStr().equals("existing_stream");
@@ -1176,6 +1175,7 @@ class RtspProtoHighRequestConsumerTest {
 
 		return new RtspProtoHighRequestConsumer(
 				buildLogMsgIf(),
+				true,
 				cfgSrvSuppIncomingMts,
 				TEST_SUB_STREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
