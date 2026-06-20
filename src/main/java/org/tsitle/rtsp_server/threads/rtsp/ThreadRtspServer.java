@@ -430,7 +430,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		if (rtspSessionInfo.getIsTransportUdp() && rtspTimeoutLastRequ != null) {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
-				logError(FNC_NAME, "RTSP session timeout after " + tmpTimeDiff + " seconds");
+				logWarn(FNC_NAME, "RTSP session sid=" + rtspSessionInfo.getIdSession().getIdStr() +
+						" timeout after " + tmpTimeDiff + " seconds");
 				return false;  // terminate session
 			}
 		}
