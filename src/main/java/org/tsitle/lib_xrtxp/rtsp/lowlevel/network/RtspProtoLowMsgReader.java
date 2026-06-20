@@ -115,6 +115,7 @@ public final class RtspProtoLowMsgReader {
 		 */
 
 		String headerLine;
+		final int MAX_TIMEOUT_CNT = 2;
 		int timeoutCnt = 0;
 		do {
 			try {
@@ -133,7 +134,7 @@ public final class RtspProtoLowMsgReader {
 					outputMsg.headerLines.add(headerLine);
 				}
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
-				if (timeoutCnt++ > 10) {
+				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
 					break;
 				}
 				try {
@@ -171,6 +172,7 @@ public final class RtspProtoLowMsgReader {
 
 		String bodyLine;
 		StringBuilder bodySb = new StringBuilder();
+		final int MAX_TIMEOUT_CNT = 2;
 		int timeoutCnt = 0;
 		do {
 			try {
@@ -178,7 +180,7 @@ public final class RtspProtoLowMsgReader {
 				timeoutCnt = 0;
 				bodySb.append(bodyLine).append(RtspProtoLowMsgConstants.CRLF);
 			} catch (InputStreamNotReadyException | InputStreamEosException e) {
-				if (timeoutCnt++ > 10) {
+				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
 					break;
 				}
 				try {
