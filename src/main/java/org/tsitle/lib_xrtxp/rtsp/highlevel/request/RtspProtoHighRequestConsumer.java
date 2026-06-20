@@ -34,6 +34,7 @@ import java.util.*;
 public final class RtspProtoHighRequestConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
@@ -46,6 +47,7 @@ public final class RtspProtoHighRequestConsumer {
 
 	public RtspProtoHighRequestConsumer(
 				@NonNull LogMsgInterface logMsgInterface,
+				boolean isRequestFromClient,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
@@ -55,6 +57,7 @@ public final class RtspProtoHighRequestConsumer {
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.isRequestFromClient = isRequestFromClient;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
@@ -297,7 +300,14 @@ public final class RtspProtoHighRequestConsumer {
 			case RtspProtoMessageType.TEARDOWN:
 				Optional<RtspProtoIdSession> tmpOptSessionId = input.getHeaderSessionId();
 				if (tmpOptSessionId.isEmpty()) {
-					throw new RtspProtoInvalidRequestException("Missing Session header");
+					if (isRequestFromClient) {
+						throw new RtspProtoInvalidRequestException("Missing Session header");
+					}
+					return;
+				}
+
+				if (isRequestFromClient && currentIdSession.isEmpty()) {
+					return;
 				}
 
 				if (currentIdSession.isEmpty() || ! tmpOptSessionId.get().equals(currentIdSession)) {
@@ -922,7 +932,8 @@ public final class RtspProtoHighRequestConsumer {
 		// if one of the parameters cannot be set, the entire request needs to be rejected
 		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
 			try {
-				parameterSetterInterface.testSettingRtspParameter(
+				parameterSetterInterface.setRtspParameter(
+						true,
 						outputDataRequ.rrIdSession,
 						outputDataRequ.requSetParamValues.getContentLang(),
 						entry.getKey(),
@@ -946,6 +957,7 @@ public final class RtspProtoHighRequestConsumer {
 		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
 			try {
 				parameterSetterInterface.setRtspParameter(
+						false,
 						outputDataRequ.rrIdSession,
 						outputDataRequ.requSetParamValues.getContentLang(),
 						entry.getKey(),
