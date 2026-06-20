@@ -349,7 +349,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						ssrcId
 					);
 			}
-			return SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(1L), ssrcId);
+			return SrtxpKmd.createForMikeyWithDefaults(DynInteger.of(1L, SrtxpKmd.DEFAULT_MKI_LEN), ssrcId);
 		}
 		/*
 		 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
