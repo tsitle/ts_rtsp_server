@@ -277,6 +277,7 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoInvalidRequestException("Invalid CSeq value");
 		}
 
+		cseqRequIo.cseqNr_expected.increment();
 		//
 		outputDataRequ.rrCseqNrLastRcvd.copyFrom(cseqRequIo.cseqNr_lastRcvd);
 
