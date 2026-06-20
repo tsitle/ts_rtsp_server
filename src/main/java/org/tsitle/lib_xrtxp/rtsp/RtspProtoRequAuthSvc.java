@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 
 /**
  * RTSP Request Authentication and Authorization Service
@@ -24,7 +25,6 @@ public class RtspProtoRequAuthSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpLogLevel rtxpLogLevel;
-	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtspProtoUserAuthInterface userAuthInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
@@ -32,14 +32,12 @@ public class RtspProtoRequAuthSvc {
 	public RtspProtoRequAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtxpLogLevel rtxpLogLevel,
-				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtxpLogLevel = rtxpLogLevel;
-		this.rtspSessionInfo = rtspSessionInfo;
 		this.userAuthInterface = userAuthInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
@@ -49,6 +47,7 @@ public class RtspProtoRequAuthSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void checkAuthorization(
+				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspRequestBasics ioRequestBasics,
 				@NonNull RtspProtoDataCntAuthClient requAuthClient
 			) {
@@ -101,7 +100,7 @@ public class RtspProtoRequAuthSvc {
 		//
 		if (wasAuthentificationOk) {
 			// check if Client IP Address is blocked
-			int tmpUnauthCnt = globalSessionInfoInterface.getUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIdIs);
+			int tmpUnauthCnt = globalSessionInfoInterface.getUnauthorized(clientIpAddr, tmpIdIs);
 			if (tmpUnauthCnt >= MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS) {
 				// reject Client IP Address even if user credentials are OK
 				wasAuthentificationOk = false;
@@ -117,23 +116,27 @@ public class RtspProtoRequAuthSvc {
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
 					ioRequestBasics.messageType, tmpIdIs.getIdStr(),
 					requAuthClient.getAuthUser(),
-					rtspSessionInfo.getClientIpAddr().getIpAddrStr().orElseThrow());
+					clientIpAddr.getIpAddrStr().orElseThrow());
 			logDebug(FNC_NAME, logMsg);
-			globalSessionInfoInterface.resetUnauthorized(rtspSessionInfo.getClientIpAddr(), tmpIdIs);
+			globalSessionInfoInterface.resetUnauthorized(clientIpAddr, tmpIdIs);
 			return;
 		}
 
 		//
-		rejectWithUnauthorized(ioRequestBasics, tmpIdIs);
+		rejectWithUnauthorized(clientIpAddr, ioRequestBasics, tmpIdIs);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void rejectWithUnauthorized(@NonNull RtspRequestBasics rtspRequestBasics, @NonNull RtspProtoIdInputSource idInputSource) {
+	private void rejectWithUnauthorized(
+				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull RtspRequestBasics rtspRequestBasics,
+				@NonNull RtspProtoIdInputSource idInputSource
+			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".rejectWithUnauthorized()";
 
-		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(rtspSessionInfo.getClientIpAddr(), idInputSource);
+		final int unauthCnt = globalSessionInfoInterface.incrementUnauthorized(clientIpAddr, idInputSource);
 		//
 		rtspRequestBasics.statusCode = RtspProtoStatusCode.UNAUTHORIZED;
 		//
@@ -141,7 +144,7 @@ public class RtspProtoRequAuthSvc {
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
 				rtspRequestBasics.messageType, idInputSource.getIdStr(),
 				rtspRequestBasics.statusCode, unauthCnt,
-				rtspSessionInfo.getClientIpAddr().getIpAddrStr().orElseThrow());
+				clientIpAddr.getIpAddrStr().orElseThrow());
 		if (unauthCnt > 1) {
 			/*
 			 * One rejection is normal due to the way RTSP clients detect the necessity of authentication.

@@ -80,7 +80,6 @@ public final class RtspProtoRequestInputSvc {
 		this.requAuthSvc = new RtspProtoRequAuthSvc(
 				logMsgInterface,
 				cfgRtxpLogLevel,
-				rtspSessionInfo,
 				userAuthInterface,
 				availableStreamsInterface,
 				globalSessionInfoInterface
@@ -227,7 +226,7 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
-		requAuthSvc.checkAuthorization(resObj, outputDataRequ.requAuthClient);
+		requAuthSvc.checkAuthorization(clientIpAddr, resObj, outputDataRequ.requAuthClient);
 
 		// store additional request data
 		try {
