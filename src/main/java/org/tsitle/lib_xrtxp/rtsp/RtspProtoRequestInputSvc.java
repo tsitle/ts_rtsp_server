@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
@@ -17,6 +18,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
@@ -53,6 +55,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param userAuthInterface User authentication instance
 	 * @param availableStreamsInterface Available streams instance
 	 * @param globalSessionInfoInterface Global session info instance
+	 * @param parameterSetterInterface Parameter setter instance
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
 	public RtspProtoRequestInputSvc(
@@ -66,6 +69,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -94,13 +98,14 @@ public final class RtspProtoRequestInputSvc {
 		this.rtspProtoLowRequestConsumer = new RtspProtoLowRequestConsumer(logMsgInterface);
 		this.rtspProtoHighRequestConsumer = new RtspProtoHighRequestConsumer(
 				logMsgInterface,
+				isRequestFromClient,
 				cfgSupportedMessageTypes,
 				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
 				availableStreamsInterface,
 				globalSessionInfoInterface,
-				null  // @TODO
+				parameterSetterInterface
 			);
 	}
 
@@ -226,7 +231,9 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
-		requAuthSvc.checkAuthorization(clientIpAddr, resObj, outputDataRequ.requAuthClient);
+		if (isRequestFromClient) {
+			requAuthSvc.checkAuthorization(clientIpAddr, resObj, outputDataRequ.requAuthClient);
+		}
 
 		// store additional request data
 		try {
