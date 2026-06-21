@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
+import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -11,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 
+import java.net.URI;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -46,10 +49,30 @@ public final class RtspLowParserHelper {
 			) {
 		/*
 		 * Example:
-		 *   "Content-Base: rtsp://example.com/path/to/resource"
+		 *   "Content-Base: rtsp://example.com/path/to/resource/"
 		 * Contains an absolute URI as base for resolving relative URLs within the entity
 		 */
-		outputHd.contentBaseStr = hdValue;
+		try {
+			URI tmpUri = HostnameHelper.convertRtspUrlIntoURI(hdValue);
+
+			// we strip away any user credentials, port number and fragment
+			outputHd.contentBaseStr = (tmpUri.getScheme().equals("https") ?
+					RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL);
+			outputHd.contentBaseStr += "://" + tmpUri.getHost();
+			if (tmpUri.getPort() > 0) {
+				outputHd.contentBaseStr += ":" + tmpUri.getPort();
+			}
+			outputHd.contentBaseStr += (tmpUri.getPath() == null ? "" : tmpUri.getPath());
+			if (! outputHd.contentBaseStr.endsWith("/")) {
+				outputHd.contentBaseStr += "/";
+			}
+			if (tmpUri.getQuery() != null) {
+				outputHd.contentBaseStr += "?" + tmpUri.getQuery();
+			}
+		} catch (HostnameHelperInvalidUriException e) {
+			// we ignore this error and use the value as-is
+			outputHd.contentBaseStr = hdValue;
+		}
 	}
 
 	public static void helperParseHeaderValue_contenc(

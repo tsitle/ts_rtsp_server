@@ -133,8 +133,8 @@ public final class RtspProtoLowRequestConsumer {
 			}
 			int tmpPort = tmpUri.getPort();
 			currentUrl = (isRtsps ? RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL) +
-					"://" + tmpUri.getHost() +
-					(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
+					"://" + (tmpUri.getHost() == null ? "" : tmpUri.getHost()) +
+					(tmpPort > 0 ? ":" + tmpUri.getPort() : "") + (tmpUri.getPath() == null ? "" : tmpUri.getPath());
 			if (tmpUri.getQuery() != null) {
 				try {
 					extractResourceUrlQueryParam(currentUrl + "?" + tmpUri.getQuery(), output);

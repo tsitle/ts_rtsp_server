@@ -79,8 +79,11 @@ public final class HostnameHelper {
 							.replaceAll("^" + RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://", "https://")
 							.replaceAll("^" + RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://", "http://"
 						));
-			if (! (resObj.getScheme().equals("https") || resObj.getScheme().equals("http"))) {
+			if (! ("https".equals(resObj.getScheme()) || "http".equals(resObj.getScheme()))) {
 				throw new HostnameHelperInvalidUriException("Invalid protocol: " + resObj.getScheme());
+			}
+			if (resObj.getHost() == null) {
+				throw new HostnameHelperInvalidUriException("Invalid host in URL: '" + url + "'");
 			}
 			return resObj;
 		} catch (URISyntaxException e) {

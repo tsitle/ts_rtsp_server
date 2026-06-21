@@ -128,7 +128,7 @@ final class ResourceUrlProcessorNg {
 		} catch (HostnameHelperInvalidUriException e) {
 			throw new RtspProtoInvalidUriException(e.getMessage());
 		}
-		String tmpPath = rscUriObj.getPath();
+		String tmpPath = (rscUriObj.getPath() == null ? "" : rscUriObj.getPath());
 		tmpPath = tmpPath.strip();
 		if (tmpPath.startsWith("/")) {
 			tmpPath = tmpPath.substring(1).strip();

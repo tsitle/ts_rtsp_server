@@ -13,7 +13,7 @@ import java.net.URI;
 
 public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 
-	private final String inputUriPath;
+	private final @NonNull String inputUriPath;
 
 	private InputStream gis;
 
@@ -44,13 +44,10 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 			) throws AvCannotOpenInputException {
 		super(logMsgInterface, idStreamSource);
 
-		if (inputUri.getScheme() == null) {
-			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
-		}
-		if (! inputUri.getScheme().equals("file")) {
+		if (! "file".equals(inputUri.getScheme())) {
 			throw new IllegalArgumentException("Input URI scheme must be 'file'");
 		}
-		this.inputUriPath = inputUri.getPath();
+		this.inputUriPath = (inputUri.getPath() == null ? "" : inputUri.getPath());
 
 		//
 		openInput();

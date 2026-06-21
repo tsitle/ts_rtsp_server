@@ -69,8 +69,8 @@ public final class RtspProtoLowRequestProducer {
 		URI tmpUri = URI.create(inputUrl);
 		int tmpPort = tmpUri.getPort();
 		String resS = (isRtsps ? RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL) +
-				"://" + tmpUri.getHost() +
-				(tmpPort != -1 ? ":" + tmpUri.getPort() : "") + tmpUri.getPath();
+				"://" + (tmpUri.getHost() == null ? "" : tmpUri.getHost()) +
+				(tmpPort > 0 ? ":" + tmpUri.getPort() : "") + (tmpUri.getPath() == null ? "" : tmpUri.getPath());
 		if (tmpUri.getQuery() != null) {
 			resS += "?" + tmpUri.getQuery();
 		}

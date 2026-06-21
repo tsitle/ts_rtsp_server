@@ -282,7 +282,8 @@ public class RtspConfig {
 	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
 	 */
 	public Optional<String> getMqServerSslCertificatePath(@NonNull URI mqServerUri) throws ConfigInvalidException {
-		return getMqServerSslCertificatePath(mqServerUri.getHost() + ":" + mqServerUri.getPort());
+		String tmpHost = (mqServerUri.getHost() == null ? "" : mqServerUri.getHost());
+		return getMqServerSslCertificatePath(tmpHost + ":" + mqServerUri.getPort());
 	}
 
 	/**
@@ -297,8 +298,8 @@ public class RtspConfig {
 			return Optional.empty();
 		}
 		URI tmpUri = URI.create((hostAndPort.startsWith("https://") ? "" : "https://") + hostAndPort);
-		String tmpHost = tmpUri.getHost();
-		int tmpPort = (tmpUri.getPort() == -1 ? 443 : tmpUri.getPort());
+		String tmpHost = (tmpUri.getHost() == null ? "" : tmpUri.getHost());
+		int tmpPort = (tmpUri.getPort() < 1 ? 443 : tmpUri.getPort());
 		String tmpSearch1 = tmpHost + ":" + tmpPort;
 		String tmpPathStr = null;
 		if (remoteMqServerSslCertificates.containsKey(tmpSearch1)) {
