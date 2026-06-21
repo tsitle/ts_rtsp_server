@@ -224,7 +224,8 @@ public final class RtspProtoSessionInfo {
 		theReadLock.lock();
 		try {
 			RtspProtoSetupInfoForSubStream tmpSi = descrSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow(() ->
-					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
+							idSubStream.getIdStr().orElse("-unset-") + "'")
 				);
 			RtspProtoSetupInfoForSubStream resObj = tmpSi.clone();
 			resObj.writeProtect();
@@ -239,7 +240,8 @@ public final class RtspProtoSessionInfo {
 		theReadLock.lock();
 		try {
 			return descrSetupInfosStream.getSsrcBySubStreamId(idSubStream).orElseThrow(() ->
-					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" + idSubStream.getIdStr() + "'")
+					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
+							idSubStream.getIdStr().orElse("-unset-") + "'")
 				);
 		} finally {
 			theReadLock.unlock();

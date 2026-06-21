@@ -36,7 +36,7 @@ public class MqChannelBus {
 		if (idStreamSource.isEmpty()) {
 			throw new IllegalArgumentException("idStreamSource cannot be empty");
 		}
-		return MqChannelBusChannelName.of(String.format("internal#%s#", idStreamSource.getIdStr()));
+		return MqChannelBusChannelName.of(String.format("internal#%s#", idStreamSource.getIdStr().orElseThrow()));
 	}
 
 	/**

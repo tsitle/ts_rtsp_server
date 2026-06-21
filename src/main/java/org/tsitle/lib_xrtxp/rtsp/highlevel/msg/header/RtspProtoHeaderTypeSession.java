@@ -31,8 +31,8 @@ public final class RtspProtoHeaderTypeSession {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"idSession='" + idSession.getIdStr() + "', " +
-				optionalIntToStr("timeout", getTimeout32bit()) +
+				"idSession=" + idSession +
+				", " + optionalIntToStr("timeout", getTimeout32bit()) +
 				"]";
 	}
 

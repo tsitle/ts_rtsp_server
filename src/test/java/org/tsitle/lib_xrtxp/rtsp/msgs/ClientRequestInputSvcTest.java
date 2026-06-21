@@ -70,7 +70,7 @@ public class ClientRequestInputSvcTest {
 	static class AvailableStreams implements RtspProtoAvailableStreamsInterface {
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return idInputSource.getIdStr().equals("existing_stream");
+			return idInputSource.getIdStr().orElse("-unset-").equals("existing_stream");
 		}
 
 		@Override

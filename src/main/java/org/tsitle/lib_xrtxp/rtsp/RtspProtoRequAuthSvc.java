@@ -90,7 +90,7 @@ public class RtspProtoRequAuthSvc {
 					logError(FNC_NAME, String.format(
 							"User '%s' is not allowed to access IS='%s'",
 							requAuthClient.getAuthUser(),
-							tmpIdIs.getIdStr()));
+							tmpIdIs.getIdStr().orElse("-unset-")));
 				}
 			}
 		} else {
@@ -114,7 +114,7 @@ public class RtspProtoRequAuthSvc {
 		if (wasAuthentificationOk && wasAuthorizationOk) {
 			final String logMsg = String.format(
 					"Accepting %s request for IS='%s' for user '%s' (client IP=%s)",
-					ioRequestBasics.messageType, tmpIdIs.getIdStr(),
+					ioRequestBasics.messageType, tmpIdIs.getIdStr().orElse("-unset-"),
 					requAuthClient.getAuthUser(),
 					clientIpAddr.getIpAddrStr().orElseThrow());
 			logDebug(FNC_NAME, logMsg);
@@ -142,7 +142,7 @@ public class RtspProtoRequAuthSvc {
 		//
 		final String logMsg = String.format(
 				"Rejecting %s request for IS='%s' with code %s (failedCnt=%d, client IP=%s)",
-				rtspRequestBasics.messageType, idInputSource.getIdStr(),
+				rtspRequestBasics.messageType, idInputSource.getIdStr().orElse("-unset-"),
 				rtspRequestBasics.statusCode, unauthCnt,
 				clientIpAddr.getIpAddrStr().orElseThrow());
 		if (unauthCnt > 1) {

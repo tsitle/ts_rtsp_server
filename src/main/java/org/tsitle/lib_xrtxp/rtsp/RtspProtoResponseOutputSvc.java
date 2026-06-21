@@ -185,7 +185,7 @@ public final class RtspProtoResponseOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.statusCode,
-				rtspSessionInfo.getIdSession().isEmpty() ? "-" : rtspSessionInfo.getIdSession().getIdStr(),
+				rtspSessionInfo.getIdSession().isEmpty() ? "-" : rtspSessionInfo.getIdSession().getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 	}
 

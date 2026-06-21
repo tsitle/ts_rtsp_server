@@ -309,7 +309,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			return;
 		}
 		if (ctfos.rtcpLastTargetCongestionLevel >= 0) {
-			logDebug(FNC_NAME, "ss=" + ctfos.idStreamSource.getIdStr() + ": Congestion level changed to: " + currentTcl);
+			logDebug(FNC_NAME, "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": " +
+					"Congestion level changed to: " + currentTcl);
 			ctfos.rtpThreadSender.notifyCongestionLevelChange(currentTcl);
 		}
 		ctfos.rtcpLastTargetCongestionLevel = currentTcl;
@@ -380,7 +381,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				logInfo(FNC_NAME, String.format(
 						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
 						isPlaybackPaused ? "Resuming" : "Starting",
-						tmpIdIs.getIdStr(),
+						tmpIdIs.getIdStr().orElse("-unset-"),
 						rtspSessionInfo.getIsTransportSrtpSrtcp() ? "" : "o",
 						rtspSessionInfo.getIsTransportUdp() ? "UDP" : "TCP",
 						rtspSessionInfo.getIsRtspsConnection() ? "" : "o"));
@@ -399,7 +400,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				}
 				break;
 			case RtspProtoMessageType.PAUSE:
-				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIdIs.getIdStr()));
+				logInfo(FNC_NAME, String.format("Pausing playback for IS='%s'", tmpIdIs.getIdStr().orElse("-unset-")));
 				//
 				rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
 				rtspChildThreadMng.pauseOrStopChildThreads(true);
@@ -431,7 +432,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		if (rtspSessionInfo.getIsTransportUdp() && rtspTimeoutLastRequ != null) {
 			long tmpTimeDiff = Duration.between(rtspTimeoutLastRequ, Instant.now()).toSeconds();
 			if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT + SESSION_TIMEOUT_TOLERANCE_SEC) {
-				logWarn(FNC_NAME, "RTSP session sid=" + rtspSessionInfo.getIdSession().getIdStr() +
+				logWarn(FNC_NAME, "RTSP session sid=" + rtspSessionInfo.getIdSession().getIdStr().orElse("-unset-") +
 						" timeout after " + tmpTimeDiff + " seconds");
 				return false;  // terminate session
 			}

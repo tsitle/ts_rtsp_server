@@ -485,13 +485,13 @@ public final class RtspProtoRequestOutputSvc {
 			tmpSiSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(idSubStream);
 		} catch (RtspProtoSessionInfoException e) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": No Sub-Stream Info found for " +
-					"Sub-Stream ID '" + idSubStream.getIdStr() + "'");
+					"Sub-Stream ID '" + idSubStream.getIdStr().orElse("-unset-") + "'");
 		}
 
 		// get the SrtxpKmd object
 		if (! tmpSiSs.getKmdOutboundPtr().isKmdSet()) {
-			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
-					"has no previous outbound KMD");
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID '" +
+					idSubStream.getIdStr().orElse("-unset-") + "' " + "has no previous outbound KMD");
 		}
 		SrtxpKmd tmpSrtxpKmd = tmpSiSs.getKmdOutboundPtr().getKmd().orElseThrow();
 
@@ -603,7 +603,7 @@ public final class RtspProtoRequestOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(fncName, String.format("Sent request '%s' to remote host (<%s>, CSeq=%s)\n",
 				msgStructured.messageType,
-				tmpInputDataRequCopy.rrIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.rrIdSession.getIdStr(),
+				tmpInputDataRequCopy.rrIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.rrIdSession.getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 
 		// update data in Session Info

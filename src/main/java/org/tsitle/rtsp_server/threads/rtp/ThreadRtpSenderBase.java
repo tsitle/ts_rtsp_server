@@ -206,7 +206,8 @@ public abstract class ThreadRtpSenderBase<
 			if (srtpVarsOutbound.ctxObj == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
-			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" + paramsCommon.getIdStreamSource().getIdStr() +
+			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" +
+					paramsCommon.getIdStreamSource().getIdStr().orElse("-unset-") +
 					", MKI=" + Long.toUnsignedString(kmd.mki().getValue()) + ")");
 			try {
 				srtpVarsOutbound.ctxUpdatePending.set(true);

@@ -56,7 +56,7 @@ class RtspProtoHighRequestConsumerTest {
 	static class AvailableStreams implements RtspProtoAvailableStreamsInterface {
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return idInputSource.getIdStr().equals("existing_stream");
+			return idInputSource.getIdStr().orElse("-unset-").equals("existing_stream");
 		}
 
 		@Override
@@ -216,7 +216,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(expRequUrl + "/", outputDataRequ.requAnnouncedSdpRaw.getContentBase());
 		assertEquals("de", outputDataRequ.requAnnouncedSdpRaw.getContentLang());
@@ -459,7 +459,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(101L, outputDataRequ.rrCseqNrLastRcvd.getCseq32bit().orElseThrow());
 	}
@@ -562,7 +562,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(Set.of("strange_param", "weird"), outputDataRequ.rrGetParamNames.getParamNames());
 	}
@@ -607,7 +607,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -634,7 +634,6 @@ class RtspProtoHighRequestConsumerTest {
 
 		// --------------------------------
 
-		//
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
 		RtspRequestBasics requBasics = wrapperProcessRequest(
 				RtspProtoSessionState.INIT,
@@ -647,7 +646,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse(""));
 	}
 
 	@Test
@@ -690,7 +689,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 	}
 
 	@Test
@@ -774,10 +773,10 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
-		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr());
+		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -851,7 +850,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
@@ -862,7 +861,8 @@ class RtspProtoHighRequestConsumerTest {
 	@Test
 	void structuredRequest_setup_invalidSubStreamPrefix() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
-		final String expRequUrl = "rtsp://some.com/existing_stream/we_have_no_proper_substreamidprefix-" + generatedSubStreamId.getIdStr();
+		final String expRequUrl = "rtsp://some.com/existing_stream/we_have_no_proper_substreamidprefix-" +
+				generatedSubStreamId.getIdStr().orElse("-unset-");
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = 707L;
 		final String expSessionId = "some-session-id";
@@ -894,7 +894,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
@@ -906,7 +906,7 @@ class RtspProtoHighRequestConsumerTest {
 	void structuredRequest_setup_ok_queryParamSrtp() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
 		final String expRequUrl = "rtsp://some.com/existing_stream/" +
-				TEST_SUB_STREAM_ID_PREFIX + generatedSubStreamId.getIdStr() +
+				TEST_SUB_STREAM_ID_PREFIX + generatedSubStreamId.getIdStr().orElse("-unset-") +
 				"?" + RtspProtoHighConstants.URL_QUERY_PARAM_SRTP + "=1";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -940,12 +940,12 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
 
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
-		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr());
-		assertEquals("exists_12345_streamsource", requBasics.rscUrl.idStreamSource.getIdStr());
-		assertEquals(generatedSubStreamId.getIdStr(), requBasics.rscUrl.idSubStream.getIdStr());
+		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));
+		assertEquals("exists_12345_streamsource", requBasics.rscUrl.idStreamSource.getIdStr().orElse("-unset-"));
+		assertEquals(generatedSubStreamId, requBasics.rscUrl.idSubStream);
 		assertTrue(outputDataRequ.rrStreamTpMain.getForceRtpRtcpEncryption());
 	}
 
@@ -1069,9 +1069,9 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(expStatCode, requBasics.statusCode);
 
 		if (expStatCode == RtspProtoStatusCode.OK) {
-			assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr());
+			assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 			assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
-			assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr());
+			assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));
 
 			if (msgTp == RtspProtoMessageType.PLAY) {
 				assertEquals(expPlayRange, outputDataRequ.getPlaybackRangeValue());

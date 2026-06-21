@@ -2,6 +2,8 @@ package org.tsitle.lib_xrtxp.rtsp.ids;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.Optional;
+
 /**
  * Base class for string-based IDs
  */
@@ -23,8 +25,11 @@ public class RtspProtoBaseIdString implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull String getIdStr() {
-		return idStr;
+	public Optional<String> getIdStr() {
+		if (idStr.isBlank()) {
+			return Optional.empty();
+		}
+		return Optional.of(idStr);
 	}
 
 	public void setIdStr(@NonNull String value) {
@@ -61,7 +66,7 @@ public class RtspProtoBaseIdString implements Cloneable {
 	}
 
 	public boolean isEmpty() {
-		return idStr.isEmpty();
+		return idStr.isBlank();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -86,7 +91,7 @@ public class RtspProtoBaseIdString implements Cloneable {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				"id='" + idStr + "'" +
+				"id=" + (isEmpty() ? "unset" : "'" + idStr + "'") +
 				"]";
 	}
 

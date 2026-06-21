@@ -209,14 +209,14 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	@Override
 	public String toString() {
-		boolean have1 = ! idSubStream1.isEmpty();
-		boolean have2 = ! idSubStream2.isEmpty();
+		boolean have1 = (! idSubStream1.isEmpty());
+		boolean have2 = (! idSubStream2.isEmpty());
 
 		return getClass().getSimpleName() + " [" +
 				"siSubStream1=" + (have1 ? siSsPtr1 : "-") +
-				", subStreamId1=" + (have1 ? "'" + idSubStream1.getIdStr() + "'" : "-") +
+				", subStreamId1=" + (have1 ? "'" + idSubStream1.getIdStr().orElseThrow() + "'" : "-") +
 				", siSubStream2=" + (have2 ? siSsPtr2 : "-") +
-				", subStreamId2=" + (have2 ? "'" + idSubStream2.getIdStr() + "'" : "-") +
+				", subStreamId2=" + (have2 ? "'" + idSubStream2.getIdStr().orElseThrow() + "'" : "-") +
 				"]";
 	}
 

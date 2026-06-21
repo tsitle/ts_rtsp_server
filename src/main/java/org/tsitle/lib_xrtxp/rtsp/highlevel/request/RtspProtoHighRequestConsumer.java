@@ -385,7 +385,7 @@ public final class RtspProtoHighRequestConsumer {
 		//
 		Set<String> sdpControlIdsInSession = new HashSet<>();
 		for (RtspProtoIdSubStream tmpIdSs : ioSetupInfosStream.getSubStreamIds()) {
-			sdpControlIdsInSession.add(cfgSubStreamIdPrefix + tmpIdSs.getIdStr());
+			sdpControlIdsInSession.add(cfgSubStreamIdPrefix + tmpIdSs.getIdStr().orElse("-unset-"));
 		}
 		//
 		RtspProtoRscUrl resObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(

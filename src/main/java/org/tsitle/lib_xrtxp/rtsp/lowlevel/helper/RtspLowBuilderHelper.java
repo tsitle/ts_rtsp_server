@@ -156,7 +156,7 @@ public final class RtspLowBuilderHelper {
 		if (hdValue.idSession.isEmpty()) {
 			throw new RtspLowInvalidRrException("sessionIdStr cannot be blank");
 		}
-		return hdValue.idSession.getIdStr() +
+		return hdValue.idSession.getIdStr().orElse("-unset-") +
 				(! isForRequest && hdValue.getTimeout32bit().isPresent() ?
 						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT +
 								Integer.toUnsignedString(hdValue.getTimeout32bit().get())

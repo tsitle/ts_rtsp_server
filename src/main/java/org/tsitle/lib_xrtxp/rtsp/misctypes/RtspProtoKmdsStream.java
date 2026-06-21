@@ -78,9 +78,9 @@ public final class RtspProtoKmdsStream implements Cloneable {
 		return getClass().getSimpleName() + " [" +
 				"areKmdsForLegacySdes=" + (areKmdsForLegacySdes == null ? "-" : (areKmdsForLegacySdes ? "T" : "F")) +
 				", kmdSubStream1=" + (have1 ? kmdSs1.getKmd().orElseThrow() : "-") +
-				", subStreamId1=" + (have1 ? "'" + kmdSs1.getSubStreamId().orElseThrow().getIdStr() + "'" : "-") +
+				", subStreamId1=" + (have1 ? kmdSs1.getSubStreamId().orElseThrow() : "-") +
 				", kmdSubStream2=" + (have2 ? kmdSs2.getKmd().orElseThrow() : "-") +
-				", subStreamId2=" + (have2 ? "'" + kmdSs2.getSubStreamId().orElseThrow().getIdStr() + "'" : "-") +
+				", subStreamId2=" + (have2 ? kmdSs2.getSubStreamId().orElseThrow() : "-") +
 				"]";
 	}
 

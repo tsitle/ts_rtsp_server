@@ -83,7 +83,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		}
 		if (! checkStreamsForInputSource(inputSourceObj)) {
 			throw new RtspProtoSdpException(FNC_NAME + ": No valid Stream Source found for Input Source '" +
-					idInputSource.getIdStr() + "'");
+					idInputSource.getIdStr().orElse("-unset-") + "'");
 		}
 
 		//
@@ -175,6 +175,9 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (serverIpOrName.isEmpty()) {
 			throw new RtspProtoSdpException(FNC_NAME + ": Server IP address must be set");
 		}
+		if (inputSourceObj.getIdInputSource().getIdStr().isEmpty()) {
+			throw new RtspProtoSdpException(FNC_NAME + ": Input Source's ID must be set");
+		}
 
 		List<@NonNull String> resL = new ArrayList<>();
 
@@ -194,7 +197,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		// s: Session Name
 		resL.add(String.format("s=%s", RtspProtoSdpPrivateConstants.SESSION_NAME));
 		// i: Session Information
-		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr()));
+		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr().orElseThrow()));
 		// t: Time Active
 		resL.add("t=0 0");
 		// a: Session Attribute: Name and version number of the tool used to create the session description
@@ -269,6 +272,12 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = ioAdStreamSett.getSettingsByStreamSourceId(ssId);
 		if (tmpInpAdSubStreamSetts.isPresent()) {
 			tmpOutSubStreamId = tmpInpAdSubStreamSetts.get().idSubStream;
+			if (tmpOutSubStreamId.isEmpty()) {
+				throw new RtspProtoSdpException("Sub-Stream ID must be set in AdSettingsForSubStream");
+			}
+			if (tmpInpAdSubStreamSetts.get().ssrcId.isEmpty()) {
+				throw new RtspProtoSdpException("SSRC must be set in AdSettingsForSubStream");
+			}
 			tmpOutRtspSsrcId = tmpInpAdSubStreamSetts.get().ssrcId.getId32bit().orElse(-1L);
 		} else {
 			// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
@@ -283,7 +292,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		tmpOutSubStreamId.writeProtect();
 
 		//
-		final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX + tmpOutSubStreamId.getIdStr();
+		final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX +
+				tmpOutSubStreamId.getIdStr().orElseThrow();
 
 		//
 		RtspProtoAdSettingsForSubStream settSubStream = new RtspProtoAdSettingsForSubStream();

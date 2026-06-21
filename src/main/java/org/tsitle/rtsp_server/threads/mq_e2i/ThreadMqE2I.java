@@ -57,7 +57,8 @@ public class ThreadMqE2I extends RunnableBase {
 		this.mqSslCertPath = mqSslCertPath;
 
 		this.threadName = String.format("MQE2I#ss%s#%s:%s:%s",
-				idStreamSource.getIdStr(), mqSettings.getHostname(), mqSettings.getRscGroup(), mqSettings.getRscChannel());
+				idStreamSource.getIdStr().orElse("-unset-"), mqSettings.getHostname(),
+				mqSettings.getRscGroup(), mqSettings.getRscChannel());
 
 		//
 		mqInternalPub = new MqInternalPub(logMsgInterface, idStreamSource);

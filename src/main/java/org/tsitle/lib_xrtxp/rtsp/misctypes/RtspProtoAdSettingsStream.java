@@ -122,7 +122,7 @@ public final class RtspProtoAdSettingsStream {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
-				"idInputSource=" + (idInputSource.isEmpty() ? "-" : "'" + idInputSource.getIdStr() + "'") +
+				"idInputSource=" + (idInputSource.isEmpty() ? "-" : "'" + idInputSource.getIdStr().orElseThrow() + "'") +
 				", subStream1=" + (ss1.idSubStream.isEmpty() ? "-" : ss1) +
 				", subStream2=" + (ss2.idSubStream.isEmpty() ? "-" : ss2) +
 				"]";

@@ -86,7 +86,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 			do {
 				String tmpIdStr = ipHash + "_" + HashMd5Helper.hashOfString(
 						String.format("%s : %5s : %08X",
-								idInputSource.getIdStr(), idStreamSource.getIdStr(),
+								idInputSource.getIdStr().orElseThrow(), idStreamSource.getIdStr().orElseThrow(),
 								RandomHelper.getRandomUint32(false)),
 						false
 					).substring(0, HASH_LEN);
@@ -196,9 +196,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * @return The new number of unauthorized attempts
 	 */
 	public int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
-				.substring(0, HASH_LEN);
+		final String uaId = getUaId(clientIpAddr, idInputSource);
 
 		theWriteLock.lock();
 		try {
@@ -228,9 +226,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * @param idInputSource Input source ID
 	 */
 	public void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
-				.substring(0, HASH_LEN);
+		final String uaId = getUaId(clientIpAddr, idInputSource);
 
 		theWriteLock.lock();
 		try {
@@ -250,9 +246,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * @return The number of unauthorized attempts
 	 */
 	public int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
-		final String ipHash = getIpHash(clientIpAddr);
-		final String uaId = ipHash + "_" + HashMd5Helper.hashOfString(idInputSource.getIdStr(), false)
-				.substring(0, HASH_LEN);
+		final String uaId = getUaId(clientIpAddr, idInputSource);
 
 		theReadLock.lock();
 		try {
@@ -277,6 +271,16 @@ public final class RtspProtoGlobalSessionDataStorage {
 		return HashMd5Helper.hashOfString(ipStr, false).substring(0, HASH_LEN);
 	}
 
+	private static @NonNull String getUaId(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idIs) {
+		if (idIs.isEmpty()) {
+			throw new IllegalArgumentException("idIs must not be empty");
+		}
+		final String ipHash = getIpHash(clientIpAddr);
+		return ipHash + "_" + HashMd5Helper
+				.hashOfString(idIs.getIdStr().orElseThrow(), false)
+				.substring(0, HASH_LEN);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull SubStreamResolve getResolveBySubStreamId(
@@ -291,12 +295,13 @@ public final class RtspProtoGlobalSessionDataStorage {
 		theReadLock.lock();
 		try {
 			if (! subStreamResolveMap.containsKey(idSubStream)) {
-				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' not found");
+				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" +
+						idSubStream.getIdStr().orElse("-unset-") + "' not found");
 			}
 			SubStreamResolve tmpSsr = subStreamResolveMap.get(idSubStream);
 			if (! tmpSsr.clientIpAddrStr.equalsIgnoreCase(ipStr)) {
-				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" + idSubStream.getIdStr() + "' " +
-						"belongs to a different IP address");
+				throw new RtspProtoIdSubStreamNotFoundException("Sub-Stream ID '" +
+						idSubStream.getIdStr().orElse("-unset-") + "' belongs to a different IP address");
 			}
 			return tmpSsr;
 		} finally {

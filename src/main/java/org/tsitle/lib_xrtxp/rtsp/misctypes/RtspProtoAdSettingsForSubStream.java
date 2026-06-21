@@ -74,8 +74,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"idStreamSource=" + (idStreamSource.isEmpty() ? "-" : "'" + idStreamSource.getIdStr() + "'") +
-				", idSubStream=" + (idSubStream.isEmpty() ? "-" : "'" + idSubStream.getIdStr() + "'") +
+				"idStreamSource=" + (idStreamSource.isEmpty() ? "-" : "'" + idStreamSource.getIdStr().orElseThrow() + "'") +
+				", idSubStream=" + (idSubStream.isEmpty() ? "-" : "'" + idSubStream.getIdStr().orElseThrow() + "'") +
 				", ssrcId=" + (ssrcId.isEmpty() ? "-" : ssrcId.toHexString(true)) +
 				", urlSubPathForSubStream='" + urlSubPathForSubStream + "'" +
 				"]";

@@ -165,13 +165,13 @@ final class RtspChildThreadMng {
 			for (RtspProtoRscUrl tmpRscUrl : rtspSessionInfo.getDescrSetupInfoRscUrls()) {
 				if (childThreadsForOneStreamMap.containsKey(tmpRscUrl.idStreamSource)) {
 					throw new IllegalStateException(FNC_NAME + ": Child thread for ss='" +
-							tmpRscUrl.idStreamSource.getIdStr() + "' already exists");
+							tmpRscUrl.idStreamSource.getIdStr().orElse("-unset-") + "' already exists");
 				}
 				RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi =
 						availableStreamsInterface.getStreamSourceInfo(tmpRscUrl.idStreamSource);
 				//
 				if (tmpAvSsi.isSourceFromMq() && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
-					logError(FNC_NAME, "ss='" + tmpRscUrl.idStreamSource.getIdStr() + "': " +
+					logError(FNC_NAME, "ss='" + tmpRscUrl.idStreamSource.getIdStr().orElse("-unset-") + "': " +
 							"Source is a message queue, but codec is not set");
 					continue;
 				}
@@ -298,8 +298,8 @@ final class RtspChildThreadMng {
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP#c" + clientConnectionNr +
-				"#sid" + rtspSessionInfo.getIdSession().getIdStr() +
-				"#ss" + tmpSiSs.getRscUrlSubStreamPtr().idStreamSource.getIdStr() +
+				"#sid" + rtspSessionInfo.getIdSession().getIdStr().orElse("-unset-") +
+				"#ss" + tmpSiSs.getRscUrlSubStreamPtr().idStreamSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()
 			);
 		ctfos.rtcpThreadSendRecv.setDaemon(false);
@@ -385,6 +385,9 @@ final class RtspChildThreadMng {
 		} catch (RtspProtoSessionInfoException e) {
 			throw new IllegalStateException(FNC_NAME + ": idSubStream not found");
 		}
+		if (rtspSessionInfo.getIdSession().isEmpty()) {
+			throw new IllegalStateException(FNC_NAME + ": Session ID must be set in Session Info");
+		}
 		//
 		RtcpInnerXsrcBlock xsrcBlock = new RtcpInnerXsrcBlock(
 				1,
@@ -392,7 +395,7 @@ final class RtspChildThreadMng {
 				List.of(
 						new RtcpInnerXsrcBlock.BlockEntry(
 								RtcpInnerXsrcBlock.BlockType.CNAME,
-								rtspSessionInfo.getIdSession().getIdStr() + "@" + cnameHostname
+								rtspSessionInfo.getIdSession().getIdStr().orElseThrow() + "@" + cnameHostname
 							)
 					)
 			);
@@ -480,8 +483,8 @@ final class RtspChildThreadMng {
 		}
 		ctfos.rtpThreadSender.setName(
 				"RTP_#c" + clientConnectionNr +
-				"#sid" + rtspSessionInfo.getIdSession().getIdStr() +
-				"#ss" + tmpSiSs.getRscUrlSubStreamPtr().idStreamSource.getIdStr() +
+				"#sid" + rtspSessionInfo.getIdSession().getIdStr().orElse("-unset-") +
+				"#ss" + tmpSiSs.getRscUrlSubStreamPtr().idStreamSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()
 			);
 		ctfos.rtpThreadSender.setDaemon(false);

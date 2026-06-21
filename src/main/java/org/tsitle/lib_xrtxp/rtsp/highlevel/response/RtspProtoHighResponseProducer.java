@@ -426,7 +426,7 @@ public final class RtspProtoHighResponseProducer {
 		}
 		if (! ioSetupInfosStream.containsSiForSubStreamId(rscUrlObj.idSubStream)) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Sub-Stream ID '" +
-					rscUrlObj.idSubStream.getIdStr() + "' not found");
+					rscUrlObj.idSubStream.getIdStr().orElse("-unset-") + "' not found");
 		}
 
 		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
@@ -448,7 +448,7 @@ public final class RtspProtoHighResponseProducer {
 		// Session ID
 		{
 			// generate RTSP Session ID if necessary
-			String tmpOutpIdSession = inputDataResp.rrIdSession.getIdStr();
+			String tmpOutpIdSession = inputDataResp.rrIdSession.getIdStr().orElse("");
 			if (tmpOutpIdSession.isEmpty()) {
 				tmpOutpIdSession = buildHexString(RandomHelper.getRandomUint32(false));
 				logDebug(FNC_NAME, "New RTSP session ID: " + tmpOutpIdSession);

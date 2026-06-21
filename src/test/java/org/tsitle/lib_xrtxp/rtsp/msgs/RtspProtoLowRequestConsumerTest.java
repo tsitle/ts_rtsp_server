@@ -921,7 +921,7 @@ class RtspProtoLowRequestConsumerTest {
 		assertEquals(expRequUrl, msgStructured.resourceUrl);
 		assertEquals(expProtoVer, msgStructured.rtspProtoVersion);
 		assertEquals(expCseqLong, msgStructured.getHeaderCseq().orElseThrow());
-		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getIdStr());
+		assertEquals(expSessId, msgStructured.getHeaderSessionId().orElseThrow().getIdStr().orElse("-unset-"));
 
 		assertEquals(0, msgStructured.bodyAnnounceSdp.getSdpLinesAllRaw().size());
 		assertEquals(0, msgStructured.bodyGetParamNames.getParamNames().size());

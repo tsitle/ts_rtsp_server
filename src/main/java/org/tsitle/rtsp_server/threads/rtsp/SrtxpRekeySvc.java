@@ -129,7 +129,7 @@ final class SrtxpRekeySvc {
 				continue;
 			}
 			//
-			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr() + ": ";
+			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 			//
 			logDebug(FNC_NAME, String.format("%s90%% of maximum outbound RTP packet count reached: %s (RTCP in %s / out %s)",
 					logMsgPrefix,
@@ -147,7 +147,7 @@ final class SrtxpRekeySvc {
 		boolean rekeyingProtoIsMikey = true;
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
 		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
-			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr() + ": ";
+			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 			//
 			SrtxpKmd tmpNextKmdOutbound;
 			try {
@@ -186,7 +186,7 @@ final class SrtxpRekeySvc {
 		}
 
 		//
-		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr() + ": ";
+		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
 		ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
 
@@ -214,12 +214,12 @@ final class SrtxpRekeySvc {
 			) throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_mikey_oneStream()";
 
-		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr() + ": ";
+		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 
 		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_onlySetup(ctfos.idSubStream);
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - no Resource URL found for Sub-Stream ID: '" +
-					ctfos.idSubStream.getIdStr() + "'");
+					ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
 			return false;
 		}
 		final String resourceUrlForSs = tmpOptRscUrl.get().getUrlStr();
@@ -237,7 +237,7 @@ final class SrtxpRekeySvc {
 		Optional<SrtxpKmd> tmpOptNextKmdOutbound = kmdsOutbound.getKmdBySubStreamId(ctfos.idSubStream);
 		if (tmpOptNextKmdOutbound.isEmpty()) {
 			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - no KMD found for Sub-Stream ID: '" +
-					ctfos.idSubStream.getIdStr() + "'");
+					ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
 			return false;
 		}
 		final SrtxpKmd tmpNextKmdOutbound = tmpOptNextKmdOutbound.get();
@@ -307,7 +307,7 @@ final class SrtxpRekeySvc {
 			Optional<SrtxpKmd> tmpOptNextKmdOutbound = kmdsOutbound.getKmdBySubStreamId(ctfos.idSubStream);
 			if (tmpOptNextKmdOutbound.isEmpty()) {
 				logError(FNC_NAME, "SRTxP re-keying failed - no KMD found for Sub-Stream ID: '" +
-						ctfos.idSubStream.getIdStr() + "'");
+						ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
 				return false;
 			}
 			srtxpRekeyOutbound_updateThreads(ctfos, tmpOptNextKmdOutbound.get());
