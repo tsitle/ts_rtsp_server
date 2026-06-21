@@ -1,5 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtsp;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 
 import java.util.Set;
@@ -16,7 +17,7 @@ public final class RtspServerConstants {
 	public static final String SERVER_NAME = "TS RTSP Server";
 
 	/** Supported incoming RTSP request types of the local host */
-	public static final Set<RtspProtoMessageType> SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES = Set.of(
+	public static final Set<@NonNull RtspProtoMessageType> SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES = Set.of(
 			RtspProtoMessageType.DESCRIBE,
 			RtspProtoMessageType.GET_PARAMETER,
 			RtspProtoMessageType.OPTIONS,
@@ -26,5 +27,8 @@ public final class RtspServerConstants {
 			RtspProtoMessageType.SETUP,
 			RtspProtoMessageType.TEARDOWN
 		);
+
+	/** Supported RTSP features of the local host */
+	public static final Set<@NonNull String> SERVER_SUPPORTED_FEATURES = Set.of();
 
 }

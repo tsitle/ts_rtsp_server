@@ -1177,6 +1177,7 @@ class RtspProtoHighRequestConsumerTest {
 				buildLogMsgIf(),
 				true,
 				cfgSrvSuppIncomingMts,
+				Set.of(),
 				TEST_SUB_STREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				buildSdpConsumer(),

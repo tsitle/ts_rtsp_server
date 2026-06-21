@@ -28,6 +28,8 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
 
+import java.util.Set;
+
 /**
  * Service for receiving and processing RTSP requests over a TCP connection.
  */
@@ -49,6 +51,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param isRequestFromClient Is this a request sent by the client?
 	 * @param cfgRtxpLogLevel RTxP log level
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
+	 * @param cfgSupportedFeatures Supported features (can be empty)
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
@@ -63,6 +66,7 @@ public final class RtspProtoRequestInputSvc {
 				boolean isRequestFromClient,
 				@NonNull RtxpLogLevel cfgRtxpLogLevel,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
+				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -100,6 +104,7 @@ public final class RtspProtoRequestInputSvc {
 				logMsgInterface,
 				isRequestFromClient,
 				cfgSupportedMessageTypes,
+				cfgSupportedFeatures,
 				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,

@@ -36,6 +36,7 @@ public final class RtspProtoHighRequestConsumer {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	private final @NonNull Set<@NonNull String> cfgSupportedFeatures;
 	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
@@ -49,6 +50,7 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isRequestFromClient,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
+				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
@@ -60,6 +62,7 @@ public final class RtspProtoHighRequestConsumer {
 		this.isRequestFromClient = isRequestFromClient;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
+		this.cfgSupportedFeatures = new HashSet<>(cfgSupportedFeatures);
 		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
@@ -601,7 +604,7 @@ public final class RtspProtoHighRequestConsumer {
 
 	private void processHeader_com_proxyrequ(@NonNull RtspProtoHeaderEntryRequest headerEntry)
 			throws RtspProtoUnsupportedFeatureRequestedException {
-		processRequiredFeatures(headerEntry.hdValProxyRequ.requiredFeatures);
+		processRequiredFeatures(true, headerEntry.hdValProxyRequ.requiredFeatures);
 	}
 
 	private void processHeader_play_range(
@@ -620,7 +623,7 @@ public final class RtspProtoHighRequestConsumer {
 
 	private void processHeader_com_require(@NonNull RtspProtoHeaderEntryRequest headerEntry)
 			throws RtspProtoUnsupportedFeatureRequestedException {
-		processRequiredFeatures(headerEntry.hdValRequire.requiredFeatures);
+		processRequiredFeatures(false, headerEntry.hdValRequire.requiredFeatures);
 	}
 
 	private void processHeader_setup_transport(
@@ -700,16 +703,28 @@ public final class RtspProtoHighRequestConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processRequiredFeatures(@NonNull Set<@NonNull String> requiredFeatures)
+	private void processRequiredFeatures(boolean isForProxy, @NonNull Set<@NonNull String> requiredFeatures)
 			throws RtspProtoUnsupportedFeatureRequestedException {
 		if (requiredFeatures.isEmpty()) {
 			return;
 		}
+		String unsupp = "";
+		if (isForProxy) {
+			unsupp = requiredFeatures.stream().findFirst().orElse("");
+		} else {
+			for (String tmpInp : requiredFeatures) {
+				if (cfgSupportedFeatures.contains(tmpInp)) {
+					continue;
+				}
+				unsupp = tmpInp;
+				break;
+			}
+			if (unsupp.isEmpty()) {
+				return;
+			}
+		}
 		// we need to respond with "551 Option not supported"
-		// @TODO make custom supported features configurable
-		throw new RtspProtoUnsupportedFeatureRequestedException(
-				requiredFeatures.stream().findFirst().orElse("")
-			);
+		throw new RtspProtoUnsupportedFeatureRequestedException(unsupp);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -189,6 +189,8 @@ public class ClientRequestInputSvcTest {
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
 
+		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");
+
 		RtspProtoSessionInfo rtspSessionInfo = new RtspProtoSessionInfo();
 
 		inputSvc = new RtspProtoRequestInputSvc(
@@ -196,6 +198,7 @@ public class ClientRequestInputSvcTest {
 				false,
 				RtxpLogLevel.DEBUG,
 				cfgSupportedMessageTypes,
+				cfgSupportedFeatures,
 				false,
 				false,
 				rtspSessionInfo,
