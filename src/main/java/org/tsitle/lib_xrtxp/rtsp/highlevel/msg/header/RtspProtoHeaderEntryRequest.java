@@ -10,7 +10,6 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 	public @NonNull RtspProtoHeaderTypeKeymgmt hdValKeymgmt = new RtspProtoHeaderTypeKeymgmt();
 	public @NonNull RtspProtoHeaderTypeProxyRequ hdValProxyRequ = new RtspProtoHeaderTypeProxyRequ();
 	public @NonNull RtspProtoHeaderTypeRequire hdValRequire = new RtspProtoHeaderTypeRequire();
-	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
 	public RtspProtoHeaderEntryRequest() {
 		super();
@@ -35,7 +34,6 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 			case KEYMGMT:
 			case PROXY_REQU:
 			case REQUIRE:
-			case USERAGENT:
 				this.hdKeyEn = hdKeyEn;
 				break;
 			default:
@@ -57,7 +55,6 @@ public final class RtspProtoHeaderEntryRequest extends RtspProtoHeaderEntryBase 
 				case KEYMGMT -> hdValKeymgmt.toString();
 				case PROXY_REQU -> hdValProxyRequ.toString();
 				case REQUIRE -> hdValRequire.toString();
-				case USERAGENT -> hdValUserAgent.toString();
 				default -> throw new IllegalArgumentException("Invalid header key for requests: " + hdKeyEn);
 			};
 	}

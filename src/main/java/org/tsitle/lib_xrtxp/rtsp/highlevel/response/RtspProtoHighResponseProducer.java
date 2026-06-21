@@ -37,7 +37,7 @@ public final class RtspProtoHighResponseProducer {
 	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull String cfgServerNameAndVersion;
+	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
@@ -49,7 +49,7 @@ public final class RtspProtoHighResponseProducer {
 	public RtspProtoHighResponseProducer(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
-				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgSenderAppNameAndVersion,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface,
@@ -57,8 +57,12 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface
 			) {
+		if (cfgSenderAppNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+
 		this.logMsgInterface = logMsgInterface;
-		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
+		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpProducerInterface = sdpProducerInterface;
@@ -585,10 +589,14 @@ public final class RtspProtoHighResponseProducer {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.DATE);
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
-		// Server
-		{
+		// Server / UserAgent
+		if (isResponseFromClient) {
+			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.USERAGENT);
+			hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		} else {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
-			hdEntry.hdValServer.serverStr = cfgServerNameAndVersion;
+			hdEntry.hdValServer.serverStr = cfgSenderAppNameAndVersion;
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
@@ -630,9 +638,10 @@ public final class RtspProtoHighResponseProducer {
 	private void addContentTypeHeader(@NonNull RtspProtoHighMsgStructuredResponse output) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addContentTypeHeader()";
 
-		if (output.messageType != RtspProtoMessageType.DESCRIBE && output.messageType != RtspProtoMessageType.GET_PARAMETER) {
+		if (output.messageType != RtspProtoMessageType.DESCRIBE &&
+				output.messageType != RtspProtoMessageType.GET_PARAMETER && output.messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Content-Type header only allowed for " +
-					"DESCRIBE/GET_PARAMETER messages");
+					"DESCRIBE/GET_PARAMETER/SET_PARAMETER messages");
 		}
 		RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.CONTENT_TYPE);
 		hdEntry.hdValContType.contentType = (output.messageType == RtspProtoMessageType.DESCRIBE ?

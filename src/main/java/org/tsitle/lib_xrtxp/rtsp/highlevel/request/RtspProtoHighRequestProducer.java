@@ -27,15 +27,22 @@ import java.util.Optional;
 public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull String cfgSenderAppNameAndVersion,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface
 			) {
+		if (cfgSenderAppNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+
 		this.logMsgInterface = logMsgInterface;
+		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.sdpProducerInterface = sdpProducerInterface;
 	}
@@ -408,6 +415,12 @@ public final class RtspProtoHighRequestProducer {
 				throw new RtspProtoInvalidRequestException(FNC_NAME + ": Computing authentication response failed: " +
 						e.getMessage());
 			}
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// UserAgent
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.USERAGENT);
+			hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}

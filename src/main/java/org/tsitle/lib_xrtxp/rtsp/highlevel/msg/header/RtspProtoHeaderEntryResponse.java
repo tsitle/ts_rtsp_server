@@ -10,6 +10,7 @@ public final class RtspProtoHeaderEntryResponse extends RtspProtoHeaderEntryBase
 	public @NonNull RtspProtoHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoHeaderTypeRtpinfo();
 	public @NonNull RtspProtoHeaderTypeServer hdValServer = new RtspProtoHeaderTypeServer();
 	public @NonNull RtspProtoHeaderTypeUnsupported hdValUnsupported = new RtspProtoHeaderTypeUnsupported();
+	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
 	@SuppressWarnings("unused")
 	public RtspProtoHeaderEntryResponse() {

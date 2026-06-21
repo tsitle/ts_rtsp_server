@@ -45,7 +45,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * Constructor.
 	 * @param logMsgInterface Log message handling instance
 	 * @param isRequestFromClient Is this a request being sent by the client?
-	 * @param cfgServerNameAndVersion Server software name and version
+	 * @param cfgSenderAppNameAndVersion Server/client software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent SDP data for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
@@ -57,7 +57,7 @@ public final class RtspProtoRequestOutputSvc {
 	public RtspProtoRequestOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isRequestFromClient,
-				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
@@ -66,8 +66,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
-		if (cfgServerNameAndVersion.isBlank()) {
-			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
+		if (cfgSenderAppNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
 		}
 
 		this.logMsgInterface = logMsgInterface;
@@ -77,7 +77,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		//
 		RtspProtoSdpProducer sdpProducer = new RtspProtoSdpProducer(
-				cfgServerNameAndVersion,
+				cfgSenderAppNameAndVersion,
 				cfgContentLanguage,
 				availableStreamsInterface,
 				globalSessionInfoInterface
@@ -86,6 +86,7 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		this.rtspProtoHighRequestProducer = new RtspProtoHighRequestProducer(
 				logMsgInterface,
+				cfgSenderAppNameAndVersion,
 				cfgIsDebugPrintRtspSdpSent,
 				sdpProducer
 			);

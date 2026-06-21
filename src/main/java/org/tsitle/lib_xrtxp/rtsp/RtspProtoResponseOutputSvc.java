@@ -47,7 +47,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * Constructor.
 	 * @param logMsgInterface Log message handling instance
 	 * @param isResponseFromClient Is this a response being sent by the client?
-	 * @param cfgServerNameAndVersion Server software name and version
+	 * @param cfgSenderAppNameAndVersion Server/client software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
@@ -62,7 +62,7 @@ public final class RtspProtoResponseOutputSvc {
 	public RtspProtoResponseOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
-				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				boolean cfgIsDebugPrintRtspSdpSent,
@@ -74,8 +74,8 @@ public final class RtspProtoResponseOutputSvc {
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
-		if (cfgServerNameAndVersion.isBlank()) {
-			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
+		if (cfgSenderAppNameAndVersion.isBlank()) {
+			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
 		}
 
 		this.logMsgInterface = logMsgInterface;
@@ -92,7 +92,7 @@ public final class RtspProtoResponseOutputSvc {
 
 		//
 		RtspProtoSdpProducer sdpProducer = new RtspProtoSdpProducer(
-				cfgServerNameAndVersion,
+				cfgSenderAppNameAndVersion,
 				cfgContentLanguage,
 				availableStreamsInterface,
 				globalSessionInfoInterface
@@ -102,7 +102,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.rtspProtoHighResponseProducer = new RtspProtoHighResponseProducer(
 				logMsgInterface,
 				isResponseFromClient,
-				cfgServerNameAndVersion,
+				cfgSenderAppNameAndVersion,
 				cfgIsDebugPrintRtspSdpSent,
 				cfgIsDebugDisableTransportUdp,
 				sdpProducer,

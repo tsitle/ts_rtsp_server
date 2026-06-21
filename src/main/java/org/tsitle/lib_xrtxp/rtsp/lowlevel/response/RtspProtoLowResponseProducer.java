@@ -90,6 +90,7 @@ public final class RtspProtoLowResponseProducer {
 					case SESSION -> buildHeaderValue_com_session(entry.getValue().hdValSession);
 					case TRANSPORT -> buildHeaderValue_setup_transport(input.messageType, entry.getValue().hdValTransport);
 					case UNSUPPORTED -> buildHeaderValue_com_unsupported(entry.getValue().hdValUnsupported);
+					case USERAGENT -> buildHeaderValue_com_useragent(entry.getValue().hdValUserAgent);
 					default -> throw new RtspProtoInvalidResponseException(FNC_NAME + ": Unknown header key: " + entry.getKey());
 				};
 			if (tmpHdVal.isBlank()) {
@@ -141,7 +142,7 @@ public final class RtspProtoLowResponseProducer {
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeContEnc hdValue
 			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
-		allowOnlyDescribeGetParameter("Content-Encoding", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Encoding", messageType);
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contenc(hdValue);
 	}
 
@@ -149,19 +150,19 @@ public final class RtspProtoLowResponseProducer {
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderTypeContLang hdValue
 			) throws RtspLowInvalidRrException, RtspProtoInvalidResponseException {
-		allowOnlyDescribeGetParameter("Content-Language", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Language", messageType);
 		return RtspLowBuilderHelper.helperBuildHeaderValue_contlang(hdValue);
 	}
 
 	private static @NonNull String buildHeaderValue_com_contlen(@NonNull RtspProtoMessageType messageType)
 			throws RtspProtoInvalidResponseException {
-		allowOnlyDescribeGetParameter("Content-Length", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Length", messageType);
 		return "";  // add this header when adding the body
 	}
 
 	private static @NonNull String buildHeaderValue_com_conttype(@NonNull RtspProtoMessageType messageType)
 			throws RtspProtoInvalidResponseException {
-		allowOnlyDescribeGetParameter("Content-Type", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Type", messageType);
 		return "";  // add this header when adding the body
 	}
 
@@ -301,13 +302,22 @@ public final class RtspProtoLowResponseProducer {
 		return hdValue.unsupportedFeatureStr;
 	}
 
+	private static @NonNull String buildHeaderValue_com_useragent(@NonNull RtspProtoHeaderTypeUa hdValue)
+			throws RtspProtoInvalidResponseException {
+		if (hdValue.userAgentStr.isBlank()) {
+			throw new RtspProtoInvalidResponseException("useragentStr cannot be blank");
+		}
+		return hdValue.userAgentStr;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void allowOnlyDescribeGetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
+	private static void allowOnlyDescribeGetSetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
 			throws RtspProtoInvalidResponseException {
-		if (messageType != RtspProtoMessageType.DESCRIBE && messageType != RtspProtoMessageType.GET_PARAMETER) {
+		if (messageType != RtspProtoMessageType.DESCRIBE &&
+				messageType != RtspProtoMessageType.GET_PARAMETER && messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoInvalidResponseException(hdDesc + " header is only valid for " +
-					"DESCRIBE/GET_PARAMETER responses");
+					"DESCRIBE/GET_PARAMETER/SET_PARAMETER responses");
 		}
 	}
 

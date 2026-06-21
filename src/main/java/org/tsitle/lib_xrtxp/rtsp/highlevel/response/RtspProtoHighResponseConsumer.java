@@ -210,6 +210,7 @@ public class RtspProtoHighResponseConsumer {
 				case RtspHeaderKey.SERVER -> processHeader_com_server(entry.getValue(), outputDataResp);
 				case RtspHeaderKey.TRANSPORT -> processHeader_setup_transport(input.messageType, entry.getValue(), outputDataResp);
 				case RtspHeaderKey.UNSUPPORTED -> processHeader_com_unsupported(entry.getValue(), outputDataResp);
+				case RtspHeaderKey.USERAGENT -> processHeader_com_useragent(entry.getValue(), outputDataResp);
 				default -> {
 					if (! preProcessedHeaders.contains(entry.getKey())) {
 						logWarn(FNC_NAME, "Skipping header: " + entry.getKey());
@@ -372,6 +373,16 @@ public class RtspProtoHighResponseConsumer {
 			throw new RtspProtoInvalidResponseException("unsupportedFeatureStr must be set");
 		}
 		logWarn(FNC_NAME, "Option '" + headerEntry.hdValUnsupported.unsupportedFeatureStr + "' is not supported");
+		// @TODO store params
+	}
+
+	private void processHeader_com_useragent(
+				@NonNull RtspProtoHeaderEntryResponse headerEntry,
+				@NonNull RtspProtoDataResponse outputDataResp
+			) throws RtspProtoInvalidResponseException {
+		if (headerEntry.hdValUserAgent.userAgentStr.isBlank()) {
+			throw new RtspProtoInvalidResponseException("userAgentStr must be set");
+		}
 		// @TODO store params
 	}
 

@@ -19,6 +19,7 @@ public class RtspProtoHeaderEntryBase {
 	public @NonNull RtspProtoHeaderTypeRange hdValRange = new RtspProtoHeaderTypeRange();
 	public @NonNull RtspProtoHeaderTypeSession hdValSession = new RtspProtoHeaderTypeSession();
 	public @NonNull RtspProtoHeaderTypeTransport hdValTransport = new RtspProtoHeaderTypeTransport();
+	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
 	protected RtspProtoHeaderEntryBase() { }
 
@@ -49,6 +50,7 @@ public class RtspProtoHeaderEntryBase {
 			case RANGE:
 			case SESSION:
 			case TRANSPORT:
+			case USERAGENT:
 				this.hdKeyEn = hdKeyEn;
 				this.baseClassHandlesHdKeyType = true;
 				break;
@@ -74,6 +76,7 @@ public class RtspProtoHeaderEntryBase {
 				case RANGE -> hdValRange.toString();
 				case SESSION -> hdValSession.toString();
 				case TRANSPORT -> hdValTransport.toString();
+				case USERAGENT -> hdValUserAgent.toString();
 				default -> throw new IllegalArgumentException("Invalid header key for base class: " + hdKeyEn);
 			};
 	}
