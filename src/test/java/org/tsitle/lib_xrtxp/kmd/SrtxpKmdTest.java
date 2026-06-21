@@ -2,8 +2,9 @@ package org.tsitle.lib_xrtxp.kmd;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -14,9 +15,9 @@ class SrtxpKmdTest {
 	@Test
 	void simpleCloneMikey() throws RtspProtoNumberRangeException {
 		SrtxpKmd kmd = SrtxpKmd.createForMikeyWithDefaults(
-				DynInteger.ofAutoSized(1001L),
+				SrtxpMki.ofAutoSized(1001L),
 				RtspProtoIdXsrc.of(0xDEADBEEFL),
-				DynInteger.ofAutoSized(2002L)
+				SrtxpKdr.ofAutoSized(2002L)
 			);
 
 		compareKmds(kmd);

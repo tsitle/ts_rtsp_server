@@ -2,8 +2,8 @@ package org.tsitle.lib_xrtxp.kmd;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -26,7 +26,7 @@ class SrtpProtectRoundTripTest {
 		// Arrange
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		final SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 		Common.srtpCtxOutboundInjectStateRtpRocOutbound(senderCtx, 0);
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys);
 
@@ -51,7 +51,7 @@ class SrtpProtectRoundTripTest {
 	void protectAndUnprotect_should_handle_roc_wrap_from_seq_ffff_to_0000() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		final SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
@@ -101,7 +101,7 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_after_roc_wrap() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xABCD1234L);
 
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		final SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
@@ -161,7 +161,7 @@ class SrtpProtectRoundTripTest {
 	void unprotectSrtp_should_reject_replay_for_old_seqnr() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
-		final SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
+		final SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(hdSsrc);
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSsrc);
@@ -204,7 +204,7 @@ class SrtpProtectRoundTripTest {
 		final RtspProtoRtpSeqNr hdSeqNrDoesntWrap = RtspProtoRtpSeqNr.of(0x0FFF);
 		final RtspProtoIdXsrc hdSenderSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
-		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp(hdSenderSsrc);
+		SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtcp(hdSenderSsrc);
 
 		final SrtpContextOutbound senderCtx = Common.createSrtpCtxOutboundDefault(hdSenderSsrc);
 		final SrtpContextInbound receiverCtx = Common.createSrtpCtxInboundDefault(hdSenderSsrc);
@@ -212,7 +212,7 @@ class SrtpProtectRoundTripTest {
 		Common.srtpCtxInjectKeys(senderCtx, rtpKeys);
 		Common.srtpCtxInjectKeys(receiverCtx, rtpKeys);
 
-		DynInteger mki = DynInteger.of(16909060L, 4);
+		SrtxpMki mki = SrtxpMki.of(16909060L, 4);
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 

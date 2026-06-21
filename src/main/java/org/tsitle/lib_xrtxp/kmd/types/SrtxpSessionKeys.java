@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Session keys for RTP/SRTP and RTCP/SRTCP
  */
-public final class SessionKeys implements Cloneable {
+public final class SrtxpSessionKeys implements Cloneable {
 
 	private @NonNull BufferExt encKey = new BufferExt();
 	private @NonNull BufferExt authKey = new BufferExt();
@@ -20,7 +20,7 @@ public final class SessionKeys implements Cloneable {
 	 * @param authKey HMAC-SHA1 key (10 or 20 bytes)
 	 * @param salt Salt (14 bytes)
 	 */
-	public SessionKeys(@NonNull BufferExt encKey, @NonNull BufferExt authKey, @NonNull BufferExt salt) {
+	public SrtxpSessionKeys(@NonNull BufferExt encKey, @NonNull BufferExt authKey, @NonNull BufferExt salt) {
 		this.encKey.copyOf(encKey);
 		this.authKey.copyOf(authKey);
 		this.salt.copyOf(salt);
@@ -30,9 +30,9 @@ public final class SessionKeys implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull SessionKeys clone() {
+	public @NonNull SrtxpSessionKeys clone() {
 		try {
-			SessionKeys clone = (SessionKeys)super.clone();
+			SrtxpSessionKeys clone = (SrtxpSessionKeys)super.clone();
 			clone.encKey = this.encKey.clone();
 			clone.authKey = this.authKey.clone();
 			clone.salt = this.salt.clone();
@@ -68,7 +68,7 @@ public final class SessionKeys implements Cloneable {
 		if (obj == null || obj.getClass() != this.getClass()) {
 			return false;
 		}
-		var that = (SessionKeys)obj;
+		var that = (SrtxpSessionKeys)obj;
 		return (
 				Objects.equals(this.encKey, that.encKey) &&
 				Objects.equals(this.authKey, that.authKey) &&

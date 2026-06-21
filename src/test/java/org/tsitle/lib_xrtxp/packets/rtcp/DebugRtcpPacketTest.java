@@ -5,8 +5,8 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextOutbound;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
@@ -32,8 +32,8 @@ class DebugRtcpPacketTest {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
 		final String sdesCname = "some-cname-" + hdSsrc.toHexString(false);
 
-		SrtxpKmd kmdNr1 = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(1L), hdSsrc);
-		SrtxpKmd kmdNr2 = SrtxpKmd.createForMikeyWithDefaults(DynInteger.ofAutoSized(2L), hdSsrc);
+		SrtxpKmd kmdNr1 = SrtxpKmd.createForMikeyWithDefaults(SrtxpMki.ofAutoSized(1L), hdSsrc);
+		SrtxpKmd kmdNr2 = SrtxpKmd.createForMikeyWithDefaults(SrtxpMki.ofAutoSized(2L), hdSsrc);
 
 		final String mikeyMsgNr1 = MikeyGenerator.generate(kmdNr1);
 		System.out.println("GEN_MIKEY_1 = \"" + mikeyMsgNr1 + "\"");

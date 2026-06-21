@@ -28,6 +28,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -40,7 +41,7 @@ public final class RtspProtoRequestInputSvc {
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
-	private final RtspProtoRequAuthSvc requAuthSvc;
+	private final @Nullable RtspProtoRequAuthSvc requAuthSvc;
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowRequestConsumer rtspProtoLowRequestConsumer;
 	private final RtspProtoHighRequestConsumer rtspProtoHighRequestConsumer;
@@ -55,7 +56,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
-	 * @param userAuthInterface User authentication instance
+	 * @param userAuthInterface User authentication instance (not required for requests from the server)
 	 * @param availableStreamsInterface Available streams instance
 	 * @param globalSessionInfoInterface Global session info instance
 	 * @param parameterSetterInterface Parameter setter instance
@@ -70,7 +71,7 @@ public final class RtspProtoRequestInputSvc {
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
-				@NonNull RtspProtoUserAuthInterface userAuthInterface,
+				@Nullable RtspProtoUserAuthInterface userAuthInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface,
@@ -85,13 +86,20 @@ public final class RtspProtoRequestInputSvc {
 		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
 
 		//
-		this.requAuthSvc = new RtspProtoRequAuthSvc(
-				logMsgInterface,
-				cfgRtxpLogLevel,
-				userAuthInterface,
-				availableStreamsInterface,
-				globalSessionInfoInterface
-			);
+		if (isRequestFromClient) {
+			if (userAuthInterface == null) {
+				throw new IllegalArgumentException("userAuthInterface must be set for requests from the client");
+			}
+			this.requAuthSvc = new RtspProtoRequAuthSvc(
+					logMsgInterface,
+					cfgRtxpLogLevel,
+					userAuthInterface,
+					availableStreamsInterface,
+					globalSessionInfoInterface
+				);
+		} else {
+			this.requAuthSvc = null;
+		}
 
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
@@ -237,6 +245,7 @@ public final class RtspProtoRequestInputSvc {
 
 		// check whether the client needs to be authenticated and if so, whether he actually is
 		if (isRequestFromClient) {
+			Objects.requireNonNull(requAuthSvc);
 			requAuthSvc.checkAuthorization(clientIpAddr, resObj, outputDataRequ.requAuthClient);
 		}
 

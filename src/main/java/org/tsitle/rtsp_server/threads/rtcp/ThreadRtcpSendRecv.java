@@ -140,7 +140,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 			logDebug(FNC_NAME, "Setting next SRTCP inbound KMD (ss=" +
 					params.getIdStreamSource().getIdStr().orElse("-unset-") +
-					", MKI=" + Long.toUnsignedString(kmd.mki().getValue()) + ")");
+					", MKI=" + Long.toUnsignedString(kmd.mki().getValue().orElse(0L)) + ")");
 			try {
 				srtcpVarsInbound.ctxUpdatePending.set(true);
 				srtcpVarsInbound.ctxObjNext = new SrtcpContextInbound(kmd);
@@ -170,7 +170,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 			logDebug(FNC_NAME, "Setting next SRTCP outbound KMD (ss=" +
 					params.getIdStreamSource().getIdStr().orElse("-unset-") +
-					", MKI=" + Long.toUnsignedString(kmd.mki().getValue()) + ")");
+					", MKI=" + Long.toUnsignedString(kmd.mki().getValue().orElse(0L)) + ")");
 			try {
 				srtcpVarsOutbound.ctxUpdatePending.set(true);
 				srtcpVarsOutbound.ctxObj = new SrtcpContextOutbound(kmd);

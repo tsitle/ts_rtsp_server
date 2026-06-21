@@ -4,9 +4,10 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.constants.*;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.MikeyData;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -384,7 +385,7 @@ public final class MikeyParser {
 				case MMSPPT_KDR:
 					try {
 						BufferExt tmpKdrBe = new BufferExt(tmpPolParamData);
-						mikeyData.spKdr = DynInteger.ofBufferBigEndian(tmpKdrBe);
+						mikeyData.spKdr = SrtxpKdr.ofBufferBigEndian(tmpKdrBe);
 					} catch (IllegalArgumentException e) {
 						errMsg = String.format("Unsupported MIKEY SP KDR length %d, expected 0/1/2/4/8", tmpBy);
 					}
@@ -514,7 +515,7 @@ public final class MikeyParser {
 			BufferExt tmpKvBe = new BufferExt();
 			extractBytes(FNC_NAME, "KEMAC KV SPI/MKI", buf, tmpKvLen, tmpKvBe);
 			try {
-				mikeyData.kemacKvDataSpiOrMki = DynInteger.ofBufferBigEndian(tmpKvBe);
+				mikeyData.kemacKvDataSpiOrMki = SrtxpMki.ofBufferBigEndian(tmpKvBe);
 			} catch (IllegalArgumentException e) {
 				throw new SrtxpSecurityException("Unsupported KEMAC KV SPI/MKI length " + tmpKvLen + ", expected 0/1/2/4/8");
 			}

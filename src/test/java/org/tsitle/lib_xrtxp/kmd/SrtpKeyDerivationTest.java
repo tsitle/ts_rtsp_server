@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.kmd;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -20,7 +20,7 @@ class SrtpKeyDerivationTest {
 	@SuppressWarnings("ConstantValue")
 	@Test
 	void rfc3711_rtp_vector_should_match() throws SrtxpSecurityException, RtspProtoNumberRangeException {
-		SessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(RtspProtoIdXsrc.of(0xABCDEF12L));
+		SrtxpSessionKeys rtpKeys = Common.createSessionKeysDefaultRtp(RtspProtoIdXsrc.of(0xABCDEF12L));
 
 		final BufferExt expectedEncKey_128 = BufferExt.decodeHexString("0xC61E7A93744F39EE10734AFE3FF7A087");
 		final BufferExt expectedEncKey_256 = BufferExt.decodeHexString("0x163E3C392D9CD97AC1B621097628F62BDE51B3E6540F74036094F0B8243BAFCA");
@@ -49,7 +49,7 @@ class SrtpKeyDerivationTest {
 	@SuppressWarnings("ConstantValue")
 	@Test
 	void rfc3711_rtcp_vector_should_match() throws SrtxpSecurityException, RtspProtoNumberRangeException {
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(RtspProtoIdXsrc.of(0xABCDEF12L));
+		SrtxpSessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(RtspProtoIdXsrc.of(0xABCDEF12L));
 
 		final BufferExt expectedEncKey_128 = BufferExt.decodeHexString("4C1AA45A81F73D61C800BBB00FBB1EAA");
 		final BufferExt expectedEncKey_256 = BufferExt.decodeHexString("2D3D918C03825CF2C091ABA8EAFBC090F2609985446270ED3F610C22B479291B");
@@ -84,14 +84,14 @@ class SrtpKeyDerivationTest {
 
 		//
 		final RtspProtoIdXsrc ssrcId = RtspProtoIdXsrc.of(0xABCDEF12L);
-		SessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(
+		SrtxpSessionKeys rtpKeys = Common.createSessionKeysNonDefRtp(
 				new BufferExt(masterKey),
 				new BufferExt(masterSalt),
 				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,
 				Common.AUTH_TAG_SIZE_FOR_ALL_TESTS,
 				ssrcId
 			);
-		SessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
+		SrtxpSessionKeys rtcpKeys = Common.createSessionKeysNonDefRtcp(
 				new BufferExt(masterKey),
 				new BufferExt(masterSalt),
 				Common.AUTH_KEY_SIZE_FOR_ALL_TESTS,

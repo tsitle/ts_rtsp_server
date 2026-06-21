@@ -55,7 +55,7 @@ public final class RtspLowParserHelper {
 		try {
 			URI tmpUri = HostnameHelper.convertRtspUrlIntoURI(hdValue);
 
-			// we strip away any user credentials, port number and fragment
+			// we strip away any user credentials and fragment
 			outputHd.contentBaseStr = (tmpUri.getScheme().equals("https") ?
 					RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL);
 			outputHd.contentBaseStr += "://" + tmpUri.getHost();
@@ -63,9 +63,11 @@ public final class RtspLowParserHelper {
 				outputHd.contentBaseStr += ":" + tmpUri.getPort();
 			}
 			outputHd.contentBaseStr += (tmpUri.getPath() == null ? "" : tmpUri.getPath());
+			// add a slash to the end
 			if (! outputHd.contentBaseStr.endsWith("/")) {
 				outputHd.contentBaseStr += "/";
 			}
+			// add query parameters
 			if (tmpUri.getQuery() != null) {
 				outputHd.contentBaseStr += "?" + tmpUri.getQuery();
 			}

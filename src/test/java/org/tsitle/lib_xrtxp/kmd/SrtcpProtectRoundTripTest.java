@@ -6,8 +6,9 @@ import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.packets.rtcp.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -26,7 +27,7 @@ class SrtcpProtectRoundTripTest {
 	void protect_then_unprotect_srtcp_compound_sr_should_restore_original_packet() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x11223344L);
 
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+		SrtxpSessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
@@ -104,9 +105,9 @@ class SrtcpProtectRoundTripTest {
 				new BufferExt(masterSaltBa),
 				authKeyLen,
 				authTagLen,
-				DynInteger.ofBufferBigEndian(new BufferExt(mkiBa)),
+				SrtxpMki.ofBufferBigEndian(new BufferExt(mkiBa)),
 				hdSsrc,
-				DynInteger.ofEmpty()
+				SrtxpKdr.ofEmpty()
 			);
 		SrtcpContextOutbound senderCtx = new SrtcpContextOutbound(rtcpKmd);
 		Common.srtcpCtxOutboundInjectStateRtcpIndex(senderCtx, 0);
@@ -159,7 +160,7 @@ class SrtcpProtectRoundTripTest {
 	void unprotect_should_fail_when_encrypted_packet_is_tampered() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x55667788L);
 
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+		SrtxpSessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
@@ -201,7 +202,7 @@ class SrtcpProtectRoundTripTest {
 	void protect_then_unprotect_srtcp_compound_sr_with_mki_should_restore_original_and_reject_wrong_mki() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0x10203040L);
 
-		SessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
+		SrtxpSessionKeys rtcpKeys = Common.createSessionKeysDefaultRtcp(hdSsrc);
 
 		SrtcpContextOutbound senderCtx = Common.createSrtcpCtxOutboundDefault(hdSsrc);
 		SrtcpContextInbound receiverCtx = Common.createSrtcpCtxInboundDefault(hdSsrc);
@@ -209,7 +210,7 @@ class SrtcpProtectRoundTripTest {
 		Common.srtcpCtxInjectKeys(senderCtx, rtcpKeys);
 		Common.srtcpCtxInjectKeys(receiverCtx, rtcpKeys);
 
-		DynInteger mki = DynInteger.of(16909060L, 4);
+		SrtxpMki mki = SrtxpMki.of(16909060L, 4);
 		senderCtx.setKmdMasterKeyIdentifier(mki);
 		receiverCtx.setKmdMasterKeyIdentifier(mki);
 

@@ -4,10 +4,10 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
@@ -506,19 +506,19 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// generate the new Key Management Data
-		DynInteger tmpKmiObj;
+		SrtxpMki tmpMkiObj;
 		if (tmpSrtxpKmd.mki().isEmpty()) {
-			tmpKmiObj = DynInteger.ofEmpty();
+			tmpMkiObj = SrtxpMki.ofEmpty();
 		} else {
-			final long nextMki = tmpSrtxpKmd.mki().getValue() + 1L;  // will automatically be wrapped around
-			tmpKmiObj = DynInteger.of(nextMki, tmpSrtxpKmd.mki().getSizeBytes());
+			final long nextMki = tmpSrtxpKmd.mki().getValue().orElseThrow() + 1L;  // will automatically be wrapped around
+			tmpMkiObj = SrtxpMki.of(nextMki, tmpSrtxpKmd.mki().getSizeBytes());
 		}
 		if (! tmpSrtxpKmd.getMetaIsForLegacySdes()) {
-			return SrtxpKmd.createForMikeyWithDefaults(tmpKmiObj, tmpSrtxpKmd.ssrcId());
+			return SrtxpKmd.createForMikeyWithDefaults(tmpMkiObj, tmpSrtxpKmd.ssrcId());
 		}
 		return SrtxpKmd.createForLegacySdesWithDefaults(
 				tmpSrtxpKmd.getMetaTagForLegacySdes().orElse(0) + 1,
-				tmpKmiObj,
+				tmpMkiObj,
 				tmpSrtxpKmd.ssrcId(),
 				tmpSrtxpKmd.kdr()
 			);

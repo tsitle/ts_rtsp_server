@@ -6,8 +6,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.MikeyParser;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.*;
@@ -544,8 +545,8 @@ public final class RtspProtoDataCntSdpStructured {
 			throw new SrtxpSecurityException("Invalid length of MasterKey and MasterSalt in crypto attribute: " +
 					tmpMkMsBe.getUsed() + " bytes (exp=" + Integer.toUnsignedString(expLen) + ")");
 		}
-		DynInteger tmpKdr = null;
-		DynInteger tmpMki = null;
+		SrtxpKdr tmpKdr = null;
+		SrtxpMki tmpMki = null;
 		for (int ix = 1; ix < tmpInlineSplit.length; ix++) {
 			String tmpKdrOrMkiStr = tmpInlineSplit[ix].strip();
 			if (tmpKdrOrMkiStr.contains(":")) {
@@ -555,10 +556,10 @@ public final class RtspProtoDataCntSdpStructured {
 			tmpKdr = parseSdesKdr(tmpKdrOrMkiStr);
 		}
 		if (tmpKdr == null) {
-			tmpKdr = DynInteger.ofEmpty();
+			tmpKdr = SrtxpKdr.ofEmpty();
 		}
 		if (tmpMki == null) {
-			tmpMki = DynInteger.ofEmpty();
+			tmpMki = SrtxpMki.ofEmpty();
 		}
 
 		//
@@ -577,7 +578,7 @@ public final class RtspProtoDataCntSdpStructured {
 		return Optional.of(resObj);
 	}
 
-	private @NonNull DynInteger parseSdesMki(@NonNull String inpMkiStr) throws SrtxpSecurityException {
+	private @NonNull SrtxpMki parseSdesMki(@NonNull String inpMkiStr) throws SrtxpSecurityException {
 		// <MKI_value>:<MKI_length_bytes>
 		String[] tmpMkiValLenSplit = inpMkiStr.split(":");
 		if (tmpMkiValLenSplit.length != 2) {
@@ -587,12 +588,12 @@ public final class RtspProtoDataCntSdpStructured {
 		long tmpMkiValLong = parseUlong("MKI Value", tmpMkiValLenSplit[0]);
 		long tmpMkiLenLong = parseUlong("MKI Length", tmpMkiValLenSplit[1]);
 		if (tmpMkiLenLong != 0 && tmpMkiLenLong != 1 && tmpMkiLenLong != 2 && tmpMkiLenLong != 4 && tmpMkiLenLong != 8) {
-			return DynInteger.ofAutoSized(tmpMkiValLong);
+			return SrtxpMki.ofAutoSized(tmpMkiValLong);
 		}
-		return DynInteger.of(tmpMkiValLong, (int) tmpMkiLenLong);
+		return SrtxpMki.of(tmpMkiValLong, (int) tmpMkiLenLong);
 	}
 
-	private @NonNull DynInteger parseSdesKdr(@NonNull String inpKdrStr) throws SrtxpSecurityException {
+	private @NonNull SrtxpKdr parseSdesKdr(@NonNull String inpKdrStr) throws SrtxpSecurityException {
 		// Key Lifetime: format "2^DIGITS" or "INTEGER"
 		long tmpKdrLong;
 		if (inpKdrStr.startsWith("2^")) {
@@ -609,7 +610,7 @@ public final class RtspProtoDataCntSdpStructured {
 			throw new SrtxpSecurityException("KDR value exceeds maximum allowed value (is=" +
 					Long.toUnsignedString(tmpKdrLong) + ", max=" + Long.toUnsignedString(SrtxpKmd.MAX_KDR_PACKETS) + ")");
 		}
-		return DynInteger.ofAutoSized(tmpKdrLong);
+		return SrtxpKdr.ofAutoSized(tmpKdrLong);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.kmd.constants.PrfDeriveLabel;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 
 import javax.crypto.BadPaddingException;
@@ -31,12 +31,12 @@ final class SrtxpKeyDerivation {
 	 * @return Session keys
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public static @NonNull SessionKeys deriveForRtp(
+	public static @NonNull SrtxpSessionKeys deriveForRtp(
 				@NonNull Cipher cipher,
 				@NonNull SrtxpKmd kmd,
 				long packetIndex
 			) throws SrtxpSecurityException {
-		return new SessionKeys(
+		return new SrtxpSessionKeys(
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_ENC, kmd.encrKeyLen(), packetIndex),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_AUTH, kmd.authKeyLen(), packetIndex),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTP_SALT, KeySizes.SALT_SIZE, packetIndex)
@@ -51,12 +51,12 @@ final class SrtxpKeyDerivation {
 	 * @return Session keys
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */
-	public static @NonNull SessionKeys deriveForRtcp(
+	public static @NonNull SrtxpSessionKeys deriveForRtcp(
 				@NonNull Cipher cipher,
 				@NonNull SrtxpKmd kmd,
 				long packetIndex
 			) throws SrtxpSecurityException {
-		return new SessionKeys(
+		return new SrtxpSessionKeys(
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_ENC, kmd.encrKeyLen(), packetIndex),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_AUTH, kmd.authKeyLen(), packetIndex),
 				prf(cipher, kmd, PrfDeriveLabel.PDL_RTCP_SALT, KeySizes.SALT_SIZE, packetIndex)
@@ -97,7 +97,7 @@ final class SrtxpKeyDerivation {
 		byte[] iv = buildKeyDerivationIv(
 				kmd.masterSalt(),
 				label.getValue(),
-				kmd.kdr().isEmpty() ? 0L : kmd.kdr().getValue(),
+				kmd.kdr().getValue().orElse(0L),
 				packetIndex
 			);
 

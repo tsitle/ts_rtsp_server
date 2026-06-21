@@ -32,14 +32,14 @@ public final class MikeyData {
 	public boolean spEnabledEncrRtp = false;
 	public boolean spEnabledEncrRtcp = false;
 	public boolean spEnabledAuthRtxp = false;
-	public @NonNull DynInteger spKdr = DynInteger.ofEmpty();
+	public @NonNull SrtxpKdr spKdr = SrtxpKdr.ofEmpty();
 
 	public final BufferExt kemacMasterKey = new BufferExt();
 	public final BufferExt kemacMasterSalt = new BufferExt();
 	public MikeyMsgKemacPayloadType kemacPt = MikeyMsgKemacPayloadType.MMKEMPT_UNKNOWN;
 	public final BufferExt kemacTekTgkSalt = new BufferExt();
 	public MikeyMsgKemacKv kemacKvType = MikeyMsgKemacKv.MMKEMKV_UNKNOWN;
-	public @NonNull DynInteger kemacKvDataSpiOrMki = DynInteger.ofEmpty();
+	public @NonNull SrtxpMki kemacKvDataSpiOrMki = SrtxpMki.ofEmpty();
 	public final BufferExt kemacKvDataIntvF = new BufferExt();
 	public final BufferExt kemacKvDataIntvT = new BufferExt();
 	public boolean kemacHaveKeys = false;

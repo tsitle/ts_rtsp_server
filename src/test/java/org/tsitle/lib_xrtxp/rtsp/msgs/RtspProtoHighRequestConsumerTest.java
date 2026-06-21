@@ -327,8 +327,8 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(1, srtxpKmd.getMetaTagForLegacySdes().orElseThrow());
 		assertEquals(BufferExt.decodeHexString("0xB4653A2F8BEE8BBBC5BE26BF6CFA3AB9"), srtxpKmd.masterKey());
 		assertEquals(BufferExt.decodeHexString("0x78970E907F0FD858DF47ECE3E53B"), srtxpKmd.masterSalt());
-		assertEquals(123456789L, srtxpKmd.mki().getValue());
-		assertEquals(Math.powExact(2L, 31), srtxpKmd.kdr().getValue());
+		assertEquals(123456789L, srtxpKmd.mki().getValue().orElseThrow());
+		assertEquals(Math.powExact(2L, 31), srtxpKmd.kdr().getValue().orElseThrow());
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(3);
 		assertEquals(2000, mediaEntry.header().portNr().getPort16bit().orElse(0));
@@ -339,8 +339,8 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals("crypto:909 AES_CM_128_HMAC_SHA1_80 inline:tGU6L4vui7vFvia/bPo6uXiXDpB/D9hY30fs4+U7|2147483648|1234567890123456:8",
 				mediaEntry.attributes().getFirst());
 		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(1234L)).orElseThrow();
-		assertEquals(1234567890123456L, srtxpKmd.mki().getValue());
-		assertEquals(2147483648L, srtxpKmd.kdr().getValue());
+		assertEquals(1234567890123456L, srtxpKmd.mki().getValue().orElseThrow());
+		assertEquals(2147483648L, srtxpKmd.kdr().getValue().orElseThrow());
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(4);
 		assertEquals(RtspProtoSdpMediaType.APPLICATION, mediaEntry.header().mediaType());

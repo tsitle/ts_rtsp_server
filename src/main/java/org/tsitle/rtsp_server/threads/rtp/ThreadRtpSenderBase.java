@@ -208,7 +208,7 @@ public abstract class ThreadRtpSenderBase<
 			}
 			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" +
 					paramsCommon.getIdStreamSource().getIdStr().orElse("-unset-") +
-					", MKI=" + Long.toUnsignedString(kmd.mki().getValue()) + ")");
+					", MKI=" + Long.toUnsignedString(kmd.mki().getValue().orElse(0L)) + ")");
 			try {
 				srtpVarsOutbound.ctxUpdatePending.set(true);
 				srtpVarsOutbound.ctxObj = new SrtpContextOutbound(kmd);

@@ -41,7 +41,7 @@ public final class SrtxpKmd implements Cloneable {
 	/** Auth Tag length */
 	private final int authTagLen;
 	/** Master Key Identifier */
-	private @NonNull DynInteger mki;
+	private @NonNull SrtxpMki mki;
 	/** SSRC ID */
 	private @NonNull RtspProtoIdXsrc ssrcId;
 	/**
@@ -50,7 +50,7 @@ public final class SrtxpKmd implements Cloneable {
 	 * The recommended value is 2^20 (= 1048576).<br />
 	 * Note that the tested RTSP clients (VLC, FFplay/Lavf, OpenRTSP) do not support KDR.
 	 */
-	private @NonNull DynInteger kdr;
+	private @NonNull SrtxpKdr kdr;
 
 	/**
 	 * Constructor.
@@ -73,17 +73,18 @@ public final class SrtxpKmd implements Cloneable {
 				@NonNull BufferExt masterSalt,
 				int authKeyLen,
 				int authTagLen,
-				@NonNull DynInteger mki,
+				@NonNull SrtxpMki mki,
 				@NonNull RtspProtoIdXsrc ssrcId,
-				@NonNull DynInteger kdr
+				@NonNull SrtxpKdr kdr
 			) {
 		if (metaTagValueForLegacySdes > SrtxpKmd.MAX_TAG_VALUE) {
 			throw new IllegalArgumentException("Tag value exceeds maximum allowed value (is=" +
 					Integer.toUnsignedString(metaTagValueForLegacySdes) + ", max=" + Integer.toUnsignedString(SrtxpKmd.MAX_TAG_VALUE) + ")");
 		}
-		if (! kdr.isEmpty() && kdr.getValue() > SrtxpKmd.MAX_KDR_PACKETS) {
+		if (! kdr.isEmpty() && kdr.getValue().orElseThrow() > SrtxpKmd.MAX_KDR_PACKETS) {
 			throw new IllegalArgumentException("KDR value exceeds maximum allowed value (is=" +
-					Long.toUnsignedString(kdr.getValue()) + ", max=" + Long.toUnsignedString(SrtxpKmd.MAX_KDR_PACKETS) + ")");
+					Long.toUnsignedString(kdr.getValue().orElseThrow()) + ", max=" +
+					Long.toUnsignedString(SrtxpKmd.MAX_KDR_PACKETS) + ")");
 		}
 
 		this.metaIsForLegacySdes = metaIsForLegacySdes;
@@ -96,7 +97,7 @@ public final class SrtxpKmd implements Cloneable {
 		this.mki = mki.clone();
 		this.ssrcId = ssrcId.clone();
 		this.ssrcId.writeProtect();
-		this.kdr = (kdr.isEmpty() || kdr.getValue() == 0L ? DynInteger.ofEmpty() : kdr.clone());
+		this.kdr = (kdr.isEmpty() || kdr.getValue().orElseThrow() == 0L ? SrtxpKdr.ofEmpty() : kdr.clone());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -108,11 +109,11 @@ public final class SrtxpKmd implements Cloneable {
 	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createForMikeyWithDefaults(@NonNull DynInteger mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
+	public static SrtxpKmd createForMikeyWithDefaults(@NonNull SrtxpMki mkiValue, @NonNull RtspProtoIdXsrc ssrcId) {
 		return createForMikeyWithDefaults(
 				mkiValue,
 				ssrcId,
-				DynInteger.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
+				SrtxpKdr.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
 			);
 	}
 
@@ -124,9 +125,9 @@ public final class SrtxpKmd implements Cloneable {
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createForMikeyWithDefaults(
-				@NonNull DynInteger mkiValue,
+				@NonNull SrtxpMki mkiValue,
 				@NonNull RtspProtoIdXsrc ssrcId,
-				@NonNull DynInteger kdr
+				@NonNull SrtxpKdr kdr
 			) {
 		return createForMikeyWithCustomKeySizes(
 				DEFAULT_ENCR_KEY_LEN,
@@ -151,7 +152,7 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
-				@NonNull DynInteger mki,
+				@NonNull SrtxpMki mki,
 				@NonNull RtspProtoIdXsrc ssrcId
 			) {
 		return createForMikeyWithCustomKeySizes(
@@ -160,7 +161,7 @@ public final class SrtxpKmd implements Cloneable {
 				authTagLen,
 				mki,
 				ssrcId,
-				DynInteger.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
+				SrtxpKdr.of(DEFAULT_KDR_PACKETS, DEFAULT_KDR_LEN)
 			);
 	}
 
@@ -178,9 +179,9 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
-				@NonNull DynInteger mki,
+				@NonNull SrtxpMki mki,
 				@NonNull RtspProtoIdXsrc ssrcId,
-				@NonNull DynInteger kdr
+				@NonNull SrtxpKdr kdr
 			) {
 		return createXxxWithCustomKeySizes(
 				false,
@@ -209,9 +210,9 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_ENCR_KEY_LEN,
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
-				DynInteger.ofEmpty(),
+				SrtxpMki.ofEmpty(),
 				ssrcId,
-				DynInteger.ofEmpty()
+				SrtxpKdr.ofEmpty()
 			);
 	}
 
@@ -227,9 +228,9 @@ public final class SrtxpKmd implements Cloneable {
 	 */
 	public static SrtxpKmd createForLegacySdesWithDefaults(
 				int metaTagValue,
-				@NonNull DynInteger mki,
+				@NonNull SrtxpMki mki,
 				@NonNull RtspProtoIdXsrc ssrcId,
-				@NonNull DynInteger kdr
+				@NonNull SrtxpKdr kdr
 			) {
 		return createXxxWithCustomKeySizes(
 				true,
@@ -300,7 +301,7 @@ public final class SrtxpKmd implements Cloneable {
 		return authTagLen;
 	}
 
-	public @NonNull DynInteger mki() {
+	public @NonNull SrtxpMki mki() {
 		return mki.clone();
 	}
 
@@ -308,7 +309,7 @@ public final class SrtxpKmd implements Cloneable {
 		return ssrcId.clone();
 	}
 
-	public @NonNull DynInteger kdr() {
+	public @NonNull SrtxpKdr kdr() {
 		return kdr.clone();
 	}
 
@@ -376,9 +377,9 @@ public final class SrtxpKmd implements Cloneable {
 				int encrKeyLen,
 				int authKeyLen,
 				int authTagLen,
-				@NonNull DynInteger mki,
+				@NonNull SrtxpMki mki,
 				@NonNull RtspProtoIdXsrc ssrcId,
-				@NonNull DynInteger kdr
+				@NonNull SrtxpKdr kdr
 			) {
 		SrtxpKmd resObj = new SrtxpKmd(
 				metaIsForLegacySdes,

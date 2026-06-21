@@ -9,7 +9,6 @@ import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoRequestInputSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -24,7 +23,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
@@ -47,21 +45,6 @@ public class ClientRequestInputSvcTest {
 		@Override
 		public void addMsgForLogThread(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
 			System.out.println(logLevel + " - " + threadId + ": " + msg);
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	static class UserAuthImpl implements RtspProtoUserAuthInterface {
-		@Override
-		public boolean authenticate(@NonNull RtspProtoDataCntAuthClient requAuthClient, @NonNull RtspProtoMessageType messageType) {
-			return false;
-		}
-
-		@Override
-		public boolean checkAccessToInputSource(@NonNull RtspProtoDataCntAuthClient requAuthClient, @NonNull RtspProtoIdInputSource idInputSource) {
-			return false;
 		}
 	}
 
@@ -208,7 +191,7 @@ public class ClientRequestInputSvcTest {
 				false,
 				false,
 				rtspSessionInfo,
-				new UserAuthImpl(),
+				null,
 				new AvailableStreams(),
 				buildGlobalSessionInfoSvc(),
 				new ParameterSetter(),

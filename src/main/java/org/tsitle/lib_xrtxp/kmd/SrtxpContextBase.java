@@ -8,8 +8,8 @@ import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -42,9 +42,9 @@ public abstract class SrtxpContextBase {
 	protected @NonNull SrtxpKmd ctxKmd;
 
 	/** Session keys for RTP/SRTP */
-	protected @Nullable SessionKeys ctxSessionKeysRtp = null;
+	protected @Nullable SrtxpSessionKeys ctxSessionKeysRtp = null;
 	/** Session keys for RTCP/SRTCP */
-	protected @Nullable SessionKeys ctxSessionKeysRtcp = null;
+	protected @Nullable SrtxpSessionKeys ctxSessionKeysRtcp = null;
 	/** Session keys re-derivation marker for RTP/SRTP */
 	private long ctxSessionKeysRederivationRtp = -1L;
 	/** Session keys re-derivation marker for RTCP/SRTCP */
@@ -109,10 +109,7 @@ public abstract class SrtxpContextBase {
 	 */
 	@SuppressWarnings("unused")
 	public Optional<Long> getMkiValue() {
-		if (ctxKmd.mki().isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(ctxKmd.mki().getValue());
+		return ctxKmd.mki().getValue();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -121,7 +118,7 @@ public abstract class SrtxpContextBase {
 	protected void sessionKeysRederivation(boolean isRtp, long packetIndex) throws SrtxpSecurityException {
 		long markerLast = (isRtp ? ctxSessionKeysRederivationRtp : ctxSessionKeysRederivationRtcp);
 		long markerNew;
-		SessionKeys tmpSessionKeys;
+		SrtxpSessionKeys tmpSessionKeys;
 		if (markerLast == -1L) {
 			final Cipher cipherAesCtr = buildCipherObject();
 			if (isRtp) {
@@ -130,8 +127,8 @@ public abstract class SrtxpContextBase {
 				tmpSessionKeys = SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, ctxKmd, 0L);
 			}
 			markerNew = 0L;
-		} else if (! ctxKmd.kdr().isEmpty() && ctxKmd.kdr().getValue() != 0L) {
-			markerNew = Long.divideUnsigned(packetIndex, ctxKmd.kdr().getValue());
+		} else if (! ctxKmd.kdr().isEmpty()) {
+			markerNew = Long.divideUnsigned(packetIndex, ctxKmd.kdr().getValue().orElseThrow());
 			if (markerNew == markerLast) {
 				return;
 			}
@@ -274,7 +271,7 @@ public abstract class SrtxpContextBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected void buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
+	protected void buildCamObject(@NonNull CtxCipherAndMac cam, @NonNull SrtxpSessionKeys sessionKeys) throws SrtxpSecurityException {
 		if (cam.cipherObj == null) {
 			cam.cipherObj = buildCipherObject();
 		}
@@ -369,13 +366,13 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For internal use and Unit Tests */
-	void setRtpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
+	void setRtpSessionKeys(@NonNull SrtxpSessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionKeys(sessionKeys);
 		ctxSessionKeysRtp = sessionKeys.clone();
 	}
 
 	/** For internal use and Unit Tests */
-	void setRtcpSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
+	void setRtcpSessionKeys(@NonNull SrtxpSessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionKeys(sessionKeys);
 		ctxSessionKeysRtcp = sessionKeys.clone();
 	}
@@ -383,7 +380,7 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/** For Unit Tests only */
-	void setKmdMasterKeyIdentifier(@NonNull DynInteger mki) {
+	void setKmdMasterKeyIdentifier(@NonNull SrtxpMki mki) {
 		ctxKmd = new SrtxpKmd(
 				ctxKmd.getMetaIsForLegacySdes(),
 				ctxKmd.getMetaTagForLegacySdes().orElse(-1),
@@ -401,7 +398,7 @@ public abstract class SrtxpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void validateSessionKeys(@NonNull SessionKeys sessionKeys) throws SrtxpSecurityException {
+	private void validateSessionKeys(@NonNull SrtxpSessionKeys sessionKeys) throws SrtxpSecurityException {
 		validateSessionEncKey(sessionKeys.encKey());
 		if (sessionKeys.salt().getUsed() != KeySizes.SALT_SIZE) {
 			throw new SrtxpSecurityException("Invalid RTP Session Salt length (expected " +

@@ -3,10 +3,10 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
 import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -355,11 +355,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						SrtxpKmd.DEFAULT_ENCR_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_KEY_LEN,
 						SrtxpKmd.DEFAULT_AUTH_TAG_LEN,
-						DynInteger.ofEmpty(),  // <-- no MKI
+						SrtxpMki.ofEmpty(),  // <-- no MKI
 						ssrcId
 					);
 			}
-			return SrtxpKmd.createForMikeyWithDefaults(DynInteger.of(1L, SrtxpKmd.DEFAULT_MKI_LEN), ssrcId);
+			return SrtxpKmd.createForMikeyWithDefaults(SrtxpMki.of(1L, SrtxpKmd.DEFAULT_MKI_LEN), ssrcId);
 		}
 		/*
 		 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.

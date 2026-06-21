@@ -3,8 +3,9 @@ package org.tsitle.lib_xrtxp.kmd;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.kmd.types.DynInteger;
-import org.tsitle.lib_xrtxp.kmd.types.SessionKeys;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.packets.rtp.ParamsContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
@@ -68,9 +69,9 @@ class Common {
 				DEFAULT_MASTER_SALT,
 				AUTH_KEY_SIZE_FOR_ALL_TESTS,
 				AUTH_TAG_SIZE_FOR_ALL_TESTS,
-				DynInteger.ofEmpty(),
+				SrtxpMki.ofEmpty(),
 				ssrcId,
-				DynInteger.ofEmpty()
+				SrtxpKdr.ofEmpty()
 			);
 	}
 
@@ -94,13 +95,13 @@ class Common {
 		return new SrtcpContextOutbound(kmd);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtxpSessionKeys createSessionKeysDefaultRtp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
 
-	static @NonNull SessionKeys createSessionKeysDefaultRtcp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
+	static @NonNull SrtxpSessionKeys createSessionKeysDefaultRtcp(@NonNull RtspProtoIdXsrc ssrcId) throws SrtxpSecurityException {
 		final Cipher cipherAesCtr = SrtxpContextBase.buildCipherObject();
 		SrtxpKmd kmd = createSrtxpKmdDefault(ssrcId);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
@@ -109,7 +110,7 @@ class Common {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("SameParameterValue")
-	static @NonNull SessionKeys createSessionKeysNonDefRtp(
+	static @NonNull SrtxpSessionKeys createSessionKeysNonDefRtp(
 				@NonNull BufferExt mk,
 				@NonNull BufferExt ms,
 				int authKeyLen,
@@ -125,15 +126,15 @@ class Common {
 				ms,
 				authKeyLen,
 				authTagLen,
-				DynInteger.ofEmpty(),
+				SrtxpMki.ofEmpty(),
 				ssrcId,
-				DynInteger.ofEmpty()
+				SrtxpKdr.ofEmpty()
 			);
 		return SrtxpKeyDerivation.deriveForRtp(cipherAesCtr, kmd, 0L);
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	static @NonNull SessionKeys createSessionKeysNonDefRtcp(
+	static @NonNull SrtxpSessionKeys createSessionKeysNonDefRtcp(
 				@NonNull BufferExt mk,
 				@NonNull BufferExt ms,
 				int authKeyLen,
@@ -149,9 +150,9 @@ class Common {
 				ms,
 				authKeyLen,
 				authTagLen,
-				DynInteger.ofEmpty(),
+				SrtxpMki.ofEmpty(),
 				ssrcId,
-				DynInteger.ofEmpty()
+				SrtxpKdr.ofEmpty()
 			);
 		return SrtxpKeyDerivation.deriveForRtcp(cipherAesCtr, kmd, 0L);
 	}
@@ -167,11 +168,11 @@ class Common {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static void srtpCtxInjectKeys(SrtpContextBase ctx, SessionKeys sessionKeys) throws Exception {
+	static void srtpCtxInjectKeys(SrtpContextBase ctx, SrtxpSessionKeys sessionKeys) throws Exception {
 		ctx.setRtpSessionKeys(sessionKeys);
 	}
 
-	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SessionKeys sessionKeys) throws Exception {
+	static void srtcpCtxInjectKeys(SrtcpContextBase ctx, SrtxpSessionKeys sessionKeys) throws Exception {
 		ctx.setRtcpSessionKeys(sessionKeys);
 	}
 
@@ -234,7 +235,7 @@ class Common {
 	@SuppressWarnings("SameParameterValue")
 	static byte[] buildExpectedSrtpPacket(
 				byte[] plainRtpPacket,
-				@NonNull SessionKeys rtpKeys,
+				@NonNull SrtxpSessionKeys rtpKeys,
 				@NonNull RtspProtoRtpSeqNr seqNr,
 				@NonNull RtspProtoIdXsrc ssrc,
 				long stateRoc
@@ -284,7 +285,7 @@ class Common {
 	@SuppressWarnings("SameParameterValue")
 	static byte[] buildExpectedSrtcpPacket(
 				byte[] plainRtcpPacket,
-				@NonNull SessionKeys rtcpSessionKeys,
+				@NonNull SrtxpSessionKeys rtcpSessionKeys,
 				@NonNull RtspProtoIdXsrc ssrc,
 				int stateIndexOnly,
 				int rtcpSrRrExtendedHeaderLen
