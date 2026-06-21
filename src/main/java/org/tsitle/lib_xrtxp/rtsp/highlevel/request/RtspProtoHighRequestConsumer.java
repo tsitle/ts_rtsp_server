@@ -298,20 +298,16 @@ public final class RtspProtoHighRequestConsumer {
 			case RtspProtoMessageType.PLAY:
 			case RtspProtoMessageType.SET_PARAMETER:
 			case RtspProtoMessageType.TEARDOWN:
-				Optional<RtspProtoIdSession> tmpOptSessionId = input.getHeaderSessionId();
-				if (tmpOptSessionId.isEmpty()) {
-					if (isRequestFromClient) {
+				if (! currentIdSession.isEmpty()) {
+					Optional<RtspProtoIdSession> tmpOptHeaderSid = input.getHeaderSessionId();
+					if (isRequestFromClient && tmpOptHeaderSid.isEmpty()) {
 						throw new RtspProtoInvalidRequestException("Missing Session header");
 					}
-					return;
-				}
-
-				if (isRequestFromClient && currentIdSession.isEmpty()) {
-					return;
-				}
-
-				if (currentIdSession.isEmpty() || ! tmpOptSessionId.get().equals(currentIdSession)) {
-					throw new RtspProtoInvalidRequestException("Invalid/missing Session ID");
+					if (tmpOptHeaderSid.isPresent() && ! tmpOptHeaderSid.get().equals(currentIdSession)) {
+						throw new RtspProtoInvalidRequestException("Invalid Session ID");
+					}
+				} else if (input.getHeaderSessionId().isPresent()) {
+					throw new RtspProtoInvalidRequestException("Session header present when not expected");
 				}
 				break;
 			default:
@@ -951,21 +947,6 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoRtspParamUnknownException(
 					String.join(", ", outputDataRequ.rrInvalidParamNames.getParamNames())
 				);
-		}
-
-		//
-		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
-			try {
-				parameterSetterInterface.setRtspParameter(
-						false,
-						outputDataRequ.rrIdSession,
-						outputDataRequ.requSetParamValues.getContentLang(),
-						entry.getKey(),
-						entry.getValue()
-					);
-			} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
-				// this cannot happen
-			}
 		}
 	}
 

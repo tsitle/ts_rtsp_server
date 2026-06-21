@@ -2,6 +2,9 @@ package org.tsitle.rtsp_server.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
@@ -43,14 +46,18 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	private final @NonNull RtspProtoIpAddr fromCtorClientIpAddr = new RtspProtoIpAddr();
 	private final boolean fromCtorIsRtspsConnection;
 
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo = new RtspProtoSessionInfo();
+
+	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final @NonNull RtspChildThreadMng rtspChildThreadMng;
 	private final @NonNull RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final @NonNull RtspProtoResponseOutputSvc rtspProtoResponseOutputSvc;
 	private final @NonNull SrtxpRekeySvc srtxpRekeySvc;
+	private final @NonNull RtspParamGetterSetterSvc rtspParamGetterSetterSvc;
 
 	private @Nullable Instant rtspTimeoutLastRequ = null;
+
+	private final RtspProtoDataCntGetSetParamKvs cachedSetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
 	private final Map<@NonNull RtspProtoIdXsrc, RtspChildThreadMng.@NonNull ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
 
@@ -116,10 +123,13 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		RtspUserAuthSvc userAuthSvc = new RtspUserAuthSvc(
 				logMsgInterface,
 				rtspConfig,
-				rtspSessionInfo,
+				this.rtspSessionInfo,
 				availableStreamsSvc,
 				globalSessionInfoSvc
 			);
+
+		//
+		rtspParamGetterSetterSvc = new RtspParamGetterSetterSvc();
 
 		//
 		this.rtspProtoRequestInputSvc = new RtspProtoRequestInputSvc(
@@ -133,14 +143,14 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				userAuthSvc,
 				availableStreamsSvc,
 				globalSessionInfoSvc,
-				null,  // @TODO
+				this.rtspParamGetterSetterSvc,
 				this.rtxpTcpReadWrite
 			);
 		this.rtspProtoResponseOutputSvc = new RtspProtoResponseOutputSvc(
 				logMsgInterface,
 				false,
 				cfgServerNameAndVersion,
-				"",  // @TODO make Content-Language configurable
+				RtspParamGetterSetterSvc.CONTENT_LANGUAGE,
 				cfgSrvSuppIncomingMts,
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
 				rtspConfig.getIsDebugPrintRtspSent(),
@@ -148,6 +158,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				this.rtspSessionInfo,
 				availableStreamsSvc,
 				globalSessionInfoSvc,
+				this.rtspParamGetterSetterSvc,
 				this.rtxpTcpReadWrite
 			);
 
@@ -156,9 +167,9 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				logMsgInterface,
 				rtspConfig,
 				cfgServerNameAndVersion,
-				rtspSessionInfo,
-				rtspChildThreadMng,
-				rtxpTcpReadWrite,
+				this.rtspSessionInfo,
+				this.rtspChildThreadMng,
+				this.rtxpTcpReadWrite,
 				availableStreamsSvc,
 				globalSessionInfoSvc
 			);
@@ -340,6 +351,12 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			);
 
 		rtspProtoResponseOutputSvc.sendResponse(resObj, tmpDataRequ);
+
+		//
+		if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SET_PARAMETER) {
+			cachedSetParamValues.copyFrom(tmpDataRequ.requSetParamValues);
+		}
+		//
 		return resObj;
 	}
 
@@ -363,6 +380,23 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 		//
 		switch (rtspRequestBasics.messageType) {
+			case RtspProtoMessageType.SET_PARAMETER:
+				rtspParamGetterSetterSvc.updateSessionId(rtspSessionInfo.getIdSession());
+				for (Map.Entry<@NonNull String, @NonNull String> entry : cachedSetParamValues.getParamKvsEntrySet()) {
+					try {
+						rtspParamGetterSetterSvc.setRtspParameter(
+								false,
+								rtspSessionInfo.getIdSession(),
+								cachedSetParamValues.getContentLang(),
+								entry.getKey(),
+								entry.getValue()
+							);
+					} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
+						// this cannot happen because the parameters have already been validated
+					}
+				}
+				cachedSetParamValues.clear();
+				break;
 			case RtspProtoMessageType.SETUP:
 				isPlaybackPaused = false;
 				//

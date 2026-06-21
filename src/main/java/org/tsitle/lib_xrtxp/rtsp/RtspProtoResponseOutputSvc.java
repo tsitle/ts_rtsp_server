@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
@@ -11,6 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseProduce
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgWriter;
@@ -54,6 +56,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param rtspSessionInfo RTSP session info
 	 * @param availableStreamsInterface Available streams instance
 	 * @param globalSessionInfoInterface Global session info instance
+	 * @param parameterGetterInterface Parameter getter instance
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
 	public RtspProtoResponseOutputSvc(
@@ -68,6 +71,7 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		if (cfgServerNameAndVersion.isBlank()) {
@@ -104,7 +108,7 @@ public final class RtspProtoResponseOutputSvc {
 				sdpProducer,
 				availableStreamsInterface,
 				globalSessionInfoInterface,
-				null
+				parameterGetterInterface
 			);
 		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(

@@ -156,12 +156,12 @@ public class ClientRequestInputSvcTest {
 		recvOptions_wrongCseq();
 		recvOptions_notFound();
 
-		recvSetParam_wrongSessionId();
+		recvSetParam_unexpectedSessionId();
 		recvSetParam_invalidParamKey();
 		recvSetParam_invalidParamVal();
 		recvSetParam_ok();
 
-		recvGetParam_wrongSessionId();
+		recvGetParam_unexpectedSessionId();
 		recvGetParam_ok();
 	}
 
@@ -266,7 +266,7 @@ public class ClientRequestInputSvcTest {
 		++cseqCorrect;
 	}
 
-	private void recvSetParam_wrongSessionId() throws Exception {
+	private void recvSetParam_unexpectedSessionId() throws Exception {
 		final List<String> msgLines = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
@@ -348,7 +348,7 @@ public class ClientRequestInputSvcTest {
 		++cseqCorrect;
 	}
 
-	private void recvGetParam_wrongSessionId() throws Exception {
+	private void recvGetParam_unexpectedSessionId() throws Exception {
 		final List<String> msgLines = List.of(
 				"GET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
