@@ -25,8 +25,10 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -37,8 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ClientRequestInputSvcTest {
 
@@ -149,12 +150,14 @@ public class ClientRequestInputSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void test_simple() throws Exception {
+	void test_series_of_requests() throws Exception {
 		initObjs();
 
-		recvOptions_ok();
-		recvOptions_wrongCseq();
 		recvOptions_notFound();
+		recvOptions_wrongCseq();
+		recvOptions_unsuppFeature1();
+		recvOptions_unsuppFeature2();
+		recvOptions_ok();
 
 		recvSetParam_unexpectedSessionId();
 		recvSetParam_invalidParamKey();
@@ -163,6 +166,8 @@ public class ClientRequestInputSvcTest {
 
 		recvGetParam_unexpectedSessionId();
 		recvGetParam_ok();
+
+		recvAnnounce_ok();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -185,6 +190,7 @@ public class ClientRequestInputSvcTest {
 
 	private void initObjs() throws IOException {
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.GET_PARAMETER);
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
@@ -229,16 +235,16 @@ public class ClientRequestInputSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void recvOptions_ok() throws Exception {
+	private void recvOptions_notFound() throws Exception {
 		final List<String> msgLines = List.of(
-				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
+				"OPTIONS rtsp://localhost/this_is_bogus RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect)
 			);
 
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
-		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(RtspProtoStatusCode.NOT_FOUND, resRequBas.statusCode);
 
 		++cseqCorrect;
 	}
@@ -255,16 +261,52 @@ public class ClientRequestInputSvcTest {
 		assertEquals(RtspProtoStatusCode.BAD_REQUEST, resRequBas.statusCode);
 	}
 
-	private void recvOptions_notFound() throws Exception {
+	private void recvOptions_unsuppFeature1() throws Exception {
 		final List<String> msgLines = List.of(
-				"OPTIONS rtsp://localhost/this_is_bogus RTSP/1.0",
-				"CSeq: " + Long.toUnsignedString(cseqCorrect)
+				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
+				"CSeq: " + Long.toUnsignedString(cseqCorrect),
+				"Require: a-neat-feature"
 			);
 
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
-		assertEquals(RtspProtoStatusCode.NOT_FOUND, resRequBas.statusCode);
+		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
+		assertEquals("a-neat-feature", outputRequ.getUnsupportedFeatureName());
+
+		++cseqCorrect;
+	}
+
+	private void recvOptions_unsuppFeature2() throws Exception {
+		final List<String> msgLines = List.of(
+				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
+				"CSeq: " + Long.toUnsignedString(cseqCorrect),
+				"Proxy-Require: first_feature, sec-ond-feature"
+			);
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+
+		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
+		if (! Set.of("first_feature", "sec-ond-feature").contains(outputRequ.getUnsupportedFeatureName())) {
+			fail("Unexpected unsupported feature name: " + outputRequ.getUnsupportedFeatureName());
+		}
+
+		++cseqCorrect;
+	}
+
+	private void recvOptions_ok() throws Exception {
+		final List<String> msgLines = List.of(
+				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
+				"CSeq: " + Long.toUnsignedString(cseqCorrect),
+				"Require: a-useful-feature"
+			);
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(RtspProtoMessageType.OPTIONS, resRequBas.messageType);
 
 		++cseqCorrect;
 	}
@@ -344,6 +386,7 @@ public class ClientRequestInputSvcTest {
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(RtspProtoMessageType.SET_PARAMETER, resRequBas.messageType);
 
 		assertEquals(Set.of("jitter"), outputRequ.requSetParamValues.getParamKvsKeySet());
 		assertEquals("13.8", outputRequ.requSetParamValues.getParamKvsValue("jitter").orElseThrow());
@@ -390,8 +433,37 @@ public class ClientRequestInputSvcTest {
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(RtspProtoMessageType.GET_PARAMETER, resRequBas.messageType);
 
 		assertEquals(Set.of("jitter"), outputRequ.rrGetParamNames.getParamNames());
+
+		++cseqCorrect;
+	}
+
+	private void recvAnnounce_ok() throws Exception {
+		final List<String> msgLines = List.of(
+				"ANNOUNCE rtsp://localhost/existing_stream RTSP/1.0",
+				"CSeq: " + Long.toUnsignedString(cseqCorrect),
+				"Content-Base: rtsps://USER:PASS@localhost:12345/existing_stream?param=value",
+				"Content-Type: " + RtspMimeType.SDP.getStrValue(),
+				"Content-Length: 144",
+				"",
+				"v=0",
+				"o=- 1781786500001 1781786500002 IN IP4 127.0.0.1",
+				//
+				"m=audio 0 RTP/SAVP 101",
+				"a=rtpmap:101 L16/8000/1",
+				"a=control:substreamidf528764d_081eb523"
+			);
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(RtspProtoMessageType.ANNOUNCE, resRequBas.messageType);
+
+		assertEquals("rtsps://localhost:12345/existing_stream/?param=value", outputRequ.requAnnouncedSdpStc.getContentBase().orElseThrow());
+		assertTrue(outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
 
 		++cseqCorrect;
 	}
