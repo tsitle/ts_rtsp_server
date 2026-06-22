@@ -41,8 +41,8 @@ public final class RtspProtoHighRequestConsumer {
 	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
-	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
+	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @Nullable RtspProtoParameterSetterInterface parameterSetterInterface;
 
 	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
@@ -56,10 +56,16 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface
 			) {
+		if (isRequestFromClient && availableStreamsInterface == null) {
+			throw new IllegalArgumentException("availableStreamsInterface must be set for requests from the client");
+		}
+		if (isRequestFromClient && globalSessionInfoInterface == null) {
+			throw new IllegalArgumentException("globalSessionInfoInterface must be set for requests from the client");
+		}
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
@@ -399,15 +405,18 @@ public final class RtspProtoHighRequestConsumer {
 				sdpControlIdsInSession
 			);
 
+		//
+		if (requestType == RtspProtoMessageType.SETUP && resObj.idSubStream.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("Sub-Stream ID missing in URL for SETUP");
+		}
+
+		if (availableStreamsInterface == null) {
+			return resObj;
+		}
 		// ensure that the Input Source is enabled
 		RtspProtoInputSource tmpIsObj = availableStreamsInterface.getInputSourceObj(resObj.idInputSource);
 		if (! tmpIsObj.getEnabled()) {
 			throw new RtspProtoInvalidRequestException("Input Source is disabled");
-		}
-
-		//
-		if (requestType == RtspProtoMessageType.SETUP && resObj.idSubStream.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("Sub-Stream ID missing in URL for SETUP");
 		}
 
 		// preliminary setting

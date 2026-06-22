@@ -29,16 +29,20 @@ public final class RtspProtoHighRequestProducer {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
-	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
+	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
 
 	public RtspProtoHighRequestProducer(
 				@NonNull LogMsgInterface logMsgInterface,
+				boolean isRequestFromClient,
 				@NonNull String cfgSenderAppNameAndVersion,
 				boolean cfgIsDebugPrintRtspSdpSent,
-				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface
+				@Nullable RtspProtoSdpProducerInterface sdpProducerInterface
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+		if (! isRequestFromClient && sdpProducerInterface == null) {
+			throw new IllegalArgumentException("sdpProducerInterface cannot be null for requests from the server");
 		}
 
 		this.logMsgInterface = logMsgInterface;
@@ -120,6 +124,9 @@ public final class RtspProtoHighRequestProducer {
 		 *   ...
 		 */
 
+		if (sdpProducerInterface == null) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": SDP producer must be set");
+		}
 		if (inputDataRequ.rrClientIpAddr.isEmpty()) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Client IP address must be set");
 		}

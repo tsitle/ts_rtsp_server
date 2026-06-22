@@ -57,9 +57,9 @@ public final class RtspProtoRequestInputSvc {
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
-	 * @param userAuthInterface User authentication instance (not required for requests from the server)
-	 * @param availableStreamsInterface Available streams instance
-	 * @param globalSessionInfoInterface Global session info instance
+	 * @param userAuthInterface User authentication instance (only required for requests from the client)
+	 * @param availableStreamsInterface Available streams instance (only required for requests from the client)
+	 * @param globalSessionInfoInterface Global session info instance (only required for requests from the client)
 	 * @param parameterSetterInterface Parameter setter instance
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
@@ -74,11 +74,20 @@ public final class RtspProtoRequestInputSvc {
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@Nullable RtspProtoUserAuthInterface userAuthInterface,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
+		if (isRequestFromClient && userAuthInterface == null) {
+			throw new IllegalArgumentException("userAuthInterface must be set for requests from the client");
+		}
+		if (isRequestFromClient && availableStreamsInterface == null) {
+			throw new IllegalArgumentException("availableStreamsInterface must be set for requests from the client");
+		}
+		if (isRequestFromClient && globalSessionInfoInterface == null) {
+			throw new IllegalArgumentException("globalSessionInfoInterface must be set for requests from the client");
+		}
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -89,9 +98,6 @@ public final class RtspProtoRequestInputSvc {
 
 		//
 		if (isRequestFromClient) {
-			if (userAuthInterface == null) {
-				throw new IllegalArgumentException("userAuthInterface must be set for requests from the client");
-			}
 			this.requAuthSvc = new RtspProtoRequAuthSvc(
 					logMsgInterface,
 					cfgRtxpLogLevel,

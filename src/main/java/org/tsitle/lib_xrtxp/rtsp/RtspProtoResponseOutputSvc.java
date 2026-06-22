@@ -54,8 +54,8 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
-	 * @param availableStreamsInterface Available streams instance
-	 * @param globalSessionInfoInterface Global session info instance
+	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
+	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
 	 * @param parameterGetterInterface Parameter getter instance
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
@@ -69,13 +69,19 @@ public final class RtspProtoResponseOutputSvc {
 				boolean cfgIsDebugPrintRtspSent,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+		if (! isResponseFromClient && availableStreamsInterface == null) {
+			throw new IllegalArgumentException("availableStreamsInterface cannot be null for responses from the server");
+		}
+		if (! isResponseFromClient && globalSessionInfoInterface == null) {
+			throw new IllegalArgumentException("globalSessionInfoInterface cannot be null for responses from the server");
 		}
 
 		this.logMsgInterface = logMsgInterface;
@@ -91,12 +97,17 @@ public final class RtspProtoResponseOutputSvc {
 		}
 
 		//
-		RtspProtoSdpProducer sdpProducer = new RtspProtoSdpProducer(
-				cfgSenderAppNameAndVersion,
-				cfgContentLanguage,
-				availableStreamsInterface,
-				globalSessionInfoInterface
-			);
+		RtspProtoSdpProducer sdpProducer;
+		if (availableStreamsInterface == null || globalSessionInfoInterface == null) {
+			sdpProducer = null;
+		} else {
+			sdpProducer = new RtspProtoSdpProducer(
+					cfgSenderAppNameAndVersion,
+					cfgContentLanguage,
+					availableStreamsInterface,
+					globalSessionInfoInterface
+				);
+		}
 
 		//
 		this.rtspProtoHighResponseProducer = new RtspProtoHighResponseProducer(

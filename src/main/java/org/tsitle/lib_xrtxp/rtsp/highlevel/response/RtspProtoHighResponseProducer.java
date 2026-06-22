@@ -40,9 +40,9 @@ public final class RtspProtoHighResponseProducer {
 	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final boolean cfgIsDebugDisableTransportUdp;
-	private final @NonNull RtspProtoSdpProducerInterface sdpProducerInterface;
-	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
+	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
+	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @Nullable RtspProtoParameterGetterInterface parameterGetterInterface;
 	private final boolean isResponseFromClient;
 
@@ -52,13 +52,22 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull String cfgSenderAppNameAndVersion,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugDisableTransportUdp,
-				@NonNull RtspProtoSdpProducerInterface sdpProducerInterface,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoSdpProducerInterface sdpProducerInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+		if (! isResponseFromClient && sdpProducerInterface == null) {
+			throw new IllegalArgumentException("sdpProducerInterface cannot be null for responses from the server");
+		}
+		if (! isResponseFromClient && availableStreamsInterface == null) {
+			throw new IllegalArgumentException("availableStreamsInterface cannot be null for responses from the server");
+		}
+		if (! isResponseFromClient && globalSessionInfoInterface == null) {
+			throw new IllegalArgumentException("globalSessionInfoInterface cannot be null for responses from the server");
 		}
 
 		this.logMsgInterface = logMsgInterface;
@@ -189,6 +198,9 @@ public final class RtspProtoHighResponseProducer {
 		 *   ...
 		 */
 
+		if (sdpProducerInterface == null) {
+			throw new RtspProtoInvalidResponseException(FNC_NAME + ": SDP producer must be set");
+		}
 		//
 		if (inputDataResp.rrRscUrl.getUrlStr().isEmpty()) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Resource URL must be set");
@@ -344,7 +356,7 @@ public final class RtspProtoHighResponseProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth
-		if (! ioDataResp.rrRscUrl.idInputSource.isEmpty()) {
+		if (availableStreamsInterface != null && ! ioDataResp.rrRscUrl.idInputSource.isEmpty()) {
 			boolean tmpNeedAuth;
 			try {
 				tmpNeedAuth = availableStreamsInterface.getInputSourceObj(ioDataResp.rrRscUrl.idInputSource)
@@ -619,7 +631,7 @@ public final class RtspProtoHighResponseProducer {
 		if (isResponseFromClient) {
 			return;
 		}
-		if (ioDataResp.respAuthServer.getAuthNonce().isBlank()) {
+		if (globalSessionInfoInterface != null && ioDataResp.respAuthServer.getAuthNonce().isBlank()) {
 			ioDataResp.respAuthServer.setAuthNonce(
 					globalSessionInfoInterface.createAuthServerNonce(ioDataResp.rrClientIpAddr)
 				);

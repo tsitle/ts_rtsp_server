@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
@@ -43,8 +44,8 @@ final class ResourceUrlProcessorNg {
 
 	public static @NonNull RtspProtoRscUrl parseUrlIntoRscUrlObject(
 				@NonNull String cfgSubStreamIdPrefix,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull String fullRscUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull Set<@NonNull String> sdpControlIdsInSession
@@ -88,7 +89,7 @@ final class ResourceUrlProcessorNg {
 		 *   subStreamIdStr   = "1234"
 		 */
 
-		if (! resObj.idSubStream.isEmpty()) {
+		if (globalSessionInfoInterface != null && ! resObj.idSubStream.isEmpty()) {
 			RtspProtoIdInputSource tmpIdIs = RtspProtoIdInputSource.ofEmpty();
 			tmpIdIs.copyFrom(
 					// this also checks if the Sub-Stream ID exists
@@ -106,7 +107,7 @@ final class ResourceUrlProcessorNg {
 		if (resObj.idInputSource.isEmpty()) {
 			throw new RtspProtoInvalidUriException("Input Source ID is missing");
 		}
-		if (! availableStreamsInterface.existsInputSourceId(resObj.idInputSource)) {
+		if (availableStreamsInterface != null && ! availableStreamsInterface.existsInputSourceId(resObj.idInputSource)) {
 			throw new RtspProtoIdInputSourceNotFoundException("Input Source ID is invalid");
 		}
 
