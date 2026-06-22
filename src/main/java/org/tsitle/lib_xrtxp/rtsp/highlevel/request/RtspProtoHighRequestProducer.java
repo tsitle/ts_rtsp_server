@@ -250,9 +250,7 @@ public final class RtspProtoHighRequestProducer {
 	/**
 	 * The client makes one PLAY request per Input Source
 	 */
-	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_play()";
-
+	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest output) {
 		/*
 		 * Example:
 		 *   "PLAY rtsp://example.com/fizzle/foo/ RTSP/1.0"
@@ -260,10 +258,11 @@ public final class RtspProtoHighRequestProducer {
 		 *   "Range: npt=0.000-"
 		 */
 
-		// @TODO set some headers
-
-		logError(FNC_NAME, "PLAY is not supported yet");
-		throw new RtspProtoInvalidRequestException(FNC_NAME + ": PLAY is not supported yet");
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.RANGE);
+			hdEntry.hdValRange.rangeStr = "npt=0.000-";  // @TODO make configurable
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 	}
 
 	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
