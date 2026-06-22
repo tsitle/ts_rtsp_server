@@ -30,7 +30,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CsRrSvcTest {
+public class C2sRrSvcTest {
 
 	static class TestLogs implements LogMsgInterface {
 		@Override
@@ -192,7 +192,7 @@ public class CsRrSvcTest {
 	private @Nullable RtspProtoRequestOutputSvc cliOutputSvc = null;
 	private @Nullable RtspProtoResponseInputSvc cliInputSvc = null;
 
-	CsRrSvcTest() { }
+	C2sRrSvcTest() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -215,6 +215,165 @@ public class CsRrSvcTest {
 		if (socketServer != null) {
 			socketServer.close();
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_getParam_invalidKeys() throws Exception {
+		Objects.requireNonNull(socketPeer);
+		Objects.requireNonNull(cliInputSvc);
+		Objects.requireNonNull(cliOutputSvc);
+		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(srvInputSvc);
+		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
+		getParamNames.putParamName("xano");
+		getParamNames.putParamName("rucola");
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
+				"rtsp://localhost/existing_stream_no_auth",
+				getParamNames
+			);
+		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		assertEquals(Set.of("xano", "rucola"), outputRequ.rrGetParamNames.getParamNames());
+		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
+		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
+		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
+		assertTrue(cliSessionInfo.getRhGetParamValues().getParamKvsKeySet().isEmpty());
+	}
+
+	@Test
+	void test_getParam_ok() throws Exception {
+		Objects.requireNonNull(socketPeer);
+		Objects.requireNonNull(cliInputSvc);
+		Objects.requireNonNull(cliOutputSvc);
+		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(srvInputSvc);
+		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(srvSessionInfo);
+		Objects.requireNonNull(srvParameterGetterSetter);
+
+		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
+		getParamNames.putParamName("jitter");
+		getParamNames.putParamName("latency");
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
+				"rtsp://localhost/existing_stream",
+				getParamNames
+			);
+		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
+
+		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRespBas.statusCode);
+		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
+		assertTrue(cliSessionInfo.getPermAuthServerRealm().isPresent());
+		assertTrue(cliSessionInfo.getPermAuthServerNonce().isPresent());
+
+		// ----------------------------------------------------
+		// -- The server has sent the Auth Realm and Nonce.
+		// -- We can now send an authorized request.
+		// ----------------------------------------------------
+
+		RtspProtoClientCredentials clientCredentials = RtspProtoClientCredentials.of(
+				UserAuthServerSide.USER,
+				UserAuthServerSide.PW
+			);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataCntGetSetParamKvs setParamKvs = new RtspProtoDataCntGetSetParamKvs();
+		setParamKvs.putParamKvsEntry("jitter", "9.7");
+		setParamKvs.putParamKvsEntry("latency", "18");
+		cliOutputSvc.sendRequest_setParameter(
+				"rtsp://localhost/existing_stream",
+				clientCredentials,
+				setParamKvs
+			);
+
+		outputRequ = new RtspProtoDataRequest();
+		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// emulate the server setting its internal parameters
+		for (Map.Entry<@NonNull String, @NonNull String> entry : outputRequ.requSetParamValues.getParamKvsEntrySet()) {
+			try {
+				srvParameterGetterSetter.setRtspParameter(
+						false,
+						srvSessionInfo.getIdSession(),
+						outputRequ.requSetParamValues.getContentLang(),
+						entry.getKey(),
+						entry.getValue()
+					);
+			} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
+				// this cannot happen because the parameters have already been validated
+			}
+		}
+
+		resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+
+		// ----------------------------------------------------
+
+		cliOutputSvc.sendRequest_getParameter(
+				"rtsp://localhost/existing_stream",
+				clientCredentials,
+				getParamNames
+			);
+
+		// ----------------------------------------------------
+
+		outputRequ = new RtspProtoDataRequest();
+		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
+		assertEquals("9.7", cliSessionInfo.getRhGetParamValues().getParamKvsValue("jitter").orElseThrow());
+		assertEquals("18.0", cliSessionInfo.getRhGetParamValues().getParamKvsValue("latency").orElseThrow());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -333,6 +492,93 @@ public class CsRrSvcTest {
 		assertTrue(cliSessionInfo.getUnsupportedFeatureName().isEmpty());
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertEquals(srvCfgSupportedMessageTypes.getMts(), cliSessionInfo.getRhSupportedMessageTypes().getMts());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_pause_wrongState() throws Exception {
+		Objects.requireNonNull(cliInputSvc);
+		Objects.requireNonNull(cliOutputSvc);
+		Objects.requireNonNull(srvInputSvc);
+		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_pause("rtsp://localhost/existing_stream_no_auth");
+		assertEquals(RtspProtoMessageType.PAUSE, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_play_wrongState() throws Exception {
+		Objects.requireNonNull(cliInputSvc);
+		Objects.requireNonNull(cliOutputSvc);
+		Objects.requireNonNull(srvInputSvc);
+		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_play("rtsp://localhost/existing_stream_no_auth");
+		assertEquals(RtspProtoMessageType.PLAY, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_teardown_wrongState() throws Exception {
+		Objects.requireNonNull(cliInputSvc);
+		Objects.requireNonNull(cliOutputSvc);
+		Objects.requireNonNull(srvInputSvc);
+		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_teardown("rtsp://localhost/existing_stream_no_auth");
+		assertEquals(RtspProtoMessageType.TEARDOWN, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -496,165 +742,6 @@ public class CsRrSvcTest {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	void test_getParam_invalidKeys() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
-		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
-		Objects.requireNonNull(srvSessionInfo);
-
-		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
-		getParamNames.putParamName("xano");
-		getParamNames.putParamName("rucola");
-
-		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream_no_auth",
-				getParamNames
-			);
-		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
-
-		// ----------------------------------------------------
-
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
-		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-
-		assertEquals(Set.of("xano", "rucola"), outputRequ.rrGetParamNames.getParamNames());
-		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
-
-		// ----------------------------------------------------
-
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
-
-		// ----------------------------------------------------
-
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
-		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
-		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
-		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
-		assertTrue(cliSessionInfo.getRhGetParamValues().getParamKvsKeySet().isEmpty());
-	}
-
-	@Test
-	void test_getParam_ok() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
-		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
-		Objects.requireNonNull(srvSessionInfo);
-		Objects.requireNonNull(srvParameterGetterSetter);
-
-		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
-		getParamNames.putParamName("jitter");
-		getParamNames.putParamName("latency");
-
-		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream",
-				getParamNames
-			);
-		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
-
-		// ----------------------------------------------------
-
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
-		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
-
-		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
-
-		// ----------------------------------------------------
-
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
-
-		// ----------------------------------------------------
-
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
-		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRespBas.statusCode);
-		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
-		assertTrue(cliSessionInfo.getPermAuthServerRealm().isPresent());
-		assertTrue(cliSessionInfo.getPermAuthServerNonce().isPresent());
-
-		// ----------------------------------------------------
-		// -- The server has sent the Auth Realm and Nonce.
-		// -- We can now send an authorized request.
-		// ----------------------------------------------------
-
-		RtspProtoClientCredentials clientCredentials = RtspProtoClientCredentials.of(
-				UserAuthServerSide.USER,
-				UserAuthServerSide.PW
-			);
-
-		// ----------------------------------------------------
-
-		RtspProtoDataCntGetSetParamKvs setParamKvs = new RtspProtoDataCntGetSetParamKvs();
-		setParamKvs.putParamKvsEntry("jitter", "9.7");
-		setParamKvs.putParamKvsEntry("latency", "18");
-		cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
-				clientCredentials,
-				setParamKvs
-			);
-
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
-		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
-
-		// emulate the server setting its internal parameters
-		for (Map.Entry<@NonNull String, @NonNull String> entry : outputRequ.requSetParamValues.getParamKvsEntrySet()) {
-			try {
-				srvParameterGetterSetter.setRtspParameter(
-						false,
-						srvSessionInfo.getIdSession(),
-						outputRequ.requSetParamValues.getContentLang(),
-						entry.getKey(),
-						entry.getValue()
-					);
-			} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
-				// this cannot happen because the parameters have already been validated
-			}
-		}
-
-		resRespBas = cliInputSvc.receiveResponse(mt);
-		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-
-		// ----------------------------------------------------
-
-		cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream",
-				clientCredentials,
-				getParamNames
-			);
-
-		// ----------------------------------------------------
-
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
-		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-
-		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
-
-		// ----------------------------------------------------
-
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
-
-		// ----------------------------------------------------
-
-		resRespBas = cliInputSvc.receiveResponse(mt);
-		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
-		assertEquals("9.7", cliSessionInfo.getRhGetParamValues().getParamKvsValue("jitter").orElseThrow());
-		assertEquals("18.0", cliSessionInfo.getRhGetParamValues().getParamKvsValue("latency").orElseThrow());
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void initRtxpTcpReadWrite() throws Exception {
@@ -681,10 +768,16 @@ public class CsRrSvcTest {
 
 		srvSessionInfo.setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
 
-		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
+		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
+		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);  // @TODO
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.GET_PARAMETER);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.PAUSE);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.PLAY);
+		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.REDIRECT);  // @TODO
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
+		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);  // @TODO
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.TEARDOWN);
 
 		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");
 		Set<String> cfgProxySupportedFeatures = Set.of("proxy-feature");

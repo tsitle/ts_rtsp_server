@@ -1,7 +1,6 @@
 package org.tsitle.lib_xrtxp.rtsp.msgs;
 
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -797,20 +796,6 @@ class RtspProtoHighRequestConsumerTest {
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.INIT, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.READY, RtspProtoStatusCode.OK);
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.PLAYING, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	@Disabled
-	void structuredRequest_redirect_xxx() {
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	@Disabled
-	void structuredRequest_setParam_xxx() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
