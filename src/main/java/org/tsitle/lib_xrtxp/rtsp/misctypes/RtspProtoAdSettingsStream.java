@@ -117,6 +117,18 @@ public final class RtspProtoAdSettingsStream {
 		ss2.writeProtect();
 	}
 
+	public void copyFrom(@NonNull RtspProtoAdSettingsStream other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		idInputSource.copyFrom(other.idInputSource);
+		ss1.copyFrom(other.ss1);
+		ss2.copyFrom(other.ss2);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

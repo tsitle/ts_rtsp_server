@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestProducer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
@@ -22,6 +23,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.request.RtspProtoLowRequestProducer;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsForSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
@@ -120,15 +122,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * <b>Note:</b> This is only allowed for Server->Client requests.
 	 * @param resourceUrl The Resource URL
 	 * @param idInputSource The Input Source ID
-	 * @param announceSdp The session description
 	 * @return The message type
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If there is an I/O exception
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_announce(
 				@NonNull String resourceUrl,
-				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoDataCntSdpRaw announceSdp
+				@NonNull RtspProtoIdInputSource idInputSource
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
@@ -137,7 +137,6 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.requAnnouncedSdpRaw.copyFrom(announceSdp);
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 
@@ -421,8 +420,6 @@ public final class RtspProtoRequestOutputSvc {
 		if (! isRequestFromClient) {
 			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
 		}
-
-		// @TODO add parameter for Range
 
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PLAY, resourceUrl, clientCredentials);
 	}
@@ -829,6 +826,30 @@ public final class RtspProtoRequestOutputSvc {
 				logError(fncName, e.getMessage());
 				return false;
 			}
+			//
+			if (rtspSessionInfo.getDescrSetupInfosStream().getSubStreamIds().isEmpty()) {
+				logError(fncName, "An ANNOUNCE request can only be sent when a DESCRIBE response has already been sent");
+				return false;
+			}
+			dataRequ.requAdStreamSett.setIdInputSource(dataRequ.rrRscUrl.idInputSource);
+			for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfosStream().getSubStreamIds()) {
+				RtspProtoSetupInfoForSubStream tmpSiForSs;
+				try {
+					tmpSiForSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSs);
+				} catch (RtspProtoSessionInfoException e) {
+					logError(fncName, e.getMessage());
+					return false;
+				}
+				RtspProtoAdSettingsForSubStream tmpAdSettForSs = new RtspProtoAdSettingsForSubStream();
+				tmpAdSettForSs.idStreamSource.copyFrom(tmpSiForSs.getRscUrlSubStreamPtr().idStreamSource);
+				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
+				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
+				final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX +
+						tmpIdSs.getIdStr().orElseThrow();
+				tmpAdSettForSs.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
+				dataRequ.requAdStreamSett.putSettingsForSubStream(tmpAdSettForSs);
+			}
+			dataRequ.requAdStreamSett.writeProtect();
 		}
 
 		// authentication parameters

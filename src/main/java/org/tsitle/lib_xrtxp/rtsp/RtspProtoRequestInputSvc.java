@@ -60,7 +60,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param userAuthInterface User authentication instance (only required for requests from the client)
 	 * @param availableStreamsInterface Available streams instance (only required for requests from the client)
 	 * @param globalSessionInfoInterface Global session info instance (only required for requests from the client)
-	 * @param parameterSetterInterface Parameter setter instance
+	 * @param parameterSetterInterface Parameter setter instance (can be null)
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
 	public RtspProtoRequestInputSvc(

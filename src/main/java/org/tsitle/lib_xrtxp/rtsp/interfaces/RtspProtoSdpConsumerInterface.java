@@ -16,9 +16,9 @@ public interface RtspProtoSdpConsumerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void parseSdpFromDescribe(
-			@NonNull RtspProtoDataCntSdpRaw inputSdp,
-			@NonNull RtspProtoDataCntSdpStructured outputSdp
-		) throws RtspProtoSdpException;
+				@NonNull RtspProtoDataCntSdpRaw inputSdp,
+				@NonNull RtspProtoDataCntSdpStructured outputSdp
+			) throws RtspProtoSdpException;
 
 	/**
 	 * Parses an updated Session Description (SDP) from an ANNOUNCE request.<br />
@@ -29,8 +29,8 @@ public interface RtspProtoSdpConsumerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void parseUpdatedSdpFromAnnounce(
-			@NonNull RtspProtoDataCntSdpRaw inputSdp,
-			@NonNull RtspProtoDataCntSdpStructured outputSdp
-		) throws RtspProtoSdpException;
+				@NonNull RtspProtoDataCntSdpRaw inputSdp,
+				@NonNull RtspProtoDataCntSdpStructured outputSdp
+			) throws RtspProtoSdpException;
 
 }

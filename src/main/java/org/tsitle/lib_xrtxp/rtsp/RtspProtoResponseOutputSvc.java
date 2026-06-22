@@ -56,7 +56,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param rtspSessionInfo RTSP session info
 	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
-	 * @param parameterGetterInterface Parameter getter instance
+	 * @param parameterGetterInterface Parameter getter instance (can be null)
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
 	public RtspProtoResponseOutputSvc(

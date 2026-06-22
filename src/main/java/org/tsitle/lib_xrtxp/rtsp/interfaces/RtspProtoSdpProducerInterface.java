@@ -27,15 +27,15 @@ public interface RtspProtoSdpProducerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void buildSdpForDescribe(
-			boolean requireSrtp,
-			@NonNull RtspProtoIdInputSource idInputSource,
-			@NonNull RtspProtoIpAddr serverIpOrName,
-			@NonNull String clientUserAgent,
-			@NonNull RtspProtoIpAddr clientIpAddr,
-			@NonNull RtspProtoDataCntSdpRaw outputSdp,
-			@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
-			@NonNull RtspProtoKmdsStream outputKmdsOutbound
-		) throws RtspProtoSdpException;
+				boolean requireSrtp,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIpAddr serverIpOrName,
+				@NonNull String clientUserAgent,
+				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull RtspProtoDataCntSdpRaw outputSdp,
+				@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
+				@NonNull RtspProtoKmdsStream outputKmdsOutbound
+			) throws RtspProtoSdpException;
 
 	/**
 	 * Builds an updated Session Description (SDP) for an ANNOUNCE request.<br />
@@ -47,18 +47,20 @@ public interface RtspProtoSdpProducerInterface {
 	 * @param serverIpOrName Local host's IP address or hostname
 	 * @param clientUserAgent Remote host's User-Agent string
 	 * @param clientIpAddr Remote host's IP address
+	 * @param inputAdStreamSett Input for the stream settings
 	 * @param inputKmdsOutbound Optional Key Management Data for outbound RTP/SRTP packets
 	 * @param outputSdp Output for the SDP lines
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void buildUpdatedSdpForAnnounce(
-			boolean requireSrtp,
-			@NonNull RtspProtoIdInputSource idInputSource,
-			@NonNull RtspProtoIpAddr serverIpOrName,
-			@NonNull String clientUserAgent,
-			@NonNull RtspProtoIpAddr clientIpAddr,
-			@Nullable RtspProtoKmdsStream inputKmdsOutbound,
-			@NonNull RtspProtoDataCntSdpRaw outputSdp
-		) throws RtspProtoSdpException;
+				boolean requireSrtp,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIpAddr serverIpOrName,
+				@NonNull String clientUserAgent,
+				@NonNull RtspProtoIpAddr clientIpAddr,
+				@NonNull RtspProtoAdSettingsStream inputAdStreamSett,
+				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
+				@NonNull RtspProtoDataCntSdpRaw outputSdp
+			) throws RtspProtoSdpException;
 
 }

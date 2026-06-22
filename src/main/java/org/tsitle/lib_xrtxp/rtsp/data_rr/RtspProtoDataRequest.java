@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp.data_rr;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoCseqNr;
 
 public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
@@ -18,6 +19,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 	/** Required features for the proxy */
 	public final @NonNull RtspProtoDataCntGetRequFeat requProxyRequiredFeatures = new RtspProtoDataCntGetRequFeat();
 
+	/** Stream settings for building an ANNOUNCE request */
+	public final @NonNull RtspProtoAdSettingsStream requAdStreamSett = new RtspProtoAdSettingsStream();
 	/** Announced SDP in its raw form */
 	public final @NonNull RtspProtoDataCntSdpRaw requAnnouncedSdpRaw = new RtspProtoDataCntSdpRaw();
 	/** Announced SDP in its parsed form */
@@ -56,6 +59,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.requSetParamValues.copyFrom(other.requSetParamValues);
 		this.requRequiredFeatures.copyFrom(other.requRequiredFeatures);
 		this.requProxyRequiredFeatures.copyFrom(other.requProxyRequiredFeatures);
+		this.requAdStreamSett.copyFrom(other.requAdStreamSett);
 		this.requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
 		this.requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
 		this.requCseqNrToSend.copyFrom(other.requCseqNrToSend);
@@ -100,6 +104,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		requSetParamValues.clear();
 		requRequiredFeatures.clear();
 		requProxyRequiredFeatures.clear();
+		requAdStreamSett.clear();
 		requAnnouncedSdpRaw.clear();
 		requAnnouncedSdpStc.clear();
 		requCseqNrToSend.clear();
@@ -119,6 +124,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		requSetParamValues.writeProtect();
 		requRequiredFeatures.writeProtect();
 		requProxyRequiredFeatures.writeProtect();
+		requAdStreamSett.writeProtect();
 		requAnnouncedSdpRaw.writeProtect();
 		requAnnouncedSdpStc.writeProtect();
 		requCseqNrToSend.writeProtect();

@@ -138,6 +138,7 @@ public final class RtspProtoHighRequestProducer {
 					inputDataRequ.rrServerIpFromRscUrl,
 					inputDataRequ.getClientUa(),
 					inputDataRequ.rrClientIpAddr,
+					inputDataRequ.requAdStreamSett,
 					kmdsOutbound,
 					output.bodyAnnounceSdp
 				);
