@@ -148,6 +148,7 @@ public final class RtspProtoLowResponseConsumer {
 			case SESSION -> parseHeaderValue_com_session(hdValue, entry);
 			case TRANSPORT -> parseHeaderValue_setup_transport(output.messageType, hdValue, entry);
 			case UNSUPPORTED -> parseHeaderValue_com_unsupported(hdValue, entry);
+			case USERAGENT -> parseHeaderValue_com_useragent(hdValue, entry);
 			default -> {
 				logWarn(FNC_NAME, "Received unknown/invalid header: '" + hdKeyStr + "'");
 				return;
@@ -504,6 +505,10 @@ public final class RtspProtoLowResponseConsumer {
 		for (String warning : outputWarnings) {
 			logWarn(FNC_NAME, warning);
 		}
+	}
+
+	private void parseHeaderValue_com_useragent(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryResponse entry) {
+		entry.hdValUserAgent.userAgentStr = hdValue;
 	}
 
 	private void parseHeaderValue_com_unsupported(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryResponse entry) {
