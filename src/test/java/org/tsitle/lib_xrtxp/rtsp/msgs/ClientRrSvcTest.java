@@ -13,20 +13,13 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 
 import java.io.IOException;
@@ -35,7 +28,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,50 +38,6 @@ public class ClientRrSvcTest {
 		@Override
 		public void addMsgForLogThread(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
 			System.out.println(logLevel + " - " + threadId + ": " + msg);
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	static class AvailableStreams implements RtspProtoAvailableStreamsInterface {
-		@Override
-		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return idInputSource.getIdStr().orElse("-unset-").equals("existing_stream");
-		}
-
-		@Override
-		public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
-				throws RtspProtoIdInputSourceNotFoundException {
-			if (! existsInputSourceId(idInputSource)) {
-				throw new RtspProtoIdInputSourceNotFoundException("");
-			}
-			RtspProtoInputSource resObj = new RtspProtoInputSource();
-			resObj.setIdInputSource(idInputSource);
-			resObj.setEnabled(true);
-			return resObj;
-		}
-
-		@Override
-		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			return Optional.empty();
-		}
-
-		@Override
-		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			return Optional.empty();
-		}
-
-		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
-		}
-
-		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
 		}
 	}
 
@@ -123,7 +71,7 @@ public class ClientRrSvcTest {
 		@Override
 		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(@NonNull RtspProtoIdSession idSession) {
 			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
-			resObj.putParamKvsEntry("jitter", Double.toString(jitterValue));
+			resObj.putParamKvsEntry("jitter", Double.toString(jitterValue).replace(",", "."));
 			return resObj;
 		}
 	}
@@ -196,25 +144,6 @@ public class ClientRrSvcTest {
 
 		assertEquals("rtsps://localhost:12345/existing_stream/?param=value", outputRequ.requAnnouncedSdpStc.getContentBase().orElseThrow());
 		assertTrue(outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
-
-		// ----------------------------------------------------
-
-		outputSvc.sendResponse(resRequBas, outputRequ);
-	}
-
-	@Test
-	void recv_options_notFound() throws Exception {
-		Objects.requireNonNull(outputSvc);
-
-		final List<String> msgLines = List.of(
-				"OPTIONS rtsp://localhost/this_is_bogus RTSP/1.0",
-				"CSeq: 987"
-			);
-
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
-
-		assertEquals(RtspProtoStatusCode.NOT_FOUND, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
@@ -346,10 +275,6 @@ public class ClientRrSvcTest {
 		rtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
 	}
 
-	private @NonNull RtspProtoGlobalSessionInfoSvc buildGlobalSessionInfoSvc() {
-		return new RtspProtoGlobalSessionInfoSvc();
-	}
-
 	private void initObjsInput() {
 		Objects.requireNonNull(rtspSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
@@ -373,8 +298,8 @@ public class ClientRrSvcTest {
 				false,
 				rtspSessionInfo,
 				null,
-				new AvailableStreams(),
-				buildGlobalSessionInfoSvc(),
+				null,
+				null,
 				parameterGetterSetter,
 				rtxpTcpReadWrite
 			);
@@ -400,8 +325,8 @@ public class ClientRrSvcTest {
 				true,
 				false,
 				rtspSessionInfo,
-				new AvailableStreams(),
-				buildGlobalSessionInfoSvc(),
+				null,
+				null,
 				parameterGetterSetter,
 				rtxpTcpReadWrite
 			);

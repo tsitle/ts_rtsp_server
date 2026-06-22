@@ -41,50 +41,6 @@ public class CsRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static class AvailableStreamsClientSide implements RtspProtoAvailableStreamsInterface {
-		@Override
-		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return false;
-		}
-
-		@Override
-		public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
-				throws RtspProtoIdInputSourceNotFoundException {
-			if (! existsInputSourceId(idInputSource)) {
-				throw new RtspProtoIdInputSourceNotFoundException("");
-			}
-			RtspProtoInputSource resObj = new RtspProtoInputSource();
-			resObj.setIdInputSource(idInputSource);
-			resObj.setEnabled(true);
-			return resObj;
-		}
-
-		@Override
-		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			return Optional.empty();
-		}
-
-		@Override
-		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			return Optional.empty();
-		}
-
-		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
-		}
-
-		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
 	static class ParameterNotify implements RtspProtoParameterNotifyInvalidInterface, RtspProtoParameterNotifyRcvdInterface {
 		@Override
 		public void notifyInvalidRtspParameters(@NonNull RtspProtoIdSession idSession, @NonNull RtspProtoDataCntGetSetParamNames invalidParams) {
@@ -213,9 +169,7 @@ public class CsRrSvcTest {
 	private @Nullable UserAuthServerSide srvUserAuthSvc = null;
 	private @Nullable ParameterGetterSetterServerSide srvParameterGetterSetter = null;
 	private @Nullable AvailableStreamsServerSide srvAvailableStreams = null;
-	private @Nullable AvailableStreamsClientSide cliAvailableStreams = null;
 	private @Nullable RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc = null;
-	private @Nullable RtspProtoGlobalSessionInfoSvc cliGlobalSessionInfoSvc = null;
 	private @Nullable RtspProtoRequestInputSvc srvInputSvc = null;
 	private @Nullable RtspProtoResponseOutputSvc srvOutputSvc = null;
 	private @Nullable RtspProtoRequestOutputSvc cliOutputSvc = null;
@@ -435,8 +389,6 @@ public class CsRrSvcTest {
 
 	private void initObjsClient() {
 		cliSessionInfo = new RtspProtoSessionInfo();
-		cliAvailableStreams = new AvailableStreamsClientSide();
-		cliGlobalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 
 		Objects.requireNonNull(cliRtxpTcpReadWrite);
 
@@ -451,8 +403,8 @@ public class CsRrSvcTest {
 				true,
 				cliSessionInfo,
 				cliRtxpTcpReadWrite,
-				cliAvailableStreams,
-				cliGlobalSessionInfoSvc
+				null,
+				null
 			);
 
 		cliInputSvc = new RtspProtoResponseInputSvc(
