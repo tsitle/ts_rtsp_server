@@ -368,6 +368,7 @@ public class ClientRrSvcTest {
 				RtxpLogLevel.DEBUG,
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
+				Set.of(),
 				false,
 				false,
 				rtspSessionInfo,

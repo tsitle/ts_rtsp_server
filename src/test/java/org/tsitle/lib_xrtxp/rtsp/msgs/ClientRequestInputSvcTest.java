@@ -124,6 +124,7 @@ public class ClientRequestInputSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @Nullable Socket socketPeer = null;
+	private final @NonNull RtspProtoSessionInfo cliSessionInfo = new RtspProtoSessionInfo();
 	private @Nullable RtspProtoRequestInputSvc inputSvc;
 	private long cseqCorrect = 1L;
 
@@ -167,10 +168,6 @@ public class ClientRequestInputSvcTest {
 		return new RtxpTcpReadWrite(socketClient);
 	}
 
-	private @NonNull RtspProtoGlobalSessionInfoSvc buildGlobalSessionInfoSvc() {
-		return new RtspProtoGlobalSessionInfoSvc();
-	}
-
 	private void initObjs() throws IOException {
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
@@ -180,20 +177,19 @@ public class ClientRequestInputSvcTest {
 
 		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");
 
-		RtspProtoSessionInfo rtspSessionInfo = new RtspProtoSessionInfo();
-
 		inputSvc = new RtspProtoRequestInputSvc(
 				new TestLogs(),
 				false,
 				RtxpLogLevel.DEBUG,
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
+				Set.of(),
 				false,
 				false,
-				rtspSessionInfo,
+				cliSessionInfo,
 				null,
 				new AvailableStreams(),
-				buildGlobalSessionInfoSvc(),
+				new RtspProtoGlobalSessionInfoSvc(),
 				new ParameterSetter(),
 				buildRtxpTcpReadWrite()
 			);
@@ -282,6 +278,7 @@ public class ClientRequestInputSvcTest {
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
+				"Server: wonderful_piece_of_software/98.76",
 				"Require: a-useful-feature"
 			);
 
@@ -290,6 +287,9 @@ public class ClientRequestInputSvcTest {
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.OPTIONS, resRequBas.messageType);
+
+		assertTrue(cliSessionInfo.getServerSoftware().isPresent());
+		assertEquals("wonderful_piece_of_software/98.76", cliSessionInfo.getServerSoftware().orElseThrow());
 
 		++cseqCorrect;
 	}
