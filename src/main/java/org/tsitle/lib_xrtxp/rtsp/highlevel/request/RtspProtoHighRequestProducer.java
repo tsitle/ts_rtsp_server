@@ -413,6 +413,7 @@ public final class RtspProtoHighRequestProducer {
 		// Auth(Client)
 		if (! inputDataRequ.requAuthClient.getAuthNonce().isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
+			hdEntry.hdValAuthClient.authUser = inputDataRequ.requAuthClient.getAuthUser();
 			hdEntry.hdValAuthClient.authUri = output.resourceUrl;
 			hdEntry.hdValAuthClient.authRealm = inputDataRequ.requAuthClient.getAuthRealm();
 			hdEntry.hdValAuthClient.authNonce = inputDataRequ.requAuthClient.getAuthNonce();

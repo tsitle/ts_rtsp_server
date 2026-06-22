@@ -64,14 +64,14 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.getPermAuthServerRealm())) {
+				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.getPermAuthServerRealm().orElse("-unset-"))) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.getPermAuthServerNonce()) &&
+				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.getPermAuthServerNonce().orElse("-unset-")) &&
 						globalSessionInfoInterface.existsAuthServerNonce(
-								rtspSessionInfo.getClientIpAddr(), rtspSessionInfo.getPermAuthServerNonce()
+								rtspSessionInfo.getClientIpAddr(), rtspSessionInfo.getPermAuthServerNonce().orElse("-unset-")
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;

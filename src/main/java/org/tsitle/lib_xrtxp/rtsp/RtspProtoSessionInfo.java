@@ -89,19 +89,25 @@ public final class RtspProtoSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull String getPermAuthServerRealm() {
+	public Optional<String> getPermAuthServerRealm() {
 		theReadLock.lock();
 		try {
-			return permAuthServer.getAuthRealm();
+			if (permAuthServer.getAuthRealm().isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(permAuthServer.getAuthRealm());
 		} finally {
 			theReadLock.unlock();
 		}
 	}
 
-	public @NonNull String getPermAuthServerNonce() {
+	public Optional<String> getPermAuthServerNonce() {
 		theReadLock.lock();
 		try {
-			return permAuthServer.getAuthNonce();
+			if (permAuthServer.getAuthNonce().isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(permAuthServer.getAuthNonce());
 		} finally {
 			theReadLock.unlock();
 		}

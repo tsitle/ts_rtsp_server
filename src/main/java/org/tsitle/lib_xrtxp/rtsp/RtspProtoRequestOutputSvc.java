@@ -694,8 +694,10 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// authentication parameters
-		dataRequ.requAuthClient.setAuthUser(clientCredentials.authUser);
-		dataRequ.requAuthClient.setAuthPlainPassword(clientCredentials.authPlainPassword);
+		if (! clientCredentials.isEmpty()) {
+			dataRequ.requAuthClient.setAuthUser(clientCredentials.getAuthUser().orElseThrow());
+			dataRequ.requAuthClient.setAuthPlainPassword(clientCredentials.getAuthPlainPassword().orElse(""));
+		}
 		dataRequ.requAuthClient.setAuthRealm(rtspSessionInfo.getPermAuthServer().getAuthRealm());
 		dataRequ.requAuthClient.setAuthNonce(rtspSessionInfo.getPermAuthServer().getAuthNonce());
 
