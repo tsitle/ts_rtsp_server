@@ -27,6 +27,8 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpProducer;
 
+import java.util.Set;
+
 /**
  * Service for sending RTSP requests over a TCP connection.
  */
@@ -220,7 +222,7 @@ public final class RtspProtoRequestOutputSvc {
 			throws TcpSocketClosedException, TcpSocketIoException {
 		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
 
-		return sendRequest_options(resourceUrl, dummyClientCredentials);
+		return sendRequest_options(resourceUrl, dummyClientCredentials, Set.of(), Set.of());
 	}
 
 	/**
@@ -235,11 +237,59 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
 			) throws TcpSocketClosedException, TcpSocketIoException {
+		return sendRequest_options(resourceUrl, clientCredentials, Set.of(), Set.of());
+	}
+
+	/**
+	 * OPTIONS request is used to query the server/client capabilities.
+	 * @param resourceUrl The Resource URL
+	 * @param requiredFeatures The required features that the remote host must support (can be empty)
+	 * @param proxyRequiredFeatures The required features that the proxy must support (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_options(
+				@NonNull String resourceUrl,
+				@NonNull Set<@NonNull String> requiredFeatures,
+				@NonNull Set<@NonNull String> proxyRequiredFeatures
+			) throws TcpSocketClosedException, TcpSocketIoException {
+		RtspProtoClientCredentials dummyClientCredentials = new RtspProtoClientCredentials();
+
+		return sendRequest_options(resourceUrl, dummyClientCredentials, requiredFeatures, proxyRequiredFeatures);
+	}
+
+	/**
+	 * OPTIONS request is used to query the server/client capabilities.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @param requiredFeatures The required features that the remote host must support (can be empty)
+	 * @param proxyRequiredFeatures The required features that the proxy must support (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_options(
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoClientCredentials clientCredentials,
+				@NonNull Set<@NonNull String> requiredFeatures,
+				@NonNull Set<@NonNull String> proxyRequiredFeatures
+			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_options()";
 
-		// @TODO add Require and Proxy-Require parameters
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.requRequiredFeatures.putAllFeatureNames(requiredFeatures);
+		inputDataRequ.requProxyRequiredFeatures.putAllFeatureNames(proxyRequiredFeatures);
 
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.OPTIONS, resourceUrl, clientCredentials);
+		return internalSendRequest(
+				FNC_NAME,
+				RtspProtoMessageType.OPTIONS,
+				clientCredentials,
+				null,
+				inputDataRequ,
+				null
+			);
 	}
 
 	/**
@@ -625,7 +675,9 @@ public final class RtspProtoRequestOutputSvc {
 		dataRequ.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		dataRequ.setRtspProtoVersionToUse(rtspSessionInfo.getRtspProtoVersionToUse());
 		dataRequ.copyAndIncrementCseqNrToSend(rtspSessionInfo.getCseqNr_requToRem_lastSent());
-		dataRequ.setClientUa(rtspSessionInfo.getClientUserAgent());
+		if (rtspSessionInfo.getClientUserAgent().isPresent()) {
+			dataRequ.setClientUa(rtspSessionInfo.getClientUserAgent().orElseThrow());
+		}
 		if (! rtspSessionInfo.getClientIpAddr().isEmpty()) {
 			dataRequ.rrClientIpAddr.copyFrom(rtspSessionInfo.getClientIpAddr());
 		}

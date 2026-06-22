@@ -17,6 +17,7 @@ public class RtspProtoHeaderEntryBase {
 	public @NonNull RtspProtoHeaderTypeCseq hdValCseq = new RtspProtoHeaderTypeCseq();
 	public @NonNull RtspProtoHeaderTypeDate hdValDate = new RtspProtoHeaderTypeDate();
 	public @NonNull RtspProtoHeaderTypeRange hdValRange = new RtspProtoHeaderTypeRange();
+	public @NonNull RtspProtoHeaderTypeServer hdValServer = new RtspProtoHeaderTypeServer();
 	public @NonNull RtspProtoHeaderTypeSession hdValSession = new RtspProtoHeaderTypeSession();
 	public @NonNull RtspProtoHeaderTypeTransport hdValTransport = new RtspProtoHeaderTypeTransport();
 	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
@@ -48,6 +49,7 @@ public class RtspProtoHeaderEntryBase {
 			case CSEQ:
 			case DATE:
 			case RANGE:
+			case SERVER:
 			case SESSION:
 			case TRANSPORT:
 			case USERAGENT:
@@ -74,6 +76,7 @@ public class RtspProtoHeaderEntryBase {
 				case CSEQ -> hdValCseq.toString();
 				case DATE -> hdValDate.toString();
 				case RANGE -> hdValRange.toString();
+				case SERVER -> hdValServer.toString();
 				case SESSION -> hdValSession.toString();
 				case TRANSPORT -> hdValTransport.toString();
 				case USERAGENT -> hdValUserAgent.toString();

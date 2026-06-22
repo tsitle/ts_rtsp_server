@@ -49,7 +49,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param isResponseFromClient Is this a response being sent by the client?
 	 * @param cfgSenderAppNameAndVersion Server/client software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
-	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
+	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty), required for an OPTIONS response
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
@@ -151,7 +151,7 @@ public final class RtspProtoResponseOutputSvc {
 			// load data from Session Info
 			loadFromSessionInfo(ioSetupInfosStream, ioDataResp);
 
-			//
+			// copy the supported message types for an OPTIONS response
 			ioDataResp.respSuppMessageTypes.copyFrom(cfgSupportedMessageTypes);
 
 			//

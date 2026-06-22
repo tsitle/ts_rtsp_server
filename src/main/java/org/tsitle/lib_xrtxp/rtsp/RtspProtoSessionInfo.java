@@ -55,14 +55,18 @@ public final class RtspProtoSessionInfo {
 	/** Request to remote host: Last sent RTSP message Sequence Number */
 	private final @NonNull RtspProtoCseqNr cseqNr_requToRem_lastSent = RtspProtoCseqNr.ofZero();
 
+	private @NonNull String unsupportedFeatureName = "";
+
 	/** Playback range request value from the client */
 	private @NonNull String clientPlaybackRangeValue = "";
 
-	/** RTSP protocol version to be used */
-	private @NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
-
 	/** Client's User-Agent */
 	private @NonNull String clientUserAgent = "";
+	/** Server's software name and version */
+	private @NonNull String serverSoftware = "";
+
+	/** RTSP protocol version to be used */
+	private @NonNull RtspProtocolVersion rtspProtoVersionToUse = RtspProtoLowMsgConstants.DEFAULT_RTSP_PROTO_VERSION;
 
 	/** RTSP message types that are supported by the remote host */
 	private final @NonNull RtspProtoDataCntMessageTypes rhSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -189,11 +193,68 @@ public final class RtspProtoSessionInfo {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
-	public @NonNull String getClientPlaybackRangeValue() {
+	public Optional<String> getUnsupportedFeatureName() {
 		theReadLock.lock();
 		try {
-			return clientPlaybackRangeValue;
+			if (unsupportedFeatureName.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(unsupportedFeatureName);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public Optional<String> getClientPlaybackRangeValue() {
+		theReadLock.lock();
+		try {
+			if (clientPlaybackRangeValue.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(clientPlaybackRangeValue);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<String> getClientUserAgent() {
+		theReadLock.lock();
+		try {
+			if (clientUserAgent.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(clientUserAgent);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<String> getServerSoftware() {
+		theReadLock.lock();
+		try {
+			if (serverSoftware.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(serverSoftware);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspProtoDataCntMessageTypes getRhSupportedMessageTypes() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataCntMessageTypes resObj = new RtspProtoDataCntMessageTypes();
+			resObj.copyFrom(rhSupportedMessageTypes);
+			resObj.writeProtect();
+			return resObj;
 		} finally {
 			theReadLock.unlock();
 		}
@@ -490,10 +551,37 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	void setUnsupportedFeatureName(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			unsupportedFeatureName = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
 	void setClientPlaybackRangeValue(@NonNull String value) {
 		theWriteLock.lock();
 		try {
 			clientPlaybackRangeValue = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setClientUserAgent(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			clientUserAgent = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setServerSoftware(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			serverSoftware = value;
 		} finally {
 			theWriteLock.unlock();
 		}
@@ -516,34 +604,6 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	@NonNull String getClientUserAgent() {
-		theReadLock.lock();
-		try {
-			return clientUserAgent;
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-	void setClientUserAgent(@NonNull String value) {
-		theWriteLock.lock();
-		try {
-			clientUserAgent = value;
-		} finally {
-			theWriteLock.unlock();
-		}
-	}
-
-	@NonNull RtspProtoDataCntMessageTypes getRhSupportedMessageTypes() {
-		theReadLock.lock();
-		try {
-			RtspProtoDataCntMessageTypes resObj = new RtspProtoDataCntMessageTypes();
-			resObj.copyFrom(rhSupportedMessageTypes);
-			resObj.writeProtect();
-			return resObj;
-		} finally {
-			theReadLock.unlock();
-		}
-	}
 	void setRhSupportedMessageTypes(@NonNull RtspProtoDataCntMessageTypes value) {
 		theWriteLock.lock();
 		try {

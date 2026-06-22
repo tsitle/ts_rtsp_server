@@ -13,6 +13,11 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 	/** RTSP message parameters to set */
 	public final @NonNull RtspProtoDataCntGetSetParamKvs requSetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
+	/** Required features */
+	public final @NonNull RtspProtoDataCntGetRequFeat requRequiredFeatures = new RtspProtoDataCntGetRequFeat();
+	/** Required features for the proxy */
+	public final @NonNull RtspProtoDataCntGetRequFeat requProxyRequiredFeatures = new RtspProtoDataCntGetRequFeat();
+
 	/** Announced SDP in its raw form */
 	public final @NonNull RtspProtoDataCntSdpRaw requAnnouncedSdpRaw = new RtspProtoDataCntSdpRaw();
 	/** Announced SDP in its parsed form */
@@ -34,7 +39,6 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 	public RtspProtoDataRequest(@NonNull RtspProtoDataRequest other) {
 		super();
 
-		this.isWriteProtected = other.isWriteProtected;
 		this.rrIdSession.copyFrom(other.rrIdSession);
 		this.rrGetParamNames.copyFrom(other.rrGetParamNames);
 		this.rrInvalidParamNames.copyFrom(other.rrInvalidParamNames);
@@ -50,6 +54,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		this.requAuthClient.copyFrom(other.requAuthClient);
 		this.requSetParamValues.copyFrom(other.requSetParamValues);
+		this.requRequiredFeatures.copyFrom(other.requRequiredFeatures);
+		this.requProxyRequiredFeatures.copyFrom(other.requProxyRequiredFeatures);
 		this.requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
 		this.requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
 		this.requCseqNrToSend.copyFrom(other.requCseqNrToSend);
@@ -58,13 +64,6 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public void setUnsupportedFeatureName(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.rrUnsupportedFeatureName = value;
-	}
 
 	public void setRtspProtoVersionToUse(@NonNull RtspProtocolVersion value) {
 		if (isWriteProtected) {
@@ -84,13 +83,6 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.requCseqNrToSend.increment();
 	}
 
-	public void setClientUa(@NonNull String value) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		this.rrClientUa = value;
-	}
-
 	public void setPlaybackRangeValue(@NonNull String value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
@@ -106,6 +98,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		requAuthClient.clear();
 		requSetParamValues.clear();
+		requRequiredFeatures.clear();
+		requProxyRequiredFeatures.clear();
 		requAnnouncedSdpRaw.clear();
 		requAnnouncedSdpStc.clear();
 		requCseqNrToSend.clear();
@@ -123,6 +117,8 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 		requAuthClient.writeProtect();
 		requSetParamValues.writeProtect();
+		requRequiredFeatures.writeProtect();
+		requProxyRequiredFeatures.writeProtect();
 		requAnnouncedSdpRaw.writeProtect();
 		requAnnouncedSdpStc.writeProtect();
 		requCseqNrToSend.writeProtect();

@@ -157,15 +157,25 @@ public final class RtspProtoResponseInputSvc {
 		if (! (rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
 			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
-
 		//
 		if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataResp.rrIdSession.isEmpty())) {
 			rtspSessionInfo.setSessionId(dataResp.rrIdSession);
 		}
-
 		//
 		if (! dataResp.respSuppMessageTypes.isMtsEmpty()) {
 			rtspSessionInfo.setRhSupportedMessageTypes(dataResp.respSuppMessageTypes);
+		}
+		//
+		if (! dataResp.getUnsupportedFeatureName().isEmpty()) {
+			rtspSessionInfo.setUnsupportedFeatureName(dataResp.getUnsupportedFeatureName());
+		}
+		//
+		if (! dataResp.getClientUa().isEmpty()) {
+			rtspSessionInfo.setClientUserAgent(dataResp.getClientUa());
+		}
+		//
+		if (! dataResp.getServerSoftware().isEmpty()) {
+			rtspSessionInfo.setServerSoftware(dataResp.getServerSoftware());
 		}
 	}
 

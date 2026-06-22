@@ -138,6 +138,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				rtspConfig.getLogLevel(),
 				cfgSrvSuppIncomingMts,
 				RtspServerConstants.SERVER_SUPPORTED_FEATURES,
+				Set.of(),
 				rtspConfig.getIsDebugPrintRtspRcvd(),
 				rtspConfig.getIsDebugDisableTransportUdp(),
 				this.rtspSessionInfo,

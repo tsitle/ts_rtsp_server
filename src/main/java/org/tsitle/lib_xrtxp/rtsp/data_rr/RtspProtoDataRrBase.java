@@ -39,6 +39,8 @@ public class RtspProtoDataRrBase {
 
 	/** Client's Useragent */
 	protected @NonNull String rrClientUa = "";
+	/** Server's software name and version */
+	protected @NonNull String rrServerSoftware = "";
 
 	/** Client's IP address */
 	public final @NonNull RtspProtoIpAddr rrClientIpAddr = new RtspProtoIpAddr();
@@ -57,6 +59,12 @@ public class RtspProtoDataRrBase {
 	public @NonNull String getUnsupportedFeatureName() {
 		return rrUnsupportedFeatureName;
 	}
+	public void setUnsupportedFeatureName(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.rrUnsupportedFeatureName = value;
+	}
 
 	public @NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
 		return rrRtspProtoVersionToUse;
@@ -64,6 +72,22 @@ public class RtspProtoDataRrBase {
 
 	public @NonNull String getClientUa() {
 		return rrClientUa;
+	}
+	public void setClientUa(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.rrClientUa = value;
+	}
+
+	public @NonNull String getServerSoftware() {
+		return rrServerSoftware;
+	}
+	public void setServerSoftware(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.rrServerSoftware = value;
 	}
 
 	public @NonNull String getPlaybackRangeValue() {
@@ -86,6 +110,7 @@ public class RtspProtoDataRrBase {
 		rrCseqNrLastRcvd.clear();
 		rrStreamTpMain.clear();
 		rrClientUa = "";
+		rrServerSoftware = "";
 		rrClientIpAddr.clear();
 		rrPlaybackRangeValue = "";
 	}

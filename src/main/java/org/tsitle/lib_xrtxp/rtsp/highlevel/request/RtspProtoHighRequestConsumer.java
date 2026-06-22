@@ -37,6 +37,7 @@ public final class RtspProtoHighRequestConsumer {
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull Set<@NonNull String> cfgSupportedFeatures;
+	private final @NonNull Set<@NonNull String> cfgProxySupportedFeatures;
 	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
@@ -51,6 +52,7 @@ public final class RtspProtoHighRequestConsumer {
 				boolean isRequestFromClient,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
+				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
@@ -63,6 +65,7 @@ public final class RtspProtoHighRequestConsumer {
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.cfgSupportedFeatures = new HashSet<>(cfgSupportedFeatures);
+		this.cfgProxySupportedFeatures = new HashSet<>(cfgProxySupportedFeatures);
 		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
@@ -148,7 +151,7 @@ public final class RtspProtoHighRequestConsumer {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.FORBIDDEN);
 		} catch (RtspProtoInvalidRequestException | RtspProtoIdInputSourceNotFoundException |
-		         RtspProtoIdStreamSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
+					RtspProtoIdStreamSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.NOT_FOUND);
 		}
@@ -463,9 +466,10 @@ public final class RtspProtoHighRequestConsumer {
 								ioSetupInfosStream,
 								entry.getValue()
 							);
-				case RtspHeaderKey.PROXY_REQU -> processHeader_com_proxyrequ(entry.getValue());
+				case RtspHeaderKey.PROXY_REQU -> processHeader_com_proxyrequ(entry.getValue(), outputDataRequ);
 				case RtspHeaderKey.RANGE -> processHeader_play_range(input.messageType, entry.getValue(), outputDataRequ);
-				case RtspHeaderKey.REQUIRE -> processHeader_com_require(entry.getValue());
+				case RtspHeaderKey.REQUIRE -> processHeader_com_require(entry.getValue(), outputDataRequ);
+				case RtspHeaderKey.SERVER -> processHeader_com_server(entry.getValue(), outputDataRequ);
 				case RtspHeaderKey.TRANSPORT ->
 						processHeader_setup_transport(
 								input.messageType,
@@ -602,9 +606,11 @@ public final class RtspProtoHighRequestConsumer {
 			);
 	}
 
-	private void processHeader_com_proxyrequ(@NonNull RtspProtoHeaderEntryRequest headerEntry)
-			throws RtspProtoUnsupportedFeatureRequestedException {
-		processRequiredFeatures(true, headerEntry.hdValProxyRequ.requiredFeatures);
+	private void processHeader_com_proxyrequ(
+				@NonNull RtspProtoHeaderEntryRequest headerEntry,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoUnsupportedFeatureRequestedException {
+		processRequiredFeatures(true, headerEntry.hdValProxyRequ.requiredFeatures, outputDataRequ);
 	}
 
 	private void processHeader_play_range(
@@ -621,9 +627,18 @@ public final class RtspProtoHighRequestConsumer {
 		outputDataRequ.setPlaybackRangeValue(headerEntry.hdValRange.rangeStr);
 	}
 
-	private void processHeader_com_require(@NonNull RtspProtoHeaderEntryRequest headerEntry)
-			throws RtspProtoUnsupportedFeatureRequestedException {
-		processRequiredFeatures(false, headerEntry.hdValRequire.requiredFeatures);
+	private void processHeader_com_require(
+				@NonNull RtspProtoHeaderEntryRequest headerEntry,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoUnsupportedFeatureRequestedException {
+		processRequiredFeatures(false, headerEntry.hdValRequire.requiredFeatures, outputDataRequ);
+	}
+
+	private void processHeader_com_server(
+				@NonNull RtspProtoHeaderEntryRequest headerEntry,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) {
+		outputDataRequ.setServerSoftware(headerEntry.hdValServer.serverStr);
 	}
 
 	private void processHeader_setup_transport(
@@ -703,28 +718,32 @@ public final class RtspProtoHighRequestConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void processRequiredFeatures(boolean isForProxy, @NonNull Set<@NonNull String> requiredFeatures)
-			throws RtspProtoUnsupportedFeatureRequestedException {
+	private void processRequiredFeatures(
+				boolean isForProxy,
+				@NonNull Set<@NonNull String> requiredFeatures,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoUnsupportedFeatureRequestedException {
 		if (requiredFeatures.isEmpty()) {
 			return;
 		}
 		String unsupp = "";
-		if (isForProxy) {
-			unsupp = requiredFeatures.stream().findFirst().orElse("");
-		} else {
-			for (String tmpInp : requiredFeatures) {
-				if (cfgSupportedFeatures.contains(tmpInp)) {
-					continue;
-				}
-				unsupp = tmpInp;
-				break;
+		Set<@NonNull String> inputPtr = (isForProxy ? cfgProxySupportedFeatures : cfgSupportedFeatures);
+		for (String tmpInp : requiredFeatures) {
+			if (inputPtr.contains(tmpInp)) {
+				continue;
 			}
-			if (unsupp.isEmpty()) {
-				return;
-			}
+			unsupp = tmpInp;
+			break;
 		}
-		// we need to respond with "551 Option not supported"
-		throw new RtspProtoUnsupportedFeatureRequestedException(unsupp);
+		if (! unsupp.isEmpty()) {
+			// we need to respond with "551 Option not supported"
+			throw new RtspProtoUnsupportedFeatureRequestedException(unsupp);
+		}
+		if (isForProxy) {
+			outputDataRequ.requProxyRequiredFeatures.putAllFeatureNames(requiredFeatures);
+		} else {
+			outputDataRequ.requRequiredFeatures.putAllFeatureNames(requiredFeatures);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

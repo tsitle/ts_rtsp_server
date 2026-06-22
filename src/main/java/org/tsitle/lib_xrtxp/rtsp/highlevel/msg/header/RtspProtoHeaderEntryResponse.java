@@ -8,7 +8,6 @@ public final class RtspProtoHeaderEntryResponse extends RtspProtoHeaderEntryBase
 	public @NonNull RtspProtoHeaderTypeAuthServer hdValAuthServer = new RtspProtoHeaderTypeAuthServer();
 	public @NonNull RtspProtoHeaderTypePublic hdValPublic = new RtspProtoHeaderTypePublic();
 	public @NonNull RtspProtoHeaderTypeRtpinfo hdValRtpinfo = new RtspProtoHeaderTypeRtpinfo();
-	public @NonNull RtspProtoHeaderTypeServer hdValServer = new RtspProtoHeaderTypeServer();
 	public @NonNull RtspProtoHeaderTypeUnsupported hdValUnsupported = new RtspProtoHeaderTypeUnsupported();
 	public @NonNull RtspProtoHeaderTypeUa hdValUserAgent = new RtspProtoHeaderTypeUa();
 
@@ -33,7 +32,6 @@ public final class RtspProtoHeaderEntryResponse extends RtspProtoHeaderEntryBase
 			case AUTH_SERVER:
 			case PUBLIC:
 			case RTPINFO:
-			case SERVER:
 			case UNSUPPORTED:
 				this.hdKeyEn = hdKeyEn;
 				break;
@@ -54,7 +52,6 @@ public final class RtspProtoHeaderEntryResponse extends RtspProtoHeaderEntryBase
 				case AUTH_SERVER -> hdValAuthServer.toString();
 				case PUBLIC -> hdValPublic.toString();
 				case RTPINFO -> hdValRtpinfo.toString();
-				case SERVER -> hdValServer.toString();
 				case UNSUPPORTED -> hdValUnsupported.toString();
 				default -> throw new IllegalArgumentException("Invalid header key for responses: " + hdKeyEn);
 			};

@@ -245,6 +245,7 @@ public final class RtspProtoLowRequestConsumer {
 			case PROXY_REQU -> parseHeaderValue_com_proxyrequ(hdValue, entry);
 			case RANGE -> parseHeaderValue_play_range(output.messageType, hdValue, entry);
 			case REQUIRE -> parseHeaderValue_com_require(hdValue, entry);
+			case SERVER -> parseHeaderValue_com_server(hdValue, entry);
 			case SESSION -> parseHeaderValue_com_session(hdValue, entry);
 			case TRANSPORT -> parseHeaderValue_setup_transport(output.messageType, hdValue, entry);
 			case USERAGENT -> parseHeaderValue_com_useragent(hdValue, entry);
@@ -470,6 +471,10 @@ public final class RtspProtoLowRequestConsumer {
 
 	private void parseHeaderValue_com_require(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
 		parseRequiredFeatures(hdValue, entry.hdValRequire.requiredFeatures);
+	}
+
+	private void parseHeaderValue_com_server(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry) {
+		entry.hdValServer.serverStr = hdValue;
 	}
 
 	private void parseHeaderValue_com_session(@NonNull String hdValue, @NonNull RtspProtoHeaderEntryRequest entry)

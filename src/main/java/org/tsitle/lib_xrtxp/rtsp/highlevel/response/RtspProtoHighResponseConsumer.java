@@ -343,7 +343,7 @@ public class RtspProtoHighResponseConsumer {
 		if (isResponseFromClient) {
 			throw new RtspProtoInvalidResponseException("Received Server header from client");
 		}
-		// @TODO store params
+		outputDataResp.setServerSoftware(headerEntry.hdValServer.serverStr);
 	}
 
 	private void processHeader_setup_transport(
@@ -373,7 +373,7 @@ public class RtspProtoHighResponseConsumer {
 			throw new RtspProtoInvalidResponseException("unsupportedFeatureStr must be set");
 		}
 		logWarn(FNC_NAME, "Option '" + headerEntry.hdValUnsupported.unsupportedFeatureStr + "' is not supported");
-		// @TODO store params
+		outputDataResp.setUnsupportedFeatureName(headerEntry.hdValUnsupported.unsupportedFeatureStr);
 	}
 
 	private void processHeader_com_useragent(
@@ -383,7 +383,7 @@ public class RtspProtoHighResponseConsumer {
 		if (headerEntry.hdValUserAgent.userAgentStr.isBlank()) {
 			throw new RtspProtoInvalidResponseException("userAgentStr must be set");
 		}
-		// @TODO store params
+		outputDataResp.setClientUa(headerEntry.hdValUserAgent.userAgentStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

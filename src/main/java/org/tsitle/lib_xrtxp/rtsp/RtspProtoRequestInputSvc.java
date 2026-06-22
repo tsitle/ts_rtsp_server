@@ -52,7 +52,8 @@ public final class RtspProtoRequestInputSvc {
 	 * @param isRequestFromClient Is this a request sent by the client?
 	 * @param cfgRtxpLogLevel RTxP log level
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
-	 * @param cfgSupportedFeatures Supported features (can be empty)
+	 * @param cfgSupportedFeatures Features that the local host supports if it is not a proxy (can be empty)
+	 * @param cfgProxySupportedFeatures Features that the local host - which is a proxy - supports (can be empty)
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
@@ -68,6 +69,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtxpLogLevel cfgRtxpLogLevel,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
+				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -113,6 +115,7 @@ public final class RtspProtoRequestInputSvc {
 				isRequestFromClient,
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
+				cfgProxySupportedFeatures,
 				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
@@ -338,8 +341,15 @@ public final class RtspProtoRequestInputSvc {
 		rtspSessionInfo.setCseqNr_requFromRem_lastRcvd(cseqRequ.cseqNr_lastRcvd);
 		rtspSessionInfo.setCseqNr_requFromRem_expected(cseqRequ.cseqNr_expected);
 		//
-		rtspSessionInfo.setClientUserAgent(dataRequ.getClientUa());
-		rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
+		if (! dataRequ.getClientUa().isEmpty()) {
+			rtspSessionInfo.setClientUserAgent(dataRequ.getClientUa());
+		}
+		if (! dataRequ.getServerSoftware().isEmpty()) {
+			rtspSessionInfo.setServerSoftware(dataRequ.getServerSoftware());
+		}
+		if (! dataRequ.getPlaybackRangeValue().isEmpty()) {
+			rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
+		}
 	}
 
 	private boolean updateSessionInfo_success(

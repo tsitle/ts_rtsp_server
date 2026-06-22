@@ -82,7 +82,7 @@ public final class RtspProtoHighRequestProducer {
 			case ANNOUNCE -> buildRequest_announce(inputDataRequ, kmdsOutbound, resObj);
 			case DESCRIBE -> buildRequest_describe(resObj);
 			case GET_PARAMETER -> buildRequest_getParameter(inputDataRequ, resObj);
-			case OPTIONS -> buildRequest_options(resObj);
+			case OPTIONS -> buildRequest_options(inputDataRequ, resObj);
 			case PAUSE -> buildRequest_pause();
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
@@ -201,7 +201,10 @@ public final class RtspProtoHighRequestProducer {
 		addContentTypeHeader(output);
 	}
 
-	private void buildRequest_options(@NonNull RtspProtoHighMsgStructuredRequest output) {
+	private void buildRequest_options(
+				@NonNull RtspProtoDataRequest inputDataRequ,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) {
 		/*
 		 * Example:
 		 *   "OPTIONS rtsp://example.com/fizzle/foo RTSP/1.0"
@@ -210,7 +213,18 @@ public final class RtspProtoHighRequestProducer {
 		 *   "Proxy-Require: gzipped-messages"
 		 */
 
-		// @TODO set some headers
+		// Require
+		if (! inputDataRequ.requRequiredFeatures.isFeatureNamesEmpty()) {
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.REQUIRE);
+			hdEntry.hdValRequire.requiredFeatures.addAll(inputDataRequ.requRequiredFeatures.getFeatureNames());
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Proxy-Require
+		if (! inputDataRequ.requProxyRequiredFeatures.isFeatureNamesEmpty()) {
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.PROXY_REQU);
+			hdEntry.hdValProxyRequ.requiredFeatures.addAll(inputDataRequ.requProxyRequiredFeatures.getFeatureNames());
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
 	}
 
 	private void buildRequest_pause() {
