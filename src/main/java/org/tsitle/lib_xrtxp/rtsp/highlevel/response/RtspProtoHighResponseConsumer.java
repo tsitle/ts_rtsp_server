@@ -1,13 +1,10 @@
 package org.tsitle.lib_xrtxp.rtsp.highlevel.response;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterNotifyInvalidInterface;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterNotifyRcvdInterface;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidResponseException;
@@ -29,23 +26,17 @@ public class RtspProtoHighResponseConsumer {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isResponseFromClient;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
-	private final @Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface;
-	private final @Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface;
 
 	private final Set<@NonNull RtspHeaderKey> preProcessedHeaders = new HashSet<>();
 
 	public RtspProtoHighResponseConsumer(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
-				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
-				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
-				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface
+				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.isResponseFromClient = isResponseFromClient;
 		this.sdpConsumerInterface = sdpConsumerInterface;
-		this.parameterNotifyInvalidInterface = parameterNotifyInvalidInterface;
-		this.parameterNotifyRcvdInterface = parameterNotifyRcvdInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -516,9 +507,9 @@ public class RtspProtoHighResponseConsumer {
 				break;
 			case RtspProtoMessageType.GET_PARAMETER, RtspProtoMessageType.SET_PARAMETER:
 				if (! outputDataResp.rrInvalidParamNames.isParamNamesEmpty()) {
-					handleBody_invalidParam(outputDataResp);
+					handleBody_invalidParam();
 				} else if (messageType == RtspProtoMessageType.GET_PARAMETER) {
-					handleBody_getParam(outputDataResp);
+					handleBody_getParam();
 				}
 				break;
 		}
@@ -528,33 +519,12 @@ public class RtspProtoHighResponseConsumer {
 		sdpConsumerInterface.parseSdpFromDescribe(outputDataResp.respDescribeSdpRaw, outputDataResp.respDescribeSdpStc);
 	}
 
-	private void handleBody_invalidParam(@NonNull RtspProtoDataResponse outputDataResp) {
-		final String FNC_NAME = getClass().getSimpleName() + ".handleBody_invalidParam()";
-
-		if (parameterNotifyInvalidInterface == null) {
-			logWarn(FNC_NAME, "RtspProtoParameterNotifyInvalidInterface is not set");
-			return;
-		}
-		parameterNotifyInvalidInterface.notifyInvalidRtspParameters(
-				outputDataResp.rrIdSession,
-				outputDataResp.rrInvalidParamNames
-			);
+	private void handleBody_invalidParam() {
+		// nothing to do
 	}
 
-	private void handleBody_getParam(@NonNull RtspProtoDataResponse outputDataResp) {
-		final String FNC_NAME = getClass().getSimpleName() + ".handleBody_getParam()";
-
-		if (outputDataResp.respGetParamValues.isParamKvsEmpty()) {
-			return;
-		}
-		if (parameterNotifyRcvdInterface == null) {
-			logWarn(FNC_NAME, "RtspProtoParameterNotifyRcvdInterface is not set");
-			return;
-		}
-		parameterNotifyRcvdInterface.notifyReceivedRtspParameters(
-				outputDataResp.rrIdSession,
-				outputDataResp.respGetParamValues
-			);
+	private void handleBody_getParam() {
+		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -4,9 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntAuthSrv;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntStreamTpMain;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -55,7 +53,13 @@ public final class RtspProtoSessionInfo {
 	/** Request to remote host: Last sent RTSP message Sequence Number */
 	private final @NonNull RtspProtoCseqNr cseqNr_requToRem_lastSent = RtspProtoCseqNr.ofZero();
 
+	/** Name of an unsupported feature that has been requested in an OPTIONS request */
 	private @NonNull String unsupportedFeatureName = "";
+
+	/** Parameter names that were rejected by the remote host, either due to their name or value */
+	private final @NonNull RtspProtoDataCntGetSetParamNames rhInvalidParamNames = new RtspProtoDataCntGetSetParamNames();
+	/** Parameter values that have been received from the remote host */
+	private final @NonNull RtspProtoDataCntGetSetParamKvs rhGetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
 	/** Playback range request value from the client */
 	private @NonNull String clientPlaybackRangeValue = "";
@@ -206,6 +210,32 @@ public final class RtspProtoSessionInfo {
 				return Optional.empty();
 			}
 			return Optional.of(unsupportedFeatureName);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull RtspProtoDataCntGetSetParamNames getRhInvalidParamNames() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataCntGetSetParamNames resObj = new RtspProtoDataCntGetSetParamNames();
+			resObj.copyFrom(rhInvalidParamNames);
+			resObj.writeProtect();
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public @NonNull RtspProtoDataCntGetSetParamKvs getRhGetParamValues() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
+			resObj.copyFrom(rhGetParamValues);
+			resObj.writeProtect();
+			return resObj;
 		} finally {
 			theReadLock.unlock();
 		}
@@ -561,6 +591,24 @@ public final class RtspProtoSessionInfo {
 		theWriteLock.lock();
 		try {
 			unsupportedFeatureName = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setRhInvalidParamNames(@NonNull RtspProtoDataCntGetSetParamNames value) {
+		theWriteLock.lock();
+		try {
+			rhInvalidParamNames.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setRhGetParamValues(@NonNull RtspProtoDataCntGetSetParamKvs value) {
+		theWriteLock.lock();
+		try {
+			rhGetParamValues.copyFrom(value);
 		} finally {
 			theWriteLock.unlock();
 		}

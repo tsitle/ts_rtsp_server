@@ -1,7 +1,6 @@
 package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
@@ -15,8 +14,6 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterNotifyInvalidInterface;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterNotifyRcvdInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.response.RtspProtoLowResponseConsumer;
@@ -42,17 +39,13 @@ public final class RtspProtoResponseInputSvc {
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param rtspSessionInfo RTSP session info
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
-	 * @param parameterNotifyInvalidInterface 'Notify invalid parameter' instance (can be null)
-	 * @param parameterNotifyRcvdInterface 'Notify received parameter' instance (can be null)
 	 */
 	public RtspProtoResponseInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
 				boolean cfgIsDebugPrintRtspRcvd,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
-				@Nullable RtspProtoParameterNotifyInvalidInterface parameterNotifyInvalidInterface,
-				@Nullable RtspProtoParameterNotifyRcvdInterface parameterNotifyRcvdInterface
+				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
@@ -71,9 +64,7 @@ public final class RtspProtoResponseInputSvc {
 		this.rtspProtoHighResponseConsumer = new RtspProtoHighResponseConsumer(
 				logMsgInterface,
 				isResponseFromClient,
-				sdpConsumer,
-				parameterNotifyInvalidInterface,
-				parameterNotifyRcvdInterface
+				sdpConsumer
 			);
 	}
 
@@ -166,9 +157,11 @@ public final class RtspProtoResponseInputSvc {
 			rtspSessionInfo.setRhSupportedMessageTypes(dataResp.respSuppMessageTypes);
 		}
 		//
-		if (! dataResp.getUnsupportedFeatureName().isEmpty()) {
-			rtspSessionInfo.setUnsupportedFeatureName(dataResp.getUnsupportedFeatureName());
-		}
+		rtspSessionInfo.setUnsupportedFeatureName(dataResp.getUnsupportedFeatureName());  // always overwrite
+		//
+		rtspSessionInfo.setRhInvalidParamNames(dataResp.rrInvalidParamNames);  // always overwrite
+		//
+		rtspSessionInfo.setRhGetParamValues(dataResp.respGetParamValues);  // always overwrite
 		//
 		if (! dataResp.getClientUa().isEmpty()) {
 			rtspSessionInfo.setClientUserAgent(dataResp.getClientUa());

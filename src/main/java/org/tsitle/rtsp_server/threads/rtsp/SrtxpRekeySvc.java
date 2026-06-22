@@ -74,9 +74,7 @@ final class SrtxpRekeySvc {
 				true,
 				rtspConfig.getIsDebugPrintRtspRcvd(),
 				rtspSessionInfo,
-				rtxpTcpReadWrite,
-				null,
-				null
+				rtxpTcpReadWrite
 			);
 	}
 
