@@ -124,8 +124,8 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getVideoFps()
 				);
 		} catch (IllegalStateException e) {
-			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr().orElse("-unset-") +
-					"': " + e.getMessage());
+			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource) +
+					": " + e.getMessage());
 		}
 	}
 
@@ -187,13 +187,19 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	private @NonNull RtspConfigStreamSource getConfigStreamSourceObj(@NonNull RtspProtoIdStreamSource idStreamSource)
 			throws RtspProtoIdStreamSourceNotFoundException {
 		if (! streamSourceMap.containsKey(idStreamSource)) {
-			throw new RtspProtoIdStreamSourceNotFoundException(idStreamSource.getIdStr().orElse("-unset-"));
+			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource));
 		}
 		Optional<RtspConfigStreamSource> tmpOptCfgSs = rtspConfig.getStreamSourceObj(idStreamSource);
 		if (tmpOptCfgSs.isEmpty()) {
-			throw new RtspProtoIdStreamSourceNotFoundException(idStreamSource.getIdStr().orElse("-unset-"));
+			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource));
 		}
 		return tmpOptCfgSs.get();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String getStreamSourceIdForExcMsg(@NonNull RtspProtoIdStreamSource idStreamSource) {
+		return "ss='" + idStreamSource.getIdStr().orElse("-unset-") + "'";
 	}
 
 }
