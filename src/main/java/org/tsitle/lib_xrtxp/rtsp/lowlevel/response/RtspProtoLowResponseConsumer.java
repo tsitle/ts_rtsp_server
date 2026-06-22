@@ -229,7 +229,7 @@ public final class RtspProtoLowResponseConsumer {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryResponse entry
 			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
-		allowOnlyDescribeGetParameter("Content-Encoding", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Encoding", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contenc(hdValue, entry.hdValContEnc);
 	}
 
@@ -238,7 +238,7 @@ public final class RtspProtoLowResponseConsumer {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryResponse entry
 			) throws RtspProtoSkippedHeaderException {
-		allowOnlyDescribeGetParameter("Content-Language", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Language", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contlang(hdValue, entry.hdValContLang);
 	}
 
@@ -247,7 +247,7 @@ public final class RtspProtoLowResponseConsumer {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryResponse entry
 			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
-		allowOnlyDescribeGetParameter("Content-Length", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Length", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_contlen(hdValue, entry.hdValContLen);
 	}
 
@@ -256,7 +256,7 @@ public final class RtspProtoLowResponseConsumer {
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryResponse entry
 			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
-		allowOnlyDescribeGetParameter("Content-Type", messageType);
+		allowOnlyDescribeGetSetParameter("Content-Type", messageType);
 		RtspLowParserHelper.helperParseHeaderValue_conttype(hdValue, entry.hdValContType);
 	}
 
@@ -512,11 +512,12 @@ public final class RtspProtoLowResponseConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void allowOnlyDescribeGetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
+	private static void allowOnlyDescribeGetSetParameter(@NonNull String hdDesc, @NonNull RtspProtoMessageType messageType)
 			throws RtspProtoSkippedHeaderException {
-		if (messageType != RtspProtoMessageType.DESCRIBE && messageType != RtspProtoMessageType.GET_PARAMETER) {
+		if (messageType != RtspProtoMessageType.DESCRIBE &&
+				messageType != RtspProtoMessageType.GET_PARAMETER && messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoSkippedHeaderException(hdDesc + " header is only valid for " +
-					"DESCRIBE/GET_PARAMETER responses");
+					"DESCRIBE/GET_PARAMETER/SET_PARAMETER responses");
 		}
 	}
 

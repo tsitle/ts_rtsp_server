@@ -261,7 +261,7 @@ public class RtspProtoHighResponseConsumer {
 			) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_contenc()";
 
-		if (! allowOnlyDescribeGetParameter(FNC_NAME, "Content-Encoding", messageType)) {
+		if (! allowOnlyDescribeGetSetParameter(FNC_NAME, "Content-Encoding", messageType)) {
 			return;
 		}
 		if (headerEntry.hdValContEnc.contentEnc != RtspContentEncoding.NONE) {
@@ -272,19 +272,19 @@ public class RtspProtoHighResponseConsumer {
 	private void processHeader_com_contlang(@NonNull RtspProtoMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_contlang()";
 
-		allowOnlyDescribeGetParameter(FNC_NAME, "Content-Language", messageType);
+		allowOnlyDescribeGetSetParameter(FNC_NAME, "Content-Language", messageType);
 	}
 
 	private void processHeader_com_contlen(@NonNull RtspProtoMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_contlen()";
 
-		allowOnlyDescribeGetParameter(FNC_NAME, "Content-Length", messageType);
+		allowOnlyDescribeGetSetParameter(FNC_NAME, "Content-Length", messageType);
 	}
 
 	private void processHeader_com_conttype(@NonNull RtspProtoMessageType messageType) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_com_conttype()";
 
-		allowOnlyDescribeGetParameter(FNC_NAME, "Content-Type", messageType);
+		allowOnlyDescribeGetSetParameter(FNC_NAME, "Content-Type", messageType);
 	}
 
 	private void processHeader_com_date() {
@@ -389,14 +389,15 @@ public class RtspProtoHighResponseConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean allowOnlyDescribeGetParameter(
+	private boolean allowOnlyDescribeGetSetParameter(
 				@NonNull String fncName,
 				@NonNull String hdDesc,
 				@NonNull RtspProtoMessageType messageType
 			) {
-		if (messageType != RtspProtoMessageType.DESCRIBE && messageType != RtspProtoMessageType.GET_PARAMETER) {
+		if (messageType != RtspProtoMessageType.DESCRIBE &&
+				messageType != RtspProtoMessageType.GET_PARAMETER && messageType != RtspProtoMessageType.SET_PARAMETER) {
 			logWarn(fncName, hdDesc + " header is only valid for " +
-					"DESCRIBE/GET_PARAMETER responses");
+					"DESCRIBE/GET_PARAMETER/SET_PARAMETER responses");
 			return false;
 		}
 		return true;
