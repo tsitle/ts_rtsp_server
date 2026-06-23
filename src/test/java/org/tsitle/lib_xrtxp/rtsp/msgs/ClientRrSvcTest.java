@@ -294,7 +294,6 @@ public class ClientRrSvcTest {
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				Set.of(),
-				"just_a_prefix",
 				false,
 				false,
 				rtspSessionInfo,

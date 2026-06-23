@@ -53,6 +53,9 @@ public class S2cRrSvcTest {
 	static class AvailableStreamsServerSide implements RtspProtoAvailableStreamsInterface {
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
+			if (idInputSource.getIdStr().orElseThrow().contains("/")) {
+				return false;
+			}
 			return Set.of("existing_stream_no_auth_no_encr", "existing_stream_no_auth_with_encr")
 					.contains(idInputSource.getIdStr().orElse("-unset-"));
 		}
@@ -61,7 +64,7 @@ public class S2cRrSvcTest {
 		public @NonNull RtspProtoInputSource getInputSourceObj(@NonNull RtspProtoIdInputSource idInputSource)
 				throws RtspProtoIdInputSourceNotFoundException {
 			if (! existsInputSourceId(idInputSource)) {
-				throw new RtspProtoIdInputSourceNotFoundException("");
+				throw new RtspProtoIdInputSourceNotFoundException(idInputSource.toString());
 			}
 			RtspProtoInputSource resObj = new RtspProtoInputSource();
 			resObj.setIdInputSource(idInputSource);
@@ -154,8 +157,6 @@ public class S2cRrSvcTest {
 		SDES,
 		MIKEY
 	}
-
-	private final @NonNull String SRV_CFG_SUBSTREAM_ID_PREFIX = "test_substream_id_prefix";
 
 	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
@@ -415,7 +416,7 @@ public class S2cRrSvcTest {
 
 			RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
 					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
-							SRV_CFG_SUBSTREAM_ID_PREFIX + tmpIdSubStream.getIdStr().orElseThrow(),
+							tmpIdSubStream.getIdStr().orElseThrow(),
 					tmpIdSubStream,
 					kmdOutboundSs
 				);
@@ -484,7 +485,6 @@ public class S2cRrSvcTest {
 				srvCfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
-				SRV_CFG_SUBSTREAM_ID_PREFIX,
 				true,
 				false,
 				srvSessionInfo,
@@ -501,7 +501,7 @@ public class S2cRrSvcTest {
 				"server name and version",
 				"en",
 				srvCfgSupportedMessageTypes,
-				SRV_CFG_SUBSTREAM_ID_PREFIX,
+				"test_substream_id_prefix",
 				false,
 				true,
 				false,
@@ -522,7 +522,6 @@ public class S2cRrSvcTest {
 				false,
 				"server name and version",
 				"en",
-				SRV_CFG_SUBSTREAM_ID_PREFIX,
 				false,
 				true,
 				srvSessionInfo,
@@ -557,7 +556,6 @@ public class S2cRrSvcTest {
 				true,
 				cliUserAgent.get(ct),
 				"en",
-				"",
 				false,
 				true,
 				Objects.requireNonNull(cliSessionInfo.get(ct)),
@@ -588,7 +586,6 @@ public class S2cRrSvcTest {
 				cliCfgSupportedMessageTypes,
 				Set.of(),
 				Set.of(),
-				"",
 				true,
 				false,
 				Objects.requireNonNull(cliSessionInfo.get(ct)),

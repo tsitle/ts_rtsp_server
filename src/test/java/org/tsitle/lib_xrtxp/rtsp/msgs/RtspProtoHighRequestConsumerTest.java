@@ -287,7 +287,10 @@ class RtspProtoHighRequestConsumerTest {
 		SrtxpKmd srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(0x3ACC2CEBL)).orElseThrow();
 		assertFalse(srtxpKmd.getMetaIsForLegacySdes());
 		assertFalse(srtxpKmd.getMetaTagForLegacySdes().isPresent());
-		assertEquals("substreamidf528764d_dbbd5deb", outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow());
+		assertEquals(
+				RtspProtoIdSubStream.of("substreamidf528764d_dbbd5deb"),
+				outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow()
+			);
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(1);
 		assertEquals(RtspProtoSdpMediaType.AUDIO, mediaEntry.header().mediaType());
@@ -311,7 +314,10 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(707, srtxpKmd.getMetaTagForLegacySdes().orElseThrow());
 		assertTrue(srtxpKmd.mki().isEmpty());
 		assertTrue(srtxpKmd.kdr().isEmpty());
-		assertEquals("substreamidf528764d_081eb523", outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow());
+		assertEquals(
+				RtspProtoIdSubStream.of("substreamidf528764d_081eb523"),
+				outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow()
+			);
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(2);
 		assertEquals(1000, mediaEntry.header().portNr().getPort16bit().orElse(0));
@@ -365,7 +371,9 @@ class RtspProtoHighRequestConsumerTest {
 
 		// --------------------------------------------------------------------
 
-		mediaEntry = outputDataRequ.requAnnouncedSdpStc.findMediaEntryForControlId("substreamidf528764d_081eb523").orElseThrow();
+		mediaEntry = outputDataRequ.requAnnouncedSdpStc
+				.findMediaEntryForControlId(RtspProtoIdSubStream.of("substreamidf528764d_081eb523"))
+				.orElseThrow();
 		assertEquals("AS:128000", mediaEntry.bandwidth());
 	}
 
@@ -891,7 +899,7 @@ class RtspProtoHighRequestConsumerTest {
 	void structuredRequest_setup_ok_queryParamSrtp() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SETUP;
 		final String expRequUrl = "rtsp://some.com/existing_stream/" +
-				TEST_SUB_STREAM_ID_PREFIX + generatedSubStreamId.getIdStr().orElse("-unset-") +
+				generatedSubStreamId.getIdStr().orElse("-unset-") +
 				"?" + RtspProtoHighConstants.URL_QUERY_PARAM_SRTP + "=1";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -1095,6 +1103,7 @@ class RtspProtoHighRequestConsumerTest {
 				sessionInfo.getClientIpAddr(),
 				ioCseqRequ,
 				ioSetupInfosStream,
+				Set.of(generatedSubStreamId),
 				inpStreamTpMain,
 				inputMsgStructured,
 				outputDataRequ
@@ -1131,6 +1140,7 @@ class RtspProtoHighRequestConsumerTest {
 	private @NonNull RtspProtoGlobalSessionInfoSvc buildGlobalSessionInfoSvc() {
 		RtspProtoGlobalSessionInfoSvc resObj = new RtspProtoGlobalSessionInfoSvc();
 		generatedSubStreamId = resObj.createSubStreamId(
+				TEST_SUB_STREAM_ID_PREFIX,
 				RtspProtoIdInputSource.of("existing_stream"),
 				RtspProtoIdStreamSource.of("exists_12345_streamsource"),
 				RtspProtoIpAddr.ofLoopback()
@@ -1164,7 +1174,6 @@ class RtspProtoHighRequestConsumerTest {
 				cfgSrvSuppIncomingMts,
 				Set.of(),
 				Set.of(),
-				TEST_SUB_STREAM_ID_PREFIX,
 				cfgIsDebugDisableTransportUdp,
 				buildSdpConsumer(),
 				new AvailableStreams(),
