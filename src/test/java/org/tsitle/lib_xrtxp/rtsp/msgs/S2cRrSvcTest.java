@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
@@ -18,19 +19,22 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
+import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,7 +53,8 @@ public class S2cRrSvcTest {
 	static class AvailableStreamsServerSide implements RtspProtoAvailableStreamsInterface {
 		@Override
 		public boolean existsInputSourceId(@NonNull RtspProtoIdInputSource idInputSource) {
-			return idInputSource.getIdStr().orElse("-unset-").equals("existing_stream_no_auth");
+			return Set.of("existing_stream_no_auth_no_encr", "existing_stream_no_auth_with_encr")
+					.contains(idInputSource.getIdStr().orElse("-unset-"));
 		}
 
 		@Override
@@ -62,43 +67,62 @@ public class S2cRrSvcTest {
 			resObj.setIdInputSource(idInputSource);
 			resObj.setEnabled(true);
 			resObj.setNeedsAuthentication(false);
-			resObj.setNeedsEncryption(false);
+			resObj.setNeedsEncryption(idInputSource.getIdStr().orElseThrow().contains("_with_encr"));
 			return resObj;
 		}
 
 		@Override
 		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			if (! idInputSource.getIdStr().orElse("-unset-").equals("existing_stream_no_auth")) {
+			if (! existsInputSourceId(idInputSource)) {
 				return Optional.empty();
 			}
 			RtspProtoStreamSource resObj = new RtspProtoStreamSource();
-			resObj.setIdStreamSource(RtspProtoIdStreamSource.of("dummy-stream-source"));
+			resObj.setIdStreamSource(RtspProtoIdStreamSource.of("dummy-stream-source-video"));
 			return Optional.of(resObj);
 		}
 
 		@Override
 		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
-			return Optional.empty();
+			if (! existsInputSourceId(idInputSource)) {
+				return Optional.empty();
+			}
+			RtspProtoStreamSource resObj = new RtspProtoStreamSource();
+			resObj.setIdStreamSource(RtspProtoIdStreamSource.of("dummy-stream-source-audio"));
+			return Optional.of(resObj);
 		}
 
 		@Override
 		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
 				throws RtspProtoIdStreamSourceNotFoundException {
-			if (! idStreamSource.getIdStr().orElse("-unset-").equals("dummy-stream-source")) {
-				throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr().orElse("-unset-") + "'");
+			if (idStreamSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
+				return new StreamSourceInfo(
+						RtpPacketType.V_H264,
+						true,
+						false,
+						URI.create("file:///dummy-file-video"),
+						(byte)-1,
+						-1,
+						false,
+						-1,
+						"",
+						15.0
+					);
 			}
-			return new StreamSourceInfo(
-					RtpPacketType.V_H264,
-					true,
-					false,
-					URI.create("file:///dummy-file"),
-					(byte)-1,
-					-1,
-					false,
-					-1,
-					"",
-					15.0
-				);
+			if (idStreamSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
+				return new StreamSourceInfo(
+						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
+						true,
+						false,
+						URI.create("file:///dummy-file-audio"),
+						(byte)2,
+						44100,
+						false,
+						-1,
+						"",
+						-1.0
+					);
+			}
+			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr().orElse("-unset-") + "'");
 		}
 
 		@Override
@@ -126,26 +150,39 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	enum ClientType {
+		SDES,
+		MIKEY
+	}
+
+	private final @NonNull String SRV_CFG_SUBSTREAM_ID_PREFIX = "test_substream_id_prefix";
+
 	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	private final @NonNull TestLogs logger = new TestLogs();
-	private @Nullable RtxpTcpReadWrite srvRtxpTcpReadWrite = null;
-	private @Nullable RtxpTcpReadWrite cliRtxpTcpReadWrite = null;
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
-	private @Nullable RtspProtoSessionInfo srvSessionInfo = null;
-	private @Nullable AvailableStreamsServerSide srvAvailableStreams;
-	private @Nullable RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc;
-	private @Nullable RtspProtoSessionInfo cliSessionInfo = null;
-	private @Nullable RtspProtoRequestOutputSvc srvRequOutputSvc = null;
-	private @Nullable RtspProtoResponseInputSvc srvRespInputSvc = null;
-	private @Nullable RtspProtoRequestInputSvc srvRequInputSvc = null;
-	private @Nullable RtspProtoResponseOutputSvc srvRespOutputSvc = null;
-	private @Nullable RtspProtoRequestInputSvc cliRequInputSvc = null;
-	private @Nullable RtspProtoResponseOutputSvc cliRespOutputSvc = null;
-	private @Nullable RtspProtoRequestOutputSvc cliRequOutputSvc = null;
-	private @Nullable RtspProtoResponseInputSvc cliRespInputSvc = null;
+
+	private RtxpTcpReadWrite srvRtxpTcpReadWrite = null;
+	private RtspProtoSessionInfo srvSessionInfo = null;
+	private AvailableStreamsServerSide srvAvailableStreams;
+	private RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc;
+	private RtspProtoRequestOutputSvc srvRequOutputSvc = null;
+	private RtspProtoResponseInputSvc srvRespInputSvc = null;
+	private RtspProtoRequestInputSvc srvRequInputSvc = null;
+	private RtspProtoResponseOutputSvc srvRespOutputSvc = null;
+
+	private final Map<ClientType, String> cliUserAgent = new HashMap<>() {{
+			put(ClientType.SDES, "LavfEmulated/0.9");
+			put(ClientType.MIKEY, "ModernClient/98.1.2");
+		}};
+	private final Map<ClientType, RtxpTcpReadWrite> cliRtxpTcpReadWrite = new HashMap<>();
+	private final Map<ClientType, RtspProtoSessionInfo> cliSessionInfo = new HashMap<>();
+	private final Map<ClientType, RtspProtoRequestInputSvc> cliRequInputSvc = new HashMap<>();
+	private final Map<ClientType, RtspProtoResponseOutputSvc> cliRespOutputSvc = new HashMap<>();
+	private final Map<ClientType, RtspProtoRequestOutputSvc> cliRequOutputSvc = new HashMap<>();
+	private final Map<ClientType, RtspProtoResponseInputSvc> cliRespInputSvc = new HashMap<>();
 
 	S2cRrSvcTest() { }
 
@@ -156,7 +193,8 @@ public class S2cRrSvcTest {
 	void setUp() throws Exception {
 		initRtxpTcpReadWrite();
 		initObjsServer();
-		initObjsClient();
+		initObjsClient(ClientType.SDES);
+		initObjsClient(ClientType.MIKEY);
 	}
 
 	@AfterEach
@@ -175,25 +213,53 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void test_announce_ok() throws Exception {
+	void test_announce_ok_noCrypto1() throws Exception {
 		// client sends DESCRIBE request to server
-		doDescribe();
-		// server sends DESCRIBE request to client
-		doAnnounce();
+		doDescribe(ClientType.SDES, "rtsp://localhost/existing_stream_no_auth_no_encr");
+		// server sends ANNOUNCE request to client
+		doAnnounce_noCrypto(ClientType.SDES);
+	}
+
+	@Test
+	void test_announce_ok_noCrypto2() throws Exception {
+		// client sends DESCRIBE request to server
+		doDescribe(ClientType.MIKEY, "rtsp://localhost/existing_stream_no_auth_no_encr");
+		// server sends ANNOUNCE request to client
+		doAnnounce_noCrypto(ClientType.MIKEY);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_announce_ok_withCryptoSdes() throws Exception {
+		// client sends DESCRIBE request to server
+		doDescribe(ClientType.SDES, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		// server sends OPTIONS request to client
+		doOptions(ClientType.SDES);
+		// server sends ANNOUNCE request to client
+		doAnnounce_withCryptoSdes();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_setParam_ok_withCryptoMikey() throws Exception {
+		// client sends DESCRIBE request to server
+		doDescribe(ClientType.MIKEY, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		// server sends OPTIONS request to client
+		doOptions(ClientType.MIKEY);
+		// server sends SET_PARAMETER request to client
+		doSetParam_withCryptoMikey();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void doDescribe() throws Exception {
-		Objects.requireNonNull(cliRespInputSvc);
-		Objects.requireNonNull(cliRequOutputSvc);
-		Objects.requireNonNull(srvRequInputSvc);
-		Objects.requireNonNull(srvRespOutputSvc);
+	private void doDescribe(ClientType ct, @NonNull String resourceUrl) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
-		Objects.requireNonNull(cliSessionInfo);
 
-		RtspProtoMessageType mt = cliRequOutputSvc.sendRequest_describe("rtsp://localhost/existing_stream_no_auth");
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_describe(resourceUrl);
 		assertEquals(RtspProtoMessageType.DESCRIBE, mt);
 
 		// ----------------------------------------------------
@@ -201,7 +267,7 @@ public class S2cRrSvcTest {
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
@@ -209,41 +275,169 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse(mt);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
 	}
 
-	private void doAnnounce() throws Exception {
-		Objects.requireNonNull(cliRequInputSvc);
-		Objects.requireNonNull(cliRespOutputSvc);
-		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvRespInputSvc);
-		Objects.requireNonNull(srvRequOutputSvc);
+	private void doAnnounce_noCrypto(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_announce(
-				"rtsp://localhost/existing_stream_no_auth",
-				RtspProtoIdInputSource.of("existing_stream_no_auth")
+				"rtsp://localhost/existing_stream_no_auth_no_encr",
+				RtspProtoIdInputSource.of("existing_stream_no_auth_no_encr")
 			);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
 
 		// ----------------------------------------------------
 
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = cliRequInputSvc.receiveRequestFromServer(outputRequ);
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+				RtspProtoSdpMediaType.VIDEO
+			);
+		assertTrue(tmpMediaEntry.isPresent());
+		tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+				RtspProtoSdpMediaType.AUDIO
+			);
+		assertTrue(tmpMediaEntry.isPresent());
 
 		// ----------------------------------------------------
 
-		cliRespOutputSvc.sendResponse(resRequBas, outputRequ);
-		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+	}
+
+	private void doOptions(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_options(
+				"rtsp://localhost/existing_stream_no_auth_with_encr"
+			);
+		assertEquals(RtspProtoMessageType.OPTIONS, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+	}
+
+	private void doAnnounce_withCryptoSdes() throws Exception {
+		final ClientType ct = ClientType.SDES;
+
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
+
+		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : srvSessionInfo.getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = srvRequOutputSvc.generateNewOutboundKmdForRekeying(tmpIdSubStream);
+
+			kmdsOutbound.putKmdForSubStream(kmdOutboundSs, tmpIdSubStream);
+		}
+
+		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
+				"rtsp://localhost/existing_stream_no_auth_with_encr",
+				RtspProtoIdInputSource.of("existing_stream_no_auth_with_encr"),
+				kmdsOutbound
+			);
+		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+				RtspProtoSdpMediaType.VIDEO
+			);
+		assertTrue(tmpMediaEntry.isPresent());
+		RtspProtoIdXsrc dummySsrc = RtspProtoIdXsrc.of(0x12345678L);  // usually we would need the SSRC from the SETUP response
+		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(tmpMediaEntry.get(), dummySsrc);
+		assertTrue(tmpSrtxpKmd.isPresent());
+		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
+		assertEquals(2, tmpSrtxpKmd.get().getMetaTagForLegacySdes().orElseThrow());
+
+		tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+				RtspProtoSdpMediaType.AUDIO
+			);
+		assertTrue(tmpMediaEntry.isPresent());
+		dummySsrc = RtspProtoIdXsrc.of(0x9ABCDEF0L);  // usually we would need the SSRC from the SETUP response
+		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(tmpMediaEntry.get(), dummySsrc);
+		assertTrue(tmpSrtxpKmd.isPresent());
+		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
+		assertEquals(2, tmpSrtxpKmd.get().getMetaTagForLegacySdes().orElseThrow());
+
+		// ----------------------------------------------------
+
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+	}
+
+	private void doSetParam_withCryptoMikey() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : srvSessionInfo.getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = srvRequOutputSvc.generateNewOutboundKmdForRekeying(tmpIdSubStream);
+
+			RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
+					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
+							SRV_CFG_SUBSTREAM_ID_PREFIX + tmpIdSubStream.getIdStr().orElseThrow(),
+					tmpIdSubStream,
+					kmdOutboundSs
+				);
+			assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
+
+			// ----------------------------------------------------
+
+			RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+			// ----------------------------------------------------
+
+			cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+			assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+
+			// ----------------------------------------------------
+
+			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+			assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -255,13 +449,12 @@ public class S2cRrSvcTest {
 
 		socketPeer.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
 		socketClient.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
-
-		cliRtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
-		srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
 	}
 
 	private void initObjsServer() throws Exception {
 		Objects.requireNonNull(socketPeer);
+
+		srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
 
 		srvSessionInfo = new RtspProtoSessionInfo();
 		srvSessionInfo.setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
@@ -291,6 +484,7 @@ public class S2cRrSvcTest {
 				srvCfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
+				SRV_CFG_SUBSTREAM_ID_PREFIX,
 				true,
 				false,
 				srvSessionInfo,
@@ -307,6 +501,7 @@ public class S2cRrSvcTest {
 				"server name and version",
 				"en",
 				srvCfgSupportedMessageTypes,
+				SRV_CFG_SUBSTREAM_ID_PREFIX,
 				false,
 				true,
 				false,
@@ -327,6 +522,7 @@ public class S2cRrSvcTest {
 				false,
 				"server name and version",
 				"en",
+				SRV_CFG_SUBSTREAM_ID_PREFIX,
 				false,
 				true,
 				srvSessionInfo,
@@ -344,78 +540,81 @@ public class S2cRrSvcTest {
 			);
 	}
 
-	private void initObjsClient() {
-		cliSessionInfo = new RtspProtoSessionInfo();
+	private void initObjsClient(ClientType ct) {
+		Objects.requireNonNull(socketClient);
 
-		initObjsClient_toServer();
-		initObjsClient_fromServer();
+		cliRtxpTcpReadWrite.put(ct, new RtxpTcpReadWrite(socketClient));
+
+		cliSessionInfo.put(ct, new RtspProtoSessionInfo());
+
+		initObjsClient_toServer(ct);
+		initObjsClient_fromServer(ct);
 	}
 
-	private void initObjsClient_toServer() {
-		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(cliRtxpTcpReadWrite);
-
-		cliRequOutputSvc = new RtspProtoRequestOutputSvc(
+	private void initObjsClient_toServer(ClientType ct) {
+		cliRequOutputSvc.put(ct, new RtspProtoRequestOutputSvc(
 				logger,
 				true,
-				"client name and version",
+				cliUserAgent.get(ct),
 				"en",
+				"",
 				false,
 				true,
-				cliSessionInfo,
-				cliRtxpTcpReadWrite,
+				Objects.requireNonNull(cliSessionInfo.get(ct)),
+				Objects.requireNonNull(cliRtxpTcpReadWrite.get(ct)),
 				null,
 				null
-			);
+			));
 
-		cliRespInputSvc = new RtspProtoResponseInputSvc(
+		cliRespInputSvc.put(ct, new RtspProtoResponseInputSvc(
 				logger,
 				false,
 				true,
-				cliSessionInfo,
-				cliRtxpTcpReadWrite
-			);
+				Objects.requireNonNull(cliSessionInfo.get(ct)),
+				Objects.requireNonNull(cliRtxpTcpReadWrite.get(ct))
+			));
 	}
 
-	private void initObjsClient_fromServer() {
-		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(cliRtxpTcpReadWrite);
-
+	private void initObjsClient_fromServer(ClientType ct) {
 		RtspProtoDataCntMessageTypes cliCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cliCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
+		cliCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
+		cliCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
 
-		cliRequInputSvc = new RtspProtoRequestInputSvc(
+		cliRequInputSvc.put(ct, new RtspProtoRequestInputSvc(
 				logger,
 				false,
 				RtxpLogLevel.DEBUG,
 				cliCfgSupportedMessageTypes,
 				Set.of(),
 				Set.of(),
+				"",
 				true,
 				false,
-				cliSessionInfo,
+				Objects.requireNonNull(cliSessionInfo.get(ct)),
 				null,
 				null,
 				null,
 				null,
-				cliRtxpTcpReadWrite
-			);
+				Objects.requireNonNull(cliRtxpTcpReadWrite.get(ct))
+			));
 
-		cliRespOutputSvc = new RtspProtoResponseOutputSvc(
+		cliRespOutputSvc.put(ct, new RtspProtoResponseOutputSvc(
 				logger,
 				true,
-				"client name and version",
+				cliUserAgent.get(ct),
 				"en",
-				new RtspProtoDataCntMessageTypes(),
+				cliCfgSupportedMessageTypes,
+				"",
 				false,
 				true,
 				false,
-				cliSessionInfo,
+				Objects.requireNonNull(cliSessionInfo.get(ct)),
 				null,
 				null,
 				null,
-				cliRtxpTcpReadWrite
-			);
+				Objects.requireNonNull(cliRtxpTcpReadWrite.get(ct))
+			));
 	}
 
 }
