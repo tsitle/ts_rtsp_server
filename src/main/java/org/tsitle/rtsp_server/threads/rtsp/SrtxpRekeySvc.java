@@ -287,7 +287,11 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
+			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
+					resourceUrl,
+					tmpOptRscUrl.get().idInputSource,
+					kmdsOutbound
+				);
 			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");

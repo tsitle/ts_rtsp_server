@@ -578,6 +578,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * This will issue an ANNOUNCE request.<br />
 	 * <b>Note:</b> This can only work if the remote host supports the legacy SDES format and ANNOUNCE.
 	 * @param resourceUrl The Resource URL
+	 * @param idInputSource The Input Source ID
 	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
@@ -585,12 +586,14 @@ public final class RtspProtoRequestOutputSvc {
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
+				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
@@ -687,8 +690,13 @@ public final class RtspProtoRequestOutputSvc {
 				(! tmpSrtxpKmd.getMetaIsForLegacySdes() && ! tmpRhSuppMts.containsMt(RtspProtoMessageType.SET_PARAMETER))) {
 			throw new RtspProtoInvalidRequestException("remote host does not support SRTxP re-keying");
 		}
-		if (tmpSrtxpKmd.mki().isEmpty()) {
-			throw new RtspProtoInvalidRequestException("cannot re-key when initial KMD had no MKI");
+		if (tmpSrtxpKmd.getMetaIsForLegacySdes() && tmpSrtxpKmd.getMetaTagForLegacySdes().isEmpty()) {
+			// for SDES we need a Tag value. The MKI value is optional.
+			throw new RtspProtoInvalidRequestException("cannot re-key with SDES when initial KMD had no Tag");
+		}
+		if (! tmpSrtxpKmd.getMetaIsForLegacySdes() && tmpSrtxpKmd.mki().isEmpty()) {
+			// for MIKEY we need a MKI value
+			throw new RtspProtoInvalidRequestException("cannot re-key with MIKEY when initial KMD had no MKI");
 		}
 
 		// generate the new Key Management Data
