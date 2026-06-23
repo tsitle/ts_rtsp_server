@@ -593,11 +593,14 @@ public final class RtspProtoHighRequestConsumer {
 		if (messageType != RtspProtoMessageType.SETUP && messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoInvalidRequestException("Received Keymgmt header in non-SETUP/SET_PARAMETER request");
 		}
-		if (rscUrlObj.idInputSource.isEmpty() || rscUrlObj.idStreamSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No IS/SS in SETUP/SET_PARAMETER request");
+		if (rscUrlObj.idInputSource.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("No Input Source in " + messageType + " request");
+		}
+		if (rscUrlObj.idStreamSource.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("No Stream Source in " + messageType + " request");
 		}
 		if (headerEntry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
-			throw new RtspProtoInvalidRequestException("Unsupported Keymgmt protocol in SETUP/SET_PARAMETER request");
+			throw new RtspProtoInvalidRequestException("Unsupported Keymgmt protocol");
 		}
 
 		SrtxpKmd tmpKmd;
@@ -662,8 +665,11 @@ public final class RtspProtoHighRequestConsumer {
 		if (messageType != RtspProtoMessageType.SETUP) {
 			throw new RtspProtoInvalidRequestException("Received Transport header in non-SETUP request");
 		}
-		if (rscUrlObj.idInputSource.isEmpty() || rscUrlObj.idStreamSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No IS/SS in SETUP request");
+		if (rscUrlObj.idInputSource.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("No Input Source in SETUP request");
+		}
+		if (rscUrlObj.idStreamSource.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("No Stream Source in SETUP request");
 		}
 		if (rscUrlObj.idSubStream.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("No Sub-Stream ID in SETUP request");

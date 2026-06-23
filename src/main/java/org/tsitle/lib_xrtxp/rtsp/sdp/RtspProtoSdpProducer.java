@@ -15,7 +15,6 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
@@ -38,12 +37,14 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull String cfgContentLanguage;
+	private final @NonNull String cfgSubStreamIdPrefix;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspProtoSdpProducer(
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
@@ -52,6 +53,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		}
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.cfgContentLanguage = cfgContentLanguage;
+		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
@@ -342,8 +344,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		tmpOutSubStreamId.writeProtect();
 
 		//
-		final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX +
-				tmpOutSubStreamId.getIdStr().orElseThrow();
+		final String tmpOutRscUrlSubPath = cfgSubStreamIdPrefix + tmpOutSubStreamId.getIdStr().orElseThrow();
 
 		//
 		RtspProtoAdSettingsForSubStream settSubStream = new RtspProtoAdSettingsForSubStream();

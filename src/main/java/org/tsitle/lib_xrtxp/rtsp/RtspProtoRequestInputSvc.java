@@ -12,7 +12,6 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -54,6 +53,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
 	 * @param cfgSupportedFeatures Features that the local host supports if it is not a proxy (can be empty)
 	 * @param cfgProxySupportedFeatures Features that the local host - which is a proxy - supports (can be empty)
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs (only required for requests from the client)
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
@@ -70,6 +70,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
+				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -122,7 +123,7 @@ public final class RtspProtoRequestInputSvc {
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
-				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
+				cfgSubStreamIdPrefix,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
 				availableStreamsInterface,

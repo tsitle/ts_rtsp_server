@@ -50,6 +50,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param cfgSenderAppNameAndVersion Server/client software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty), required for an OPTIONS response
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs (only required for responses from the server)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
@@ -65,6 +66,7 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
+				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
 				boolean cfgIsDebugDisableTransportUdp,
@@ -104,6 +106,7 @@ public final class RtspProtoResponseOutputSvc {
 			sdpProducer = new RtspProtoSdpProducer(
 					cfgSenderAppNameAndVersion,
 					cfgContentLanguage,
+					cfgSubStreamIdPrefix,
 					availableStreamsInterface,
 					globalSessionInfoInterface
 				);

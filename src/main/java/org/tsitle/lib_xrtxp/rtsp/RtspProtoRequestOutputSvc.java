@@ -13,7 +13,6 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestProducer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
@@ -38,6 +37,7 @@ public final class RtspProtoRequestOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
+	private final @NonNull String cfgSubStreamIdPrefix;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
@@ -51,6 +51,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * @param isRequestFromClient Is this a request being sent by the client?
 	 * @param cfgSenderAppNameAndVersion Server/client software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs (only required for requests from the server)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent SDP data for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param rtspSessionInfo RTSP session info
@@ -63,6 +64,7 @@ public final class RtspProtoRequestOutputSvc {
 				boolean isRequestFromClient,
 				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgContentLanguage,
+				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -82,6 +84,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
+		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
@@ -93,6 +96,7 @@ public final class RtspProtoRequestOutputSvc {
 			sdpProducer = new RtspProtoSdpProducer(
 					cfgSenderAppNameAndVersion,
 					cfgContentLanguage,
+					cfgSubStreamIdPrefix,
 					availableStreamsInterface,
 					globalSessionInfoInterface
 				);
@@ -853,8 +857,7 @@ public final class RtspProtoRequestOutputSvc {
 				tmpAdSettForSs.idStreamSource.copyFrom(tmpSiForSs.getRscUrlSubStreamPtr().idStreamSource);
 				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
 				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
-				final String tmpOutRscUrlSubPath = RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX +
-						tmpIdSs.getIdStr().orElseThrow();
+				final String tmpOutRscUrlSubPath = cfgSubStreamIdPrefix + tmpIdSs.getIdStr().orElseThrow();
 				tmpAdSettForSs.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
 				dataRequ.requAdStreamSett.putSettingsForSubStream(tmpAdSettForSs);
 			}
