@@ -38,6 +38,7 @@ public final class RtspProtoHighResponseProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String cfgSenderAppNameAndVersion;
+	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
@@ -50,6 +51,7 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
 				@NonNull String cfgSenderAppNameAndVersion,
+				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugDisableTransportUdp,
 				@Nullable RtspProtoSdpProducerInterface sdpProducerInterface,
@@ -59,6 +61,9 @@ public final class RtspProtoHighResponseProducer {
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
+		}
+		if (! isResponseFromClient && cfgSubStreamIdPrefix.isBlank()) {
+			throw new IllegalArgumentException("cfgSubStreamIdPrefix cannot be blank for responses from the server");
 		}
 		if (! isResponseFromClient && sdpProducerInterface == null) {
 			throw new IllegalArgumentException("sdpProducerInterface cannot be null for responses from the server");
@@ -72,6 +77,7 @@ public final class RtspProtoHighResponseProducer {
 
 		this.logMsgInterface = logMsgInterface;
 		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
+		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpProducerInterface = sdpProducerInterface;
@@ -219,6 +225,7 @@ public final class RtspProtoHighResponseProducer {
 			// build SDP
 			sdpProducerInterface.buildSdpForDescribe(
 					inputDataResp.rrStreamTpMain.isSrtpRequired(),
+					cfgSubStreamIdPrefix,
 					inputDataResp.rrRscUrl.idInputSource,
 					inputDataResp.rrServerIpFromRscUrl,
 					inputDataResp.getClientUa(),

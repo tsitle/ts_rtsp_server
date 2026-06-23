@@ -17,6 +17,7 @@ public interface RtspProtoSdpProducerInterface {
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param requireSrtp Whether SRTP is required
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
 	 * @param idInputSource Input Source
 	 * @param serverIpOrName Server's IP address or hostname
 	 * @param clientUserAgent Client's User-Agent string
@@ -28,6 +29,7 @@ public interface RtspProtoSdpProducerInterface {
 	 */
 	void buildSdpForDescribe(
 				boolean requireSrtp,
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,

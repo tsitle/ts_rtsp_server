@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseProducer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
@@ -27,6 +28,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidResponseException;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for sending RTSP responses over a TCP connection.
@@ -79,6 +81,9 @@ public final class RtspProtoResponseOutputSvc {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
 		}
+		if (! isResponseFromClient && cfgSubStreamIdPrefix.isBlank()) {
+			throw new IllegalArgumentException("cfgSubStreamIdPrefix cannot be blank for responses from the server");
+		}
 		if (! isResponseFromClient && availableStreamsInterface == null) {
 			throw new IllegalArgumentException("availableStreamsInterface cannot be null for responses from the server");
 		}
@@ -106,7 +111,6 @@ public final class RtspProtoResponseOutputSvc {
 			sdpProducer = new RtspProtoSdpProducer(
 					cfgSenderAppNameAndVersion,
 					cfgContentLanguage,
-					cfgSubStreamIdPrefix,
 					availableStreamsInterface,
 					globalSessionInfoInterface
 				);
@@ -117,6 +121,7 @@ public final class RtspProtoResponseOutputSvc {
 				logMsgInterface,
 				isResponseFromClient,
 				cfgSenderAppNameAndVersion,
+				cfgSubStreamIdPrefix,
 				cfgIsDebugPrintRtspSdpSent,
 				cfgIsDebugDisableTransportUdp,
 				sdpProducer,
@@ -240,6 +245,11 @@ public final class RtspProtoResponseOutputSvc {
 		}
 		//
 		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
+		// store the available Sub-Stream IDs from a DESCRIBE response
+		Set<@NonNull RtspProtoIdSubStream> tmpSiSsIds = setupInfosStream.getSubStreamIds();
+		if (! tmpSiSsIds.isEmpty()) {
+			rtspSessionInfo.setDescrAvailableSubStreamIds(tmpSiSsIds);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

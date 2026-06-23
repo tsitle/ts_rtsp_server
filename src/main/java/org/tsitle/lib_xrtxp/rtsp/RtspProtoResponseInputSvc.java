@@ -14,10 +14,13 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.response.RtspProtoLowResponseConsumer;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
+
+import java.util.Set;
 
 /**
  * Service for receiving and processing RTSP responses over a TCP connection.
@@ -169,6 +172,16 @@ public final class RtspProtoResponseInputSvc {
 		//
 		if (! dataResp.getServerSoftware().isEmpty()) {
 			rtspSessionInfo.setServerSoftware(dataResp.getServerSoftware());
+		}
+		//
+		if (! dataResp.respDescribeSdpStc.getMediaEntries().isEmpty()) {
+			// store the available Sub-Stream IDs from a DESCRIBE response
+			Set<@NonNull RtspProtoIdSubStream> tmpMeCtrlIds = dataResp.respDescribeSdpStc.findMediaEntryControlIds();
+			if (! tmpMeCtrlIds.isEmpty()) {
+				rtspSessionInfo.setDescrAvailableSubStreamIds(tmpMeCtrlIds);
+			}
+			// store the received structured SDP data
+			rtspSessionInfo.setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
 		}
 	}
 

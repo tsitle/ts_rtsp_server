@@ -28,6 +28,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
+import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
 import java.util.*;
 
@@ -38,7 +39,6 @@ public final class RtspProtoHighRequestConsumer {
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull Set<@NonNull String> cfgSupportedFeatures;
 	private final @NonNull Set<@NonNull String> cfgProxySupportedFeatures;
-	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
 	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
@@ -53,7 +53,6 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
-				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
@@ -72,7 +71,6 @@ public final class RtspProtoHighRequestConsumer {
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.cfgSupportedFeatures = new HashSet<>(cfgSupportedFeatures);
 		this.cfgProxySupportedFeatures = new HashSet<>(cfgProxySupportedFeatures);
-		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
@@ -95,7 +93,8 @@ public final class RtspProtoHighRequestConsumer {
 	 * @param clientIpAddr Client's IP address - used for associating Sub-Stream IDs with a specific client (for requests from the server this can always be 127.0.0.1)
 	 * @param ioCseqRequ I/O for CSeq Nr.
 	 * @param ioSetupInfosStream I/O for stream setup info
-	 * @param inpStreamTpMain I/O for main stream transport settings
+	 * @param inpAvailableSubStreamIds Input for available Sub-Stream IDs (from a previous DESCRIBE response)
+	 * @param inpStreamTpMain Input for main stream transport settings
 	 * @param inputMsgStc Input message
 	 * @param outputDataRequ Output for request data
 	 * @return Basic request information
@@ -106,6 +105,7 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoDataCntCseqRequInp ioCseqRequ,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds,
 				@NonNull RtspProtoDataCntStreamTpMain inpStreamTpMain,
 				@NonNull RtspProtoHighMsgStructuredRequest inputMsgStc,
 				@NonNull RtspProtoDataRequest outputDataRequ
@@ -150,7 +150,7 @@ public final class RtspProtoHighRequestConsumer {
 					inputMsgStc.messageType,
 					inputMsgStc.resourceUrl,
 					clientIpAddr,
-					ioSetupInfosStream,
+					inpAvailableSubStreamIds,
 					outputDataRequ.rrStreamTpMain
 				);
 		} catch (RtspProtoInvalidUriException e) {
@@ -203,10 +203,10 @@ public final class RtspProtoHighRequestConsumer {
 
 		// handle body
 		try {
-			handleBody(inputMsgStc.messageType, outputDataRequ);
+			handleBody(inputMsgStc.messageType, ioSetupInfosStream, outputDataRequ);
 		} catch (RtspProtoRtspParamUnknownException e) {
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.INVALID_PARAMETER);
-		} catch (RtspProtoSdpException e) {
+		} catch (RtspProtoSdpException | RtspProtoInvalidRequestException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.BAD_REQUEST);
 		}
@@ -378,7 +378,7 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoMessageType requestType,
 				@NonNull String resourceUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds,
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException, RtspProtoInvalidUriException,
 					RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException,
@@ -391,18 +391,12 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		//
-		Set<String> sdpControlIdsInSession = new HashSet<>();
-		for (RtspProtoIdSubStream tmpIdSs : ioSetupInfosStream.getSubStreamIds()) {
-			sdpControlIdsInSession.add(cfgSubStreamIdPrefix + tmpIdSs.getIdStr().orElse("-unset-"));
-		}
-		//
 		RtspProtoRscUrl resObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
-				cfgSubStreamIdPrefix,
 				availableStreamsInterface,
 				globalSessionInfoInterface,
 				resourceUrlStr,
 				clientIpAddr,
-				sdpControlIdsInSession
+				inpAvailableSubStreamIds
 			);
 
 		//
@@ -594,10 +588,10 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoInvalidRequestException("Received Keymgmt header in non-SETUP/SET_PARAMETER request");
 		}
 		if (rscUrlObj.idInputSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No Input Source in " + messageType + " request");
+			throw new RtspProtoInvalidRequestException("No Input Source ID in " + messageType + " request");
 		}
-		if (rscUrlObj.idStreamSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No Stream Source in " + messageType + " request");
+		if (rscUrlObj.idSubStream.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("No Sub-Stream ID in " + messageType + " request");
 		}
 		if (headerEntry.hdValKeymgmt.proto == RtspKeymgmtProto.NONE) {
 			throw new RtspProtoInvalidRequestException("Unsupported Keymgmt protocol");
@@ -610,9 +604,9 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoInvalidRequestException("Failed to set client MIKEY: " + e.getMessage());
 		}
 
-		handleKmdFromMikey(
+		handleNewInboundKmd(
 				messageType == RtspProtoMessageType.SETUP,
-				rscUrlObj,
+				rscUrlObj.idSubStream,
 				ioSetupInfosStream,
 				tmpKmd
 			);
@@ -666,10 +660,10 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoInvalidRequestException("Received Transport header in non-SETUP request");
 		}
 		if (rscUrlObj.idInputSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No Input Source in SETUP request");
+			throw new RtspProtoInvalidRequestException("No Input Source ID in SETUP request");
 		}
 		if (rscUrlObj.idStreamSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No Stream Source in SETUP request");
+			throw new RtspProtoInvalidRequestException("No Stream Source ID in SETUP request");
 		}
 		if (rscUrlObj.idSubStream.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("No Sub-Stream ID in SETUP request");
@@ -779,22 +773,22 @@ public final class RtspProtoHighRequestConsumer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void handleKmdFromMikey(
+	private void handleNewInboundKmd(
 				boolean isSetup,
-				@NonNull RtspProtoRscUrl rscUrlObj,
+				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull SrtxpKmd kmd
 			) throws RtspProtoInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".handleKmdFromMikey()";
+		final String FNC_NAME = getClass().getSimpleName() + ".handleNewInboundKmd()";
 
-		if (rscUrlObj.idSubStream.isEmpty()) {
+		if (idSubStream.isEmpty()) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID must be set");
 		}
 
-		if (! ioSetupInfosStream.containsSiForSubStreamId(rscUrlObj.idSubStream)) {
+		if (! ioSetupInfosStream.containsSiForSubStreamId(idSubStream)) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream info not found");
 		}
-		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
+		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow();
 
 		//System.out.println("<<<<<<<<<<<<<<<< rcvd KMD: " + kmd);
 
@@ -821,20 +815,29 @@ public final class RtspProtoHighRequestConsumer {
 			logDebug(FNC_NAME, "fixed inbound KMD with wrong Auth Key length");
 		}
 
+		final boolean isForLegacySdes = kmdToUse.getMetaIsForLegacySdes();
 		if (isSetup) {
-			tmpSiSs.getKmdInboundCurPtr().setKmd(kmdToUse, rscUrlObj.idSubStream);
+			tmpSiSs.getKmdInboundCurPtr().setKmd(kmdToUse, idSubStream);
 		} else if (! tmpSiSs.getKmdInboundCurPtr().isKmdSet()) {
 			logWarn(FNC_NAME, "received new inbound KMD but had no previous KMD - ignoring new KMD");
-		} else if (tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound KMD but previous KMD had no MKI - ignoring new KMD");
-		} else if (kmdToUse.mki().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound KMD but it has no MKI - ignoring new KMD");
-		} else if (kmdToUse.mki().getValue() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().getValue()) {
-			logWarn(FNC_NAME, "received new inbound KMD but MKI is unchanged - ignoring new KMD");
+		} else if (isForLegacySdes && tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound SDES KMD but previous KMD had no Tag - ignoring new KMD");
+		} else if (! isForLegacySdes && tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound MIKEY KMD but previous KMD had no MKI - ignoring new KMD");
+		} else if (isForLegacySdes && kmdToUse.getMetaTagForLegacySdes().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound SDES KMD but it has no Tag - ignoring new KMD");
+		} else if (! isForLegacySdes && kmdToUse.mki().isEmpty()) {
+			logWarn(FNC_NAME, "received new inbound MIKEY KMD but it has no MKI - ignoring new KMD");
+		} else if (isForLegacySdes &&
+				kmdToUse.getMetaTagForLegacySdes() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes()) {
+			logWarn(FNC_NAME, "received new inbound SDES KMD but Tag is unchanged - ignoring new KMD");
+		} else if (! isForLegacySdes &&
+				kmdToUse.mki().getValue() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().getValue()) {
+			logWarn(FNC_NAME, "received new inbound MIKEY KMD but MKI is unchanged - ignoring new KMD");
 		} else if (kmdToUse.ssrcId() != tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId()) {
 			logWarn(FNC_NAME, "received new inbound KMD but SSRC has been modified - ignoring new KMD");
 		} else {
-			tmpSiSs.getKmdInboundNextPtr().setKmd(kmdToUse, rscUrlObj.idSubStream);
+			tmpSiSs.getKmdInboundNextPtr().setKmd(kmdToUse, idSubStream);
 		}
 	}
 
@@ -944,11 +947,12 @@ public final class RtspProtoHighRequestConsumer {
 
 	private void handleBody(
 				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws RtspProtoRtspParamUnknownException, RtspProtoSdpException {
+			) throws RtspProtoRtspParamUnknownException, RtspProtoSdpException, RtspProtoInvalidRequestException {
 		switch (messageType) {
 			case ANNOUNCE:
-				handleBody_announce(outputDataRequ);
+				handleBody_announce(ioSetupInfosStream, outputDataRequ);
 				break;
 			case SET_PARAMETER:
 				handleBody_setParameter(outputDataRequ);
@@ -956,7 +960,12 @@ public final class RtspProtoHighRequestConsumer {
 		}
 	}
 
-	private void handleBody_announce(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoSdpException {
+	private void handleBody_announce(
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoSdpException, RtspProtoInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".handleBody_announce()";
+
 		sdpConsumerInterface.parseUpdatedSdpFromAnnounce(outputDataRequ.requAnnouncedSdpRaw, outputDataRequ.requAnnouncedSdpStc);
 	}
 

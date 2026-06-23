@@ -15,6 +15,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
@@ -27,6 +28,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -53,7 +55,6 @@ public final class RtspProtoRequestInputSvc {
 	 * @param cfgSupportedMessageTypes Supported message types (can but shouldn't be empty)
 	 * @param cfgSupportedFeatures Features that the local host supports if it is not a proxy (can be empty)
 	 * @param cfgProxySupportedFeatures Features that the local host - which is a proxy - supports (can be empty)
-	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs (only required for requests from the client)
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param rtspSessionInfo RTSP session info
@@ -70,7 +71,6 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
-				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspRcvd,
 				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -123,7 +123,6 @@ public final class RtspProtoRequestInputSvc {
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
-				cfgSubStreamIdPrefix,
 				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
 				availableStreamsInterface,
@@ -226,9 +225,17 @@ public final class RtspProtoRequestInputSvc {
 		RtspProtoDataCntCseqRequInp ioCseqRequ = new RtspProtoDataCntCseqRequInp();
 		RtspProtoDataCntStreamTpMain inpStreamTpMain = new RtspProtoDataCntStreamTpMain();
 		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
+		Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds = new HashSet<>();
 
 		// load data from Session Info
-		loadFromSessionInfo(currentIdSession, ioCseqRequ, inpStreamTpMain, ioSetupInfosStream, currentSessionState);
+		loadFromSessionInfo(
+				currentIdSession,
+				ioCseqRequ,
+				inpStreamTpMain,
+				inpAvailableSubStreamIds,
+				ioSetupInfosStream,
+				currentSessionState
+			);
 
 		// process the request - without checking authentication
 		RtspRequestBasics resObj = rtspProtoHighRequestConsumer.processRequest(
@@ -237,6 +244,7 @@ public final class RtspProtoRequestInputSvc {
 				clientIpAddr,
 				ioCseqRequ,
 				ioSetupInfosStream,
+				inpAvailableSubStreamIds,
 				inpStreamTpMain,
 				msgStructured,
 				outputDataRequ
@@ -322,6 +330,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoDataCntCseqRequInp cseqRequ,
 				@NonNull RtspProtoDataCntStreamTpMain streamTpMain,
+				@NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataCntSessionState sessionState
 			) {
@@ -335,6 +344,9 @@ public final class RtspProtoRequestInputSvc {
 		streamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
 		//
 		ioSetupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
+		//
+		availableSubStreamIds.clear();
+		availableSubStreamIds.addAll(rtspSessionInfo.getDescrAvailableSubStreamIds());
 		//
 		sessionState.setSessionState(rtspSessionInfo.getSessionState());
 	}

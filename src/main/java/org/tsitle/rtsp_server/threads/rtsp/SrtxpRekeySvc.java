@@ -1,7 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
@@ -63,7 +62,6 @@ final class SrtxpRekeySvc {
 				false,
 				cfgServerNameAndVersion,
 				"",  // @TODO make Content-Language configurable
-				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
 				rtspConfig.getIsDebugPrintRtspSent(),
 				rtspSessionInfo,

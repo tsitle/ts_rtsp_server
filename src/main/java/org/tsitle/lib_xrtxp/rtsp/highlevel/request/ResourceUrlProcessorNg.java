@@ -8,20 +8,20 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidUriException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Set;
 
 final class ResourceUrlProcessorNg {
 
-	/** SDP Control IDs (aka Sub-Stream IDs) that are available in the current session */
-	private final @NonNull Set<@NonNull String> sdpControlIdsInSession;
-	/** Prefix of Sub-Stream IDs */
-	private final @NonNull String cfgSubStreamIdPrefix;
+	/** Sub-Stream IDs that are available in the current session */
+	private final @NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds;
 	/** Full Resource URL (e.g. 'rtsp://localhost:1051/movie.stream/substreamid1234') */
 	private final @NonNull String fullRscUrlStr;
 
@@ -30,12 +30,10 @@ final class ResourceUrlProcessorNg {
 	private @NonNull String subStreamIdStr = "";
 
 	private ResourceUrlProcessorNg(
-				@NonNull String cfgSubStreamIdPrefix,
-				@NonNull Set<@NonNull String> sdpControlIdsInSession,
+				@NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds,
 				@NonNull String fullRscUrlStr
 			) {
-		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
-		this.sdpControlIdsInSession = sdpControlIdsInSession;
+		this.availableSubStreamIds = new HashSet<>(availableSubStreamIds);
 		this.fullRscUrlStr = fullRscUrlStr;
 	}
 
@@ -43,19 +41,17 @@ final class ResourceUrlProcessorNg {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull RtspProtoRscUrl parseUrlIntoRscUrlObject(
-				@NonNull String cfgSubStreamIdPrefix,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull String fullRscUrlStr,
 				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull Set<@NonNull String> sdpControlIdsInSession
+				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds
 			) throws RtspProtoInvalidUriException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdInputSourceNotFoundException {
 		RtspProtoRscUrl resObj = new RtspProtoRscUrl();
 		resObj.setUrlStr(fullRscUrlStr);
 
 		ResourceUrlProcessorNg rscUrlProcObj = new ResourceUrlProcessorNg(
-				cfgSubStreamIdPrefix,
-				sdpControlIdsInSession,
+				inpAvailableSubStreamIds,
 				fullRscUrlStr
 			);
 
@@ -72,6 +68,13 @@ final class ResourceUrlProcessorNg {
 			while (tmpPath.endsWith("/")) {
 				tmpPath = tmpPath.substring(0, tmpPath.length() - 1);
 			}
+			if (tmpPath.lastIndexOf('/') > 0) {
+				tmpPath = tmpPath.substring(tmpPath.lastIndexOf('/') + 1);
+			}
+			/*
+			 * In case that the Sub-Stream ID is present but invalid, the Input Source ID will actually be the invalid Sub-Stream ID.
+			 * But since the Input Source ID will be validated at the end of this method, that should not be a problem.
+			 */
 			resObj.idInputSource.setIdStr(tmpPath);
 		}
 
@@ -161,16 +164,13 @@ final class ResourceUrlProcessorNg {
 		}
 
 		String controlIdStr = tmpPath.substring(tmpIdxA + 1);
-		if (! sdpControlIdsInSession.contains(controlIdStr)) {
+		RtspProtoIdSubStream tmpControlIdAsSsId = RtspProtoIdSubStream.of(controlIdStr);
+		if (! availableSubStreamIds.contains(tmpControlIdAsSsId)) {
 			// the Resource URL Path does not contain a valid SDP Control ID
 			return;
 		}
-		if (! controlIdStr.startsWith(cfgSubStreamIdPrefix)) {
-			// the SDP Control ID is invalid
-			return;
-		}
 		// the Resource URL Path contains the Input Source ID and the Sub-Stream ID
-		subStreamIdStr = controlIdStr.substring(cfgSubStreamIdPrefix.length());
+		subStreamIdStr = controlIdStr;
 		rscUrlStrPathMod = rscUrlStrPathMod.substring(0, tmpIdxA);
 	}
 

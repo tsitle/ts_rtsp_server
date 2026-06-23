@@ -20,11 +20,13 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 
 	@Override
 	public @NonNull RtspProtoIdSubStream createSubStreamId(
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) {
 		return globalSessionInfo.createSubStreamId(
+				cfgSubStreamIdPrefix,
 				clientIpAddr,
 				idInputSource,
 				idStreamSource

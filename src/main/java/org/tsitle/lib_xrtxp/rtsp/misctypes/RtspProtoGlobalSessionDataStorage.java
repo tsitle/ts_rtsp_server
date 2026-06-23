@@ -56,12 +56,14 @@ public final class RtspProtoGlobalSessionDataStorage {
 	 * Create a new Sub-Stream ID.<br />
 	 * A Sub-Stream ID is unique per DESCRIBE request per Stream Source. Even if the same client makes multiple DESCRIBE
 	 * requests for the same Input and Stream Source, the Sub-Stream ID will change every time.
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
 	 * @param clientIpAddr Client's IP address
 	 * @param idInputSource Input Source ID as requested from the client per DESCRIBE request
 	 * @param idStreamSource Stream Source ID as requested from the client per DESCRIBE request
 	 * @return Unique Sub-Stream ID
 	 */
 	public @NonNull RtspProtoIdSubStream createSubStreamId(
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdStreamSource idStreamSource
@@ -84,7 +86,7 @@ public final class RtspProtoGlobalSessionDataStorage {
 		try {
 			RtspProtoIdSubStream tmpIdSub = RtspProtoIdSubStream.ofEmpty();
 			do {
-				String tmpIdStr = ipHash + "_" + HashMd5Helper.hashOfString(
+				String tmpIdStr = cfgSubStreamIdPrefix + ipHash + "_" + HashMd5Helper.hashOfString(
 						String.format("%s : %5s : %08X",
 								idInputSource.getIdStr().orElseThrow(), idStreamSource.getIdStr().orElseThrow(),
 								RandomHelper.getRandomUint32(false)),

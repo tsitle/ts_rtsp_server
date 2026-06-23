@@ -80,6 +80,15 @@ public final class RtspProtoSessionInfo {
 	/** Stream info from DESCRIBE/SETUP responses */
 	private final @NonNull RtspProtoSetupInfosStream descrSetupInfosStream = new RtspProtoSetupInfosStream();
 
+	/** Available Sub-Stream IDs from a DESCRIBE response */
+	private final @NonNull Set<@NonNull RtspProtoIdSubStream> descrAvailableSubStreamIds = new HashSet<>();
+
+	// ----------------------------------------------------------------
+
+	/** SDP structured data from DESCRIBE response */
+	private final @NonNull RtspProtoDataCntSdpStructured rhDescribeSdpStcObj = new RtspProtoDataCntSdpStructured();
+	private boolean rhDescribeSdpStcIsSet = false;
+
 	// ----------------------------------------------------------------
 
 	/** Current state of the RTSP session */
@@ -389,6 +398,35 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// --------------------------------------------------
+
+	public @NonNull Set<@NonNull RtspProtoIdSubStream> getDescrAvailableSubStreamIds() {
+		theReadLock.lock();
+		try {
+			return new HashSet<>(descrAvailableSubStreamIds);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
+		theReadLock.lock();
+		try {
+			if (! rhDescribeSdpStcIsSet) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
+			resObj.copyFrom(rhDescribeSdpStcObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoSessionState getSessionState() {
@@ -463,6 +501,9 @@ public final class RtspProtoSessionInfo {
 			streamTpMain.setIsRtspsConnection(isRtsps);
 
 			descrSetupInfosStream.clear();
+			descrAvailableSubStreamIds.clear();
+			rhDescribeSdpStcObj.clear();
+			rhDescribeSdpStcIsSet = false;
 			resourceUrlPerMtMap_nonSetup.clear();
 			sessionState = RtspProtoSessionState.INIT;
 		} finally {
@@ -690,6 +731,26 @@ public final class RtspProtoSessionInfo {
 		theWriteLock.lock();
 		try {
 			descrSetupInfosStream.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setDescrAvailableSubStreamIds(@NonNull Set<@NonNull RtspProtoIdSubStream> value) {
+		theWriteLock.lock();
+		try {
+			descrAvailableSubStreamIds.clear();
+			descrAvailableSubStreamIds.addAll(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setRhDescribeSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
+		theWriteLock.lock();
+		try {
+			rhDescribeSdpStcObj.copyFrom(sdpStructured);
+			rhDescribeSdpStcIsSet = true;
 		} finally {
 			theWriteLock.unlock();
 		}

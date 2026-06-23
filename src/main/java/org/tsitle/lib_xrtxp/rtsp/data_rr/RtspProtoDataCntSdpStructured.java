@@ -9,14 +9,13 @@ import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKdr;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public final class RtspProtoDataCntSdpStructured {
 
@@ -281,16 +280,29 @@ public final class RtspProtoDataCntSdpStructured {
 	}
 
 	/**
+	 * Find Control IDs (aka Sub-Stream ID) of all media entries.
+	 * @return Control IDs
+	 */
+	public @NonNull Set<@NonNull RtspProtoIdSubStream> findMediaEntryControlIds() {
+		return mediaEntries.stream()
+				.filter(entry -> extractMediaEntryControlId(entry).isPresent())
+				.map(entry -> extractMediaEntryControlId(entry).orElseThrow())
+				.collect(Collectors.toSet());
+	}
+
+	/**
 	 * Find the media entry for a given Control ID (aka Sub-Stream ID).
 	 * @param controlId Control ID to search for
 	 * @return Media entry
 	 */
-	public Optional<RtspProtoSdpDataMediaEntry> findMediaEntryForControlId(@NonNull String controlId) {
-		if (controlId.isBlank()) {
+	public Optional<RtspProtoSdpDataMediaEntry> findMediaEntryForControlId(@NonNull RtspProtoIdSubStream controlId) {
+		if (controlId.isEmpty()) {
 			throw new IllegalArgumentException(getClass().getSimpleName() + ": Control ID must not be blank");
 		}
 		return mediaEntries.stream()
-				.filter(entry -> extractMediaEntryControlId(entry).orElse("").equals(controlId))
+				.filter(entry -> extractMediaEntryControlId(entry)
+						.orElse(RtspProtoIdSubStream.ofEmpty())
+						.equals(controlId))
 				.findFirst();
 	}
 
@@ -299,10 +311,14 @@ public final class RtspProtoDataCntSdpStructured {
 	 * @param entry Media entry to extract the Control ID from.
 	 * @return Control ID
 	 */
-	public Optional<String> extractMediaEntryControlId(@NonNull RtspProtoSdpDataMediaEntry entry) {
+	public Optional<RtspProtoIdSubStream> extractMediaEntryControlId(@NonNull RtspProtoSdpDataMediaEntry entry) {
 		for (String tmpAttr : entry.attributes()) {
 			if (tmpAttr.toLowerCase().startsWith("control:")) {
-				return Optional.of(tmpAttr.substring("control:".length()).strip());
+				return Optional.of(
+						RtspProtoIdSubStream.of(
+								tmpAttr.substring("control:".length()).strip()
+							)
+					);
 			}
 		}
 		return Optional.empty();

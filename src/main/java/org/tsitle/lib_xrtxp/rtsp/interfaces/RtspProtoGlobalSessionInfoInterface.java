@@ -15,12 +15,14 @@ public interface RtspProtoGlobalSessionInfoInterface {
 	/**
 	 * Create a new Sub-Stream ID.<br />
 	 * The Sub-Stream ID will be globally unique.
+	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
 	 * @param idInputSource Input Source ID
 	 * @param idStreamSource Stream Source ID
 	 * @param clientIpAddr Client's IP Address
 	 * @return Sub-Stream ID
 	 */
 	@NonNull RtspProtoIdSubStream createSubStreamId(
+				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdStreamSource idStreamSource,
 				@NonNull RtspProtoIpAddr clientIpAddr
