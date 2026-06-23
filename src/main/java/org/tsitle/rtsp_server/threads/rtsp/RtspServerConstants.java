@@ -18,6 +18,7 @@ public final class RtspServerConstants {
 
 	/** Supported incoming RTSP request types of the local host */
 	public static final Set<@NonNull RtspProtoMessageType> SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES = Set.of(
+			RtspProtoMessageType.ANNOUNCE,
 			RtspProtoMessageType.DESCRIBE,
 			RtspProtoMessageType.GET_PARAMETER,
 			RtspProtoMessageType.OPTIONS,
