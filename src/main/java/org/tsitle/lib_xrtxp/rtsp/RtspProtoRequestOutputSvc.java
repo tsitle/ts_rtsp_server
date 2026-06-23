@@ -835,12 +835,13 @@ public final class RtspProtoRequestOutputSvc {
 				return false;
 			}
 			//
-			if (rtspSessionInfo.getDescrSetupInfosStream().getSubStreamIds().isEmpty()) {
+			Set<@NonNull RtspProtoIdSubStream> tmpSubStreamIds = rtspSessionInfo.getDescrSetupInfoSubStreamIds();
+			if (tmpSubStreamIds.isEmpty()) {
 				logError(fncName, "An ANNOUNCE request can only be sent when a DESCRIBE response has already been sent");
 				return false;
 			}
 			dataRequ.requAdStreamSett.setIdInputSource(dataRequ.rrRscUrl.idInputSource);
-			for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfosStream().getSubStreamIds()) {
+			for (RtspProtoIdSubStream tmpIdSs : tmpSubStreamIds) {
 				RtspProtoSetupInfoForSubStream tmpSiForSs;
 				try {
 					tmpSiForSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSs);

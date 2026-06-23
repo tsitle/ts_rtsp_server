@@ -307,6 +307,15 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	public @NonNull Set<RtspProtoIdSubStream> getDescrSetupInfoSubStreamIds() {
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getSubStreamIds();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
 	public @NonNull Set<RtspProtoRscUrl> getDescrSetupInfoRscUrls() {
 		theReadLock.lock();
 		try {
