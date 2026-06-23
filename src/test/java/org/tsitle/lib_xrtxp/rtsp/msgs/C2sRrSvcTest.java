@@ -179,18 +179,18 @@ public class C2sRrSvcTest {
 	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	private final @NonNull TestLogs logger = new TestLogs();
-	private @Nullable RtxpTcpReadWrite srvRtxpTcpReadWrite = null;
-	private @Nullable RtxpTcpReadWrite cliRtxpTcpReadWrite = null;
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
-	private @Nullable ParameterGetterSetterServerSide srvParameterGetterSetter = null;
-	private @Nullable RtspProtoSessionInfo srvSessionInfo = null;
-	private @Nullable RtspProtoSessionInfo cliSessionInfo = null;
-	private @Nullable RtspProtoRequestInputSvc srvInputSvc = null;
-	private @Nullable RtspProtoResponseOutputSvc srvOutputSvc = null;
-	private @Nullable RtspProtoRequestOutputSvc cliOutputSvc = null;
-	private @Nullable RtspProtoResponseInputSvc cliInputSvc = null;
+
+	private ParameterGetterSetterServerSide srvParameterGetterSetter = null;
+	private RtspProtoSessionInfo srvSessionInfo = null;
+	private RtspProtoRequestInputSvc srvInputSvc = null;
+	private RtspProtoResponseOutputSvc srvOutputSvc = null;
+
+	private RtspProtoSessionInfo cliSessionInfo = null;
+	private RtspProtoRequestOutputSvc cliOutputSvc = null;
+	private RtspProtoResponseInputSvc cliInputSvc = null;
 
 	C2sRrSvcTest() { }
 
@@ -221,12 +221,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_getParam_invalidKeys() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
@@ -263,14 +258,8 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_getParam_ok() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
-		Objects.requireNonNull(srvParameterGetterSetter);
 
 		RtspProtoDataCntGetSetParamNames getParamNames = new RtspProtoDataCntGetSetParamNames();
 		getParamNames.putParamName("jitter");
@@ -380,12 +369,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_options_unsuppFeature1() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_options(
@@ -416,12 +400,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_options_unsuppFeature2() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_options(
@@ -455,12 +434,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_options_ok() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_options(
@@ -498,10 +472,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_pause_wrongState() throws Exception {
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_pause("rtsp://localhost/existing_stream_no_auth");
@@ -527,10 +498,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_play_wrongState() throws Exception {
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_play("rtsp://localhost/existing_stream_no_auth");
@@ -556,10 +524,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_teardown_wrongState() throws Exception {
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_teardown("rtsp://localhost/existing_stream_no_auth");
@@ -585,12 +550,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_setParam_invalidKeys() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoDataCntGetSetParamKvs setParamKvs = new RtspProtoDataCntGetSetParamKvs();
@@ -626,12 +586,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_setParam_invalidVal() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoDataCntGetSetParamKvs setParamKvs = new RtspProtoDataCntGetSetParamKvs();
@@ -666,12 +621,7 @@ public class C2sRrSvcTest {
 
 	@Test
 	void test_setParam_ok() throws Exception {
-		Objects.requireNonNull(socketPeer);
-		Objects.requireNonNull(cliInputSvc);
-		Objects.requireNonNull(cliOutputSvc);
 		Objects.requireNonNull(cliSessionInfo);
-		Objects.requireNonNull(srvInputSvc);
-		Objects.requireNonNull(srvOutputSvc);
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoDataCntGetSetParamKvs setParamKvs = new RtspProtoDataCntGetSetParamKvs();
@@ -751,20 +701,18 @@ public class C2sRrSvcTest {
 
 		socketPeer.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
 		socketClient.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
-
-		cliRtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
-		srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
 	}
 
 	private void initObjsServer() throws Exception {
+		Objects.requireNonNull(socketPeer);
+
+		RtxpTcpReadWrite srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
+
 		srvSessionInfo = new RtspProtoSessionInfo();
 		srvParameterGetterSetter = new ParameterGetterSetterServerSide();
 		AvailableStreamsServerSide srvAvailableStreams = new AvailableStreamsServerSide();
 		RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 		UserAuthServerSide srvUserAuthSvc = new UserAuthServerSide(logger);
-
-		Objects.requireNonNull(srvRtxpTcpReadWrite);
-		Objects.requireNonNull(socketPeer);
 
 		srvSessionInfo.setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
 
@@ -789,6 +737,7 @@ public class C2sRrSvcTest {
 				srvCfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
+				"just_a_prefix",
 				true,
 				false,
 				srvSessionInfo,
@@ -805,6 +754,7 @@ public class C2sRrSvcTest {
 				"server name and version",
 				"en",
 				srvCfgSupportedMessageTypes,
+				"just_a_prefix",
 				false,
 				true,
 				false,
@@ -817,15 +767,18 @@ public class C2sRrSvcTest {
 	}
 
 	private void initObjsClient() {
-		cliSessionInfo = new RtspProtoSessionInfo();
+		Objects.requireNonNull(socketClient);
 
-		Objects.requireNonNull(cliRtxpTcpReadWrite);
+		RtxpTcpReadWrite cliRtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
+
+		cliSessionInfo = new RtspProtoSessionInfo();
 
 		cliOutputSvc = new RtspProtoRequestOutputSvc(
 				logger,
 				true,
 				"client name and version",
 				"en",
+				"",
 				false,
 				true,
 				cliSessionInfo,

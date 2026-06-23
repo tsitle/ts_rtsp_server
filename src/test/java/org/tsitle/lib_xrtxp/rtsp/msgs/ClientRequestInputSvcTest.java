@@ -130,6 +130,7 @@ public class ClientRequestInputSvcTest {
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				Set.of(),
+				"just_a_prefix",
 				false,
 				false,
 				cliSessionInfo,
