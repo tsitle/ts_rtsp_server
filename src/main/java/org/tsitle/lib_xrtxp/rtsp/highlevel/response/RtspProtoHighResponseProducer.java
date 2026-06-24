@@ -246,7 +246,6 @@ public final class RtspProtoHighResponseProducer {
 				RtspProtoRscUrl tmpRscUrlSs = new RtspProtoRscUrl();
 				tmpRscUrlSs.setUrlStr(baseRscUrl + tmpAvSs.getUrlSubPathForSubStream());
 				tmpRscUrlSs.idInputSource.copyFrom(inputDataResp.rrRscUrl.idInputSource);
-				tmpRscUrlSs.idStreamSource.copyFrom(tmpAvSs.idStreamSource);
 				tmpRscUrlSs.idSubStream.copyFrom(tmpIdSs);
 
 				outputSetupInfosStream.createAndAddSetupSubStream(

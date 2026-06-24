@@ -662,9 +662,6 @@ public final class RtspProtoHighRequestConsumer {
 		if (rscUrlObj.idInputSource.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("No Input Source ID in SETUP request");
 		}
-		if (rscUrlObj.idStreamSource.isEmpty()) {
-			throw new RtspProtoInvalidRequestException("No Stream Source ID in SETUP request");
-		}
 		if (rscUrlObj.idSubStream.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("No Sub-Stream ID in SETUP request");
 		}

@@ -22,7 +22,6 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
@@ -61,8 +60,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	private final Map<@NonNull RtspProtoIdXsrc, RtspChildThreadMng.@NonNull ChildThreadsForOneStream> childThreadsPerSsrcMap = new HashMap<>();
 
-	/** Track 'Thread-Is-Ready-For-Playback' states per stream source */
-	private final @NonNull Map<@NonNull RtspProtoIdStreamSource, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
+	/** Track 'Thread-Is-Ready-For-Playback' states per Sub-Stream */
+	private final @NonNull Map<@NonNull RtspProtoIdSubStream, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
 
 	/** Has the client requested PAUSE? */
 	private boolean isPlaybackPaused = false;
@@ -111,7 +110,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				this.rtspSessionInfo,
 				this.rtxpTcpReadWrite,
 				this,
-				availableStreamsSvc
+				availableStreamsSvc,
+				globalSessionInfoSvc
 			);
 
 		//
@@ -162,6 +162,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				availableStreamsSvc,
 				globalSessionInfoSvc,
 				this.rtspParamGetterSetterSvc,
+				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("Lavf"),  // FFplay doesn't support MIKEY
 				this.rtxpTcpReadWrite
 			);
 
@@ -260,7 +261,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 			ctfosToUse = childThreadsPerSsrcMap.get(ssrcId);
 		} else {
 			for (RtspProtoRscUrl tmpRscUrl : rtspSessionInfo.getDescrSetupInfoRscUrls()) {
-				if (! rtspChildThreadMng.ctfosMapContainsKey(tmpRscUrl.idStreamSource)) {
+				if (! rtspChildThreadMng.ctfosMapContainsKey(tmpRscUrl.idSubStream)) {
 					continue;
 				}
 				try {
@@ -270,7 +271,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				} catch (RtspProtoSessionInfoException e) {
 					continue;
 				}
-				ctfosToUse = rtspChildThreadMng.getCtfosMapValue(tmpRscUrl.idStreamSource);
+				ctfosToUse = rtspChildThreadMng.getCtfosMapValue(tmpRscUrl.idSubStream);
 				childThreadsPerSsrcMap.put(ssrcId.clone(), ctfosToUse);
 				break;
 			}
@@ -292,14 +293,14 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 	}
 
 	@Override
-	public synchronized void cbNotifyThreadReady(@NonNull RtspProtoIdStreamSource idStreamSource) {
-		threadReadyStates.put(idStreamSource, true);
+	public synchronized void cbNotifyThreadReady(@NonNull RtspProtoIdSubStream idSubStream) {
+		threadReadyStates.put(idSubStream, true);
 	}
 
 	@Override
 	public synchronized @NonNull Boolean cbThreadMayStartPlayback() {
 		boolean areAllReady = true;
-		for (RtspProtoIdStreamSource tmpIdSs : rtspSessionInfo.getDescrSetupInfoStreamSourceIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfoSubStreamIds()) {
 			if (! threadReadyStates.getOrDefault(tmpIdSs, false)) {
 				areAllReady = false;
 				break;
@@ -334,7 +335,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;
 		}
-		for (RtspProtoIdStreamSource tmpIdSs : rtspSessionInfo.getDescrSetupInfoStreamSourceIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfoSubStreamIds()) {
 			if (! rtspChildThreadMng.ctfosMapContainsKey(tmpIdSs)) {
 				continue;
 			}

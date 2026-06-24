@@ -102,9 +102,6 @@ final class ResourceUrlProcessorNg {
 				throw new RtspProtoInvalidUriException("Input Source ID resolved from Sub-Stream ID does not match");
 			}
 			resObj.idInputSource.copyFrom(tmpIdIs);
-			resObj.idStreamSource.copyFrom(
-					globalSessionInfoInterface.getStreamSourceIdBySubStreamId(resObj.idSubStream, clientIpAddr)
-				);
 		}
 
 		if (resObj.idInputSource.isEmpty()) {

@@ -10,7 +10,6 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlExcep
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
@@ -306,15 +305,6 @@ public final class RtspProtoSessionInfo {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public @NonNull Set<RtspProtoIdStreamSource> getDescrSetupInfoStreamSourceIds() {
-		theReadLock.lock();
-		try {
-			return descrSetupInfosStream.getStreamSourceIds();
-		} finally {
-			theReadLock.unlock();
-		}
-	}
 
 	public @NonNull Set<RtspProtoIdSubStream> getDescrSetupInfoSubStreamIds() {
 		theReadLock.lock();

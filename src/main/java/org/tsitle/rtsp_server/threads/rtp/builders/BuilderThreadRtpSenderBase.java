@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
@@ -37,6 +38,8 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comIdStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParamsCommon.setIdStreamSource(v); return self(); }
 
+	public B comIdSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParamsCommon.setIdSubStream(v); return self(); }
+
 	public B comSsrcId(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcId(v); return self(); }
 
 	public B comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return self(); }
@@ -65,7 +68,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 		return self();
 	}
 
-	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdStreamSource> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
+	public B comCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdSubStream> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return self(); }
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }
 
 	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }

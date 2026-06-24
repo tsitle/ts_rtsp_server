@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
@@ -94,9 +95,13 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	private @NonNull RtspProtoIdSession debugSessionId = RtspProtoIdSession.ofEmpty();
 	private boolean isSetDebugSessionId;
 
-	/** Stream ID - not the SSRC */
+	/** Stream Source ID - not the SSRC */
 	private @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 	private boolean isSetIdStreamSource;
+
+	/** Sub-Stream ID */
+	private @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
+	private boolean isSetIdSubStream;
 
 	/** RTSP Synchronization Source Identifier of the stream */
 	private @NonNull RtspProtoIdXsrc ssrcId = RtspProtoIdXsrc.ofEmpty();
@@ -137,6 +142,13 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		this.idStreamSource.copyFrom(idStreamSource);
 		this.idStreamSource.writeProtect();
 		this.isSetIdStreamSource = true;
+	}
+
+	public @NonNull RtspProtoIdSubStream getIdSubStream() { return idSubStream; }
+	public void setIdSubStream(@NonNull RtspProtoIdSubStream idSubStream) {
+		this.idSubStream.copyFrom(idSubStream);
+		this.idSubStream.writeProtect();
+		this.isSetIdSubStream = true;
 	}
 
 	public @NonNull RtspProtoIdXsrc getSsrcId() { return ssrcId.clone(); }
@@ -213,6 +225,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 			//
 			clone.debugSessionId = debugSessionId.clone();
 			clone.idStreamSource = idStreamSource.clone();
+			clone.idSubStream = idSubStream.clone();
 			clone.ssrcId = ssrcId.clone();
 			clone.transport = transport.clone();
 			clone.crypto = crypto.clone();
@@ -228,7 +241,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	private void checkAllParamsSet() {
 		requireIsSet(isSetLogMsgInterface, "logMsgInterface");
 		requireIsSet(isSetDebugSessionId, "debugSessionId");
-		requireIsSet(isSetIdStreamSource, "streamSourceId");
+		requireIsSet(isSetIdStreamSource, "idStreamSource");
+		requireIsSet(isSetIdSubStream, "idSubStream");
 
 		requireIsSet(isSetSsrcId, "ssrcId");
 
@@ -257,6 +271,13 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		requireNonNull(debugSessionId, "debugSessionId");
 		if (debugSessionId.isEmpty()) {
 			throw new IllegalArgumentException(errPrefix + "debugSessionId must not be empty");
+		}
+
+		if (idStreamSource.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "idStreamSource must not be empty");
+		}
+		if (idSubStream.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "idSubStream must not be empty");
 		}
 
 		if (ssrcId.isEmpty()) {

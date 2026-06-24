@@ -532,7 +532,7 @@ public abstract class ThreadRtpSenderBase<
 	private void waitForParallelThreadToStart() throws InterruptedException, RtpThreadsDidNotStartException {
 		final String FNC_NAME = getClass().getSimpleName() + ".waitForParallelThreadToStart()";
 
-		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getIdStreamSource());
+		paramsCommon.getCbNotifyThreadReady().orElseThrow().accept(paramsCommon.getIdSubStream());
 		//logDebug(FNC_NAME, "Parallel thread notified");
 
 		int timeoutCnt = 0;

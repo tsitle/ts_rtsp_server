@@ -132,34 +132,25 @@ public final class RtspProtoRequestOutputSvc {
 	 * ANNOUNCE updates the session description in real-time.<br />
 	 * <b>Note:</b> This is only allowed for Server->Client requests.
 	 * @param resourceUrl The Resource URL
-	 * @param idInputSource The Input Source ID
 	 * @return The message type
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If there is an I/O exception
 	 */
-	public @NonNull RtspProtoMessageType sendRequest_announce(
-				@NonNull String resourceUrl,
-				@NonNull RtspProtoIdInputSource idInputSource
-			) throws TcpSocketClosedException, TcpSocketIoException {
+	public @NonNull RtspProtoMessageType sendRequest_announce(@NonNull String resourceUrl)
+			throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
 		if (isRequestFromClient) {
 			throw new IllegalArgumentException("This method is only allowed for Server->Client requests");
 		}
 
-		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
-		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
-		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
-
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
-
-		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
 
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.ANNOUNCE,
-				dummyClientCredentials,
-				internRequArgs
+				resourceUrl,
+				dummyClientCredentials
 			);
 	}
 
@@ -569,7 +560,6 @@ public final class RtspProtoRequestOutputSvc {
 	 * <b>Note:</b> This can only work if the server supports the legacy SDES format and ANNOUNCE.<br />
 	 * <b>Note:</b> This is only allowed for Client->Server requests.
 	 * @param resourceUrl The Resource URL
-	 * @param idInputSource The Input Source ID
 	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
@@ -577,7 +567,6 @@ public final class RtspProtoRequestOutputSvc {
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(
 				@NonNull String resourceUrl,
-				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpInitialOutboundSdes()";
@@ -588,7 +577,6 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
-		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
@@ -657,7 +645,6 @@ public final class RtspProtoRequestOutputSvc {
 	 * This will issue an ANNOUNCE request.<br />
 	 * <b>Note:</b> This can only work if the remote host supports the legacy SDES format and ANNOUNCE.
 	 * @param resourceUrl The Resource URL
-	 * @param idInputSource The Input Source ID
 	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
@@ -665,14 +652,12 @@ public final class RtspProtoRequestOutputSvc {
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
-				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
-		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
 
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
@@ -833,14 +818,15 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		internRequArgs.inputDataRequ.writeProtect();
 
-		if (requestMessageType == RtspProtoMessageType.ANNOUNCE &&
-				internRequArgs.inputDataRequ.rrRscUrl.idInputSource.isEmpty()) {
-			logError(fncName, "Input Source not found");
-			return requestMessageType;
-		}
-
 		//
 		RtspProtoDataRequest ioDataRequCopy = new RtspProtoDataRequest(internRequArgs.inputDataRequ);
+
+		//
+		// @TODO Parse URL
+		/*if (ioDataRequCopy.rrRscUrl.idInputSource.isEmpty()) {
+			logError(fncName, "Input Source ID not found");
+			return requestMessageType;
+		}*/
 
 		// load data from Session Info
 		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy)) {
@@ -933,7 +919,6 @@ public final class RtspProtoRequestOutputSvc {
 					return false;
 				}
 				RtspProtoAdSettingsForSubStream tmpAdSettForSs = new RtspProtoAdSettingsForSubStream();
-				tmpAdSettForSs.idStreamSource.copyFrom(tmpSiForSs.getRscUrlSubStreamPtr().idStreamSource);
 				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
 				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
 				final String tmpOutRscUrlSubPath = tmpIdSs.getIdStr().orElseThrow();
@@ -968,7 +953,7 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// store the Resource URL object
-		if (isRequestFromClient) {
+		if (isRequestFromClient && requestMessageType != RtspProtoMessageType.SETUP) {
 			rtspSessionInfo.putResourceUrlForMt_nonSetup(requestMessageType, dataRequ.rrRscUrl);
 		}
 

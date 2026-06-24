@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -32,6 +33,8 @@ public class BuilderThreadRtcp {
 		public Builder debugSessionId(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
 
 		public Builder idStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParams.setIdStreamSource(v); return this; }
+
+		public Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }
 
 		public Builder ssrcId(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
 
