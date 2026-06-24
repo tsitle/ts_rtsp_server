@@ -20,13 +20,9 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
@@ -175,7 +171,7 @@ public class S2cRrSvcTest {
 	private RtspProtoResponseOutputSvc srvRespOutputSvc = null;
 
 	private final Map<ClientType, String> cliUserAgent = new HashMap<>() {{
-			put(ClientType.SDES, "LavfEmulated/0.9");
+			put(ClientType.SDES, "client with sdes/0.9");
 			put(ClientType.MIKEY, "ModernClient/98.1.2");
 		}};
 	private final Map<ClientType, RtxpTcpReadWrite> cliRtxpTcpReadWrite = new HashMap<>();
@@ -233,10 +229,24 @@ public class S2cRrSvcTest {
 
 	@Test
 	void test_announce_ok_withCryptoSdes() throws Exception {
+		final ClientType ct = ClientType.SDES;
+
 		// client sends DESCRIBE request to server
-		doDescribe(ClientType.SDES, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		doDescribe(ct, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
+		// @TODO sendRequest_srtxpInitialOutboundSdes()
+		// client sends SETUP requests to server
+		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfo.get(ct).getDescrAvailableSubStreamIds()) {
+			doSetup(
+					ct,
+					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
+							tmpIdSubStream.getIdStr().orElse("-unset-"),
+					true
+				);
+		}
 		// server sends OPTIONS request to client
-		doOptions(ClientType.SDES);
+		doOptions(ct);
 		// server sends ANNOUNCE request to client
 		doAnnounce_withCryptoSdes();
 	}
@@ -245,10 +255,22 @@ public class S2cRrSvcTest {
 
 	@Test
 	void test_setParam_ok_withCryptoMikey() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+
 		// client sends DESCRIBE request to server
-		doDescribe(ClientType.MIKEY, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		doDescribe(ct, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		// client sends SETUP requests to server
+		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfo.get(ct).getDescrAvailableSubStreamIds()) {
+			doSetup(
+					ct,
+					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
+							tmpIdSubStream.getIdStr().orElse("-unset-"),
+					true
+				);
+		}
 		// server sends OPTIONS request to client
-		doOptions(ClientType.MIKEY);
+		doOptions(ct);
 		// server sends SET_PARAMETER request to client
 		doSetParam_withCryptoMikey();
 	}
@@ -274,6 +296,40 @@ public class S2cRrSvcTest {
 
 		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
 
+		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvSessionInfo.getDescrAvailableSubStreamIds().size());
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse(mt);
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+
+		assertEquals(2, cliSessionInfo.get(ct).getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
+	}
+
+	private void doSetup(ClientType ct, @NonNull String resourceUrlSubStream, boolean useTransportUdp) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_setup(
+				resourceUrlSubStream,
+				useTransportUdp
+			);
+		assertEquals(RtspProtoMessageType.SETUP, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
+
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse(mt);
@@ -286,8 +342,7 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(srvSessionInfo);
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_announce(
-				"rtsp://localhost/existing_stream_no_auth_no_encr",
-				RtspProtoIdInputSource.of("existing_stream_no_auth_no_encr")
+				"rtsp://localhost/existing_stream_no_auth_no_encr"
 			);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
 
@@ -350,6 +405,12 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
+		// ----------------------------------------------------
+
+		assertEquals(2, cliSessionInfo.get(ct).getDescrSetupInfoSubStreamIds().size());
+
+		// ----------------------------------------------------
+
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
 
 		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
@@ -376,8 +437,12 @@ public class S2cRrSvcTest {
 				RtspProtoSdpMediaType.VIDEO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		RtspProtoIdXsrc dummySsrc = RtspProtoIdXsrc.of(0x12345678L);  // usually we would need the SSRC from the SETUP response
-		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(tmpMediaEntry.get(), dummySsrc);
+		RtspProtoIdSubStream tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
+				tmpMediaEntry.get(),
+				cliSessionInfo.get(ct).getDescrSetupInfoSsrcBySubStreamsId(tmpIdSs)
+			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
 		assertEquals(2, tmpSrtxpKmd.get().getMetaTagForLegacySdes().orElseThrow());
@@ -386,8 +451,12 @@ public class S2cRrSvcTest {
 				RtspProtoSdpMediaType.AUDIO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		dummySsrc = RtspProtoIdXsrc.of(0x9ABCDEF0L);  // usually we would need the SSRC from the SETUP response
-		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(tmpMediaEntry.get(), dummySsrc);
+		tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
+				tmpMediaEntry.get(),
+				cliSessionInfo.get(ct).getDescrSetupInfoSsrcBySubStreamsId(tmpIdSs)
+			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
 		assertEquals(2, tmpSrtxpKmd.get().getMetaTagForLegacySdes().orElseThrow());
@@ -409,6 +478,12 @@ public class S2cRrSvcTest {
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
+
+		// ----------------------------------------------------
+
+		assertEquals(2, cliSessionInfo.get(ct).getDescrSetupInfoSubStreamIds().size());
+
+		// ----------------------------------------------------
 
 		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
 		for (RtspProtoIdSubStream tmpIdSubStream : srvSessionInfo.getDescrSetupInfoSubStreamIds()) {
@@ -474,6 +549,7 @@ public class S2cRrSvcTest {
 		UserAuthServerSide srvUserAuthSvc = new UserAuthServerSide();
 
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);
 
 		Set<String> cfgSupportedFeatures = Set.of();
 		Set<String> cfgProxySupportedFeatures = Set.of();
@@ -509,6 +585,7 @@ public class S2cRrSvcTest {
 				srvAvailableStreams,
 				srvGlobalSessionInfoSvc,
 				null,
+				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("client with sdes"),
 				srvRtxpTcpReadWrite
 			);
 	}
@@ -607,6 +684,7 @@ public class S2cRrSvcTest {
 				true,
 				false,
 				Objects.requireNonNull(cliSessionInfo.get(ct)),
+				null,
 				null,
 				null,
 				null,

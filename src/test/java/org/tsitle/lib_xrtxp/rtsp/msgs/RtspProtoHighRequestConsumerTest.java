@@ -847,7 +847,6 @@ class RtspProtoHighRequestConsumerTest {
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
-		assertTrue(requBasics.rscUrl.idStreamSource.isEmpty());
 		assertTrue(requBasics.rscUrl.idSubStream.isEmpty());
 	}
 
@@ -891,7 +890,6 @@ class RtspProtoHighRequestConsumerTest {
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
-		assertTrue(requBasics.rscUrl.idStreamSource.isEmpty());
 		assertTrue(requBasics.rscUrl.idSubStream.isEmpty());
 	}
 
@@ -937,7 +935,6 @@ class RtspProtoHighRequestConsumerTest {
 
 		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
 		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));
-		assertEquals("exists_12345_streamsource", requBasics.rscUrl.idStreamSource.getIdStr().orElse("-unset-"));
 		assertEquals(generatedSubStreamId, requBasics.rscUrl.idSubStream);
 		assertTrue(outputDataRequ.rrStreamTpMain.getForceRtpRtcpEncryption());
 	}
@@ -1088,7 +1085,6 @@ class RtspProtoHighRequestConsumerTest {
 			RtspProtoRscUrl tmpRscUrlObj = new RtspProtoRscUrl();
 			tmpRscUrlObj.setUrlStr(inputMsgStructured.resourceUrl);
 			tmpRscUrlObj.idInputSource = RtspProtoIdInputSource.of("someInSo");
-			tmpRscUrlObj.idStreamSource = RtspProtoIdStreamSource.of("someStSo");
 			tmpRscUrlObj.idSubStream = generatedSubStreamId;
 			ioSetupInfosStream.createAndAddSetupSubStream(
 					tmpRscUrlObj,

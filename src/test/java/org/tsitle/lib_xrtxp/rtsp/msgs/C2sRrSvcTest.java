@@ -761,6 +761,7 @@ public class C2sRrSvcTest {
 				srvAvailableStreams,
 				srvGlobalSessionInfoSvc,
 				srvParameterGetterSetter,
+				null,
 				srvRtxpTcpReadWrite
 			);
 	}

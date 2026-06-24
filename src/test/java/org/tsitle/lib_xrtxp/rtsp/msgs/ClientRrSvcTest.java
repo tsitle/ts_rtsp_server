@@ -329,6 +329,7 @@ public class ClientRrSvcTest {
 				null,
 				null,
 				parameterGetterSetter,
+				null,
 				rtxpTcpReadWrite
 			);
 	}
