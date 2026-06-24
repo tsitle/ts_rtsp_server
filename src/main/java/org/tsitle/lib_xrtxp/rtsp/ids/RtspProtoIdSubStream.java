@@ -28,6 +28,18 @@ public final class RtspProtoIdSubStream extends RtspProtoBaseIdString implements
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFrom(@NonNull RtspProtoIdSubStream other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		setIdStr(other.getIdStr().orElse(""));
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public RtspProtoIdSubStream clone() {
 		return (RtspProtoIdSubStream)super.clone();

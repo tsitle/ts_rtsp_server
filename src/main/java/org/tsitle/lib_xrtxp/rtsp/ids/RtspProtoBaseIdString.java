@@ -9,7 +9,7 @@ import java.util.Optional;
  */
 public class RtspProtoBaseIdString implements Cloneable {
 
-	private boolean isWriteProtected = false;
+	protected boolean isWriteProtected = false;
 
 	private @NonNull String idStr = "";
 
@@ -46,16 +46,6 @@ public class RtspProtoBaseIdString implements Cloneable {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		idStr = "";
-	}
-
-	public void copyFrom(@NonNull RtspProtoBaseIdString other) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		if (other == this) {
-			return;
-		}
-		idStr = other.idStr;
 	}
 
 	public boolean isReadOnly() {

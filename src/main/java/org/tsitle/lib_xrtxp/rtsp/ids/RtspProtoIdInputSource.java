@@ -28,6 +28,18 @@ public final class RtspProtoIdInputSource extends RtspProtoBaseIdString implemen
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFrom(@NonNull RtspProtoIdInputSource other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		setIdStr(other.getIdStr().orElse(""));
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public RtspProtoIdInputSource clone() {
 		return (RtspProtoIdInputSource)super.clone();

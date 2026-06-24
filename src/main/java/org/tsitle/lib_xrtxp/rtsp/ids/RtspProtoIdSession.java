@@ -28,6 +28,18 @@ public final class RtspProtoIdSession extends RtspProtoBaseIdString implements C
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFrom(@NonNull RtspProtoIdSession other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		setIdStr(other.getIdStr().orElse(""));
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public RtspProtoIdSession clone() {
 		return (RtspProtoIdSession)super.clone();
