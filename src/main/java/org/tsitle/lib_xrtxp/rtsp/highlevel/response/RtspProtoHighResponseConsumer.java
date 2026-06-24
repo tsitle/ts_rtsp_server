@@ -169,7 +169,7 @@ public class RtspProtoHighResponseConsumer {
 		if (! currentIdSession.isEmpty() && ! tmpSessionId.equals(currentIdSession)) {
 			throw new RtspProtoInvalidSessionIdException();
 		}
-		if (isResponseFromClient) {
+		if (isResponseFromClient || outputDataResp.rrIdSession.isEmpty()) {
 			outputDataResp.rrIdSession.copyFrom(tmpSessionId);
 		}
 

@@ -138,7 +138,6 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		//
-		outputDataRequ.rrIdSession.copyFrom(currentIdSession);
 		outputDataRequ.requRtspSessionState.copyFrom(currentSessionState);
 		outputDataRequ.rrClientIpAddr.copyFrom(clientIpAddr);
 		outputDataRequ.rrStreamTpMain.copyFrom(inpStreamTpMain);
@@ -235,7 +234,7 @@ public final class RtspProtoHighRequestConsumer {
 			return RtspProtoStatusCode.BAD_REQUEST;
 		}
 		try {
-			checkSessionId(currentIdSession, input);
+			checkAndUpdateSessionId(currentIdSession, input, outputDataRequ);
 		} catch (RtspProtoInvalidRequestException e) {
 			logWarn(fncName, e.getMessage() + logMsgSuffix);
 			return RtspProtoStatusCode.SESSION_NOT_FOUND;
@@ -300,30 +299,48 @@ public final class RtspProtoHighRequestConsumer {
 		preProcessedHeaders.add(RtspHeaderKey.CSEQ);
 	}
 
-	private void checkSessionId(
+	private void checkAndUpdateSessionId(
 				@NonNull RtspProtoIdSession currentIdSession,
-				@NonNull RtspProtoHighMsgStructuredRequest input
+				@NonNull RtspProtoHighMsgStructuredRequest input,
+				@NonNull RtspProtoDataRequest outputDataRequ
 			) throws RtspProtoInvalidRequestException {
+		Optional<RtspProtoIdSession> tmpOptHeaderSid = input.getHeaderSessionId();
+
 		switch (input.messageType) {
 			case RtspProtoMessageType.GET_PARAMETER:
 			case RtspProtoMessageType.PAUSE:
 			case RtspProtoMessageType.PLAY:
 			case RtspProtoMessageType.SET_PARAMETER:
+			case RtspProtoMessageType.SETUP:
 			case RtspProtoMessageType.TEARDOWN:
 				if (! currentIdSession.isEmpty()) {
-					Optional<RtspProtoIdSession> tmpOptHeaderSid = input.getHeaderSessionId();
 					if (isRequestFromClient && tmpOptHeaderSid.isEmpty()) {
 						throw new RtspProtoInvalidRequestException("Missing Session header");
 					}
 					if (tmpOptHeaderSid.isPresent() && ! tmpOptHeaderSid.get().equals(currentIdSession)) {
 						throw new RtspProtoInvalidRequestException("Invalid Session ID");
 					}
-				} else if (input.getHeaderSessionId().isPresent()) {
+				} else if (isRequestFromClient && input.getHeaderSessionId().isPresent()) {
 					throw new RtspProtoInvalidRequestException("Session header present when not expected");
 				}
 				break;
 			default:
 				break;
+		}
+
+		//
+		if (! isRequestFromClient) {
+			if (currentIdSession.isEmpty() && tmpOptHeaderSid.isPresent()) {
+				outputDataRequ.rrIdSession.copyFrom(tmpOptHeaderSid.get());
+			} else if (! currentIdSession.isEmpty() && tmpOptHeaderSid.isPresent() &&
+					! tmpOptHeaderSid.get().equals(currentIdSession)) {
+				throw new RtspProtoInvalidRequestException("Invalid Session ID");
+			}
+		}
+
+		//
+		if (outputDataRequ.rrIdSession.isEmpty() && ! currentIdSession.isEmpty()) {
+			outputDataRequ.rrIdSession.copyFrom(currentIdSession);
 		}
 
 		//

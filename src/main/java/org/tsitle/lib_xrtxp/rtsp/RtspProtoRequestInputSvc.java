@@ -288,9 +288,10 @@ public final class RtspProtoRequestInputSvc {
 		}
 
 		// update data in Session Info
-		if (! (resObj.isValid() && updateSessionInfo_success(resObj, outputDataRequ.rrStreamTpMain, ioSetupInfosStream))) {
+		if (! resObj.isValid()) {
 			return resObj;
 		}
+		updateSessionInfo_success(resObj, outputDataRequ, ioSetupInfosStream);
 
 		//
 		logDebug(fncName, String.format("Received %s request (CSeq=%d)",
@@ -371,21 +372,21 @@ public final class RtspProtoRequestInputSvc {
 		}
 	}
 
-	private boolean updateSessionInfo_success(
+	private void updateSessionInfo_success(
 				@NonNull RtspRequestBasics requBasics,
-				@NonNull RtspProtoDataCntStreamTpMain streamTpMain,
+				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoSetupInfosStream setupInfosStream
 			) {
-		if (streamTpMain.getForceRtpRtcpEncryption()) {  // only update one-way
+		if (dataRequ.rrStreamTpMain.getForceRtpRtcpEncryption()) {  // only update one-way
 			rtspSessionInfo.setStreamTpMainForceRtpRtcpEncryption();
 		}
-		if (streamTpMain.getRtpRtcpEncryptionRequired()) {  // only update one-way
+		if (dataRequ.rrStreamTpMain.getRtpRtcpEncryptionRequired()) {  // only update one-way
 			rtspSessionInfo.setStreamTpMainRtpRtcpEncryptionRequired();
 		}
-		if (streamTpMain.getIsTransportUdp()) {  // only update one-way
+		if (dataRequ.rrStreamTpMain.getIsTransportUdp()) {  // only update one-way
 			rtspSessionInfo.setStreamTpMainIsTransportUdp();
 		}
-		if (streamTpMain.getIsTransportSrtpSrtcp()) {  // only update one-way
+		if (dataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp()) {  // only update one-way
 			rtspSessionInfo.setStreamTpMainIsTransportSrtpSrtcp();
 		}
 		//
@@ -395,7 +396,12 @@ public final class RtspProtoRequestInputSvc {
 			rtspSessionInfo.putResourceUrlForMt_nonSetup(requBasics.messageType, requBasics.rscUrl);
 		}
 
-		return true;
+		//
+		if (! isRequestFromClient && rtspSessionInfo.getIdSession().isEmpty()) {
+			if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataRequ.rrIdSession.isEmpty())) {
+				rtspSessionInfo.setSessionId(dataRequ.rrIdSession);
+			}
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
