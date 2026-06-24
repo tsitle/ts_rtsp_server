@@ -254,7 +254,19 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void test_setParam_ok_withCryptoMikey() throws Exception {
+	void test_setParam_ok_withCryptoMikey_udp() throws Exception {
+		do_setParam_ok_withCryptoMikey(true);
+	}
+
+	@Test
+	void test_setParam_ok_withCryptoMikey_tcp() throws Exception {
+		do_setParam_ok_withCryptoMikey(false);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	void do_setParam_ok_withCryptoMikey(boolean useTransportUdp) throws Exception {
 		final ClientType ct = ClientType.MIKEY;
 
 		// client sends DESCRIBE request to server
@@ -266,7 +278,7 @@ public class S2cRrSvcTest {
 					ct,
 					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
 							tmpIdSubStream.getIdStr().orElse("-unset-"),
-					true
+					useTransportUdp
 				);
 		}
 		// server sends OPTIONS request to client
@@ -274,9 +286,6 @@ public class S2cRrSvcTest {
 		// server sends SET_PARAMETER request to client
 		doSetParam_withCryptoMikey();
 	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
 
 	private void doDescribe(ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -422,7 +431,6 @@ public class S2cRrSvcTest {
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
 				"rtsp://localhost/existing_stream_no_auth_with_encr",
-				RtspProtoIdInputSource.of("existing_stream_no_auth_with_encr"),
 				kmdsOutbound
 			);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
