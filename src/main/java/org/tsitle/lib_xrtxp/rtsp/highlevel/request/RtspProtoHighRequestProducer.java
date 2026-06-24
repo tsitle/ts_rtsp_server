@@ -8,6 +8,8 @@ import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsForSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoAuthDigest;
@@ -56,42 +58,41 @@ public final class RtspProtoHighRequestProducer {
 
 	public @NonNull RtspProtoHighMsgStructuredRequest buildRequest(
 				@NonNull RtspProtoMessageType requestMessageType,
-				@Nullable RtspProtoIdSubStream idSubStream,
-				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspProtoKmdsStream kmdsOutbound
+				@Nullable RtspProtoIdSubStream inputIdSubStream,
+				@NonNull RtspProtoDataRequest ioDataRequ,
+				@Nullable RtspProtoKmdsStream kmdsOutboundForAnnounceSetParam,
+				boolean setupUseTransportUdp
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
 
-		if (inputDataRequ.rrRscUrl.isEmpty()) {
+		if (ioDataRequ.rrRscUrl.isEmpty()) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Resource URL must be set");
 		}
-
-		inputDataRequ.writeProtect();
 
 		//
 		RtspProtoHighMsgStructuredRequest resObj = new RtspProtoHighMsgStructuredRequest();
 
-		resObj.rtspProtoVersion = inputDataRequ.getRtspProtoVersionToUse();
+		resObj.rtspProtoVersion = ioDataRequ.getRtspProtoVersionToUse();
 		resObj.statusCode = RtspProtoStatusCode.OK;
 		resObj.messageType = requestMessageType;
 
 		//
-		resObj.resourceUrl = inputDataRequ.rrRscUrl.getUrlStr();
+		resObj.resourceUrl = ioDataRequ.rrRscUrl.getUrlStr();
 
 		//
-		addCommonHeaders(inputDataRequ, resObj);
+		addCommonHeaders(ioDataRequ, resObj);
 
 		//
 		switch (requestMessageType) {
-			case ANNOUNCE -> buildRequest_announce(inputDataRequ, kmdsOutbound, resObj);
+			case ANNOUNCE -> buildRequest_announce(ioDataRequ, kmdsOutboundForAnnounceSetParam, resObj);
 			case DESCRIBE -> buildRequest_describe(resObj);
-			case GET_PARAMETER -> buildRequest_getParameter(inputDataRequ, resObj);
-			case OPTIONS -> buildRequest_options(inputDataRequ, resObj);
+			case GET_PARAMETER -> buildRequest_getParameter(ioDataRequ, resObj);
+			case OPTIONS -> buildRequest_options(ioDataRequ, resObj);
 			case PAUSE -> buildRequest_pause();
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(inputDataRequ, kmdsOutbound, idSubStream, resObj);
-			case SETUP -> buildRequest_setup(resObj);
+			case SET_PARAMETER -> buildRequest_setParameter(ioDataRequ, kmdsOutboundForAnnounceSetParam, inputIdSubStream, resObj);
+			case SETUP -> buildRequest_setup(setupUseTransportUdp, ioDataRequ, inputIdSubStream, resObj);
 			case TEARDOWN -> buildRequest_teardown();
 			default -> throw new RtspProtoInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
 					requestMessageType);
@@ -296,7 +297,7 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_setParameter(
 				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspProtoKmdsStream kmdsOutbound,
-				@Nullable RtspProtoIdSubStream idSubStream,
+				@Nullable RtspProtoIdSubStream inputIdSubStream,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
@@ -325,30 +326,11 @@ public final class RtspProtoHighRequestProducer {
 		if (kmdsOutbound == null) {
 			return;
 		}
-		if (idSubStream == null) {
-			throw new IllegalArgumentException(FNC_NAME + ": idSubStream must not be null when " +
+		if (inputIdSubStream == null || inputIdSubStream.isEmpty()) {
+			throw new IllegalArgumentException(FNC_NAME + ": inputIdSubStream must be set when " +
 					"setting SRTxP key management data for SET_PARAMETER request");
 		}
-		Optional<SrtxpKmd> tmpOptKmd = kmdsOutbound.getKmdBySubStreamId(idSubStream);
-		if (tmpOptKmd.isEmpty()) {
-			throw new IllegalArgumentException(FNC_NAME + ": KMD for Sub-Stream not found");
-		}
-		SrtxpKmd tmpKmd = tmpOptKmd.get();
-		if (tmpKmd.getMetaIsForLegacySdes()) {
-			throw new IllegalArgumentException(FNC_NAME + ": KMD must not be for legacy SDES key management");
-		}
-		String tmpCryptoStrB64;
-		try {
-			// modern MIKEY key management
-			tmpCryptoStrB64 = MikeyGenerator.generate(tmpKmd);
-		} catch (SrtxpSecurityException e) {
-			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
-		}
-		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.KEYMGMT);
-		entry.hdValKeymgmt.proto = RtspKeymgmtProto.MIKEY;
-		entry.hdValKeymgmt.uriStr = output.resourceUrl;
-		entry.hdValKeymgmt.dataStr = tmpCryptoStrB64;
-		output.headers.put(RtspHeaderKey.KEYMGMT, entry);
+		addKeymgmtHeader(kmdsOutbound, inputIdSubStream, output);
 	}
 
 	/**
@@ -356,7 +338,12 @@ public final class RtspProtoHighRequestProducer {
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */
-	private void buildRequest_setup(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
+	private void buildRequest_setup(
+				boolean setupUseTransportUdp,
+				@NonNull RtspProtoDataRequest ioDataRequ,
+				@Nullable RtspProtoIdSubStream inputIdSubStream,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
 
 		/*
@@ -370,11 +357,37 @@ public final class RtspProtoHighRequestProducer {
 		 *   "KeyMgmt: prot=mikey; uri=\"rtsp://example.com/fizzle/foo/substreamidf528764d_93b6207a\"; data=\"...\""
 		 */
 
-		// @TODO check if we need and have KMD
+		if (inputIdSubStream == null || inputIdSubStream.isEmpty()) {
+			throw new IllegalArgumentException(FNC_NAME + ": inputIdSubStream must be set for a SETUP request");
+		}
 
-		// @TODO set some headers
-		logError(FNC_NAME, "SETUP is not supported yet");
-		throw new RtspProtoInvalidRequestException(FNC_NAME + ": SETUP is not supported yet");
+		RtspProtoAdSettingsForSubStream tmpAdSettsForSs = ioDataRequ.requAdStreamSett
+				.getSettingsBySubStreamId(inputIdSubStream).orElseThrow(() ->
+						new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID not found in AdSettingsForSubStream")
+					);
+
+		// Transport
+		{
+			ioDataRequ.rrStreamTpMain.setIsTransportUdp(setupUseTransportUdp);
+
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.TRANSPORT);
+			hdEntry.hdValTransport.tpSubStream.setIsEncr(ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp());
+			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(! setupUseTransportUdp);
+			hdEntry.hdValTransport.tpSubStream.setIsUdp(setupUseTransportUdp);
+			hdEntry.hdValTransport.tpSubStream.setIsUnicast(true);
+			hdEntry.hdValTransport.tpMode = RtspTransportMode.PLAY;
+			// @TODO create UDP sockets or assign TCP channels
+			output.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+
+		// Keymgmt
+		/*if (ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp() && ! tmpAdSettsForSs.) {
+			RtspProtoKmdsStream kmdsOutbound;
+			// @TODO generate and store KMDs
+			//addKeymgmtHeader(kmdsOutbound, inputIdSubStream, output);
+		}*/
+
+		throw new RtspProtoInvalidRequestException("SETUP not implemented");
 	}
 
 	private void buildRequest_teardown() {
@@ -479,11 +492,41 @@ public final class RtspProtoHighRequestProducer {
 		output.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
+	private void addKeymgmtHeader(
+				@NonNull RtspProtoKmdsStream kmdsOutbound,
+				@NonNull RtspProtoIdSubStream idSubStream,
+				@NonNull RtspProtoHighMsgStructuredRequest output
+			) throws RtspProtoInvalidRequestException {
+		final String FNC_NAME = getClass().getSimpleName() + ".addKeymgmtHeader()";
+
+		Optional<SrtxpKmd> tmpOptKmd = kmdsOutbound.getKmdBySubStreamId(idSubStream);
+		if (tmpOptKmd.isEmpty()) {
+			throw new IllegalArgumentException(FNC_NAME + ": KMD for Sub-Stream not found");
+		}
+		SrtxpKmd tmpKmd = tmpOptKmd.get();
+		if (tmpKmd.getMetaIsForLegacySdes()) {
+			throw new IllegalArgumentException(FNC_NAME + ": KMD must not be for legacy SDES key management");
+		}
+		String tmpCryptoStrB64;
+		try {
+			// modern MIKEY key management
+			tmpCryptoStrB64 = MikeyGenerator.generate(tmpKmd);
+		} catch (SrtxpSecurityException e) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Could not generate MIKEY message: " + e.getMessage());
+		}
+		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.KEYMGMT);
+		entry.hdValKeymgmt.proto = RtspKeymgmtProto.MIKEY;
+		entry.hdValKeymgmt.uriStr = output.resourceUrl;
+		entry.hdValKeymgmt.dataStr = tmpCryptoStrB64;
+		output.headers.put(RtspHeaderKey.KEYMGMT, entry);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
+	@SuppressWarnings("SameParameterValue")
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}

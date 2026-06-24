@@ -6,6 +6,8 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -15,11 +17,17 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRespons
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.response.RtspProtoLowResponseConsumer;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdForSubStream;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
+import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -28,6 +36,7 @@ import java.util.Set;
 public final class RtspProtoResponseInputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean isResponseFromClient;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 
@@ -51,6 +60,7 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		this.logMsgInterface = logMsgInterface;
+		this.isResponseFromClient = isResponseFromClient;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 
@@ -122,7 +132,7 @@ public final class RtspProtoResponseInputSvc {
 		outputDataResp.writeProtect();
 
 		// update data in Session Info
-		updateSessionInfo(outputDataResp);
+		updateSessionInfo(requestMessageType, outputDataResp);
 
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",
@@ -147,7 +157,7 @@ public final class RtspProtoResponseInputSvc {
 		cseqRespInp.writeProtect();
 	}
 
-	private void updateSessionInfo(@NonNull RtspProtoDataResponse dataResp) {
+	private void updateSessionInfo(@NonNull RtspProtoMessageType requestMessageType, @NonNull RtspProtoDataResponse dataResp) {
 		if (! (rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
 			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
@@ -173,16 +183,83 @@ public final class RtspProtoResponseInputSvc {
 		if (! dataResp.getServerSoftware().isEmpty()) {
 			rtspSessionInfo.setServerSoftware(dataResp.getServerSoftware());
 		}
+
 		//
-		if (! dataResp.respDescribeSdpStc.getMediaEntries().isEmpty()) {
-			// store the available Sub-Stream IDs from a DESCRIBE response
-			Set<@NonNull RtspProtoIdSubStream> tmpMeCtrlIds = dataResp.respDescribeSdpStc.findMediaEntryControlIds();
-			if (! tmpMeCtrlIds.isEmpty()) {
-				rtspSessionInfo.setDescrAvailableSubStreamIds(tmpMeCtrlIds);
-			}
-			// store the received structured SDP data
-			rtspSessionInfo.setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
+		if (requestMessageType != RtspProtoMessageType.DESCRIBE) {
+			return;
 		}
+		if (isResponseFromClient || dataResp.respDescribeSdpStc.getMediaEntries().isEmpty()) {
+			return;
+		}
+		Set<@NonNull RtspProtoIdSubStream> tmpMeCtrlIds = dataResp.respDescribeSdpStc.findMediaEntryControlIds();
+		if (! tmpMeCtrlIds.isEmpty()) {
+			// store stream settings from a DESCRIBE response
+			RtspProtoSetupInfosStream tmpSis = new RtspProtoSetupInfosStream();
+			for (RtspProtoIdSubStream tmpMeCtrlId : tmpMeCtrlIds) {
+				buildSubStreamSettingsFromDescribeResponse(
+						requestMessageType,
+						dataResp,
+						tmpMeCtrlId,
+						tmpSis
+					);
+			}
+			rtspSessionInfo.setDescrSetupInfosStream(tmpSis);
+
+			// store the available Sub-Stream IDs from a DESCRIBE response
+			rtspSessionInfo.setDescrAvailableSubStreamIds(tmpMeCtrlIds);
+		}
+		// store the received structured SDP data
+		rtspSessionInfo.setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
+	}
+
+	private void buildSubStreamSettingsFromDescribeResponse(
+				@NonNull RtspProtoMessageType requestMessageType,
+				@NonNull RtspProtoDataResponse dataResp,
+				@NonNull RtspProtoIdSubStream idSubStream,
+				@NonNull RtspProtoSetupInfosStream outputSis
+			) {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildSubStreamSettingsFromDescribeResponse()";
+
+		RtspProtoSdpDataMediaEntry tmpMeObj = dataResp.respDescribeSdpStc.findMediaEntryForControlId(idSubStream).orElseThrow();
+
+		// get the Input Source ID
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(requestMessageType);
+		if (tmpOptRscUrl.isEmpty()) {
+			logWarn(FNC_NAME, "No Resource URL found for request message type: " + requestMessageType);
+			return;
+		}
+		if (tmpOptRscUrl.orElseThrow().idInputSource.isEmpty()) {
+			logWarn(FNC_NAME, "Resource URL for request message type " + requestMessageType + " has no idInputSource");
+			return;
+		}
+		// create the Resource URL object
+		RtspProtoRscUrl tmpMeRscUrl = new RtspProtoRscUrl();
+		Optional<String> tmpOptBaseUrl = dataResp.respDescribeSdpStc.getContentBase();
+		if (tmpOptBaseUrl.isEmpty()) {
+			logWarn(FNC_NAME, "Content-Base from SDP is empty");
+			return;
+		}
+		String tmpBaseUrl = tmpOptBaseUrl.orElseThrow();
+		if (! tmpBaseUrl.endsWith("/")) {
+			tmpBaseUrl += "/";
+		}
+		tmpMeRscUrl.setUrlStr(tmpBaseUrl + tmpOptRscUrl.orElseThrow().idInputSource.getIdStr().orElse("-unset-"));
+		tmpMeRscUrl.idInputSource.copyFrom(tmpOptRscUrl.orElseThrow().idInputSource);
+		tmpMeRscUrl.idSubStream.copyFrom(idSubStream);
+
+		// extract the KMD from the SDP Media Entry
+		RtspProtoKmdForSubStream kmdOutbound = new RtspProtoKmdForSubStream();
+		try {
+			Optional<SrtxpKmd> tmpMeKmd = dataResp.respDescribeSdpStc
+					.extractMediaEntrySrtxpKmd(tmpMeObj, RtspProtoIdXsrc.ofEmpty());
+			tmpMeKmd.ifPresent(srtxpKmd -> kmdOutbound.setKmd(srtxpKmd, idSubStream));
+		} catch (SrtxpSecurityException e) {
+			logWarn(FNC_NAME, "Extracting KMD from SDP Media Entry caught: " + e.getMessage());
+			return;
+		}
+
+		// store the Sub-Stream info
+		outputSis.createAndAddDescribeSubStream(tmpMeRscUrl, kmdOutbound);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

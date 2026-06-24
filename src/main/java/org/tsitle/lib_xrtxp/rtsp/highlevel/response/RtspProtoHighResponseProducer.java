@@ -11,8 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
@@ -20,9 +19,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryResponse;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspAuthAlgo;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
@@ -224,8 +221,8 @@ public final class RtspProtoHighResponseProducer {
 
 			// build SDP
 			sdpProducerInterface.buildSdpForDescribe(
-					inputDataResp.rrStreamTpMain.isSrtpRequired(),
 					cfgSubStreamIdPrefix,
+					inputDataResp.rrStreamTpMain.isSrtpRequired(),
 					inputDataResp.rrRscUrl.idInputSource,
 					inputDataResp.rrServerIpFromRscUrl,
 					inputDataResp.getClientUa(),

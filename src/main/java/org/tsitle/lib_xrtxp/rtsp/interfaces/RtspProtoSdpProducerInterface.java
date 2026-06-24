@@ -14,10 +14,10 @@ public interface RtspProtoSdpProducerInterface {
 	/**
 	 * Builds a Session Description (SDP) response for a DESCRIBE request.<br />
 	 * (for some examples see
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
-	 * @param requireSrtp Whether SRTP is required
+	 *   <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
+	 *   <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
+	 * @param requireSrtp Whether SRTP is required
 	 * @param idInputSource Input Source
 	 * @param serverIpOrName Server's IP address or hostname
 	 * @param clientUserAgent Client's User-Agent string
@@ -28,8 +28,8 @@ public interface RtspProtoSdpProducerInterface {
 	 * @throws RtspProtoSdpException If an error occurs during SDP generation
 	 */
 	void buildSdpForDescribe(
-				boolean requireSrtp,
 				@NonNull String cfgSubStreamIdPrefix,
+				boolean requireSrtp,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,
@@ -42,8 +42,8 @@ public interface RtspProtoSdpProducerInterface {
 	/**
 	 * Builds an updated Session Description (SDP) for an ANNOUNCE request.<br />
 	 * (for some examples see
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
-	 * <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
+	 *   <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and
+	 *   <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>)
 	 * @param requireSrtp Whether SRTP is required
 	 * @param idInputSource Input Source
 	 * @param serverIpOrName Local host's IP address or hostname

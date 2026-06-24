@@ -19,6 +19,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoDescribeRespSrtxpTypeDeciderInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
@@ -39,12 +40,22 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	private final @NonNull String cfgContentLanguage;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
+	private final @Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface;
 
+	/**
+	 * Constructor.
+	 * @param cfgServerNameAndVersion Server's software name and version
+	 * @param cfgContentLanguage Content language (can be empty)
+	 * @param availableStreamsInterface Available streams instance
+	 * @param globalSessionInfoInterface Global session info instance
+	 * @param srtxpKmdsTypeDeciderInterface SRTxP KMDs type decider instance (can be null)
+	 */
 	public RtspProtoSdpProducer(
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface
 			) {
 		if (cfgServerNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
@@ -53,6 +64,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		this.cfgContentLanguage = cfgContentLanguage;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
+		this.srtxpKmdsTypeDeciderInterface = srtxpKmdsTypeDeciderInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,8 +72,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 	@Override
 	public void buildSdpForDescribe(
-				boolean requireSrtp,
 				@NonNull String cfgSubStreamIdPrefix,
+				boolean requireSrtp,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,
@@ -75,8 +87,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		internalBuildSdp(
 				FNC_NAME,
 				true,
-				requireSrtp,
 				cfgSubStreamIdPrefix,
+				requireSrtp,
 				idInputSource,
 				serverIpOrName,
 				clientUserAgent,
@@ -111,8 +123,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		internalBuildSdp(
 				FNC_NAME,
 				false,
-				requireSrtp,
 				"",
+				requireSrtp,
 				idInputSource,
 				serverIpOrName,
 				clientUserAgent,
@@ -129,8 +141,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	private void internalBuildSdp(
 				@NonNull String fncName,
 				boolean isForDescribe,
-				boolean requireSrtp,
 				@NonNull String cfgSubStreamIdPrefixForDescribe,
+				boolean requireSrtp,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIpAddr serverIpOrName,
 				@NonNull String clientUserAgent,
@@ -396,9 +408,9 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	}
 
 	private @NonNull SrtxpKmd generateKmdsOutbound(@NonNull String clientUserAgent, @NonNull RtspProtoIdXsrc ssrcId) {
-		boolean isForLegacySdes = clientUserAgent.startsWith("Lavf");
-
-		if (! isForLegacySdes) {
+		final boolean useLegacySdesForSrtxpKmds = (srtxpKmdsTypeDeciderInterface != null &&
+				srtxpKmdsTypeDeciderInterface.useLegacySdesForSrtxpKmds(clientUserAgent));
+		if (! useLegacySdesForSrtxpKmds) {
 			// @TODO The current GStreamer version 1.24.11 is buggy and does not propagate the MKI to the SRTxP decoder.
 			// @TODO Try to fix this in GStreamer once my pending Merge Request (#11629) for the Auth Key length issue is accepted.
 			boolean isForBuggyGstreamer = clientUserAgent.startsWith("GStreamer");

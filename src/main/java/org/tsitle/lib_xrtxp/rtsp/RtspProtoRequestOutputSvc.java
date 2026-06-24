@@ -35,6 +35,17 @@ import java.util.Set;
  */
 public final class RtspProtoRequestOutputSvc {
 
+	private static class InternRequArgs {
+		@Nullable RtspProtoIdSubStream inputIdSubStream = null;
+		final @NonNull RtspProtoDataRequest inputDataRequ;
+		@Nullable RtspProtoKmdsStream kmdsOutboundForAnnounceSetParam = null;
+		boolean setupUseTransportUdp = true;
+
+		InternRequArgs(@NonNull RtspProtoDataRequest inputDataRequ) {
+			this.inputDataRequ = inputDataRequ;
+		}
+	}
+
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
@@ -93,7 +104,8 @@ public final class RtspProtoRequestOutputSvc {
 					cfgSenderAppNameAndVersion,
 					cfgContentLanguage,
 					availableStreamsInterface,
-					globalSessionInfoInterface
+					globalSessionInfoInterface,
+					null
 				);
 		}
 
@@ -141,13 +153,13 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.ANNOUNCE,
 				dummyClientCredentials,
-				null,
-				inputDataRequ,
-				null
+				internRequArgs
 			);
 	}
 
@@ -258,13 +270,13 @@ public final class RtspProtoRequestOutputSvc {
 		inputDataRequ.rrGetParamNames.copyFrom(getParameterNames);
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.GET_PARAMETER,
 				clientCredentials,
-				null,
-				inputDataRequ,
-				null
+				internRequArgs
 			);
 	}
 
@@ -339,13 +351,13 @@ public final class RtspProtoRequestOutputSvc {
 		inputDataRequ.requRequiredFeatures.putAllFeatureNames(requiredFeatures);
 		inputDataRequ.requProxyRequiredFeatures.putAllFeatureNames(proxyRequiredFeatures);
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.OPTIONS,
 				clientCredentials,
-				null,
-				inputDataRequ,
-				null
+				internRequArgs
 			);
 	}
 
@@ -483,13 +495,36 @@ public final class RtspProtoRequestOutputSvc {
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 		inputDataRequ.requSetParamValues.copyFrom(setParameterKvs);
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.SET_PARAMETER,
 				clientCredentials,
-				null,
-				inputDataRequ,
-				null
+				internRequArgs
+			);
+	}
+
+	/**
+	 * SETUP requests to establish a media session between the client and server.<br />
+	 * <b>Note:</b> If encryption is enabled for the Sub-Stream, then MIKEY will be used for SRTxP KMDs.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
+	 * @param useTransportUdp Use UDP transport?
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_setup(
+				@NonNull String resourceUrlForSubStream,
+				boolean useTransportUdp
+			) throws TcpSocketClosedException, TcpSocketIoException {
+		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
+
+		return sendRequest_setup(
+				resourceUrlForSubStream,
+				dummyClientCredentials,
+				useTransportUdp
 			);
 	}
 
@@ -497,29 +532,16 @@ public final class RtspProtoRequestOutputSvc {
 	 * SETUP requests to establish a media session between the client and server.<br />
 	 * <b>Note:</b> This is only allowed for Client->Server requests.
 	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
-	 * @return The message type that was sent
-	 * @throws TcpSocketClosedException If the TCP socket is closed
-	 * @throws TcpSocketIoException If an I/O error occurs
-	 */
-	public @NonNull RtspProtoMessageType sendRequest_setup(@NonNull String resourceUrlForSubStream)
-			throws TcpSocketClosedException, TcpSocketIoException {
-		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
-
-		return sendRequest_setup(resourceUrlForSubStream, dummyClientCredentials);
-	}
-
-	/**
-	 * SETUP requests to establish a media session between the client and server.<br />
-	 * <b>Note:</b> This is only allowed for Client->Server requests.
-	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
 	 * @param clientCredentials Client credentials (can be empty)
+	 * @param useTransportUdp Use UDP transport?
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull String resourceUrlForSubStream,
-				@NonNull RtspProtoClientCredentials clientCredentials
+				@NonNull RtspProtoClientCredentials clientCredentials,
+				boolean useTransportUdp
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setup()";
 
@@ -527,9 +549,65 @@ public final class RtspProtoRequestOutputSvc {
 			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
 		}
 
-		// @TODO add parameters for Transport and KeyMgmt
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrlForSubStream);
 
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.SETUP, resourceUrlForSubStream, clientCredentials);
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+		internRequArgs.setupUseTransportUdp = useTransportUdp;
+
+		return internalSendRequest(
+				FNC_NAME,
+				RtspProtoMessageType.SETUP,
+				clientCredentials,
+				internRequArgs
+			);
+	}
+
+	/**
+	 * Send the initial Key Management Data (KMD) using the legacy SDES format for SRTP/SRTCP to the server.<br />
+	 * This will issue an ANNOUNCE request.<br />
+	 * <b>Note:</b> This can only work if the server supports the legacy SDES format and ANNOUNCE.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param idInputSource The Input Source ID
+	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoKmdsStream kmdsOutbound
+			) throws TcpSocketClosedException, TcpSocketIoException {
+		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpInitialOutboundSdes()";
+
+		if (! isRequestFromClient) {
+			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
+		}
+
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.rrRscUrl.idInputSource.copyFrom(idInputSource);
+
+		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
+
+		if (kmdsOutbound.getNumberOfSubStreams() == 0) {
+			throw new IllegalArgumentException("Need KMD for at least one sub-stream");
+		}
+		if (! kmdsOutbound.getAreKmdsForLegacySdes().orElse(false)) {
+			throw new IllegalArgumentException("KMDs must be for legacy SDES");
+		}
+
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+		internRequArgs.kmdsOutboundForAnnounceSetParam = kmdsOutbound;
+
+		return internalSendRequest(
+				FNC_NAME,
+				RtspProtoMessageType.ANNOUNCE,
+				dummyClientCredentials,
+				internRequArgs
+			);
 	}
 
 	/**
@@ -562,13 +640,15 @@ public final class RtspProtoRequestOutputSvc {
 		RtspProtoKmdsStream tmpKmdsOutbound = new RtspProtoKmdsStream();
 		tmpKmdsOutbound.putKmdForSubStream(kmdOutbound, idSubStream);
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+		internRequArgs.inputIdSubStream = idSubStream;
+		internRequArgs.kmdsOutboundForAnnounceSetParam = tmpKmdsOutbound;
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.SET_PARAMETER,
 				dummyClientCredentials,
-				idSubStream,
-				inputDataRequ,
-				tmpKmdsOutbound
+				internRequArgs
 			);
 	}
 
@@ -603,13 +683,14 @@ public final class RtspProtoRequestOutputSvc {
 			throw new IllegalArgumentException("KMDs must be for legacy SDES");
 		}
 
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+		internRequArgs.kmdsOutboundForAnnounceSetParam = kmdsOutbound;
+
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.ANNOUNCE,
 				dummyClientCredentials,
-				null,
-				inputDataRequ,
-				kmdsOutbound
+				internRequArgs
 			);
 	}
 
@@ -728,13 +809,14 @@ public final class RtspProtoRequestOutputSvc {
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
 		return internalSendRequest(
 				fncName,
 				requestMessageType,
 				clientCredentials,
-				null,
-				inputDataRequ,
-				null
+				internRequArgs
 			);
 	}
 
@@ -742,41 +824,38 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String fncName,
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
-				@Nullable RtspProtoIdSubStream idSubStream,
-				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspProtoKmdsStream kmdsOutbound
+				@NonNull InternRequArgs internRequArgs
 			) throws TcpSocketClosedException, TcpSocketIoException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
 		//
-		inputDataRequ.writeProtect();
+		internRequArgs.inputDataRequ.writeProtect();
 
-		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && inputDataRequ.rrRscUrl.idInputSource.isEmpty()) {
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE &&
+				internRequArgs.inputDataRequ.rrRscUrl.idInputSource.isEmpty()) {
 			logError(fncName, "Input Source not found");
 			return requestMessageType;
 		}
 
 		//
-		RtspProtoDataRequest tmpInputDataRequCopy = new RtspProtoDataRequest(inputDataRequ);
+		RtspProtoDataRequest ioDataRequCopy = new RtspProtoDataRequest(internRequArgs.inputDataRequ);
 
 		// load data from Session Info
-		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, tmpInputDataRequCopy)) {
+		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy)) {
 			return requestMessageType;
 		}
-
-		//
-		tmpInputDataRequCopy.writeProtect();
 
 		// build the outgoing message
 		RtspProtoHighMsgStructuredRequest msgStructured;
 		try {
 			msgStructured = rtspProtoHighRequestProducer.buildRequest(
 					requestMessageType,
-					idSubStream,
-					tmpInputDataRequCopy,
-					kmdsOutbound
+					internRequArgs.inputIdSubStream,
+					ioDataRequCopy,
+					internRequArgs.kmdsOutboundForAnnounceSetParam,
+					internRequArgs.setupUseTransportUdp
 				);
 		} catch (RtspProtoInvalidRequestException e) {
 			logError(fncName, "Failed to build HL request: " + e.getMessage());
@@ -794,13 +873,13 @@ public final class RtspProtoRequestOutputSvc {
 
 		// send the message
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
-		logDebug(fncName, String.format("Sent request '%s' to remote host (<%s>, CSeq=%s)\n",
+		logDebug(fncName, String.format("Sent request '%s' to remote host (<%s>, CSeq=%s)\n",  // <-- intentional extra NL
 				msgStructured.messageType,
-				tmpInputDataRequCopy.rrIdSession.isEmpty() ? "-" : tmpInputDataRequCopy.rrIdSession.getIdStr().orElseThrow(),
+				ioDataRequCopy.rrIdSession.isEmpty() ? "-" : ioDataRequCopy.rrIdSession.getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 
 		// update data in Session Info
-		updateSessionInfo(tmpInputDataRequCopy);
+		updateSessionInfo(requestMessageType, ioDataRequCopy);
 
 		//
 		return requestMessageType;
@@ -833,10 +912,15 @@ public final class RtspProtoRequestOutputSvc {
 				logError(fncName, e.getMessage());
 				return false;
 			}
-			//
+		}
+
+		// stream settings
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE || requestMessageType == RtspProtoMessageType.SETUP) {
 			Set<@NonNull RtspProtoIdSubStream> tmpSubStreamIds = rtspSessionInfo.getDescrSetupInfoSubStreamIds();
 			if (tmpSubStreamIds.isEmpty()) {
-				logError(fncName, "An ANNOUNCE request can only be sent when a DESCRIBE response has already been sent");
+				String tmpErrMsgPfx = (requestMessageType == RtspProtoMessageType.ANNOUNCE ? "An" : "A");
+				logError(fncName, tmpErrMsgPfx + " " + requestMessageType +
+						" request can only be sent when a DESCRIBE response has already been sent/received");
 				return false;
 			}
 			dataRequ.requAdStreamSett.setIdInputSource(dataRequ.rrRscUrl.idInputSource);
@@ -852,7 +936,7 @@ public final class RtspProtoRequestOutputSvc {
 				tmpAdSettForSs.idStreamSource.copyFrom(tmpSiForSs.getRscUrlSubStreamPtr().idStreamSource);
 				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
 				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
-				final String tmpOutRscUrlSubPath = cfgSubStreamIdPrefix + tmpIdSs.getIdStr().orElseThrow();
+				final String tmpOutRscUrlSubPath = tmpIdSs.getIdStr().orElseThrow();
 				tmpAdSettForSs.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
 				dataRequ.requAdStreamSett.putSettingsForSubStream(tmpAdSettForSs);
 			}
@@ -873,8 +957,22 @@ public final class RtspProtoRequestOutputSvc {
 		return true;
 	}
 
-	private void updateSessionInfo(@NonNull RtspProtoDataRequest dataRequ) {
+	private void updateSessionInfo(@NonNull RtspProtoMessageType requestMessageType, @NonNull RtspProtoDataRequest dataRequ) {
 		rtspSessionInfo.setCseqNr_requToRem_lastSent(dataRequ.getCseqNrToSend());
+
+		// main transport parameters
+		if (dataRequ.rrStreamTpMain.getIsTransportUdp()) {
+			rtspSessionInfo.setStreamTpMainIsTransportUdp();
+		} else {
+			rtspSessionInfo.setStreamTpMainIsTransportTcp();
+		}
+
+		// store the Resource URL object
+		if (isRequestFromClient) {
+			rtspSessionInfo.putResourceUrlForMt_nonSetup(requestMessageType, dataRequ.rrRscUrl);
+		}
+
+		// @TODO copy outbound KMDs from SETUP request
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

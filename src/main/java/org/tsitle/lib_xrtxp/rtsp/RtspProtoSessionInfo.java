@@ -567,6 +567,14 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+	void setStreamTpMainIsTransportTcp() {
+		theWriteLock.lock();
+		try {
+			streamTpMain.setIsTransportUdp(false);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
 	void setStreamTpMainIsTransportSrtpSrtcp() {
 		theWriteLock.lock();
 		try {

@@ -12,6 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseProduce
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoDescribeRespSrtxpTypeDeciderInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
@@ -60,6 +61,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
 	 * @param parameterGetterInterface Parameter getter instance (can be null)
+	 * @param srtxpKmdsTypeDeciderInterface SRTxP KMDs type decider instance (can be null)
 	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
 	 */
 	public RtspProtoResponseOutputSvc(
@@ -76,6 +78,7 @@ public final class RtspProtoResponseOutputSvc {
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
+				@Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
@@ -112,7 +115,8 @@ public final class RtspProtoResponseOutputSvc {
 					cfgSenderAppNameAndVersion,
 					cfgContentLanguage,
 					availableStreamsInterface,
-					globalSessionInfoInterface
+					globalSessionInfoInterface,
+					srtxpKmdsTypeDeciderInterface
 				);
 		}
 
@@ -206,7 +210,7 @@ public final class RtspProtoResponseOutputSvc {
 
 		// send the message
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
-		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",
+		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",  // <-- intentional extra NL
 				msgStructured.statusCode,
 				rtspSessionInfo.getIdSession().isEmpty() ? "-" : rtspSessionInfo.getIdSession().getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));

@@ -967,6 +967,44 @@ public final class RtspProtoHighRequestConsumer {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleBody_announce()";
 
 		sdpConsumerInterface.parseUpdatedSdpFromAnnounce(outputDataRequ.requAnnouncedSdpRaw, outputDataRequ.requAnnouncedSdpStc);
+
+		// handle inbound KMDs from SDP
+		Set<@NonNull RtspProtoIdSubStream> mediaEntryControlIds = outputDataRequ.requAnnouncedSdpStc.findMediaEntryControlIds();
+		if (mediaEntryControlIds.isEmpty()) {
+			return;
+		}
+		for (RtspProtoIdSubStream tmpIdSs : mediaEntryControlIds) {
+			Optional<RtspProtoSdpDataMediaEntry> tmpMe = outputDataRequ.requAnnouncedSdpStc.findMediaEntryForControlId(tmpIdSs);
+			if (tmpMe.isEmpty()) {
+				continue;
+			}
+			//
+			if (! ioSetupInfosStream.containsSiForSubStreamId(tmpIdSs)) {
+				continue;
+			}
+			//
+			SrtxpKmd tmpKmd;
+			try {
+				Optional<SrtxpKmd> tmpOptKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
+						tmpMe.orElseThrow(),
+						ioSetupInfosStream.getSsrcBySubStreamId(tmpIdSs).orElseThrow()
+					);
+				if (tmpOptKmd.isEmpty()) {
+					continue;
+				}
+				tmpKmd = tmpOptKmd.orElseThrow();
+			} catch (SrtxpSecurityException e) {
+				throw new RtspProtoInvalidRequestException(FNC_NAME + ": SrtxpSecurityException for Sub-Stream ID '" +
+						tmpIdSs.getIdStr().orElse("-unset-") + "': " + e.getMessage());
+			}
+			//
+			handleNewInboundKmd(
+					false,
+					tmpIdSs,
+					ioSetupInfosStream,
+					tmpKmd
+				);
+		}
 	}
 
 	private void handleBody_setParameter(@NonNull RtspProtoDataRequest outputDataRequ) throws RtspProtoRtspParamUnknownException {
