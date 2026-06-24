@@ -2,21 +2,24 @@ package org.tsitle.lib_xrtxp.rtsp.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighUdpPorts;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsForSubStream;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoAuthDigest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
@@ -24,7 +27,9 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspKeymgmtProto;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class RtspProtoHighRequestProducer {
 
@@ -56,9 +61,33 @@ public final class RtspProtoHighRequestProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void parseOutputUrl(
+				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds,
+				@NonNull RtspProtoRscUrl ioRscUrl
+			) throws RtspProtoInvalidUriException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseOutputUrl()";
+
+		try {
+			RtspProtoRscUrl tmpObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
+					null,
+					null,
+					ioRscUrl.getUrlStr(),
+					RtspProtoIpAddr.ofLoopback(),  // doesn't matter since it's not used
+					inpAvailableSubStreamIds
+				);
+			ioRscUrl.copyFrom(tmpObj);
+		} catch (RtspProtoInvalidUriException |
+					RtspProtoIdSubStreamNotFoundException | RtspProtoIdInputSourceNotFoundException e) {
+			String tmpExcMsg = "Failed to parse URL: " + e.getMessage();
+			logError(FNC_NAME, tmpExcMsg);
+			throw new RtspProtoInvalidUriException(tmpExcMsg);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public @NonNull RtspProtoHighMsgStructuredRequest buildRequest(
 				@NonNull RtspProtoMessageType requestMessageType,
-				@Nullable RtspProtoIdSubStream inputIdSubStream,
 				@NonNull RtspProtoDataRequest ioDataRequ,
 				@Nullable RtspProtoKmdsStream kmdsOutboundForAnnounceSetParam,
 				boolean setupUseTransportUdp
@@ -91,8 +120,8 @@ public final class RtspProtoHighRequestProducer {
 			case PAUSE -> buildRequest_pause();
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(ioDataRequ, kmdsOutboundForAnnounceSetParam, inputIdSubStream, resObj);
-			case SETUP -> buildRequest_setup(setupUseTransportUdp, ioDataRequ, inputIdSubStream, resObj);
+			case SET_PARAMETER -> buildRequest_setParameter(ioDataRequ, kmdsOutboundForAnnounceSetParam, resObj);
+			case SETUP -> buildRequest_setup(setupUseTransportUdp, ioDataRequ, resObj);
 			case TEARDOWN -> buildRequest_teardown();
 			default -> throw new RtspProtoInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
 					requestMessageType);
@@ -297,7 +326,6 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_setParameter(
 				@NonNull RtspProtoDataRequest inputDataRequ,
 				@Nullable RtspProtoKmdsStream kmdsOutbound,
-				@Nullable RtspProtoIdSubStream inputIdSubStream,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
@@ -326,11 +354,11 @@ public final class RtspProtoHighRequestProducer {
 		if (kmdsOutbound == null) {
 			return;
 		}
-		if (inputIdSubStream == null || inputIdSubStream.isEmpty()) {
-			throw new IllegalArgumentException(FNC_NAME + ": inputIdSubStream must be set when " +
+		if (inputDataRequ.rrRscUrl.idSubStream.isEmpty()) {
+			throw new IllegalArgumentException(FNC_NAME + ": idSubStream must be set when " +
 					"setting SRTxP key management data for SET_PARAMETER request");
 		}
-		addKeymgmtHeader(kmdsOutbound, inputIdSubStream, output);
+		addKeymgmtHeader(kmdsOutbound, inputDataRequ.rrRscUrl.idSubStream, output);
 	}
 
 	/**
@@ -341,7 +369,6 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_setup(
 				boolean setupUseTransportUdp,
 				@NonNull RtspProtoDataRequest ioDataRequ,
-				@Nullable RtspProtoIdSubStream inputIdSubStream,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
@@ -357,12 +384,12 @@ public final class RtspProtoHighRequestProducer {
 		 *   "KeyMgmt: prot=mikey; uri=\"rtsp://example.com/fizzle/foo/substreamidf528764d_93b6207a\"; data=\"...\""
 		 */
 
-		if (inputIdSubStream == null || inputIdSubStream.isEmpty()) {
+		if (ioDataRequ.rrRscUrl.idSubStream.isEmpty()) {
 			throw new IllegalArgumentException(FNC_NAME + ": inputIdSubStream must be set for a SETUP request");
 		}
 
 		RtspProtoAdSettingsForSubStream tmpAdSettsForSs = ioDataRequ.requAdStreamSett
-				.getSettingsBySubStreamId(inputIdSubStream).orElseThrow(() ->
+				.getSettingsBySubStreamId(ioDataRequ.rrRscUrl.idSubStream).orElseThrow(() ->
 						new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream ID not found in AdSettingsForSubStream")
 					);
 
@@ -370,13 +397,58 @@ public final class RtspProtoHighRequestProducer {
 		{
 			ioDataRequ.rrStreamTpMain.setIsTransportUdp(setupUseTransportUdp);
 
+			//
+			RtspProtoIdXsrc tmpDummySsrc;
+			try {
+				tmpDummySsrc = RtspProtoIdXsrc.of(0x01);
+			} catch (RtspProtoNumberRangeException e) {
+				// this will never happen
+				tmpDummySsrc = RtspProtoIdXsrc.ofEmpty();
+			}
+			RtspProtoSetupInfoForSubStream tmpSiSs = new RtspProtoSetupInfoForSubStream(
+					ioDataRequ.rrRscUrl,
+					tmpDummySsrc,  // this is not the real SSRC. we need to replace it once we have received a response
+					RtspProtoRtpSeqNr.ofEmpty(),  // same here
+					RtspProtoRtpTimestamp.ofEmpty(),  // same here
+					TimestampEpochNs.ofEmpty()  // same here
+				);
+			RtspProtoDataCntSubStreamTp tmpSsTp = tmpSiSs.getSubStreamTpPtr();
+			tmpSsTp.setIsUdp(setupUseTransportUdp);
+			tmpSsTp.setIsInterleaved(! setupUseTransportUdp);
+			tmpSsTp.setIsUnicast(true);
+			tmpSsTp.setIsEncr(ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp());
+
+			//
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.TRANSPORT);
-			hdEntry.hdValTransport.tpSubStream.setIsEncr(ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp());
-			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(! setupUseTransportUdp);
-			hdEntry.hdValTransport.tpSubStream.setIsUdp(setupUseTransportUdp);
-			hdEntry.hdValTransport.tpSubStream.setIsUnicast(true);
+			hdEntry.hdValTransport.tpSubStream.setIsUdp(tmpSsTp.getIsUdp());
+			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(tmpSsTp.getIsInterleaved());
+			hdEntry.hdValTransport.tpSubStream.setIsUnicast(tmpSsTp.getIsUnicast());
+			hdEntry.hdValTransport.tpSubStream.setIsEncr(tmpSsTp.getIsEncr());
 			hdEntry.hdValTransport.tpMode = RtspTransportMode.PLAY;
-			// @TODO create UDP sockets or assign TCP channels
+			if (setupUseTransportUdp) {
+				// we need to open the UDP sockets now so we can get the port numbers
+				try {
+					RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(false, tmpSiSs);
+				} catch (RtspProtoCouldNotFindUdpPortsException | UdpSocketIoException e) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": " + e.getMessage());
+				}
+				try {
+					Objects.requireNonNull(tmpSiSs.getClientUdpSocketRtpPtr());
+					Objects.requireNonNull(tmpSiSs.getClientUdpSocketRtcpPtr());
+					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(tmpSiSs.getClientUdpSocketRtpPtr().getLocalPort());
+					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(tmpSiSs.getClientUdpSocketRtcpPtr().getLocalPort());
+				} catch (RtspProtoNumberRangeException e) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting Client UDP ports failed: " + e.getMessage());
+				}
+			} else {
+				try {
+					// @TODO assign TCP channels
+					hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(1);
+					hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(2);
+				} catch (RtspProtoNumberRangeException e) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting Client TCP channels failed: " + e.getMessage());
+				}
+			}
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
@@ -526,7 +598,6 @@ public final class RtspProtoHighRequestProducer {
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
-	@SuppressWarnings("SameParameterValue")
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}

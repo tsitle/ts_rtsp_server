@@ -42,6 +42,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	public void createAndAddDescribeSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
+				@NonNull RtspProtoIdXsrc dummySsrcId,
 				@NonNull RtspProtoKmdForSubStream kmdOutbound
 			) {
 		/*
@@ -51,7 +52,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		 */
 		createAndAddSetupDescribeSubStream(
 				rscUrlSubStream,
-				RtspProtoIdXsrc.ofEmpty(),
+				dummySsrcId,
 				RtspProtoRtpSeqNr.ofEmpty(),
 				RtspProtoRtpTimestamp.ofEmpty(),
 				TimestampEpochNs.ofEmpty(),
@@ -243,6 +244,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 			);
 		if (tmpKmd != null) {
 			resObj.getKmdOutboundPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);
+			resObj.getSubStreamTpPtr().setIsEncr(true);
 		}
 		//
 		putInfoForSubStream(resObj);

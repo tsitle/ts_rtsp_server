@@ -327,15 +327,14 @@ public final class RtspProtoDataCntSdpStructured {
 	/**
 	 * Extract the SRTxP KMD from a media entry.
 	 * @param entry Media entry to extract the SRTxP KMD from.
-	 * @param idSsrc SSRC of the corresponding Sub-Stream. This will be stored in the returned SRTxP KMD and is crucial for en-/decryption.
+	 * @param idSsrcForSdes SSRC of the corresponding Sub-Stream for legacy SDES. This will be stored in the returned SRTxP KMD and is crucial for en-/decryption.
 	 * @return SRTxP KMD
 	 * @throws SrtxpSecurityException If an error occurs during KMD extraction.
 	 */
-	public Optional<SrtxpKmd> extractMediaEntrySrtxpKmd(@NonNull RtspProtoSdpDataMediaEntry entry, @NonNull RtspProtoIdXsrc idSsrc)
-			throws SrtxpSecurityException {
-		if (idSsrc.isEmpty()) {
-			throw new IllegalArgumentException(getClass().getSimpleName() + ": SSRC must be set");
-		}
+	public Optional<SrtxpKmd> extractMediaEntrySrtxpKmd(
+				@NonNull RtspProtoSdpDataMediaEntry entry,
+				@NonNull RtspProtoIdXsrc idSsrcForSdes
+			) throws SrtxpSecurityException {
 		String tmpMikeyB64 = null;
 		String tmpSdesB64WithTag = null;
 		for (String tmpAttr : entry.attributes()) {
@@ -359,10 +358,6 @@ public final class RtspProtoDataCntSdpStructured {
 			 * "a=key-mgmt:mikey AQAFAE...AAAEA"
 			 */
 			SrtxpKmd resObj = MikeyParser.parseMickeyMsgIntoKmd(tmpMikeyB64.strip());
-			if (! resObj.ssrcId().equals(idSsrc)) {
-				throw new SrtxpSecurityException("SSRC mismatch (is=" +
-						resObj.ssrcId().toHexString(true) + ", exp=" + idSsrc.toHexString(true) + ")");
-			}
 			return Optional.of(resObj);
 		}
 
@@ -374,7 +369,10 @@ public final class RtspProtoDataCntSdpStructured {
 		 * "a=crypto:<TAG> AES_CM_128_HMAC_SHA1_80 inline:<MasterKey and MasterSalt>|<Key Lifetime>|<MKI_value>:<MKI_length_bytes> [<session-params>]"
 		 * "a=crypto:<TAG> AES_CM_128_HMAC_SHA1_80 inline:<MasterKey and MasterSalt>|<MKI_value>:<MKI_length_bytes> [<session-params>]"
 		 */
-		return parseSdes(idSsrc, tmpSdesB64WithTag);
+		if (idSsrcForSdes.isEmpty()) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ": SSRC must be set for legacy SDES KMDs");
+		}
+		return parseSdes(idSsrcForSdes, tmpSdesB64WithTag);
 	}
 
 	/**

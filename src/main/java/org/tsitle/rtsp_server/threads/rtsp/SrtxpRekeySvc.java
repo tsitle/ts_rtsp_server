@@ -289,7 +289,6 @@ final class SrtxpRekeySvc {
 		{
 			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
 					resourceUrl,
-					tmpOptRscUrl.get().idInputSource,
 					kmdsOutbound
 				);
 			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);

@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighUdpPorts;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
@@ -29,9 +30,6 @@ import java.net.*;
 import java.util.*;
 
 public final class RtspProtoHighResponseProducer {
-
-	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 50;
-	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String cfgSenderAppNameAndVersion;
@@ -217,7 +215,7 @@ public final class RtspProtoHighResponseProducer {
 		//
 		try {
 			RtspProtoAdSettingsStream outputAdStreamSett = new RtspProtoAdSettingsStream();
-			RtspProtoKmdsStream outputKmdsOutbound = new RtspProtoKmdsStream();
+			RtspProtoKmdsStream outputKmdsStreamOutbound = new RtspProtoKmdsStream();
 
 			// build SDP
 			sdpProducerInterface.buildSdpForDescribe(
@@ -229,7 +227,7 @@ public final class RtspProtoHighResponseProducer {
 					inputDataResp.rrClientIpAddr,
 					outputMsgResp.bodyDescribeSdp,
 					outputAdStreamSett,
-					outputKmdsOutbound
+					outputKmdsStreamOutbound
 				);
 
 			// copy the stream settings and KMDs
@@ -237,10 +235,10 @@ public final class RtspProtoHighResponseProducer {
 				RtspProtoAdSettingsForSubStream tmpAvSs = outputAdStreamSett.getSettingsBySubStreamId(tmpIdSs)
 						.orElseThrow();
 
-				RtspProtoKmdForSubStream tmpProtoKmdOutbound = new RtspProtoKmdForSubStream();
-				if (outputKmdsOutbound.containsKmdForSubStreamId(tmpIdSs)) {
-					SrtxpKmd tmpSrtxpKmdOutbound = outputKmdsOutbound.getKmdBySubStreamId(tmpIdSs).orElseThrow();
-					tmpProtoKmdOutbound.setKmd(tmpSrtxpKmdOutbound, tmpIdSs);
+				RtspProtoKmdForSubStream tmpKmdForSsOutbound = new RtspProtoKmdForSubStream();
+				if (outputKmdsStreamOutbound.containsKmdForSubStreamId(tmpIdSs)) {
+					SrtxpKmd tmpSrtxpKmdOutbound = outputKmdsStreamOutbound.getKmdBySubStreamId(tmpIdSs).orElseThrow();
+					tmpKmdForSsOutbound.setKmd(tmpSrtxpKmdOutbound, tmpIdSs);
 				}
 
 				RtspProtoRscUrl tmpRscUrlSs = new RtspProtoRscUrl();
@@ -251,7 +249,7 @@ public final class RtspProtoHighResponseProducer {
 				outputSetupInfosStream.createAndAddSetupSubStream(
 						tmpRscUrlSs,
 						tmpAvSs.ssrcId,
-						tmpProtoKmdOutbound
+						tmpKmdForSsOutbound
 					);
 			}
 		} catch (RtspProtoSdpException e) {
@@ -462,7 +460,11 @@ public final class RtspProtoHighResponseProducer {
 		}
 
 		// we need to open the UDP sockets now so we can get the port numbers
-		findAndOpenUdpSocketPorts(tmpSiSs);
+		try {
+			RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(true, tmpSiSs);
+		} catch (RtspProtoCouldNotFindUdpPortsException e) {
+			throw new RtspProtoInvalidResponseException(FNC_NAME + ": " + e.getMessage());
+		}
 
 		// Session ID
 		{
@@ -523,66 +525,6 @@ public final class RtspProtoHighResponseProducer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/**
-	 * Find and open UDP sockets for RTP and RTCP in accordance with RFC-3551 Section 8
-	 */
-	private void findAndOpenUdpSocketPorts(@NonNull RtspProtoSetupInfoForSubStream siSs)
-			throws UdpSocketIoException, RtspProtoInvalidResponseException {
-		final String FNC_NAME = getClass().getSimpleName() + ".findAndOpenUdpSocketPorts()";
-
-		if (! siSs.getSubStreamTpPtr().getIsUdp()) {
-			return;
-		}
-
-		if (siSs.getServerUdpSocketRtpPtr() != null) {
-			siSs.getServerUdpSocketRtpPtr().close();
-		}
-		if (siSs.getServerUdpSocketRtcpPtr() != null) {
-			siSs.getServerUdpSocketRtcpPtr().close();
-		}
-
-		//
-		DatagramSocket tmpSocketRtp = null;
-		DatagramSocket tmpSocketRtcp = null;
-
-		int loopCnt = 0;
-		boolean isOk = false;
-		while (++loopCnt <= 1000) {
-			if (tmpSocketRtp != null) {
-				tmpSocketRtp.close();
-			}
-			try {
-				tmpSocketRtp = new DatagramSocket();
-				if (tmpSocketRtp.getLocalPort() % 2 != 0) {
-					continue;
-				}
-				tmpSocketRtcp = new DatagramSocket(
-						tmpSocketRtp.getLocalPort() + 1
-					);
-				isOk = true;
-				break;
-			} catch (SocketException e) {
-				// keep going until we find a free port pair
-			}
-		}
-		if (! isOk) {
-			throw new RtspProtoInvalidResponseException(FNC_NAME + ": Could not find proper UDP sockets");
-		}
-		try {
-			tmpSocketRtp.setSoTimeout(SOCKET_UDP_RTP_TIMEOUT_MS);
-			tmpSocketRtp.setSendBufferSize(1024 * 1024);  // this is only a hint, not the actual buffer size
-			tmpSocketRtcp.setSoTimeout(SOCKET_UDP_RTCP_TIMEOUT_MS);
-			tmpSocketRtcp.setSendBufferSize(1024 * 64);  // this is only a hint, not the actual buffer size
-		} catch (SocketException e) {
-			throw new UdpSocketIoException(FNC_NAME + ": Could not configure UDP sockets: " + e.getMessage());
-		}
-
-		siSs.setServerUdpSocketRtpPtr(tmpSocketRtp);
-		siSs.setServerUdpSocketRtcpPtr(tmpSocketRtcp);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
 	private static @NonNull String buildHexString(int value) {
 		return String.format("%08X", value);
 	}
@@ -605,13 +547,15 @@ public final class RtspProtoHighResponseProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Server / UserAgent
-		if (isResponseFromClient) {
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.USERAGENT);
-			hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
-		} else {
-			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
-			hdEntry.hdValServer.serverStr = cfgSenderAppNameAndVersion;
+		{
+			RtspProtoHeaderEntryResponse hdEntry;
+			if (isResponseFromClient) {
+				hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.USERAGENT);
+				hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
+			} else {
+				hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.SERVER);
+				hdEntry.hdValServer.serverStr = cfgSenderAppNameAndVersion;
+			}
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session

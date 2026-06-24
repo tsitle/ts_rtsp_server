@@ -39,6 +39,11 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 	/** Server's UDP socket for inbound/outbound RTCP packets */
 	private @Nullable DatagramSocket tpServerUdpSocketRtcp = null;
 
+	/** Client's UDP socket for inbound RTP packets */
+	private @Nullable DatagramSocket tpClientUdpSocketRtp = null;
+	/** Client's UDP socket for inbound/outbound RTCP packets */
+	private @Nullable DatagramSocket tpClientUdpSocketRtcp = null;
+
 	/** Inbound Key Management Data */
 	private @NonNull RtspProtoKmdForSubStream kmdInboundCur = new RtspProtoKmdForSubStream();
 	/** Next Inbound Key Management Data (obtained from re-keying request) */
@@ -119,6 +124,25 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.tpServerUdpSocketRtcp = value;
+	}
+
+	public @Nullable DatagramSocket getClientUdpSocketRtpPtr() {
+		return tpClientUdpSocketRtp;
+	}
+	public @Nullable DatagramSocket getClientUdpSocketRtcpPtr() {
+		return tpClientUdpSocketRtcp;
+	}
+	public void setClientUdpSocketRtpPtr(@NonNull DatagramSocket value) {
+		if (writeProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
+		this.tpClientUdpSocketRtp = value;
+	}
+	public void setClientUdpSocketRtcpPtr(@NonNull DatagramSocket value) {
+		if (writeProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
+		this.tpClientUdpSocketRtcp = value;
 	}
 
 	public @NonNull RtspProtoKmdForSubStream getKmdInboundCurPtr() {

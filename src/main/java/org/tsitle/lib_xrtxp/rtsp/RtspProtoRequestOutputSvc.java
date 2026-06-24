@@ -10,12 +10,10 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestProducer;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -50,6 +48,7 @@ public final class RtspProtoRequestOutputSvc {
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final RtspProtoHighRequestProducer rtspProtoHighRequestProducer;
 	private final RtspProtoLowRequestProducer rtspProtoLowRequestProducer;
@@ -94,6 +93,7 @@ public final class RtspProtoRequestOutputSvc {
 		this.isRequestFromClient = isRequestFromClient;
 		this.rtspSessionInfo = rtspSessionInfo;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 
 		//
 		RtspProtoSdpProducer sdpProducer;
@@ -821,13 +821,6 @@ public final class RtspProtoRequestOutputSvc {
 		//
 		RtspProtoDataRequest ioDataRequCopy = new RtspProtoDataRequest(internRequArgs.inputDataRequ);
 
-		//
-		// @TODO Parse URL
-		/*if (ioDataRequCopy.rrRscUrl.idInputSource.isEmpty()) {
-			logError(fncName, "Input Source ID not found");
-			return requestMessageType;
-		}*/
-
 		// load data from Session Info
 		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy)) {
 			return requestMessageType;
@@ -838,7 +831,6 @@ public final class RtspProtoRequestOutputSvc {
 		try {
 			msgStructured = rtspProtoHighRequestProducer.buildRequest(
 					requestMessageType,
-					internRequArgs.inputIdSubStream,
 					ioDataRequCopy,
 					internRequArgs.kmdsOutboundForAnnounceSetParam,
 					internRequArgs.setupUseTransportUdp
@@ -879,6 +871,30 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataRequest dataRequ
 			) {
+		// parse URL
+		try {
+			Set<@NonNull RtspProtoIdSubStream> tmpAvailableSubStreamIds = rtspSessionInfo.getDescrAvailableSubStreamIds();
+			rtspProtoHighRequestProducer.parseOutputUrl(tmpAvailableSubStreamIds, dataRequ.rrRscUrl);
+		} catch (RtspProtoInvalidUriException e) {
+			logError(fncName, "Parsing the Resource URL UrlStr failed: " + e.getMessage());
+			return false;
+		}
+
+		// sanity checks
+		if (dataRequ.rrRscUrl.getUrlStr().isBlank()) {
+			logError(fncName, "Resource URL UrlStr cannot be empty");
+			return false;
+		}
+		if (dataRequ.rrRscUrl.idInputSource.isEmpty()) {
+			logError(fncName, "Resource URL idInputSource cannot be empty");
+			return false;
+		}
+		if (requestMessageType == RtspProtoMessageType.SETUP && dataRequ.rrRscUrl.idSubStream.isEmpty()) {
+			logError(fncName, "Resource URL idSubStream cannot be empty for SETUP requests");
+			return false;
+		}
+
+		//
 		dataRequ.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		dataRequ.setRtspProtoVersionToUse(rtspSessionInfo.getRtspProtoVersionToUse());
 		dataRequ.copyAndIncrementCseqNrToSend(rtspSessionInfo.getCseqNr_requToRem_lastSent());
@@ -889,6 +905,7 @@ public final class RtspProtoRequestOutputSvc {
 			dataRequ.rrClientIpAddr.copyFrom(rtspSessionInfo.getClientIpAddr());
 		}
 
+		// server IP
 		if (requestMessageType == RtspProtoMessageType.ANNOUNCE) {
 			try {
 				dataRequ.rrServerIpFromRscUrl.copyFrom(
@@ -918,8 +935,20 @@ public final class RtspProtoRequestOutputSvc {
 					logError(fncName, e.getMessage());
 					return false;
 				}
+
 				RtspProtoAdSettingsForSubStream tmpAdSettForSs = new RtspProtoAdSettingsForSubStream();
 				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
+				if (! isRequestFromClient && globalSessionInfoInterface != null) {
+					try {
+						RtspProtoIdStreamSource tmpIdStreamSource = globalSessionInfoInterface
+								.getStreamSourceIdBySubStreamId(tmpIdSs, rtspSessionInfo.getClientIpAddr());
+						tmpAdSettForSs.idStreamSource.copyFrom(tmpIdStreamSource);
+					} catch (RtspProtoIdSubStreamNotFoundException e) {
+						logError(fncName, "Could not find Sub-Stream ID in Global Session Info for " +
+								requestMessageType + " request");
+						return false;
+					}
+				}
 				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
 				final String tmpOutRscUrlSubPath = tmpIdSs.getIdStr().orElseThrow();
 				tmpAdSettForSs.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
