@@ -50,10 +50,14 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	private final List<@NonNull String> unauthorizedIds = new ArrayList<>();
 	private final @NonNull Map<@NonNull String, @NonNull Integer> unauthorizedMap = new HashMap<>();
 
+	private final @NonNull String saltForIpHash;
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public RtspProtoGlobalSessionInfoSvc() { }
+	public RtspProtoGlobalSessionInfoSvc() {
+		saltForIpHash = String.format("%08x", RandomHelper.getRandomUint32(false));
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -269,16 +273,16 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String getIpHash(@NonNull RtspProtoIpAddr clientIpAddr) {
+	private @NonNull String getIpHash(@NonNull RtspProtoIpAddr clientIpAddr) {
 		if (clientIpAddr.isEmpty()) {
 			throw new IllegalArgumentException("Client IP address must be set");
 		}
 		final String ipStr = clientIpAddr.getIpAddrStr().orElseThrow();
 
-		return HashMd5Helper.hashOfString(ipStr, false).substring(0, HASH_LEN);
+		return HashMd5Helper.hashOfString(saltForIpHash + "_" + ipStr, false).substring(0, HASH_LEN);
 	}
 
-	private static @NonNull String getUaId(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idIs) {
+	private @NonNull String getUaId(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idIs) {
 		if (idIs.isEmpty()) {
 			throw new IllegalArgumentException("idIs must not be empty");
 		}
