@@ -814,7 +814,6 @@ class RtspProtoHighRequestConsumerTest {
 		final String expRequUrl = "rtsp://some.com/existing_stream/" + TEST_SUB_STREAM_ID_PREFIX + "notexists";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = 707L;
-		final String expSessionId = "some-session-id";
 
 		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
 
@@ -835,15 +834,13 @@ class RtspProtoHighRequestConsumerTest {
 		RtspRequestBasics requBasics = wrapperProcessRequest(
 				RtspProtoSessionState.INIT,
 				msgStructured,
-				RtspProtoIdSession.of(expSessionId),
+				RtspProtoIdSession.ofEmpty(),
 				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
-
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
@@ -857,7 +854,6 @@ class RtspProtoHighRequestConsumerTest {
 				generatedSubStreamId.getIdStr().orElse("-unset-");
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = 707L;
-		final String expSessionId = "some-session-id";
 
 		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
 
@@ -878,15 +874,13 @@ class RtspProtoHighRequestConsumerTest {
 		RtspRequestBasics requBasics = wrapperProcessRequest(
 				RtspProtoSessionState.INIT,
 				msgStructured,
-				RtspProtoIdSession.of(expSessionId),
+				RtspProtoIdSession.ofEmpty(),
 				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.NOT_FOUND, requBasics.statusCode);
-
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertTrue(requBasics.rscUrl.isEmpty());
 		assertTrue(requBasics.rscUrl.idInputSource.isEmpty());
@@ -901,7 +895,6 @@ class RtspProtoHighRequestConsumerTest {
 				"?" + RtspProtoHighConstants.URL_QUERY_PARAM_SRTP + "=1";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
-		final String expSessionId = "some-session-id";
 
 		RtspProtoHighMsgStructuredRequest msgStructured = new RtspProtoHighMsgStructuredRequest();
 
@@ -923,15 +916,13 @@ class RtspProtoHighRequestConsumerTest {
 		RtspRequestBasics requBasics = wrapperProcessRequest(
 				RtspProtoSessionState.INIT,
 				msgStructured,
-				RtspProtoIdSession.of(expSessionId),
+				RtspProtoIdSession.ofEmpty(),
 				new RtspProtoDataCntCseqRequInp(),
 				outputDataRequ
 			);
 
 		assertEquals(expMsgType, requBasics.messageType);
 		assertEquals(RtspProtoStatusCode.OK, requBasics.statusCode);
-
-		assertEquals(expSessionId, outputDataRequ.rrIdSession.getIdStr().orElse("-unset-"));
 
 		assertEquals(expRequUrl, requBasics.rscUrl.getUrlStr());
 		assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));

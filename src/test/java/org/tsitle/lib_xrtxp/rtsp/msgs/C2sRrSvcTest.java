@@ -249,7 +249,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
@@ -285,7 +285,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertTrue(cliSessionInfo.getPermAuthServerRealm().isPresent());
@@ -333,7 +333,7 @@ public class C2sRrSvcTest {
 			}
 		}
 
-		resRespBas = cliInputSvc.receiveResponse(mt);
+		resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
 		// ----------------------------------------------------
@@ -358,7 +358,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		resRespBas = cliInputSvc.receiveResponse(mt);
+		resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
 		assertEquals("9.7", cliSessionInfo.getRhGetParamValues().getParamKvsValue("jitter").orElseThrow());
@@ -392,7 +392,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRespBas.statusCode);
 		assertEquals("hulahup", cliSessionInfo.getUnsupportedFeatureName().orElseThrow());
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
@@ -425,7 +425,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRespBas.statusCode);
 		if (! Set.of("yolanda", "petro").contains(cliSessionInfo.getUnsupportedFeatureName().orElseThrow())) {
 			fail("Unexpected unsupported feature name: " + cliSessionInfo.getUnsupportedFeatureName().orElseThrow());
@@ -461,7 +461,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertTrue(cliSessionInfo.getUnsupportedFeatureName().isEmpty());
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
@@ -490,7 +490,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
 	}
 
@@ -516,7 +516,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
 	}
 
@@ -542,7 +542,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRespBas.statusCode);
 	}
 
@@ -578,7 +578,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
@@ -613,7 +613,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertEquals(Set.of("jitter"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
@@ -648,7 +648,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertTrue(cliSessionInfo.getPermAuthServerRealm().isPresent());
@@ -685,7 +685,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		resRespBas = cliInputSvc.receiveResponse(mt);
+		resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
 		assertTrue(cliSessionInfo.getRhGetParamValues().getParamKvsKeySet().isEmpty());

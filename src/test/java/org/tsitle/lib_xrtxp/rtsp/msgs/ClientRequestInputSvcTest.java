@@ -89,7 +89,7 @@ public class ClientRequestInputSvcTest {
 		recvOptions_wrongCseq();
 		recvOptions_ok();
 
-		recvSetParam_unexpectedSessionId();
+		recvSetParam_ok_unexpectedSessionId();
 		recvSetParam_invalidParamKey();
 		recvSetParam_invalidParamVal();
 		recvSetParam_ok();
@@ -226,7 +226,7 @@ public class ClientRequestInputSvcTest {
 		++cseqCorrect;
 	}
 
-	private void recvSetParam_unexpectedSessionId() throws Exception {
+	private void recvSetParam_ok_unexpectedSessionId() throws Exception {
 		final List<String> msgLines = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
@@ -234,14 +234,15 @@ public class ClientRequestInputSvcTest {
 				"Content-Length: 39",
 				"Session: bogus",
 				"",
-				"packets_received: 100.0",
 				"jitter: 13.8"
 			);
+
+		// since there was no Session ID until now, the Session ID will be accepted
 
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
-		assertEquals(RtspProtoStatusCode.SESSION_NOT_FOUND, resRequBas.statusCode);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		++cseqCorrect;
 	}
@@ -315,16 +316,21 @@ public class ClientRequestInputSvcTest {
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
 				"Content-Length: 26",
-				"Session: bogus",
+				"Session: bogus_but_different",
 				"",
 				"packets_received",
 				"jitter"
 			);
 
+		// since the Session ID had already been stored as "bogus", the modified Session ID won't be accepted
+
+		assertEquals("bogus", cliSessionInfo.getIdSession().getIdStr().orElse("-unset-"));
+
 		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
 		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
 
 		assertEquals(RtspProtoStatusCode.SESSION_NOT_FOUND, resRequBas.statusCode);
+		assertEquals("bogus", cliSessionInfo.getIdSession().getIdStr().orElse("-unset-"));
 
 		++cseqCorrect;
 	}

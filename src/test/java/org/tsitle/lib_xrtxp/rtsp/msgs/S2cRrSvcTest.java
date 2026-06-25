@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
@@ -281,6 +282,7 @@ public class S2cRrSvcTest {
 					useTransportUdp
 				);
 		}
+		doCheckSetupClientSide(ct, useTransportUdp);
 		// server sends OPTIONS request to client
 		doOptions(ct);
 		// server sends SET_PARAMETER request to client
@@ -310,7 +312,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse(mt);
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
 
@@ -341,9 +343,81 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse(mt);
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
+	}
+
+	private void doCheckSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		Set<RtspProtoIdSubStream> checkSubStrIds = cliSessionInfoPtr.getDescrSetupInfoSubStreamIds();
+		assertEquals(checkSubStrIds, cliSessionInfoPtr.getDescrAvailableSubStreamIds());
+		int maxTcpChann = -1;
+		for (RtspProtoIdSubStream subStrId : checkSubStrIds) {
+			assertTrue(
+					cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(subStrId),
+					"missing HaveSetup: ss=" + subStrId.getIdStr().orElse("-unset-")
+				);
+			RtspProtoSetupInfoForSubStream tmpSiForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
+			assertFalse(tmpSiForSs.getSsrcInboundPtr().isEmpty());
+			assertFalse(tmpSiForSs.getSsrcOutboundPtr().isEmpty());
+			assertNotEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getSsrcOutboundPtr());
+			/*System.out.println("- ss=" + subStrId.getIdStr().orElse("-unset-") + ": client inbound_ SSRC: " +
+					tmpSiForSs.getSsrcInboundPtr().toHexString(true));
+			System.out.println("- ss=" + subStrId.getIdStr().orElse("-unset-") + ": client outbound SSRC: " +
+					tmpSiForSs.getSsrcOutboundPtr().toHexString(true));*/
+			assertTrue(
+					tmpSiForSs.getKmdInboundCurPtr().isKmdSet(),
+					"missing KmdInbound: ss=" + subStrId.getIdStr().orElse("-unset-")
+				);
+			assertEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+			assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
+			if (ct == ClientType.MIKEY) {
+				assertTrue(
+						tmpSiForSs.getKmdOutboundPtr().isKmdSet(),
+					"missing KmdOutbound: ss=" + subStrId.getIdStr().orElse("-unset-")
+					);
+				assertEquals(tmpSiForSs.getSsrcOutboundPtr(), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+			}
+			assertTrue(tmpSiForSs.getRtpSeqNrT0Ptr().isEmpty());  // we need to make a PLAY request first
+			assertEquals(useTransportUdp, tmpSiForSs.getSubStreamTpPtr().getIsUdp());
+			assertTrue(tmpSiForSs.getSubStreamTpPtr().getIsEncr());
+			assertTrue(tmpSiForSs.getSubStreamTpPtr().getIsUnicast());
+			assertNotEquals(useTransportUdp, tmpSiForSs.getSubStreamTpPtr().getIsInterleaved());
+			if (useTransportUdp) {
+				assertNotNull(tmpSiForSs.getClientUdpSocketRtpPtr());
+				assertNotNull(tmpSiForSs.getClientUdpSocketRtcpPtr());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
+			} else {
+				assertNull(tmpSiForSs.getClientUdpSocketRtpPtr());
+				assertNull(tmpSiForSs.getClientUdpSocketRtcpPtr());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
+				assertTrue(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
+				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
+				assertNotEquals(
+						tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().getChannel8bit().orElseThrow(),
+						tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()
+					);
+				assertNotEquals(maxTcpChann, tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow());
+				if (tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow() > maxTcpChann) {
+					maxTcpChann = tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow();
+				}
+			}
+		}
 	}
 
 	private void doAnnounce_noCrypto(ClientType ct) throws Exception {
@@ -376,7 +450,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
@@ -403,7 +477,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
@@ -449,7 +523,7 @@ public class S2cRrSvcTest {
 		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get(),
-				cliSessionInfo.get(ct).getDescrSetupInfoSsrcBySubStreamsId(tmpIdSs)
+				cliSessionInfo.get(ct).getDescrSetupInfoSsrcInboundBySubStreamsId(tmpIdSs)
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
@@ -463,7 +537,7 @@ public class S2cRrSvcTest {
 		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get(),
-				cliSessionInfo.get(ct).getDescrSetupInfoSsrcBySubStreamsId(tmpIdSs)
+				cliSessionInfo.get(ct).getDescrSetupInfoSsrcInboundBySubStreamsId(tmpIdSs)
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
@@ -476,7 +550,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
@@ -487,9 +561,11 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
 		// ----------------------------------------------------
 
-		assertEquals(2, cliSessionInfo.get(ct).getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliSessionInfoPtr.getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
@@ -511,16 +587,33 @@ public class S2cRrSvcTest {
 			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
 			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().ssrcId());
+			assertEquals(SrtxpMki.of(2, 4), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().mki());
+
 			// ----------------------------------------------------
 
 			cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
-			assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+			assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 
 			// ----------------------------------------------------
 
-			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse(mt);
+			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 			assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+
+			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
+			assertEquals(SrtxpMki.of(2, 4), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+
+			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().ssrcId());
+
+			assertEquals(tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow());
+
+			assertTrue(tmpSiForSsSrv.getKmdInboundCurPtr().isKmdSet());
+			assertEquals(tmpSiForSsSrv.getKmdInboundCurPtr().getKmd().orElseThrow(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow());
+			assertEquals(tmpSiForSsSrv.getSsrcInboundPtr(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
 		}
 	}
 
