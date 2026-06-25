@@ -802,7 +802,8 @@ public final class RtspProtoHighRequestConsumer {
 		if (! ioSetupInfosStream.containsSiForSubStreamId(idSubStream)) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream info not found");
 		}
-		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow();
+		RtspProtoSetupInfoForSubStream tmpInpSiSs = ioSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow();
+		RtspProtoSetupInfoForSubStream outSiSs = new RtspProtoSetupInfoForSubStream(tmpInpSiSs, kmd.ssrcId());
 
 		//System.out.println("<<<<<<<<<<<<<<<< rcvd KMD: " + kmd);
 
@@ -831,28 +832,38 @@ public final class RtspProtoHighRequestConsumer {
 
 		final boolean isForLegacySdes = kmdToUse.getMetaIsForLegacySdes();
 		if (isSetup) {
-			tmpSiSs.getKmdInboundCurPtr().setKmd(kmdToUse, idSubStream);
-		} else if (! tmpSiSs.getKmdInboundCurPtr().isKmdSet()) {
-			logWarn(FNC_NAME, "received new inbound KMD but had no previous KMD - ignoring new KMD");
-		} else if (isForLegacySdes && tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound SDES KMD but previous KMD had no Tag - ignoring new KMD");
-		} else if (! isForLegacySdes && tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound MIKEY KMD but previous KMD had no MKI - ignoring new KMD");
+			outSiSs.getKmdInboundCurPtr().setKmd(kmdToUse, idSubStream);
+		} else if (! outSiSs.getKmdInboundCurPtr().isKmdSet()) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound KMD but had no previous KMD - rejecting new KMD");
+		} else if (isForLegacySdes && outSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().isEmpty()) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound SDES KMD but previous KMD had no Tag - rejecting new KMD");
+		} else if (! isForLegacySdes && outSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().isEmpty()) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound MIKEY KMD but previous KMD had no MKI - rejecting new KMD");
 		} else if (isForLegacySdes && kmdToUse.getMetaTagForLegacySdes().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound SDES KMD but it has no Tag - ignoring new KMD");
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound SDES KMD but it has no Tag - rejecting new KMD");
 		} else if (! isForLegacySdes && kmdToUse.mki().isEmpty()) {
-			logWarn(FNC_NAME, "received new inbound MIKEY KMD but it has no MKI - ignoring new KMD");
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound MIKEY KMD but it has no MKI - rejecting new KMD");
 		} else if (isForLegacySdes &&
-				kmdToUse.getMetaTagForLegacySdes() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes()) {
-			logWarn(FNC_NAME, "received new inbound SDES KMD but Tag is unchanged - ignoring new KMD");
+				kmdToUse.getMetaTagForLegacySdes() == outSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes()) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound SDES KMD but Tag is unchanged - rejecting new KMD");
 		} else if (! isForLegacySdes &&
-				kmdToUse.mki().getValue() == tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().getValue()) {
-			logWarn(FNC_NAME, "received new inbound MIKEY KMD but MKI is unchanged - ignoring new KMD");
-		} else if (kmdToUse.ssrcId() != tmpSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId()) {
-			logWarn(FNC_NAME, "received new inbound KMD but SSRC has been modified - ignoring new KMD");
+				kmdToUse.mki().getValue() == outSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki().getValue()) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound MIKEY KMD but MKI is unchanged - rejecting new KMD");
+		} else if (! kmdToUse.ssrcId().equals(outSiSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId())) {
+			throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
+					"received new inbound KMD but SSRC has been modified - rejecting new KMD");
 		} else {
-			tmpSiSs.getKmdInboundNextPtr().setKmd(kmdToUse, idSubStream);
+			outSiSs.getKmdInboundNextPtr().setKmd(kmdToUse, idSubStream);
 		}
+
+		ioSetupInfosStream.replaceSiForSubStream(idSubStream, outSiSs);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -1001,7 +1012,7 @@ public final class RtspProtoHighRequestConsumer {
 			try {
 				Optional<SrtxpKmd> tmpOptKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 						tmpMe.orElseThrow(),
-						ioSetupInfosStream.getSsrcBySubStreamId(tmpIdSs).orElseThrow()
+						ioSetupInfosStream.getSsrcInboundBySubStreamId(tmpIdSs).orElseThrow()
 					);
 				if (tmpOptKmd.isEmpty()) {
 					continue;

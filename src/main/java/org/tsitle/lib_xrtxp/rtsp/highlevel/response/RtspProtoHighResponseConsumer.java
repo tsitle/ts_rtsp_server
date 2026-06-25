@@ -46,7 +46,7 @@ public class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp,
 				@NonNull RtspProtoHighMsgStructuredResponse input,
-				@NonNull RtspProtoDataResponse outputDataResp
+				@NonNull RtspProtoDataResponse ioDataResp
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".processResponse()";
 
@@ -55,7 +55,6 @@ public class RtspProtoHighResponseConsumer {
 		preProcessedHeaders.clear();
 
 		currentIdSession.writeProtect();
-		outputDataResp.clear();
 
 		//
 		final String logMsgSuffix = " in response for " + input.messageType + " request";
@@ -67,7 +66,7 @@ public class RtspProtoHighResponseConsumer {
 				currentIdSession,
 				cseqRespInp,
 				input,
-				outputDataResp
+				ioDataResp
 			);
 		if (! tmpPreflight) {
 			return RtspResponseBasics.createInternalServerError();
@@ -75,7 +74,7 @@ public class RtspProtoHighResponseConsumer {
 
 		// process headers that haven't been processed yet
 		try {
-			processRemainingHeaders(input, outputDataResp);
+			processRemainingHeaders(input, ioDataResp);
 		} catch (RtspProtoInvalidResponseException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
@@ -83,7 +82,7 @@ public class RtspProtoHighResponseConsumer {
 
 		// process body
 		try {
-			processBody(input, outputDataResp);
+			processBody(input, ioDataResp);
 		} catch (RtspProtoInvalidResponseException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
@@ -91,7 +90,7 @@ public class RtspProtoHighResponseConsumer {
 
 		// handle body
 		try {
-			handleBody(input.messageType, outputDataResp);
+			handleBody(input.messageType, ioDataResp);
 		} catch (RtspProtoSdpException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
@@ -154,23 +153,26 @@ public class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoHighMsgStructuredResponse input,
 				@NonNull RtspProtoDataResponse outputDataResp
 			) throws RtspProtoInvalidResponseException, RtspProtoInvalidSessionIdException {
-		if (input.messageType != RtspProtoMessageType.SETUP) {
-			return;
-		}
 		Optional<RtspProtoIdSession> tmpOptSessionId = input.getHeaderSessionId();
-		if (tmpOptSessionId.isEmpty()) {
+		if (! currentIdSession.isEmpty() && tmpOptSessionId.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("Missing Session header");
 		}
-		RtspProtoIdSession tmpSessionId = tmpOptSessionId.get();
+		if (tmpOptSessionId.isPresent()) {
+			RtspProtoIdSession tmpSessionId = tmpOptSessionId.get();
 
-		if (tmpSessionId.isEmpty()) {
-			throw new RtspProtoInvalidSessionIdException();
-		}
-		if (! currentIdSession.isEmpty() && ! tmpSessionId.equals(currentIdSession)) {
-			throw new RtspProtoInvalidSessionIdException();
+			if (tmpSessionId.isEmpty()) {
+				throw new RtspProtoInvalidSessionIdException();
+			}
+			if (! currentIdSession.isEmpty() && ! tmpSessionId.equals(currentIdSession)) {
+				throw new RtspProtoInvalidSessionIdException();
+			}
 		}
 		if (isResponseFromClient || outputDataResp.rrIdSession.isEmpty()) {
-			outputDataResp.rrIdSession.copyFrom(tmpSessionId);
+			if (currentIdSession.isEmpty() && tmpOptSessionId.isPresent()) {
+				outputDataResp.rrIdSession.copyFrom(tmpOptSessionId.get());
+			} else {
+				outputDataResp.rrIdSession.copyFrom(currentIdSession);
+			}
 		}
 
 		//
@@ -181,27 +183,27 @@ public class RtspProtoHighResponseConsumer {
 
 	private void processRemainingHeaders(
 				@NonNull RtspProtoHighMsgStructuredResponse input,
-				@NonNull RtspProtoDataResponse outputDataResp
+				@NonNull RtspProtoDataResponse ioDataResp
 			) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processRemainingHeaders()";
 
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : input.headers.entrySet()) {
 			switch (entry.getKey()) {
-				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue(), outputDataResp);
-				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue(), outputDataResp);
+				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue(), ioDataResp);
+				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue(), ioDataResp);
 				case RtspHeaderKey.CONTENT_BASE -> processHeader_describe_contbase(input.messageType);
 				case RtspHeaderKey.CONTENT_ENC -> processHeader_com_contenc(input.messageType, entry.getValue());
 				case RtspHeaderKey.CONTENT_LANG -> processHeader_com_contlang(input.messageType);
 				case RtspHeaderKey.CONTENT_LEN -> processHeader_com_contlen(input.messageType);
 				case RtspHeaderKey.CONTENT_TYPE -> processHeader_com_conttype(input.messageType);
 				case RtspHeaderKey.DATE -> processHeader_com_date();
-				case RtspHeaderKey.PUBLIC -> processHeader_options_public(input.messageType, entry.getValue(), outputDataResp);
-				case RtspHeaderKey.RANGE -> processHeader_play_range(input.messageType, entry.getValue(), outputDataResp);
-				case RtspHeaderKey.RTPINFO -> processHeader_play_rtpinfo(input.messageType, entry.getValue(), outputDataResp);
-				case RtspHeaderKey.SERVER -> processHeader_com_server(entry.getValue(), outputDataResp);
-				case RtspHeaderKey.TRANSPORT -> processHeader_setup_transport(input.messageType, entry.getValue(), outputDataResp);
-				case RtspHeaderKey.UNSUPPORTED -> processHeader_com_unsupported(entry.getValue(), outputDataResp);
-				case RtspHeaderKey.USERAGENT -> processHeader_com_useragent(entry.getValue(), outputDataResp);
+				case RtspHeaderKey.PUBLIC -> processHeader_options_public(input.messageType, entry.getValue(), ioDataResp);
+				case RtspHeaderKey.RANGE -> processHeader_play_range(input.messageType, entry.getValue(), ioDataResp);
+				case RtspHeaderKey.RTPINFO -> processHeader_play_rtpinfo(input.messageType, entry.getValue(), ioDataResp);
+				case RtspHeaderKey.SERVER -> processHeader_com_server(entry.getValue(), ioDataResp);
+				case RtspHeaderKey.TRANSPORT -> processHeader_setup_transport(input.messageType, entry.getValue(), ioDataResp);
+				case RtspHeaderKey.UNSUPPORTED -> processHeader_com_unsupported(entry.getValue(), ioDataResp);
+				case RtspHeaderKey.USERAGENT -> processHeader_com_useragent(entry.getValue(), ioDataResp);
 				default -> {
 					if (! preProcessedHeaders.contains(entry.getKey())) {
 						logWarn(FNC_NAME, "Skipping header: " + entry.getKey());
@@ -324,7 +326,7 @@ public class RtspProtoHighResponseConsumer {
 		if (isResponseFromClient) {
 			throw new RtspProtoInvalidResponseException("Received RTP-Info header from client");
 		}
-		// @TODO store params
+		// @TODO store params RTP SeqNr + RTP Timestamp
 	}
 
 	private void processHeader_com_server(
@@ -340,7 +342,7 @@ public class RtspProtoHighResponseConsumer {
 	private void processHeader_setup_transport(
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderEntryResponse headerEntry,
-				@NonNull RtspProtoDataResponse outputDataResp
+				@NonNull RtspProtoDataResponse ioDataResp
 			) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_setup_transport()";
 
@@ -351,7 +353,39 @@ public class RtspProtoHighResponseConsumer {
 		if (isResponseFromClient) {
 			throw new RtspProtoInvalidResponseException("Received Transport header from client");
 		}
-		// @TODO store params
+
+		if (headerEntry.hdValTransport.tpSubStream.getIsUdp() != ioDataResp.respSetupSubStreamTp.getIsUdp()) {
+			throw new RtspProtoInvalidResponseException("Received invalid Transport type (is=" +
+					(headerEntry.hdValTransport.tpSubStream.getIsUdp() ? "UDP" : "TCP") +
+					", exp=" +
+					(ioDataResp.respSetupSubStreamTp.getIsUdp() ? "UDP" : "TCP") +
+					")");
+		}
+		if (headerEntry.hdValTransport.tpSubStream.getIsEncr() != ioDataResp.respSetupSubStreamTp.getIsEncr()) {
+			throw new RtspProtoInvalidResponseException("Received invalid Transport encryption mode (is=" +
+					(headerEntry.hdValTransport.tpSubStream.getIsEncr() ? "Encrypted" : "Unencrypted") +
+					", exp=" +
+					(ioDataResp.respSetupSubStreamTp.getIsEncr() ? "Encrypted" : "Unencrypted") +
+					")");
+		}
+
+		if (headerEntry.hdValTransport.tpSubStream.getIsUdp()) {
+			if (headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
+				throw new RtspProtoInvalidResponseException("Missing Server UDP RTP Port in Transport header");
+			}
+			if (headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
+				throw new RtspProtoInvalidResponseException("Missing Server UDP RTCP Port in Transport header");
+			}
+			ioDataResp.respSetupSubStreamTp.getServerUdpPortRtpPtr()
+					.copyFrom(headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr());
+			ioDataResp.respSetupSubStreamTp.getServerUdpPortRtcpPtr()
+					.copyFrom(headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr());
+		}
+
+		if (headerEntry.hdValTransport.tpSsrcId.isEmpty()) {
+			throw new RtspProtoInvalidResponseException("Missing SSRC in Transport header");
+		}
+		ioDataResp.respSetupSubStreamSsrc.copyFrom(headerEntry.hdValTransport.tpSsrcId);
 	}
 
 	private void processHeader_com_unsupported(

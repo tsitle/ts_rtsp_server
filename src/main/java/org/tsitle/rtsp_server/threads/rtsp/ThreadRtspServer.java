@@ -265,7 +265,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 					continue;
 				}
 				try {
-					if (! rtspSessionInfo.getDescrSetupInfoSsrcBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
+					if (! rtspSessionInfo.getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
 						continue;
 					}
 				} catch (RtspProtoSessionInfoException e) {

@@ -20,10 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.request.RtspProtoLowRequestProducer;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsForSubStream;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpProducer;
 
 import java.util.Set;
@@ -820,9 +817,10 @@ public final class RtspProtoRequestOutputSvc {
 
 		//
 		RtspProtoDataRequest ioDataRequCopy = new RtspProtoDataRequest(internRequArgs.inputDataRequ);
+		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
 
 		// load data from Session Info
-		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy)) {
+		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy, ioSetupInfosStream)) {
 			return requestMessageType;
 		}
 
@@ -832,6 +830,7 @@ public final class RtspProtoRequestOutputSvc {
 			msgStructured = rtspProtoHighRequestProducer.buildRequest(
 					requestMessageType,
 					ioDataRequCopy,
+					ioSetupInfosStream,
 					internRequArgs.kmdsOutboundForAnnounceSetParam,
 					internRequArgs.setupUseTransportUdp
 				);
@@ -857,7 +856,7 @@ public final class RtspProtoRequestOutputSvc {
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 
 		// update data in Session Info
-		updateSessionInfo(requestMessageType, ioDataRequCopy);
+		updateSessionInfo(requestMessageType, ioDataRequCopy, ioSetupInfosStream);
 
 		//
 		return requestMessageType;
@@ -869,7 +868,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String fncName,
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
-				@NonNull RtspProtoDataRequest dataRequ
+				@NonNull RtspProtoDataRequest dataRequ,
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream
 			) {
 		// parse URL
 		try {
@@ -949,12 +949,18 @@ public final class RtspProtoRequestOutputSvc {
 						return false;
 					}
 				}
-				tmpAdSettForSs.ssrcId.copyFrom(tmpSiForSs.getSsrcIdPtr());
+				tmpAdSettForSs.ssrcInbound.copyFrom(tmpSiForSs.getSsrcInboundPtr());
+				tmpAdSettForSs.ssrcOutbound.copyFrom(tmpSiForSs.getSsrcOutboundPtr());
 				final String tmpOutRscUrlSubPath = tmpIdSs.getIdStr().orElseThrow();
 				tmpAdSettForSs.setUrlSubPathForSubStream(tmpOutRscUrlSubPath);
 				dataRequ.requAdStreamSett.putSettingsForSubStream(tmpAdSettForSs);
 			}
 			dataRequ.requAdStreamSett.writeProtect();
+		}
+		if (requestMessageType == RtspProtoMessageType.DESCRIBE ||
+				requestMessageType == RtspProtoMessageType.SETUP ||
+				requestMessageType == RtspProtoMessageType.SET_PARAMETER) {
+			ioSetupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
 		}
 
 		// authentication parameters
@@ -971,7 +977,11 @@ public final class RtspProtoRequestOutputSvc {
 		return true;
 	}
 
-	private void updateSessionInfo(@NonNull RtspProtoMessageType requestMessageType, @NonNull RtspProtoDataRequest dataRequ) {
+	private void updateSessionInfo(
+				@NonNull RtspProtoMessageType requestMessageType,
+				@NonNull RtspProtoDataRequest dataRequ,
+				@NonNull RtspProtoSetupInfosStream setupInfosStream
+			) {
 		rtspSessionInfo.setCseqNr_requToRem_lastSent(dataRequ.getCseqNrToSend());
 
 		// main transport parameters
@@ -985,8 +995,15 @@ public final class RtspProtoRequestOutputSvc {
 		if (isRequestFromClient && requestMessageType != RtspProtoMessageType.SETUP) {
 			rtspSessionInfo.putResourceUrlForMt_nonSetup(requestMessageType, dataRequ.rrRscUrl);
 		}
+		rtspSessionInfo.setLastUsedOutgoingRequestResourceUrl(dataRequ.rrRscUrl);
 
-		// @TODO copy outbound KMDs from SETUP request
+		// store the request message type
+		rtspSessionInfo.setLastUsedOutgoingRequestMsgType(requestMessageType);
+
+		// store sub-stream setting from SETUP/SET_PARAMETER request
+		if (requestMessageType == RtspProtoMessageType.SET_PARAMETER || requestMessageType == RtspProtoMessageType.SETUP) {
+			rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

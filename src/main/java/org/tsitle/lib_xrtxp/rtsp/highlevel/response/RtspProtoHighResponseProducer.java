@@ -248,7 +248,7 @@ public final class RtspProtoHighResponseProducer {
 
 				outputSetupInfosStream.createAndAddSetupSubStream(
 						tmpRscUrlSs,
-						tmpAvSs.ssrcId,
+						tmpAvSs.ssrcOutbound,
 						tmpKmdForSsOutbound
 					);
 			}
@@ -404,7 +404,7 @@ public final class RtspProtoHighResponseProducer {
 				tmpStreamInfoOutput.urlStr = tmpSiSs.getRscUrlSubStreamPtr().getUrlStr();
 				tmpStreamInfoOutput.seqNr.copyFrom(tmpSiSs.getRtpSeqNrT0Ptr());
 				tmpStreamInfoOutput.rtpTimestamp.copyFrom(tmpSiSs.getRtpTimestampT0Ptr());
-				tmpStreamInfoOutput.ssrcId.copyFrom(tmpSiSs.getSsrcIdPtr());
+				tmpStreamInfoOutput.ssrcId.copyFrom(tmpSiSs.getSsrcOutboundPtr());
 				if (tmpSubStreamNr == 1) {
 					hdEntry.hdValRtpinfo.setSubStream1(tmpStreamInfoOutput);
 				} else if (tmpSubStreamNr == 2) {
@@ -515,7 +515,7 @@ public final class RtspProtoHighResponseProducer {
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtpPtr());
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtcpPtr());
 			}
-			hdEntry.hdValTransport.tpSsrcId.copyFrom(tmpSiSs.getSsrcIdPtr());
+			hdEntry.hdValTransport.tpSsrcId.copyFrom(tmpSiSs.getSsrcOutboundPtr());
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 

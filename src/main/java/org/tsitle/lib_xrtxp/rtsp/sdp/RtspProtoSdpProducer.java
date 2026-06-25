@@ -328,10 +328,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			if (tmpOutSubStreamId.isEmpty()) {
 				throw new RtspProtoSdpException("Sub-Stream ID must be set in AdSettingsForSubStream");
 			}
-			if (tmpInpAdSubStreamSetts.get().ssrcId.isEmpty()) {
+			if (tmpInpAdSubStreamSetts.get().ssrcOutbound.isEmpty()) {
 				throw new RtspProtoSdpException("SSRC must be set in AdSettingsForSubStream");
 			}
-			tmpOutRtspSsrcIdLong = tmpInpAdSubStreamSetts.get().ssrcId.getId32bit().orElse(-1L);
+			tmpOutRtspSsrcIdLong = tmpInpAdSubStreamSetts.get().ssrcOutbound.getId32bit().orElse(-1L);
 		} else if (! isForDescribe) {
 			throw new RtspProtoSdpException("Stream Source ID must be set in AdSettingsForSubStream");
 		} else {  // only DESCRIBE
@@ -364,7 +364,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (isForDescribe) {
 			settSubStream.idStreamSource.copyFrom(ssId);
 			settSubStream.idSubStream.copyFrom(tmpOutSubStreamId);
-			settSubStream.ssrcId.copyFrom(tmpOutRtspSsrcIdObj);
+			settSubStream.ssrcOutbound.copyFrom(tmpOutRtspSsrcIdObj);
 			settSubStream.setUrlSubPathForSubStream(tmpSdpControlIdForSubStream);
 		}
 

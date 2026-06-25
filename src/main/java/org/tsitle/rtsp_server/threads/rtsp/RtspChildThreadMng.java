@@ -298,7 +298,7 @@ final class RtspChildThreadMng {
 				.debugSessionId(rtspSessionInfo.getIdSession())
 				.idStreamSource(ctfos.idStreamSource)
 				.idSubStream(ctfos.idSubStream)
-				.ssrcId(tmpSiSs.getSsrcIdPtr())
+				.ssrcId(tmpSiSs.getSsrcOutboundPtr())
 				.tpClientIpAddr(getClientIpAddr());
 		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
 			tmpBuilder
@@ -348,7 +348,7 @@ final class RtspChildThreadMng {
 				.comDebugSessionId(rtspSessionInfo.getIdSession())
 				.comIdStreamSource(idStreamSource)
 				.comIdSubStream(streamInfo.getRscUrlSubStreamPtr().idSubStream)
-				.comSsrcId(streamInfo.getSsrcIdPtr())
+				.comSsrcId(streamInfo.getSsrcOutboundPtr())
 				.comTpClientIpAddr(getClientIpAddr())
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.getSubStreamTpPtr().getIsEncr())
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))
@@ -414,7 +414,7 @@ final class RtspChildThreadMng {
 		//
 		RtcpInnerXsrcBlock xsrcBlock = new RtcpInnerXsrcBlock(
 				1,
-				tmpSiSs.getSsrcIdPtr(),
+				tmpSiSs.getSsrcOutboundPtr(),
 				List.of(
 						new RtcpInnerXsrcBlock.BlockEntry(
 								RtcpInnerXsrcBlock.BlockType.CNAME,

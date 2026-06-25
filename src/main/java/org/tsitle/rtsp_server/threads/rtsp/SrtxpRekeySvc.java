@@ -223,8 +223,8 @@ final class SrtxpRekeySvc {
 		final String resourceUrlForSs = tmpOptRscUrl.get().getUrlStr();
 
 		{
-			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
-			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
 				return false;
@@ -242,12 +242,12 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
+			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
 					resourceUrlForSs,
 					ctfos.idSubStream,
 					tmpNextKmdOutbound
 				);
-			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
 				return false;
@@ -277,8 +277,8 @@ final class SrtxpRekeySvc {
 		final String resourceUrl = tmpOptRscUrl.get().getUrlStr();
 
 		{
-			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
-			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
 				return false;
@@ -287,11 +287,8 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			RtspProtoMessageType tmpMt = rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
-					resourceUrl,
-					kmdsOutbound
-				);
-			RtspProtoStatusCode requStatCode = recvResponseFromClient(tmpMt);
+			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
+			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");
 				return false;
@@ -318,13 +315,12 @@ final class SrtxpRekeySvc {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspProtoStatusCode recvResponseFromClient(@NonNull RtspProtoMessageType requestMessageType)
-			throws TcpSocketClosedException, TcpSocketIoException {
+	private @NonNull RtspProtoStatusCode recvResponseFromClient() throws TcpSocketClosedException, TcpSocketIoException {
 		int timeoutCnt = 0;
 		RtspResponseBasics respBasics = null;
 		while (++timeoutCnt < 100) {
 			try {
-				respBasics = rtspProtoResponseInputSvc.receiveResponse(requestMessageType);
+				respBasics = rtspProtoResponseInputSvc.receiveResponse();
 			} catch (InputStreamNotReadyException ignored) {
 				// ignore
 			}

@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
+import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -13,6 +14,7 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseConsumer;
@@ -91,19 +93,26 @@ public final class RtspProtoResponseInputSvc {
 
 	/**
 	 * Receive a response.
-	 * @param requestMessageType The message type of the request that this response is for.
 	 * @return Basic response information
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
-	public @NonNull RtspResponseBasics receiveResponse(@NonNull RtspProtoMessageType requestMessageType)
+	public @NonNull RtspResponseBasics receiveResponse()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
+
+		//
+		Optional<RtspProtoMessageType> tmpOptLastMsgTp = loadFromSessionInfo_onlyLastMsgType();
+		if (tmpOptLastMsgTp.isEmpty()) {
+			logWarn(FNC_NAME, "Receiving RTSP response message failed because no request message type is known");
+			return RtspResponseBasics.createInternalServerError();
+		}
+		RtspProtoMessageType requestMessageType = tmpOptLastMsgTp.get();
 
 		// read the raw response from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
@@ -122,10 +131,12 @@ public final class RtspProtoResponseInputSvc {
 		// load data from Session Info
 		RtspProtoIdSession currentIdSession = RtspProtoIdSession.ofEmpty();
 		RtspProtoDataCntCseqRespInp cseqRespInp = new RtspProtoDataCntCseqRespInp();
-		loadFromSessionInfo(currentIdSession, cseqRespInp);
+		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
+		if (! loadFromSessionInfo(currentIdSession, cseqRespInp, requestMessageType, outputDataResp)) {
+			return RtspResponseBasics.createInternalServerError();
+		}
 
 		// process the response
-		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
 		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(
 				currentIdSession,
 				cseqRespInp,
@@ -151,15 +162,57 @@ public final class RtspProtoResponseInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void loadFromSessionInfo(
+	private Optional<RtspProtoMessageType> loadFromSessionInfo_onlyLastMsgType() {
+		return rtspSessionInfo.getLastUsedOutgoingRequestMsgType();
+	}
+
+	private boolean loadFromSessionInfo(
 				@NonNull RtspProtoIdSession currentIdSession,
-				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp
+				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp,
+				@NonNull RtspProtoMessageType requestMessageType,
+				@NonNull RtspProtoDataResponse dataResp
 			) {
+		final String FNC_NAME = getClass().getSimpleName() + ".loadFromSessionInfo()";
+
+		// copy the last used Resource URL object
+		if (rtspSessionInfo.getLastUsedOutgoingRequestResourceUrl().isEmpty()) {
+			logError(FNC_NAME, "Resource URL UrlStr cannot be empty");
+			return false;
+		}
+		dataResp.rrRscUrl.copyFrom(rtspSessionInfo.getLastUsedOutgoingRequestResourceUrl().orElseThrow());
+		if (dataResp.rrRscUrl.idInputSource.isEmpty()) {
+			logError(FNC_NAME, "Resource URL idInputSource cannot be empty");
+			return false;
+		}
+
+		RtspProtoIdSubStream idSsPtr = dataResp.rrRscUrl.idSubStream;
+
+		if (requestMessageType == RtspProtoMessageType.SETUP && idSsPtr.isEmpty()) {
+			logError(FNC_NAME, "Resource URL idSubStream cannot be empty for SETUP responses");
+			return false;
+		}
+
+		//
 		currentIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		currentIdSession.writeProtect();
 
+		//
 		cseqRespInp.cseqNr_expected.copyFrom(rtspSessionInfo.getCseqNr_requToRem_lastSent());
 		cseqRespInp.writeProtect();
+
+		//
+		try {
+			RtspProtoSetupInfoForSubStream inpSiForSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(idSsPtr);
+			dataResp.respSetupSubStreamTp.copyFrom(inpSiForSs.getSubStreamTpPtr());
+		} catch (RtspProtoSessionInfoException e) {
+			// ignore
+		}
+		dataResp.respSetupSubStreamTp.setIsUdp(rtspSessionInfo.getStreamTpMain().getIsTransportUdp());
+		dataResp.respSetupSubStreamTp.setIsInterleaved(! rtspSessionInfo.getStreamTpMain().getIsTransportUdp());
+		dataResp.respSetupSubStreamTp.setIsUnicast(true);
+		dataResp.respSetupSubStreamTp.setIsEncr(rtspSessionInfo.getStreamTpMain().getIsTransportSrtpSrtcp());
+
+		return true;
 	}
 
 	private void updateSessionInfo(@NonNull RtspProtoMessageType requestMessageType, @NonNull RtspProtoDataResponse dataResp) {
@@ -191,7 +244,7 @@ public final class RtspProtoResponseInputSvc {
 
 		// store stream settings from a SETUP response
 		if (! isResponseFromClient && requestMessageType == RtspProtoMessageType.SETUP) {
-			storeSubStreamSettingsFromSetupResponse();
+			storeSubStreamSettingsFromSetupResponse(dataResp);
 			return;
 		}
 
@@ -236,8 +289,25 @@ public final class RtspProtoResponseInputSvc {
 		rtspSessionInfo.setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
 	}
 
-	private void storeSubStreamSettingsFromSetupResponse() {
-		// @TODO update the SSRC, RTP SeqNr, RTP Timestamp and what not. Also store the inbound KMDs
+	private void storeSubStreamSettingsFromSetupResponse(@NonNull RtspProtoDataResponse dataResp) {
+		final String FNC_NAME = getClass().getSimpleName() + ".storeSubStreamSettingsFromSetupResponse()";
+
+		RtspProtoIdSubStream idSsPtr = dataResp.rrRscUrl.idSubStream;
+
+		RtspProtoSetupInfoForSubStream outSiForSs;
+		try {
+			outSiForSs = new RtspProtoSetupInfoForSubStream(
+					rtspSessionInfo.getDescrSetupInfoBySubStreamsId(idSsPtr),
+					dataResp.respSetupSubStreamSsrc
+				);
+		} catch (RtspProtoSessionInfoException e) {
+			logError(FNC_NAME, "Could not find Sub-Stream info for ss='" +
+					idSsPtr.getIdStr().orElse("-unset-") + "'");
+			return;
+		}
+		outSiForSs.getSubStreamTpPtr().copyFrom(dataResp.respSetupSubStreamTp);
+		outSiForSs.setHaveSetup(true);
+		rtspSessionInfo.setDescrSetupInfosForSubStream(idSsPtr, outSiForSs);
 	}
 
 	private boolean buildSubStreamSettingsFromDescribeResponse(
@@ -265,11 +335,11 @@ public final class RtspProtoResponseInputSvc {
 		// get the Input Source ID
 		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(requestMessageType);
 		if (tmpOptRscUrl.isEmpty()) {
-			logWarn(FNC_NAME, "No Resource URL found for request message type: " + requestMessageType);
+			logError(FNC_NAME, "No Resource URL found for request message type: " + requestMessageType);
 			return false;
 		}
 		if (tmpOptRscUrl.orElseThrow().idInputSource.isEmpty()) {
-			logWarn(FNC_NAME, "Resource URL for request message type " + requestMessageType + " has no idInputSource");
+			logError(FNC_NAME, "Resource URL for request message type " + requestMessageType + " has no idInputSource");
 			return false;
 		}
 		// create the Resource URL object
@@ -288,28 +358,33 @@ public final class RtspProtoResponseInputSvc {
 		tmpMeRscUrl.idSubStream.copyFrom(idSubStream);
 
 		// extract the KMD from the SDP Media Entry
-		RtspProtoKmdForSubStream kmdOutbound = new RtspProtoKmdForSubStream();
-		RtspProtoIdXsrc tmpDummySsrc;
+		RtspProtoKmdForSubStream kmdInbound = new RtspProtoKmdForSubStream();
+		RtspProtoIdXsrc tmpDummySsrcInbound;
+		RtspProtoIdXsrc tmpSsrcOutbound;
 		try {
-			tmpDummySsrc = RtspProtoIdXsrc.of(0x01);  // this needs to be replaced later in the case of SDES
-			Optional<SrtxpKmd> tmpMeKmd = dataResp.respDescribeSdpStc.extractMediaEntrySrtxpKmd(tmpMeObj, tmpDummySsrc);
+			tmpDummySsrcInbound = RtspProtoIdXsrc.of(0x01);  // this needs to be replaced later in the case of SDES
+			Optional<SrtxpKmd> tmpMeKmd = dataResp.respDescribeSdpStc.extractMediaEntrySrtxpKmd(tmpMeObj, tmpDummySsrcInbound);
 			if (tmpMeKmd.isPresent()) {
-				kmdOutbound.setKmd(tmpMeKmd.get(), idSubStream);
+				kmdInbound.setKmd(tmpMeKmd.get(), idSubStream);
 				if (! tmpMeKmd.orElseThrow().getMetaIsForLegacySdes()) {
-					tmpDummySsrc.copyFrom(tmpMeKmd.orElseThrow().ssrcId());
+					tmpDummySsrcInbound.copyFrom(tmpMeKmd.orElseThrow().ssrcId());
 				}
 			}
+
+			// generate SSRC ID
+			long tmpOutRtspSsrcIdLong = Integer.toUnsignedLong(RandomHelper.getRandomUint32(false));
+			tmpSsrcOutbound = RtspProtoIdXsrc.of(tmpOutRtspSsrcIdLong);
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
-			logWarn(FNC_NAME, "Setting dummy SSRC failed: " + e.getMessage());
+			logError(FNC_NAME, "Setting dummy SSRC failed: " + e.getMessage());
 			return false;
 		} catch (SrtxpSecurityException e) {
-			logWarn(FNC_NAME, "Extracting KMD from SDP Media Entry caught: " + e.getMessage());
+			logError(FNC_NAME, "Extracting KMD from SDP Media Entry caught: " + e.getMessage());
 			return false;
 		}
 
 		// store the Sub-Stream info
-		outputSis.createAndAddDescribeSubStream(tmpMeRscUrl, tmpDummySsrc, kmdOutbound);
+		outputSis.createAndAddDescribeSubStream(tmpMeRscUrl, tmpDummySsrcInbound, tmpSsrcOutbound, kmdInbound);
 
 		return true;
 	}
@@ -321,6 +396,9 @@ public final class RtspProtoResponseInputSvc {
 	}
 	private void logWarn(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.WARN, fncName, msg);
+	}
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),

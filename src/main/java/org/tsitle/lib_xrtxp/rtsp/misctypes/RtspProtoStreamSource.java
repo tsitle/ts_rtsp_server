@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
  */
 public final class RtspProtoStreamSource {
 
-	private boolean writeProtected = false;
+	private boolean isWriteProtected = false;
 
 	/** Stream Source ID */
 	private final @NonNull RtspProtoIdStreamSource id = RtspProtoIdStreamSource.ofEmpty();
@@ -24,7 +24,7 @@ public final class RtspProtoStreamSource {
 		return id.clone();
 	}
 	public void setIdStreamSource(@NonNull RtspProtoIdStreamSource id) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.id.copyFrom(id);
@@ -34,7 +34,7 @@ public final class RtspProtoStreamSource {
 		return enabled;
 	}
 	public void setEnabled(boolean enabled) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.enabled = enabled;
@@ -43,7 +43,7 @@ public final class RtspProtoStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void writeProtect() {
-		writeProtected = true;
+		isWriteProtected = true;
 
 		id.writeProtect();
 	}

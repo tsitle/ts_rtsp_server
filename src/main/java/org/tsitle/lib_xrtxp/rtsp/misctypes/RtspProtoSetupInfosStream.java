@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -27,23 +28,26 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	public void createAndAddSetupSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
-				@NonNull RtspProtoIdXsrc ssrcId,
+				@NonNull RtspProtoIdXsrc ssrcOutbound,
 				@NonNull RtspProtoKmdForSubStream kmdOutbound
 			) {
 		createAndAddSetupDescribeSubStream(
 				rscUrlSubStream,
-				ssrcId,
+				null,
+				ssrcOutbound,
 				RtspProtoRtpSeqNr.withOverflow(RandomHelper.getRandomUint16()),
 				RtspProtoRtpTimestamp.withOverflow(RandomHelper.getRandomUint32(true)),
 				TimestampEpochNs.ofNow(),
+				null,
 				kmdOutbound
 			);
 	}
 
 	public void createAndAddDescribeSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
-				@NonNull RtspProtoIdXsrc dummySsrcId,
-				@NonNull RtspProtoKmdForSubStream kmdOutbound
+				@NonNull RtspProtoIdXsrc dummySsrcInbound,
+				@NonNull RtspProtoIdXsrc ssrcOutbound,
+				@NonNull RtspProtoKmdForSubStream kmdInbound
 			) {
 		/*
 		 * In a DESCRIBE response we don't get the SSRC, RTP SeqNr and RTP Timestamp.
@@ -52,11 +56,13 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		 */
 		createAndAddSetupDescribeSubStream(
 				rscUrlSubStream,
-				dummySsrcId,
+				dummySsrcInbound,
+				ssrcOutbound,
 				RtspProtoRtpSeqNr.ofEmpty(),
 				RtspProtoRtpTimestamp.ofEmpty(),
 				TimestampEpochNs.ofEmpty(),
-				kmdOutbound
+				kmdInbound,
+				null
 			);
 	}
 
@@ -110,15 +116,30 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return Optional.of(resObj.clone());
 	}
 
-	public Optional<RtspProtoIdXsrc> getSsrcBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+	public Optional<RtspProtoIdXsrc> getSsrcInboundBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		if (idSubStream.isEmpty()) {
 			return Optional.empty();
 		}
 		RtspProtoIdXsrc resObj = null;
 		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
-			resObj = (siSsPtr1 == null ? null : siSsPtr1.getSsrcIdPtr());
+			resObj = (siSsPtr1 == null ? null : siSsPtr1.getSsrcInboundPtr());
 		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
-			resObj = (siSsPtr2 == null ? null : siSsPtr2.getSsrcIdPtr());
+			resObj = (siSsPtr2 == null ? null : siSsPtr2.getSsrcInboundPtr());
+		}
+		if (resObj == null) {
+			return Optional.empty();
+		}
+		return Optional.of(resObj.clone());
+	}
+	public Optional<RtspProtoIdXsrc> getSsrcOutboundBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+		if (idSubStream.isEmpty()) {
+			return Optional.empty();
+		}
+		RtspProtoIdXsrc resObj = null;
+		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
+			resObj = (siSsPtr1 == null ? null : siSsPtr1.getSsrcOutboundPtr());
+		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
+			resObj = (siSsPtr2 == null ? null : siSsPtr2.getSsrcOutboundPtr());
 		}
 		if (resObj == null) {
 			return Optional.empty();
@@ -165,6 +186,37 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return resSet;
 	}
 
+	public @NonNull RtspProtoTcpChannelNr getHighestTcpChannelNrFromAllSubStreams() {
+		int max = -1;
+		if (! idSubStream1.isEmpty() && siSsPtr1 != null &&
+				! siSsPtr1.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty() &&
+				siSsPtr1.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow() > max) {
+			max = siSsPtr1.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow();
+		}
+		if (! idSubStream2.isEmpty() && siSsPtr2 != null &&
+				! siSsPtr2.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty() &&
+				siSsPtr2.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow() > max) {
+			max = siSsPtr2.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow();
+		}
+		if (max < 0) {
+			return RtspProtoTcpChannelNr.ofEmpty();
+		}
+		try {
+			return RtspProtoTcpChannelNr.of(max);
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+			return RtspProtoTcpChannelNr.ofEmpty();
+		}
+	}
+
+	public void replaceSiForSubStream(@NonNull RtspProtoIdSubStream idSubStream, @NonNull RtspProtoSetupInfoForSubStream value) {
+		if (! containsSiForSubStreamId(idSubStream)) {
+			throw new IllegalArgumentException("Sub-Stream Info for ID '" +
+					idSubStream.getIdStr().orElse("-unset-") + "' does not exist");
+		}
+		putInfoForSubStream(value);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void copyFrom(@NonNull RtspProtoSetupInfosStream other) {
@@ -206,11 +258,13 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 
 	private void createAndAddSetupDescribeSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
-				@NonNull RtspProtoIdXsrc ssrcId,
+				@Nullable RtspProtoIdXsrc ssrcInbound,
+				@NonNull RtspProtoIdXsrc ssrcOutbound,
 				@NonNull RtspProtoRtpSeqNr rtpSeqNr,
 				@NonNull RtspProtoRtpTimestamp rtpTimestamp,
 				@NonNull TimestampEpochNs rtpTimestampGenEpochNs,
-				@NonNull RtspProtoKmdForSubStream kmdOutbound
+				@Nullable RtspProtoKmdForSubStream kmdInbound,
+				@Nullable RtspProtoKmdForSubStream kmdOutbound
 			) {
 		if (rscUrlSubStream.getUrlStr().isEmpty()) {
 			throw new IllegalArgumentException("Resource URL must be set");
@@ -221,29 +275,45 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		if (rscUrlSubStream.idSubStream.isEmpty()) {
 			throw new IllegalArgumentException("Sub-Stream ID must be set");
 		}
-		if (ssrcId.isEmpty()) {
-			throw new IllegalArgumentException("ssrcId must be set");
+
+		RtspProtoIdXsrc tmpSsrcForKmd;
+		if (kmdInbound != null && ssrcInbound != null) {
+			tmpSsrcForKmd = ssrcInbound;
+		} else if (kmdOutbound != null) {
+			tmpSsrcForKmd = ssrcOutbound;
+		} else {
+			throw new IllegalArgumentException("SSRC must be set");
+		}
+		if (tmpSsrcForKmd.isEmpty()) {
+			throw new IllegalArgumentException("SSRC must be set");
 		}
 
 		SrtxpKmd tmpKmd = null;
-		if (kmdOutbound.isKmdSet()) {
+		if (kmdInbound != null && kmdInbound.isKmdSet()) {
+			tmpKmd = kmdInbound.getKmd().orElseThrow();
+		} else if (kmdOutbound != null && kmdOutbound.isKmdSet()) {
 			tmpKmd = kmdOutbound.getKmd().orElseThrow();
 		}
 		if (tmpKmd != null && tmpKmd.ssrcId().isEmpty()) {
 			throw new IllegalArgumentException("kmdOutbound.ssrcId must be set");
 		}
-		if (tmpKmd != null && ! tmpKmd.ssrcId().equals(ssrcId)) {
-			throw new IllegalArgumentException("kmdOutbound.ssrcId must match ssrcId");
+		if (tmpKmd != null && ! tmpKmd.ssrcId().equals(tmpSsrcForKmd)) {
+			throw new IllegalArgumentException("kmdOutbound.ssrcId must match SSRC");
 		}
 		RtspProtoSetupInfoForSubStream resObj = new RtspProtoSetupInfoForSubStream(
 				rscUrlSubStream,
-				ssrcId,
+				ssrcInbound,
+				ssrcOutbound,
 				rtpSeqNr,
 				rtpTimestamp,
 				rtpTimestampGenEpochNs
 			);
 		if (tmpKmd != null) {
-			resObj.getKmdOutboundPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);
+			if (kmdInbound != null) {
+				resObj.getKmdInboundCurPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);
+			} else {
+				resObj.getKmdOutboundPtr().setKmd(tmpKmd, rscUrlSubStream.idSubStream);
+			}
 			resObj.getSubStreamTpPtr().setIsEncr(true);
 		}
 		//

@@ -98,6 +98,14 @@ public final class RtspProtoSessionInfo {
 	/** Resource URL per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
 	private final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspProtoRscUrl> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
+	/** Last used outgoing request Resource URL object */
+	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = new RtspProtoRscUrl();
+
+	// ----------------------------------------------------------------
+
+	/** Last used outgoing request message type */
+	private @NonNull RtspProtoMessageType lastUsedOutgoingRequestMsgType = RtspProtoMessageType.UNKNOWN;
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -340,11 +348,23 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
+	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcInboundBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
 		theReadLock.lock();
 		try {
-			return descrSetupInfosStream.getSsrcBySubStreamId(idSubStream).orElseThrow(() ->
+			return descrSetupInfosStream.getSsrcInboundBySubStreamId(idSubStream).orElseThrow(() ->
+					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
+							idSubStream.getIdStr().orElse("-unset-") + "'")
+				);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcOutboundBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
+			throws RtspProtoSessionInfoException {
+		theReadLock.lock();
+		try {
+			return descrSetupInfosStream.getSsrcOutboundBySubStreamId(idSubStream).orElseThrow(() ->
 					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
 							idSubStream.getIdStr().orElse("-unset-") + "'")
 				);
@@ -476,6 +496,32 @@ public final class RtspProtoSessionInfo {
 		theReadLock.lock();
 		try {
 			return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<RtspProtoRscUrl> getLastUsedOutgoingRequestResourceUrl() {
+		theReadLock.lock();
+		try {
+			if (lastUsedOutgoingRequestResourceUrlObj.isEmpty()) {
+				return Optional.empty();
+			}
+			return Optional.of(lastUsedOutgoingRequestResourceUrlObj.clone());
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<RtspProtoMessageType> getLastUsedOutgoingRequestMsgType() {
+		theReadLock.lock();
+		try {
+			if (lastUsedOutgoingRequestMsgType == RtspProtoMessageType.UNKNOWN) {
+				return Optional.empty();
+			}
+			return Optional.of(lastUsedOutgoingRequestMsgType);
 		} finally {
 			theReadLock.unlock();
 		}
@@ -733,6 +779,14 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+	void setDescrSetupInfosForSubStream(@NonNull RtspProtoIdSubStream idSubStream, @NonNull RtspProtoSetupInfoForSubStream value) {
+		theWriteLock.lock();
+		try {
+			descrSetupInfosStream.replaceSiForSubStream(idSubStream, value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
 
 	void setDescrAvailableSubStreamIds(@NonNull Set<@NonNull RtspProtoIdSubStream> value) {
 		theWriteLock.lock();
@@ -760,6 +814,24 @@ public final class RtspProtoSessionInfo {
 			RtspProtoRscUrl tmpObj = rscUrl.clone();
 			tmpObj.writeProtect();
 			resourceUrlPerMtMap_nonSetup.put(mt, tmpObj);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setLastUsedOutgoingRequestResourceUrl(@NonNull RtspProtoRscUrl rscUrl) {
+		theWriteLock.lock();
+		try {
+			lastUsedOutgoingRequestResourceUrlObj.copyFrom(rscUrl);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setLastUsedOutgoingRequestMsgType(@NonNull RtspProtoMessageType requestMessageType) {
+		theWriteLock.lock();
+		try {
+			lastUsedOutgoingRequestMsgType = requestMessageType;
 		} finally {
 			theWriteLock.unlock();
 		}

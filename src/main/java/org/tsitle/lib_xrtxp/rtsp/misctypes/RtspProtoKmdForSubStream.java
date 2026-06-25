@@ -12,7 +12,7 @@ import java.util.Optional;
  */
 public final class RtspProtoKmdForSubStream implements Cloneable {
 
-	private boolean writeProtected = false;
+	private boolean isWriteProtected = false;
 
 	private boolean isKmdForLegacySdes = false;
 	private @Nullable SrtxpKmd kmd = null;
@@ -25,7 +25,7 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 		return (kmd != null);
 	}
 	public void setKmd(@NonNull SrtxpKmd kmd, @NonNull RtspProtoIdSubStream idSubStream) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		if (idSubStream.isEmpty()) {
@@ -60,18 +60,34 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void writeProtect() {
-		writeProtected = true;
+		isWriteProtected = true;
 
 		idSubStream.writeProtect();
 	}
 
 	public void clear() {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		isKmdForLegacySdes = false;
 		kmd = null;
 		idSubStream.clear();
+	}
+
+	public void copyFrom(@NonNull RtspProtoKmdForSubStream other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		isKmdForLegacySdes = other.isKmdForLegacySdes;
+		if (other.kmd == null) {
+			kmd = null;
+		} else {
+			kmd = other.kmd.clone();
+		}
+		idSubStream.copyFrom(other.idSubStream);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

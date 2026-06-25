@@ -14,7 +14,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 
 	public @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
 	public @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
-	public @NonNull RtspProtoIdXsrc ssrcId = RtspProtoIdXsrc.ofEmpty();
+	public @NonNull RtspProtoIdXsrc ssrcInbound = RtspProtoIdXsrc.ofEmpty();
+	public @NonNull RtspProtoIdXsrc ssrcOutbound = RtspProtoIdXsrc.ofEmpty();
 	private @NonNull String urlSubPathForSubStream = "";
 
 	public @NonNull String getUrlSubPathForSubStream() {
@@ -33,7 +34,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 		}
 		idStreamSource.clear();
 		idSubStream.clear();
-		ssrcId.clear();
+		ssrcInbound.clear();
+		ssrcOutbound.clear();
 		urlSubPathForSubStream = "";
 	}
 
@@ -42,7 +44,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 
 		idStreamSource.writeProtect();
 		idSubStream.writeProtect();
-		ssrcId.writeProtect();
+		ssrcInbound.writeProtect();
+		ssrcOutbound.writeProtect();
 	}
 
 	public void copyFrom(@NonNull RtspProtoAdSettingsForSubStream other) {
@@ -54,7 +57,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 		}
 		idStreamSource.copyFrom(other.idStreamSource);
 		idSubStream.copyFrom(other.idSubStream);
-		ssrcId.copyFrom(other.ssrcId);
+		ssrcInbound.copyFrom(other.ssrcInbound);
+		ssrcOutbound.copyFrom(other.ssrcOutbound);
 		urlSubPathForSubStream = other.urlSubPathForSubStream;
 	}
 
@@ -64,7 +68,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 			RtspProtoAdSettingsForSubStream cloned = (RtspProtoAdSettingsForSubStream)super.clone();
 			cloned.idStreamSource = idStreamSource.clone();
 			cloned.idSubStream = idSubStream.clone();
-			cloned.ssrcId = ssrcId.clone();
+			cloned.ssrcInbound = ssrcInbound.clone();
+			cloned.ssrcOutbound = ssrcOutbound.clone();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -76,7 +81,8 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 		return "[" +
 				"idStreamSource=" + (idStreamSource.isEmpty() ? "-" : "'" + idStreamSource.getIdStr().orElseThrow() + "'") +
 				", idSubStream=" + (idSubStream.isEmpty() ? "-" : "'" + idSubStream.getIdStr().orElseThrow() + "'") +
-				", ssrcId=" + (ssrcId.isEmpty() ? "-" : ssrcId.toHexString(true)) +
+				", ssrcInbound=" + (ssrcInbound.isEmpty() ? "-" : ssrcInbound.toHexString(true)) +
+				", ssrcOutbound=" + (ssrcOutbound.isEmpty() ? "-" : ssrcOutbound.toHexString(true)) +
 				", urlSubPathForSubStream='" + urlSubPathForSubStream + "'" +
 				"]";
 	}

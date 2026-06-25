@@ -14,7 +14,7 @@ import java.net.DatagramSocket;
  */
 public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 
-	private boolean writeProtected = false;
+	private boolean isWriteProtected = false;
 
 	/** Resource URL of the Sub-Stream */
 	private @NonNull RtspProtoRscUrl rscUrlSubStream = new RtspProtoRscUrl();
@@ -22,8 +22,10 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 	/** Have we received a SETUP for this Sub-Stream? */
 	private boolean haveSetup = false;
 
-	/** RTSP Synchronization Source Identifier (random number. one per session/client and per stream) */
-	private @NonNull RtspProtoIdXsrc ssrcId;
+	/** RTSP Synchronization Source Identifier for inbound packets (random number. one per session/client and per stream) */
+	private @NonNull RtspProtoIdXsrc ssrcInbound;
+	/** RTSP Synchronization Source Identifier for outbound packets (random number. one per session/client and per stream) */
+	private @NonNull RtspProtoIdXsrc ssrcOutbound;
 	/** Initial RTP Sequence Number within the session (random number, 16 bits unsigned) */
 	public @NonNull RtspProtoRtpSeqNr rtpSeqNrT0;
 	/** Initial RTP Timestamp within the session (random number) */
@@ -53,21 +55,68 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 
 	public RtspProtoSetupInfoForSubStream(
 				@NonNull RtspProtoRscUrl rscUrlSubStream,
-				@NonNull RtspProtoIdXsrc ssrcId,
+				@Nullable RtspProtoIdXsrc ssrcInbound,
+				@NonNull RtspProtoIdXsrc ssrcOutbound,
 				@NonNull RtspProtoRtpSeqNr rtpSeqNrT0,
 				@NonNull RtspProtoRtpTimestamp rtpTimestampT0,
 				@NonNull TimestampEpochNs rtpGenTsT0EpochNs
 			) {
 		this.rscUrlSubStream.copyFrom(rscUrlSubStream);
 		this.rscUrlSubStream.writeProtect();
-		this.ssrcId = ssrcId.clone();
-		this.ssrcId.writeProtect();
+
+		if (ssrcInbound != null) {
+			this.ssrcInbound = ssrcInbound.clone();
+		} else {
+			this.ssrcInbound = RtspProtoIdXsrc.ofEmpty();
+		}
+		this.ssrcInbound.writeProtect();
+
+		this.ssrcOutbound = ssrcOutbound.clone();
+		this.ssrcOutbound.writeProtect();
+
 		this.rtpSeqNrT0 = rtpSeqNrT0.clone();
 		this.rtpSeqNrT0.writeProtect();
 		this.rtpTimestampT0 = rtpTimestampT0.clone();
 		this.rtpTimestampT0.writeProtect();
 		this.rtpGenTsT0EpochNs = rtpGenTsT0EpochNs.clone();
 		this.rtpGenTsT0EpochNs.writeProtect();
+	}
+
+	public RtspProtoSetupInfoForSubStream(
+				@NonNull RtspProtoSetupInfoForSubStream other,
+				@NonNull RtspProtoIdXsrc ssrcInbound
+			) {
+		this.rscUrlSubStream.copyFrom(other.rscUrlSubStream);
+		this.rscUrlSubStream.writeProtect();
+
+		this.haveSetup = other.haveSetup;
+
+		if (ssrcInbound.isEmpty()) {
+			throw new IllegalArgumentException("ssrcInbound is empty");
+		}
+		this.ssrcInbound = ssrcInbound.clone();
+		this.ssrcInbound.writeProtect();
+
+		this.ssrcOutbound = other.ssrcOutbound.clone();
+
+		this.rtpSeqNrT0 = other.rtpSeqNrT0.clone();
+		this.rtpSeqNrT0.writeProtect();
+		this.rtpTimestampT0 = other.rtpTimestampT0.clone();
+		this.rtpTimestampT0.writeProtect();
+		this.rtpGenTsT0EpochNs = other.rtpGenTsT0EpochNs.clone();
+		this.rtpGenTsT0EpochNs.writeProtect();
+
+		this.subStreamTp.copyFrom(other.subStreamTp);
+
+		this.tpServerUdpSocketRtp = other.tpServerUdpSocketRtp;
+		this.tpServerUdpSocketRtcp = other.tpServerUdpSocketRtcp;
+
+		this.tpClientUdpSocketRtp = other.tpClientUdpSocketRtp;
+		this.tpClientUdpSocketRtcp = other.tpClientUdpSocketRtcp;
+
+		this.kmdInboundCur.copyFrom(other.kmdInboundCur);
+		this.kmdInboundNext.copyFrom(other.kmdInboundNext);
+		this.kmdOutbound.copyFrom(other.kmdOutbound);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -81,14 +130,17 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 		return haveSetup;
 	}
 	public void setHaveSetup(boolean haveSetup) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.haveSetup = haveSetup;
 	}
 
-	public @NonNull RtspProtoIdXsrc getSsrcIdPtr() {
-		return ssrcId;
+	public @NonNull RtspProtoIdXsrc getSsrcInboundPtr() {
+		return ssrcInbound;
+	}
+	public @NonNull RtspProtoIdXsrc getSsrcOutboundPtr() {
+		return ssrcOutbound;
 	}
 
 	public @NonNull RtspProtoRtpSeqNr getRtpSeqNrT0Ptr() {
@@ -114,13 +166,13 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 		return tpServerUdpSocketRtcp;
 	}
 	public void setServerUdpSocketRtpPtr(@NonNull DatagramSocket value) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.tpServerUdpSocketRtp = value;
 	}
 	public void setServerUdpSocketRtcpPtr(@NonNull DatagramSocket value) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.tpServerUdpSocketRtcp = value;
@@ -133,13 +185,13 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 		return tpClientUdpSocketRtcp;
 	}
 	public void setClientUdpSocketRtpPtr(@NonNull DatagramSocket value) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.tpClientUdpSocketRtp = value;
 	}
 	public void setClientUdpSocketRtcpPtr(@NonNull DatagramSocket value) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.tpClientUdpSocketRtcp = value;
@@ -169,10 +221,11 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void writeProtect() {
-		writeProtected = true;
+		isWriteProtected = true;
 
 		rscUrlSubStream.writeProtect();
-		ssrcId.writeProtect();
+		ssrcInbound.writeProtect();
+		ssrcOutbound.writeProtect();
 		rtpSeqNrT0.writeProtect();
 		rtpTimestampT0.writeProtect();
 		rtpGenTsT0EpochNs.writeProtect();
@@ -191,7 +244,8 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 			RtspProtoSetupInfoForSubStream cloned = (RtspProtoSetupInfoForSubStream)super.clone();
 
 			cloned.rscUrlSubStream = rscUrlSubStream.clone();
-			cloned.ssrcId = ssrcId.clone();
+			cloned.ssrcInbound = ssrcInbound.clone();
+			cloned.ssrcOutbound = ssrcOutbound.clone();
 			cloned.rtpSeqNrT0 = rtpSeqNrT0.clone();
 			cloned.rtpTimestampT0 = rtpTimestampT0.clone();
 			cloned.rtpGenTsT0EpochNs = rtpGenTsT0EpochNs.clone();

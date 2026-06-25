@@ -79,4 +79,13 @@ public final class RtspProtoRscUrl implements Cloneable {
 		}
 	}
 
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				"idInputSource=" + idInputSource +
+				", idSubStream=" + idSubStream +
+				", urlStr=" + urlStr +
+				"]";
+	}
+
 }

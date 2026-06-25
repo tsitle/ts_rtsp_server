@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.data_rr;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 
@@ -14,6 +15,11 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 	public final @NonNull RtspProtoDataCntSdpRaw respDescribeSdpRaw = new RtspProtoDataCntSdpRaw();
 	/** Announced SDP in its parsed form */
 	public final @NonNull RtspProtoDataCntSdpStructured respDescribeSdpStc = new RtspProtoDataCntSdpStructured();
+
+	/** Sub-Stream transport parameters */
+	public final @NonNull RtspProtoDataCntSubStreamTp respSetupSubStreamTp = new RtspProtoDataCntSubStreamTp();
+	/** Sub-Stream SSRC */
+	public final @NonNull RtspProtoIdXsrc respSetupSubStreamSsrc = RtspProtoIdXsrc.ofEmpty();
 
 	/** Supported Message Types */
 	public final @NonNull RtspProtoDataCntMessageTypes respSuppMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -53,6 +59,8 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 		respGetParamValues.clear();
 		respDescribeSdpRaw.clear();
 		respDescribeSdpStc.clear();
+		respSetupSubStreamTp.clear();
+		respSetupSubStreamSsrc.clear();
 		respSuppMessageTypes.clear();
 	}
 
@@ -64,6 +72,8 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 		respGetParamValues.writeProtect();
 		respDescribeSdpRaw.writeProtect();
 		respDescribeSdpStc.writeProtect();
+		respSetupSubStreamTp.writeProtect();
+		respSetupSubStreamSsrc.writeProtect();
 		respSuppMessageTypes.writeProtect();
 	}
 

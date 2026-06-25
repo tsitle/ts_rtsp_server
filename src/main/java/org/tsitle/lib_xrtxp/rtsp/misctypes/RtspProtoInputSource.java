@@ -12,7 +12,7 @@ import java.util.Set;
  */
 public final class RtspProtoInputSource {
 
-	private boolean writeProtected = false;
+	private boolean isWriteProtected = false;
 
 	/** Input Source ID */
 	private final @NonNull RtspProtoIdInputSource id = RtspProtoIdInputSource.ofEmpty();
@@ -38,7 +38,7 @@ public final class RtspProtoInputSource {
 		return resObj;
 	}
 	public void setIdInputSource(@NonNull RtspProtoIdInputSource id) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.id.copyFrom(id);
@@ -48,7 +48,7 @@ public final class RtspProtoInputSource {
 		return enabled;
 	}
 	public void setEnabled(boolean enabled) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.enabled = enabled;
@@ -58,7 +58,7 @@ public final class RtspProtoInputSource {
 		return needsAuthentication;
 	}
 	public void setNeedsAuthentication(boolean needsAuthentication) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.needsAuthentication = needsAuthentication;
@@ -69,7 +69,7 @@ public final class RtspProtoInputSource {
 		return Set.copyOf(allowedUserAccountGroups);
 	}
 	public void setAllowedUserAccountGroups(@NonNull Set<@NonNull String> allowedUserAccountGroups) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.allowedUserAccountGroups.clear();
@@ -80,7 +80,7 @@ public final class RtspProtoInputSource {
 		return needsEncryption;
 	}
 	public void setNeedsEncryption(boolean needsEncryption) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		this.needsEncryption = needsEncryption;
@@ -96,7 +96,7 @@ public final class RtspProtoInputSource {
 		return resSet;
 	}
 	public void putIdStreamSource(@NonNull RtspProtoIdStreamSource streamSourceId) {
-		if (writeProtected) {
+		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
 		RtspProtoIdStreamSource tmpOut = streamSourceId.clone();
@@ -107,7 +107,7 @@ public final class RtspProtoInputSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void writeProtect() {
-		writeProtected = true;
+		isWriteProtected = true;
 
 		id.writeProtect();
 	}
