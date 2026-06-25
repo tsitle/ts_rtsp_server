@@ -259,7 +259,7 @@ class SrtpProtectRoundTripTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void roundtrip_with_known_packet() throws RtspProtoNumberRangeException, SrtxpSecurityException {
+	void roundtrip_with_known_packet_mikey() throws RtspProtoNumberRangeException, SrtxpSecurityException {
 		final String mikeyMsgB64 = "AQAFAB689BUBAADerb7vAAAAAAsA7d5Ie+CvLKQKEGl58Bsf8vm5EK1lNv8UYmoBAAAAHgABAQEBEAIBAQMB" +
 				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAelSS9tk6FSVy058rqi+UTmFBjpxrb6PnjjRaGBRuxBAAAAAEA";
 		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
@@ -270,6 +270,78 @@ class SrtpProtectRoundTripTest {
 		final String plainRtpHex = "801A123401020304DEADBEEF00112233445566778899AABBCCDDEEFF";
 
 		SrtxpKmd kmd = MikeyParser.parseMickeyMsgIntoKmd(mikeyMsgB64);
+
+		SrtpContextOutbound contextOutbound = new SrtpContextOutbound(kmd);
+
+		BufferExt rtpPlainPktBuf = BufferExt.decodeHexString(plainRtpHex);
+
+		RtpBaseContainerInfo rtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(rtpPlainPktBuf);
+
+		BufferExt srtpEncrPktBuf = new BufferExt();
+
+		contextOutbound.protectRtp(
+				rtpPlainPktBuf,
+				false,
+				false,
+				rtpPktContainerInfo.sequenceNumber(),
+				rtpPktContainerInfo.ssrcId(),
+				srtpEncrPktBuf
+			);
+
+		//RtpBaseContainerInfo srtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(srtpEncrPktBuf);
+
+		assertNotEquals(srtpEncrPktBuf, rtpPlainPktBuf);
+
+		// -----------------------------------------------
+
+		SrtpContextInbound contextInbound = new SrtpContextInbound(kmd);
+
+		BufferExt newlyDecrPktBuf = new BufferExt();
+
+		contextInbound.unprotectSrtp(
+				srtpEncrPktBuf,
+				rtpPktContainerInfo.sequenceNumber(),
+				rtpPktContainerInfo.ssrcId(),
+				newlyDecrPktBuf
+			);
+
+		assertEquals(newlyDecrPktBuf, rtpPlainPktBuf);
+
+		//RtpBaseContainerInfo newlyDecrRtpPktContainerInfo = RtpPacketContainerBase.parsePacketHeader(newlyDecrPktBuf);
+
+		RtpPacketMjpeg rtpPacketMjpeg = new RtpPacketMjpeg(newlyDecrPktBuf);
+
+		assertEquals(expPktType, rtpPacketMjpeg.getPayloadType());
+		assertEquals(expSenderSsrc, rtpPacketMjpeg.getSsrcId());
+		assertEquals(expSeqNr, rtpPacketMjpeg.getSequenceNumber());
+		assertEquals(expTimestamp, rtpPacketMjpeg.getTimestamp());
+		assertEquals(expIsMarkerSet, rtpPacketMjpeg.getIsMarkerSet());
+	}
+
+	@Test
+	void roundtrip_with_known_packet_sdes() throws RtspProtoNumberRangeException, SrtxpSecurityException {
+		final String mikeyMsgB64 = "AQAFAB689BUBAADerb7vAAAAAAsA7d5Ie+CvLKQKEGl58Bsf8vm5EK1lNv8UYmoBAAAAHgABAQEBEAIBAQMB" +
+				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAelSS9tk6FSVy058rqi+UTmFBjpxrb6PnjjRaGBRuxBAAAAAEA";
+		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
+		final RtpPacketType expPktType = RtpPacketType.V_JPEG;
+		final RtspProtoRtpSeqNr expSeqNr = RtspProtoRtpSeqNr.of(4660);
+		final RtspProtoRtpTimestamp expTimestamp = RtspProtoRtpTimestamp.of(16909060L);
+		final boolean expIsMarkerSet = false;
+		final String plainRtpHex = "801A123401020304DEADBEEF00112233445566778899AABBCCDDEEFF";
+
+		SrtxpKmd preKmdFromKikey = MikeyParser.parseMickeyMsgIntoKmd(mikeyMsgB64);
+		SrtxpKmd kmd = new SrtxpKmd(
+				true,
+				1,
+				preKmdFromKikey.encrKeyLen(),
+				preKmdFromKikey.masterKey(),
+				preKmdFromKikey.masterSalt(),
+				preKmdFromKikey.authKeyLen(),
+				preKmdFromKikey.authTagLen(),
+				preKmdFromKikey.mki(),
+				RtspProtoIdXsrc.ofEmpty(),
+				preKmdFromKikey.kdr()
+			);
 
 		SrtpContextOutbound contextOutbound = new SrtpContextOutbound(kmd);
 

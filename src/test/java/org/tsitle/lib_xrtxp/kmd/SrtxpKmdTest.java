@@ -25,8 +25,8 @@ class SrtxpKmdTest {
 	}
 
 	@Test
-	void simpleCloneSdes() throws RtspProtoNumberRangeException {
-		SrtxpKmd kmd = SrtxpKmd.createForLegacySdesWithDefaults(987, RtspProtoIdXsrc.of(0x874301FAL));
+	void simpleCloneSdes() {
+		SrtxpKmd kmd = SrtxpKmd.createForLegacySdesWithDefaults(987);
 
 		compareKmds(kmd);
 	}
