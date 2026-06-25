@@ -429,7 +429,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		 * FFplay ignores the transports RTP/AVP and RTP/SAVP and only looks for the 'a=crypto' line.
 		 * Similarly, it will always request RTP/AVP transport in the SETUP request.
 		 */
-		return SrtxpKmd.createForLegacySdesWithDefaults(1, ssrcId);
+		return SrtxpKmd.createForLegacySdesWithDefaults(1);
 	}
 
 	private void buildSdpForSubStream_output(

@@ -98,7 +98,8 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 		// validate Sender SSRC
 		encrPktView.setOffset(RtcpPacketHeader.HEADER_SIZE);
 		int tmpSenderSsrcInt = encrPktView.getIntFromBigEndian(false);
-		if (! ctxStateSrtcpSsrc.isEmpty() && Integer.toUnsignedLong(tmpSenderSsrcInt) != ctxStateSrtcpSsrc.getId32bit().orElseThrow()) {
+		if (! ctxStateSrtcpSsrc.isEmpty() &&
+				Integer.toUnsignedLong(tmpSenderSsrcInt) != ctxStateSrtcpSsrc.getId32bit().orElseThrow()) {
 			throw new SrtxpSecurityException("Invalid Sender SSRC in SRTCP packet: " +
 					String.format("is=0x%08X, expected=%s", tmpSenderSsrcInt, ctxStateSrtcpSsrc.toHexString(true)));
 		}

@@ -91,9 +91,6 @@ public final class RtspProtoSetupInfoForSubStream implements Cloneable {
 
 		this.haveSetup = other.haveSetup;
 
-		if (ssrcInbound.isEmpty()) {
-			throw new IllegalArgumentException("ssrcInbound is empty");
-		}
 		this.ssrcInbound = ssrcInbound.clone();
 		this.ssrcInbound.writeProtect();
 

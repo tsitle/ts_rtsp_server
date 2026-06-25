@@ -81,8 +81,8 @@ public abstract class SrtxpContextBase {
 		if (kmd.authTagLen() > KeySizes.SHA1_SIZE_160) {  // Auth Tag cannot be longer than what SHA1-160 can output
 			throw new SrtxpSecurityException("Auth Tag length must be <= " + KeySizes.SHA1_SIZE_160 + " bytes");
 		}
-		if (kmd.ssrcId().isEmpty()) {
-			throw new SrtxpSecurityException("ssrcId must be set");
+		if (! kmd.getMetaIsForLegacySdes() && kmd.ssrcId().isEmpty()) {
+			throw new SrtxpSecurityException("ssrcId must be set for MIKEY KMDs");  // even though it is not actually being used
 		}
 
 		//

@@ -775,7 +775,6 @@ public final class RtspProtoRequestOutputSvc {
 		return SrtxpKmd.createForLegacySdesWithDefaults(
 				tmpSrtxpKmd.getMetaTagForLegacySdes().orElse(0) + 1,
 				tmpMkiObj,
-				tmpSrtxpKmd.ssrcId(),
 				tmpSrtxpKmd.kdr()
 			);
 	}

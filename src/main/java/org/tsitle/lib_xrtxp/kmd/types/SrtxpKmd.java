@@ -95,7 +95,11 @@ public final class SrtxpKmd implements Cloneable {
 		this.authKeyLen = authKeyLen;
 		this.authTagLen = authTagLen;
 		this.mki = mki.clone();
-		this.ssrcId = ssrcId.clone();
+		if (metaIsForLegacySdes) {
+			this.ssrcId = RtspProtoIdXsrc.ofEmpty();
+		} else {
+			this.ssrcId = ssrcId.clone();
+		}
 		this.ssrcId.writeProtect();
 		this.kdr = (kdr.isEmpty() || kdr.getValue().orElseThrow() == 0L ? SrtxpKdr.ofEmpty() : kdr.clone());
 	}
@@ -200,10 +204,9 @@ public final class SrtxpKmd implements Cloneable {
 	 * This is required for compatibility with older RTSP clients like FFplay using Lavf61.7.100.<br />
 	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
 	 * @param metaTagValue Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
-	 * @param ssrcId SSRC ID
 	 * @return New KMD object
 	 */
-	public static SrtxpKmd createForLegacySdesWithDefaults(int metaTagValue, @NonNull RtspProtoIdXsrc ssrcId) {
+	public static SrtxpKmd createForLegacySdesWithDefaults(int metaTagValue) {
 		return createXxxWithCustomKeySizes(
 				true,
 				metaTagValue,
@@ -211,7 +214,7 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
 				SrtxpMki.ofEmpty(),
-				ssrcId,
+				RtspProtoIdXsrc.ofEmpty(),
 				SrtxpKdr.ofEmpty()
 			);
 	}
@@ -222,14 +225,12 @@ public final class SrtxpKmd implements Cloneable {
 	 * The difference to a regular KMD is that no MKI will be used and KDR is set to zero.
 	 * @param metaTagValue Only for legacy SDES: Tag value (similar to MKI but only relevant in SDP)
 	 * @param mki Master Key Identifier
-	 * @param ssrcId SSRC ID
 	 * @param kdr Key Derivation Rate
 	 * @return New KMD object
 	 */
 	public static SrtxpKmd createForLegacySdesWithDefaults(
 				int metaTagValue,
 				@NonNull SrtxpMki mki,
-				@NonNull RtspProtoIdXsrc ssrcId,
 				@NonNull SrtxpKdr kdr
 			) {
 		return createXxxWithCustomKeySizes(
@@ -239,7 +240,7 @@ public final class SrtxpKmd implements Cloneable {
 				DEFAULT_AUTH_KEY_LEN,
 				DEFAULT_AUTH_TAG_LEN,
 				mki,
-				ssrcId,
+				RtspProtoIdXsrc.ofEmpty(),
 				kdr
 			);
 	}
