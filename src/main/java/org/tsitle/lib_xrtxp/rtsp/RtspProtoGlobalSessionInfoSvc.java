@@ -297,16 +297,14 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 		NtpTimestamp tmpTs = NtpTimestamp.ofNow();
 		String blockTs1 = String.format("%08x", tmpTs.getSeconds32bit().orElseThrow());
 		String blockTs2 = String.format("%04x", (tmpTs.getFraction32bit().orElseThrow() >>> 16) & 0xFFFFL)
-				// we replace this letter just for fun (but keeping sortability)
-				.replace("f", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "g" : "h"));
+				.replace("f", "g");  // we replace this letter just for fun (but keeping sortability)
 		String blockTs3 = String.format("%04x", tmpTs.getFraction32bit().orElseThrow() & 0xFFFFL)
-				// we replace this letter just for fun (but keeping sortability)
-				.replace("f", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "i" : "u"));
+				.replace("f", "i");  // we replace this letter just for fun (but keeping sortability)
 		//
 		String blockRnd1 = String.format("%04x", RandomHelper.getRandomUint16())
 				.replace("1", "j")  // we replace the digits just for fun (no sortability required)
-				.replace("2", "k")
-				.replace("3", "m");
+				.replace("2", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "k" : "h"))
+				.replace("3", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "m" : "u"));
 		String tmp8chars = String.format("%04x%04x",
 					RandomHelper.getRandomUint16(),
 					RandomHelper.getRandomUint16()
@@ -330,7 +328,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 				.replace("b", "p");
 		/*
 		 * The resulting UUID has an increased alphabet size (+18 characters --> 34), which increases the entropy of the UUID.
-		 * Example output: 'ede77ae5-cbgb-bua4-6eje-1vr179zq18d0'
+		 * Example output: 'ede77ae5-cbgb-bia4-6eje-1vr179zq18d0'
 		 */
 		return String.format("%s-%s-%s-%s-%s%s", blockTs1, blockTs2, blockTs3, blockRnd1, blockRnd2dot1, blockRnd2dot2);
 	}
