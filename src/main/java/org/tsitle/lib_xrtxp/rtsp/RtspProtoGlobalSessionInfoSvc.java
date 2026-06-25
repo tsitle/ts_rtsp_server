@@ -2,8 +2,8 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
+import org.tsitle.lib_xrtxp.common.helpers.UuidHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
@@ -99,7 +99,10 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 			int tmpTries = 0;
 			do {
 				String tmpIdStr = cfgSubStreamIdPrefix + ipHash + "_" +
-						HashMd5Helper.hashOfString(generateUuid(), false).substring(0, HASH_LEN);
+						HashMd5Helper.hashOfString(
+								UuidHelper.generateUuid(false),
+								false
+							).substring(0, HASH_LEN);
 				tmpIdSub.setIdStr(tmpIdStr);
 			} while (subStreamIds.contains(tmpIdSub) && ++tmpTries < MAX_TRIES);
 			if (tmpTries == MAX_TRIES) {
@@ -164,7 +167,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 */
 	public @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
 		final String ipHash = getIpHash(clientIpAddr);
-		final String tmpUuid = generateUuid();
+		final String tmpUuid = UuidHelper.generateUuid(false);
 		final String nonce = HashMd5Helper.hashOfString(tmpUuid, false);
 
 		theWriteLock.lock();
@@ -290,47 +293,6 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 		return ipHash + "_" + HashMd5Helper
 				.hashOfString(idIs.getIdStr().orElseThrow(), false)
 				.substring(0, HASH_LEN);
-	}
-
-	private static @NonNull String generateUuid() {
-		// we use the NTP timestamp as a base for the UUID. This will provide sortability
-		NtpTimestamp tmpTs = NtpTimestamp.ofNow();
-		String blockTs1 = String.format("%08x", tmpTs.getSeconds32bit().orElseThrow());
-		String blockTs2 = String.format("%04x", (tmpTs.getFraction32bit().orElseThrow() >>> 16) & 0xFFFFL)
-				.replace("f", "g");  // we replace this letter just for fun (but keeping sortability)
-		String blockTs3 = String.format("%04x", tmpTs.getFraction32bit().orElseThrow() & 0xFFFFL)
-				.replace("f", "i");  // we replace this letter just for fun (but keeping sortability)
-		//
-		String blockRnd1 = String.format("%04x", RandomHelper.getRandomUint16())
-				.replace("1", "j")  // we replace the digits just for fun (no sortability required)
-				.replace("2", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "k" : "h"))
-				.replace("3", (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? "m" : "u"));
-		String tmp8chars = String.format("%04x%04x",
-					RandomHelper.getRandomUint16(),
-					RandomHelper.getRandomUint16()
-				)
-				.replace("a", "q")  // we replace the letters just for fun (no sortability required)
-				.replace("b", "r")
-				.replace("f", "z");
-		StringBuilder blockRnd2dot1 = new StringBuilder();
-		for (char c : tmp8chars.toCharArray()) {
-			if (c == 'c') {
-				c = (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? 's' : 't');
-			} else if (c == 'd') {
-				c = (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? 'x' : 'v');
-			} else if (c == 'e') {
-				c = (Short.toUnsignedInt(RandomHelper.getRandomUint16()) % 2 == 0 ? 'y' : 'w');
-			}
-			blockRnd2dot1.append(c);
-		}
-		String blockRnd2dot2 = String.format("%04x", RandomHelper.getRandomUint16())
-				.replace("a", "n")  // we replace the letters just for fun (no sortability required)
-				.replace("b", "p");
-		/*
-		 * The resulting UUID has an increased alphabet size (+18 characters --> 34), which increases the entropy of the UUID.
-		 * Example output: 'ede77ae5-cbgb-bia4-6eje-1vr179zq18d0'
-		 */
-		return String.format("%s-%s-%s-%s-%s%s", blockTs1, blockTs2, blockTs3, blockRnd1, blockRnd2dot1, blockRnd2dot2);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
