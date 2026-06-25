@@ -284,7 +284,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals("key-mgmt:mikey AQAFAElq4SIBAAA6zCzrAAAAAAsA7d5mHVUyqcsKEP9Ynnh3rIApS64s5GNDOb4BAAAAHgABA" +
 				"QEBEAIBAQMBFAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAepnM1qcQLCtXMUZ8imXhhE4K37b1PTMal3WhDgdssBAAAAAEA",
 				mediaEntry.attributes().get(5));
-		SrtxpKmd srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(0x3ACC2CEBL)).orElseThrow();
+		SrtxpKmd srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry).orElseThrow();
 		assertFalse(srtxpKmd.getMetaIsForLegacySdes());
 		assertFalse(srtxpKmd.getMetaTagForLegacySdes().isPresent());
 		assertEquals(
@@ -309,7 +309,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals("control:substreamidf528764d_081eb523", mediaEntry.attributes().get(1));
 		assertEquals("crypto:707 AES_CM_128_HMAC_SHA1_80 inline:tGU6L4vui7vFvia/bPo6uXiXDpB/D9hY30fs4+U7",
 				mediaEntry.attributes().get(2));
-		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(1234L)).orElseThrow();
+		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry).orElseThrow();
 		assertTrue(srtxpKmd.getMetaIsForLegacySdes());
 		assertEquals(707, srtxpKmd.getMetaTagForLegacySdes().orElseThrow());
 		assertTrue(srtxpKmd.mki().isEmpty());
@@ -327,7 +327,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(1, mediaEntry.attributes().size());
 		assertEquals("crypto:1 AES_CM_128_HMAC_SHA1_80 inline:tGU6L4vui7vFvia/bPo6uXiXDpB/D9hY30fs4+U7|2^31|123456789:4",
 				mediaEntry.attributes().getFirst());
-		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(1234L)).orElseThrow();
+		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry).orElseThrow();
 		assertTrue(srtxpKmd.getMetaIsForLegacySdes());
 		assertEquals(1, srtxpKmd.getMetaTagForLegacySdes().orElseThrow());
 		assertEquals(BufferExt.decodeHexString("0xB4653A2F8BEE8BBBC5BE26BF6CFA3AB9"), srtxpKmd.masterKey());
@@ -343,7 +343,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals(1, mediaEntry.attributes().size());
 		assertEquals("crypto:909 AES_CM_128_HMAC_SHA1_80 inline:tGU6L4vui7vFvia/bPo6uXiXDpB/D9hY30fs4+U7|2147483648|1234567890123456:8",
 				mediaEntry.attributes().getFirst());
-		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry, RtspProtoIdXsrc.of(1234L)).orElseThrow();
+		srtxpKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(mediaEntry).orElseThrow();
 		assertEquals(1234567890123456L, srtxpKmd.mki().getValue().orElseThrow());
 		assertEquals(2147483648L, srtxpKmd.kdr().getValue().orElseThrow());
 

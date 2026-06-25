@@ -246,6 +246,7 @@ public class S2cRrSvcTest {
 					true
 				);
 		}
+		doCheckSetupClientSide(ct, true);
 		// server sends OPTIONS request to client
 		doOptions(ct);
 		// server sends ANNOUNCE request to client
@@ -375,15 +376,19 @@ public class S2cRrSvcTest {
 					tmpSiForSs.getKmdInboundCurPtr().isKmdSet(),
 					"missing KmdInbound: ss=" + subStrId.getIdStr().orElse("-unset-")
 				);
-			assertEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
-			assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
 			if (ct == ClientType.MIKEY) {
-				assertTrue(
-						tmpSiForSs.getKmdOutboundPtr().isKmdSet(),
-					"missing KmdOutbound: ss=" + subStrId.getIdStr().orElse("-unset-")
-					);
+				assertEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
+			}
+			assertTrue(
+					tmpSiForSs.getKmdOutboundPtr().isKmdSet(),
+				"missing KmdOutbound: ss=" + subStrId.getIdStr().orElse("-unset-")
+				);
+			if (ct == ClientType.MIKEY) {
 				assertEquals(tmpSiForSs.getSsrcOutboundPtr(), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
 				assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+			} else {
+				assertEquals(1, tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
 			}
 			assertTrue(tmpSiForSs.getRtpSeqNrT0Ptr().isEmpty());  // we need to make a PLAY request first
 			assertEquals(useTransportUdp, tmpSiForSs.getSubStreamTpPtr().getIsUdp());
@@ -522,8 +527,7 @@ public class S2cRrSvcTest {
 		RtspProtoIdSubStream tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
 		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
-				tmpMediaEntry.get(),
-				cliSessionInfo.get(ct).getDescrSetupInfoSsrcInboundBySubStreamsId(tmpIdSs)
+				tmpMediaEntry.get()
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
@@ -536,8 +540,7 @@ public class S2cRrSvcTest {
 		tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
 		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
-				tmpMediaEntry.get(),
-				cliSessionInfo.get(ct).getDescrSetupInfoSsrcInboundBySubStreamsId(tmpIdSs)
+				tmpMediaEntry.get()
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
