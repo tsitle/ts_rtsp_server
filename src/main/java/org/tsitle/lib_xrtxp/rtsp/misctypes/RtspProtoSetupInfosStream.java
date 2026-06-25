@@ -294,12 +294,10 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		} else if (kmdOutbound != null && kmdOutbound.isKmdSet()) {
 			tmpKmd = kmdOutbound.getKmd().orElseThrow();
 		}
-		if (tmpKmd != null && tmpKmd.ssrcId().isEmpty()) {
-			throw new IllegalArgumentException("kmdOutbound.ssrcId must be set");
+		if (tmpKmd != null && ! tmpKmd.getMetaIsForLegacySdes() && tmpKmd.ssrcId().isEmpty()) {
+			throw new IllegalArgumentException("SSRC must be set for MIKEY KMDs");
 		}
-		if (tmpKmd != null && ! tmpKmd.ssrcId().equals(tmpSsrcForKmd)) {
-			throw new IllegalArgumentException("kmdOutbound.ssrcId must match SSRC");
-		}
+
 		RtspProtoSetupInfoForSubStream resObj = new RtspProtoSetupInfoForSubStream(
 				rscUrlSubStream,
 				ssrcInbound,

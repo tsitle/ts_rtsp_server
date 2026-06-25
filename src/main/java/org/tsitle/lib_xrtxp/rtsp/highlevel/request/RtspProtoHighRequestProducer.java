@@ -481,22 +481,30 @@ public final class RtspProtoHighRequestProducer {
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
-		// Keymgmt
-		if (ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp() && siForSs.getKmdInboundCurPtr().isKmdSet()) {
-			if (siForSs.getKmdInboundCurPtr().getIsKmdForLegacySdes().orElse(true)) {
-				throw new IllegalArgumentException(FNC_NAME + ": KMD must not be for legacy SDES key management");
-			}
-			// generate outbound KMD (with its own SSRC)
-			SrtxpKmd outboundKmd = SrtxpKmd.createForMikeyWithDefaults(
+		// generate outbound KMD
+		if (! (ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp() && siForSs.getKmdInboundCurPtr().isKmdSet())) {
+			return;
+		}
+		boolean isForLegacySdes = siForSs.getKmdInboundCurPtr().getIsKmdForLegacySdes().orElse(true);
+		if (isForLegacySdes && siForSs.getKmdOutboundPtr().isKmdSet()) {
+			return;  // don't generate a new KMD since we have already (probably) used ANNOUNCE to publish the KMDs
+		}
+		// generate outbound KMD (with its own SSRC)
+		SrtxpKmd outboundKmd;
+		if (isForLegacySdes) {
+			outboundKmd = SrtxpKmd.createForLegacySdesWithDefaults(1);
+		} else {
+			outboundKmd = SrtxpKmd.createForMikeyWithDefaults(
 					SrtxpMki.of(1, SrtxpKmd.DEFAULT_MKI_LEN),
 					siForSs.getSsrcOutboundPtr()
 				);
-			siForSs.getKmdOutboundPtr().setKmd(outboundKmd, idSubStreamPtr);
-			//
+		}
+		siForSs.getKmdOutboundPtr().setKmd(outboundKmd, idSubStreamPtr);
+
+		// Keymgmt
+		if (! isForLegacySdes) {
 			addKeymgmtHeader(outboundKmd, output);
 		}
-
-		//throw new RtspProtoInvalidRequestException("SETUP not implemented");
 	}
 
 	private void buildRequest_teardown() {

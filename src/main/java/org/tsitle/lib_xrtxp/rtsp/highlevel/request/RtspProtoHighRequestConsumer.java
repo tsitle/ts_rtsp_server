@@ -1011,8 +1011,7 @@ public final class RtspProtoHighRequestConsumer {
 			SrtxpKmd tmpKmd;
 			try {
 				Optional<SrtxpKmd> tmpOptKmd = outputDataRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
-						tmpMe.orElseThrow(),
-						ioSetupInfosStream.getSsrcInboundBySubStreamId(tmpIdSs).orElseThrow()
+						tmpMe.orElseThrow()
 					);
 				if (tmpOptKmd.isEmpty()) {
 					continue;

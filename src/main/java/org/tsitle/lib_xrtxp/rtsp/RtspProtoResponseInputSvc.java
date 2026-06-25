@@ -362,14 +362,9 @@ public final class RtspProtoResponseInputSvc {
 		RtspProtoIdXsrc tmpDummySsrcInbound;
 		RtspProtoIdXsrc tmpSsrcOutbound;
 		try {
-			tmpDummySsrcInbound = RtspProtoIdXsrc.of(0x01);  // this needs to be replaced later in the case of SDES
-			Optional<SrtxpKmd> tmpMeKmd = dataResp.respDescribeSdpStc.extractMediaEntrySrtxpKmd(tmpMeObj, tmpDummySsrcInbound);
-			if (tmpMeKmd.isPresent()) {
-				kmdInbound.setKmd(tmpMeKmd.get(), idSubStream);
-				if (! tmpMeKmd.orElseThrow().getMetaIsForLegacySdes()) {
-					tmpDummySsrcInbound.copyFrom(tmpMeKmd.orElseThrow().ssrcId());
-				}
-			}
+			tmpDummySsrcInbound = RtspProtoIdXsrc.of(0x01);
+			Optional<SrtxpKmd> tmpMeKmd = dataResp.respDescribeSdpStc.extractMediaEntrySrtxpKmd(tmpMeObj);
+			tmpMeKmd.ifPresent(srtxpKmd -> kmdInbound.setKmd(srtxpKmd, idSubStream));
 
 			// generate SSRC ID
 			long tmpOutRtspSsrcIdLong = Integer.toUnsignedLong(RandomHelper.getRandomUint32(false));
