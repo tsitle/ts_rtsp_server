@@ -21,6 +21,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
@@ -213,84 +214,114 @@ public class S2cRrSvcTest {
 	@Test
 	void test_announce_ok_noCrypto1() throws Exception {
 		// client sends DESCRIBE request to server
-		doDescribe(ClientType.SDES, "rtsp://localhost/existing_stream_no_auth_no_encr");
+		do_c2s_Describe(ClientType.SDES, "rtsp://localhost/existing_stream_no_auth_no_encr");
 		// server sends ANNOUNCE request to client
-		doAnnounce_noCrypto(ClientType.SDES);
+		do_s2c_Announce_noCrypto(ClientType.SDES);
 	}
 
 	@Test
 	void test_announce_ok_noCrypto2() throws Exception {
 		// client sends DESCRIBE request to server
-		doDescribe(ClientType.MIKEY, "rtsp://localhost/existing_stream_no_auth_no_encr");
+		do_c2s_Describe(ClientType.MIKEY, "rtsp://localhost/existing_stream_no_auth_no_encr");
 		// server sends ANNOUNCE request to client
-		doAnnounce_noCrypto(ClientType.MIKEY);
+		do_s2c_Announce_noCrypto(ClientType.MIKEY);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void test_announce_ok_withCryptoSdes() throws Exception {
+	void test_announce_ok_withCryptoSdes_announceBeforeSetup() throws Exception {
 		final ClientType ct = ClientType.SDES;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
 
 		// client sends DESCRIBE request to server
-		doDescribe(ct, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		do_c2s_Describe(ct, rscUrlStr);
 		// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
-		// @TODO sendRequest_srtxpInitialOutboundSdes()
+		do_c2s_Announce_withCryptoSdes(rscUrlStr);
 		// client sends SETUP requests to server
 		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
 		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfo.get(ct).getDescrAvailableSubStreamIds()) {
-			doSetup(
+			do_c2s_Setup(
 					ct,
-					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
-							tmpIdSubStream.getIdStr().orElse("-unset-"),
+					rscUrlStr + "/" + tmpIdSubStream.getIdStr().orElse("-unset-"),
 					true
 				);
 		}
 		doCheckSetupClientSide(ct, true);
 		// server sends OPTIONS request to client
-		doOptions(ct);
+		do_s2c_Options(ct);
 		// server sends ANNOUNCE request to client
-		doAnnounce_withCryptoSdes();
+		do_s2c_Announce_withCryptoSdes();
+		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
+	}
+
+	@Test
+	void test_announce_ok_withCryptoSdes_announceAfterSetup() throws Exception {
+		final ClientType ct = ClientType.SDES;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+
+		// client sends DESCRIBE request to server
+		do_c2s_Describe(ct, rscUrlStr);
+		// client sends SETUP requests to server
+		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfo.get(ct).getDescrAvailableSubStreamIds()) {
+			do_c2s_Setup(
+					ct,
+					rscUrlStr + "/" + tmpIdSubStream.getIdStr().orElse("-unset-"),
+					true
+				);
+		}
+		// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
+		do_c2s_Announce_withCryptoSdes(rscUrlStr);
+		doCheckSetupClientSide(ct, true);
+		// server sends OPTIONS request to client
+		do_s2c_Options(ct);
+		// server sends ANNOUNCE request to client
+		do_s2c_Announce_withCryptoSdes();
+		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	void test_setParam_ok_withCryptoMikey_udp() throws Exception {
-		do_setParam_ok_withCryptoMikey(true);
+		internal_test_setParam_ok_withCryptoMikey(true);
 	}
 
 	@Test
 	void test_setParam_ok_withCryptoMikey_tcp() throws Exception {
-		do_setParam_ok_withCryptoMikey(false);
+		internal_test_setParam_ok_withCryptoMikey(false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	void do_setParam_ok_withCryptoMikey(boolean useTransportUdp) throws Exception {
+	private void internal_test_setParam_ok_withCryptoMikey(boolean useTransportUdp) throws Exception {
 		final ClientType ct = ClientType.MIKEY;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
 
 		// client sends DESCRIBE request to server
-		doDescribe(ct, "rtsp://localhost/existing_stream_no_auth_with_encr");
+		do_c2s_Describe(ct, rscUrlStr);
 		// client sends SETUP requests to server
 		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
 		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfo.get(ct).getDescrAvailableSubStreamIds()) {
-			doSetup(
+			do_c2s_Setup(
 					ct,
-					"rtsp://localhost/existing_stream_no_auth_with_encr/" +
-							tmpIdSubStream.getIdStr().orElse("-unset-"),
+					rscUrlStr + "/" + tmpIdSubStream.getIdStr().orElse("-unset-"),
 					useTransportUdp
 				);
 		}
 		doCheckSetupClientSide(ct, useTransportUdp);
 		// server sends OPTIONS request to client
-		doOptions(ct);
+		do_s2c_Options(ct);
 		// server sends SET_PARAMETER request to client
-		doSetParam_withCryptoMikey();
+		do_s2c_SetParam_withCryptoMikey();
+		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
 	}
 
-	private void doDescribe(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void do_c2s_Describe(ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -321,7 +352,7 @@ public class S2cRrSvcTest {
 		assertEquals(2, cliSessionInfo.get(ct).getDescrAvailableSubStreamIds().size());
 	}
 
-	private void doSetup(ClientType ct, @NonNull String resourceUrlSubStream, boolean useTransportUdp) throws Exception {
+	private void do_c2s_Setup(ClientType ct, @NonNull String resourceUrlSubStream, boolean useTransportUdp) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -357,75 +388,181 @@ public class S2cRrSvcTest {
 		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
 
 		Set<RtspProtoIdSubStream> checkSubStrIds = cliSessionInfoPtr.getDescrSetupInfoSubStreamIds();
-		assertEquals(checkSubStrIds, cliSessionInfoPtr.getDescrAvailableSubStreamIds());
+		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
 		int maxTcpChann = -1;
+
 		for (RtspProtoIdSubStream subStrId : checkSubStrIds) {
 			assertTrue(
 					cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(subStrId),
 					"missing HaveSetup: ss=" + subStrId.getIdStr().orElse("-unset-")
 				);
-			RtspProtoSetupInfoForSubStream tmpSiForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
-			assertFalse(tmpSiForSs.getSsrcInboundPtr().isEmpty());
-			assertFalse(tmpSiForSs.getSsrcOutboundPtr().isEmpty());
-			assertNotEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getSsrcOutboundPtr());
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
+
+			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
+			assertFalse(tmpSiForSsClient.getSsrcOutboundPtr().isEmpty());
+			assertNotEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getSsrcOutboundPtr());
 			/*System.out.println("- ss=" + subStrId.getIdStr().orElse("-unset-") + ": client inbound_ SSRC: " +
-					tmpSiForSs.getSsrcInboundPtr().toHexString(true));
+					tmpSiForSsClient.getSsrcInboundPtr().toHexString(true));
 			System.out.println("- ss=" + subStrId.getIdStr().orElse("-unset-") + ": client outbound SSRC: " +
-					tmpSiForSs.getSsrcOutboundPtr().toHexString(true));*/
+					tmpSiForSsClient.getSsrcOutboundPtr().toHexString(true));*/
 			assertTrue(
-					tmpSiForSs.getKmdInboundCurPtr().isKmdSet(),
+					tmpSiForSsClient.getKmdInboundCurPtr().isKmdSet(),
 					"missing KmdInbound: ss=" + subStrId.getIdStr().orElse("-unset-")
 				);
 			if (ct == ClientType.MIKEY) {
-				assertEquals(tmpSiForSs.getSsrcInboundPtr(), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
-				assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
+				assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
 			}
 			assertTrue(
-					tmpSiForSs.getKmdOutboundPtr().isKmdSet(),
+					tmpSiForSsClient.getKmdOutboundPtr().isKmdSet(),
 				"missing KmdOutbound: ss=" + subStrId.getIdStr().orElse("-unset-")
 				);
 			if (ct == ClientType.MIKEY) {
-				assertEquals(tmpSiForSs.getSsrcOutboundPtr(), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
-				assertEquals(SrtxpMki.of(1, 4), tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+				assertEquals(tmpSiForSsClient.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().mki());
 			} else {
-				assertEquals(1, tmpSiForSs.getKmdOutboundPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+				assertEquals(1, tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
 			}
-			assertTrue(tmpSiForSs.getRtpSeqNrT0Ptr().isEmpty());  // we need to make a PLAY request first
-			assertEquals(useTransportUdp, tmpSiForSs.getSubStreamTpPtr().getIsUdp());
-			assertTrue(tmpSiForSs.getSubStreamTpPtr().getIsEncr());
-			assertTrue(tmpSiForSs.getSubStreamTpPtr().getIsUnicast());
-			assertNotEquals(useTransportUdp, tmpSiForSs.getSubStreamTpPtr().getIsInterleaved());
+			assertTrue(tmpSiForSsClient.getRtpSeqNrT0Ptr().isEmpty());  // we need to make a PLAY request first
+			assertEquals(useTransportUdp, tmpSiForSsClient.getSubStreamTpPtr().getIsUdp());
+			assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getIsEncr());
+			assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getIsUnicast());
+			assertNotEquals(useTransportUdp, tmpSiForSsClient.getSubStreamTpPtr().getIsInterleaved());
 			if (useTransportUdp) {
-				assertNotNull(tmpSiForSs.getClientUdpSocketRtpPtr());
-				assertNotNull(tmpSiForSs.getClientUdpSocketRtcpPtr());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
+				assertNotNull(tmpSiForSsClient.getClientUdpSocketRtpPtr());
+				assertNotNull(tmpSiForSsClient.getClientUdpSocketRtcpPtr());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
 			} else {
-				assertNull(tmpSiForSs.getClientUdpSocketRtpPtr());
-				assertNull(tmpSiForSs.getClientUdpSocketRtcpPtr());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
-				assertTrue(tmpSiForSs.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
-				assertFalse(tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
+				assertNull(tmpSiForSsClient.getClientUdpSocketRtpPtr());
+				assertNull(tmpSiForSsClient.getClientUdpSocketRtcpPtr());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getServerUdpPortRtpPtr().isEmpty());
+				assertTrue(tmpSiForSsClient.getSubStreamTpPtr().getServerUdpPortRtcpPtr().isEmpty());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty());
+				assertFalse(tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty());
 				assertNotEquals(
-						tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtpPtr().getChannel8bit().orElseThrow(),
-						tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()
+						tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtpPtr().getChannel8bit().orElseThrow(),
+						tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()
 					);
-				assertNotEquals(maxTcpChann, tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow());
-				if (tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow() > maxTcpChann) {
-					maxTcpChann = tmpSiForSs.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow();
+				assertNotEquals(maxTcpChann, tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow());
+				if (tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow() > maxTcpChann) {
+					maxTcpChann = tmpSiForSsClient.getSubStreamTpPtr().getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow();
 				}
 			}
 		}
 	}
 
-	private void doAnnounce_noCrypto(ClientType ct) throws Exception {
+	@SuppressWarnings("SameParameterValue")
+	private void do_c2s_Announce_withCryptoSdes(@NonNull String resourceUrl) throws Exception {
+		final ClientType ct = ClientType.SDES;
+
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		Set<RtspProtoIdSubStream> previousSubStrIds = cliSessionInfoPtr.getDescrSetupInfoSubStreamIds();
+		assertEquals(2, previousSubStrIds.size());
+		Set<RtspProtoIdXsrc> previousInboundSsrcs = new HashSet<>();
+		Set<RtspProtoIdXsrc> previousOutboundSsrcs = new HashSet<>();
+		for (RtspProtoIdSubStream subStrId : previousSubStrIds) {
+			assertFalse(subStrId.isEmpty(), "Sub-Stream ID must not be empty");
+
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
+
+			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
+			previousInboundSsrcs.add(tmpSiForSsClient.getSsrcInboundPtr());
+			assertFalse(tmpSiForSsClient.getSsrcOutboundPtr().isEmpty());
+			previousOutboundSsrcs.add(tmpSiForSsClient.getSsrcOutboundPtr());
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_srtxpInitialOutboundSdes(resourceUrl);
+		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+
+		// ----------------------------------------------------
+
+		Set<RtspProtoIdSubStream> newSubStrIds = cliSessionInfoPtr.getDescrSetupInfoSubStreamIds();
+		Set<RtspProtoIdXsrc> newInboundSsrcs = new HashSet<>();
+		Set<RtspProtoIdXsrc> newOutboundSsrcs = new HashSet<>();
+		for (RtspProtoIdSubStream subStrId : newSubStrIds) {
+			assertFalse(subStrId.isEmpty(), "Sub-Stream ID must not be empty");
+
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
+
+			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
+			newInboundSsrcs.add(tmpSiForSsClient.getSsrcInboundPtr());
+			assertFalse(tmpSiForSsClient.getSsrcOutboundPtr().isEmpty());
+			newOutboundSsrcs.add(tmpSiForSsClient.getSsrcOutboundPtr());
+		}
+		assertEquals(previousSubStrIds, newSubStrIds);
+		assertEquals(previousInboundSsrcs, newInboundSsrcs);
+		assertEquals(previousOutboundSsrcs, newOutboundSsrcs);
+
+		for (RtspProtoIdSubStream subStrId : newSubStrIds) {
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(subStrId);
+
+			assertNotEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getSsrcOutboundPtr());
+			assertTrue(
+					tmpSiForSsClient.getKmdOutboundPtr().isKmdSet(),
+					"missing KmdOutbound: ss=" + subStrId.getIdStr().orElse("-unset-")
+				);
+			assertEquals(1, tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+		}
+	}
+
+	private void do_s2c_Options(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_options(
+				"rtsp://localhost/existing_stream_no_auth_with_encr"
+			);
+		assertEquals(RtspProtoMessageType.OPTIONS, mt);
+
+		// ----------------------------------------------------
+
+		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+	}
+
+	private void do_s2c_Announce_noCrypto(ClientType ct) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -460,34 +597,7 @@ public class S2cRrSvcTest {
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
 
-	private void doOptions(ClientType ct) throws Exception {
-		Objects.requireNonNull(cliSessionInfo.get(ct));
-		Objects.requireNonNull(srvSessionInfo);
-
-		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_options(
-				"rtsp://localhost/existing_stream_no_auth_with_encr"
-			);
-		assertEquals(RtspProtoMessageType.OPTIONS, mt);
-
-		// ----------------------------------------------------
-
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
-		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-
-		// ----------------------------------------------------
-
-		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
-		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
-
-		// ----------------------------------------------------
-
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
-		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
-	}
-
-	private void doAnnounce_withCryptoSdes() throws Exception {
+	private void do_s2c_Announce_withCryptoSdes() throws Exception {
 		final ClientType ct = ClientType.SDES;
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -558,7 +668,7 @@ public class S2cRrSvcTest {
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
 
-	private void doSetParam_withCryptoMikey() throws Exception {
+	private void do_s2c_SetParam_withCryptoMikey() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -604,19 +714,76 @@ public class S2cRrSvcTest {
 			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 			assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+		}
+	}
 
+	private void doCheckKeysAfterSrvRekeying_clientAndServer(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		assertEquals(2, cliSessionInfoPtr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
+
+		// ----------------------------------------------------
+
+		for (RtspProtoIdSubStream tmpIdSubStream : srvSessionInfo.getDescrSetupInfoSubStreamIds()) {
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
 			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
-			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
-			assertEquals(SrtxpMki.of(2, 4), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().mki());
 
-			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
-			assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().ssrcId());
+			// check the client's inbound SSRC vs. the server's outbound SSRC
+			assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsSrv.getSsrcOutboundPtr());
 
+			// check client's current inbound KMD's SSRC + MKI
+			if (ct == ClientType.MIKEY) {
+				assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
+			}
+
+			// check client's next inbound KMD's SSRC + MKI
+			if (ct == ClientType.MIKEY) {
+				assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(2, 4), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().mki());
+			}
+
+			// check client's current/next inbound KMD's Tag
+			if (ct == ClientType.SDES) {
+				assertEquals(1, tmpSiForSsClient.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+				assertEquals(2, tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+			}
+
+			// check client's outbound KMD's SSRC
+			if (ct == ClientType.MIKEY) {
+				assertFalse(tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId().isEmpty());
+			}
+
+			// check server's current inbound KMD's SSRC + MKI
+			if (ct == ClientType.MIKEY) {
+				assertTrue(tmpSiForSsSrv.getSsrcInboundPtr().isEmpty());
+				assertEquals(tmpSiForSsClient.getSsrcOutboundPtr(), tmpSiForSsSrv.getKmdInboundCurPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(1, 4), tmpSiForSsSrv.getKmdInboundCurPtr().getKmd().orElseThrow().mki());
+			}
+
+			// check server's current inbound KMD's Tag
+			if (ct == ClientType.SDES) {
+				assertEquals(1, tmpSiForSsSrv.getKmdInboundCurPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+			}
+
+			// check server's outbound KMD's SSRC + MKI
+			if (ct == ClientType.MIKEY) {
+				assertEquals(tmpSiForSsSrv.getSsrcOutboundPtr(), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(2, 4), tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+			}
+
+			// check server's outbound KMD vs. the client's next inbound KMD
 			assertEquals(tmpSiForSsSrv.getKmdOutboundPtr().getKmd().orElseThrow(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow());
 
+			// check server's current inbound KMD vs. the client's outbound KMD
 			assertTrue(tmpSiForSsSrv.getKmdInboundCurPtr().isKmdSet());
 			assertEquals(tmpSiForSsSrv.getKmdInboundCurPtr().getKmd().orElseThrow(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow());
-			assertEquals(tmpSiForSsSrv.getSsrcInboundPtr(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
 		}
 	}
 
@@ -652,6 +819,7 @@ public class S2cRrSvcTest {
 
 		UserAuthServerSide srvUserAuthSvc = new UserAuthServerSide();
 
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);
 
