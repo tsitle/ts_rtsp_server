@@ -220,7 +220,12 @@ final class SrtxpRekeySvc {
 					ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
 			return false;
 		}
-		final String resourceUrlForSs = tmpOptRscUrl.get().getUrlStr();
+		RtspProtoRscUrl tmpRscUrl = tmpOptRscUrl.get();
+		final String resourceUrlForSs = tmpRscUrl.getUrlStr();
+		if (! tmpRscUrl.idSubStream.equals(ctfos.idSubStream)) {
+			logError(FNC_NAME, logMsgPrefix + "Resource URL object contains invalid Sub-Stream ID");
+			return false;
+		}
 
 		{
 			rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
@@ -242,11 +247,7 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(
-					resourceUrlForSs,
-					ctfos.idSubStream,
-					tmpNextKmdOutbound
-				);
+			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(tmpRscUrl, tmpNextKmdOutbound);
 			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
