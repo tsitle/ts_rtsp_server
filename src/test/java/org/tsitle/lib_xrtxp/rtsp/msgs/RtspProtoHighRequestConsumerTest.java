@@ -1073,10 +1073,11 @@ class RtspProtoHighRequestConsumerTest {
 		RtspProtoDataCntStreamTpMain inpStreamTpMain = new RtspProtoDataCntStreamTpMain();
 		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
 		if (! generatedSubStreamId.isEmpty()) {
-			RtspProtoRscUrl tmpRscUrlObj = new RtspProtoRscUrl();
-			tmpRscUrlObj.setUrlStr(inputMsgStructured.resourceUrl);
-			tmpRscUrlObj.idInputSource = RtspProtoIdInputSource.of("someInSo");
-			tmpRscUrlObj.idSubStream = generatedSubStreamId;
+			RtspProtoRscUrl tmpRscUrlObj = RtspProtoRscUrl.of(
+					inputMsgStructured.resourceUrl,
+					RtspProtoIdInputSource.of("someInSo"),
+					generatedSubStreamId
+				);
 			ioSetupInfosStream.createAndAddSetupSubStream(
 					tmpRscUrlObj,
 					RtspProtoIdXsrc.of(1001L),

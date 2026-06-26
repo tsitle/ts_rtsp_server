@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 
+import java.util.Objects;
+
 /**
  * Container for Resource URLs and the respective Input Source ID and Sub-Stream ID.
  */
@@ -11,11 +13,41 @@ public final class RtspProtoRscUrl implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
+	private @NonNull String urlStr = "";
 	public @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
 	public @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
-	private @NonNull String urlStr = "";
+
+	private RtspProtoRscUrl() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull RtspProtoRscUrl ofEmpty() {
+		return new RtspProtoRscUrl();
+	}
+
+	public static @NonNull RtspProtoRscUrl of(@NonNull String urlStr) {
+		RtspProtoRscUrl obj = new RtspProtoRscUrl();
+		obj.setUrlStr(urlStr);
+		return obj;
+	}
+
+	public static @NonNull RtspProtoRscUrl of(@NonNull String urlStr, @NonNull RtspProtoIdInputSource idInputSource) {
+		RtspProtoRscUrl obj = RtspProtoRscUrl.of(urlStr);
+		obj.idInputSource.copyFrom(idInputSource);
+		return obj;
+	}
+
+	public static @NonNull RtspProtoRscUrl of(
+				@NonNull String urlStr,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIdSubStream idSubStream
+			) {
+		RtspProtoRscUrl obj = of(urlStr, idInputSource);
+		obj.idSubStream.copyFrom(idSubStream);
+		return obj;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull String getUrlStr() {
@@ -86,6 +118,20 @@ public final class RtspProtoRscUrl implements Cloneable {
 				", idSubStream=" + idSubStream +
 				", urlStr=" + urlStr +
 				"]";
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof RtspProtoRscUrl that)) {
+			return false;
+		}
+		return (Objects.equals(urlStr, that.urlStr) && Objects.equals(idInputSource, that.idInputSource) &&
+				Objects.equals(idSubStream, that.idSubStream));
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(urlStr, idInputSource, idSubStream);
 	}
 
 }

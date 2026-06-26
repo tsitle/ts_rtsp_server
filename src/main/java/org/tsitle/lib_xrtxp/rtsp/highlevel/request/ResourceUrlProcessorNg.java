@@ -47,8 +47,7 @@ final class ResourceUrlProcessorNg {
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds
 			) throws RtspProtoInvalidUriException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdInputSourceNotFoundException {
-		RtspProtoRscUrl resObj = new RtspProtoRscUrl();
-		resObj.setUrlStr(fullRscUrlStr);
+		RtspProtoRscUrl resObj = RtspProtoRscUrl.of(fullRscUrlStr);
 
 		ResourceUrlProcessorNg rscUrlProcObj = new ResourceUrlProcessorNg(
 				inpAvailableSubStreamIds,

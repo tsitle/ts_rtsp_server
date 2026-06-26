@@ -18,10 +18,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -229,7 +226,7 @@ public class C2sRrSvcTest {
 		getParamNames.putParamName("rucola");
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream_no_auth",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream_no_auth"),
 				getParamNames
 			);
 		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
@@ -266,7 +263,7 @@ public class C2sRrSvcTest {
 		getParamNames.putParamName("latency");
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				getParamNames
 			);
 		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
@@ -307,7 +304,7 @@ public class C2sRrSvcTest {
 		setParamKvs.putParamKvsEntry("jitter", "9.7");
 		setParamKvs.putParamKvsEntry("latency", "18");
 		cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				clientCredentials,
 				setParamKvs
 			);
@@ -339,7 +336,7 @@ public class C2sRrSvcTest {
 		// ----------------------------------------------------
 
 		cliOutputSvc.sendRequest_getParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				clientCredentials,
 				getParamNames
 			);
@@ -558,7 +555,7 @@ public class C2sRrSvcTest {
 		setParamKvs.putParamKvsEntry("rucola", "no");
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				setParamKvs
 			);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
@@ -593,7 +590,7 @@ public class C2sRrSvcTest {
 		setParamKvs.putParamKvsEntry("jitter", "-9.7");
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				setParamKvs
 			);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
@@ -629,7 +626,7 @@ public class C2sRrSvcTest {
 		setParamKvs.putParamKvsEntry("latency", "18");
 
 		RtspProtoMessageType mt = cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				setParamKvs
 			);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
@@ -664,7 +661,7 @@ public class C2sRrSvcTest {
 				UserAuthServerSide.PW
 			);
 		cliOutputSvc.sendRequest_setParameter(
-				"rtsp://localhost/existing_stream",
+				RtspProtoRscUrl.of("rtsp://localhost/existing_stream"),
 				clientCredentials,
 				setParamKvs
 			);

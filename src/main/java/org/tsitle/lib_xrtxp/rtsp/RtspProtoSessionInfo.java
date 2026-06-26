@@ -99,7 +99,7 @@ public final class RtspProtoSessionInfo {
 	private final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspProtoRscUrl> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
 	/** Last used outgoing request Resource URL object */
-	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = new RtspProtoRscUrl();
+	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = RtspProtoRscUrl.ofEmpty();
 
 	// ----------------------------------------------------------------
 

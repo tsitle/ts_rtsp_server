@@ -244,10 +244,11 @@ public final class RtspProtoHighResponseProducer {
 					tmpKmdForSsOutbound.setKmd(tmpSrtxpKmdOutbound, tmpIdSs);
 				}
 
-				RtspProtoRscUrl tmpRscUrlSs = new RtspProtoRscUrl();
-				tmpRscUrlSs.setUrlStr(baseRscUrl + tmpAvSs.getUrlSubPathForSubStream());
-				tmpRscUrlSs.idInputSource.copyFrom(inputDataResp.rrRscUrl.idInputSource);
-				tmpRscUrlSs.idSubStream.copyFrom(tmpIdSs);
+				RtspProtoRscUrl tmpRscUrlSs = RtspProtoRscUrl.of(
+						baseRscUrl + tmpAvSs.getUrlSubPathForSubStream(),
+						inputDataResp.rrRscUrl.idInputSource,
+						tmpIdSs
+					);
 
 				outputSetupInfosStream.createAndAddSetupSubStream(
 						tmpRscUrlSs,

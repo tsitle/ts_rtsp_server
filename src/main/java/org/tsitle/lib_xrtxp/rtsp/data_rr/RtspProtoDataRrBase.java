@@ -26,7 +26,7 @@ public class RtspProtoDataRrBase {
 	public final @NonNull RtspProtoIpAddr rrServerIpFromRscUrl = new RtspProtoIpAddr();
 
 	/** Resource URL that the request/response belongs to */
-	public final @NonNull RtspProtoRscUrl rrRscUrl = new RtspProtoRscUrl();
+	public final @NonNull RtspProtoRscUrl rrRscUrl = RtspProtoRscUrl.ofEmpty();
 
 	/** RTSP protocol version */
 	protected @NonNull RtspProtocolVersion rrRtspProtoVersionToUse = RtspProtocolVersion.NONE;

@@ -10,7 +10,7 @@ public final class RtspRequestBasics {
 
 	public @NonNull RtspProtoMessageType messageType = RtspProtoMessageType.UNKNOWN;
 	public @NonNull RtspProtoStatusCode statusCode = RtspProtoStatusCode.OK;
-	public final @NonNull RtspProtoRscUrl rscUrl = new RtspProtoRscUrl();
+	public final @NonNull RtspProtoRscUrl rscUrl = RtspProtoRscUrl.ofEmpty();
 
 	private RtspRequestBasics() { }
 

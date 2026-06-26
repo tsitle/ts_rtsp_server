@@ -17,7 +17,7 @@ public final class RtspProtoSetupInfoForSubStream {
 	private boolean isWriteProtected = false;
 
 	/** Resource URL of the Sub-Stream */
-	private final @NonNull RtspProtoRscUrl rscUrlSubStream = new RtspProtoRscUrl();
+	private final @NonNull RtspProtoRscUrl rscUrlSubStream = RtspProtoRscUrl.ofEmpty();
 
 	/** Have we received a SETUP for this Sub-Stream? */
 	private boolean haveSetup = false;

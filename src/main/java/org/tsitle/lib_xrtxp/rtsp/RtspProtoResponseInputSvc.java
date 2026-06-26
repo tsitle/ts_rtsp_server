@@ -343,7 +343,6 @@ public final class RtspProtoResponseInputSvc {
 			return false;
 		}
 		// create the Resource URL object
-		RtspProtoRscUrl tmpMeRscUrl = new RtspProtoRscUrl();
 		Optional<String> tmpOptBaseUrl = dataResp.respDescribeSdpStc.getContentBase();
 		if (tmpOptBaseUrl.isEmpty()) {
 			logWarn(FNC_NAME, "Content-Base from SDP is empty");
@@ -353,9 +352,11 @@ public final class RtspProtoResponseInputSvc {
 		if (! tmpBaseUrl.endsWith("/")) {
 			tmpBaseUrl += "/";
 		}
-		tmpMeRscUrl.setUrlStr(tmpBaseUrl + tmpOptRscUrl.orElseThrow().idInputSource.getIdStr().orElse("-unset-"));
-		tmpMeRscUrl.idInputSource.copyFrom(tmpOptRscUrl.orElseThrow().idInputSource);
-		tmpMeRscUrl.idSubStream.copyFrom(idSubStream);
+		RtspProtoRscUrl tmpMeRscUrl = RtspProtoRscUrl.of(
+				tmpBaseUrl + idSubStream.getIdStr().orElse("-unset-"),
+				tmpOptRscUrl.orElseThrow().idInputSource,
+				idSubStream
+			);
 
 		// extract the KMD from the SDP Media Entry
 		RtspProtoKmdForSubStream kmdInbound = new RtspProtoKmdForSubStream();
