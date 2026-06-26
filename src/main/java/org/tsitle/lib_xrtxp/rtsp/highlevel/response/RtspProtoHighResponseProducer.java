@@ -25,6 +25,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspAuthAlgo;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
+import org.tsitle.lib_xrtxp.rtsp.sdp.ArgsSdpForDescribeFromServer;
 
 import java.net.*;
 import java.util.*;
@@ -218,17 +219,19 @@ public final class RtspProtoHighResponseProducer {
 			RtspProtoKmdsStream outputKmdsStreamOutbound = new RtspProtoKmdsStream();
 
 			// build SDP
-			sdpProducerInterface.buildSdpForDescribe(
-					cfgSubStreamIdPrefix,
-					inputDataResp.rrStreamTpMain.isSrtpRequired(),
-					inputDataResp.rrRscUrl.idInputSource,
-					inputDataResp.rrServerIpFromRscUrl,
-					inputDataResp.getClientUa(),
-					inputDataResp.rrClientIpAddr,
-					outputMsgResp.bodyDescribeSdp,
-					outputAdStreamSett,
-					outputKmdsStreamOutbound
-				);
+			ArgsSdpForDescribeFromServer sdpBldArgs = ArgsSdpForDescribeFromServer.Builder.builder()
+					.cfgSubStreamIdPrefix(cfgSubStreamIdPrefix)
+					.requireSrtp(inputDataResp.rrStreamTpMain.isSrtpRequired())
+					.idInputSource(inputDataResp.rrRscUrl.idInputSource)
+					.serverIpOrName(inputDataResp.rrServerIpFromRscUrl)
+					.clientUserAgent(inputDataResp.getClientUa())
+					.clientIpAddr(inputDataResp.rrClientIpAddr)
+					.outputSdp(outputMsgResp.bodyDescribeSdp)
+					.outputAdStreamSett(outputAdStreamSett)
+					.outputKmdsOutbound(outputKmdsStreamOutbound)
+					.build();
+
+			sdpProducerInterface.buildSdpForDescribeFromServer(sdpBldArgs);
 
 			// copy the stream settings and KMDs
 			for (RtspProtoIdSubStream tmpIdSs : outputAdStreamSett.getSubStreamIds()) {
@@ -399,7 +402,7 @@ public final class RtspProtoHighResponseProducer {
 		{
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RTPINFO);
 			int tmpSubStreamNr = 1;
-			for (RtspProtoSetupInfoForSubStream tmpSiSs : inputSetupInfosStream.getSis()) {
+			for (RtspProtoSetupInfoForSubStream tmpSiSs : inputSetupInfosStream.getSiPtrs()) {
 				RtspProtoHeaderTypeRtpinfo.SubStream tmpStreamInfoOutput = new RtspProtoHeaderTypeRtpinfo.SubStream();
 				tmpStreamInfoOutput.urlStr = tmpSiSs.getRscUrlSubStreamPtr().getUrlStr();
 				tmpStreamInfoOutput.seqNr.copyFrom(tmpSiSs.getRtpSeqNrT0Ptr());
@@ -446,9 +449,9 @@ public final class RtspProtoHighResponseProducer {
 					rscUrlObj.idSubStream.getIdStr().orElse("-unset-") + "' not found");
 		}
 
-		RtspProtoSetupInfoForSubStream tmpSiSs = ioSetupInfosStream.getSiBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
+		RtspProtoSetupInfoForSubStream tmpSiSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
 		try {
-			tmpSiSs.isTransportValid(
+			tmpSiSsPtr.isTransportValid(
 					inputDataResp.rrStreamTpMain.getRtpRtcpEncryptionRequired(),
 					inputDataResp.rrStreamTpMain.getForceRtpRtcpEncryption(),
 					inputDataResp.rrStreamTpMain.getIsRtspsConnection(),
@@ -461,7 +464,7 @@ public final class RtspProtoHighResponseProducer {
 
 		// we need to open the UDP sockets now so we can get the port numbers
 		try {
-			RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(true, tmpSiSs);
+			RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(true, tmpSiSsPtr);
 		} catch (RtspProtoCouldNotFindUdpPortsException e) {
 			throw new RtspProtoInvalidResponseException(FNC_NAME + ": " + e.getMessage());
 		}
@@ -491,7 +494,7 @@ public final class RtspProtoHighResponseProducer {
 
 		// Transport
 		{
-			RtspProtoDataCntSubStreamTp tmpInpSubStreamTpPtr = tmpSiSs.getSubStreamTpPtr();
+			RtspProtoDataCntSubStreamTp tmpInpSubStreamTpPtr = tmpSiSsPtr.getSubStreamTpPtr();
 
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.TRANSPORT);
 			hdEntry.hdValTransport.tpSubStream.setIsUdp(tmpInpSubStreamTpPtr.getIsUdp());
@@ -504,10 +507,10 @@ public final class RtspProtoHighResponseProducer {
 				hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientUdpPortRtpPtr());
 				hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientUdpPortRtcpPtr());
 				try {
-					Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtpPtr());
-					Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtcpPtr());
-					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(tmpSiSs.getServerUdpSocketRtpPtr().getLocalPort());
-					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(tmpSiSs.getServerUdpSocketRtcpPtr().getLocalPort());
+					Objects.requireNonNull(tmpSiSsPtr.getServerUdpSocketRtpPtr());
+					Objects.requireNonNull(tmpSiSsPtr.getServerUdpSocketRtcpPtr());
+					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(tmpSiSsPtr.getServerUdpSocketRtpPtr().getLocalPort());
+					hdEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(tmpSiSsPtr.getServerUdpSocketRtcpPtr().getLocalPort());
 				} catch (RtspProtoNumberRangeException e) {
 					throw new RtspProtoInvalidResponseException(FNC_NAME + ": Setting Server UDP ports failed: " + e.getMessage());
 				}
@@ -515,12 +518,12 @@ public final class RtspProtoHighResponseProducer {
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtpPtr());
 				hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().copyFrom(tmpInpSubStreamTpPtr.getClientTcpChannRtcpPtr());
 			}
-			hdEntry.hdValTransport.tpSsrcId.copyFrom(tmpSiSs.getSsrcOutboundPtr());
+			hdEntry.hdValTransport.tpSsrcId.copyFrom(tmpSiSsPtr.getSsrcOutboundPtr());
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
 		//
-		tmpSiSs.setHaveSetup(true);
+		tmpSiSsPtr.setHaveSetup(true);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

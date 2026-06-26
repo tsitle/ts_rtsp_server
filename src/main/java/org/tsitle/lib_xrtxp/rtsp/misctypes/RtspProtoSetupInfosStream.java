@@ -87,7 +87,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return false;
 	}
 
-	public Optional<RtspProtoSetupInfoForSubStream> getSiBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
+	public Optional<RtspProtoSetupInfoForSubStream> getSiPtrBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		if (idSubStream.isEmpty()) {
 			return Optional.empty();
 		}
@@ -116,21 +116,6 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return Optional.of(resObj.clone());
 	}
 
-	public Optional<RtspProtoIdXsrc> getSsrcInboundBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		if (idSubStream.isEmpty()) {
-			return Optional.empty();
-		}
-		RtspProtoIdXsrc resObj = null;
-		if (! idSubStream1.isEmpty() && idSubStream.equals(idSubStream1)) {
-			resObj = (siSsPtr1 == null ? null : siSsPtr1.getSsrcInboundPtr());
-		} else if (! idSubStream2.isEmpty() && idSubStream.equals(idSubStream2)) {
-			resObj = (siSsPtr2 == null ? null : siSsPtr2.getSsrcInboundPtr());
-		}
-		if (resObj == null) {
-			return Optional.empty();
-		}
-		return Optional.of(resObj.clone());
-	}
 	public Optional<RtspProtoIdXsrc> getSsrcOutboundBySubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		if (idSubStream.isEmpty()) {
 			return Optional.empty();
@@ -152,14 +137,13 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return (! idSubStream1.isEmpty() ? 1 : 0) + (! idSubStream2.isEmpty() ? 1 : 0);
 	}
 
-	@SuppressWarnings("unused")
 	public @NonNull Set<@NonNull RtspProtoIdSubStream> getSubStreamIds() {
 		Set<@NonNull RtspProtoIdSubStream> resSet = new HashSet<>();
 		if (! idSubStream1.isEmpty()) {
-			resSet.add(idSubStream1);
+			resSet.add(idSubStream1.clone());
 		}
 		if (! idSubStream2.isEmpty()) {
-			resSet.add(idSubStream2);
+			resSet.add(idSubStream2.clone());
 		}
 		return resSet;
 	}
@@ -175,7 +159,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return resSet;
 	}
 
-	public @NonNull Set<@NonNull RtspProtoSetupInfoForSubStream> getSis() {
+	public @NonNull Set<@NonNull RtspProtoSetupInfoForSubStream> getSiPtrs() {
 		Set<@NonNull RtspProtoSetupInfoForSubStream> resSet = new HashSet<>();
 		if (! idSubStream1.isEmpty() && siSsPtr1 != null) {
 			resSet.add(siSsPtr1);

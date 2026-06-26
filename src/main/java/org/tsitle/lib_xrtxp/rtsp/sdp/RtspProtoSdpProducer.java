@@ -26,41 +26,92 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
+import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Producer for Session Description Protocol (SDP) messages (according to RFC-2327 Section 6).
+ * Producer for Session Description Protocol (SDP) messages (according to RFC-2327 Section 6).<br />
+ * For some examples see:<br />
+ *   <a href="https://datatracker.ietf.org/doc/html/rfc2327">RFC-2327: Session Description Protocol</a> and<br />
+ *   <a href="https://datatracker.ietf.org/doc/html/rfc4317">RFC-4317: SDP Offer/Answer Examples</a>.
  */
 public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface {
 
-	private final @NonNull String cfgServerNameAndVersion;
+	private enum BuildTarget {
+		DESCRIBE_FROM_SERVER,
+		ANNOUNCE_FROM_SERVER,
+		ANNOUNCE_FROM_CLIENT
+	}
+
+	private static class InternalArgs {
+		@NonNull BuildTarget buildTarget;
+		boolean requireSrtp;
+		@NonNull String cfgSubStreamIdPrefixForDescribe;
+		@NonNull RtspProtoIdInputSource idInputSource;
+		@NonNull RtspProtoIpAddr serverIpOrName;
+		@NonNull String clientUserAgent;
+		@NonNull RtspProtoIpAddr clientIpAddr;
+		@NonNull RtspProtoAdSettingsStream ioAdStreamSett;
+		@Nullable RtspProtoKmdsStream ioKmdsOutbound;
+		@NonNull RtspProtoDataCntSdpRaw outputSdp;
+
+		InternalArgs(
+					@NonNull BuildTarget buildTarget,
+					boolean requireSrtp,
+					@NonNull String cfgSubStreamIdPrefixForDescribe,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIpAddr serverIpOrName,
+					@NonNull String clientUserAgent,
+					@NonNull RtspProtoIpAddr clientIpAddr,
+					@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
+					@Nullable RtspProtoKmdsStream ioKmdsOutbound,
+					@NonNull RtspProtoDataCntSdpRaw outputSdp
+				) {
+			this.buildTarget = buildTarget;
+			this.requireSrtp = requireSrtp;
+			this.cfgSubStreamIdPrefixForDescribe = cfgSubStreamIdPrefixForDescribe;
+			this.idInputSource = idInputSource;
+			this.serverIpOrName = serverIpOrName;
+			this.clientUserAgent = clientUserAgent;
+			this.clientIpAddr = clientIpAddr;
+			this.ioAdStreamSett = ioAdStreamSett;
+			this.ioKmdsOutbound = ioKmdsOutbound;
+			this.outputSdp = outputSdp;
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final @NonNull String cfgContentLanguage;
-	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
+	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface;
 
 	/**
 	 * Constructor.
-	 * @param cfgServerNameAndVersion Server's software name and version
+	 * @param cfgSenderAppNameAndVersion Server's software name and version
 	 * @param cfgContentLanguage Content language (can be empty)
-	 * @param availableStreamsInterface Available streams instance
-	 * @param globalSessionInfoInterface Global session info instance
-	 * @param srtxpKmdsTypeDeciderInterface SRTxP KMDs type decider instance (can be null)
+	 * @param availableStreamsInterface Available streams instance (only required for server-side)
+	 * @param globalSessionInfoInterface Global session info instance (only required for server-side)
+	 * @param srtxpKmdsTypeDeciderInterface SRTxP KMDs type decider instance (can be null, only required for server-side)
 	 */
 	public RtspProtoSdpProducer(
-				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgContentLanguage,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
+				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface
 			) {
-		if (cfgServerNameAndVersion.isBlank()) {
+		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgServerNameAndVersion cannot be blank");
 		}
-		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
+		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
 		this.cfgContentLanguage = cfgContentLanguage;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
@@ -71,132 +122,176 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public void buildSdpForDescribe(
-				@NonNull String cfgSubStreamIdPrefix,
-				boolean requireSrtp,
-				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoIpAddr serverIpOrName,
-				@NonNull String clientUserAgent,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoDataCntSdpRaw outputSdp,
-				@NonNull RtspProtoAdSettingsStream outputAdStreamSett,
-				@NonNull RtspProtoKmdsStream outputKmdsOutbound
-			) throws RtspProtoSdpException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForDescribe()";
+	public void buildSdpForDescribeFromServer(@NonNull ArgsSdpForDescribeFromServer args) throws RtspProtoSdpException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForDescribeFromServer()";
 
-		internalBuildSdp(
-				FNC_NAME,
-				true,
-				cfgSubStreamIdPrefix,
-				requireSrtp,
-				idInputSource,
-				serverIpOrName,
-				clientUserAgent,
-				clientIpAddr,
-				outputKmdsOutbound,
-				outputAdStreamSett,
-				outputSdp
+		InternalArgs internalArgs = new InternalArgs(
+				BuildTarget.DESCRIBE_FROM_SERVER,
+				args.requireSrtp,
+				args.cfgSubStreamIdPrefix,
+				args.idInputSource,
+				args.serverIpOrName,
+				args.clientUserAgent,
+				args.clientIpAddr,
+				args.outputAdStreamSett,
+				args.outputKmdsOutbound,
+				args.outputSdp
 			);
+
+		internalBuildSdp(FNC_NAME, internalArgs);
 	}
 
 	@Override
-	public void buildUpdatedSdpForAnnounce(
-				boolean requireSrtp,
-				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoIpAddr serverIpOrName,
-				@NonNull String clientUserAgent,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoAdSettingsStream inputAdStreamSett,
-				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
-				@NonNull RtspProtoDataCntSdpRaw outputSdp
-			) throws RtspProtoSdpException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildUpdatedSdpForAnnounce()";
+	public void buildUpdatedSdpForAnnounceFromServer(@NonNull ArgsUpdatedSdpForAnnounceFromServer args) throws RtspProtoSdpException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildUpdatedSdpForAnnounceFromServer()";
 
 		/*
-		 * Re-keying legacy SDES keys:
-		 * we need to send an ANNOUNCE request that contains the entire SDP.
+		 * Re-keying legacy SDES keys from the server to the client:
+		 * We need to send an ANNOUNCE request that contains the entire SDP.
 		 * Only the 'a=crypto' line must change and use a different tag.
-		 * The initial SDP would contain something like 'a=crypto:1 ...' and the new SDP
-		 * would contain something like 'a=crypto:2 ...'.
+		 * The initial SDP would contain something like 'a=crypto:1 ...' per Media Entry,
+		 * and then subsequent SDPs would contain something like 'a=crypto:2 ...' per Media Entry.
 		 */
 
-		internalBuildSdp(
-				FNC_NAME,
-				false,
+		InternalArgs internalArgs = new InternalArgs(
+				BuildTarget.ANNOUNCE_FROM_SERVER,
+				args.requireSrtp,
 				"",
-				requireSrtp,
-				idInputSource,
-				serverIpOrName,
-				clientUserAgent,
-				clientIpAddr,
-				inputKmdsOutbound,
-				inputAdStreamSett,
-				outputSdp
+				args.idInputSource,
+				args.serverIpOrName,
+				args.clientUserAgent,
+				args.clientIpAddr,
+				args.inputAdStreamSett,
+				args.inputKmdsOutbound,
+				args.outputSdp
 			);
+
+		internalBuildSdp(FNC_NAME, internalArgs);
+	}
+
+	@Override
+	public void buildSrtxpSdpForAnnounceFromClient(@NonNull ArgsSrtxpSdpForAnnounceFromClient args) throws RtspProtoSdpException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildSrtxpSdpForAnnounceFromClient()";
+
+		/*
+		 * Sending legacy SDES keys from the client to the server:
+		 * We need to send an ANNOUNCE request that contains only a minimal SDP.
+		 * The minimal SDP is only going to contain the SDP version number and minimal Media Entries that
+		 * are copied from the server's DESCRIBE response.
+		 * The initial SDP would contain something like 'a=crypto:1 ...' per Media Entry,
+		 * and then subsequent SDPs for re-keying would contain something like 'a=crypto:2 ...' per Media Entry.
+		 */
+
+		if (args.inputSdpFromServer.getCommonVersion().isEmpty()) {
+			throw new RtspProtoSdpException(FNC_NAME + ": inputSdpFromServer.getCommonVersion() must be set");
+		}
+
+		Set<@NonNull RtspProtoIdSubStream> tmpCtrlIds = args.inputSdpFromServer.findMediaEntryControlIds();
+
+		RtspProtoKmdsStream tmpKmdsToUse;
+		if (args.doGenerateLegacySdesKmds) {
+			if (args.outputLegacySdesKmdsOutbound == null) {
+				throw new RtspProtoSdpException(FNC_NAME + ": outputLegacySdesKmdsOutbound must be set");
+			}
+			tmpKmdsToUse = args.outputLegacySdesKmdsOutbound;
+			for (RtspProtoIdSubStream ctrlId : tmpCtrlIds) {
+				SrtxpKmd tmpKmd = SrtxpKmd.createForLegacySdesWithDefaults(1);
+				tmpKmdsToUse.putKmdForSubStream(tmpKmd, ctrlId);
+			}
+		} else {
+			if (args.inputLegacySdesKmdsOutbound == null) {
+				throw new RtspProtoSdpException(FNC_NAME + ": inputLegacySdesKmdsOutbound must be set");
+			}
+			tmpKmdsToUse = args.inputLegacySdesKmdsOutbound;
+		}
+
+		args.outputSdpFromClient.setContentLang(args.inputSdpFromServer.getContentLang().orElse(""));
+		args.outputSdpFromClient.setContentBase(args.inputSdpFromServer.getContentBase().orElse(""));
+		List<String> sdpLines = new ArrayList<>();
+		sdpLines.add("v=" + args.inputSdpFromServer.getCommonVersion().orElseThrow());
+		sdpLines.add("a=tool:" + cfgSenderAppNameAndVersion);
+		for (RtspProtoIdSubStream ctrlId : tmpCtrlIds) {
+			Optional<RtspProtoSdpDataMediaEntry> tmpOptMe = args.inputSdpFromServer.findMediaEntryForControlId(ctrlId);
+			if (tmpOptMe.isEmpty()) {
+				continue;
+			}
+			//
+			if (! tmpKmdsToUse.containsKmdForSubStreamId(ctrlId)) {
+				throw new RtspProtoSdpException(FNC_NAME + ": Stream KMDs contain no KMD for Sub-Stream ID '" +
+						ctrlId.getIdStr().orElse("-unset-") + "'");
+			}
+			//
+			RtspProtoSdpDataMediaEntry tmpMe = tmpOptMe.get();
+			if (tmpMe.header().formatList().isEmpty()) {
+				continue;
+			}
+			String tmpFmtStr = String.join(" ", tmpMe.header().formatList());
+			sdpLines.add(String.format("m=%s %d %s %s",
+					tmpMe.header().mediaType().name().toLowerCase(),
+					tmpMe.header().portNr().getPort16bit().orElse(0),
+					tmpMe.header().transport().getStrValue(),
+					tmpFmtStr));
+			sdpLines.add("a=control:" + ctrlId.getIdStr().orElseThrow());
+
+			addCryptoParams(sdpLines, tmpKmdsToUse.getKmdBySubStreamId(ctrlId).orElseThrow());
+		}
+		args.outputSdpFromClient.addAllSdpLinesAllRaw(sdpLines);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void internalBuildSdp(
-				@NonNull String fncName,
-				boolean isForDescribe,
-				@NonNull String cfgSubStreamIdPrefixForDescribe,
-				boolean requireSrtp,
-				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoIpAddr serverIpOrName,
-				@NonNull String clientUserAgent,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@Nullable RtspProtoKmdsStream ioKmdsOutbound,
-				@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
-				@NonNull RtspProtoDataCntSdpRaw outputSdp
-			) throws RtspProtoSdpException {
-		if (isForDescribe) {
-			ioAdStreamSett.clear();
+	private void internalBuildSdp(@NonNull String fncName, @NonNull InternalArgs args) throws RtspProtoSdpException {
+		if (args.buildTarget != BuildTarget.DESCRIBE_FROM_SERVER && args.buildTarget != BuildTarget.ANNOUNCE_FROM_SERVER) {
+			throw new IllegalStateException(fncName + ": cannot use this function for the build target " + args.buildTarget);
+		}
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException(fncName + ": availableStreamsInterface must be set");
+		}
+		if (globalSessionInfoInterface == null) {
+			throw new IllegalStateException(fncName + ": globalSessionInfoInterface must be set");
+		}
+
+		//
+		if (args.buildTarget == BuildTarget.DESCRIBE_FROM_SERVER) {
+			args.ioAdStreamSett.clear();
 		}
 
 		//
 		RtspProtoInputSource inputSourceObj;
 		try {
-			inputSourceObj = availableStreamsInterface.getInputSourceObj(idInputSource);
+			inputSourceObj = availableStreamsInterface.getInputSourceObj(args.idInputSource);
 		} catch (RtspProtoIdInputSourceNotFoundException e) {
 			throw new RtspProtoSdpException(fncName + ": Input Source not found");
 		}
 		if (! checkStreamsForInputSource(inputSourceObj)) {
 			throw new RtspProtoSdpException(fncName + ": No valid Stream Source found for Input Source '" +
-					idInputSource.getIdStr().orElse("-unset-") + "'");
+					args.idInputSource.getIdStr().orElse("-unset-") + "'");
 		}
 
 		//
-		if (isForDescribe) {
-			ioAdStreamSett.setIdInputSource(idInputSource);
+		if (args.buildTarget == BuildTarget.DESCRIBE_FROM_SERVER) {
+			args.ioAdStreamSett.setIdInputSource(args.idInputSource);
 		}
 
 		//
 		List<@NonNull String> tmpSdpLines;
-		tmpSdpLines = buildSdpLines(
-				isForDescribe,
-				requireSrtp,
-				cfgSubStreamIdPrefixForDescribe,
-				inputSourceObj,
-				serverIpOrName,
-				clientUserAgent,
-				clientIpAddr,
-				ioAdStreamSett,
-				ioKmdsOutbound
-			);
-		outputSdp.addAllSdpLinesAllRaw(tmpSdpLines);
+		tmpSdpLines = buildSdpLines(args, inputSourceObj);
+		args.outputSdp.addAllSdpLinesAllRaw(tmpSdpLines);
 		if (! cfgContentLanguage.isBlank()) {
-			outputSdp.setContentLang(cfgContentLanguage);
+			args.outputSdp.setContentLang(cfgContentLanguage);
 		}
 
 		//
-		ioAdStreamSett.writeProtect();
+		args.ioAdStreamSett.writeProtect();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean checkStreamsForInputSource(@NonNull RtspProtoInputSource inputSourceObj) {
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException("availableStreamsInterface must be set");
+		}
 		Optional<RtspProtoStreamSource> optSsObjVideo =
 				availableStreamsInterface.getFirstVideoStreamSourceObj(inputSourceObj.getIdInputSource());
 		Optional<RtspProtoStreamSource> optSsObjAudio =
@@ -207,19 +302,16 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull List<@NonNull String> buildSdpLines(
-				boolean isForDescribe,
-				boolean requireSrtp,
-				@NonNull String cfgSubStreamIdPrefixForDescribe,
-				@NonNull RtspProtoInputSource inputSourceObj,
-				@NonNull RtspProtoIpAddr serverIpOrName,
-				@NonNull String clientUserAgent,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
-				@Nullable RtspProtoKmdsStream ioKmdsOutbound
+				@NonNull InternalArgs args,
+				@NonNull RtspProtoInputSource inputSourceObj
 			) throws RtspProtoSdpException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpLines()";
 
-		if (serverIpOrName.isEmpty()) {
+		if (args.buildTarget != BuildTarget.DESCRIBE_FROM_SERVER && args.buildTarget != BuildTarget.ANNOUNCE_FROM_SERVER) {
+			throw new IllegalStateException(FNC_NAME + ": cannot use this function for the build target " + args.buildTarget);
+		}
+
+		if (args.serverIpOrName.isEmpty()) {
 			throw new RtspProtoSdpException(FNC_NAME + ": Server IP address must be set");
 		}
 		if (inputSourceObj.getIdInputSource().getIdStr().isEmpty()) {
@@ -237,7 +329,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		final String tmpO_Version = Long.toUnsignedString(NtpTimestamp.ofNow().getTsAsUnsigned64bit().orElseThrow());
 		final String tmpO_NetworkType = "IN";
 		final String tmpO_AddressType = "IP4";
-		final String tmpO_UnicastAddress = serverIpOrName.getIpAddrStr().orElseThrow();  // can be an IP address or a hostname
+		final String tmpO_UnicastAddress = args.serverIpOrName.getIpAddrStr().orElseThrow();  // can be an IP address or a hostname
 		resL.add(String.format("o=%s %s %s %s %s %s",
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
@@ -248,7 +340,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		// t: Time Active
 		resL.add("t=0 0");
 		// a: Session Attribute: Name and version number of the tool used to create the session description
-		resL.add(String.format("a=tool:%s", cfgServerNameAndVersion));
+		resL.add(String.format("a=tool:%s", cfgSenderAppNameAndVersion));
 		// a: Session Attribute: Type of the conference
 		resL.add("a=type:broadcast");
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
@@ -259,31 +351,9 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		// -------------------------------------
 		try {
 			// optional Video Stream
-			buildSdpForSubStream(
-					isForDescribe,
-					requireSrtp,
-					cfgSubStreamIdPrefixForDescribe,
-					inputSourceObj,
-					clientUserAgent,
-					clientIpAddr,
-					ioKmdsOutbound,
-					ioAdStreamSett,
-					true,
-					resL
-				);
+			buildSdpForSubStream(args, inputSourceObj, true, resL);
 			// optional Audio Stream
-			buildSdpForSubStream(
-					isForDescribe,
-					requireSrtp,
-					cfgSubStreamIdPrefixForDescribe,
-					inputSourceObj,
-					clientUserAgent,
-					clientIpAddr,
-					ioKmdsOutbound,
-					ioAdStreamSett,
-					false,
-					resL
-				);
+			buildSdpForSubStream(args, inputSourceObj, false, resL);
 		} catch (RtspProtoIdStreamSourceNotFoundException e) {
 			throw new RtspProtoSdpException(FNC_NAME + ": Stream Source ID not found: " + e.getMessage());
 		}
@@ -294,18 +364,22 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildSdpForSubStream(
-				boolean isForDescribe,
-				boolean requireSrtp,
-				@NonNull String cfgSubStreamIdPrefixForDescribe,
+				@NonNull InternalArgs args,
 				@NonNull RtspProtoInputSource inputSourceObj,
-				@NonNull String clientUserAgent,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@Nullable RtspProtoKmdsStream ioKmdsOutbound,
-				@NonNull RtspProtoAdSettingsStream ioAdStreamSett,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
 			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream()";
+
+		if (args.buildTarget != BuildTarget.DESCRIBE_FROM_SERVER && args.buildTarget != BuildTarget.ANNOUNCE_FROM_SERVER) {
+			throw new IllegalStateException(FNC_NAME + ": cannot use this function for the build target " + args.buildTarget);
+		}
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException(FNC_NAME + ": availableStreamsInterface must be set");
+		}
+		if (globalSessionInfoInterface == null) {
+			throw new IllegalStateException(FNC_NAME + ": globalSessionInfoInterface must be set");
+		}
 
 		Optional<RtspProtoStreamSource> tmpOptSsObj;
 		if (useVideo) {
@@ -322,25 +396,25 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		//
 		final RtspProtoIdSubStream tmpOutSubStreamId;
 		final long tmpOutRtspSsrcIdLong;
-		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = ioAdStreamSett.getSettingsByStreamSourceId(ssId);
+		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = args.ioAdStreamSett.getSettingsByStreamSourceId(ssId);
 		if (tmpInpAdSubStreamSetts.isPresent()) {
 			tmpOutSubStreamId = tmpInpAdSubStreamSetts.get().idSubStream;
 			if (tmpOutSubStreamId.isEmpty()) {
-				throw new RtspProtoSdpException("Sub-Stream ID must be set in AdSettingsForSubStream");
+				throw new RtspProtoSdpException(FNC_NAME + ": Sub-Stream ID must be set in AdSettingsForSubStream");
 			}
 			if (tmpInpAdSubStreamSetts.get().ssrcOutbound.isEmpty()) {
-				throw new RtspProtoSdpException("SSRC must be set in AdSettingsForSubStream");
+				throw new RtspProtoSdpException(FNC_NAME + ": SSRC must be set in AdSettingsForSubStream");
 			}
 			tmpOutRtspSsrcIdLong = tmpInpAdSubStreamSetts.get().ssrcOutbound.getId32bit().orElse(-1L);
-		} else if (! isForDescribe) {
-			throw new RtspProtoSdpException("Stream Source ID must be set in AdSettingsForSubStream");
+		} else if (args.buildTarget == BuildTarget.ANNOUNCE_FROM_SERVER) {
+			throw new RtspProtoSdpException(FNC_NAME + ": Stream Source ID must be set in AdSettingsForSubStream");
 		} else {  // only DESCRIBE
 			// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
 			tmpOutSubStreamId = globalSessionInfoInterface.createSubStreamId(
-					cfgSubStreamIdPrefixForDescribe,
+					args.cfgSubStreamIdPrefixForDescribe,
 					inputSourceObj.getIdInputSource(),
 					ssId,
-					clientIpAddr
+					args.clientIpAddr
 				);
 			// generate SSRC ID
 			tmpOutRtspSsrcIdLong = Integer.toUnsignedLong(RandomHelper.getRandomUint32(false));
@@ -361,7 +435,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		//
 		RtspProtoAdSettingsForSubStream settSubStream = new RtspProtoAdSettingsForSubStream();
-		if (isForDescribe) {
+		if (args.buildTarget == BuildTarget.DESCRIBE_FROM_SERVER) {
 			settSubStream.idStreamSource.copyFrom(ssId);
 			settSubStream.idSubStream.copyFrom(tmpOutSubStreamId);
 			settSubStream.ssrcOutbound.copyFrom(tmpOutRtspSsrcIdObj);
@@ -371,7 +445,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		// ----------------------------------------
 
 		buildSdpForSubStream_output(
-				requireSrtp,
+				args.requireSrtp,
 				useVideo,
 				ssId,
 				tmpSdpControlIdForSubStream,
@@ -380,30 +454,30 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 
 		// ----------------------------------------
 
-		if (requireSrtp) {
-			if (ioKmdsOutbound == null) {
+		if (args.requireSrtp) {
+			if (args.ioKmdsOutbound == null) {
 				throw new RtspProtoSdpException(FNC_NAME + ": ioKmdsOutbound is null");
 			}
 			SrtxpKmd kmdOutboundForSs;
 			boolean isNewKmd = false;
-			if (! ioKmdsOutbound.containsKmdForSubStreamId(tmpOutSubStreamId)) {
-				kmdOutboundForSs = generateKmdsOutbound(clientUserAgent, tmpOutRtspSsrcIdObj);
+			if (! args.ioKmdsOutbound.containsKmdForSubStreamId(tmpOutSubStreamId)) {
+				kmdOutboundForSs = generateKmdsOutbound(args.clientUserAgent, tmpOutRtspSsrcIdObj);
 				isNewKmd = true;
 			} else {
-				kmdOutboundForSs = ioKmdsOutbound.getKmdBySubStreamId(tmpOutSubStreamId).orElseThrow();
+				kmdOutboundForSs = args.ioKmdsOutbound.getKmdBySubStreamId(tmpOutSubStreamId).orElseThrow();
 			}
 			// add crypto parameters to SDP output
 			addCryptoParams(outputList, kmdOutboundForSs);
 			//
 			if (isNewKmd) {
-				ioKmdsOutbound.putKmdForSubStream(kmdOutboundForSs, tmpOutSubStreamId);
+				args.ioKmdsOutbound.putKmdForSubStream(kmdOutboundForSs, tmpOutSubStreamId);
 			}
 		}
 
 		// ----------------------------------------
 
-		if (isForDescribe) {
-			ioAdStreamSett.putSettingsForSubStream(settSubStream);
+		if (args.buildTarget == BuildTarget.DESCRIBE_FROM_SERVER) {
+			args.ioAdStreamSett.putSettingsForSubStream(settSubStream);
 		}
 	}
 
@@ -440,6 +514,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull List<@NonNull String> outputList
 			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream_output()";
+
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException(FNC_NAME + ": availableStreamsInterface must be set");
+		}
 
 		final RtspProtoAvailableStreamsInterface.StreamSourceInfo ssInfo = availableStreamsInterface.getStreamSourceInfo(idStreamSource);
 		final int ssVideoRtpClockRate;

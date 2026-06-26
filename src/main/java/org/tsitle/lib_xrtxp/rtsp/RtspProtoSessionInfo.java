@@ -336,11 +336,11 @@ public final class RtspProtoSessionInfo {
 			throws RtspProtoSessionInfoException {
 		theReadLock.lock();
 		try {
-			RtspProtoSetupInfoForSubStream tmpSi = descrSetupInfosStream.getSiBySubStreamId(idSubStream).orElseThrow(() ->
+			RtspProtoSetupInfoForSubStream tmpSiPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream).orElseThrow(() ->
 					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
 							idSubStream.getIdStr().orElse("-unset-") + "'")
 				);
-			RtspProtoSetupInfoForSubStream resObj = tmpSi.clone();
+			RtspProtoSetupInfoForSubStream resObj = new RtspProtoSetupInfoForSubStream(tmpSiPtr);
 			resObj.writeProtect();
 			return resObj;
 		} finally {
@@ -348,18 +348,6 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcInboundBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
-			throws RtspProtoSessionInfoException {
-		theReadLock.lock();
-		try {
-			return descrSetupInfosStream.getSsrcInboundBySubStreamId(idSubStream).orElseThrow(() ->
-					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
-							idSubStream.getIdStr().orElse("-unset-") + "'")
-				);
-		} finally {
-			theReadLock.unlock();
-		}
-	}
 	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcOutboundBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
 		theReadLock.lock();
@@ -367,7 +355,7 @@ public final class RtspProtoSessionInfo {
 			return descrSetupInfosStream.getSsrcOutboundBySubStreamId(idSubStream).orElseThrow(() ->
 					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
 							idSubStream.getIdStr().orElse("-unset-") + "'")
-				);
+				).clone();
 		} finally {
 			theReadLock.unlock();
 		}
@@ -385,11 +373,11 @@ public final class RtspProtoSessionInfo {
 	public Optional<SrtxpKmd> getDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		theReadLock.lock();
 		try {
-			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
-			if (tmpOptSiSs.isEmpty()) {
+			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSsPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream);
+			if (tmpOptSiSsPtr.isEmpty()) {
 				return Optional.empty();
 			}
-			return tmpOptSiSs.get().getKmdInboundNextPtr().getKmd();
+			return tmpOptSiSsPtr.get().getKmdInboundNextPtr().getKmd();
 		} finally {
 			theReadLock.unlock();
 		}
@@ -398,11 +386,11 @@ public final class RtspProtoSessionInfo {
 	public void clearDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
 		theWriteLock.lock();
 		try {
-			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSs = descrSetupInfosStream.getSiBySubStreamId(idSubStream);
-			if (tmpOptSiSs.isEmpty()) {
+			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSsPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream);
+			if (tmpOptSiSsPtr.isEmpty()) {
 				return;
 			}
-			tmpOptSiSs.get().getKmdInboundNextPtr().clear();
+			tmpOptSiSsPtr.get().getKmdInboundNextPtr().clear();
 		} finally {
 			theWriteLock.unlock();
 		}
@@ -413,25 +401,11 @@ public final class RtspProtoSessionInfo {
 	public @NonNull Set<@NonNull RtspProtoIdSubStream> getDescrAvailableSubStreamIds() {
 		theReadLock.lock();
 		try {
-			return new HashSet<>(descrAvailableSubStreamIds);
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("unused")
-	public Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
-		theReadLock.lock();
-		try {
-			if (! rhDescribeSdpStcIsSet) {
-				return Optional.empty();
+			Set<RtspProtoIdSubStream> resSet = new HashSet<>();
+			for (RtspProtoIdSubStream idSubStream : descrAvailableSubStreamIds) {
+				resSet.add(idSubStream.clone());
 			}
-			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
-			resObj.copyFrom(rhDescribeSdpStcObj);
-			resObj.writeProtect();
-			return Optional.of(resObj);
+			return resSet;
 		} finally {
 			theReadLock.unlock();
 		}
@@ -798,6 +772,20 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
+		theReadLock.lock();
+		try {
+			if (! rhDescribeSdpStcIsSet) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
+			resObj.copyFrom(rhDescribeSdpStcObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
 	void setRhDescribeSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
 		theWriteLock.lock();
 		try {

@@ -278,8 +278,8 @@ public final class RtspProtoResponseInputSvc {
 
 			// store the encryption settings
 			for (RtspProtoIdSubStream tmpMeCtrlId : tmpMeCtrlIdsOutput) {
-				Optional<RtspProtoSetupInfoForSubStream> tmpSiForSs = tmpSis.getSiBySubStreamId(tmpMeCtrlId);
-				if (tmpSiForSs.isPresent() && tmpSiForSs.get().getSubStreamTpPtr().getIsEncr()) {
+				Optional<RtspProtoSetupInfoForSubStream> tmpOptSiForSsPtr = tmpSis.getSiPtrBySubStreamId(tmpMeCtrlId);
+				if (tmpOptSiForSsPtr.isPresent() && tmpOptSiForSsPtr.get().getSubStreamTpPtr().getIsEncr()) {
 					rtspSessionInfo.setStreamTpMainIsTransportSrtpSrtcp();
 					break;
 				}

@@ -34,6 +34,7 @@ public final class RtspProtoRequestOutputSvc {
 		@Nullable RtspProtoIdSubStream inputIdSubStream = null;
 		final @NonNull RtspProtoDataRequest inputDataRequ;
 		@Nullable RtspProtoKmdsStream kmdsOutboundForAnnounceSetParam = null;
+		boolean announceFromClientGenerateLegacySdesKmds = false;
 		boolean setupUseTransportUdp = true;
 
 		InternRequArgs(@NonNull RtspProtoDataRequest inputDataRequ) {
@@ -93,18 +94,13 @@ public final class RtspProtoRequestOutputSvc {
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 
 		//
-		RtspProtoSdpProducer sdpProducer;
-		if (availableStreamsInterface == null || globalSessionInfoInterface == null) {
-			sdpProducer = null;
-		} else {
-			sdpProducer = new RtspProtoSdpProducer(
-					cfgSenderAppNameAndVersion,
-					cfgContentLanguage,
-					availableStreamsInterface,
-					globalSessionInfoInterface,
-					null
-				);
-		}
+		RtspProtoSdpProducer sdpProducer = new RtspProtoSdpProducer(
+				cfgSenderAppNameAndVersion,
+				cfgContentLanguage,
+				availableStreamsInterface,
+				globalSessionInfoInterface,
+				null
+			);
 
 		//
 		this.rtspProtoHighRequestProducer = new RtspProtoHighRequestProducer(
@@ -557,15 +553,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * <b>Note:</b> This can only work if the server supports the legacy SDES format and ANNOUNCE.<br />
 	 * <b>Note:</b> This is only allowed for Client->Server requests.
 	 * @param resourceUrl The Resource URL
-	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 */
-	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(
-				@NonNull String resourceUrl,
-				@NonNull RtspProtoKmdsStream kmdsOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException {
+	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(@NonNull String resourceUrl)
+			throws TcpSocketClosedException, TcpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpInitialOutboundSdes()";
 
 		if (! isRequestFromClient) {
@@ -577,15 +570,9 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
-		if (kmdsOutbound.getNumberOfSubStreams() == 0) {
-			throw new IllegalArgumentException("Need KMD for at least one sub-stream");
-		}
-		if (! kmdsOutbound.getAreKmdsForLegacySdes().orElse(false)) {
-			throw new IllegalArgumentException("KMDs must be for legacy SDES");
-		}
-
 		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
-		internRequArgs.kmdsOutboundForAnnounceSetParam = kmdsOutbound;
+		internRequArgs.kmdsOutboundForAnnounceSetParam = null;
+		internRequArgs.announceFromClientGenerateLegacySdesKmds = true;
 
 		return internalSendRequest(
 				FNC_NAME,
@@ -831,6 +818,7 @@ public final class RtspProtoRequestOutputSvc {
 					ioDataRequCopy,
 					ioSetupInfosStream,
 					internRequArgs.kmdsOutboundForAnnounceSetParam,
+					internRequArgs.announceFromClientGenerateLegacySdesKmds,
 					internRequArgs.setupUseTransportUdp
 				);
 		} catch (RtspProtoInvalidRequestException e) {
@@ -916,6 +904,11 @@ public final class RtspProtoRequestOutputSvc {
 			}
 		}
 
+		// received structured SDP data
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && rtspSessionInfo.getRhDescribeSdpStc().isPresent()) {
+			dataRequ.requAnnouncedSdpStc.copyFrom(rtspSessionInfo.getRhDescribeSdpStc().orElseThrow());
+		}
+
 		// stream settings
 		if (requestMessageType == RtspProtoMessageType.ANNOUNCE || requestMessageType == RtspProtoMessageType.SETUP) {
 			Set<@NonNull RtspProtoIdSubStream> tmpSubStreamIds = rtspSessionInfo.getDescrSetupInfoSubStreamIds();
@@ -956,7 +949,8 @@ public final class RtspProtoRequestOutputSvc {
 			}
 			dataRequ.requAdStreamSett.writeProtect();
 		}
-		if (requestMessageType == RtspProtoMessageType.DESCRIBE ||
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE ||
+				requestMessageType == RtspProtoMessageType.DESCRIBE ||
 				requestMessageType == RtspProtoMessageType.SETUP ||
 				requestMessageType == RtspProtoMessageType.SET_PARAMETER) {
 			ioSetupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
@@ -999,8 +993,9 @@ public final class RtspProtoRequestOutputSvc {
 		// store the request message type
 		rtspSessionInfo.setLastUsedOutgoingRequestMsgType(requestMessageType);
 
-		// store sub-stream setting from SETUP/SET_PARAMETER request
-		if (requestMessageType == RtspProtoMessageType.SET_PARAMETER || requestMessageType == RtspProtoMessageType.SETUP) {
+		// store sub-stream setting from ANNOUNCE/(DESCRIBE)/SETUP/SET_PARAMETER request
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE || requestMessageType == RtspProtoMessageType.DESCRIBE ||
+				requestMessageType == RtspProtoMessageType.SET_PARAMETER || requestMessageType == RtspProtoMessageType.SETUP) {
 			rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
 		}
 	}

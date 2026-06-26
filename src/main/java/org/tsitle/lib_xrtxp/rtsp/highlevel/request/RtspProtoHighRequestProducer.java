@@ -25,6 +25,8 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspKeymgmtProto;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
+import org.tsitle.lib_xrtxp.rtsp.sdp.ArgsSrtxpSdpForAnnounceFromClient;
+import org.tsitle.lib_xrtxp.rtsp.sdp.ArgsUpdatedSdpForAnnounceFromServer;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +35,7 @@ import java.util.Set;
 public final class RtspProtoHighRequestProducer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean isRequestFromClient;
 	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
@@ -52,6 +55,7 @@ public final class RtspProtoHighRequestProducer {
 		}
 
 		this.logMsgInterface = logMsgInterface;
+		this.isRequestFromClient = isRequestFromClient;
 		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.sdpProducerInterface = sdpProducerInterface;
@@ -89,7 +93,8 @@ public final class RtspProtoHighRequestProducer {
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoDataRequest ioDataRequ,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
-				@Nullable RtspProtoKmdsStream kmdsOutboundForAnnounceSetParam,
+				@Nullable RtspProtoKmdsStream inpKmdsOutboundForAnnounceSetParam,
+				boolean announceFromClientGenerateLegacySdesKmds,
 				boolean setupUseTransportUdp
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest()";
@@ -113,14 +118,27 @@ public final class RtspProtoHighRequestProducer {
 
 		//
 		switch (requestMessageType) {
-			case ANNOUNCE -> buildRequest_announce(ioDataRequ, kmdsOutboundForAnnounceSetParam, resObj);
+			case ANNOUNCE ->
+					buildRequest_announce(
+							ioSetupInfosStream,
+							ioDataRequ,
+							inpKmdsOutboundForAnnounceSetParam,
+							announceFromClientGenerateLegacySdesKmds,
+							resObj
+						);
 			case DESCRIBE -> buildRequest_describe(resObj);
 			case GET_PARAMETER -> buildRequest_getParameter(ioDataRequ, resObj);
 			case OPTIONS -> buildRequest_options(ioDataRequ, resObj);
 			case PAUSE -> buildRequest_pause();
 			case PLAY -> buildRequest_play(resObj);
 			case REDIRECT -> buildRequest_redirect(resObj);
-			case SET_PARAMETER -> buildRequest_setParameter(ioSetupInfosStream, ioDataRequ, kmdsOutboundForAnnounceSetParam, resObj);
+			case SET_PARAMETER ->
+					buildRequest_setParameter(
+							ioSetupInfosStream,
+							ioDataRequ,
+							inpKmdsOutboundForAnnounceSetParam,
+							resObj
+						);
 			case SETUP -> buildRequest_setup(setupUseTransportUdp, ioDataRequ, ioSetupInfosStream, resObj);
 			case TEARDOWN -> buildRequest_teardown();
 			default -> throw new RtspProtoInvalidRequestException(FNC_NAME + ": Unsupported message type: " +
@@ -136,9 +154,11 @@ public final class RtspProtoHighRequestProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void buildRequest_announce(
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspProtoKmdsStream kmdsOutbound,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
+				boolean announceFromClientGenerateLegacySdesKmds,
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_announce()";
 
@@ -157,28 +177,67 @@ public final class RtspProtoHighRequestProducer {
 		if (sdpProducerInterface == null) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": SDP producer must be set");
 		}
-		if (inputDataRequ.rrClientIpAddr.isEmpty()) {
-			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Client IP address must be set");
-		}
+
+		RtspProtoKmdsStream tmpGenOutpKmds = (isRequestFromClient && announceFromClientGenerateLegacySdesKmds ?
+				new RtspProtoKmdsStream() : null);
+		RtspProtoKmdsStream tmpKmdsToStore = (isRequestFromClient && announceFromClientGenerateLegacySdesKmds ?
+				tmpGenOutpKmds : inputKmdsOutbound);
 
 		try {
-			sdpProducerInterface.buildUpdatedSdpForAnnounce(
-					inputDataRequ.rrStreamTpMain.isSrtpRequired(),
-					inputDataRequ.rrRscUrl.idInputSource,
-					inputDataRequ.rrServerIpFromRscUrl,
-					inputDataRequ.getClientUa(),
-					inputDataRequ.rrClientIpAddr,
-					inputDataRequ.requAdStreamSett,
-					kmdsOutbound,
-					output.bodyAnnounceSdp
-				);
+			if (isRequestFromClient) {
+				if (! announceFromClientGenerateLegacySdesKmds && inputKmdsOutbound == null) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": KMDs outbound must not be null");
+				}
+				ArgsSrtxpSdpForAnnounceFromClient sdpBldArgs = ArgsSrtxpSdpForAnnounceFromClient.Builder.builder()
+						.inputSdpFromServer(inputDataRequ.requAnnouncedSdpStc)
+						.inputLegacySdesKmdsOutbound(inputKmdsOutbound)
+						.doGenerateLegacySdesKmds(announceFromClientGenerateLegacySdesKmds)
+						.outputLegacySdesKmdsOutbound(tmpGenOutpKmds)
+						.outputSdpFromClient(outputMsgRequ.bodyAnnounceSdp)
+						.build();
+				sdpProducerInterface.buildSrtxpSdpForAnnounceFromClient(sdpBldArgs);
+			} else {
+				if (inputDataRequ.rrClientIpAddr.isEmpty()) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Client IP address must be set");
+				}
+				if (inputKmdsOutbound == null && inputDataRequ.rrStreamTpMain.isSrtpRequired()) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": KMDs outbound must be set if SRTP is required");
+				}
+				ArgsUpdatedSdpForAnnounceFromServer sdpBldArgs = ArgsUpdatedSdpForAnnounceFromServer.Builder.builder()
+						.requireSrtp(inputDataRequ.rrStreamTpMain.isSrtpRequired())
+						.idInputSource(inputDataRequ.rrRscUrl.idInputSource)
+						.serverIpOrName(inputDataRequ.rrServerIpFromRscUrl)
+						.clientUserAgent(inputDataRequ.getClientUa())
+						.clientIpAddr(inputDataRequ.rrClientIpAddr)
+						.inputAdStreamSett(inputDataRequ.requAdStreamSett)
+						.inputKmdsOutbound(inputKmdsOutbound)
+						.outputSdp(outputMsgRequ.bodyAnnounceSdp)
+						.build();
+				sdpProducerInterface.buildUpdatedSdpForAnnounceFromServer(sdpBldArgs);
+			}
 		} catch (RtspProtoSdpException e) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Building SDP failed: " + e.getMessage());
 		}
 
+		// store the KMDs
+		if (tmpKmdsToStore != null) {
+			for (RtspProtoSetupInfoForSubStream tmpSiForSsPtr : ioSetupInfosStream.getSiPtrs()) {
+				boolean haveKmd = tmpKmdsToStore.containsKmdForSubStreamId(tmpSiForSsPtr.getRscUrlSubStreamPtr().idSubStream);
+				if (! haveKmd) {
+					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Generated KMDs do not contain ss='" +
+							tmpSiForSsPtr.getRscUrlSubStreamPtr().idSubStream.getIdStr().orElse("-unset-") + "'");
+				}
+				SrtxpKmd tmpKmd = tmpKmdsToStore
+						.getKmdBySubStreamId(tmpSiForSsPtr.getRscUrlSubStreamPtr().idSubStream)
+						.orElseThrow();
+				tmpSiForSsPtr.getKmdOutboundPtr().setKmd(tmpKmd, tmpSiForSsPtr.getRscUrlSubStreamPtr().idSubStream);
+			}
+		}
+
+		//
 		if (cfgIsDebugPrintRtspSdpSent) {
 			logDebug(FNC_NAME, "-------- SDP:");
-			for (String tmpSingleSdpLine : output.bodyAnnounceSdp.getSdpLinesAllRaw()) {
+			for (String tmpSingleSdpLine : outputMsgRequ.bodyAnnounceSdp.getSdpLinesAllRaw()) {
 				logDebug(FNC_NAME, "---------------- " + tmpSingleSdpLine);
 			}
 		}
@@ -192,15 +251,15 @@ public final class RtspProtoHighRequestProducer {
 			//
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_BASE);
 			hdEntry.hdValContBase.contentBaseStr = tmpRscUrl + (tmpRscUrl.endsWith("/") ? "" : "/");
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
-		addContentTypeHeader(output);
+		addContentTypeHeader(outputMsgRequ);
 		// Content-Language
-		addContentLangHeader(output.bodyAnnounceSdp.getContentLang(), output);
+		addContentLangHeader(outputMsgRequ.bodyAnnounceSdp.getContentLang(), outputMsgRequ);
 	}
 
-	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest output) {
+	private void buildRequest_describe(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ) {
 		/*
 		 * Example:
 		 *   "DESCRIBE rtsp://example.com/fizzle/foo RTSP/1.0"
@@ -212,13 +271,13 @@ public final class RtspProtoHighRequestProducer {
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.ACCEPT);
 			hdEntry.hdValAccept.rtspMimeType = RtspMimeType.SDP;
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
 	private void buildRequest_getParameter(
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		/*
 		 * Example:
@@ -234,14 +293,14 @@ public final class RtspProtoHighRequestProducer {
 		if (inputDataRequ.rrGetParamNames.isParamNamesEmpty()) {
 			return;
 		}
-		output.bodyGetParamNames.copyFrom(inputDataRequ.rrGetParamNames);
+		outputMsgRequ.bodyGetParamNames.copyFrom(inputDataRequ.rrGetParamNames);
 		// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
-		addContentTypeHeader(output);
+		addContentTypeHeader(outputMsgRequ);
 	}
 
 	private void buildRequest_options(
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) {
 		/*
 		 * Example:
@@ -255,13 +314,13 @@ public final class RtspProtoHighRequestProducer {
 		if (! inputDataRequ.requRequiredFeatures.isFeatureNamesEmpty()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.REQUIRE);
 			hdEntry.hdValRequire.requiredFeatures.addAll(inputDataRequ.requRequiredFeatures.getFeatureNames());
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Proxy-Require
 		if (! inputDataRequ.requProxyRequiredFeatures.isFeatureNamesEmpty()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.PROXY_REQU);
 			hdEntry.hdValProxyRequ.requiredFeatures.addAll(inputDataRequ.requProxyRequiredFeatures.getFeatureNames());
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
@@ -281,7 +340,7 @@ public final class RtspProtoHighRequestProducer {
 	/**
 	 * The client makes one PLAY request per Input Source
 	 */
-	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest output) {
+	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ) {
 		/*
 		 * Example:
 		 *   "PLAY rtsp://example.com/fizzle/foo/ RTSP/1.0"
@@ -292,11 +351,12 @@ public final class RtspProtoHighRequestProducer {
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.RANGE);
 			hdEntry.hdValRange.rangeStr = "npt=0.000-";  // @TODO make configurable
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
-	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
+	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ)
+			throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_redirect()";
 
 		/*
@@ -326,8 +386,8 @@ public final class RtspProtoHighRequestProducer {
 	private void buildRequest_setParameter(
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@Nullable RtspProtoKmdsStream kmdsOutbound,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@Nullable RtspProtoKmdsStream inputKmdsOutbound,
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setParameter()";
 
@@ -344,15 +404,15 @@ public final class RtspProtoHighRequestProducer {
 
 		//
 		if (! inputDataRequ.requSetParamValues.isParamKvsEmpty()) {
-			output.bodySetParamKv.copyFrom(inputDataRequ.requSetParamValues);
+			outputMsgRequ.bodySetParamKv.copyFrom(inputDataRequ.requSetParamValues);
 			// Content-Type (we don't add the Content-Length - this will be done by the low-level request builder)
-			addContentTypeHeader(output);
+			addContentTypeHeader(outputMsgRequ);
 			// Content-Language
-			addContentLangHeader(inputDataRequ.requSetParamValues.getContentLang(), output);
+			addContentLangHeader(inputDataRequ.requSetParamValues.getContentLang(), outputMsgRequ);
 		}
 
 		// set the SRTxP Key Management Data for a SET_PARAMETER request used for re-keying
-		if (kmdsOutbound == null) {
+		if (inputKmdsOutbound == null) {
 			return;
 		}
 		RtspProtoIdSubStream idSubStreamPtr = inputDataRequ.rrRscUrl.idSubStream;
@@ -360,7 +420,7 @@ public final class RtspProtoHighRequestProducer {
 			throw new IllegalArgumentException(FNC_NAME + ": idSubStream must be set when " +
 					"setting SRTxP key management data for SET_PARAMETER request");
 		}
-		Optional<SrtxpKmd> tmpOptKmd = kmdsOutbound.getKmdBySubStreamId(idSubStreamPtr);
+		Optional<SrtxpKmd> tmpOptKmd = inputKmdsOutbound.getKmdBySubStreamId(idSubStreamPtr);
 		if (tmpOptKmd.isEmpty()) {
 			throw new IllegalArgumentException(FNC_NAME + ": KMD for Sub-Stream not found");
 		}
@@ -373,11 +433,11 @@ public final class RtspProtoHighRequestProducer {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": no SETUP info found for Sub-Stream ID '" +
 					idSubStreamPtr.getIdStr().orElse("-unset-") + "'");
 		}
-		RtspProtoSetupInfoForSubStream siForSs = ioSetupInfosStream.getSiBySubStreamId(idSubStreamPtr).orElseThrow();
-		siForSs.getKmdOutboundPtr().setKmd(tmpKmd, idSubStreamPtr);
+		RtspProtoSetupInfoForSubStream siForSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(idSubStreamPtr).orElseThrow();
+		siForSsPtr.getKmdOutboundPtr().setKmd(tmpKmd, idSubStreamPtr);
 
 		// Keymgmt
-		addKeymgmtHeader(tmpKmd, output);
+		addKeymgmtHeader(tmpKmd, outputMsgRequ);
 	}
 
 	/**
@@ -389,7 +449,7 @@ public final class RtspProtoHighRequestProducer {
 				boolean setupUseTransportUdp,
 				@NonNull RtspProtoDataRequest ioDataRequ,
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_setup()";
 
@@ -415,29 +475,29 @@ public final class RtspProtoHighRequestProducer {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": no SETUP info found for Sub-Stream ID '" +
 					idSubStreamPtr.getIdStr().orElse("-unset-") + "'");
 		}
-		RtspProtoSetupInfoForSubStream siForSs = ioSetupInfosStream.getSiBySubStreamId(idSubStreamPtr).orElseThrow();
+		RtspProtoSetupInfoForSubStream siForSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(idSubStreamPtr).orElseThrow();
 
 		// Transport
 		{
 			ioDataRequ.rrStreamTpMain.setIsTransportUdp(setupUseTransportUdp);
 
 			//
-			RtspProtoDataCntSubStreamTp ssTp = siForSs.getSubStreamTpPtr();
+			RtspProtoDataCntSubStreamTp ssTp = siForSsPtr.getSubStreamTpPtr();
 			ssTp.setIsUdp(setupUseTransportUdp);
 			ssTp.setIsInterleaved(! setupUseTransportUdp);
 			ssTp.setIsUnicast(true);
 			if (setupUseTransportUdp) {
 				// we need to open the UDP sockets now so we can get the port numbers
 				try {
-					RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(false, siForSs);
+					RtspProtoHighUdpPorts.findAndOpenUdpSocketPorts(false, siForSsPtr);
 				} catch (RtspProtoCouldNotFindUdpPortsException | UdpSocketIoException e) {
 					throw new RtspProtoInvalidRequestException(FNC_NAME + ": " + e.getMessage());
 				}
-				Objects.requireNonNull(siForSs.getClientUdpSocketRtpPtr());
-				Objects.requireNonNull(siForSs.getClientUdpSocketRtcpPtr());
+				Objects.requireNonNull(siForSsPtr.getClientUdpSocketRtpPtr());
+				Objects.requireNonNull(siForSsPtr.getClientUdpSocketRtcpPtr());
 				try {
-					ssTp.getClientUdpPortRtpPtr().setPort16bit(siForSs.getClientUdpSocketRtpPtr().getLocalPort());
-					ssTp.getClientUdpPortRtcpPtr().setPort16bit(siForSs.getClientUdpSocketRtcpPtr().getLocalPort());
+					ssTp.getClientUdpPortRtpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtpPtr().getLocalPort());
+					ssTp.getClientUdpPortRtcpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtcpPtr().getLocalPort());
 				} catch (RtspProtoNumberRangeException e) {
 					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting Client UDP ports failed: " + e.getMessage());
 				}
@@ -461,8 +521,8 @@ public final class RtspProtoHighRequestProducer {
 			hdEntry.hdValTransport.tpMode = RtspTransportMode.PLAY;
 			if (setupUseTransportUdp) {
 				try {
-					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(siForSs.getClientUdpSocketRtpPtr().getLocalPort());
-					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(siForSs.getClientUdpSocketRtcpPtr().getLocalPort());
+					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtpPtr().getLocalPort());
+					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtcpPtr().getLocalPort());
 				} catch (RtspProtoNumberRangeException e) {
 					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting Client UDP ports failed: " + e.getMessage());
 				}
@@ -478,15 +538,15 @@ public final class RtspProtoHighRequestProducer {
 					// this will never happen
 				}
 			}
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
 		// generate outbound KMD
-		if (! (ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp() && siForSs.getKmdInboundCurPtr().isKmdSet())) {
+		if (! (ioDataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp() && siForSsPtr.getKmdInboundCurPtr().isKmdSet())) {
 			return;
 		}
-		boolean isForLegacySdes = siForSs.getKmdInboundCurPtr().getIsKmdForLegacySdes().orElse(true);
-		if (isForLegacySdes && siForSs.getKmdOutboundPtr().isKmdSet()) {
+		boolean isForLegacySdes = siForSsPtr.getKmdInboundCurPtr().getIsKmdForLegacySdes().orElse(true);
+		if (isForLegacySdes && siForSsPtr.getKmdOutboundPtr().isKmdSet()) {
 			return;  // don't generate a new KMD since we have already (probably) used ANNOUNCE to publish the KMDs
 		}
 		// generate outbound KMD (with its own SSRC)
@@ -496,14 +556,14 @@ public final class RtspProtoHighRequestProducer {
 		} else {
 			outboundKmd = SrtxpKmd.createForMikeyWithDefaults(
 					SrtxpMki.of(1, SrtxpKmd.DEFAULT_MKI_LEN),
-					siForSs.getSsrcOutboundPtr()
+					siForSsPtr.getSsrcOutboundPtr()
 				);
 		}
-		siForSs.getKmdOutboundPtr().setKmd(outboundKmd, idSubStreamPtr);
+		siForSsPtr.getKmdOutboundPtr().setKmd(outboundKmd, idSubStreamPtr);
 
 		// Keymgmt
 		if (! isForLegacySdes) {
-			addKeymgmtHeader(outboundKmd, output);
+			addKeymgmtHeader(outboundKmd, outputMsgRequ);
 		}
 	}
 
@@ -523,7 +583,7 @@ public final class RtspProtoHighRequestProducer {
 
 	private void addCommonHeaders(
 				@NonNull RtspProtoDataRequest inputDataRequ,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addCommonHeaders()";
 
@@ -534,24 +594,24 @@ public final class RtspProtoHighRequestProducer {
 			}
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CSEQ);
 			hdEntry.hdValCseq.cseqNr.copyFrom(inputDataRequ.getCseqNrToSend());
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Date
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.DATE);
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Session
 		if (! inputDataRequ.rrIdSession.isEmpty()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.SESSION);
 			hdEntry.hdValSession.idSession.copyFrom(inputDataRequ.rrIdSession);
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)
 		if (! inputDataRequ.requAuthClient.getAuthNonce().isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
 			hdEntry.hdValAuthClient.authUser = inputDataRequ.requAuthClient.getAuthUser();
-			hdEntry.hdValAuthClient.authUri = output.resourceUrl;
+			hdEntry.hdValAuthClient.authUri = outputMsgRequ.resourceUrl;
 			hdEntry.hdValAuthClient.authRealm = inputDataRequ.requAuthClient.getAuthRealm();
 			hdEntry.hdValAuthClient.authNonce = inputDataRequ.requAuthClient.getAuthNonce();
 			try {
@@ -559,7 +619,7 @@ public final class RtspProtoHighRequestProducer {
 						inputDataRequ.requAuthClient.getAuthUser(),
 						inputDataRequ.requAuthClient.getAuthPlainPassword(),
 						hdEntry.hdValAuthClient.authUri,
-						output.messageType,
+						outputMsgRequ.messageType,
 						hdEntry.hdValAuthClient.authRealm,
 						hdEntry.hdValAuthClient.authNonce
 					);
@@ -567,37 +627,38 @@ public final class RtspProtoHighRequestProducer {
 				throw new RtspProtoInvalidRequestException(FNC_NAME + ": Computing authentication response failed: " +
 						e.getMessage());
 			}
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// UserAgent
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.USERAGENT);
 			hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
-			output.headers.put(hdEntry.getHdKey(), hdEntry);
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
 
-	private void addContentTypeHeader(@NonNull RtspProtoHighMsgStructuredRequest output) throws RtspProtoInvalidRequestException {
+	private void addContentTypeHeader(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ)
+			throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addContentTypeHeader()";
 
-		if (output.messageType != RtspProtoMessageType.ANNOUNCE &&
-				output.messageType != RtspProtoMessageType.GET_PARAMETER && output.messageType != RtspProtoMessageType.SET_PARAMETER) {
+		if (outputMsgRequ.messageType != RtspProtoMessageType.ANNOUNCE &&
+				outputMsgRequ.messageType != RtspProtoMessageType.GET_PARAMETER && outputMsgRequ.messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Content-Type header only allowed for " +
 					"DESCRIBE/GET_PARAMETER/SET_PARAMETER messages");
 		}
 		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_TYPE);
-		hdEntry.hdValContType.contentType = (output.messageType == RtspProtoMessageType.ANNOUNCE ?
+		hdEntry.hdValContType.contentType = (outputMsgRequ.messageType == RtspProtoMessageType.ANNOUNCE ?
 				RtspMimeType.SDP : RtspMimeType.PARAMETERS);
-		output.headers.put(hdEntry.getHdKey(), hdEntry);
+		outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
 	private void addContentLangHeader(
 				@NonNull String contLang,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addContentLangHeader()";
 
-		if (output.messageType != RtspProtoMessageType.ANNOUNCE && output.messageType != RtspProtoMessageType.SET_PARAMETER) {
+		if (outputMsgRequ.messageType != RtspProtoMessageType.ANNOUNCE && outputMsgRequ.messageType != RtspProtoMessageType.SET_PARAMETER) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Content-Language header only allowed for " +
 					"ANNOUNCE/SET_PARAMETER messages");
 		}
@@ -606,12 +667,12 @@ public final class RtspProtoHighRequestProducer {
 		}
 		RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONTENT_LANG);
 		hdEntry.hdValContLang.contentLangStr = contLang;
-		output.headers.put(hdEntry.getHdKey(), hdEntry);
+		outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 	}
 
 	private void addKeymgmtHeader(
 				@NonNull SrtxpKmd kmdOutbound,
-				@NonNull RtspProtoHighMsgStructuredRequest output
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
 			) throws RtspProtoInvalidRequestException {
 		final String FNC_NAME = getClass().getSimpleName() + ".addKeymgmtHeader()";
 
@@ -627,9 +688,9 @@ public final class RtspProtoHighRequestProducer {
 		}
 		RtspProtoHeaderEntryRequest entry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.KEYMGMT);
 		entry.hdValKeymgmt.proto = RtspKeymgmtProto.MIKEY;
-		entry.hdValKeymgmt.uriStr = output.resourceUrl;
+		entry.hdValKeymgmt.uriStr = outputMsgRequ.resourceUrl;
 		entry.hdValKeymgmt.dataStr = tmpCryptoStrB64;
-		output.headers.put(RtspHeaderKey.KEYMGMT, entry);
+		outputMsgRequ.headers.put(RtspHeaderKey.KEYMGMT, entry);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
