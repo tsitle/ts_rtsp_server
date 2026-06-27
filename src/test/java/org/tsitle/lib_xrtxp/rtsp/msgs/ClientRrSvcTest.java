@@ -15,7 +15,9 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
@@ -51,6 +53,8 @@ public class ClientRrSvcTest {
 		public void setRtspParameter(
 					boolean dryRunOnly,
 					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream,
 					@NonNull String contentLanguage,
 					@NonNull String key,
 					@NonNull String value
@@ -69,7 +73,11 @@ public class ClientRrSvcTest {
 		}
 
 		@Override
-		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(@NonNull RtspProtoIdSession idSession) {
+		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(
+					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream
+				) {
 			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
 			resObj.putParamKvsEntry("jitter", Double.toString(jitterValue).replace(",", "."));
 			return resObj;
@@ -237,6 +245,8 @@ public class ClientRrSvcTest {
 			parameterGetterSetter.setRtspParameter(
 					false,
 					RtspProtoIdSession.of("11111"),
+					tmpOptKvs.get().getIdInputSource(),
+					tmpOptKvs.get().getIdSubStream(),
 					"",
 					paramKey,
 					tmpOptKvs.get().getParamKvsValue(paramKey).orElseThrow()

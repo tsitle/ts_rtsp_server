@@ -15,7 +15,9 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
@@ -50,6 +52,8 @@ public class ClientRequestInputSvcTest {
 		public void setRtspParameter(
 					boolean dryRunOnly,
 					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream,
 					@NonNull String contentLanguage,
 					@NonNull String key,
 					@NonNull String value

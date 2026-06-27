@@ -17,6 +17,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 
@@ -127,18 +128,32 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static class ParameterGetterSetterServerSide implements RtspProtoParameterGetterInterface, RtspProtoParameterSetterInterface {
-		static double jitterValue = 0.0;
-		static double latencyValue = 0.0;
+		private double jitterValue = 0.0;
+		private double latencyValue = 0.0;
+		private final @NonNull RtspProtoSessionInfo sessionInfo;
+
+		ParameterGetterSetterServerSide(@NonNull RtspProtoSessionInfo sessionInfo) {
+			this.sessionInfo = sessionInfo;
+		}
 
 		@Override
 		public void setRtspParameter(
 					boolean dryRunOnly,
 					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream,
 					@NonNull String contentLanguage,
 					@NonNull String key,
 					@NonNull String value
 				) throws RtspProtoRtspParamUnknownException, RtspProtoRtspParamInvalidValueException {
-			if (key.equals("jitter")) {
+			if (! checkSessionId(idSession)) {
+				throw new RtspProtoRtspParamUnknownException("Session ID mismatch");
+			}
+			if (! checkInputSource(idInputSource)) {
+				throw new RtspProtoRtspParamUnknownException("Non-existing Input Source");
+			}
+
+			if (idSubStream.isEmpty() && key.equals("jitter")) {
 				double tmpDbl = Double.parseDouble(value);
 				if (tmpDbl < 0.0) {
 					throw new RtspProtoRtspParamInvalidValueException("xxx");
@@ -148,7 +163,7 @@ public class C2sRrSvcTest {
 				}
 				return;
 			}
-			if (key.equals("latency")) {
+			if (idSubStream.isEmpty() && key.equals("latency")) {
 				double tmpDbl = Double.parseDouble(value);
 				if (tmpDbl < 0.0) {
 					throw new RtspProtoRtspParamInvalidValueException("xxx");
@@ -158,15 +173,41 @@ public class C2sRrSvcTest {
 				}
 				return;
 			}
+			if (! idSubStream.isEmpty()) {
+				throw new RtspProtoRtspParamUnknownException("Sub-Stream ID should have been empty");
+			}
 			throw new RtspProtoRtspParamUnknownException("xxx");
 		}
 
 		@Override
-		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(@NonNull RtspProtoIdSession idSession) {
+		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(
+					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream
+				) {
 			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
-			resObj.putParamKvsEntry("jitter", Double.toString(jitterValue).replace(",", "."));
-			resObj.putParamKvsEntry("latency", Double.toString(latencyValue).replace(",", "."));
+			if (checkSessionId(idSession) && checkInputSource(idInputSource)) {
+				if (idSubStream.isEmpty()) {
+					resObj.putParamKvsEntry("jitter", doubleToString(jitterValue));
+					resObj.putParamKvsEntry("latency", doubleToString(latencyValue));
+				}
+			}
 			return resObj;
+		}
+
+		private @NonNull String doubleToString(double value) {
+			return Double.toString(value).replace(",", ".");
+		}
+
+		private boolean checkSessionId(@NonNull RtspProtoIdSession idSession) {
+			return idSession.equals(sessionInfo.getIdSession());
+		}
+
+		private boolean checkInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
+			Set<RtspProtoIdInputSource> availIss = new HashSet<>();
+			availIss.add(RtspProtoIdInputSource.of("existing_stream"));
+			availIss.add(RtspProtoIdInputSource.of("existing_stream_no_auth"));
+			return availIss.contains(idInputSource);
 		}
 	}
 
@@ -323,6 +364,8 @@ public class C2sRrSvcTest {
 				srvParameterGetterSetter.setRtspParameter(
 						false,
 						srvSessionInfo.getIdSession(),
+						tmpOptKvs.get().getIdInputSource(),
+						tmpOptKvs.get().getIdSubStream(),
 						tmpOptKvs.get().getContentLang(),
 						entry.getKey(),
 						entry.getValue()
@@ -704,7 +747,7 @@ public class C2sRrSvcTest {
 		RtxpTcpReadWrite srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
 
 		srvSessionInfo = new RtspProtoSessionInfo();
-		srvParameterGetterSetter = new ParameterGetterSetterServerSide();
+		srvParameterGetterSetter = new ParameterGetterSetterServerSide(srvSessionInfo);
 		AvailableStreamsServerSide srvAvailableStreams = new AvailableStreamsServerSide();
 		RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 		UserAuthServerSide srvUserAuthSvc = new UserAuthServerSide(logger);

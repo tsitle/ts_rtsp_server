@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -16,13 +17,14 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.ids.*;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
@@ -151,6 +153,108 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	static class ParameterGetterSetterServerSide implements RtspProtoParameterGetterInterface, RtspProtoParameterSetterInterface {
+		private double jitterValue = 0.0;
+		private double latencyValue = 0.0;
+		private double subVolumeValue = 0.0;
+		private final @NonNull RtspProtoSessionInfo sessionInfo;
+		private final @NonNull RtspProtoIdSubStream audioSubStreamId = RtspProtoIdSubStream.ofEmpty();
+
+		ParameterGetterSetterServerSide(@NonNull RtspProtoSessionInfo sessionInfo) {
+			this.sessionInfo = sessionInfo;
+		}
+
+		public void setAudioSubStreamId(@NonNull RtspProtoIdSubStream audioSubStreamId) {
+			this.audioSubStreamId.copyFrom(audioSubStreamId);
+		}
+
+		@Override
+		public void setRtspParameter(
+					boolean dryRunOnly,
+					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream,
+					@NonNull String contentLanguage,
+					@NonNull String key,
+					@NonNull String value
+				) throws RtspProtoRtspParamUnknownException, RtspProtoRtspParamInvalidValueException {
+			if (! checkSessionId(idSession)) {
+				throw new RtspProtoRtspParamUnknownException("Session ID mismatch");
+			}
+			if (! checkInputSource(idInputSource)) {
+				throw new RtspProtoRtspParamUnknownException("Non-existing Input Source");
+			}
+
+			if (idSubStream.isEmpty() && key.equals("jitter")) {
+				double tmpDbl = Double.parseDouble(value);
+				if (tmpDbl < 0.0) {
+					throw new RtspProtoRtspParamInvalidValueException("xxx");
+				}
+				if (! dryRunOnly) {
+					jitterValue = tmpDbl;
+				}
+				return;
+			}
+			if (idSubStream.isEmpty() && key.equals("latency")) {
+				double tmpDbl = Double.parseDouble(value);
+				if (tmpDbl < 0.0) {
+					throw new RtspProtoRtspParamInvalidValueException("xxx");
+				}
+				if (! dryRunOnly) {
+					latencyValue = tmpDbl;
+				}
+				return;
+			}
+			if (! idSubStream.isEmpty() && idSubStream.equals(audioSubStreamId) && key.equals("volume")) {
+				double tmpDbl = Double.parseDouble(value);
+				if (tmpDbl < 0.0) {
+					throw new RtspProtoRtspParamInvalidValueException("xxx");
+				}
+				if (! dryRunOnly) {
+					subVolumeValue = tmpDbl;
+				}
+				return;
+			}
+			throw new RtspProtoRtspParamUnknownException("xxx");
+		}
+
+		@Override
+		public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(
+					@NonNull RtspProtoIdSession idSession,
+					@NonNull RtspProtoIdInputSource idInputSource,
+					@NonNull RtspProtoIdSubStream idSubStream
+				) {
+			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
+			if (checkSessionId(idSession) && checkInputSource(idInputSource)) {
+				if (idSubStream.isEmpty()) {
+					resObj.putParamKvsEntry("jitter", doubleToString(jitterValue));
+					resObj.putParamKvsEntry("latency", doubleToString(latencyValue));
+				} else if (! idSubStream.isEmpty() && idSubStream.equals(audioSubStreamId)) {
+					resObj.putParamKvsEntry("volume", doubleToString(subVolumeValue));
+				}
+			}
+			return resObj;
+		}
+
+		private @NonNull String doubleToString(double value) {
+			return Double.toString(value).replace(",", ".");
+		}
+
+		private boolean checkSessionId(@NonNull RtspProtoIdSession idSession) {
+			return idSession.equals(sessionInfo.getIdSession());
+		}
+
+		private boolean checkInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
+			Set<RtspProtoIdInputSource> availIss = new HashSet<>();
+			availIss.add(RtspProtoIdInputSource.of("existing_stream"));
+			availIss.add(RtspProtoIdInputSource.of("existing_stream_no_auth"));
+			return availIss.contains(idInputSource);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	enum ClientType {
 		SDES,
 		MIKEY
@@ -230,7 +334,75 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void test_announce_ok_withCryptoSdes_announceBeforeSetup() throws Exception {
+	void test_rekeying_ok_sdes_announceBeforeSetup() throws Exception {
+		internal_test_rekeying_ok_sdes(true, true);
+	}
+
+	@Test
+	void test_rekeying_ok_sdes_announceAfterSetup_udp() throws Exception {
+		internal_test_rekeying_ok_sdes(true, false);
+	}
+
+	@Test
+	void test_rekeying_ok_sdes_announceAfterSetup_tcp() throws Exception {
+		internal_test_rekeying_ok_sdes(false, false);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_rekeying_ok_mikey_udp() throws Exception {
+		internal_test_rekeying_ok_mikey(true);
+	}
+
+	@Test
+	void test_rekeying_ok_mikey_tcp() throws Exception {
+		internal_test_rekeying_ok_mikey(false);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	@Disabled
+	void test_options_on_substream() {
+		// @TODO send OPTIONS request for a sub-stream
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	@Disabled
+	void test_setParam_on_substream() {
+		// @TODO send SET_PARAMETER request for a sub-stream
+	}
+
+	@Test
+	@Disabled
+	void test_getParam_on_substream() {
+		// @TODO send GET_PARAMETER request for a sub-stream
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	@Disabled
+	void test_play() {
+		// @TODO
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	@Disabled
+	void test_redirect() {
+		// @TODO
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void internal_test_rekeying_ok_sdes(boolean useTransportUdp, boolean announceInitialClientKeysBeforeSetup)
+			throws Exception {
 		final ClientType ct = ClientType.SDES;
 		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
 
@@ -238,8 +410,13 @@ public class S2cRrSvcTest {
 
 		// client sends DESCRIBE request to server
 		do_c2s_Describe(ct, rscUrlStr);
-		// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
-		do_c2s_Announce_withCryptoSdes(rscUrlStr);
+
+		//
+		if (announceInitialClientKeysBeforeSetup) {
+			// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
+			do_c2s_InitialAnnounce_sdes(rscUrlStr);
+		}
+
 		// client sends SETUP requests to server
 		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
 		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
@@ -249,7 +426,7 @@ public class S2cRrSvcTest {
 			do_c2s_Setup(
 					ct,
 					rscUrlForSs,
-					true
+					useTransportUdp
 				);
 			//
 			RtspProtoRscUrl checkRscUrlForSsSrv = srvSessionInfo.getResourceUrlForMt_onlySetup(tmpIdSubStream).orElseThrow();
@@ -257,59 +434,32 @@ public class S2cRrSvcTest {
 			RtspProtoRscUrl checkRscUrlForSsClient = cliSessionInfoPtr.getResourceUrlForMt_onlySetup(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsClient);
 		}
-		doCheckSetupClientSide(ct, true);
-		// server sends OPTIONS request to client
-		do_s2c_Options(ct);
-		// server sends ANNOUNCE request to client
-		do_s2c_Announce_withCryptoSdes();
-		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
-	}
 
-	@Test
-	void test_announce_ok_withCryptoSdes_announceAfterSetup() throws Exception {
-		final ClientType ct = ClientType.SDES;
-		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
-
-		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
-
-		// client sends DESCRIBE request to server
-		do_c2s_Describe(ct, rscUrlStr);
-		// client sends SETUP requests to server
-		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
-			do_c2s_Setup(
-					ct,
-					rscUrlForSs,
-					true
-				);
+		//
+		if (! announceInitialClientKeysBeforeSetup) {
+			// client sends ANNOUNCE request to server - which contains the client's initial outbound KMDs
+			do_c2s_InitialAnnounce_sdes(rscUrlStr);
 		}
-		// client sends ANNOUNCE request to server - which contains the client's outbound KMDs
-		do_c2s_Announce_withCryptoSdes(rscUrlStr);
-		doCheckSetupClientSide(ct, true);
+
+		//
+		do_checkSetupClientSide(ct, useTransportUdp);
+
 		// server sends OPTIONS request to client
 		do_s2c_Options(ct);
-		// server sends ANNOUNCE request to client
-		do_s2c_Announce_withCryptoSdes();
-		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
+
+		// server sends ANNOUNCE request to client - which contains the server's new outbound KMDs
+		do_s2c_RekeyingAnnounce_sdes();
+		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
+
+		// client sends OPTIONS request to server
+		do_c2s_Options(ct);
+
+		// client sends ANNOUNCE request to server - which contains the client's new outbound KMDs
+		do_c2s_RekeyingAnnounce_sdes();
+		do_checkKeys_afterClientRekeying_clientAndServer(ct);
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	void test_setParam_ok_withCryptoMikey_udp() throws Exception {
-		internal_test_setParam_ok_withCryptoMikey(true);
-	}
-
-	@Test
-	void test_setParam_ok_withCryptoMikey_tcp() throws Exception {
-		internal_test_setParam_ok_withCryptoMikey(false);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void internal_test_setParam_ok_withCryptoMikey(boolean useTransportUdp) throws Exception {
+	private void internal_test_rekeying_ok_mikey(boolean useTransportUdp) throws Exception {
 		final ClientType ct = ClientType.MIKEY;
 		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
 
@@ -317,6 +467,7 @@ public class S2cRrSvcTest {
 
 		// client sends DESCRIBE request to server
 		do_c2s_Describe(ct, rscUrlStr);
+
 		// client sends SETUP requests to server
 		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
 		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
@@ -332,12 +483,21 @@ public class S2cRrSvcTest {
 			RtspProtoRscUrl checkRscUrlForSsClient = cliSessionInfoPtr.getResourceUrlForMt_onlySetup(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsClient);
 		}
-		doCheckSetupClientSide(ct, useTransportUdp);
+		do_checkSetupClientSide(ct, useTransportUdp);
+
 		// server sends OPTIONS request to client
 		do_s2c_Options(ct);
-		// server sends SET_PARAMETER request to client
-		do_s2c_SetParam_withCryptoMikey();
-		doCheckKeysAfterSrvRekeying_clientAndServer(ct);
+
+		// server sends SET_PARAMETER request to client - which contains the server's new outbound KMDs
+		do_s2c_RekeyingSetParam_mikey();
+		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
+
+		// client sends OPTIONS request to server
+		do_c2s_Options(ct);
+
+		// client sends SET_PARAMETER request to server - which contains the client's new outbound KMDs
+		do_c2s_RekeyingSetParam_mikey();
+		do_checkKeys_afterClientRekeying_clientAndServer(ct);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -423,7 +583,7 @@ public class S2cRrSvcTest {
 		assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 	}
 
-	private void doCheckSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
+	private void do_checkSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 
 		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
@@ -500,7 +660,7 @@ public class S2cRrSvcTest {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private void do_c2s_Announce_withCryptoSdes(@NonNull String resourceUrl) throws Exception {
+	private void do_c2s_InitialAnnounce_sdes(@NonNull String resourceUrl) throws Exception {
 		final ClientType ct = ClientType.SDES;
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -645,7 +805,7 @@ public class S2cRrSvcTest {
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
 
-	private void do_s2c_Announce_withCryptoSdes() throws Exception {
+	private void do_s2c_RekeyingAnnounce_sdes() throws Exception {
 		final ClientType ct = ClientType.SDES;
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -721,7 +881,7 @@ public class S2cRrSvcTest {
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 	}
 
-	private void do_s2c_SetParam_withCryptoMikey() throws Exception {
+	private void do_s2c_RekeyingSetParam_mikey() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
 
 		Objects.requireNonNull(cliSessionInfo.get(ct));
@@ -766,7 +926,7 @@ public class S2cRrSvcTest {
 		}
 	}
 
-	private void doCheckKeysAfterSrvRekeying_clientAndServer(ClientType ct) throws Exception {
+	private void do_checkKeys_afterSrvRekeying_clientAndServer(ClientType ct) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -836,6 +996,143 @@ public class S2cRrSvcTest {
 		}
 	}
 
+	private void do_c2s_Options(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		RtspProtoRscUrl rscUrl = cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_options(rscUrl.getUrlStr());
+		assertEquals(RtspProtoMessageType.OPTIONS, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+	}
+
+	private void do_c2s_RekeyingAnnounce_sdes() throws Exception {
+		final ClientType ct = ClientType.SDES;
+
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		RtspProtoKmdsStream kmdsOutboundRekey = new  RtspProtoKmdsStream();
+		for (RtspProtoIdSubStream tmpIdSs : cliSessionInfoPtr.getDescrSetupInfoSubStreamIds() ) {
+			SrtxpKmd kmdReky = cliRequOutputSvc.get(ct).generateNewOutboundKmdForRekeying(tmpIdSs);
+			kmdsOutboundRekey.putKmdForSubStream(kmdReky, tmpIdSs);
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoRscUrl rscUrl = cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.ANNOUNCE).orElseThrow();
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_srtxpRekeyOutboundSdes(rscUrl.getUrlStr(), kmdsOutboundRekey);
+		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+	}
+
+	private void do_c2s_RekeyingSetParam_mikey() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		assertEquals(2, cliSessionInfoPtr.getDescrSetupInfoSubStreamIds().size());
+
+		// ----------------------------------------------------
+
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = cliRequOutputSvc.get(ct).generateNewOutboundKmdForRekeying(tmpIdSubStream);
+
+			RtspProtoRscUrl rscUrlForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+
+			RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_srtxpRekeyOutboundMikey(rscUrlForSs, kmdOutboundSs);
+			assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
+
+			// ----------------------------------------------------
+
+			RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+			// ----------------------------------------------------
+
+			srvRespOutputSvc.sendResponse(resRequBas);
+
+			// ----------------------------------------------------
+
+			RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+		}
+	}
+
+	private void do_checkKeys_afterClientRekeying_clientAndServer(ClientType ct) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		assertEquals(2, cliSessionInfoPtr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
+
+		// ----------------------------------------------------
+
+		for (RtspProtoIdSubStream tmpIdSubStream : srvSessionInfo.getDescrSetupInfoSubStreamIds()) {
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+
+			// check client's current outbound KMD's SSRC + MKI
+			if (ct == ClientType.MIKEY) {
+				assertEquals(tmpSiForSsClient.getSsrcOutboundPtr(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().ssrcId());
+				assertEquals(SrtxpMki.of(2, 4), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().mki());
+			}
+
+			// check client's outbound KMD's Tag
+			if (ct == ClientType.SDES) {
+				assertEquals(2, tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow().getMetaTagForLegacySdes().orElseThrow());
+			}
+
+			// check server's next inbound KMD vs. the client's outbound KMD
+			assertEquals(tmpSiForSsSrv.getKmdInboundNextPtr().getKmd().orElseThrow(), tmpSiForSsClient.getKmdOutboundPtr().getKmd().orElseThrow());
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void initRtxpTcpReadWrite() throws Exception {
@@ -870,6 +1167,8 @@ public class S2cRrSvcTest {
 
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);
 
 		Set<String> cfgSupportedFeatures = Set.of();
