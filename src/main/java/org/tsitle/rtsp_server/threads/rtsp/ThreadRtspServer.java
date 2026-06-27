@@ -398,6 +398,8 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 						rtspParamGetterSetterSvc.setRtspParameter(
 								false,
 								rtspSessionInfo.getIdSession(),
+								cachedSetParamValues.getIdInputSource(),
+								cachedSetParamValues.getIdSubStream(),
 								cachedSetParamValues.getContentLang(),
 								entry.getKey(),
 								entry.getValue()

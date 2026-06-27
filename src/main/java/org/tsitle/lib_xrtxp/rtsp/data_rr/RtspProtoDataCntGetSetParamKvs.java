@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.data_rr;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 
 import java.util.*;
 
@@ -13,6 +15,9 @@ public final class RtspProtoDataCntGetSetParamKvs {
 
 	/** Parameter key-value-pairs */
 	private final @NonNull Map<@NonNull String, @NonNull String> paramKvs = new HashMap<>();
+
+	private final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
+	private final @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -49,6 +54,26 @@ public final class RtspProtoDataCntGetSetParamKvs {
 		paramKvs.put(key, value);
 	}
 
+	public @NonNull RtspProtoIdInputSource getIdInputSource() {
+		return idInputSource.clone();
+	}
+	public void setIdInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.idInputSource.copyFrom(idInputSource);
+	}
+
+	public @NonNull RtspProtoIdSubStream getIdSubStream() {
+		return idSubStream.clone();
+	}
+	public void setIdSubStream(@NonNull RtspProtoIdSubStream idSubStream) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.idSubStream.copyFrom(idSubStream);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void clear() {
@@ -57,6 +82,8 @@ public final class RtspProtoDataCntGetSetParamKvs {
 		}
 		contentLang = "";
 		paramKvs.clear();
+		idInputSource.clear();
+		idSubStream.clear();
 	}
 
 	public void copyFrom(@NonNull RtspProtoDataCntGetSetParamKvs other) {
@@ -69,6 +96,8 @@ public final class RtspProtoDataCntGetSetParamKvs {
 		contentLang = other.contentLang;
 		paramKvs.clear();
 		paramKvs.putAll(other.paramKvs);
+		idInputSource.copyFrom(other.idInputSource);
+		idSubStream.copyFrom(other.idSubStream);
 	}
 
 	public void writeProtect() {
@@ -100,6 +129,8 @@ public final class RtspProtoDataCntGetSetParamKvs {
 		return getClass().getSimpleName() + " [" +
 				"contentLang='" + contentLang + "'" +
 				", paramKvs=" + mapToString(paramKvs) +
+				", idInputSource=" + idInputSource +
+				", idSubStream=" + idSubStream +
 				"]";
 	}
 

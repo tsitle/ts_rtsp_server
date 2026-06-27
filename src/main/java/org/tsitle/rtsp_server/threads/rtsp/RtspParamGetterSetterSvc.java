@@ -4,7 +4,9 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 
@@ -32,6 +34,8 @@ public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterI
 	public void setRtspParameter(
 				boolean dryRunOnly,
 				@NonNull RtspProtoIdSession idSession,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull String contentLanguage,
 				@NonNull String key,
 				@NonNull String value
@@ -47,7 +51,11 @@ public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterI
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(@NonNull RtspProtoIdSession idSession) {
+	public @NonNull RtspProtoDataCntGetSetParamKvs getAllRtspParameters(
+				@NonNull RtspProtoIdSession idSession,
+				@NonNull RtspProtoIdInputSource idInputSource,
+				@NonNull RtspProtoIdSubStream idSubStream
+			) {
 		RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
 		resObj.setContentLang(CONTENT_LANGUAGE);
 		return resObj;

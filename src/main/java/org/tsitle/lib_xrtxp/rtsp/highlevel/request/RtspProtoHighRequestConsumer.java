@@ -189,6 +189,9 @@ public final class RtspProtoHighRequestConsumer {
 			return RtspRequestBasics.createKnownWithOptionNotSupported(inputMsgStc.messageType);
 		}
 
+		//
+		outputDataRequ.rrRscUrl.copyFrom(rscUrlObj);
+
 		// process body
 		if (inputMsgStc.messageType == RtspProtoMessageType.ANNOUNCE ||
 				inputMsgStc.messageType == RtspProtoMessageType.GET_PARAMETER || inputMsgStc.messageType == RtspProtoMessageType.SET_PARAMETER) {
@@ -1061,22 +1064,30 @@ public final class RtspProtoHighRequestConsumer {
 
 		outputDataRequ.rrInvalidParamNames.clear();
 
+		//
+		outputDataRequ.requSetParamValues.setIdInputSource(outputDataRequ.rrRscUrl.idInputSource);
+		outputDataRequ.requSetParamValues.setIdSubStream(outputDataRequ.rrRscUrl.idSubStream);
+
 		// if one of the parameters cannot be set, the entire request needs to be rejected
 		for (Map.Entry<@NonNull String, @NonNull String> entry : outputDataRequ.requSetParamValues.getParamKvsEntrySet()) {
 			try {
 				parameterSetterInterface.setRtspParameter(
 						true,
 						outputDataRequ.rrIdSession,
+						outputDataRequ.requSetParamValues.getIdInputSource(),
+						outputDataRequ.requSetParamValues.getIdSubStream(),
 						outputDataRequ.requSetParamValues.getContentLang(),
 						entry.getKey(),
 						entry.getValue()
 					);
 			} catch (RtspProtoRtspParamUnknownException e) {
 				outputDataRequ.rrInvalidParamNames.putParamName(entry.getKey());
-				logWarn(FNC_NAME, "Unknown parameter: '" + entry.getKey() + "'");
+				logWarn(FNC_NAME, "RtspProtoRtspParamUnknownException caught for parameter: '" +
+						entry.getKey() + "': " + e.getMessage());
 			} catch (RtspProtoRtspParamInvalidValueException e) {
 				outputDataRequ.rrInvalidParamNames.putParamName(entry.getKey());
-				logWarn(FNC_NAME, "Invalid value for parameter key='" + entry.getKey() + "': '" + entry.getValue() + "'");
+				logWarn(FNC_NAME, "RtspProtoRtspParamInvalidValueException caught for parameter key='" +
+						entry.getKey() + "': '" + entry.getValue() + "': " + e.getMessage());
 			}
 		}
 		if (! outputDataRequ.rrInvalidParamNames.isParamNamesEmpty()) {

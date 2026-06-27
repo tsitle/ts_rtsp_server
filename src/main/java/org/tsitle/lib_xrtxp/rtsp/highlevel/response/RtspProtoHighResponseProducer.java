@@ -318,8 +318,11 @@ public final class RtspProtoHighResponseProducer {
 			output.statusCode = RtspProtoStatusCode.INVALID_PARAMETER;
 			output.bodyGetSetInvalidParams.copyFrom(inputDataResp.rrGetParamNames);
 		} else {
-			RtspProtoDataCntGetSetParamKvs tmpDataGsp =
-					parameterGetterInterface.getAllRtspParameters(inputDataResp.rrIdSession);
+			RtspProtoDataCntGetSetParamKvs tmpDataGsp = parameterGetterInterface.getAllRtspParameters(
+					inputDataResp.rrIdSession,
+					inputDataResp.rrRscUrl.idInputSource,
+					inputDataResp.rrRscUrl.idSubStream
+				);
 
 			Set<String> tmpMissingParams = new HashSet<>();
 			for (String requParam : inputDataResp.rrGetParamNames.getParamNames()) {
