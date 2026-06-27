@@ -128,9 +128,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If there is an I/O exception
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_announce(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
 		if (isRequestFromClient) {
@@ -154,9 +155,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_describe(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_describe(resourceUrl, dummyClientCredentials);
@@ -170,11 +172,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_describe(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_describe()";
 
 		if (! isRequestFromClient) {
@@ -190,9 +193,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_getParameter(resourceUrl, dummyClientCredentials);
@@ -205,11 +209,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		return internalSendRequest(FNC_NAME, RtspProtoMessageType.GET_PARAMETER, resourceUrl, clientCredentials);
@@ -223,11 +228,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_getParameter(resourceUrl, dummyClientCredentials, getParameterNames);
@@ -242,12 +248,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -270,9 +277,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_options(resourceUrl, dummyClientCredentials, Set.of(), Set.of());
@@ -285,11 +293,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		return sendRequest_options(resourceUrl, clientCredentials, Set.of(), Set.of());
 	}
 
@@ -301,12 +310,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull Set<@NonNull String> requiredFeatures,
 				@NonNull Set<@NonNull String> proxyRequiredFeatures
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_options(resourceUrl, dummyClientCredentials, requiredFeatures, proxyRequiredFeatures);
@@ -321,13 +331,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull Set<@NonNull String> requiredFeatures,
 				@NonNull Set<@NonNull String> proxyRequiredFeatures
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_options()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -352,9 +363,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_pause(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_pause(resourceUrl, dummyClientCredentials);
@@ -368,11 +380,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_pause(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_pause()";
 
 		if (! isRequestFromClient) {
@@ -389,9 +402,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_play(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_play(resourceUrl, dummyClientCredentials);
@@ -405,11 +419,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
 		if (! isRequestFromClient) {
@@ -426,9 +441,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_redirect(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_redirect()";
 
 		if (isRequestFromClient) {
@@ -449,11 +465,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_setParameter(resourceUrl, dummyClientCredentials, setParameterKvs);
@@ -467,12 +484,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -498,11 +516,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				boolean useTransportUdp
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_setup(
@@ -521,12 +540,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				boolean useTransportUdp
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setup()";
 
 		if (! isRequestFromClient) {
@@ -560,9 +580,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpInitialOutboundSdes()";
 
 		if (! isRequestFromClient) {
@@ -595,11 +616,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull SrtxpKmd kmdOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundMikey()";
 
 		if (resourceUrlForSubStream.idSubStream.isEmpty()) {
@@ -639,11 +661,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -678,9 +701,10 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_teardown(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_teardown(resourceUrl, dummyClientCredentials);
@@ -696,11 +720,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_teardown(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_teardown()";
 
 		if (! isRequestFromClient) {
@@ -780,7 +805,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 
@@ -799,7 +824,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull InternRequArgs internRequArgs
-			) throws TcpSocketClosedException, TcpSocketIoException {
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
@@ -818,7 +843,7 @@ public final class RtspProtoRequestOutputSvc {
 
 		// load data from Session Info
 		if (! loadFromSessionInfo(fncName, requestMessageType, clientCredentials, ioDataRequCopy, ioSetupInfosStream)) {
-			return RtspProtoMessageType.UNKNOWN;
+			throw new RtspProtoSendRequestFailedException(fncName + ": Failed to load Session Info");
 		}
 
 		// build the outgoing message
@@ -833,8 +858,7 @@ public final class RtspProtoRequestOutputSvc {
 					internRequArgs.setupUseTransportUdp
 				);
 		} catch (RtspProtoInvalidRequestException e) {
-			logError(fncName, "Failed to build HL request: " + e.getMessage());
-			return RtspProtoMessageType.UNKNOWN;
+			throw new RtspProtoSendRequestFailedException(fncName + ": Failed to build HL request: " + e.getMessage());
 		}
 
 		// convert the message
@@ -842,8 +866,7 @@ public final class RtspProtoRequestOutputSvc {
 		try {
 			msgRaw = rtspProtoLowRequestProducer.buildMessage(msgStructured);
 		} catch (RtspProtoInvalidRequestException e) {
-			logError(fncName, "Failed to build LL request: " + e.getMessage());
-			return RtspProtoMessageType.UNKNOWN;
+			throw new RtspProtoSendRequestFailedException(fncName + ": Failed to build LL request: " + e.getMessage());
 		}
 
 		// send the message

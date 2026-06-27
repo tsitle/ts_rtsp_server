@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendResponseFailedException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.response.RtspProtoHighResponseProducer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -22,7 +23,6 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.response.RtspProtoLowResponseProducer;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpProducer;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
@@ -147,28 +147,23 @@ public final class RtspProtoResponseOutputSvc {
 	/**
 	 * Send a response.
 	 * @param rtspRequestBasics Basic information about the request that this response is for
-	 * @param inputDataRequ Input data from the request that this response is for
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws UdpSocketIoException If an I/O error occurs on the UDP socket
 	 * @throws TcpSocketIoException If an I/O error occurs on the TCP socket
+	 * @throws RtspProtoSendResponseFailedException If sending the response has failed
 	 */
-	public void sendResponse(
-				@NonNull RtspRequestBasics rtspRequestBasics,
-				@NonNull RtspProtoDataRequest inputDataRequ
-			) throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException {
+	public void sendResponse(@NonNull RtspRequestBasics rtspRequestBasics)
+			throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException, RtspProtoSendResponseFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
-		//
-		inputDataRequ.writeProtect();
-
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;
 		try {
-			RtspProtoDataResponse ioDataResp = new RtspProtoDataResponse(inputDataRequ);
+			RtspProtoDataResponse ioDataResp = new RtspProtoDataResponse();
 			RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
 
 			// load data from Session Info
@@ -180,12 +175,10 @@ public final class RtspProtoResponseOutputSvc {
 			//
 			if (rtspRequestBasics.messageType == RtspProtoMessageType.DESCRIBE && rtspRequestBasics.statusCode == RtspProtoStatusCode.OK) {
 				if (ioDataResp.rrServerIpFromRscUrl.isEmpty()) {
-					logError(FNC_NAME, "Server IP from Resource URL must be set");
-					return;
+					throw new RtspProtoSendResponseFailedException("Server IP from Resource URL must be set");
 				}
 				if (ioDataResp.rrRscUrl.idInputSource.isEmpty()) {
-					logError(FNC_NAME, "Input Source ID must be set");
-					return;
+					throw new RtspProtoSendResponseFailedException("Input Source ID must be set");
 				}
 			}
 
@@ -195,8 +188,7 @@ public final class RtspProtoResponseOutputSvc {
 			// update data in Session Info
 			updateSessionInfo(ioSetupInfosStream, ioDataResp, msgStructured);
 		} catch (RtspProtoInvalidResponseException e) {
-			logError(FNC_NAME, "Failed to build HL response: " + e.getMessage());
-			return;
+			throw new RtspProtoSendResponseFailedException("Failed to build HL response: " + e.getMessage());
 		}
 
 		// convert the message
@@ -204,8 +196,7 @@ public final class RtspProtoResponseOutputSvc {
 		try {
 			msgRaw = rtspProtoLowResponseProducer.buildMessage(msgStructured);
 		} catch (RtspProtoInvalidResponseException e) {
-			logError(FNC_NAME, "Failed to build LL response: " + e.getMessage());
-			return;
+			throw new RtspProtoSendResponseFailedException("Failed to build LL response: " + e.getMessage());
 		}
 
 		// send the message
@@ -223,6 +214,9 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
+		dataResp.copyFromRequest(rtspSessionInfo.getLastIncomingRequestData());
+
+		//
 		dataResp.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
 		//
 		dataResp.respAuthServer.copyFrom(rtspSessionInfo.getPermAuthServer());
@@ -243,12 +237,15 @@ public final class RtspProtoResponseOutputSvc {
 				! tmpOptIdSess.get().isEmpty() && ! rtspSessionInfo.getIdSession().isReadOnly()) {
 			rtspSessionInfo.setSessionId(tmpOptIdSess.get());
 		}
+
 		// store permanent Auth data
 		if (! (isResponseFromClient || rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
 			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
-		//
+
+		// store stream settings
 		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
+
 		// store the available Sub-Stream IDs from a DESCRIBE response
 		Set<@NonNull RtspProtoIdSubStream> tmpSiSsIds = setupInfosStream.getSubStreamIds();
 		if (! tmpSiSsIds.isEmpty()) {
@@ -261,9 +258,7 @@ public final class RtspProtoResponseOutputSvc {
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
+	@SuppressWarnings("SameParameterValue")
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
 				fncName + ": " + msg);

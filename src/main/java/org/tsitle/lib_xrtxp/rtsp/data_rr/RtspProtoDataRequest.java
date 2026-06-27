@@ -96,6 +96,22 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFrom(@NonNull RtspProtoDataRequest other) {
+		super.copyFrom(other);
+
+		requAuthClient.copyFrom(other.requAuthClient);
+		requSetParamValues.copyFrom(other.requSetParamValues);
+		requRequiredFeatures.copyFrom(other.requRequiredFeatures);
+		requProxyRequiredFeatures.copyFrom(other.requProxyRequiredFeatures);
+		requAdStreamSett.copyFrom(other.requAdStreamSett);
+		requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
+		requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
+		requCseqNrToSend.copyFrom(other.requCseqNrToSend);
+		requRtspSessionState.copyFrom(other.requRtspSessionState);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public void clear() {
 		super.clear();

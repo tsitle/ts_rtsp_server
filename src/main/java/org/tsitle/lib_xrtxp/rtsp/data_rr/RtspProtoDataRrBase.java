@@ -96,6 +96,25 @@ public class RtspProtoDataRrBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	protected void copyFrom(@NonNull RtspProtoDataRrBase other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		rrIdSession.copyFrom(other.rrIdSession);
+		rrGetParamNames.copyFrom(other.rrGetParamNames);
+		rrInvalidParamNames.copyFrom(other.rrInvalidParamNames);
+		rrUnsupportedFeatureName = other.rrUnsupportedFeatureName;
+		rrServerIpFromRscUrl.copyFrom(other.rrServerIpFromRscUrl);
+		rrRscUrl.copyFrom(other.rrRscUrl);
+		rrRtspProtoVersionToUse = other.rrRtspProtoVersionToUse;
+		rrCseqNrLastRcvd.copyFrom(other.rrCseqNrLastRcvd);
+		rrStreamTpMain.copyFrom(other.rrStreamTpMain);
+		rrClientUa = other.rrClientUa;
+		rrServerSoftware = other.rrServerSoftware;
+		rrClientIpAddr.copyFrom(other.rrClientIpAddr);
+		rrPlaybackRangeValue = other.rrPlaybackRangeValue;
+	}
+
 	protected void clear() {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");

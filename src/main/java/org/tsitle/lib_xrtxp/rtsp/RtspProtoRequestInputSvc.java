@@ -137,16 +137,13 @@ public final class RtspProtoRequestInputSvc {
 	/**
 	 * Receive a request from the client.
 	 * @param clientIpAddr Client's IP address - used for associating Sub-Stream IDs with a specific client
-	 * @param outputDataRequ Output for request data
 	 * @return Basic request information
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
-	public @NonNull RtspRequestBasics receiveRequestFromClient(
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoDataRequest outputDataRequ
-			) throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
+	public @NonNull RtspRequestBasics receiveRequestFromClient(@NonNull RtspProtoIpAddr clientIpAddr)
+			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromClient()";
 
 		if (! isRequestFromClient) {
@@ -156,18 +153,17 @@ public final class RtspProtoRequestInputSvc {
 			throw new IllegalArgumentException("Client IP address is empty");
 		}
 
-		return internalReceiveRequest(FNC_NAME, clientIpAddr, outputDataRequ);
+		return internalReceiveRequest(FNC_NAME, clientIpAddr);
 	}
 
 	/**
 	 * Receive a request from the server.
-	 * @param outputDataRequ Output for request data
 	 * @return Basic request information
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
-	public @NonNull RtspRequestBasics receiveRequestFromServer(@NonNull RtspProtoDataRequest outputDataRequ)
+	public @NonNull RtspRequestBasics receiveRequestFromServer()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromServer()";
 
@@ -177,7 +173,7 @@ public final class RtspProtoRequestInputSvc {
 
 		RtspProtoIpAddr tmpClientIpAddr = RtspProtoIpAddr.ofLoopback();
 
-		return internalReceiveRequest(FNC_NAME, tmpClientIpAddr, outputDataRequ);
+		return internalReceiveRequest(FNC_NAME, tmpClientIpAddr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -185,15 +181,14 @@ public final class RtspProtoRequestInputSvc {
 
 	private @NonNull RtspRequestBasics internalReceiveRequest(
 				@NonNull String fncName,
-				@NonNull RtspProtoIpAddr clientIpAddr,
-				@NonNull RtspProtoDataRequest outputDataRequ
+				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
 		//
-		outputDataRequ.clear();
+		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
 
 		// read the raw request from the TCP socket
 		RtspProtoLowMsgRaw lowInputRaw = rtspProtoLowMsgReader.readMessage();  // blocks for setSoTimeout() value
@@ -267,10 +262,10 @@ public final class RtspProtoRequestInputSvc {
 			requAuthSvc.checkAuthorization(clientIpAddr, resObj, outputDataRequ.requAuthClient);
 		}
 
-		// store additional request data
+		// load additional request data
 		try {
-			storeResourceUrl(resObj, outputDataRequ);
-			storeServerIp(msgStructured, resObj, outputDataRequ);
+			loadResourceUrl(resObj, outputDataRequ);
+			loadServerIp(msgStructured, resObj, outputDataRequ);
 		} catch (RtspProtoInvalidRequestException e) {
 			resObj.statusCode = RtspProtoStatusCode.INTERNAL_SERVER_ERROR;
 			logWarn(fncName, String.format("%s for RTSP request message (rt=%s), rejecting it with code %s",
@@ -301,14 +296,14 @@ public final class RtspProtoRequestInputSvc {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void storeResourceUrl(
+	private void loadResourceUrl(
 				@NonNull RtspRequestBasics requBasics,
 				@NonNull RtspProtoDataRequest outputDataRequ
 			) {
 		outputDataRequ.rrRscUrl.copyFrom(requBasics.rscUrl);
 	}
 
-	private void storeServerIp(
+	private void loadServerIp(
 				@NonNull RtspProtoHighMsgStructuredRequest msgStructured,
 				@NonNull RtspRequestBasics requBasics,
 				@NonNull RtspProtoDataRequest outputDataRequ
@@ -356,6 +351,9 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoDataCntCseqRequInp cseqRequ
 			) {
+		rtspSessionInfo.setLastIncomingRequestData(dataRequ);
+
+		//
 		rtspSessionInfo.setRtspProtoVersionToUse(dataRequ.getRtspProtoVersionToUse());
 		//
 		rtspSessionInfo.setCseqNr_requFromRem_lastRcvd(cseqRequ.cseqNr_lastRcvd);
@@ -370,6 +368,11 @@ public final class RtspProtoRequestInputSvc {
 		if (! dataRequ.getPlaybackRangeValue().isEmpty()) {
 			rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
 		}
+
+		//
+		rtspSessionInfo.setRhInvalidParamNames(dataRequ.rrInvalidParamNames);  // always overwrite
+		rtspSessionInfo.clearRhGetParamNames();
+		rtspSessionInfo.clearRhSetParamValues();
 	}
 
 	private void updateSessionInfo_success(
@@ -377,6 +380,9 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoSetupInfosStream setupInfosStream
 			) {
+		rtspSessionInfo.setLastIncomingRequestData(dataRequ);  // update again
+
+		//
 		if (dataRequ.rrStreamTpMain.getForceRtpRtcpEncryption()) {  // only update one-way
 			rtspSessionInfo.setStreamTpMainForceRtpRtcpEncryption();
 		}
@@ -401,6 +407,24 @@ public final class RtspProtoRequestInputSvc {
 			if (! (rtspSessionInfo.getIdSession().isReadOnly() || dataRequ.rrIdSession.isEmpty())) {
 				rtspSessionInfo.setSessionId(dataRequ.rrIdSession);
 			}
+		}
+
+		//
+		if (requBasics.messageType == RtspProtoMessageType.GET_PARAMETER) {
+			rtspSessionInfo.setRhGetParamNames(dataRequ.rrGetParamNames);
+		} else if (requBasics.messageType == RtspProtoMessageType.SET_PARAMETER) {
+			rtspSessionInfo.setRhSetParamValues(dataRequ.requSetParamValues);
+		}
+
+		//
+		if (requBasics.messageType == RtspProtoMessageType.OPTIONS) {
+			rtspSessionInfo.setRhRequiredFeatures(dataRequ.requRequiredFeatures);
+			rtspSessionInfo.setRhProxyRequiredFeatures(dataRequ.requProxyRequiredFeatures);
+		}
+
+		//
+		if (requBasics.messageType == RtspProtoMessageType.ANNOUNCE) {
+			rtspSessionInfo.setRhAnnouncedSdpStc(dataRequ.requAnnouncedSdpStc);
 		}
 	}
 

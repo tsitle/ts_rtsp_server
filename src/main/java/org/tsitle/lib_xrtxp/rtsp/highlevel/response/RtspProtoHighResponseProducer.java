@@ -148,6 +148,8 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull RtspProtoDataResponse ioDataResp,
 				@NonNull RtspProtoHighMsgStructuredResponse output
 			) throws RtspProtoInvalidResponseException {
+		final String FNC_NAME = getClass().getSimpleName() + ".buildResponse_nack()";
+
 		/*
 		 * Example:
 		 *   "RTSP/1.0 500 Something went wrong"
@@ -159,6 +161,9 @@ public final class RtspProtoHighResponseProducer {
 		 */
 		switch (statusCode) {
 			case INVALID_PARAMETER:  // from SET_PARAMETER (not GET_PARAMETER)
+				if (ioDataResp.rrInvalidParamNames.isParamNamesEmpty()) {
+					throw new RtspProtoInvalidResponseException(FNC_NAME + ": InvalidParamNames is empty");
+				}
 				output.bodyGetSetInvalidParams.copyFrom(ioDataResp.rrInvalidParamNames);
 				// Content-Type (we don't add the Content-Length - this will be done by the low-level response builder)
 				addContentTypeHeader(output);
@@ -166,9 +171,11 @@ public final class RtspProtoHighResponseProducer {
 			case RtspProtoStatusCode.OPTION_NOT_SUPPORTED:
 				// Unsupported
 				{
+					if (ioDataResp.getUnsupportedFeatureName().isBlank()) {
+						throw new RtspProtoInvalidResponseException(FNC_NAME + ": UnsupportedFeatureName is empty");
+					}
 					RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.UNSUPPORTED);
-					hdEntry.hdValUnsupported.unsupportedFeatureStr = (ioDataResp.getUnsupportedFeatureName().isBlank()
-							? "_unknown_" : ioDataResp.getUnsupportedFeatureName());
+					hdEntry.hdValUnsupported.unsupportedFeatureStr = ioDataResp.getUnsupportedFeatureName();
 					output.headers.put(hdEntry.getHdKey(), hdEntry);
 				}
 				break;

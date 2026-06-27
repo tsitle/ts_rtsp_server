@@ -31,9 +31,13 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 		super();
 	}
 
-	public RtspProtoDataResponse(@NonNull RtspProtoDataRequest inputDataRequ) {
-		super();
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
+	public void copyFromRequest(@NonNull RtspProtoDataRequest inputDataRequ) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
 		rrIdSession.copyFrom(inputDataRequ.rrIdSession);
 		rrGetParamNames.copyFrom(inputDataRequ.rrGetParamNames);
 		rrInvalidParamNames.copyFrom(inputDataRequ.rrInvalidParamNames);
@@ -48,7 +52,6 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 		rrPlaybackRangeValue = inputDataRequ.getPlaybackRangeValue();
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
@@ -228,7 +229,12 @@ final class SrtxpRekeySvc {
 		}
 
 		{
-			rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
+			try {
+				rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
+			} catch (RtspProtoSendRequestFailedException e) {
+				logError(FNC_NAME, logMsgPrefix + "RtspProtoSendRequestFailedException caught: " + e.getMessage());
+				return false;
+			}
 			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
@@ -247,7 +253,12 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(tmpRscUrl, tmpNextKmdOutbound);
+			try {
+				rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundMikey(tmpRscUrl, tmpNextKmdOutbound);
+			} catch (RtspProtoSendRequestFailedException e) {
+				logError(FNC_NAME, logMsgPrefix + "RtspProtoSendRequestFailedException caught: " + e.getMessage());
+				return false;
+			}
 			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support pushing new MK");
@@ -278,7 +289,12 @@ final class SrtxpRekeySvc {
 		final String resourceUrl = tmpOptRscUrl.get().getUrlStr();
 
 		{
-			rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
+			try {
+				rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
+			} catch (RtspProtoSendRequestFailedException e) {
+				logError(FNC_NAME, "RtspProtoSendRequestFailedException caught: " + e.getMessage());
+				return false;
+			}
 			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode != RtspProtoStatusCode.OK) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
@@ -288,7 +304,12 @@ final class SrtxpRekeySvc {
 
 		//
 		{
-			rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
+			try {
+				rtspProtoRequestOutputSvc.sendRequest_srtxpRekeyOutboundSdes(resourceUrl, kmdsOutbound);
+			} catch (RtspProtoSendRequestFailedException e) {
+				logError(FNC_NAME, "RtspProtoSendRequestFailedException caught: " + e.getMessage());
+				return false;
+			}
 			RtspProtoStatusCode requStatCode = recvResponseFromClient();
 			if (requStatCode == RtspProtoStatusCode.METHOD_NOT_ALLOWED) {
 				logError(FNC_NAME, "SRTxP re-keying failed - client does not support pushing new MK");

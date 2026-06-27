@@ -54,11 +54,23 @@ public final class RtspProtoSessionInfo {
 
 	/** Name of an unsupported feature that has been requested in an OPTIONS request */
 	private @NonNull String unsupportedFeatureName = "";
+	/** Features that have been requested in an OPTIONS request */
+	private final @NonNull RtspProtoDataCntGetRequFeat rhRequiredFeatures = new RtspProtoDataCntGetRequFeat();
+	/** Proxy features that have been requested in an OPTIONS request */
+	private final @NonNull RtspProtoDataCntGetRequFeat rhProxyRequiredFeatures = new RtspProtoDataCntGetRequFeat();
 
 	/** Parameter names that were rejected by the remote host, either due to their name or value */
-	private final @NonNull RtspProtoDataCntGetSetParamNames rhInvalidParamNames = new RtspProtoDataCntGetSetParamNames();
-	/** Parameter values that have been received from the remote host */
-	private final @NonNull RtspProtoDataCntGetSetParamKvs rhGetParamValues = new RtspProtoDataCntGetSetParamKvs();
+	private final @NonNull RtspProtoDataCntGetSetParamNames rhInvalidParamNamesObj = new RtspProtoDataCntGetSetParamNames();
+	private boolean rhInvalidParamNamesIsSet = false;
+	/** GET_PARAMETER names that have been requested by the remote host */
+	private final @NonNull RtspProtoDataCntGetSetParamNames rhGetParamNamesObj = new RtspProtoDataCntGetSetParamNames();
+	private boolean rhGetParamNamesIsSet = false;
+	/** GET_PARAMETER values that have been received from the remote host */
+	private final @NonNull RtspProtoDataCntGetSetParamKvs rhGetParamValuesObj = new RtspProtoDataCntGetSetParamKvs();
+	private boolean rhGetParamValuesIsSet = false;
+	/** SET_PARAMETER values that have been received from the remote host */
+	private final @NonNull RtspProtoDataCntGetSetParamKvs rhSetParamValuesObj = new RtspProtoDataCntGetSetParamKvs();
+	private boolean rhSetParamValuesIsSet = false;
 
 	/** Playback range request value from the client */
 	private @NonNull String clientPlaybackRangeValue = "";
@@ -84,9 +96,13 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------------------
 
-	/** SDP structured data from DESCRIBE response */
+	/** SDP structured data from a DESCRIBE response */
 	private final @NonNull RtspProtoDataCntSdpStructured rhDescribeSdpStcObj = new RtspProtoDataCntSdpStructured();
 	private boolean rhDescribeSdpStcIsSet = false;
+
+	/** SDP structured data from an ANNOUNCE request */
+	private final @NonNull RtspProtoDataCntSdpStructured rhAnnouncedSdpStcObj = new RtspProtoDataCntSdpStructured();
+	private boolean rhAnnouncedSdpStcIsSet = false;
 
 	// ----------------------------------------------------------------
 
@@ -98,13 +114,14 @@ public final class RtspProtoSessionInfo {
 	/** Resource URL per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
 	private final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspProtoRscUrl> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
 
-	/** Last used outgoing request Resource URL object */
-	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = RtspProtoRscUrl.ofEmpty();
-
 	// ----------------------------------------------------------------
 
+	/** Last used outgoing request Resource URL object */
+	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = RtspProtoRscUrl.ofEmpty();
 	/** Last used outgoing request message type */
 	private @NonNull RtspProtoMessageType lastUsedOutgoingRequestMsgType = RtspProtoMessageType.UNKNOWN;
+	/** Internal only: Results from the last incoming request */
+	private final @NonNull RtspProtoDataRequest lastIncomingRequestData = new RtspProtoDataRequest();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -133,7 +150,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public @NonNull RtspProtoIpAddr getClientIpAddr() {
 		theReadLock.lock();
@@ -160,7 +177,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public boolean getIsRtspsConnection() {
 		theReadLock.lock();
@@ -206,7 +223,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public @NonNull RtspProtoIdSession getIdSession() {
 		theReadLock.lock();
@@ -217,7 +234,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public Optional<String> getUnsupportedFeatureName() {
 		theReadLock.lock();
@@ -231,33 +248,99 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public @NonNull RtspProtoDataCntGetSetParamNames getRhInvalidParamNames() {
+	public Optional<RtspProtoDataCntGetRequFeat> getRhRequiredFeatures() {
 		theReadLock.lock();
 		try {
+			if (rhRequiredFeatures.isFeatureNamesEmpty()) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntGetRequFeat resObj = new RtspProtoDataCntGetRequFeat();
+			resObj.copyFrom(rhRequiredFeatures);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<RtspProtoDataCntGetRequFeat> getRhProxyRequiredFeatures() {
+		theReadLock.lock();
+		try {
+			if (rhProxyRequiredFeatures.isFeatureNamesEmpty()) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntGetRequFeat resObj = new RtspProtoDataCntGetRequFeat();
+			resObj.copyFrom(rhProxyRequiredFeatures);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
+
+	public Optional<RtspProtoDataCntGetSetParamNames> getRhInvalidParamNames() {
+		theReadLock.lock();
+		try {
+			if (! rhInvalidParamNamesIsSet || rhInvalidParamNamesObj.isParamNamesEmpty()) {
+				return Optional.empty();
+			}
 			RtspProtoDataCntGetSetParamNames resObj = new RtspProtoDataCntGetSetParamNames();
-			resObj.copyFrom(rhInvalidParamNames);
+			resObj.copyFrom(rhInvalidParamNamesObj);
 			resObj.writeProtect();
-			return resObj;
+			return Optional.of(resObj);
 		} finally {
 			theReadLock.unlock();
 		}
 	}
 
-	public @NonNull RtspProtoDataCntGetSetParamKvs getRhGetParamValues() {
+	public Optional<RtspProtoDataCntGetSetParamNames> getRhGetParamNames() {
 		theReadLock.lock();
 		try {
-			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
-			resObj.copyFrom(rhGetParamValues);
+			if (! rhGetParamNamesIsSet || rhGetParamNamesObj.isParamNamesEmpty()) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntGetSetParamNames resObj = new RtspProtoDataCntGetSetParamNames();
+			resObj.copyFrom(rhGetParamNamesObj);
 			resObj.writeProtect();
-			return resObj;
+			return Optional.of(resObj);
 		} finally {
 			theReadLock.unlock();
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	public Optional<RtspProtoDataCntGetSetParamKvs> getRhGetParamValues() {
+		theReadLock.lock();
+		try {
+			if (! rhGetParamValuesIsSet || rhGetParamValuesObj.isParamKvsEmpty()) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
+			resObj.copyFrom(rhGetParamValuesObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<RtspProtoDataCntGetSetParamKvs> getRhSetParamValues() {
+		theReadLock.lock();
+		try {
+			if (! rhSetParamValuesIsSet || rhSetParamValuesObj.isParamKvsEmpty()) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
+			resObj.copyFrom(rhSetParamValuesObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
 
 	@SuppressWarnings("unused")
 	public Optional<String> getClientPlaybackRangeValue() {
@@ -272,7 +355,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public Optional<String> getClientUserAgent() {
 		theReadLock.lock();
@@ -298,7 +381,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public @NonNull RtspProtoDataCntMessageTypes getRhSupportedMessageTypes() {
 		theReadLock.lock();
@@ -312,7 +395,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public @NonNull Set<RtspProtoIdSubStream> getDescrSetupInfoSubStreamIds() {
 		theReadLock.lock();
@@ -411,7 +494,39 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
+
+	public Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
+		theReadLock.lock();
+		try {
+			if (! rhDescribeSdpStcIsSet) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
+			resObj.copyFrom(rhDescribeSdpStcObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<RtspProtoDataCntSdpStructured> getRhAnnouncedSdpStc() {
+		theReadLock.lock();
+		try {
+			if (! rhAnnouncedSdpStcIsSet) {
+				return Optional.empty();
+			}
+			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
+			resObj.copyFrom(rhAnnouncedSdpStcObj);
+			resObj.writeProtect();
+			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
 
 	public @NonNull RtspProtoSessionState getSessionState() {
 		theReadLock.lock();
@@ -446,7 +561,7 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	public Optional<RtspProtoRscUrl> getResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt) {
 		if (mt == RtspProtoMessageType.UNKNOWN) {
@@ -475,6 +590,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	public Optional<RtspProtoRscUrl> getLastUsedOutgoingRequestResourceUrl() {
 		theReadLock.lock();
 		try {
@@ -486,8 +603,6 @@ public final class RtspProtoSessionInfo {
 			theReadLock.unlock();
 		}
 	}
-
-	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<RtspProtoMessageType> getLastUsedOutgoingRequestMsgType() {
 		theReadLock.lock();
@@ -521,8 +636,10 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+	// ----------------------------------------------------
 
 	@NonNull RtspProtoDataCntAuthSrv getPermAuthServer() {
 		theReadLock.lock();
@@ -541,6 +658,8 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	// ----------------------------------------------------
 
 	@NonNull RtspProtoDataCntStreamTpMain getStreamTpMain() {
 		theReadLock.lock();
@@ -594,6 +713,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	void setSessionId(@NonNull RtspProtoIdSession value) {
 		theWriteLock.lock();
 		try {
@@ -603,6 +724,8 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	// ----------------------------------------------------
 
 	@NonNull RtspProtoCseqNr getCseqNr_requFromRem_lastRcvd() {
 		theReadLock.lock();
@@ -655,6 +778,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	void setUnsupportedFeatureName(@NonNull String value) {
 		theWriteLock.lock();
 		try {
@@ -664,10 +789,50 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	void setRhRequiredFeatures(@NonNull RtspProtoDataCntGetRequFeat value) {
+		theWriteLock.lock();
+		try {
+			rhRequiredFeatures.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setRhProxyRequiredFeatures(@NonNull RtspProtoDataCntGetRequFeat value) {
+		theWriteLock.lock();
+		try {
+			rhProxyRequiredFeatures.copyFrom(value);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
+
 	void setRhInvalidParamNames(@NonNull RtspProtoDataCntGetSetParamNames value) {
 		theWriteLock.lock();
 		try {
-			rhInvalidParamNames.copyFrom(value);
+			rhInvalidParamNamesObj.copyFrom(value);
+			rhInvalidParamNamesIsSet = true;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setRhGetParamNames(@NonNull RtspProtoDataCntGetSetParamNames value) {
+		theWriteLock.lock();
+		try {
+			rhGetParamNamesObj.copyFrom(value);
+			rhGetParamNamesIsSet = true;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+	void clearRhGetParamNames() {
+		theWriteLock.lock();
+		try {
+			rhGetParamNamesObj.clear();
+			rhGetParamNamesIsSet = false;
 		} finally {
 			theWriteLock.unlock();
 		}
@@ -676,11 +841,33 @@ public final class RtspProtoSessionInfo {
 	void setRhGetParamValues(@NonNull RtspProtoDataCntGetSetParamKvs value) {
 		theWriteLock.lock();
 		try {
-			rhGetParamValues.copyFrom(value);
+			rhGetParamValuesObj.copyFrom(value);
+			rhGetParamValuesIsSet = true;
 		} finally {
 			theWriteLock.unlock();
 		}
 	}
+
+	void setRhSetParamValues(@NonNull RtspProtoDataCntGetSetParamKvs setParamKvs) {
+		theWriteLock.lock();
+		try {
+			rhSetParamValuesObj.copyFrom(setParamKvs);
+			rhSetParamValuesIsSet = true;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+	void clearRhSetParamValues() {
+		theWriteLock.lock();
+		try {
+			rhSetParamValuesObj.clear();
+			rhSetParamValuesIsSet = false;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
 
 	void setClientPlaybackRangeValue(@NonNull String value) {
 		theWriteLock.lock();
@@ -690,6 +877,8 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	// ----------------------------------------------------
 
 	void setClientUserAgent(@NonNull String value) {
 		theWriteLock.lock();
@@ -709,6 +898,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	@NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
 		theReadLock.lock();
 		try {
@@ -726,6 +917,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	void setRhSupportedMessageTypes(@NonNull RtspProtoDataCntMessageTypes value) {
 		theWriteLock.lock();
 		try {
@@ -734,6 +927,8 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	// ----------------------------------------------------
 
 	@NonNull RtspProtoSetupInfosStream getDescrSetupInfosStream() {
 		theReadLock.lock();
@@ -762,6 +957,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
+	// ----------------------------------------------------
+
 	void setDescrAvailableSubStreamIds(@NonNull Set<@NonNull RtspProtoIdSubStream> value) {
 		theWriteLock.lock();
 		try {
@@ -772,20 +969,8 @@ public final class RtspProtoSessionInfo {
 		}
 	}
 
-	Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
-		theReadLock.lock();
-		try {
-			if (! rhDescribeSdpStcIsSet) {
-				return Optional.empty();
-			}
-			RtspProtoDataCntSdpStructured resObj = new RtspProtoDataCntSdpStructured();
-			resObj.copyFrom(rhDescribeSdpStcObj);
-			resObj.writeProtect();
-			return Optional.of(resObj);
-		} finally {
-			theReadLock.unlock();
-		}
-	}
+	// ----------------------------------------------------
+
 	void setRhDescribeSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
 		theWriteLock.lock();
 		try {
@@ -795,6 +980,18 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	void setRhAnnouncedSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
+		theWriteLock.lock();
+		try {
+			rhAnnouncedSdpStcObj.copyFrom(sdpStructured);
+			rhAnnouncedSdpStcIsSet = true;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
 
 	void putResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
 		theWriteLock.lock();
@@ -806,6 +1003,8 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	// ----------------------------------------------------
 
 	void setLastUsedOutgoingRequestResourceUrl(@NonNull RtspProtoRscUrl rscUrl) {
 		theWriteLock.lock();
@@ -824,6 +1023,27 @@ public final class RtspProtoSessionInfo {
 			theWriteLock.unlock();
 		}
 	}
+
+	@NonNull RtspProtoDataRequest getLastIncomingRequestData() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataRequest resObj = new RtspProtoDataRequest();
+			resObj.copyFrom(lastIncomingRequestData);
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setLastIncomingRequestData(@NonNull RtspProtoDataRequest data) {
+		theWriteLock.lock();
+		try {
+			lastIncomingRequestData.copyFrom(data);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull RtspProtoIpAddr findRtspIpFromResourceUrl(@NonNull RtspProtoRscUrl rscUrl)
 			throws RtspProtoCannotFindIpFromRscUrlException {

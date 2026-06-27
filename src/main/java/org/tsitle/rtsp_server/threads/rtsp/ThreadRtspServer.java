@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendResponseFailedException;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
@@ -16,7 +17,6 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
@@ -348,17 +348,24 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 
 	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
 			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
-		RtspProtoDataRequest tmpDataRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient(
-				rtspSessionInfo.getClientIpAddr(),
-				tmpDataRequ
-			);
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveClientRequestAndRespond()";
 
-		rtspProtoResponseOutputSvc.sendResponse(resObj, tmpDataRequ);
+		cachedSetParamValues.clear();
+
+		//
+		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient(rtspSessionInfo.getClientIpAddr());
+
+		try {
+			rtspProtoResponseOutputSvc.sendResponse(resObj);
+		} catch (RtspProtoSendResponseFailedException e) {
+			logError(FNC_NAME, "RtspProtoSendResponseFailedException caught: " + e.getMessage());
+			return resObj;
+		}
 
 		//
 		if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SET_PARAMETER) {
-			cachedSetParamValues.copyFrom(tmpDataRequ.requSetParamValues);
+			Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = rtspSessionInfo.getRhSetParamValues();
+			tmpOptKvs.ifPresent(cachedSetParamValues::copyFrom);
 		}
 		//
 		return resObj;
