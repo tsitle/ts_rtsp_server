@@ -10,7 +10,6 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
@@ -28,6 +27,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -83,7 +83,7 @@ public class ClientRrSvcTest {
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
-	private @Nullable RtspProtoSessionInfo rtspSessionInfo = null;
+	private @Nullable RtspProtoSessionInfo cliSessionInfo = null;
 	private @Nullable ParameterGetterSetter parameterGetterSetter = null;
 	private @Nullable RtspProtoRequestInputSvc inputSvc = null;
 	private @Nullable RtspProtoResponseOutputSvc outputSvc = null;
@@ -96,7 +96,7 @@ public class ClientRrSvcTest {
 	@BeforeEach
 	void setUp() throws IOException {
 		initRtxpTcpReadWrite();
-		rtspSessionInfo = new RtspProtoSessionInfo();
+		cliSessionInfo = new RtspProtoSessionInfo();
 		parameterGetterSetter = new ParameterGetterSetter();
 		initObjsInput();
 		initObjsOutput();
@@ -120,6 +120,7 @@ public class ClientRrSvcTest {
 	@Test
 	void recv_announce_ok() throws Exception {
 		Objects.requireNonNull(outputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"ANNOUNCE rtsp://localhost/existing_stream RTSP/1.0",
@@ -136,23 +137,27 @@ public class ClientRrSvcTest {
 				"a=control:substreamidf528764d_081eb523"
 			);
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+		RtspRequestBasics resRequBas = recvRequest(msgLines);
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, resRequBas.messageType);
 
-		assertEquals("rtsps://localhost:12345/existing_stream/?param=value", outputRequ.requAnnouncedSdpStc.getContentBase().orElseThrow());
-		assertTrue(outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
+		assertTrue(cliSessionInfo.getRhAnnouncedSdpStc().isPresent());
+		assertEquals(
+				"rtsps://localhost:12345/existing_stream/?param=value",
+				cliSessionInfo.getRhAnnouncedSdpStc().orElseThrow().getContentBase().orElseThrow()
+			);
+		assertTrue(cliSessionInfo.getRhAnnouncedSdpStc().orElseThrow().findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
 
 		// ----------------------------------------------------
 
-		outputSvc.sendResponse(resRequBas, outputRequ);
+		outputSvc.sendResponse(resRequBas);
 	}
 
 	@Test
 	void recv_options_unsuppFeature1() throws Exception {
 		Objects.requireNonNull(outputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
@@ -160,20 +165,19 @@ public class ClientRrSvcTest {
 				"Require: a-neat-feature"
 			);
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+		RtspRequestBasics resRequBas = recvRequest(msgLines);
 
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
-		assertEquals("a-neat-feature", outputRequ.getUnsupportedFeatureName());
 
 		// ----------------------------------------------------
 
-		outputSvc.sendResponse(resRequBas, outputRequ);
+		assertDoesNotThrow(() -> outputSvc.sendResponse(resRequBas));
 	}
 
 	@Test
 	void recv_setParam_invalidParamKey() throws Exception {
 		Objects.requireNonNull(outputSvc);
+		Objects.requireNonNull(cliSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
@@ -185,22 +189,23 @@ public class ClientRrSvcTest {
 				"jitter: 13.8"
 			);
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = recvRequest(msgLines, outputRequ);
+		RtspRequestBasics resRequBas = recvRequest(msgLines);
 
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertEquals(Set.of("packets_received"), outputRequ.rrInvalidParamNames.getParamNames());
+		assertTrue(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("packets_received"), cliSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
 
 		// ----------------------------------------------------
 
-		outputSvc.sendResponse(resRequBas, outputRequ);
+		outputSvc.sendResponse(resRequBas);
 	}
 
 	@Test
 	void recv_setParam_getParam_ok() throws Exception {
 		Objects.requireNonNull(outputSvc);
 		Objects.requireNonNull(parameterGetterSetter);
+		Objects.requireNonNull(cliSessionInfo);
 
 		final List<String> msgLinesSet = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
@@ -211,29 +216,30 @@ public class ClientRrSvcTest {
 				"jitter: 13.8"
 			);
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = recvRequest(msgLinesSet, outputRequ);
+		RtspRequestBasics resRequBas = recvRequest(msgLinesSet);
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, resRequBas.messageType);
 
-		assertEquals(Set.of("jitter"), outputRequ.requSetParamValues.getParamKvsKeySet());
-		assertEquals("13.8", outputRequ.requSetParamValues.getParamKvsValue("jitter").orElseThrow());
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = cliSessionInfo.getRhSetParamValues();
+		assertTrue(tmpOptKvs.isPresent());
+		assertEquals(Set.of("jitter"), tmpOptKvs.get().getParamKvsKeySet());
+		assertEquals("13.8", tmpOptKvs.get().getParamKvsValue("jitter").orElseThrow());
 
 		// ----------------------------------------------------
 
-		outputSvc.sendResponse(resRequBas, outputRequ);
+		outputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		// emulate actually setting the parameter value
-		for (String paramKey : outputRequ.requSetParamValues.getParamKvsKeySet()) {
+		for (String paramKey : tmpOptKvs.get().getParamKvsKeySet()) {
 			parameterGetterSetter.setRtspParameter(
 					false,
 					RtspProtoIdSession.of("11111"),
 					"",
 					paramKey,
-					outputRequ.requSetParamValues.getParamKvsValue(paramKey).orElseThrow()
+					tmpOptKvs.get().getParamKvsValue(paramKey).orElseThrow()
 				);
 		}
 
@@ -248,17 +254,17 @@ public class ClientRrSvcTest {
 				"jitter"
 			);
 
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = recvRequest(msgLinesGet, outputRequ);
+		resRequBas = recvRequest(msgLinesGet);
 
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.GET_PARAMETER, resRequBas.messageType);
 
-		assertEquals(Set.of("jitter"), outputRequ.rrGetParamNames.getParamNames());
+		assertTrue(cliSessionInfo.getRhGetParamNames().isPresent());
+		assertEquals(Set.of("jitter"), cliSessionInfo.getRhGetParamNames().orElseThrow().getParamNames());
 
 		// ----------------------------------------------------
 
-		outputSvc.sendResponse(resRequBas, outputRequ);
+		outputSvc.sendResponse(resRequBas);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -276,7 +282,7 @@ public class ClientRrSvcTest {
 	}
 
 	private void initObjsInput() {
-		Objects.requireNonNull(rtspSessionInfo);
+		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -296,7 +302,7 @@ public class ClientRrSvcTest {
 				Set.of(),
 				false,
 				false,
-				rtspSessionInfo,
+				cliSessionInfo,
 				null,
 				null,
 				null,
@@ -306,7 +312,7 @@ public class ClientRrSvcTest {
 	}
 
 	private void initObjsOutput() {
-		Objects.requireNonNull(rtspSessionInfo);
+		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -325,7 +331,7 @@ public class ClientRrSvcTest {
 				false,
 				true,
 				false,
-				rtspSessionInfo,
+				cliSessionInfo,
 				null,
 				null,
 				parameterGetterSetter,
@@ -336,10 +342,7 @@ public class ClientRrSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspRequestBasics recvRequest(
-				@NonNull List<@NonNull String> msgLines,
-				@NonNull RtspProtoDataRequest outputRequ
-			) throws Exception {
+	private @NonNull RtspRequestBasics recvRequest(@NonNull List<@NonNull String> msgLines) throws Exception {
 		Objects.requireNonNull(inputSvc);
 
 		// emulate the server sending a request
@@ -348,7 +351,7 @@ public class ClientRrSvcTest {
 		socketPeer.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));
 		socketPeer.getOutputStream().flush();
 
-		return inputSvc.receiveRequestFromServer(outputRequ);
+		return inputSvc.receiveRequestFromServer();
 	}
 
 }

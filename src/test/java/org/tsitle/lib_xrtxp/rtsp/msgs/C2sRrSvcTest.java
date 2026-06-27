@@ -233,24 +233,25 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals(Set.of("xano", "rucola"), outputRequ.rrGetParamNames.getParamNames());
+		assertTrue(srvSessionInfo.getRhGetParamNames().isPresent());
+		assertEquals(Set.of("xano", "rucola"), srvSessionInfo.getRhGetParamNames().orElseThrow().getParamNames());
 		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
-		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
-		assertTrue(cliSessionInfo.getRhGetParamValues().getParamKvsKeySet().isEmpty());
+		assertTrue(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
+		assertTrue(cliSessionInfo.getRhGetParamValues().isEmpty());
 	}
 
 	@Test
@@ -270,15 +271,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
-
-		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -309,19 +307,23 @@ public class C2sRrSvcTest {
 				setParamKvs
 			);
 
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
+
+		assertTrue(srvSessionInfo.getRhSetParamValues().isPresent());
+		assertEquals(Set.of("jitter", "latency"), srvSessionInfo.getRhSetParamValues().orElseThrow().getParamKvsKeySet());
 
 		// emulate the server setting its internal parameters
-		for (Map.Entry<@NonNull String, @NonNull String> entry : outputRequ.requSetParamValues.getParamKvsEntrySet()) {
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvSessionInfo.getRhSetParamValues();
+		assertTrue(tmpOptKvs.isPresent());
+		for (Map.Entry<@NonNull String, @NonNull String> entry : tmpOptKvs.get().getParamKvsEntrySet()) {
 			try {
 				srvParameterGetterSetter.setRtspParameter(
 						false,
 						srvSessionInfo.getIdSession(),
-						outputRequ.requSetParamValues.getContentLang(),
+						tmpOptKvs.get().getContentLang(),
 						entry.getKey(),
 						entry.getValue()
 					);
@@ -343,23 +345,24 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals(Set.of("jitter", "latency"), outputRequ.rrGetParamNames.getParamNames());
+		assertTrue(srvSessionInfo.getRhGetParamNames().isPresent());
+		assertEquals(Set.of("jitter", "latency"), srvSessionInfo.getRhGetParamNames().orElseThrow().getParamNames());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
-		assertEquals("9.7", cliSessionInfo.getRhGetParamValues().getParamKvsValue("jitter").orElseThrow());
-		assertEquals("18.0", cliSessionInfo.getRhGetParamValues().getParamKvsValue("latency").orElseThrow());
+		assertFalse(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertTrue(cliSessionInfo.getRhGetParamValues().isPresent());
+		assertEquals("9.7", cliSessionInfo.getRhGetParamValues().orElseThrow().getParamKvsValue("jitter").orElseThrow());
+		assertEquals("18.0", cliSessionInfo.getRhGetParamValues().orElseThrow().getParamKvsValue("latency").orElseThrow());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -378,14 +381,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
-		assertEquals("hulahup", outputRequ.getUnsupportedFeatureName());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -409,16 +410,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
-		if (! Set.of("yolanda", "petro").contains(outputRequ.getUnsupportedFeatureName())) {
-			fail("Unexpected unsupported feature name: " + outputRequ.getUnsupportedFeatureName());
-		}
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -443,18 +440,18 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals("client name and version", outputRequ.getClientUa());
 		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
-		assertEquals(Set.of("a-useful-feature"), outputRequ.requRequiredFeatures.getFeatureNames());
-		assertEquals(Set.of("proxy-feature"), outputRequ.requProxyRequiredFeatures.getFeatureNames());
+		assertTrue(srvSessionInfo.getRhRequiredFeatures().isPresent());
+		assertTrue(srvSessionInfo.getRhProxyRequiredFeatures().isPresent());
+		assertEquals(Set.of("a-useful-feature"), srvSessionInfo.getRhRequiredFeatures().orElseThrow().getFeatureNames());
+		assertEquals(Set.of("proxy-feature"), srvSessionInfo.getRhProxyRequiredFeatures().orElseThrow().getFeatureNames());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -477,13 +474,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -503,13 +499,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -529,13 +524,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -562,23 +556,26 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertEquals(Set.of("xano", "rucola"), outputRequ.requSetParamValues.getParamKvsKeySet());
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvSessionInfo.getRhSetParamValues();
+		assertFalse(tmpOptKvs.isPresent());
+		assertTrue(srvSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("xano", "rucola"), srvSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
 		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
-		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
+		assertTrue(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("xano", "rucola"), cliSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
 	}
 
 	@Test
@@ -597,23 +594,26 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertEquals(Set.of("jitter"), outputRequ.requSetParamValues.getParamKvsKeySet());
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvSessionInfo.getRhSetParamValues();
+		assertFalse(tmpOptKvs.isPresent());
+		assertTrue(srvSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("jitter"), srvSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
 		assertEquals("client name and version", srvSessionInfo.getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRespBas.statusCode);
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
-		assertEquals(Set.of("jitter"), cliSessionInfo.getRhInvalidParamNames().getParamNames());
+		assertTrue(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("jitter"), cliSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
 	}
 
 	@Test
@@ -633,15 +633,12 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
-
-		assertEquals(Set.of("jitter", "latency"), outputRequ.requSetParamValues.getParamKvsKeySet());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -668,24 +665,25 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		outputRequ = new RtspProtoDataRequest();
-		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals(Set.of("jitter", "latency"), outputRequ.requSetParamValues.getParamKvsKeySet());
-		assertEquals("9.7", outputRequ.requSetParamValues.getParamKvsValue("jitter").orElseThrow());
-		assertEquals("18", outputRequ.requSetParamValues.getParamKvsValue("latency").orElseThrow());
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvSessionInfo.getRhSetParamValues();
+		assertTrue(tmpOptKvs.isPresent());
+		assertEquals(Set.of("jitter", "latency"), tmpOptKvs.get().getParamKvsKeySet());
+		assertEquals("9.7", tmpOptKvs.get().getParamKvsValue("jitter").orElseThrow());
+		assertEquals("18", tmpOptKvs.get().getParamKvsValue("latency").orElseThrow());
 
 		// ----------------------------------------------------
 
-		srvOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
 		resRespBas = cliInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertTrue(cliSessionInfo.getRhInvalidParamNames().getParamNames().isEmpty());
-		assertTrue(cliSessionInfo.getRhGetParamValues().getParamKvsKeySet().isEmpty());
+		assertFalse(cliSessionInfo.getRhInvalidParamNames().isPresent());
+		assertFalse(cliSessionInfo.getRhGetParamValues().isPresent());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -356,8 +356,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 
@@ -366,7 +365,7 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvRespOutputSvc.sendResponse(resRequBas);
 
 		assertEquals(2, srvSessionInfo.getDescrSetupInfoSubStreamIds().size());
 		assertEquals(2, srvSessionInfo.getDescrAvailableSubStreamIds().size());
@@ -409,14 +408,13 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
-		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvRespOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -534,13 +532,12 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr(), outputRequ);
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
-		srvRespOutputSvc.sendResponse(resRequBas, outputRequ);
+		srvRespOutputSvc.sendResponse(resRequBas);
 
 		// ----------------------------------------------------
 
@@ -582,6 +579,10 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
 		RtspProtoRscUrl rscUrl = srvSessionInfo.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_options(rscUrl.getUrlStr());
@@ -589,14 +590,13 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
 
-		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
-		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
+		assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
@@ -609,6 +609,10 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
 		RtspProtoRscUrl rscUrl = srvSessionInfo.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_announce(rscUrl.getUrlStr());
@@ -616,22 +620,23 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+		assertTrue(cliSessionInfoPtr.getRhAnnouncedSdpStc().isPresent());
+		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliSessionInfoPtr.getRhAnnouncedSdpStc().orElseThrow();
+		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.VIDEO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+		tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.AUDIO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
 
 		// ----------------------------------------------------
 
-		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
-		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
+		assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
@@ -646,9 +651,11 @@ public class S2cRrSvcTest {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
 		// ----------------------------------------------------
 
-		assertEquals(2, cliSessionInfo.get(ct).getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliSessionInfoPtr.getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
@@ -671,30 +678,31 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+		assertTrue(cliSessionInfoPtr.getRhAnnouncedSdpStc().isPresent());
+		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliSessionInfoPtr.getRhAnnouncedSdpStc().orElseThrow();
+		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.VIDEO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		RtspProtoIdSubStream tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
-		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
-		Optional<SrtxpKmd> tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
+		RtspProtoIdSubStream tmpIdSs = requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		assertTrue(cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		Optional<SrtxpKmd> tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
 		assertTrue(tmpSrtxpKmd.get().getMetaIsForLegacySdes());
 		assertEquals(2, tmpSrtxpKmd.get().getMetaTagForLegacySdes().orElseThrow());
 
-		tmpMediaEntry = outputRequ.requAnnouncedSdpStc.findFirstMediaEntryOfType(
+		tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.AUDIO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		tmpIdSs = outputRequ.requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
-		assertTrue(cliSessionInfo.get(ct).getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
-		tmpSrtxpKmd = outputRequ.requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
+		tmpIdSs = requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		assertTrue(cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
 			);
 		assertTrue(tmpSrtxpKmd.isPresent());
@@ -703,8 +711,8 @@ public class S2cRrSvcTest {
 
 		// ----------------------------------------------------
 
-		cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
-		assertEquals("server name and version", cliSessionInfo.get(ct).getServerSoftware().orElseThrow());
+		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
+		assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
@@ -738,8 +746,7 @@ public class S2cRrSvcTest {
 
 			// ----------------------------------------------------
 
-			RtspProtoDataRequest outputRequ = new RtspProtoDataRequest();
-			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer(outputRequ);
+			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
@@ -748,7 +755,7 @@ public class S2cRrSvcTest {
 
 			// ----------------------------------------------------
 
-			cliRespOutputSvc.get(ct).sendResponse(resRequBas, outputRequ);
+			cliRespOutputSvc.get(ct).sendResponse(resRequBas);
 			assertEquals("server name and version", cliSessionInfoPtr.getServerSoftware().orElseThrow());
 
 			// ----------------------------------------------------
