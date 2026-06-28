@@ -215,7 +215,7 @@ public final class RtspProtoDataCntSdpStructured {
 		mediaEntries.set(mediaEntries.size() - 1, new RtspProtoSdpDataMediaEntry(
 				RtspProtoIdSubStream.of(value.strip()),
 				new RtspProtoSdpDataMediaEntryHeader(lastEntry.header()),
-				value.strip(),
+				lastEntry.title(),
 				new RtspProtoSdpDataConnectionMedia(lastEntry.connectionInfo()),
 				lastEntry.bandwidth(),
 				new ArrayList<>(lastEntry.attributes())
