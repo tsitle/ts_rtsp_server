@@ -204,6 +204,23 @@ public final class RtspProtoDataCntSdpStructured {
 		}
 		this.mediaEntries.add(value);
 	}
+	public void updateLastMediaEntryControlId(@NonNull String value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (mediaEntries.isEmpty()) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ": No media entries available");
+		}
+		RtspProtoSdpDataMediaEntry lastEntry = mediaEntries.getLast();
+		mediaEntries.set(mediaEntries.size() - 1, new RtspProtoSdpDataMediaEntry(
+				RtspProtoIdSubStream.of(value.strip()),
+				new RtspProtoSdpDataMediaEntryHeader(lastEntry.header()),
+				value.strip(),
+				new RtspProtoSdpDataConnectionMedia(lastEntry.connectionInfo()),
+				lastEntry.bandwidth(),
+				new ArrayList<>(lastEntry.attributes())
+			));
+	}
 	public void updateLastMediaEntryTitle(@NonNull String value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
@@ -213,6 +230,7 @@ public final class RtspProtoDataCntSdpStructured {
 		}
 		RtspProtoSdpDataMediaEntry lastEntry = mediaEntries.getLast();
 		mediaEntries.set(mediaEntries.size() - 1, new RtspProtoSdpDataMediaEntry(
+				lastEntry.controlId().clone(),
 				new RtspProtoSdpDataMediaEntryHeader(lastEntry.header()),
 				value.strip(),
 				new RtspProtoSdpDataConnectionMedia(lastEntry.connectionInfo()),
@@ -229,6 +247,7 @@ public final class RtspProtoDataCntSdpStructured {
 		}
 		RtspProtoSdpDataMediaEntry lastEntry = mediaEntries.getLast();
 		mediaEntries.set(mediaEntries.size() - 1, new RtspProtoSdpDataMediaEntry(
+				lastEntry.controlId().clone(),
 				new RtspProtoSdpDataMediaEntryHeader(lastEntry.header()),
 				lastEntry.title(),
 				new RtspProtoSdpDataConnectionMedia(value),
@@ -245,6 +264,7 @@ public final class RtspProtoDataCntSdpStructured {
 		}
 		RtspProtoSdpDataMediaEntry lastEntry = mediaEntries.getLast();
 		mediaEntries.set(mediaEntries.size() - 1, new RtspProtoSdpDataMediaEntry(
+				lastEntry.controlId().clone(),
 				new RtspProtoSdpDataMediaEntryHeader(lastEntry.header()),
 				lastEntry.title(),
 				new RtspProtoSdpDataConnectionMedia(lastEntry.connectionInfo()),
@@ -285,8 +305,8 @@ public final class RtspProtoDataCntSdpStructured {
 	 */
 	public @NonNull Set<@NonNull RtspProtoIdSubStream> findMediaEntryControlIds() {
 		return mediaEntries.stream()
-				.filter(entry -> extractMediaEntryControlId(entry).isPresent())
-				.map(entry -> extractMediaEntryControlId(entry).orElseThrow())
+				.map(RtspProtoSdpDataMediaEntry::controlId)
+				.filter(ctrlId -> ! ctrlId.isEmpty())
 				.collect(Collectors.toSet());
 	}
 
@@ -300,28 +320,8 @@ public final class RtspProtoDataCntSdpStructured {
 			throw new IllegalArgumentException(getClass().getSimpleName() + ": Control ID must not be blank");
 		}
 		return mediaEntries.stream()
-				.filter(entry -> extractMediaEntryControlId(entry)
-						.orElse(RtspProtoIdSubStream.ofEmpty())
-						.equals(controlId))
+				.filter(entry -> entry.controlId().equals(controlId))
 				.findFirst();
-	}
-
-	/**
-	 * Extract the Control ID (aka Sub-Stream ID) from a media entry.
-	 * @param entry Media entry to extract the Control ID from.
-	 * @return Control ID
-	 */
-	public Optional<RtspProtoIdSubStream> extractMediaEntryControlId(@NonNull RtspProtoSdpDataMediaEntry entry) {
-		for (String tmpAttr : entry.attributes()) {
-			if (tmpAttr.toLowerCase().startsWith("control:")) {
-				return Optional.of(
-						RtspProtoIdSubStream.of(
-								tmpAttr.substring("control:".length()).strip()
-							)
-					);
-			}
-		}
-		return Optional.empty();
 	}
 
 	/**

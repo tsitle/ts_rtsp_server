@@ -1,11 +1,13 @@
 package org.tsitle.lib_xrtxp.rtsp.sdp.types;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public record RtspProtoSdpDataMediaEntry(
+			@NonNull RtspProtoIdSubStream controlId,
 			@NonNull RtspProtoSdpDataMediaEntryHeader header,
 			@NonNull String title,
 			@NonNull RtspProtoSdpDataConnectionMedia connectionInfo,
@@ -15,6 +17,7 @@ public record RtspProtoSdpDataMediaEntry(
 
 	public RtspProtoSdpDataMediaEntry(@NonNull RtspProtoSdpDataMediaEntryHeader header) {
 		this(
+				RtspProtoIdSubStream.ofEmpty(),
 				new RtspProtoSdpDataMediaEntryHeader(header),
 				"",
 				new RtspProtoSdpDataConnectionMedia("", "", ""),
@@ -32,7 +35,8 @@ public record RtspProtoSdpDataMediaEntry(
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"header=" + header +
+				"controlId=" + controlId +
+				", header=" + header +
 				(! title.isBlank() ? ", title='" + title + "'" : "") +
 				(! connectionInfo.isEmpty() ? ", connectionInfo=" + connectionInfo : "") +
 				(! bandwidth.isBlank() ? ", bandwidth='" + bandwidth + "'" : "") +

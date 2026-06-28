@@ -645,6 +645,11 @@ public final class RtspProtoSdpConsumer implements RtspProtoSdpConsumerInterface
 			throw new RtspProtoSdpException(FNC_NAME + ": Invalid value: '" + entryVal + "'");
 		}
 		outputSdp.updateLastMediaEntryAttr(entryVal);
+
+		//
+		if (entryVal.toLowerCase().startsWith("control:")) {
+			outputSdp.updateLastMediaEntryControlId(entryVal.substring("control:".length()).strip());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
