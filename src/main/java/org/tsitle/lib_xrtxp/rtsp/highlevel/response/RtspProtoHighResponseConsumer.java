@@ -210,8 +210,7 @@ public class RtspProtoHighResponseConsumer {
 								inputMsgStc.messageType,
 								entry.getValue(),
 								inpAvailableSubStreamIds,
-								ioSetupInfosStream,
-								ioDataResp
+								ioSetupInfosStream
 							);
 				case RtspHeaderKey.SERVER -> processHeader_com_server(entry.getValue(), ioDataResp);
 				case RtspHeaderKey.TRANSPORT -> processHeader_setup_transport(inputMsgStc.messageType, entry.getValue(), ioDataResp);
@@ -329,8 +328,7 @@ public class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull RtspProtoHeaderEntryResponse headerEntry,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds,
-				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
-				@NonNull RtspProtoDataResponse outputDataResp
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream
 			) throws RtspProtoInvalidResponseException {
 		final String FNC_NAME = getClass().getSimpleName() + ".processHeader_play_rtpinfo()";
 
