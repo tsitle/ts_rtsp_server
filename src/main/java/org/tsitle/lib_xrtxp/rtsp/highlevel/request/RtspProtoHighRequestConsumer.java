@@ -811,7 +811,6 @@ public final class RtspProtoHighRequestConsumer {
 		}
 		RtspProtoSetupInfoForSubStream tmpInpSiSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(idSubStream).orElseThrow();
 		RtspProtoSetupInfoForSubStream outSiSs = new RtspProtoSetupInfoForSubStream(tmpInpSiSsPtr);
-		outSiSs.getSsrcInboundPtr().copyFrom(tmpInpSiSsPtr.getSsrcInboundPtr());
 
 		//System.out.println("<<<<<<<<<<<<<<<< rcvd KMD: " + kmd);
 
