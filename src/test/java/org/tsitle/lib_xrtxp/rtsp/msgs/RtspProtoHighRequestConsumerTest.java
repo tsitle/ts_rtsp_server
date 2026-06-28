@@ -957,8 +957,7 @@ class RtspProtoHighRequestConsumerTest {
 
 		mts = Set.of(
 				RtspProtoMessageType.DESCRIBE,
-				RtspProtoMessageType.OPTIONS,
-				RtspProtoMessageType.REDIRECT
+				RtspProtoMessageType.OPTIONS
 			);
 		for (RtspProtoMessageType mt : mts) {
 			test_missingSessionId(mt, RtspProtoStatusCode.OK);
@@ -1144,7 +1143,6 @@ class RtspProtoHighRequestConsumerTest {
 				RtspProtoMessageType.OPTIONS,
 				RtspProtoMessageType.PAUSE,
 				RtspProtoMessageType.PLAY,
-				RtspProtoMessageType.REDIRECT,
 				RtspProtoMessageType.SET_PARAMETER,
 				RtspProtoMessageType.SETUP,
 				RtspProtoMessageType.TEARDOWN

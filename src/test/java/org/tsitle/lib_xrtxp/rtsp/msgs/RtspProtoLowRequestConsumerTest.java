@@ -722,13 +722,6 @@ class RtspProtoLowRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_redirect_ok() throws Exception {
-		basic_structuredRequest_ok(RtspProtoMessageType.REDIRECT);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
 	void structuredRequest_setParam_ok_noKeys() throws Exception {
 		final RtspProtoMessageType expMsgType = RtspProtoMessageType.SET_PARAMETER;
 		final String expRequUrl = "rtsp://some.com/stream";

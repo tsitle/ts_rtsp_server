@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -593,14 +592,6 @@ public class FullBidirRequRespSvcTest {
 				ct,
 				cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.PAUSE).orElseThrow().getUrlStr()
 			);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	@Disabled
-	void test_redirect_noCrypto() {
-		// @TODO
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
