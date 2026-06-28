@@ -754,15 +754,11 @@ public class C2sRrSvcTest {
 
 		srvSessionInfo.setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
 
-		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
-		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);  // @TODO
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.GET_PARAMETER);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.PAUSE);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.PLAY);
-		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.REDIRECT);  // @TODO
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
-		//srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);  // @TODO
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.TEARDOWN);
 
 		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");

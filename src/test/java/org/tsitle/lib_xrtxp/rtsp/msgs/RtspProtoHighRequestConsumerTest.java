@@ -289,7 +289,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertFalse(srtxpKmd.getMetaTagForLegacySdes().isPresent());
 		assertEquals(
 				RtspProtoIdSubStream.of("substreamidf528764d_dbbd5deb"),
-				outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow()
+				mediaEntry.controlId()
 			);
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(1);
@@ -316,7 +316,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertTrue(srtxpKmd.kdr().isEmpty());
 		assertEquals(
 				RtspProtoIdSubStream.of("substreamidf528764d_081eb523"),
-				outputDataRequ.requAnnouncedSdpStc.extractMediaEntryControlId(mediaEntry).orElseThrow()
+				mediaEntry.controlId()
 			);
 
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc.getMediaEntries().get(2);
