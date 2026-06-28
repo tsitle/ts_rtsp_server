@@ -171,6 +171,7 @@ public class ThreadRtspServer extends RunnableBase implements RtspChildThreadsCa
 				logMsgInterface,
 				rtspConfig,
 				cfgServerNameAndVersion,
+				RtspParamGetterSetterSvc.CONTENT_LANGUAGE,
 				this.rtspSessionInfo,
 				this.rtspChildThreadMng,
 				this.rtxpTcpReadWrite,

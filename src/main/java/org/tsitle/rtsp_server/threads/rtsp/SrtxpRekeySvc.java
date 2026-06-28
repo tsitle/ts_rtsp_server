@@ -48,6 +48,7 @@ final class SrtxpRekeySvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
+				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadMng rtspChildThreadMng,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
@@ -64,7 +65,7 @@ final class SrtxpRekeySvc {
 				false,
 				cfgServerNameAndVersion,
 				RtspConnectionPolicy.KEEPALIVE,
-				"",  // @TODO make Content-Language configurable
+				cfgContentLanguage,
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
 				rtspConfig.getIsDebugPrintRtspSent(),
 				rtspSessionInfo,
