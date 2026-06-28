@@ -156,16 +156,22 @@ public class S2cRrSvcTest {
 	static class ParameterGetterSetterServerSide implements RtspProtoParameterGetterInterface, RtspProtoParameterSetterInterface {
 		private double jitterValue = 0.0;
 		private double latencyValue = 0.0;
-		private double subVolumeValue = 0.0;
+		private double subVideoSpeedValue = 0.0;
+		private double subAudioVolumeValue = 0.0;
 		private final @NonNull RtspProtoSessionInfo sessionInfo;
+		private final @NonNull RtspProtoIdSubStream videoSubStreamId = RtspProtoIdSubStream.ofEmpty();
 		private final @NonNull RtspProtoIdSubStream audioSubStreamId = RtspProtoIdSubStream.ofEmpty();
 
 		ParameterGetterSetterServerSide(@NonNull RtspProtoSessionInfo sessionInfo) {
 			this.sessionInfo = sessionInfo;
 		}
 
-		public void setAudioSubStreamId(@NonNull RtspProtoIdSubStream audioSubStreamId) {
-			this.audioSubStreamId.copyFrom(audioSubStreamId);
+		public void setVideoSubStreamId(@NonNull RtspProtoIdSubStream idSs) {
+			this.videoSubStreamId.copyFrom(idSs);
+		}
+
+		public void setAudioSubStreamId(@NonNull RtspProtoIdSubStream idSs) {
+			this.audioSubStreamId.copyFrom(idSs);
 		}
 
 		@Override
@@ -205,13 +211,23 @@ public class S2cRrSvcTest {
 				}
 				return;
 			}
+			if (! idSubStream.isEmpty() && idSubStream.equals(videoSubStreamId) && key.equals("speed")) {
+				double tmpDbl = Double.parseDouble(value);
+				if (tmpDbl < 0.0) {
+					throw new RtspProtoRtspParamInvalidValueException("xxx");
+				}
+				if (! dryRunOnly) {
+					subVideoSpeedValue = tmpDbl;
+				}
+				return;
+			}
 			if (! idSubStream.isEmpty() && idSubStream.equals(audioSubStreamId) && key.equals("volume")) {
 				double tmpDbl = Double.parseDouble(value);
 				if (tmpDbl < 0.0) {
 					throw new RtspProtoRtspParamInvalidValueException("xxx");
 				}
 				if (! dryRunOnly) {
-					subVolumeValue = tmpDbl;
+					subAudioVolumeValue = tmpDbl;
 				}
 				return;
 			}
@@ -229,8 +245,10 @@ public class S2cRrSvcTest {
 				if (idSubStream.isEmpty()) {
 					resObj.putParamKvsEntry("jitter", doubleToString(jitterValue));
 					resObj.putParamKvsEntry("latency", doubleToString(latencyValue));
+				} else if (! idSubStream.isEmpty() && idSubStream.equals(videoSubStreamId)) {
+					resObj.putParamKvsEntry("speed", doubleToString(subVideoSpeedValue));
 				} else if (! idSubStream.isEmpty() && idSubStream.equals(audioSubStreamId)) {
-					resObj.putParamKvsEntry("volume", doubleToString(subVolumeValue));
+					resObj.putParamKvsEntry("volume", doubleToString(subAudioVolumeValue));
 				}
 			}
 			return resObj;
@@ -246,8 +264,8 @@ public class S2cRrSvcTest {
 
 		private boolean checkInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
 			Set<RtspProtoIdInputSource> availIss = new HashSet<>();
-			availIss.add(RtspProtoIdInputSource.of("existing_stream"));
-			availIss.add(RtspProtoIdInputSource.of("existing_stream_no_auth"));
+			availIss.add(RtspProtoIdInputSource.of("existing_stream_no_auth_no_encr"));
+			availIss.add(RtspProtoIdInputSource.of("existing_stream_no_auth_with_encr"));
 			return availIss.contains(idInputSource);
 		}
 	}
@@ -269,8 +287,9 @@ public class S2cRrSvcTest {
 
 	private RtxpTcpReadWrite srvRtxpTcpReadWrite = null;
 	private RtspProtoSessionInfo srvSessionInfo = null;
-	private AvailableStreamsServerSide srvAvailableStreams;
-	private RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc;
+	private AvailableStreamsServerSide srvAvailableStreams = null;
+	private RtspProtoGlobalSessionInfoSvc srvGlobalSessionInfoSvc = null;
+	private ParameterGetterSetterServerSide srvParameterGetterSetter = null;
 	private RtspProtoRequestOutputSvc srvRequOutputSvc = null;
 	private RtspProtoResponseInputSvc srvRespInputSvc = null;
 	private RtspProtoRequestInputSvc srvRequInputSvc = null;
@@ -363,30 +382,144 @@ public class S2cRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	@Disabled
-	void test_options_on_substream() {
-		// @TODO send OPTIONS request for a sub-stream
+	void test_options_on_substream() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+		final boolean useTransportUdp = true;
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// client sends DESCRIBE request to server
+		do_c2s_Describe(ct, rscUrlStr);
+
+		// client sends SETUP requests to server
+		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+			do_c2s_Setup(
+					ct,
+					rscUrlForSs,
+					useTransportUdp
+				);
+		}
+
+		// client sends OPTIONS requests to server
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+			do_c2s_Options(ct, rscUrlForSs.getUrlStr());
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void test_setGetParam_on_substream() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+		final boolean useTransportUdp = true;
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// client sends DESCRIBE request to server
+		do_c2s_Describe(ct, rscUrlStr);
+
+		// client sends SETUP requests to server
+		assertEquals(2, cliSessionInfoPtr.getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliSessionInfoPtr.getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+			do_c2s_Setup(
+					ct,
+					rscUrlForSs,
+					useTransportUdp
+				);
+		}
+
+		// find Sub-Stream IDs - method 1
+		RtspProtoIdSubStream idSsVideo = RtspProtoIdSubStream.ofEmpty();
+		RtspProtoIdSubStream idSsAudio = RtspProtoIdSubStream.ofEmpty();
+		List<RtspProtoSdpDataMediaEntry> mediaEntries = cliSessionInfoPtr.getRhDescribeSdpStc().orElseThrow().getMediaEntries();
+		for (RtspProtoSdpDataMediaEntry mediaEntry : mediaEntries) {
+			if (mediaEntry.header().mediaType() == RtspProtoSdpMediaType.VIDEO) {
+				idSsVideo.copyFrom(mediaEntry.controlId());
+			} else if (mediaEntry.header().mediaType() == RtspProtoSdpMediaType.AUDIO) {
+				idSsAudio.copyFrom(mediaEntry.controlId());
+			}
+		}
+
+		assertFalse(idSsVideo.isEmpty());
+		assertFalse(idSsAudio.isEmpty());
+
+		// find Sub-Stream IDs - method 2
+		RtspProtoIdSubStream tmpM2IdSsVideo = cliSessionInfoPtr.getRhDescribeSdpStc().orElseThrow()
+				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.VIDEO).orElseThrow()
+				.controlId();
+		RtspProtoIdSubStream tmpM2IdSsAudio = cliSessionInfoPtr.getRhDescribeSdpStc().orElseThrow()
+				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).orElseThrow()
+				.controlId();
+
+		assertEquals(idSsVideo, tmpM2IdSsVideo);
+		assertEquals(idSsAudio, tmpM2IdSsAudio);
+
+		// client sends SET_PARAMETER request for the entire stream to server
+		do_c2s_SetParam_noCrypto(
+				ct,
+				true,
+				false,
+				false,
+				cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
+			);
+
+		// client sends SET_PARAMETER request for VIDEO Sub-Stream to server - get Sub-Stream URL method 1
+		do_c2s_SetParam_noCrypto(
+				ct,
+				false,
+				true,
+				false,
+				cliSessionInfoPtr.getDescrSetupInfoBySubStreamsId(idSsVideo).getRscUrlSubStreamPtr()  // <-- getDescrSetupInfoBySubStreamsId()
+			);
+
+		// client sends SET_PARAMETER request for AUDIO Sub-Stream to server - get Sub-Stream URL method 2
+		do_c2s_SetParam_noCrypto(
+				ct,
+				false,
+				false,
+				true,
+				cliSessionInfoPtr.getResourceUrlForMt_onlySetup(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+			);
+
+		// client sends GET_PARAMETER request for the entire stream to server
+		do_c2s_GetParam_noCrypto(
+				ct,
+				true,
+				false,
+				false,
+				cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
+			);
+
+		// client sends GET_PARAMETER request for VIDEO Sub-Stream to server
+		do_c2s_GetParam_noCrypto(
+				ct,
+				false,
+				true,
+				false,
+				cliSessionInfoPtr.getResourceUrlForMt_onlySetup(idSsVideo).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+			);
+
+		// client sends GET_PARAMETER request for AUDIO Sub-Stream to server
+		do_c2s_GetParam_noCrypto(
+				ct,
+				false,
+				false,
+				true,
+				cliSessionInfoPtr.getResourceUrlForMt_onlySetup(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
 	@Disabled
-	void test_setParam_on_substream() {
-		// @TODO send SET_PARAMETER request for a sub-stream
-	}
-
-	@Test
-	@Disabled
-	void test_getParam_on_substream() {
-		// @TODO send GET_PARAMETER request for a sub-stream
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Test
-	@Disabled
-	void test_play() {
+	void test_play_pause_teardown() {
 		// @TODO
 	}
 
@@ -452,7 +585,8 @@ public class S2cRrSvcTest {
 		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
 
 		// client sends OPTIONS request to server
-		do_c2s_Options(ct);
+		RtspProtoRscUrl rscUrl = cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
+		do_c2s_Options(ct, rscUrl.getUrlStr());
 
 		// client sends ANNOUNCE request to server - which contains the client's new outbound KMDs
 		do_c2s_RekeyingAnnounce_sdes();
@@ -493,7 +627,8 @@ public class S2cRrSvcTest {
 		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
 
 		// client sends OPTIONS request to server
-		do_c2s_Options(ct);
+		RtspProtoRscUrl rscUrl = cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
+		do_c2s_Options(ct, rscUrl.getUrlStr());
 
 		// client sends SET_PARAMETER request to server - which contains the client's new outbound KMDs
 		do_c2s_RekeyingSetParam_mikey();
@@ -847,7 +982,7 @@ public class S2cRrSvcTest {
 				RtspProtoSdpMediaType.VIDEO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		RtspProtoIdSubStream tmpIdSs = requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		RtspProtoIdSubStream tmpIdSs = tmpMediaEntry.get().controlId();
 		assertTrue(cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		Optional<SrtxpKmd> tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
@@ -860,7 +995,7 @@ public class S2cRrSvcTest {
 				RtspProtoSdpMediaType.AUDIO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
-		tmpIdSs = requAnnouncedSdpStc.extractMediaEntryControlId(tmpMediaEntry.get()).orElseThrow();
+		tmpIdSs = tmpMediaEntry.get().controlId();
 		assertTrue(cliSessionInfoPtr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
@@ -996,17 +1131,13 @@ public class S2cRrSvcTest {
 		}
 	}
 
-	private void do_c2s_Options(ClientType ct) throws Exception {
+	private void do_c2s_Options(ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliSessionInfo.get(ct));
 		Objects.requireNonNull(srvSessionInfo);
 
-		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
-
 		// ----------------------------------------------------
 
-		RtspProtoRscUrl rscUrl = cliSessionInfoPtr.getResourceUrlForMt_nonSetup(RtspProtoMessageType.DESCRIBE).orElseThrow();
-
-		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_options(rscUrl.getUrlStr());
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_options(resourceUrl);
 		assertEquals(RtspProtoMessageType.OPTIONS, mt);
 
 		// ----------------------------------------------------
@@ -1135,6 +1266,154 @@ public class S2cRrSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private void do_c2s_SetParam_noCrypto(
+				ClientType ct,
+				boolean isUrlStream,
+				boolean isUrlSubStreamVideo,
+				boolean isUrlSubStreamAudio,
+				@NonNull RtspProtoRscUrl resourceUrl
+			) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		// ----------------------------------------------------
+
+		// store the Sub-Stream IDs in the parameter Getter/Setter
+		if (isUrlSubStreamVideo) {
+			srvParameterGetterSetter.setVideoSubStreamId(resourceUrl.idSubStream);
+		} else if (isUrlSubStreamAudio) {
+			srvParameterGetterSetter.setAudioSubStreamId(resourceUrl.idSubStream);
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoDataCntGetSetParamKvs setParameterKvs = new RtspProtoDataCntGetSetParamKvs();
+
+		if (isUrlStream) {
+			setParameterKvs.putParamKvsEntry("jitter", "1234567.89");
+			setParameterKvs.putParamKvsEntry("latency", "864.2");
+		} else if (isUrlSubStreamVideo) {
+			setParameterKvs.putParamKvsEntry("speed", "1.5");
+		} else if (isUrlSubStreamAudio) {
+			setParameterKvs.putParamKvsEntry("volume", "99.9");
+		} else {
+			throw new IllegalArgumentException("isUrlXxx");
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_setParameter(resourceUrl, setParameterKvs);
+		assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+
+		// ----------------------------------------------------
+
+		// emulate the server setting its internal parameters
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvSessionInfo.getRhSetParamValues();
+		assertTrue(tmpOptKvs.isPresent());
+		for (Map.Entry<@NonNull String, @NonNull String> entry : tmpOptKvs.get().getParamKvsEntrySet()) {
+			try {
+				srvParameterGetterSetter.setRtspParameter(
+						false,
+						srvSessionInfo.getIdSession(),
+						tmpOptKvs.get().getIdInputSource(),
+						tmpOptKvs.get().getIdSubStream(),
+						tmpOptKvs.get().getContentLang(),
+						entry.getKey(),
+						entry.getValue()
+					);
+			} catch (RtspProtoRtspParamUnknownException | RtspProtoRtspParamInvalidValueException e) {
+				// this cannot happen because the parameters have already been validated
+			}
+		}
+	}
+
+	private void do_c2s_GetParam_noCrypto(
+				ClientType ct,
+				boolean isUrlStream,
+				boolean isUrlSubStreamVideo,
+				boolean isUrlSubStreamAudio,
+				@NonNull RtspProtoRscUrl resourceUrl
+			) throws Exception {
+		Objects.requireNonNull(cliSessionInfo.get(ct));
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
+
+		// ----------------------------------------------------
+
+		// store the Sub-Stream IDs in the parameter Getter/Setter
+		if (isUrlSubStreamVideo) {
+			srvParameterGetterSetter.setVideoSubStreamId(resourceUrl.idSubStream);
+		} else if (isUrlSubStreamAudio) {
+			srvParameterGetterSetter.setAudioSubStreamId(resourceUrl.idSubStream);
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoDataCntGetSetParamNames getParameterNames = new RtspProtoDataCntGetSetParamNames();
+
+		if (isUrlStream) {
+			getParameterNames.putParamName("jitter");
+			getParameterNames.putParamName("latency");
+		} else if (isUrlSubStreamVideo) {
+			getParameterNames.putParamName("speed");
+		} else if (isUrlSubStreamAudio) {
+			getParameterNames.putParamName("volume");
+		} else {
+			throw new IllegalArgumentException("isUrlXxx");
+		}
+
+		// ----------------------------------------------------
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_getParameter(resourceUrl, getParameterNames);
+		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+
+		// ----------------------------------------------------
+
+		assertTrue(cliSessionInfoPtr.getRhGetParamValues().isPresent());
+
+		Set<Map.Entry<String, String>> expKvs = new HashSet<>();
+		if (isUrlStream) {
+			expKvs.add(Map.entry("jitter", "1234567.89"));
+			expKvs.add(Map.entry("latency", "864.2"));
+		} else if (isUrlSubStreamVideo) {
+			expKvs.add(Map.entry("speed", "1.5"));
+		} else {
+			expKvs.add(Map.entry("volume", "99.9"));
+		}
+		assertEquals(expKvs, cliSessionInfoPtr.getRhGetParamValues().orElseThrow().getParamKvsEntrySet());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void initRtxpTcpReadWrite() throws Exception {
 		socketServer = new ServerSocket(0);
 		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
@@ -1155,6 +1434,8 @@ public class S2cRrSvcTest {
 		srvAvailableStreams = new AvailableStreamsServerSide();
 		srvGlobalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 
+		srvParameterGetterSetter = new ParameterGetterSetterServerSide(srvSessionInfo);
+
 		initObjsServer_fromClient();
 		initObjsServer_toClient();
 	}
@@ -1167,6 +1448,7 @@ public class S2cRrSvcTest {
 
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.DESCRIBE);
+		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.GET_PARAMETER);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
 		srvCfgSupportedMessageTypes.putMt(RtspProtoMessageType.SETUP);
@@ -1187,7 +1469,7 @@ public class S2cRrSvcTest {
 				srvUserAuthSvc,
 				srvAvailableStreams,
 				srvGlobalSessionInfoSvc,
-				null,
+				srvParameterGetterSetter,
 				srvRtxpTcpReadWrite
 			);
 
@@ -1204,7 +1486,7 @@ public class S2cRrSvcTest {
 				srvSessionInfo,
 				srvAvailableStreams,
 				srvGlobalSessionInfoSvc,
-				null,
+				srvParameterGetterSetter,
 				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("client with sdes"),
 				srvRtxpTcpReadWrite
 			);
