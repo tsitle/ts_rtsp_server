@@ -296,7 +296,7 @@ public class C2sRrSvcTest {
 	}
 
 	@Test
-	void test_getParam_ok() throws Exception {
+	void test_getParam_ok_auth() throws Exception {
 		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -470,7 +470,7 @@ public class C2sRrSvcTest {
 	}
 
 	@Test
-	void test_options_ok() throws Exception {
+	void test_options_ok_noAuth() throws Exception {
 		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 
@@ -503,6 +503,37 @@ public class C2sRrSvcTest {
 		assertTrue(cliSessionInfo.getUnsupportedFeatureName().isEmpty());
 		assertEquals("server name and version", cliSessionInfo.getServerSoftware().orElseThrow());
 		assertEquals(srvCfgSupportedMessageTypes.getMts(), cliSessionInfo.getRhSupportedMessageTypes().getMts());
+	}
+
+	@Test
+	void test_options_ok_auth() throws Exception {
+		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(srvSessionInfo);
+
+		RtspProtoClientCredentials clientCredentials = RtspProtoClientCredentials.of(
+				UserAuthServerSide.USER,
+				UserAuthServerSide.PW
+			);
+
+		RtspProtoMessageType mt = cliOutputSvc.sendRequest_options(
+				"rtsp://localhost/existing_stream",
+				clientCredentials
+			);
+		assertEquals(RtspProtoMessageType.OPTIONS, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);  // <-- the server doesn't check the credentials for OPTIONS requests
+
+		// ----------------------------------------------------
+
+		srvOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliInputSvc.receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -660,7 +691,7 @@ public class C2sRrSvcTest {
 	}
 
 	@Test
-	void test_setParam_ok() throws Exception {
+	void test_setParam_ok_auth() throws Exception {
 		Objects.requireNonNull(cliSessionInfo);
 		Objects.requireNonNull(srvSessionInfo);
 

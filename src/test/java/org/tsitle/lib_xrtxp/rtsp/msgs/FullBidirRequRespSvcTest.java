@@ -519,6 +519,31 @@ public class FullBidirRequRespSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
+	void test_getParam_stream_noCrypto() throws Exception {
+		final ClientType ct = ClientType.MIKEY;
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_no_encr";
+
+		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_getParameter(rscUrlStr);
+		assertEquals(RtspProtoMessageType.GET_PARAMETER, mt);
+
+		// ----------------------------------------------------
+
+		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
+		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
+
+		// ----------------------------------------------------
+
+		srvRespOutputSvc.sendResponse(resRequBas);
+
+		// ----------------------------------------------------
+
+		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
 	void test_play_pause_teardown_noCrypto() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
 		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
