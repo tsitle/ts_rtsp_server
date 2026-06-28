@@ -38,7 +38,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class S2cRrSvcTest {
+public class FullBidirRequRespSvcTest {
 
 	static class TestLogs implements LogMsgInterface {
 		@Override
@@ -306,7 +306,7 @@ public class S2cRrSvcTest {
 	private final Map<ClientType, RtspProtoRequestOutputSvc> cliRequOutputSvc = new HashMap<>();
 	private final Map<ClientType, RtspProtoResponseInputSvc> cliRespInputSvc = new HashMap<>();
 
-	S2cRrSvcTest() { }
+	FullBidirRequRespSvcTest() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
