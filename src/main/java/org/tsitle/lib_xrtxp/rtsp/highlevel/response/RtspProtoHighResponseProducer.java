@@ -115,7 +115,7 @@ public final class RtspProtoHighResponseProducer {
 
 		//
 		switch (rtspRequestBasics.messageType) {
-			case ANNOUNCE, PAUSE, REDIRECT, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
+			case ANNOUNCE, PAUSE, SET_PARAMETER, TEARDOWN -> buildResponse_ack();
 			case DESCRIBE -> buildResponse_describe(ioDataResp, ioSetupInfosStream, resObj);
 			case GET_PARAMETER -> buildResponse_getParameter(ioDataResp, resObj);
 			case OPTIONS -> buildResponse_options(ioDataResp, resObj);

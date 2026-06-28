@@ -131,8 +131,7 @@ public final class RtspProtoHighRequestProducer {
 			case GET_PARAMETER -> buildRequest_getParameter(ioDataRequ, resObj);
 			case OPTIONS -> buildRequest_options(ioDataRequ, resObj);
 			case PAUSE -> buildRequest_pause();
-			case PLAY -> buildRequest_play(resObj);
-			case REDIRECT -> buildRequest_redirect(resObj);
+			case PLAY -> buildRequest_play(ioDataRequ, resObj);
 			case SET_PARAMETER ->
 					buildRequest_setParameter(
 							ioSetupInfosStream,
@@ -356,34 +355,6 @@ public final class RtspProtoHighRequestProducer {
 		}
 	}
 
-	private void buildRequest_redirect(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ)
-			throws RtspProtoInvalidRequestException {
-		final String FNC_NAME = getClass().getSimpleName() + ".buildRequest_redirect()";
-
-		/*
-		 * A redirect request informs the client that it must connect to another
-		 * server location. It contains the mandatory header Location, which
-		 * indicates that the client should issue requests for that URL. It may
-		 * contain the parameter Range, which indicates when the redirection
-		 * takes effect. If the client wants to continue to send or receive
-		 * media for this URI, the client MUST issue a TEARDOWN request for the
-		 * current session and a SETUP for the new session at the designated
-		 * host.
-		 *
-		 * This example request redirects traffic for this URI to the new server
-		 * at the given playtime:
-		 *   "REDIRECT rtsp://example.com/fizzle/foo RTSP/1.0"
-		 *   "CSeq: 732"
-		 *   "Location: rtsp://bigserver.com:8001"
-		 *   "Range: clock=19960213T143205Z-"
-		 */
-
-		// @TODO set some headers
-
-		logError(FNC_NAME, "REDIRECT is not supported yet");
-		throw new RtspProtoInvalidRequestException(FNC_NAME + ": REDIRECT is not supported yet");
-	}
-
 	private void buildRequest_setParameter(
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataRequest inputDataRequ,
@@ -442,7 +413,7 @@ public final class RtspProtoHighRequestProducer {
 	}
 
 	/**
-	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
+	 * The client makes one SETUP request per Sub-Stream.<br />
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */

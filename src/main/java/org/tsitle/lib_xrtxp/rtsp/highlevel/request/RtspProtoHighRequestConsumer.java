@@ -365,7 +365,6 @@ public final class RtspProtoHighRequestConsumer {
 				input.messageType == RtspProtoMessageType.DESCRIBE ||
 				input.messageType == RtspProtoMessageType.GET_PARAMETER ||
 				input.messageType == RtspProtoMessageType.OPTIONS ||
-				input.messageType == RtspProtoMessageType.REDIRECT ||
 				input.messageType == RtspProtoMessageType.SET_PARAMETER ||
 				input.messageType == RtspProtoMessageType.SETUP) {
 			return;

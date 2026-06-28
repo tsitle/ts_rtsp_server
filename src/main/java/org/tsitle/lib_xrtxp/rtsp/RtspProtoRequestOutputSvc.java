@@ -439,30 +439,6 @@ public final class RtspProtoRequestOutputSvc {
 	}
 
 	/**
-	 * REDIRECT request is used to redirect the client to a new URL.<br />
-	 * <b>Note:</b> This is only allowed for Server->Client requests.
-	 * @param resourceUrl The Resource URL
-	 * @return The message type that was sent
-	 * @throws TcpSocketClosedException If the TCP socket is closed
-	 * @throws TcpSocketIoException If an I/O error occurs
-	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
-	 */
-	public @NonNull RtspProtoMessageType sendRequest_redirect(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
-		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_redirect()";
-
-		if (isRequestFromClient) {
-			throw new IllegalArgumentException("This method is only allowed for Server->Client requests");
-		}
-
-		// @TODO add Location and Range parameters
-
-		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
-
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.REDIRECT, resourceUrl, dummyClientCredentials);
-	}
-
-	/**
 	 * SET_PARAMETER requests to set the value of one or more parameters for a presentation or stream specified by the URI.
 	 * @param resourceUrl The Resource URL
 	 * @param setParameterKvs The key-value pairs of parameters to set

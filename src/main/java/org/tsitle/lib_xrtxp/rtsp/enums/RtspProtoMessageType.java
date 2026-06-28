@@ -17,8 +17,6 @@ public enum RtspProtoMessageType {
 	PAUSE,
 	/** Start playback of stream. (RFC-2326 Section 10.5) */
 	PLAY,
-	/** Inform the client that it must connect to another server location. (RFC-2326 Section 10.10) */
-	REDIRECT,
 	/** Receive one or more parameter values for the session. (RFC-2326 Section 10.9) */
 	SET_PARAMETER,
 	/** Set a sub-stream up. (RFC-2326 Section 10.4) */
