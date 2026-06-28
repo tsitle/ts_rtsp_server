@@ -811,6 +811,7 @@ public class C2sRrSvcTest {
 				logger,
 				true,
 				"client name and version",
+				null,
 				"en",
 				false,
 				true,

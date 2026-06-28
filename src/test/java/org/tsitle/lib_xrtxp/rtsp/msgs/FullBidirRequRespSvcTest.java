@@ -26,6 +26,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
@@ -700,6 +701,7 @@ public class FullBidirRequRespSvcTest {
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient(srvSessionInfo.getClientIpAddr());
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvSessionInfo.getClientUserAgent().orElseThrow());
+		assertEquals(RtspConnectionPolicy.CLOSE, srvSessionInfo.getRhConnectionPolicy().orElseThrow());
 
 		RtspProtoRscUrl checkRscUrlForSsSrv = srvSessionInfo.getResourceUrlForMt_nonSetup(mt).orElseThrow();
 		assertEquals(resourceUrl, checkRscUrlForSsSrv.getUrlStr());
@@ -1649,6 +1651,7 @@ public class FullBidirRequRespSvcTest {
 				logger,
 				false,
 				"server name and version",
+				null,
 				"en",
 				false,
 				true,
@@ -1683,6 +1686,7 @@ public class FullBidirRequRespSvcTest {
 				logger,
 				true,
 				cliUserAgent.get(ct),
+				RtspConnectionPolicy.CLOSE,  // <-- intentionally using the non-default value here
 				"en",
 				false,
 				true,
