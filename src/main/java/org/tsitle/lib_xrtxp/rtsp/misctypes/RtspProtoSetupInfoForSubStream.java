@@ -23,15 +23,15 @@ public final class RtspProtoSetupInfoForSubStream {
 	private boolean haveSetup = false;
 
 	/** RTSP Synchronization Source Identifier for inbound packets (random number. one per session/client and per stream) */
-	private final @NonNull RtspProtoIdXsrc ssrcInbound;
+	private final @NonNull RtspProtoIdXsrc ssrcInbound = RtspProtoIdXsrc.ofEmpty();
 	/** RTSP Synchronization Source Identifier for outbound packets (random number. one per session/client and per stream) */
-	private final @NonNull RtspProtoIdXsrc ssrcOutbound;
+	private final @NonNull RtspProtoIdXsrc ssrcOutbound = RtspProtoIdXsrc.ofEmpty();
 	/** Initial RTP Sequence Number within the session (random number, 16 bits unsigned) */
-	public final @NonNull RtspProtoRtpSeqNr rtpSeqNrT0;
+	public final @NonNull RtspProtoRtpSeqNr rtpSeqNrT0 = RtspProtoRtpSeqNr.ofEmpty();
 	/** Initial RTP Timestamp within the session (random number) */
-	private final @NonNull RtspProtoRtpTimestamp rtpTimestampT0;
+	private final @NonNull RtspProtoRtpTimestamp rtpTimestampT0 = RtspProtoRtpTimestamp.ofEmpty();
 	/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
-	private final @NonNull TimestampEpochNs rtpGenTsT0EpochNs;
+	private final @NonNull TimestampEpochNs rtpGenTsT0EpochNs = TimestampEpochNs.ofEmpty();
 
 	/** Transport settings */
 	private final @NonNull RtspProtoDataCntSubStreamTp subStreamTp = new RtspProtoDataCntSubStreamTp();
@@ -65,46 +65,36 @@ public final class RtspProtoSetupInfoForSubStream {
 		this.rscUrlSubStream.writeProtect();
 
 		if (ssrcInbound != null) {
-			this.ssrcInbound = ssrcInbound.clone();
-		} else {
-			this.ssrcInbound = RtspProtoIdXsrc.ofEmpty();
+			this.ssrcInbound.copyFrom(ssrcInbound.clone());
 		}
 		this.ssrcInbound.writeProtect();
 
-		this.ssrcOutbound = ssrcOutbound.clone();
+		this.ssrcOutbound.copyFrom(ssrcOutbound);
 		this.ssrcOutbound.writeProtect();
 
-		this.rtpSeqNrT0 = rtpSeqNrT0.clone();
+		this.rtpSeqNrT0.copyFrom(rtpSeqNrT0);
 		this.rtpSeqNrT0.writeProtect();
-		this.rtpTimestampT0 = rtpTimestampT0.clone();
+		this.rtpTimestampT0.copyFrom(rtpTimestampT0);
 		this.rtpTimestampT0.writeProtect();
-		this.rtpGenTsT0EpochNs = rtpGenTsT0EpochNs.clone();
+		this.rtpGenTsT0EpochNs.copyFrom(rtpGenTsT0EpochNs);
 		this.rtpGenTsT0EpochNs.writeProtect();
 	}
 
 	public RtspProtoSetupInfoForSubStream(@NonNull RtspProtoSetupInfoForSubStream other) {
-		this(other, other.ssrcInbound);
-	}
+		this.isWriteProtected = false;
 
-	public RtspProtoSetupInfoForSubStream(
-				@NonNull RtspProtoSetupInfoForSubStream other,
-				@NonNull RtspProtoIdXsrc ssrcInbound
-			) {
 		this.rscUrlSubStream.copyFrom(other.rscUrlSubStream);
 		this.rscUrlSubStream.writeProtect();
 
 		this.haveSetup = other.haveSetup;
 
-		this.ssrcInbound = ssrcInbound.clone();
-		this.ssrcInbound.writeProtect();
+		this.ssrcInbound.copyFrom(ssrcInbound);
 
-		this.ssrcOutbound = other.ssrcOutbound.clone();
+		this.ssrcOutbound.copyFrom(other.ssrcOutbound);
 
-		this.rtpSeqNrT0 = other.rtpSeqNrT0.clone();
-		this.rtpSeqNrT0.writeProtect();
-		this.rtpTimestampT0 = other.rtpTimestampT0.clone();
-		this.rtpTimestampT0.writeProtect();
-		this.rtpGenTsT0EpochNs = other.rtpGenTsT0EpochNs.clone();
+		this.rtpSeqNrT0.copyFrom(other.rtpSeqNrT0);
+		this.rtpTimestampT0.copyFrom(other.rtpTimestampT0);
+		this.rtpGenTsT0EpochNs.copyFrom(other.rtpGenTsT0EpochNs);
 		this.rtpGenTsT0EpochNs.writeProtect();
 
 		this.subStreamTp.copyFrom(other.subStreamTp);

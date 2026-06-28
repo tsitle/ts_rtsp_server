@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
@@ -411,7 +412,7 @@ public final class RtspProtoHighRequestConsumer {
 		}
 
 		//
-		RtspProtoRscUrl resObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
+		RtspProtoRscUrl resObj = ResourceUrlProcessor.parseUrlIntoRscUrlObject(
 				availableStreamsInterface,
 				globalSessionInfoInterface,
 				resourceUrlStr,
@@ -806,7 +807,8 @@ public final class RtspProtoHighRequestConsumer {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream info not found");
 		}
 		RtspProtoSetupInfoForSubStream tmpInpSiSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(idSubStream).orElseThrow();
-		RtspProtoSetupInfoForSubStream outSiSs = new RtspProtoSetupInfoForSubStream(tmpInpSiSsPtr, tmpInpSiSsPtr.getSsrcInboundPtr());
+		RtspProtoSetupInfoForSubStream outSiSs = new RtspProtoSetupInfoForSubStream(tmpInpSiSsPtr);
+		outSiSs.getSsrcInboundPtr().copyFrom(tmpInpSiSsPtr.getSsrcInboundPtr());
 
 		//System.out.println("<<<<<<<<<<<<<<<< rcvd KMD: " + kmd);
 

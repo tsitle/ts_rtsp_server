@@ -34,6 +34,12 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void setPlaybackRangeValue(@NonNull String value) {
+		rrPlaybackRangeValue = value;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public void copyFromRequest(@NonNull RtspProtoDataRequest inputDataRequ) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");

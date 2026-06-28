@@ -11,6 +11,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighUdpPorts;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
@@ -71,7 +72,7 @@ public final class RtspProtoHighRequestProducer {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseOutputUrl()";
 
 		try {
-			RtspProtoRscUrl tmpObj = ResourceUrlProcessorNg.parseUrlIntoRscUrlObject(
+			RtspProtoRscUrl tmpObj = ResourceUrlProcessor.parseUrlIntoRscUrlObject(
 					null,
 					null,
 					ioRscUrl.getUrlStr(),

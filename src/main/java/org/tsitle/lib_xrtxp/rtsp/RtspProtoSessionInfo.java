@@ -74,6 +74,8 @@ public final class RtspProtoSessionInfo {
 
 	/** Playback range request value from the client */
 	private @NonNull String clientPlaybackRangeValue = "";
+	/** Playback range response value from the server */
+	private @NonNull String serverPlaybackRangeValue = "";
 
 	/** Client's User-Agent */
 	private @NonNull String clientUserAgent = "";
@@ -342,7 +344,6 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------
 
-	@SuppressWarnings("unused")
 	public Optional<String> getClientPlaybackRangeValue() {
 		theReadLock.lock();
 		try {
@@ -350,6 +351,18 @@ public final class RtspProtoSessionInfo {
 				return Optional.empty();
 			}
 			return Optional.of(clientPlaybackRangeValue);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public Optional<String> getServerPlaybackRangeValue() {
+		theReadLock.lock();
+		try {
+			if (serverPlaybackRangeValue.isBlank()) {
+				return Optional.empty();
+			}
+			return Optional.of(serverPlaybackRangeValue);
 		} finally {
 			theReadLock.unlock();
 		}
@@ -873,6 +886,15 @@ public final class RtspProtoSessionInfo {
 		theWriteLock.lock();
 		try {
 			clientPlaybackRangeValue = value;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void setServerPlaybackRangeValue(@NonNull String value) {
+		theWriteLock.lock();
+		try {
+			serverPlaybackRangeValue = value;
 		} finally {
 			theWriteLock.unlock();
 		}

@@ -131,8 +131,17 @@ public final class RtspProtoResponseInputSvc {
 		// load data from Session Info
 		RtspProtoIdSession currentIdSession = RtspProtoIdSession.ofEmpty();
 		RtspProtoDataCntCseqRespInp cseqRespInp = new RtspProtoDataCntCseqRespInp();
+		Set<@NonNull RtspProtoIdSubStream> inpAvailableSubStreamIds = new HashSet<>();
+		RtspProtoSetupInfosStream ioSetupInfosStream = new RtspProtoSetupInfosStream();
 		RtspProtoDataResponse outputDataResp = new RtspProtoDataResponse();
-		if (! loadFromSessionInfo(currentIdSession, cseqRespInp, requestMessageType, outputDataResp)) {
+		if (! loadFromSessionInfo(
+					currentIdSession,
+					cseqRespInp,
+					requestMessageType,
+					inpAvailableSubStreamIds,
+					ioSetupInfosStream,
+					outputDataResp
+				)) {
 			return RtspResponseBasics.createInternalServerError();
 		}
 
@@ -140,6 +149,8 @@ public final class RtspProtoResponseInputSvc {
 		RtspResponseBasics resObj = rtspProtoHighResponseConsumer.processResponse(
 				currentIdSession,
 				cseqRespInp,
+				inpAvailableSubStreamIds,
+				ioSetupInfosStream,
 				msgStructured,
 				outputDataResp
 			);
@@ -148,7 +159,7 @@ public final class RtspProtoResponseInputSvc {
 		outputDataResp.writeProtect();
 
 		// update data in Session Info
-		updateSessionInfo(requestMessageType, outputDataResp);
+		updateSessionInfo(requestMessageType, ioSetupInfosStream, outputDataResp);
 
 		//
 		logDebug(FNC_NAME, String.format("Received response for request '%s' (CSeq=%s, Status=%d)",
@@ -170,6 +181,8 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtspProtoIdSession currentIdSession,
 				@NonNull RtspProtoDataCntCseqRespInp cseqRespInp,
 				@NonNull RtspProtoMessageType requestMessageType,
+				@NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds,
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".loadFromSessionInfo()";
@@ -212,10 +225,20 @@ public final class RtspProtoResponseInputSvc {
 		dataResp.respSetupSubStreamTp.setIsUnicast(true);
 		dataResp.respSetupSubStreamTp.setIsEncr(rtspSessionInfo.getStreamTpMain().getIsTransportSrtpSrtcp());
 
+		//
+		availableSubStreamIds.clear();
+		availableSubStreamIds.addAll(rtspSessionInfo.getDescrAvailableSubStreamIds());
+		//
+		ioSetupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
+
 		return true;
 	}
 
-	private void updateSessionInfo(@NonNull RtspProtoMessageType requestMessageType, @NonNull RtspProtoDataResponse dataResp) {
+	private void updateSessionInfo(
+				@NonNull RtspProtoMessageType requestMessageType,
+				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
+				@NonNull RtspProtoDataResponse dataResp
+			) {
 		if (! (rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
 			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
 		}
@@ -241,10 +264,21 @@ public final class RtspProtoResponseInputSvc {
 		if (! dataResp.getServerSoftware().isEmpty()) {
 			rtspSessionInfo.setServerSoftware(dataResp.getServerSoftware());
 		}
+		//
+		if (! dataResp.getPlaybackRangeValue().isEmpty()) {
+			rtspSessionInfo.setServerPlaybackRangeValue(dataResp.getPlaybackRangeValue());
+		}
 
 		// store stream settings from a SETUP response
 		if (! isResponseFromClient && requestMessageType == RtspProtoMessageType.SETUP) {
 			storeSubStreamSettingsFromSetupResponse(dataResp);
+			return;
+		}
+
+		// store stream settings from a PLAY response
+		if (! isResponseFromClient && requestMessageType == RtspProtoMessageType.PLAY) {
+			storeSubStreamSettingsFromSetupResponse(dataResp);
+			rtspSessionInfo.setDescrSetupInfosStream(ioSetupInfosStream);
 			return;
 		}
 
@@ -296,10 +330,8 @@ public final class RtspProtoResponseInputSvc {
 
 		RtspProtoSetupInfoForSubStream outSiForSs;
 		try {
-			outSiForSs = new RtspProtoSetupInfoForSubStream(
-					rtspSessionInfo.getDescrSetupInfoBySubStreamsId(idSsPtr),
-					dataResp.respSetupSubStreamSsrc
-				);
+			outSiForSs = new RtspProtoSetupInfoForSubStream(rtspSessionInfo.getDescrSetupInfoBySubStreamsId(idSsPtr));
+			outSiForSs.getSsrcInboundPtr().copyFrom(dataResp.respSetupSubStreamSsrc);
 		} catch (RtspProtoSessionInfoException e) {
 			logError(FNC_NAME, "Could not find Sub-Stream info for ss='" +
 					idSsPtr.getIdStr().orElse("-unset-") + "'");

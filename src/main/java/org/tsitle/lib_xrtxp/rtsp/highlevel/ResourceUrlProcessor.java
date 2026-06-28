@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.rtsp.highlevel.request;
+package org.tsitle.lib_xrtxp.rtsp.highlevel;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -18,7 +18,10 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
-final class ResourceUrlProcessorNg {
+/**
+ * Resource URL processor for the RTSP protocol.
+ */
+public final class ResourceUrlProcessor {
 
 	/** Sub-Stream IDs that are available in the current session */
 	private final @NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds;
@@ -29,7 +32,7 @@ final class ResourceUrlProcessorNg {
 	private @NonNull String rscUrlStrPathMod = "";
 	private @NonNull String subStreamIdStr = "";
 
-	private ResourceUrlProcessorNg(
+	private ResourceUrlProcessor(
 				@NonNull Set<@NonNull RtspProtoIdSubStream> availableSubStreamIds,
 				@NonNull String fullRscUrlStr
 			) {
@@ -40,6 +43,18 @@ final class ResourceUrlProcessorNg {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Parse a Resource URL into an RtspProtoRscUrl object.
+	 * @param availableStreamsInterface Available streams instance (only required on the server-side)
+	 * @param globalSessionInfoInterface Global Session Info instance (only required on the server-side)
+	 * @param fullRscUrlStr Full Resource URL string
+	 * @param clientIpAddr Client IP address (only required on the server-side)
+	 * @param inpAvailableSubStreamIds Input for available Sub-Stream IDs
+	 * @return Parsed RtspProtoRscUrl object
+	 * @throws RtspProtoInvalidUriException If the URI is invalid
+	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID could not be found
+	 * @throws RtspProtoIdInputSourceNotFoundException If the Input Source ID could not be found
+	 */
 	public static @NonNull RtspProtoRscUrl parseUrlIntoRscUrlObject(
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
@@ -49,7 +64,7 @@ final class ResourceUrlProcessorNg {
 			) throws RtspProtoInvalidUriException, RtspProtoIdSubStreamNotFoundException, RtspProtoIdInputSourceNotFoundException {
 		RtspProtoRscUrl resObj = RtspProtoRscUrl.of(fullRscUrlStr);
 
-		ResourceUrlProcessorNg rscUrlProcObj = new ResourceUrlProcessorNg(
+		ResourceUrlProcessor rscUrlProcObj = new ResourceUrlProcessor(
 				inpAvailableSubStreamIds,
 				fullRscUrlStr
 			);
