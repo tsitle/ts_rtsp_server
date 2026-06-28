@@ -771,7 +771,7 @@ public class C2sRrSvcTest {
 				srvCfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
-				true,
+				false,
 				false,
 				srvSessionInfo,
 				srvUserAuthSvc,
@@ -823,7 +823,7 @@ public class C2sRrSvcTest {
 		cliInputSvc = new RtspProtoResponseInputSvc(
 				logger,
 				false,
-				true,
+				false,
 				cliSessionInfo,
 				cliRtxpTcpReadWrite
 			);
