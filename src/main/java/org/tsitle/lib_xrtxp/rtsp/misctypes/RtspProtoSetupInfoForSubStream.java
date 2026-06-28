@@ -88,8 +88,7 @@ public final class RtspProtoSetupInfoForSubStream {
 
 		this.haveSetup = other.haveSetup;
 
-		this.ssrcInbound.copyFrom(ssrcInbound);
-
+		this.ssrcInbound.copyFrom(other.ssrcInbound);
 		this.ssrcOutbound.copyFrom(other.ssrcOutbound);
 
 		this.rtpSeqNrT0.copyFrom(other.rtpSeqNrT0);
