@@ -14,7 +14,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighUdpPorts;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoAuthDigest;
@@ -23,9 +23,6 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpProducerInterface;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspKeymgmtProto;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.ArgsSrtxpSdpForAnnounceFromClient;
 import org.tsitle.lib_xrtxp.rtsp.sdp.ArgsUpdatedSdpForAnnounceFromServer;
 
@@ -38,6 +35,7 @@ public final class RtspProtoHighRequestProducer {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
 	private final @NonNull String cfgSenderAppNameAndVersion;
+	private final @NonNull RtspConnectionPolicy cfgConnectionPolicy;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
 	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
 
@@ -45,6 +43,7 @@ public final class RtspProtoHighRequestProducer {
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isRequestFromClient,
 				@NonNull String cfgSenderAppNameAndVersion,
+				@NonNull RtspConnectionPolicy cfgConnectionPolicy,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				@Nullable RtspProtoSdpProducerInterface sdpProducerInterface
 			) {
@@ -58,6 +57,7 @@ public final class RtspProtoHighRequestProducer {
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
 		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
+		this.cfgConnectionPolicy = cfgConnectionPolicy;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
 		this.sdpProducerInterface = sdpProducerInterface;
 	}
@@ -634,6 +634,12 @@ public final class RtspProtoHighRequestProducer {
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.USERAGENT);
 			hdEntry.hdValUserAgent.userAgentStr = cfgSenderAppNameAndVersion;
+			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
+		}
+		// Connection Policy
+		{
+			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.CONNECTION);
+			hdEntry.hdValConnection.connectionPol = cfgConnectionPolicy;
 			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}

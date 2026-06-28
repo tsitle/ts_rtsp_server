@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
@@ -62,6 +63,7 @@ final class SrtxpRekeySvc {
 				logMsgInterface,
 				false,
 				cfgServerNameAndVersion,
+				RtspConnectionPolicy.KEEPALIVE,
 				"",  // @TODO make Content-Language configurable
 				rtspConfig.getIsDebugPrintRtspSdpSent(),
 				rtspConfig.getIsDebugPrintRtspSent(),

@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.data_rr;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoCseqNr;
@@ -28,6 +29,9 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
 	/** RTSP message Sequence Number to use for sending a request */
 	private final @NonNull RtspProtoCseqNr requCseqNrToSend = RtspProtoCseqNr.ofZero();
+
+	/** RTSP connection policy */
+	private @NonNull RtspConnectionPolicy requConnectionPolicy = RtspConnectionPolicy.NONE;
 
 	/** RTSP session state */
 	public final @NonNull RtspProtoDataCntSessionState requRtspSessionState = new RtspProtoDataCntSessionState();
@@ -63,6 +67,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
 		this.requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
 		this.requCseqNrToSend.copyFrom(other.requCseqNrToSend);
+		this.requConnectionPolicy = other.requConnectionPolicy;
 		this.requRtspSessionState.copyFrom(other.requRtspSessionState);
 	}
 
@@ -94,6 +99,16 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.rrPlaybackRangeValue = value;
 	}
 
+	public @NonNull RtspConnectionPolicy getConnectionPolicy() {
+		return requConnectionPolicy;
+	}
+	public void setConnectionPolicy(@NonNull RtspConnectionPolicy value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		this.requConnectionPolicy = value;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void copyFrom(@NonNull RtspProtoDataRequest other) {
@@ -107,6 +122,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		requAnnouncedSdpRaw.copyFrom(other.requAnnouncedSdpRaw);
 		requAnnouncedSdpStc.copyFrom(other.requAnnouncedSdpStc);
 		requCseqNrToSend.copyFrom(other.requCseqNrToSend);
+		requConnectionPolicy = other.requConnectionPolicy;
 		requRtspSessionState.copyFrom(other.requRtspSessionState);
 	}
 
@@ -129,6 +145,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
 		}
+		requConnectionPolicy = RtspConnectionPolicy.NONE;
 		requRtspSessionState.clear();
 	}
 

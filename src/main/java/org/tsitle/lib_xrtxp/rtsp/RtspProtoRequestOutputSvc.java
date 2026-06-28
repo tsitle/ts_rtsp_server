@@ -17,6 +17,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgWriter;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.request.RtspProtoLowRequestProducer;
@@ -57,6 +58,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * @param logMsgInterface Log message handling instance
 	 * @param isRequestFromClient Is this a request being sent by the client?
 	 * @param cfgSenderAppNameAndVersion Server/client software name and version
+	 * @param cfgConnectionPolicy Connection policy (can be null, default is KEEPALIVE)
 	 * @param cfgContentLanguage Content language (can be empty)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent SDP data for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
@@ -69,6 +71,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isRequestFromClient,
 				@NonNull String cfgSenderAppNameAndVersion,
+				@Nullable RtspConnectionPolicy cfgConnectionPolicy,
 				@NonNull String cfgContentLanguage,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
@@ -107,6 +110,7 @@ public final class RtspProtoRequestOutputSvc {
 				logMsgInterface,
 				isRequestFromClient,
 				cfgSenderAppNameAndVersion,
+				cfgConnectionPolicy == null ? RtspConnectionPolicy.KEEPALIVE : cfgConnectionPolicy,
 				cfgIsDebugPrintRtspSdpSent,
 				sdpProducer
 			);

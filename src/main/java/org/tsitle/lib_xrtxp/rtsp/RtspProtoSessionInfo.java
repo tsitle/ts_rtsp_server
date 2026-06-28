@@ -12,6 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
@@ -105,6 +106,11 @@ public final class RtspProtoSessionInfo {
 	/** SDP structured data from an ANNOUNCE request */
 	private final @NonNull RtspProtoDataCntSdpStructured rhAnnouncedSdpStcObj = new RtspProtoDataCntSdpStructured();
 	private boolean rhAnnouncedSdpStcIsSet = false;
+
+	// ----------------------------------------------------------------
+
+	/** Connection policy as requested by the remote host */
+	private @NonNull RtspConnectionPolicy rhConnectionPolicy = RtspConnectionPolicy.NONE;
 
 	// ----------------------------------------------------------------
 
@@ -534,6 +540,20 @@ public final class RtspProtoSessionInfo {
 			resObj.copyFrom(rhAnnouncedSdpStcObj);
 			resObj.writeProtect();
 			return Optional.of(resObj);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
+
+	public Optional<RtspConnectionPolicy> getRhConnectionPolicy() {
+		theReadLock.lock();
+		try {
+			if (rhConnectionPolicy == RtspConnectionPolicy.NONE) {
+				return Optional.empty();
+			}
+			return Optional.of(rhConnectionPolicy);
 		} finally {
 			theReadLock.unlock();
 		}
@@ -1008,6 +1028,17 @@ public final class RtspProtoSessionInfo {
 		try {
 			rhAnnouncedSdpStcObj.copyFrom(sdpStructured);
 			rhAnnouncedSdpStcIsSet = true;
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	// ----------------------------------------------------
+
+	void setRhConnectionPolicy(@NonNull RtspConnectionPolicy connectionPolicy) {
+		theWriteLock.lock();
+		try {
+			rhConnectionPolicy = connectionPolicy;
 		} finally {
 			theWriteLock.unlock();
 		}

@@ -129,7 +129,8 @@ public class RtspProtoHighResponseConsumer {
 		return true;
 	}
 
-	private void checkRtspProtoVersion(@NonNull RtspProtoHighMsgStructuredResponse inputMsgStc) throws RtspProtoInvalidResponseException {
+	private void checkRtspProtoVersion(@NonNull RtspProtoHighMsgStructuredResponse inputMsgStc)
+			throws RtspProtoInvalidResponseException {
 		if (inputMsgStc.rtspProtoVersion == RtspProtocolVersion.NONE) {
 			throw new RtspProtoInvalidResponseException("Missing RTSP protocol version");
 		}
@@ -196,7 +197,7 @@ public class RtspProtoHighResponseConsumer {
 		for (Map.Entry<@NonNull RtspHeaderKey, @NonNull RtspProtoHeaderEntryResponse> entry : inputMsgStc.headers.entrySet()) {
 			switch (entry.getKey()) {
 				case RtspHeaderKey.AUTH_SERVER -> processHeader_com_auth_server(entry.getValue(), ioDataResp);
-				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue(), ioDataResp);
+				case RtspHeaderKey.CONNECTION -> processHeader_com_connection();
 				case RtspHeaderKey.CONTENT_BASE -> processHeader_describe_contbase(inputMsgStc.messageType);
 				case RtspHeaderKey.CONTENT_ENC -> processHeader_com_contenc(inputMsgStc.messageType, entry.getValue());
 				case RtspHeaderKey.CONTENT_LANG -> processHeader_com_contlang(inputMsgStc.messageType);
@@ -241,11 +242,8 @@ public class RtspProtoHighResponseConsumer {
 		outputDataResp.respAuthServer.setAuthNonce(headerEntry.hdValAuthServer.authNonce);
 	}
 
-	private void processHeader_com_connection(
-				@NonNull RtspProtoHeaderEntryResponse headerEntry,
-				@NonNull RtspProtoDataResponse outputDataResp
-			) {
-		// @TODO store param
+	private void processHeader_com_connection() {
+		// nothing to do
 	}
 
 	private void processHeader_describe_contbase(@NonNull RtspProtoMessageType messageType) throws RtspProtoInvalidResponseException {

@@ -20,6 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
+import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
@@ -425,6 +426,11 @@ public final class RtspProtoRequestInputSvc {
 		//
 		if (requBasics.messageType == RtspProtoMessageType.ANNOUNCE) {
 			rtspSessionInfo.setRhAnnouncedSdpStc(dataRequ.requAnnouncedSdpStc);
+		}
+
+		//
+		if (dataRequ.getConnectionPolicy() != RtspConnectionPolicy.NONE) {
+			rtspSessionInfo.setRhConnectionPolicy(dataRequ.getConnectionPolicy());
 		}
 	}
 

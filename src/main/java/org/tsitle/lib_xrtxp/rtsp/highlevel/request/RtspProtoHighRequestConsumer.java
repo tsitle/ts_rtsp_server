@@ -476,7 +476,7 @@ public final class RtspProtoHighRequestConsumer {
 			switch (entry.getKey()) {
 				case RtspHeaderKey.ACCEPT -> processHeader_describe_accept(input.messageType, entry.getValue());
 				case RtspHeaderKey.AUTH_CLIENT -> processHeader_com_auth_client(entry.getValue(), outputDataRequ);
-				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue());
+				case RtspHeaderKey.CONNECTION -> processHeader_com_connection(entry.getValue(), outputDataRequ);
 				case RtspHeaderKey.CONTENT_BASE -> processHeader_announce_contbase(input.messageType);
 				case RtspHeaderKey.CONTENT_ENC -> processHeader_com_contenc(input.messageType, entry.getValue());
 				case RtspHeaderKey.CONTENT_LANG -> processHeader_com_contlang(input.messageType);
@@ -548,11 +548,14 @@ public final class RtspProtoHighRequestConsumer {
 		outputDataRequ.requAuthClient.setAuthResp(headerEntry.hdValAuthClient.authResp);
 	}
 
-	private void processHeader_com_connection(@NonNull RtspProtoHeaderEntryRequest headerEntry)
-			throws RtspProtoInvalidRequestException {
+	private void processHeader_com_connection(
+				@NonNull RtspProtoHeaderEntryRequest headerEntry,
+				@NonNull RtspProtoDataRequest outputDataRequ
+			) throws RtspProtoInvalidRequestException {
 		if (headerEntry.hdValConnection.connectionPol == RtspConnectionPolicy.NONE) {
 			throw new RtspProtoInvalidRequestException("Connection Policy must be set");
 		}
+		outputDataRequ.setConnectionPolicy(headerEntry.hdValConnection.connectionPol);
 	}
 
 	private void processHeader_announce_contbase(@NonNull RtspProtoMessageType messageType) {
