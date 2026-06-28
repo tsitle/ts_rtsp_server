@@ -435,7 +435,18 @@ public final class RtspProtoRequestOutputSvc {
 			throw new IllegalArgumentException("This method is only allowed for Client->Server requests");
 		}
 
-		return internalSendRequest(FNC_NAME, RtspProtoMessageType.PLAY, resourceUrl, clientCredentials);
+		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
+		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
+		inputDataRequ.setPlaybackRangeValue("npt=0.000-");
+
+		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
+
+		return internalSendRequest(
+				FNC_NAME,
+				RtspProtoMessageType.PLAY,
+				clientCredentials,
+				internRequArgs
+			);
 	}
 
 	/**

@@ -340,7 +340,10 @@ public final class RtspProtoHighRequestProducer {
 	/**
 	 * The client makes one PLAY request per Input Source
 	 */
-	private void buildRequest_play(@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ) {
+	private void buildRequest_play(
+				@NonNull RtspProtoDataRequest inputDataRequ,
+				@NonNull RtspProtoHighMsgStructuredRequest outputMsgRequ
+			) {
 		/*
 		 * Example:
 		 *   "PLAY rtsp://example.com/fizzle/foo/ RTSP/1.0"
@@ -350,7 +353,7 @@ public final class RtspProtoHighRequestProducer {
 
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.RANGE);
-			hdEntry.hdValRange.rangeStr = "npt=0.000-";  // @TODO make configurable
+			hdEntry.hdValRange.rangeStr = inputDataRequ.getPlaybackRangeValue();
 			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}
