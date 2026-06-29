@@ -366,9 +366,6 @@ public final class RtspProtoRequestInputSvc {
 		if (! dataRequ.getServerSoftware().isEmpty()) {
 			rtspSessionInfo.setServerSoftware(dataRequ.getServerSoftware());
 		}
-		if (! dataRequ.getPlaybackRangeValue().isEmpty()) {
-			rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
-		}
 
 		//
 		rtspSessionInfo.setRhInvalidParamNames(dataRequ.rrInvalidParamNames);  // always overwrite
@@ -431,6 +428,11 @@ public final class RtspProtoRequestInputSvc {
 		//
 		if (dataRequ.getConnectionPolicy() != RtspConnectionPolicy.NONE) {
 			rtspSessionInfo.setRhConnectionPolicy(dataRequ.getConnectionPolicy());
+		}
+
+		//
+		if (! dataRequ.getPlaybackRangeValue().isEmpty()) {
+			rtspSessionInfo.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
 		}
 	}
 
