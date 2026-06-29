@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeTransport;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
@@ -413,39 +414,43 @@ public class RtspProtoHighResponseConsumer {
 		if (isResponseFromClient) {
 			throw new RtspProtoInvalidResponseException("Received Transport header from client");
 		}
+		if (headerEntry.hdValTransport.tpOptions.isEmpty()) {
+			throw new RtspProtoInvalidResponseException("Received Transport header with no options");
+		}
 
-		if (headerEntry.hdValTransport.tpSubStream.getIsUdp() != ioDataResp.respSetupSubStreamTp.getIsUdp()) {
+		RtspProtoHeaderTypeTransport.TpOption tmpInpTpOpt = headerEntry.hdValTransport.tpOptions.getFirst();
+		if (tmpInpTpOpt.tpSubStream.getIsUdp() != ioDataResp.respSetupSubStreamTp.getIsUdp()) {
 			throw new RtspProtoInvalidResponseException("Received invalid Transport type (is=" +
-					(headerEntry.hdValTransport.tpSubStream.getIsUdp() ? "UDP" : "TCP") +
+					(tmpInpTpOpt.tpSubStream.getIsUdp() ? "UDP" : "TCP") +
 					", exp=" +
 					(ioDataResp.respSetupSubStreamTp.getIsUdp() ? "UDP" : "TCP") +
 					")");
 		}
-		if (headerEntry.hdValTransport.tpSubStream.getIsEncr() != ioDataResp.respSetupSubStreamTp.getIsEncr()) {
+		if (tmpInpTpOpt.tpSubStream.getIsEncr() != ioDataResp.respSetupSubStreamTp.getIsEncr()) {
 			throw new RtspProtoInvalidResponseException("Received invalid Transport encryption mode (is=" +
-					(headerEntry.hdValTransport.tpSubStream.getIsEncr() ? "Encrypted" : "Unencrypted") +
+					(tmpInpTpOpt.tpSubStream.getIsEncr() ? "Encrypted" : "Unencrypted") +
 					", exp=" +
 					(ioDataResp.respSetupSubStreamTp.getIsEncr() ? "Encrypted" : "Unencrypted") +
 					")");
 		}
 
-		if (headerEntry.hdValTransport.tpSubStream.getIsUdp()) {
-			if (headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
+		if (tmpInpTpOpt.tpSubStream.getIsUdp()) {
+			if (tmpInpTpOpt.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
 				throw new RtspProtoInvalidResponseException("Missing Server UDP RTP Port in Transport header");
 			}
-			if (headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
+			if (tmpInpTpOpt.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
 				throw new RtspProtoInvalidResponseException("Missing Server UDP RTCP Port in Transport header");
 			}
 			ioDataResp.respSetupSubStreamTp.getServerUdpPortRtpPtr()
-					.copyFrom(headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtpPtr());
+					.copyFrom(tmpInpTpOpt.tpSubStream.getServerUdpPortRtpPtr());
 			ioDataResp.respSetupSubStreamTp.getServerUdpPortRtcpPtr()
-					.copyFrom(headerEntry.hdValTransport.tpSubStream.getServerUdpPortRtcpPtr());
+					.copyFrom(tmpInpTpOpt.tpSubStream.getServerUdpPortRtcpPtr());
 		}
 
-		if (headerEntry.hdValTransport.tpSsrcId.isEmpty()) {
+		if (tmpInpTpOpt.tpSsrcId.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("Missing SSRC in Transport header");
 		}
-		ioDataResp.respSetupSubStreamSsrc.copyFrom(headerEntry.hdValTransport.tpSsrcId);
+		ioDataResp.respSetupSubStreamSsrc.copyFrom(tmpInpTpOpt.tpSsrcId);
 	}
 
 	private void processHeader_com_unsupported(

@@ -170,13 +170,16 @@ public final class RtspLowBuilderHelper {
 		/*
 		 * Example:
 		 *   Request:
-		 *     "RTP/AVP;unicast;client_port=1050-1051"
-		 *     or
-		 *     "RTP/AVP/TCP;interleaved=0-1"
-		 *     or
-		 *     "RTP/AVP;multicast;ttl=127;mode=\"PLAY\""
-		 *     or
-		 *     "RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
+		 *     single transport option acceptable to the client:
+		 *       "RTP/AVP;unicast;client_port=1050-1051"
+		 *       or
+		 *       "RTP/AVP/TCP;interleaved=0-1"
+		 *       or
+		 *       "RTP/AVP;multicast;ttl=127;mode=\"PLAY\""
+		 *       or
+		 *       "RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
+		 *     multiple transport options that are acceptable to the client:
+		 *       "RTP/AVP;multicast;ttl=127;mode=\"PLAY\",RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
 		 *   Response:
 		 *     "RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=1050-1051;server_port=6970-6971;ssrc=DEADBEEF"
 		 *     or
@@ -189,99 +192,117 @@ public final class RtspLowBuilderHelper {
 
 		StringBuilder sb = new StringBuilder();
 
-		if (hdValue.tpSubStream.getIsUdp()) {
-			sb.append(hdValue.tpSubStream.getIsEncr() ?
-					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2
-					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
-		} else {
-			sb.append(hdValue.tpSubStream.getIsEncr() ?
-					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP
-					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP);
-		}
-		sb.append(";");
-
-		if (! hdValue.tpSubStream.getIsUnicast()) {
-			throw new RtspLowInvalidRrException("No other Transport Delivery than Unicast is supported");
-		}
-		sb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";");
-
-		if (! isForRequest) {
-			if (! hdValue.tpSourceIpOrHost.isBlank()) {
-				sb
-						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP)
-						.append(hdValue.tpSourceIpOrHost).append(";");
+		boolean isFirst = true;
+		for (RtspProtoHeaderTypeTransport.TpOption tmpTpOpt : hdValue.tpOptions) {
+			if (! isFirst) {
+				sb.append(",");
 			}
-			if (! hdValue.tpDestIpOrHost.isBlank()) {
-				sb
-						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP)
-						.append(hdValue.tpDestIpOrHost).append(";");
-			}
-		}
-
-		if (hdValue.tpSubStream.getIsUdp()) {
-			if (hdValue.tpSubStream.getClientUdpPortRtpPtr().isEmpty()) {
-				throw new RtspLowInvalidRrException("Transport Client RTP UDP port must be set");
-			}
-			if (hdValue.tpSubStream.getClientUdpPortRtcpPtr().isEmpty()) {
-				throw new RtspLowInvalidRrException("Transport Client RTCP UDP port must be set");
-			}
-			if (hdValue.tpSubStream.getClientUdpPortRtpPtr().equals(hdValue.tpSubStream.getClientUdpPortRtcpPtr())) {
-				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP UDP ports must be different");
-			}
-			sb
-					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientUdpPortRtpPtr().getPort16bit().orElseThrow()))
-					.append("-")
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientUdpPortRtcpPtr().getPort16bit().orElseThrow()));
+			helperBuildHeaderValue_transport_single(tmpTpOpt, isForRequest, sb);
+			isFirst = false;
 			if (! isForRequest) {
-				sb.append(";");
-				if (hdValue.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
-					throw new RtspLowInvalidRrException("Transport Server RTP UDP port must be set");
-				}
-				if (hdValue.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
-					throw new RtspLowInvalidRrException("Transport Server RTCP UDP port must be set");
-				}
-				if (hdValue.tpSubStream.getServerUdpPortRtpPtr().equals(hdValue.tpSubStream.getServerUdpPortRtcpPtr())) {
-					throw new RtspLowInvalidRrException("Transport Server RTP and RTCP UDP ports must be different");
-				}
-				sb
-						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT)
-						.append(Integer.toUnsignedString(hdValue.tpSubStream.getServerUdpPortRtpPtr().getPort16bit().orElseThrow()))
-						.append("-")
-						.append(Integer.toUnsignedString(hdValue.tpSubStream.getServerUdpPortRtcpPtr().getPort16bit().orElseThrow()));
+				break;
 			}
-		} else {
-			if (hdValue.tpSubStream.getClientTcpChannRtpPtr().isEmpty()) {
-				throw new RtspLowInvalidRrException("Transport Client RTP TCP channel must be set");
-			}
-			if (hdValue.tpSubStream.getClientTcpChannRtcpPtr().isEmpty()) {
-				throw new RtspLowInvalidRrException("Transport Client RTCP TCP channel must be set");
-			}
-			if (hdValue.tpSubStream.getClientTcpChannRtpPtr().equals(hdValue.tpSubStream.getClientTcpChannRtcpPtr())) {
-				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP TCP channels must be different");
-			}
-			sb
-					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientTcpChannRtpPtr().getChannel8bit().orElseThrow()))
-					.append("-")
-					.append(Integer.toUnsignedString(hdValue.tpSubStream.getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()));
-		}
-
-		if (! isForRequest && hdValue.tpSubStream.getIsUnicast() && ! hdValue.tpSsrcId.isEmpty()) {
-			sb
-					.append(";")
-					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
-					.append(hdValue.tpSsrcId.toHexString(false));
-		}
-
-		if (isForRequest && hdValue.tpMode != RtspTransportMode.NONE) {
-			sb
-					.append(";")
-					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_MODE)
-					.append(hdValue.tpMode.getStrValue());
 		}
 
 		return sb.toString();
+	}
+
+	public static void helperBuildHeaderValue_transport_single(
+				RtspProtoHeaderTypeTransport.@NonNull TpOption hdValueTpOpt,
+				boolean isForRequest,
+				StringBuilder outputSb
+			) throws RtspLowInvalidRrException {
+		if (hdValueTpOpt.tpSubStream.getIsUdp()) {
+			outputSb.append(hdValueTpOpt.tpSubStream.getIsEncr() ?
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPUDP2
+					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPUDP2);
+		} else {
+			outputSb.append(hdValueTpOpt.tpSubStream.getIsEncr() ?
+					RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP
+					: RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPAVPTCP);
+		}
+		outputSb.append(";");
+
+		if (! hdValueTpOpt.tpSubStream.getIsUnicast()) {
+			throw new RtspLowInvalidRrException("No other Transport Delivery than Unicast is supported");
+		}
+		outputSb.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST).append(";");
+
+		if (! isForRequest) {
+			if (! hdValueTpOpt.tpSourceIpOrHost.isBlank()) {
+				outputSb
+						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SOURCEIP)
+						.append(hdValueTpOpt.tpSourceIpOrHost).append(";");
+			}
+			if (! hdValueTpOpt.tpDestIpOrHost.isBlank()) {
+				outputSb
+						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_DESTIP)
+						.append(hdValueTpOpt.tpDestIpOrHost).append(";");
+			}
+		}
+
+		if (hdValueTpOpt.tpSubStream.getIsUdp()) {
+			if (hdValueTpOpt.tpSubStream.getClientUdpPortRtpPtr().isEmpty()) {
+				throw new RtspLowInvalidRrException("Transport Client RTP UDP port must be set");
+			}
+			if (hdValueTpOpt.tpSubStream.getClientUdpPortRtcpPtr().isEmpty()) {
+				throw new RtspLowInvalidRrException("Transport Client RTCP UDP port must be set");
+			}
+			if (hdValueTpOpt.tpSubStream.getClientUdpPortRtpPtr().equals(hdValueTpOpt.tpSubStream.getClientUdpPortRtcpPtr())) {
+				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP UDP ports must be different");
+			}
+			outputSb
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT)
+					.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getClientUdpPortRtpPtr().getPort16bit().orElseThrow()))
+					.append("-")
+					.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getClientUdpPortRtcpPtr().getPort16bit().orElseThrow()));
+			if (! isForRequest) {
+				outputSb.append(";");
+				if (hdValueTpOpt.tpSubStream.getServerUdpPortRtpPtr().isEmpty()) {
+					throw new RtspLowInvalidRrException("Transport Server RTP UDP port must be set");
+				}
+				if (hdValueTpOpt.tpSubStream.getServerUdpPortRtcpPtr().isEmpty()) {
+					throw new RtspLowInvalidRrException("Transport Server RTCP UDP port must be set");
+				}
+				if (hdValueTpOpt.tpSubStream.getServerUdpPortRtpPtr().equals(hdValueTpOpt.tpSubStream.getServerUdpPortRtcpPtr())) {
+					throw new RtspLowInvalidRrException("Transport Server RTP and RTCP UDP ports must be different");
+				}
+				outputSb
+						.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT)
+						.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getServerUdpPortRtpPtr().getPort16bit().orElseThrow()))
+						.append("-")
+						.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getServerUdpPortRtcpPtr().getPort16bit().orElseThrow()));
+			}
+		} else {
+			if (hdValueTpOpt.tpSubStream.getClientTcpChannRtpPtr().isEmpty()) {
+				throw new RtspLowInvalidRrException("Transport Client RTP TCP channel must be set");
+			}
+			if (hdValueTpOpt.tpSubStream.getClientTcpChannRtcpPtr().isEmpty()) {
+				throw new RtspLowInvalidRrException("Transport Client RTCP TCP channel must be set");
+			}
+			if (hdValueTpOpt.tpSubStream.getClientTcpChannRtpPtr().equals(hdValueTpOpt.tpSubStream.getClientTcpChannRtcpPtr())) {
+				throw new RtspLowInvalidRrException("Transport Client RTP and RTCP TCP channels must be different");
+			}
+			outputSb
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED)
+					.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getClientTcpChannRtpPtr().getChannel8bit().orElseThrow()))
+					.append("-")
+					.append(Integer.toUnsignedString(hdValueTpOpt.tpSubStream.getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()));
+		}
+
+		if (! isForRequest && hdValueTpOpt.tpSubStream.getIsUnicast() && ! hdValueTpOpt.tpSsrcId.isEmpty()) {
+			outputSb
+					.append(";")
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SSRC)  // only valid for unicast transmission
+					.append(hdValueTpOpt.tpSsrcId.toHexString(false));
+		}
+
+		if (isForRequest && hdValueTpOpt.tpMode != RtspTransportMode.NONE) {
+			outputSb
+					.append(";")
+					.append(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_MODE)
+					.append(hdValueTpOpt.tpMode.getStrValue());
+		}
 	}
 
 }

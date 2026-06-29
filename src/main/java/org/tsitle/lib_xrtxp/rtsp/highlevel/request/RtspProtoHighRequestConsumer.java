@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeTransport;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
@@ -33,6 +34,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class RtspProtoHighRequestConsumer {
 
@@ -717,48 +719,43 @@ public final class RtspProtoHighRequestConsumer {
 		if (rscUrlObj.idSubStream.isEmpty()) {
 			throw new RtspProtoInvalidRequestException("No Sub-Stream ID in SETUP request");
 		}
+		if (headerEntry.hdValTransport.tpOptions.isEmpty()) {
+			throw new RtspProtoInvalidRequestException("Received Transport header without options");
+		}
 
 		if (! ioSetupInfosStream.containsSiForSubStreamId(rscUrlObj.idSubStream)) {
 			throw new RtspProtoInvalidRequestException(FNC_NAME + ": Sub-Stream info not found");
 		}
+
+		// find transport option that is acceptable
+		RtspProtoDataCntSubStreamTp tmpInpSsTp = new RtspProtoDataCntSubStreamTp();
+		List<String> excMsgUnsTp = new ArrayList<>();
+		int tpOptIx = -1;
+		boolean wasOk = false;
+		for (RtspProtoHeaderTypeTransport.TpOption tmpTpOption : headerEntry.hdValTransport.tpOptions) {
+			++tpOptIx;
+			tmpInpSsTp.copyFrom(tmpTpOption.tpSubStream);
+			excMsgUnsTp.add("");
+			try {
+				checkSetupTransportOption(tpOptIx, ioStreamTpMain, tmpInpSsTp);
+			} catch (RtspProtoUnsupportedTransportException e) {
+				excMsgUnsTp.set(tpOptIx, e.getMessage());
+				continue;
+			}
+			wasOk = true;
+			break;
+		}
+
+		if (! wasOk) {
+			String excMsg = excMsgUnsTp.stream().filter(s -> ! s.isEmpty()).collect(Collectors.joining(", "));
+			throw new RtspProtoUnsupportedTransportException("Invalid Transport(s): " + excMsg);
+		}
+
+		// copy transport option
 		RtspProtoSetupInfoForSubStream tmpSiSsPtr = ioSetupInfosStream.getSiPtrBySubStreamId(rscUrlObj.idSubStream).orElseThrow();
+		tmpSiSsPtr.getSubStreamTpPtr().copyFrom(tmpInpSsTp);
 
-		// copy settings
-		tmpSiSsPtr.getSubStreamTpPtr().copyFrom(headerEntry.hdValTransport.tpSubStream);
-		if (tmpSiSsPtr.getSubStreamTpPtr().getIsUdp()) {
-			if (tmpSiSsPtr.getSubStreamTpPtr().getClientUdpPortRtpPtr().isEmpty()) {
-				throw new RtspProtoInvalidRequestException("No client UDP RTP port in SETUP request");
-			}
-			if (tmpSiSsPtr.getSubStreamTpPtr().getClientUdpPortRtcpPtr().isEmpty()) {
-				throw new RtspProtoInvalidRequestException("No client UDP RTCP port in SETUP request");
-			}
-		} else {
-			if (tmpSiSsPtr.getSubStreamTpPtr().getClientTcpChannRtpPtr().isEmpty()) {
-				throw new RtspProtoInvalidRequestException("No client TCP RTP channel in SETUP request");
-			}
-			if (tmpSiSsPtr.getSubStreamTpPtr().getClientTcpChannRtcpPtr().isEmpty()) {
-				throw new RtspProtoInvalidRequestException("No client TCP RTCP channel in SETUP request");
-			}
-		}
-
-		//
-		if (ioStreamTpMain.getForceRtpRtcpEncryption() && ! tmpSiSsPtr.getSubStreamTpPtr().getIsEncr()) {
-			logWarn(FNC_NAME, "Client requested unencrypted Transport but server will force encryption");
-			tmpSiSsPtr.getSubStreamTpPtr().setIsEncr(true);
-		}
-
-		//
-		try {
-			tmpSiSsPtr.isTransportValid(
-					ioStreamTpMain.getRtpRtcpEncryptionRequired(),
-					ioStreamTpMain.getForceRtpRtcpEncryption(),
-					ioStreamTpMain.getIsRtspsConnection(),
-					cfgIsDebugDisableTransportUdp
-				);
-		} catch (RtspProtoInvalidTpSettingsException e) {
-			throw new RtspProtoUnsupportedTransportException("Invalid Transport: " + e.getMessage());
-		}
-
+		// update main stream transport settings
 		if (tmpSiSsPtr.getSubStreamTpPtr().getIsUdp()) {  // only update one-way
 			ioStreamTpMain.setIsTransportUdp(true);
 		}
@@ -818,6 +815,53 @@ public final class RtspProtoHighRequestConsumer {
 			return false;
 		}
 		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkSetupTransportOption(
+				int tpOptIx,
+				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain,
+				@NonNull RtspProtoDataCntSubStreamTp ioSsTp
+			) throws RtspProtoInvalidRequestException, RtspProtoUnsupportedTransportException {
+		final String FNC_NAME = getClass().getSimpleName() + ".checkSetupTransportOption()";
+
+		String errMsgPrefix = "TpOptIx=" + Integer.toUnsignedString(tpOptIx) + ": ";
+
+		// check settings
+		if (ioSsTp.getIsUdp()) {
+			if (ioSsTp.getClientUdpPortRtpPtr().isEmpty()) {
+				throw new RtspProtoInvalidRequestException(errMsgPrefix + "No client UDP RTP port in SETUP request");
+			}
+			if (ioSsTp.getClientUdpPortRtcpPtr().isEmpty()) {
+				throw new RtspProtoInvalidRequestException(errMsgPrefix + "No client UDP RTCP port in SETUP request");
+			}
+		} else {
+			if (ioSsTp.getClientTcpChannRtpPtr().isEmpty()) {
+				throw new RtspProtoInvalidRequestException(errMsgPrefix + "No client TCP RTP channel in SETUP request");
+			}
+			if (ioSsTp.getClientTcpChannRtcpPtr().isEmpty()) {
+				throw new RtspProtoInvalidRequestException(errMsgPrefix + "No client TCP RTCP channel in SETUP request");
+			}
+		}
+
+		//
+		if (ioStreamTpMain.getForceRtpRtcpEncryption() && ! ioSsTp.getIsEncr()) {
+			logWarn(FNC_NAME, errMsgPrefix + "Client requested unencrypted Transport but server will force encryption");
+			ioSsTp.setIsEncr(true);
+		}
+
+		//
+		try {
+			ioSsTp.isTransportValid(
+					ioStreamTpMain.getRtpRtcpEncryptionRequired(),
+					ioStreamTpMain.getForceRtpRtcpEncryption(),
+					ioStreamTpMain.getIsRtspsConnection(),
+					cfgIsDebugDisableTransportUdp
+				);
+		} catch (RtspProtoInvalidTpSettingsException e) {
+			throw new RtspProtoUnsupportedTransportException(errMsgPrefix + "Invalid Transport: " + e.getMessage());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

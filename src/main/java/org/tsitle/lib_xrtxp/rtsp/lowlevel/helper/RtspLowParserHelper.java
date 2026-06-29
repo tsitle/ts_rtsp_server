@@ -253,18 +253,16 @@ public final class RtspLowParserHelper {
 				@NonNull List<@NonNull String> outputWarnings
 			) throws RtspLowInvalidRrException {
 		/*
-		 * @TODO remove example once support for multiple transports has been implemented
 		 * Example:
 		 *   Request:
-		 *     "RTP/AVP;unicast;client_port=1050-1051"
-		 *     or
-		 *     "RTP/AVP/TCP;interleaved=0-1"
-		 *     or
-		 *     "RTP/AVP;multicast;ttl=127;mode=\"PLAY\",RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
+		 *     single transport option acceptable to the client:
+		 *       "RTP/AVP;unicast;client_port=1050-1051"
+		 *     multiple transport options that are acceptable to the client:
+		 *       "RTP/AVP;multicast;ttl=127;mode=\"PLAY\",RTP/AVP;unicast;client_port=3456-3457;mode=\"PLAY\""
 		 *   Response:
-		 *     "RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=1050-1051;server_port=6970-6971;ssrc=DEADBEEF"
+		 *       "RTP/AVP;unicast;destination=10.55.0.5;source=192.168.5.20;client_port=1050-1051;server_port=6970-6971;ssrc=DEADBEEF"
 		 *     or
-		 *     "RTP/AVP/TCP;interleaved=0-1"
+		 *       "RTP/AVP/TCP;interleaved=0-1"
 		 * See https://datatracker.ietf.org/doc/html/rfc2326#section-12.39
 		 *
 		 * Currently, there is no support for RTSP v2.0 style Transport parameters
@@ -272,7 +270,9 @@ public final class RtspLowParserHelper {
 		 */
 
 		for (String tmpPart : hdValue.split(",")) {
-			parseOneTransportVariant(tmpPart.strip(), isForRequest, outputHd, outputWarnings);
+			RtspProtoHeaderTypeTransport.@NonNull TpOption tmpOutputTpOpt = new RtspProtoHeaderTypeTransport.TpOption();
+			parseOneTransportVariant(tmpPart.strip(), isForRequest, tmpOutputTpOpt, outputWarnings);
+			outputHd.tpOptions.add(tmpOutputTpOpt);
 		}
 	}
 
@@ -338,7 +338,7 @@ public final class RtspLowParserHelper {
 	private static void parseOneTransportVariant(
 				@NonNull String hdPartValue,
 				boolean isForRequest,
-				@NonNull RtspProtoHeaderTypeTransport outputHd,
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt,
 				@NonNull List<@NonNull String> outputWarnings
 			) throws RtspLowInvalidRrException {
 		/*
@@ -385,17 +385,17 @@ public final class RtspLowParserHelper {
 			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_RTPSAVPTCP.equalsIgnoreCase(curTokenAsIs)) {
 				rawTransportProfileLowerTp = InternalTpProfLtp.RTP_SAVP_TCP;
 			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_UNICAST.equalsIgnoreCase(curTokenAsIs)) {
-				outputHd.tpSubStream.setIsUnicast(true);
+				outputTpOpt.tpSubStream.setIsUnicast(true);
 			} else if (RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_VAL_SET_TP_MULTICAST.equalsIgnoreCase(curTokenAsIs)) {
-				outputHd.tpSubStream.setIsUnicast(false);
+				outputTpOpt.tpSubStream.setIsUnicast(false);
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.toLowerCase())) {
 				rawClientPorts = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_CLIENTPORT.length());
 				rawClientPorts = rawClientPorts.strip();
-				outputHd.tpSubStream.setIsInterleaved(false);
+				outputTpOpt.tpSubStream.setIsInterleaved(false);
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.toLowerCase())) {
 				rawClientChanns = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_INTERLEAVED.length());
 				rawClientChanns = rawClientChanns.strip();
-				outputHd.tpSubStream.setIsInterleaved(true);
+				outputTpOpt.tpSubStream.setIsInterleaved(true);
 			} else if (curTokenLc.startsWith(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT.toLowerCase())) {
 				rawServerPorts = curTokenAsIs.substring(RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TP_SERVERPORT.length());
 				rawServerPorts = rawServerPorts.strip();
@@ -417,51 +417,51 @@ public final class RtspLowParserHelper {
 		}
 
 		// parse Transport/Profile/Lower-Transport
-		parseTransportParam_tpProfLtp(rawTransportProfileLowerTp, outputHd);
+		parseTransportParam_tpProfLtp(rawTransportProfileLowerTp, outputTpOpt);
 		// check Unicast/Multicast
-		checkTransportParam_delivery(rawClientPorts, rawClientChanns, rawServerPorts, outputHd);
+		checkTransportParam_delivery(rawClientPorts, rawClientChanns, rawServerPorts, outputTpOpt);
 		// check Interleaved
-		checkTransportParam_interleaved(outputHd);
+		checkTransportParam_interleaved(outputTpOpt);
 		// parse client UDP ports
-		if (outputHd.tpSubStream.getIsUdp() && outputHd.tpSubStream.getIsUnicast()) {
-			parseTransportParam_clientUdpPorts(rawClientPorts, outputHd);
+		if (outputTpOpt.tpSubStream.getIsUdp() && outputTpOpt.tpSubStream.getIsUnicast()) {
+			parseTransportParam_clientUdpPorts(rawClientPorts, outputTpOpt);
 		}
 		// parse client TCP channels
-		if (! outputHd.tpSubStream.getIsUdp() && outputHd.tpSubStream.getIsUnicast()) {
-			parseTransportParam_clientTcpChanns(rawClientChanns, outputHd);
+		if (! outputTpOpt.tpSubStream.getIsUdp() && outputTpOpt.tpSubStream.getIsUnicast()) {
+			parseTransportParam_clientTcpChanns(rawClientChanns, outputTpOpt);
 		}
 		// parse server UDP ports
-		if (outputHd.tpSubStream.getIsUdp() && outputHd.tpSubStream.getIsUnicast()) {
-			parseTransportParam_serverUdpPorts(rawServerPorts, isForRequest, outputHd);
+		if (outputTpOpt.tpSubStream.getIsUdp() && outputTpOpt.tpSubStream.getIsUnicast()) {
+			parseTransportParam_serverUdpPorts(rawServerPorts, isForRequest, outputTpOpt);
 		}
 		// parse Source and Destination IPs
-		parseTransportParam_sourceDestIps(rawSourceIp, rawDestIp, isForRequest, outputHd);
+		parseTransportParam_sourceDestIps(rawSourceIp, rawDestIp, isForRequest, outputTpOpt);
 		// parse SSRC ID
-		parseTransportParam_ssrc(rawSsrc, isForRequest, outputHd);
+		parseTransportParam_ssrc(rawSsrc, isForRequest, outputTpOpt);
 		// parse Mode
-		parseTransportParam_mode(rawMode, outputHd);
+		parseTransportParam_mode(rawMode, outputTpOpt);
 	}
 
 	private static void parseTransportParam_tpProfLtp(
 				@NonNull InternalTpProfLtp rawTransportProfileLowerTp,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		switch (rawTransportProfileLowerTp) {
 			case InternalTpProfLtp.RTP_AVP_UDP -> {
-				outputHd.tpSubStream.setIsUdp(true);
-				outputHd.tpSubStream.setIsEncr(false);
+				outputTpOpt.tpSubStream.setIsUdp(true);
+				outputTpOpt.tpSubStream.setIsEncr(false);
 			}
 			case InternalTpProfLtp.RTP_SAVP_UDP -> {
-				outputHd.tpSubStream.setIsUdp(true);
-				outputHd.tpSubStream.setIsEncr(true);
+				outputTpOpt.tpSubStream.setIsUdp(true);
+				outputTpOpt.tpSubStream.setIsEncr(true);
 			}
 			case InternalTpProfLtp.RTP_AVP_TCP -> {
-				outputHd.tpSubStream.setIsUdp(false);
-				outputHd.tpSubStream.setIsEncr(false);
+				outputTpOpt.tpSubStream.setIsUdp(false);
+				outputTpOpt.tpSubStream.setIsEncr(false);
 			}
 			case InternalTpProfLtp.RTP_SAVP_TCP -> {
-				outputHd.tpSubStream.setIsUdp(false);
-				outputHd.tpSubStream.setIsEncr(true);
+				outputTpOpt.tpSubStream.setIsUdp(false);
+				outputTpOpt.tpSubStream.setIsEncr(true);
 			}
 			default -> throw new RtspLowInvalidRrException("Missing Transport parameter Tp/Prof/LowerTp");
 		}
@@ -471,31 +471,31 @@ public final class RtspLowParserHelper {
 				@NonNull String rawClientPorts,
 				@NonNull String rawClientChanns,
 				@NonNull String rawServerPorts,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
-		if (! (outputHd.tpSubStream.getIsUdp() || outputHd.tpSubStream.getIsUnicast())) {
+		if (! (outputTpOpt.tpSubStream.getIsUdp() || outputTpOpt.tpSubStream.getIsUnicast())) {
 			throw new RtspLowInvalidRrException("Cannot combine TCP with Multicast");
 		}
-		if (! outputHd.tpSubStream.getIsUnicast() &&
+		if (! outputTpOpt.tpSubStream.getIsUnicast() &&
 				(! (rawClientPorts.isBlank() && rawClientChanns.isBlank() && rawServerPorts.isBlank()))) {
 			throw new RtspLowInvalidRrException("Cannot combine Multicast with individual ports/channels");
 		}
 	}
 
 	private static void checkTransportParam_interleaved(
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
-		if (outputHd.tpSubStream.getIsUdp() && outputHd.tpSubStream.getIsInterleaved()) {
+		if (outputTpOpt.tpSubStream.getIsUdp() && outputTpOpt.tpSubStream.getIsInterleaved()) {
 			throw new RtspLowInvalidRrException("Cannot combine UDP with Interleaved");
 		}
-		if (! (outputHd.tpSubStream.getIsUdp() || outputHd.tpSubStream.getIsInterleaved())) {
+		if (! (outputTpOpt.tpSubStream.getIsUdp() || outputTpOpt.tpSubStream.getIsInterleaved())) {
 			throw new RtspLowInvalidRrException("TCP must use Interleaved");
 		}
 	}
 
 	private static void parseTransportParam_clientUdpPorts(
 				@NonNull String rawClientPorts,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		final String fieldDesc = "Transport parameter Client UDP Ports";
 		if (rawClientPorts.isBlank()) {
@@ -507,8 +507,8 @@ public final class RtspLowParserHelper {
 					"expected two ports");
 		}
 		try {
-			outputHd.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
+			outputTpOpt.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
+			outputTpOpt.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientPorts + "' - " +
 					"cannot parse ports, invalid format");
@@ -520,7 +520,7 @@ public final class RtspLowParserHelper {
 
 	private static void parseTransportParam_clientTcpChanns(
 				@NonNull String rawClientChanns,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		final String fieldDesc = "Transport parameter Client TCP Channels";
 		if (rawClientChanns.isBlank()) {
@@ -532,8 +532,8 @@ public final class RtspLowParserHelper {
 					"expected two channels");
 		}
 		try {
-			outputHd.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(Integer.parseInt(tmpPorts[1]));
+			outputTpOpt.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(Integer.parseInt(tmpPorts[0]));
+			outputTpOpt.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawClientChanns + "' - " +
 					"cannot parse channels, invalid format");
@@ -546,7 +546,7 @@ public final class RtspLowParserHelper {
 	private static void parseTransportParam_serverUdpPorts(
 				@NonNull String rawServerPorts,
 				boolean isForRequest,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		final String fieldDesc = "Transport parameter Server UDP Ports";
 		if (isForRequest) {
@@ -564,8 +564,8 @@ public final class RtspLowParserHelper {
 					"expected two ports");
 		}
 		try {
-			outputHd.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
-			outputHd.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
+			outputTpOpt.tpSubStream.getServerUdpPortRtpPtr().setPort16bit(Integer.parseInt(tmpPorts[0]));
+			outputTpOpt.tpSubStream.getServerUdpPortRtcpPtr().setPort16bit(Integer.parseInt(tmpPorts[1]));
 		} catch (NumberFormatException e) {
 			throw new RtspLowInvalidRrException("Invalid " + fieldDesc + ": '" + rawServerPorts + "' - " +
 					"cannot parse ports, invalid format");
@@ -579,7 +579,7 @@ public final class RtspLowParserHelper {
 				@NonNull String rawSourceIp,
 				@NonNull String rawDestIp,
 				boolean isForRequest,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		if (isForRequest) {
 			if (! (rawSourceIp.isBlank() && rawDestIp.isBlank())) {
@@ -588,14 +588,14 @@ public final class RtspLowParserHelper {
 			}
 			return;
 		}
-		outputHd.tpSourceIpOrHost = rawSourceIp;  // can be empty
-		outputHd.tpDestIpOrHost = rawDestIp;  // can be empty
+		outputTpOpt.tpSourceIpOrHost = rawSourceIp;  // can be empty
+		outputTpOpt.tpDestIpOrHost = rawDestIp;  // can be empty
 	}
 
 	private static void parseTransportParam_ssrc(
 				@NonNull String rawSsrc,
 				boolean isForRequest,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) throws RtspLowInvalidRrException {
 		final String fieldDesc = "Transport parameter SSRC";
 		if (isForRequest) {
@@ -605,14 +605,14 @@ public final class RtspLowParserHelper {
 			return;
 		}
 		if (rawSsrc.isBlank()) {
-			outputHd.tpSsrcId.clear();  // can be empty
+			outputTpOpt.tpSsrcId.clear();  // can be empty
 			return;
 		}
-		if (! outputHd.tpSubStream.getIsUnicast()) {
+		if (! outputTpOpt.tpSubStream.getIsUnicast()) {
 			throw new RtspLowInvalidRrException(fieldDesc + " is only valid for Unicast");
 		}
 		try {
-			outputHd.tpSsrcId.setId32bit(
+			outputTpOpt.tpSsrcId.setId32bit(
 					helperParseHexStringIntoLong(fieldDesc, rawSsrc)
 				);
 		} catch (RtspProtoNumberRangeException e) {
@@ -623,13 +623,13 @@ public final class RtspLowParserHelper {
 
 	private static void parseTransportParam_mode(
 				@NonNull String rawMode,
-				@NonNull RtspProtoHeaderTypeTransport outputHd
+				RtspProtoHeaderTypeTransport.@NonNull TpOption outputTpOpt
 			) {
 		if (rawMode.isBlank()) {
-			outputHd.tpMode = RtspTransportMode.NONE;
+			outputTpOpt.tpMode = RtspTransportMode.NONE;
 			return;
 		}
-		outputHd.tpMode = RtspTransportMode.of(rawMode);
+		outputTpOpt.tpMode = RtspTransportMode.of(rawMode);
 	}
 
 }

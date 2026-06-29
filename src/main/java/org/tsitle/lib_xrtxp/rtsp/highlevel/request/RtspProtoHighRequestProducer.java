@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighUdpPorts;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeTransport;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
@@ -489,30 +490,34 @@ public final class RtspProtoHighRequestProducer {
 
 			//
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.TRANSPORT);
-			hdEntry.hdValTransport.tpSubStream.setIsUdp(ssTp.getIsUdp());
-			hdEntry.hdValTransport.tpSubStream.setIsInterleaved(ssTp.getIsInterleaved());
-			hdEntry.hdValTransport.tpSubStream.setIsUnicast(ssTp.getIsUnicast());
-			hdEntry.hdValTransport.tpSubStream.setIsEncr(ssTp.getIsEncr());
-			hdEntry.hdValTransport.tpMode = RtspTransportMode.PLAY;
+			RtspProtoHeaderTypeTransport.TpOption tmpOutpTpOpt = new RtspProtoHeaderTypeTransport.TpOption();
+
+			tmpOutpTpOpt.tpSubStream.setIsUdp(ssTp.getIsUdp());
+			tmpOutpTpOpt.tpSubStream.setIsInterleaved(ssTp.getIsInterleaved());
+			tmpOutpTpOpt.tpSubStream.setIsUnicast(ssTp.getIsUnicast());
+			tmpOutpTpOpt.tpSubStream.setIsEncr(ssTp.getIsEncr());
+			tmpOutpTpOpt.tpMode = RtspTransportMode.PLAY;
 			if (setupUseTransportUdp) {
 				try {
-					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtpPtr().getLocalPort());
-					hdEntry.hdValTransport.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtcpPtr().getLocalPort());
+					tmpOutpTpOpt.tpSubStream.getClientUdpPortRtpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtpPtr().getLocalPort());
+					tmpOutpTpOpt.tpSubStream.getClientUdpPortRtcpPtr().setPort16bit(siForSsPtr.getClientUdpSocketRtcpPtr().getLocalPort());
 				} catch (RtspProtoNumberRangeException e) {
 					throw new RtspProtoInvalidRequestException(FNC_NAME + ": Setting Client UDP ports failed: " + e.getMessage());
 				}
 			} else {
 				try {
-					hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(
+					tmpOutpTpOpt.tpSubStream.getClientTcpChannRtpPtr().setChannel8bit(
 							ssTp.getClientTcpChannRtpPtr().getChannel8bit().orElseThrow()
 						);
-					hdEntry.hdValTransport.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(
+					tmpOutpTpOpt.tpSubStream.getClientTcpChannRtcpPtr().setChannel8bit(
 							ssTp.getClientTcpChannRtcpPtr().getChannel8bit().orElseThrow()
 						);
 				} catch (RtspProtoNumberRangeException e) {
 					// this will never happen
 				}
 			}
+
+			hdEntry.hdValTransport.tpOptions.add(tmpOutpTpOpt);
 			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
