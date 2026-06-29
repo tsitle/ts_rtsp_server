@@ -85,21 +85,6 @@ public class RtspConfig {
 	}
 
 	private static class SectionLogging {
-		/** Debugging: print the RTSP messages that have been received from the client? */
-		@Expose
-		private final boolean debugPrintRtspRcvd;
-		/** Debugging: print the RTSP messages that have been sent to the client? */
-		@Expose
-		private final boolean debugPrintRtspSent;
-		/** Debugging: print the RTSP SDP description that has been sent to the client? */
-		@Expose
-		private final boolean debugPrintRtspSdpSent;
-		/** Debugging: rewind the media files? */
-		@Expose
-		private final boolean debugRewindMediaFiles;
-		/** Debugging: disable UDP transport? */
-		@Expose
-		private boolean debugDisableTransportUdp;
 		/** Log level (INFO, DEBUG, WARN, ERROR) */
 		@Expose
 		private @NonNull String logLevel;
@@ -111,11 +96,6 @@ public class RtspConfig {
 		private @Nullable RtxpLogLevel internalLogLevel;
 
 		public SectionLogging() {
-			this.debugPrintRtspRcvd = false;
-			this.debugPrintRtspSent = false;
-			this.debugPrintRtspSdpSent = false;
-			this.debugRewindMediaFiles = false;
-			this.debugDisableTransportUdp = false;
 			this.logLevel = RtxpLogLevel.INFO.name();
 			this.outputs = new SectionLogOutputs();
 
@@ -137,12 +117,41 @@ public class RtspConfig {
 		}
 	}
 
+	private static class SectionDebugging {
+		/** Debugging: print the RTSP messages that have been received from the client? */
+		@Expose
+		private final boolean debugPrintRtspRcvd;
+		/** Debugging: print the RTSP messages that have been sent to the client? */
+		@Expose
+		private final boolean debugPrintRtspSent;
+		/** Debugging: print the RTSP SDP description that has been sent to the client? */
+		@Expose
+		private final boolean debugPrintRtspSdpSent;
+		/** Debugging: rewind the media files? */
+		@Expose
+		private final boolean debugRewindMediaFiles;
+		/** Debugging: disable UDP transport? */
+		@Expose
+		private boolean debugDisableTransportUdp;
+
+		public SectionDebugging() {
+			this.debugPrintRtspRcvd = false;
+			this.debugPrintRtspSent = false;
+			this.debugPrintRtspSdpSent = false;
+			this.debugRewindMediaFiles = false;
+			this.debugDisableTransportUdp = false;
+		}
+	}
+
 	/** Main configuration */
 	@Expose
 	private final @NonNull SectionServer server;
 	/** Logging configuration */
 	@Expose
 	private final @NonNull SectionLogging logging;
+	/** Debugging configuration */
+	@Expose
+	private final @NonNull SectionDebugging debugging;
 	/** Map of User Accounts (the map keys are unique usernames) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull String> userAccounts;
@@ -178,6 +187,7 @@ public class RtspConfig {
 	public RtspConfig() {
 		this.server = new SectionServer();
 		this.logging = new SectionLogging();
+		this.debugging = new SectionDebugging();
 		this.userAccounts = new HashMap<>();
 		this.userAccountGroups = new HashMap<>();
 		this.remoteMqServerSslCertificates = new HashMap<>();
@@ -419,7 +429,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspRcvd() {
 		checkPostProcessed();
-		return logging.debugPrintRtspRcvd;
+		return debugging.debugPrintRtspRcvd;
 	}
 
 	/**
@@ -428,7 +438,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspSent() {
 		checkPostProcessed();
-		return logging.debugPrintRtspSent;
+		return debugging.debugPrintRtspSent;
 	}
 
 	/**
@@ -437,7 +447,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugPrintRtspSdpSent() {
 		checkPostProcessed();
-		return logging.debugPrintRtspSdpSent;
+		return debugging.debugPrintRtspSdpSent;
 	}
 
 	/**
@@ -446,7 +456,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugRewindMediaFiles() {
 		checkPostProcessed();
-		return logging.debugRewindMediaFiles;
+		return debugging.debugRewindMediaFiles;
 	}
 
 	/**
@@ -455,7 +465,7 @@ public class RtspConfig {
 	 */
 	public boolean getIsDebugDisableTransportUdp() {
 		checkPostProcessed();
-		return logging.debugDisableTransportUdp;
+		return debugging.debugDisableTransportUdp;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -569,6 +579,7 @@ public class RtspConfig {
 		//
 		validateSectionServer();
 		validateSectionLogging();
+		validateSectionDebugging();
 		validateSectionsUserAcc();
 		validateSectionUag();
 		validateSectionMqSslCerts();
@@ -659,6 +670,10 @@ public class RtspConfig {
 		if (getLoggingEnabledOutputFile() && getLoggingOutputFilename().isBlank()) {
 			throw new ConfigInvalidException(FNC_NAME + ": Logging to file is enabled but 'logging.outputs.filename' is empty");
 		}
+	}
+
+	private void validateSectionDebugging() {
+		// nothing to do
 	}
 
 	private void validateSectionsUserAcc() throws ConfigInvalidException {
