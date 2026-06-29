@@ -29,7 +29,6 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryReques
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.sdp.RtspProtoSdpConsumer;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpConsumerInterface;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
@@ -1074,7 +1073,7 @@ class RtspProtoHighRequestConsumerTest {
 		if (! generatedSubStreamId.isEmpty()) {
 			RtspProtoRscUrl tmpRscUrlObj = RtspProtoRscUrl.of(
 					inputMsgStructured.resourceUrl,
-					RtspProtoIdInputSource.of("someInSo"),
+					RtspProtoIdInputSource.of("existing_stream"),
 					generatedSubStreamId
 				);
 			ioSetupInfosStream.createAndAddSetupSubStream(
@@ -1099,10 +1098,6 @@ class RtspProtoHighRequestConsumerTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull LogMsgInterface buildLogMsgIf() {
-		return new TestLogs();
-	}
-
 	private static @NonNull RtspProtoSessionInfo buildRtspSessionInfo(@NonNull RtspProtoSessionState sessionState)
 			throws RtspProtoSessionInfoException {
 		RtspProtoSessionInfo resObj = new RtspProtoSessionInfo();
@@ -1118,10 +1113,6 @@ class RtspProtoHighRequestConsumerTest {
 			resObj.moveToNextSessionState(RtspProtoMessageType.SETUP);
 		}
 		return resObj;
-	}
-
-	private static @NonNull RtspProtoSdpConsumerInterface buildSdpConsumer() {
-		return new RtspProtoSdpConsumer();
 	}
 
 	private @NonNull RtspProtoGlobalSessionInfoSvc buildGlobalSessionInfoSvc() {
@@ -1155,13 +1146,13 @@ class RtspProtoHighRequestConsumerTest {
 		final boolean cfgIsDebugDisableTransportUdp = false;
 
 		return new RtspProtoHighRequestConsumer(
-				buildLogMsgIf(),
+				new TestLogs(),
 				true,
 				cfgSrvSuppIncomingMts,
 				Set.of(),
 				Set.of(),
 				cfgIsDebugDisableTransportUdp,
-				buildSdpConsumer(),
+				new RtspProtoSdpConsumer(),
 				new AvailableStreams(),
 				globalSessionInfoSvc,
 				null

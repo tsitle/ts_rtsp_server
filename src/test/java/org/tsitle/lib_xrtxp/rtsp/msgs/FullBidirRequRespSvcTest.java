@@ -384,7 +384,7 @@ public class FullBidirRequRespSvcTest {
 	@Test
 	void test_options_on_substream_noCrypto() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
-		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_no_encr";
 		final boolean useTransportUdp = true;
 
 		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
@@ -415,7 +415,7 @@ public class FullBidirRequRespSvcTest {
 	@Test
 	void test_setGetParam_on_substream_noCrypto() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
-		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_no_encr";
 		final boolean useTransportUdp = true;
 
 		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
@@ -545,7 +545,7 @@ public class FullBidirRequRespSvcTest {
 	@Test
 	void test_play_pause_teardown_noCrypto() throws Exception {
 		final ClientType ct = ClientType.MIKEY;
-		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_with_encr";
+		final String rscUrlStr = "rtsp://localhost/existing_stream_no_auth_no_encr";
 		final boolean useTransportUdp = true;
 
 		RtspProtoSessionInfo cliSessionInfoPtr = cliSessionInfo.get(ct);
