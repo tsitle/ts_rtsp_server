@@ -365,15 +365,20 @@ public final class RtspProtoHighRequestConsumer {
 				input.messageType == RtspProtoMessageType.DESCRIBE ||
 				input.messageType == RtspProtoMessageType.GET_PARAMETER ||
 				input.messageType == RtspProtoMessageType.OPTIONS ||
-				input.messageType == RtspProtoMessageType.SET_PARAMETER ||
-				input.messageType == RtspProtoMessageType.SETUP) {
+				input.messageType == RtspProtoMessageType.SET_PARAMETER) {
 			return;
 		}
 
 		boolean wasOk = false;
 		switch (currentSessionState.getSessionState()) {
+			case INIT:
+				if (input.messageType == RtspProtoMessageType.SETUP) {  // SETUP is allowed in INIT and READY states
+					wasOk = true;
+				}
+				break;
 			case READY:
 				if (input.messageType == RtspProtoMessageType.PLAY ||
+						input.messageType == RtspProtoMessageType.SETUP ||  // SETUP is allowed in INIT and READY states
 						input.messageType == RtspProtoMessageType.TEARDOWN) {  // TEARDOWN is allowed in READY and PLAYING states
 					wasOk = true;
 				}
