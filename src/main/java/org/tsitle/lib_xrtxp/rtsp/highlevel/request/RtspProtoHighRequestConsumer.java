@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
@@ -160,6 +161,12 @@ public final class RtspProtoHighRequestConsumer {
 					RtspProtoIdStreamSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.NOT_FOUND);
+		}
+		try {
+			checkResourceUrlVsSessionInfo(rscUrlObj, ioSetupInfosStream);
+		} catch (RtspProtoInvalidRequestException e) {
+			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
+			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.BAD_REQUEST);
 		}
 
 		// process resource URL query parameters
@@ -443,6 +450,23 @@ public final class RtspProtoHighRequestConsumer {
 				tmpIsObj.getNeedsEncryption()
 			);
 		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkResourceUrlVsSessionInfo(
+				@NonNull RtspProtoRscUrl rscUrl,
+				@NonNull RtspProtoSetupInfosStream inpSetupInfosStream
+			) throws RtspProtoInvalidRequestException {
+		if (inpSetupInfosStream.getNumberOfSubStreams() == 0) {
+			return;
+		}
+		RtspProtoIdInputSource idIsSetup = inpSetupInfosStream.getSiPtrs().iterator().next().getRscUrlSubStreamPtr().idInputSource;
+		if (! idIsSetup.equals(rscUrl.idInputSource)) {
+			throw new RtspProtoInvalidRequestException("Input Source ID in request doesn't match previous SETUP request's Input Source ID " +
+					"(is='" + rscUrl.idInputSource.getIdStr().orElse("-unset-") + "', " +
+					"exp='" + idIsSetup.getIdStr().orElse("-unset-") + "')");
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

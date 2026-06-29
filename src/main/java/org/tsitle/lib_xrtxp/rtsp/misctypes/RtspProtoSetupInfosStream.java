@@ -132,7 +132,6 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 		return Optional.of(resObj.clone());
 	}
 
-	@SuppressWarnings("unused")
 	public int getNumberOfSubStreams() {
 		return (! idSubStream1.isEmpty() ? 1 : 0) + (! idSubStream2.isEmpty() ? 1 : 0);
 	}
