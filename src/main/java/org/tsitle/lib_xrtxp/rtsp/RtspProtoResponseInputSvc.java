@@ -277,7 +277,6 @@ public final class RtspProtoResponseInputSvc {
 
 		// store stream settings from a PLAY response
 		if (! isResponseFromClient && requestMessageType == RtspProtoMessageType.PLAY) {
-			storeSubStreamSettingsFromSetupResponse(dataResp);
 			rtspSessionInfo.setDescrSetupInfosStream(ioSetupInfosStream);
 			return;
 		}
