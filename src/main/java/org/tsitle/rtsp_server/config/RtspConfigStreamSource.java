@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
@@ -410,7 +411,8 @@ public class RtspConfigStreamSource {
 		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdStreamSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
 			AudioStreamOutgoingAacFromFile asoAac = new AudioStreamOutgoingAacFromFile(avStreamIncoming);
-			asoAac.getNextFrame(tmpBuf);
+			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			asoAac.getNextFrame(tmpBuf, tmpStTimestamp);
 
 			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);
 

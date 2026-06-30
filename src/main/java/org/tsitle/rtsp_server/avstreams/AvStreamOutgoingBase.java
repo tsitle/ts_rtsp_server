@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -40,8 +41,9 @@ public abstract class AvStreamOutgoingBase<T extends AvStreamIncomingBase> {
 	/**
 	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
+	 * @param stTimestamp Output for sample-time timestamp
 	 */
-	public abstract void getNextFrame(@NonNull BufferExt frameBuf)
+	public abstract void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
 			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException;
 
 	/**

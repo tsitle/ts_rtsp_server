@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -42,7 +43,8 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, AVSTRO
 
 	public abstract int getInputQueueSize();
 
-	public abstract void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEosException;
+	public abstract void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+			throws InputStreamEosException;
 
 	/**
 	 * Receives a notification about the current congestion level.

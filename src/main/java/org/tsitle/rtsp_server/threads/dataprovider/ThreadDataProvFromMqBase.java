@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingFromMqBase;
 import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingH26xFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -16,6 +17,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	protected boolean haveAllRequiredMetadataPackets = false;
 	private final BufferExt remainingInputBuf = new BufferExt();
+	private final TimestampEpochNs stTimestampCurFrame = TimestampEpochNs.ofEmpty();
 	protected int magicBytesLength = -1;
 	protected byte[] magicBytesArrPtr = null;
 
@@ -87,7 +89,8 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	}
 
 	@Override
-	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEosException {
+	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+			throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		if (haveEos()) {
@@ -97,7 +100,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 			BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
 			if (! needMagicBytes || remainingInputBuf.isEmpty()) {
 				try {
-					mediaOutgoingStream.getNextFrame(readIntoBufPtr);
+					mediaOutgoingStream.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
 				} catch (InputStreamIoException e) {
 					throw new InputStreamEosException();
 				}
@@ -110,6 +113,9 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 				logError(FNC_NAME, "caught: " + e);
 				throw new InputStreamEosException();
 			}
+
+			stTimestamp.copyFrom(stTimestampCurFrame);
+
 			/*
 			 * IP cameras tend to send, for instance, 'SPS', 'PPS' and a VCL NAL Unit in a single packet.
 			 * So we need to find the next magic bytes to split the buffer into multiple NAL Units.

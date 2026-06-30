@@ -150,6 +150,7 @@ public abstract class ThreadRtpSenderH26xBase<
 
 		//
 		cacheFrameData.rtpFrameNr = outputNud.rtpFrameNr;
+		cacheFrameData.stTimestamp.copyFrom(outputNud.stTimestamp);
 		cacheFrameData.totalFrameSize = outputNud.rawPayloadData.getUsed();
 		cacheFrameData.rtpPayloadDataViewPtr = outputNud.rtpPayloadDataView;
 		cacheFrameData.totalAuRtpPayloadSz = globalAuTotalRtpPayloadSizeCur;
@@ -211,7 +212,7 @@ public abstract class ThreadRtpSenderH26xBase<
 		}
 
 		// get the next frame from the input stream
-		threadDataProv.getNextFrame(tmpLatestNud.rawPayloadData, tmpLatestNud.h26xInfo);
+		threadDataProv.getNextFrame(tmpLatestNud.rawPayloadData, tmpLatestNud.stTimestamp, tmpLatestNud.h26xInfo);
 		if (tmpLatestNud.rawPayloadData.isEmpty()) {
 			logWarn(FNC_NAME, "tmpLatestNud.rawPayloadData is empty");
 			throw new InputStreamEosException();

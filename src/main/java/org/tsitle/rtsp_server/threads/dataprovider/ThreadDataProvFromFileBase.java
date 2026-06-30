@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingFromFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
@@ -19,7 +20,12 @@ import java.util.concurrent.locks.Condition;
 public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>>
 		extends ThreadDataProvBase<I, AvStreamOutgoingFromFileBase> {
 
-	private final ArrayList<@NonNull BufferExt> dataQueue = new ArrayList<>();
+	private static class DataQueueEntry {
+		final @NonNull BufferExt buf = new BufferExt();
+		final @NonNull TimestampEpochNs stTimestamp = TimestampEpochNs.ofEmpty();
+	}
+
+	private final ArrayList<@NonNull DataQueueEntry> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
 
 	private final AtomicBoolean eosReached = new AtomicBoolean(false);
@@ -53,7 +59,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 		//
 		for (int i = 0; i < queueSize; ++i) {
-			dataQueue.add(new BufferExt());
+			dataQueue.add(new DataQueueEntry());
 			infoQueue.add(null);
 		}
 		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
@@ -104,7 +110,8 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	}
 
 	@Override
-	public void getNextFrame(@NonNull BufferExt buf, @NonNull I infoObj) throws InputStreamEosException {
+	public void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+			throws InputStreamEosException {
 		if (eosReached.get()) {
 			throw new InputStreamEosException();
 		}
@@ -118,7 +125,8 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		}
 		lock.lock();
 		try {
-			buf.copyOf(dataQueue.get(queueIxRead.get()));
+			buf.copyOf(dataQueue.get(queueIxRead.get()).buf);
+			stTimestamp.copyFrom(dataQueue.get(queueIxRead.get()).stTimestamp);
 			I tmpInfoObj = infoQueue.get(queueIxRead.get());
 			if (tmpInfoObj == null) {
 				throw new IllegalStateException("tmpInfoObj == null");
@@ -207,9 +215,10 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	private void acquireData_sub(String fncName) {
 		// get the next frame from the input, as well as its size
-		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get());
+		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get()).buf;
+		TimestampEpochNs tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;
 		try {
-			mediaOutgoingStream.getNextFrame(tmpFrameBufPtr);
+			mediaOutgoingStream.getNextFrame(tmpFrameBufPtr, tmpStTimestampPtr);
 			if (doStop.get()) {
 				return;
 			}

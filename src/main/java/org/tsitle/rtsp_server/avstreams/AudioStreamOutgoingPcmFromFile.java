@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
@@ -74,9 +75,13 @@ public class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase
 	/**
 	 * Reads the next audio samples from the stream.
 	 * @param frameBuf Output buffer to store the samples in
+	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+			throws InputStreamIoException, InputStreamEosException {
+		stTimestamp.clear();
+
 		BufferExt readIntoPtr = (isBigEndian || bytesPerSample == 1 ? frameBuf : cachedDataBuf2);
 		//
 		frameBuf.clear();

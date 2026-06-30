@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
@@ -48,9 +49,11 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void readFrame(@NonNull BufferExt buf) throws InputStreamIoException, InputStreamEosException {
+	public void readFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
+			throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readFrame()";
 
+		stTimestamp.clear();
 		buf.clear();
 		if (haveEos) {
 			throw new InputStreamEosException();
@@ -59,6 +62,10 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 			while (true) {
 				Optional<MqPacketAv> optPacket = mqInternalSub.receiveMessageAv(buf);
 				if (optPacket.isPresent()) {
+					TimestampEpochNs tmpTs = TimestampEpochNs.ofEpochMsUnsigned64bit(
+							optPacket.get().mdTimestampMs()
+						);
+					stTimestamp.copyFrom(tmpTs);
 					break;
 				}
 				try {

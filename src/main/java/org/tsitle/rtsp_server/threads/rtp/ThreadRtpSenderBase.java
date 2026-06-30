@@ -79,6 +79,7 @@ public abstract class ThreadRtpSenderBase<
 	/** System.nanoTime when the RTP timestamp T0 was adjusted (in nanoseconds) */
 	@SuppressWarnings("FieldCanBeLocal")
 	private final @NonNull TimestampEpochNs rtpTsT0GenAdj = TimestampEpochNs.ofEmpty();
+	private boolean rtpTsT0Gen_fromMq_isSet = false;
 	/** Current RTP timestamp */
 	private final @NonNull RtspProtoRtpTimestamp rtpTsCurrent = RtspProtoRtpTimestamp.ofZero();
 
@@ -266,10 +267,10 @@ public abstract class ThreadRtpSenderBase<
 			timeNtpTsInfo.timeSessionStartMonoNs.setEpochNsUnsigned64bit(System.nanoTime());
 
 			// adjust RTP timestamp T0
-			rtpTsT0GenAdj.setEpochNsUnsigned64bit(System.nanoTime());
-			rtpTsT0GenAdj.writeProtect();
+			rtpTsT0GenAdj.copyFrom(TimestampEpochNs.ofNow());
+			//rtpTsT0GenAdj.writeProtect();
 			rtpTsT0Adj.copyFrom(getRtpTimestampAsInt_t0org_forNow(rtpTsT0GenAdj));
-			rtpTsT0Adj.writeProtect();
+			//rtpTsT0Adj.writeProtect();
 
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(rtpTsT0GenAdj));
@@ -388,7 +389,11 @@ public abstract class ThreadRtpSenderBase<
 		} else {
 			// get the next frame to send over the wire from the input stream
 			try {
-				threadDataProv.getNextFrame(cacheFrameData.rtpPayloadDataForDefFdSupplier, codecInfoObj);
+				threadDataProv.getNextFrame(
+						cacheFrameData.rtpPayloadDataForDefFdSupplier,
+						cacheFrameData.stTimestamp,
+						codecInfoObj
+					);
 				if (cacheFrameData.rtpPayloadDataForDefFdSupplier.isEmpty()) {
 					throw new InputStreamEosException();
 				}
@@ -586,8 +591,20 @@ public abstract class ThreadRtpSenderBase<
 		return rtpTsT0Adj.add((rtpFrameNr - 1) * rtpTicksPerFrame);
 	}
 
-	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0adj_forNow(@NonNull TimestampEpochNs currentSysNanos) {
-		long elapsedNs = currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) - rtpTsT0GenAdj.getEpochNsUnsigned64bit().orElse(0L);
+	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0adj_forNow(
+				@NonNull TimestampEpochNs currentSysNanos,
+				boolean sourceIsMq
+			) {
+		if (sourceIsMq && ! rtpTsT0Gen_fromMq_isSet) {
+			rtpTsT0GenAdj.copyFrom(currentSysNanos);
+			rtpTsT0Gen_fromMq_isSet = true;
+			if (currentSysNanos.isEmpty()) {
+				logError(getClass().getSimpleName() + ".getRtpTimestampAsInt_t0adj_forNow()",
+						"currentSysNanos is empty");
+			}
+		}
+		long elapsedNs = currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) -
+				rtpTsT0GenAdj.getEpochNsUnsigned64bit().orElse(0L);
 		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
 		return rtpTsT0Adj.add(elapsedTicks);
 	}
@@ -632,14 +649,16 @@ public abstract class ThreadRtpSenderBase<
 				adaptiveScheduler.waitForNextFrame();
 			}
 			//
-			TimestampEpochNs tmpCurSysNanos = TimestampEpochNs.ofNow();
+			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
 			if (paramsCommon.getIsStreamSourceFromFile()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
+			} else if (frameData.stTimestamp.isEmpty()) {
+				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));
 			} else {
-				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurSysNanos));
+				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(frameData.stTimestamp, true));
 			}
 			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(tmpCurSysNanos));
+			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(tmpCurTsNow));
 			siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
 			//
 			isFirstPktOfFrame = false;

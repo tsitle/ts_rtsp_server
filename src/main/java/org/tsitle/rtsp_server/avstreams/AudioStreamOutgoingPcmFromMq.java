@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
@@ -62,12 +63,14 @@ public class AudioStreamOutgoingPcmFromMq extends AvStreamOutgoingFromMqBase {
 	/**
 	 * Reads the next audio samples from the stream.
 	 * @param frameBuf Output buffer to store the samples in
+	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf) throws InputStreamIoException, InputStreamEosException {
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+			throws InputStreamIoException, InputStreamEosException {
 		BufferExt readIntoPtr = (isBigEndian || bytesPerSample == 1 ? frameBuf : cachedDataBuf2);
 		//
-		avStreamIncoming.readFrame(readIntoPtr);
+		avStreamIncoming.readFrame(readIntoPtr, stTimestamp);
 		int tmpRead = readIntoPtr.getUsed();
 		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
 			// discard any partial samples
