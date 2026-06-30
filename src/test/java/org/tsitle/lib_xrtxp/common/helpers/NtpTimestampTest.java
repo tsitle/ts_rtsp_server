@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,16 +75,49 @@ class NtpTimestampTest {
 		final long deltaAbs = Math.abs(ntpExpectedLong - ntpActual.getTsAsUnsigned64bit().orElseThrow());
 		final long deltaNanosAbs = Math.abs(ntpExpectedObj.diffNanos(ntpActual));
 
+		// ---------------------------------------------------
+
 		long expSec = ntpExpectedObj.getSeconds32bit().orElseThrow();
 		long expFrac = ntpExpectedObj.getFraction32bit().orElseThrow();
 		assertEquals(3983496380L, expSec);
 		assertEquals(579292303L, expFrac);
+
+		// ---------------------------------------------------
 
 		NtpTimestamp anotherTest = NtpTimestamp.of(expSec, expFrac);
 		assertEquals(ntpExpectedObj, anotherTest);
 
 		assertTrue(deltaAbs < 5L);  // small difference expected due to a rounding error
 		assertTrue(deltaNanosAbs < 2L);  // 1ns difference expected due to a rounding error
+
+		// ---------------------------------------------------
+
+		Instant javaTsActual = ntpActual.toInstant();
+		assertEquals(2026, javaTsActual.atZone(ZoneOffset.UTC).getYear());
+		assertEquals(3, javaTsActual.atZone(ZoneOffset.UTC).getMonthValue());
+		assertEquals(26, javaTsActual.atZone(ZoneOffset.UTC).getDayOfMonth());
+		assertEquals(6, javaTsActual.atZone(ZoneOffset.UTC).getHour());
+		assertEquals(46, javaTsActual.atZone(ZoneOffset.UTC).getMinute());
+		assertEquals(20, javaTsActual.atZone(ZoneOffset.UTC).getSecond());
+		assertTrue(Math.abs(134876999 - javaTsActual.atZone(ZoneOffset.UTC).getNano()) < 5);
+
+		// ---------------------------------------------------
+
+		TimestampEpochNs tsEpochActual = TimestampEpochNs.ofInstant(javaTsActual);
+		assertEquals(1774507580134876998L, tsEpochActual.getEpochNsUnsigned64bit().orElseThrow());
+
+		Instant reconvertedJavaTs = tsEpochActual.toInstant().orElseThrow();
+		assertEquals(javaTsActual, reconvertedJavaTs);
+
+		NtpTimestamp reconvertedNtp = NtpTimestamp.ofInstant(reconvertedJavaTs);
+		Instant javaTsFinal = reconvertedNtp.toInstant();
+		assertEquals(2026, javaTsFinal.atZone(ZoneOffset.UTC).getYear());
+		assertEquals(3, javaTsFinal.atZone(ZoneOffset.UTC).getMonthValue());
+		assertEquals(26, javaTsFinal.atZone(ZoneOffset.UTC).getDayOfMonth());
+		assertEquals(6, javaTsFinal.atZone(ZoneOffset.UTC).getHour());
+		assertEquals(46, javaTsFinal.atZone(ZoneOffset.UTC).getMinute());
+		assertEquals(20, javaTsFinal.atZone(ZoneOffset.UTC).getSecond());
+		assertTrue(Math.abs(134876999 - javaTsFinal.atZone(ZoneOffset.UTC).getNano()) < 5);
 	}
 
 	@Test
