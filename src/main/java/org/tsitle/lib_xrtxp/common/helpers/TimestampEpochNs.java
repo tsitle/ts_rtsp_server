@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.common.helpers;
 
 import org.jspecify.annotations.NonNull;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -21,8 +22,23 @@ public final class TimestampEpochNs implements Cloneable {
 	}
 
 	public static TimestampEpochNs ofNow() {
+		return ofInstant(Instant.now());
+	}
+
+	public static TimestampEpochNs ofInstant(@NonNull Instant value) {
 		TimestampEpochNs resObj = new TimestampEpochNs();
-		resObj.epochNs = System.nanoTime();
+		resObj.epochNs = value.getEpochSecond() * 1_000_000_000L + value.getNano();
+		resObj.isSet = true;
+		return resObj;
+	}
+
+	public static TimestampEpochNs ofEpochMsUnsigned64bit(long value64bit) {
+		return ofEpochNsUnsigned64bit(value64bit * 1_000_000L);
+	}
+
+	public static TimestampEpochNs ofEpochNsUnsigned64bit(long value64bit) {
+		TimestampEpochNs resObj = new TimestampEpochNs();
+		resObj.epochNs = value64bit;
 		resObj.isSet = true;
 		return resObj;
 	}
@@ -38,6 +54,17 @@ public final class TimestampEpochNs implements Cloneable {
 		}
 		this.epochNs = value64bit;
 		this.isSet = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public Optional<Instant> toInstant() {
+		if (isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(
+				Instant.ofEpochSecond(epochNs / 1_000_000_000L, epochNs % 1_000_000_000L)
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
