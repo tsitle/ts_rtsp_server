@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
  * @param msgNr Message number
  * @param codec The codec used for the payload
  * @param isCodecGuessed Whether the codec was guessed or explicitly set
- * @param mdTimestamp Metadata: sample time timestamp of the payload
+ * @param mdTimestampMs Metadata: sample time timestamp of the payload in milliseconds
  * @param mdCounter Metadata: packet counter
  * @param mdVideoIsKeyframe Metadata: is this a keyframe? (video only)
  * @param mdVideoResoWidth Metadata: resolution width (video only)
@@ -24,7 +24,7 @@ public record MqPacketAv(
 			long msgNr,
 			@NonNull MqPacketCodec codec,
 			boolean isCodecGuessed,
-			long mdTimestamp,
+			long mdTimestampMs,
 			int mdCounter,
 			boolean mdVideoIsKeyframe,
 			int mdVideoResoWidth,
@@ -42,7 +42,7 @@ public record MqPacketAv(
 				"msgNr=" + Long.toUnsignedString(msgNr) +
 				", codec=" + codec +
 				(codec.isVideo() ? ", isCodecGuessed=" + (isCodecGuessed ? "T" : "F") : "") +
-				", mdTimestamp=" + Long.toUnsignedString(mdTimestamp) +
+				", mdTimestampMs=" + Long.toUnsignedString(mdTimestampMs) +
 				", mdCounter=" + Integer.toUnsignedString(mdCounter) +
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
 				(codec.isVideo() ? ", mdVideoResoWidth=" + Integer.toUnsignedString(mdVideoResoWidth) : "") +

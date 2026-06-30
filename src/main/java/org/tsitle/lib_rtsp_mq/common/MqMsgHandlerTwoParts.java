@@ -147,7 +147,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		if (packet.codec().isVideo()) {
 			tempBb.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
 		}
-		tempBb.putLong(packet.mdTimestamp());
+		tempBb.putLong(packet.mdTimestampMs());
 		tempBb.putInt(packet.mdCounter());
 		if (packet.codec().isVideo()) {
 			tempBb.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);

@@ -100,7 +100,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(FNC_NAME, packet.isCodecGuessed(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint64(FNC_NAME, packet.mdTimestamp(), ZMQ.SNDMORE);
+		writeFieldToMqUint64(FNC_NAME, packet.mdTimestampMs(), ZMQ.SNDMORE);
 		writeFieldToMqUint32(FNC_NAME, packet.mdCounter(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(FNC_NAME, packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);

@@ -141,9 +141,9 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 
 		//
 		if (doPrintDebugStats) {
-			printDebugStats(FNC_NAME, packet.mdTimestamp());
+			printDebugStats(FNC_NAME, packet.mdTimestampMs());
 		}
-		stats.lastTimestampMs = packet.mdTimestamp();
+		stats.lastTimestampMs = packet.mdTimestampMs();
 		stats.lastRecvTimeNs = System.nanoTime();
 
 		//
