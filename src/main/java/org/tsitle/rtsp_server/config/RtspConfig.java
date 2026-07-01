@@ -5,7 +5,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.rtsp_server.threads.rtsp.RtspServerConstants;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.RtspServerConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 

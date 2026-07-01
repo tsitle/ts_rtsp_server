@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtsp;
+package org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;

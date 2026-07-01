@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
@@ -13,10 +14,10 @@ import org.tsitle.lib_xrtxp.packets.rtcp.*;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
+import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -34,7 +35,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final @NonNull ParamsThreadRtcp params;
 	private final @Nullable DatagramSocket parRtcpSocketUdp;
-	private final @Nullable RtxpTcpReadWrite parRtcpRwIfTcp;
+	private final @Nullable RtspChildThreadsCbRtxpTcpInterface parRtcpRwIfTcp;
 
 	private final AtomicInteger targetCongestionLevel = new AtomicInteger(0);
 	private final @NonNull DatagramPacket cacheDpRecv;
@@ -198,8 +199,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 		try {
 			while (! doStop.get()) {
-				if ((parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) ||
-						(parRtcpRwIfTcp != null && parRtcpRwIfTcp.isSocketClosed())) {
+				if (parRtcpSocketUdp != null && parRtcpSocketUdp.isClosed()) {
 					break;
 				}
 				if (! mainLoop()) {
@@ -219,7 +219,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
-		} catch (TcpSocketIoException e) {
+		} catch (TcpSocketIoException | TcpSocketClosedException e) {
 			// fail silently
 		} finally {
 			if (parRtcpSocketUdp != null) {
@@ -242,7 +242,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException {
+	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		//
@@ -257,10 +257,10 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 						parRtcpSocketUdp.getLocalPort() + " from port " + cacheDpRecv.getPort());*/
 				cacheRecvBuf1.copyOf(cacheDpRecv.getData(), cacheDpRecv.getOffset(), cacheDpRecv.getLength());
 			} else if (parRtcpRwIfTcp != null) {
-				if (! parRtcpRwIfTcp.canReadRtcp(params.getTpClientDestTcpChann())) {
+				if (! parRtcpRwIfTcp.cbCanReadRtcpOverTcp(params.getTpClientDestTcpChann())) {
 					return true;
 				}
-				boolean tmResB = parRtcpRwIfTcp.readRtcpBinary(cacheRecvBuf1, params.getTpClientDestTcpChann());
+				boolean tmResB = parRtcpRwIfTcp.cbReadRtcpBinaryOverTcp(cacheRecvBuf1, params.getTpClientDestTcpChann());
 				if (! tmResB) {
 					return false;
 				}
@@ -295,7 +295,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendFromQueue() throws TcpSocketIoException, UdpSocketIoException {
+	private void sendFromQueue() throws TcpSocketIoException, UdpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueue()";
 
 		BufferExt plainPktBuf = queueSend.poll();
@@ -345,7 +345,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 		} else if (parRtcpRwIfTcp != null) {
 			BufferView tmpBv = new BufferView(outpPacketPtr);
-			parRtcpRwIfTcp.writeRtcpBinary(tmpBv, params.getTpClientDestTcpChann());
+			parRtcpRwIfTcp.cbSendRtcpBinaryOverTcp(tmpBv, params.getTpClientDestTcpChann());
 		}
 		//logDebug(FNC_NAME, "sent RTCP packet");
 

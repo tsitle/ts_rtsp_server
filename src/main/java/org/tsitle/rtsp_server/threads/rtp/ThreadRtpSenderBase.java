@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.rtp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -21,13 +22,13 @@ import org.tsitle.rtsp_server.exceptions.*;
 import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -66,7 +67,7 @@ public abstract class ThreadRtpSenderBase<
 	/** Thread parameters */
 	protected final ParamsThreadRtpSenderCommon paramsCommon;
 	private final @Nullable DatagramSocket parComRtpSocketUdp;
-	private final @Nullable RtxpTcpReadWrite parComRtpRwIfTcp;
+	private final @Nullable RtspChildThreadsCbRtxpTcpInterface parComRtpRwIfTcp;
 	/** RTP Clock Rate */
 	@SuppressWarnings({"FieldCanBeLocal", "unused"})
 	private final int rtpClockrate;
@@ -279,8 +280,7 @@ public abstract class ThreadRtpSenderBase<
 
 			//
 			while (! doStop.get()) {
-				if ((parComRtpSocketUdp != null && parComRtpSocketUdp.isClosed()) ||
-						(parComRtpRwIfTcp != null && parComRtpRwIfTcp.isSocketClosed())) {
+				if (parComRtpSocketUdp != null && parComRtpSocketUdp.isClosed()) {
 					break;
 				}
 				if (! mainLoop()) {
@@ -777,17 +777,18 @@ public abstract class ThreadRtpSenderBase<
 				throw new UdpSocketIoException(FNC_NAME + ": send() failed: " + e.getMessage());
 			}
 		} else if (parComRtpRwIfTcp != null) {
-			if (parComRtpRwIfTcp.isSocketClosed()) {
-				// fail silently
-				return false;
-			}
 			// send the packet over the TCP socket
 			BufferView tmpBv = new BufferView(
 					curPacketContainer.getPacketBufferPtr(),
 					0,
 					curPacketContainer.getPacketSize()
 				);
-			parComRtpRwIfTcp.writeRtpBinary(tmpBv, paramsCommon.getTpClientDestTcpChann());
+			try {
+				parComRtpRwIfTcp.cbSendRtpBinaryOverTcp(tmpBv, paramsCommon.getTpClientDestTcpChann());
+			} catch (TcpSocketClosedException e) {
+				// fail silently
+				return false;
+			}
 		}
 
 		//

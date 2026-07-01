@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
@@ -12,6 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
+import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 
 import java.net.DatagramSocket;
 import java.util.Optional;
@@ -30,8 +30,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		private @Nullable DatagramSocket socketUdp;
 		private boolean isSetSocketUdp;
 
-		/** Destination TCP read/write interface for RTxP packets (audio and video) */
-		private @Nullable RtxpTcpReadWrite clientDestTcpIf;
+		/** Destination TCP write interface for RTP packets (audio and video) */
+		private @Nullable RtspChildThreadsCbRtxpTcpInterface clientDestTcpIf;
 		private boolean isSetClientDestTcpIf;
 		/** Destination TCP channel for RTxP packets (audio and video), provided by the RTSP Client */
 		private @NonNull RtspProtoTcpChannelNr clientDestTcpChann = RtspProtoTcpChannelNr.ofEmpty();
@@ -180,8 +180,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		this.transport.isSetSocketUdp = true;
 	}
 
-	public Optional<RtxpTcpReadWrite> getTpClientDestTcpIf() { return Optional.ofNullable(transport.clientDestTcpIf); }
-	public void setTpClientDestTcpIf(@NonNull RtxpTcpReadWrite value) {
+	public Optional<RtspChildThreadsCbRtxpTcpInterface> getTpClientDestTcpIf() { return Optional.ofNullable(transport.clientDestTcpIf); }
+	public void setTpClientDestTcpIf(@NonNull RtspChildThreadsCbRtxpTcpInterface value) {
 		this.transport.clientDestTcpIf = value;
 		this.transport.isSetClientDestTcpIf = true;
 	}

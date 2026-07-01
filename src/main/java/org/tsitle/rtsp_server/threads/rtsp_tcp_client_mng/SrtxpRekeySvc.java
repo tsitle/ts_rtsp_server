@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtsp;
+package org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
@@ -23,6 +23,8 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
+import org.tsitle.rtsp_server.threads.rtsp_play.ChildThreadsForOneStream;
+import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
 
 import java.util.Optional;
 
@@ -39,7 +41,7 @@ final class SrtxpRekeySvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
-	private final @NonNull RtspChildThreadMng rtspChildThreadMng;
+	private final @NonNull ThreadRtspPlay threadRtspPlay;
 
 	private final @NonNull RtspProtoRequestOutputSvc rtspProtoRequestOutputSvc;
 	private final @NonNull RtspProtoResponseInputSvc rtspProtoResponseInputSvc;
@@ -50,14 +52,14 @@ final class SrtxpRekeySvc {
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
-				@NonNull RtspChildThreadMng rtspChildThreadMng,
+				@NonNull ThreadRtspPlay threadRtspPlay,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
 				@NonNull RtspAvailableStreamsSvc availableStreamsSvc,
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspSessionInfo = rtspSessionInfo;
-		this.rtspChildThreadMng = rtspChildThreadMng;
+		this.threadRtspPlay = threadRtspPlay;
 
 		//
 		this.rtspProtoRequestOutputSvc = new RtspProtoRequestOutputSvc(
@@ -89,7 +91,7 @@ final class SrtxpRekeySvc {
 		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;  // we're not ready yet
 		}
-		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
+		for (ChildThreadsForOneStream ctfos : threadRtspPlay.getCtfosMapValuesOnlyRunning()) {
 			if (ctfos.srtxpInboundRekeyingInProgress) {
 				boolean tmpHasBeenCompleted = ctfos.rtcpThreadSendRecv.hasSrtcpInboundRekeyingBeenCompleted();
 				if (tmpHasBeenCompleted) {
@@ -111,7 +113,7 @@ final class SrtxpRekeySvc {
 
 		// check sub-streams to see whether any of them need re-keying
 		boolean needRekey = false;
-		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
+		for (ChildThreadsForOneStream ctfos : threadRtspPlay.getCtfosMapValuesOnlyRunning()) {
 			if (ctfos.srtxpOutboundRekeyingInProgress) {
 				boolean tmpHasBeenCompleted;
 				if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
@@ -148,7 +150,7 @@ final class SrtxpRekeySvc {
 		// generate new KMDs for all sub-streams
 		boolean rekeyingProtoIsMikey = true;
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
-		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
+		for (ChildThreadsForOneStream ctfos : threadRtspPlay.getCtfosMapValuesOnlyRunning()) {
 			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 			//
 			SrtxpKmd tmpNextKmdOutbound;
@@ -165,7 +167,7 @@ final class SrtxpRekeySvc {
 		//
 		if (rekeyingProtoIsMikey) {
 			// send one request per sub-stream
-			for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
+			for (ChildThreadsForOneStream ctfos : threadRtspPlay.getCtfosMapValuesOnlyRunning()) {
 				if (! srtxpRekeyOutbound_mikey_oneStream(ctfos, kmdsOutbound)) {
 					return false;  // shutdown the session
 				}
@@ -179,7 +181,7 @@ final class SrtxpRekeySvc {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void srtxpRekeyInbound_oneStream(RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos) {
+	private void srtxpRekeyInbound_oneStream(@NonNull ChildThreadsForOneStream ctfos) {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyInbound_oneStream()";
 
 		Optional<SrtxpKmd> tmpNextKmdInbound = rtspSessionInfo.getDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
@@ -198,7 +200,7 @@ final class SrtxpRekeySvc {
 	}
 
 	private void srtxpRekeyOutbound_updateThreads(
-				RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos,
+				@NonNull ChildThreadsForOneStream ctfos,
 				@NonNull SrtxpKmd kmd
 			) {
 		if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
@@ -211,7 +213,7 @@ final class SrtxpRekeySvc {
 	}
 
 	private boolean srtxpRekeyOutbound_mikey_oneStream(
-				RtspChildThreadMng.@NonNull ChildThreadsForOneStream ctfos,
+				@NonNull ChildThreadsForOneStream ctfos,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketIoException, TcpSocketClosedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_mikey_oneStream()";
@@ -326,7 +328,7 @@ final class SrtxpRekeySvc {
 
 		//
 		logInfo(FNC_NAME, "SRTxP re-keying in progress");
-		for (RtspChildThreadMng.ChildThreadsForOneStream ctfos : rtspChildThreadMng.getCtfosMapValuesOnlyRunning()) {
+		for (ChildThreadsForOneStream ctfos : threadRtspPlay.getCtfosMapValuesOnlyRunning()) {
 			Optional<SrtxpKmd> tmpOptNextKmdOutbound = kmdsOutbound.getKmdBySubStreamId(ctfos.idSubStream);
 			if (tmpOptNextKmdOutbound.isEmpty()) {
 				logError(FNC_NAME, "SRTxP re-keying failed - no KMD found for Sub-Stream ID: '" +

@@ -13,8 +13,8 @@ import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
 import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
-import org.tsitle.rtsp_server.threads.rtsp.RtspServerConstants;
-import org.tsitle.rtsp_server.threads.rtsp.ThreadRtspServer;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.RtspServerConstants;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.ThreadRtspTcpClientMng;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
@@ -50,6 +50,8 @@ public class RtspServerApp {
 			new LinkedBlockingQueue<>(100)
 		);
 	private static @Nullable ExecutorService poolMqE2I;
+
+	private static final RtspThreadMng rtspThreadMng = new RtspThreadMng();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -323,12 +325,13 @@ public class RtspServerApp {
 					socketRtspTcp.setSoTimeout(10);  // only for read()
 
 					//
-					ThreadRtspServer thread = new ThreadRtspServer(
+					ThreadRtspTcpClientMng thread = new ThreadRtspTcpClientMng(
 							RtspServerApp::addMsgForLogThread,
 							cancelToken,
 							rtspConfig,
 							cfgServerNameAndVersion,
 							globalSessionInfoSvc,
+							rtspThreadMng,
 							++clientConnectionCount,
 							socketRtspTcp,
 							isRtspsConn
