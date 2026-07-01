@@ -13,8 +13,8 @@ import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
 import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.RtspServerConstants;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.ThreadRtspTcpClientMng;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.RtspServerConstants;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.ThreadRtspTcpClientInbound;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
@@ -325,7 +325,7 @@ public class RtspServerApp {
 					socketRtspTcp.setSoTimeout(10);  // only for read()
 
 					//
-					ThreadRtspTcpClientMng thread = new ThreadRtspTcpClientMng(
+					ThreadRtspTcpClientInbound thread = new ThreadRtspTcpClientInbound(
 							RtspServerApp::addMsgForLogThread,
 							cancelToken,
 							rtspConfig,

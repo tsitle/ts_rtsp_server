@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng;
+package org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;

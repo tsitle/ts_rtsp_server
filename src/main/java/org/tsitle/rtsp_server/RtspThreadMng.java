@@ -10,7 +10,7 @@ import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtcpFromRtpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng.RtspStartPlayThreadInterface;
+import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.RtspStartPlayThreadInterface;
 
 public final class RtspThreadMng implements RtspStartPlayThreadInterface {
 

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtsp_tcp_client_mng;
+package org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -41,7 +41,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
-public final class ThreadRtspTcpClientMng extends RunnableBase implements RtspChildThreadsCbRtcpFromRtpInterface, RtspChildThreadsCbRtxpTcpInterface {
+public final class ThreadRtspTcpClientInbound extends RunnableBase implements RtspChildThreadsCbRtcpFromRtpInterface, RtspChildThreadsCbRtxpTcpInterface {
 
 	/** RTSP session timeout tolerance in seconds. Sometimes even compliant clients fail to send a keep-alive message in time. */
 	private static final int SESSION_TIMEOUT_TOLERANCE_SEC = 15;
@@ -89,7 +89,7 @@ public final class ThreadRtspTcpClientMng extends RunnableBase implements RtspCh
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
 	 * @param isRtspsConnection True if the RTSP connection is over TLS/SSL
 	 */
-	public ThreadRtspTcpClientMng(
+	public ThreadRtspTcpClientInbound(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
