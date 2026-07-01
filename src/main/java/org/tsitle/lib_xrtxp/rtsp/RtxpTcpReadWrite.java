@@ -111,7 +111,8 @@ public final class RtxpTcpReadWrite {
 	private static final String CRLF = "\r\n";
 	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
 	private static final int QUEUES_MAX_SIZE = 50;
-	private static final int READ_MAX_RETRIES = 1;
+	private static final int READ_MAX_RETRIES_BIN = 5;
+	private static final int READ_MAX_RETRIES_STR = 2;
 
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_DEF = 10L;  // VLC sometimes takes quite a while to complete an RTSP setup right after being started
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY = 60L;
@@ -385,11 +386,9 @@ public final class RtxpTcpReadWrite {
 					if (channIdInt == -1) {
 						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
-					//noinspection DataFlowIssue
 					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
-					//noinspection ConstantValue
-					if (++readTimeoutCnt >= READ_MAX_RETRIES) {
+					if (++readTimeoutCnt >= READ_MAX_RETRIES_BIN) {
 						break;
 					}
 					continue;
@@ -409,11 +408,9 @@ public final class RtxpTcpReadWrite {
 					if (tmpVal == -1) {
 						throw new IOException(FNC_NAME + ": Could not read from socket");
 					}
-					//noinspection DataFlowIssue
 					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
-					//noinspection ConstantValue
-					if (++readTimeoutCnt >= READ_MAX_RETRIES) {
+					if (++readTimeoutCnt >= READ_MAX_RETRIES_BIN) {
 						break;
 					}
 					continue;
@@ -432,11 +429,9 @@ public final class RtxpTcpReadWrite {
 					if (tmpDidRead == -1) {
 						throw new IOException(FNC_NAME + ": " + "Could not read from socket");
 					}
-					//noinspection DataFlowIssue
 					readTimeoutCnt = 0;
 				} catch (SocketTimeoutException e) {
-					//noinspection ConstantValue
-					if (++readTimeoutCnt >= READ_MAX_RETRIES) {
+					if (++readTimeoutCnt >= READ_MAX_RETRIES_BIN) {
 						break;
 					}
 					continue;
@@ -480,11 +475,9 @@ public final class RtxpTcpReadWrite {
 				if (tmpInt == -1) {
 					throw new IOException(FNC_NAME + ": Could not read from socket");
 				}
-				//noinspection DataFlowIssue
 				readTimeoutCnt = 0;
 			} catch (SocketTimeoutException e) {
-				//noinspection ConstantValue
-				if (++readTimeoutCnt >= READ_MAX_RETRIES) {
+				if (++readTimeoutCnt >= READ_MAX_RETRIES_STR) {
 					resB = false;
 					break;
 				}
