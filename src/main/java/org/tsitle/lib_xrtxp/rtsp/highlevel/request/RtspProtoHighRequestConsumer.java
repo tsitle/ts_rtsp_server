@@ -946,10 +946,9 @@ public final class RtspProtoHighRequestConsumer {
 							"received new inbound KMD but SSRC has been modified - rejecting new KMD");
 				}
 			}
-			if (kmdToUse.mki().isEmpty()) {
-				throw new RtspProtoInvalidRequestException(FNC_NAME + ": " +
-						"received new inbound MIKEY KMD but it has no MKI - rejecting new KMD");
-			}
+			/*
+			 * Note: GStreamer doesn't support MIKEY KMDs with MKI
+			 */
 		}
 
 		if (isSetup || ! haveCurrentKmd) {
