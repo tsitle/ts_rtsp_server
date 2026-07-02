@@ -1010,8 +1010,8 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// store the Resource URL object
-		if (isRequestFromClient && requestMessageType != RtspProtoMessageType.SETUP) {
-			rtspSessionInfo.putResourceUrlForMt_nonSetup(requestMessageType, dataRequ.rrRscUrl);
+		if (isRequestFromClient && dataRequ.rrRscUrl.idSubStream.isEmpty()) {
+			rtspSessionInfo.setLastRequestRscUrl_mainStream(dataRequ.rrRscUrl);
 		}
 		rtspSessionInfo.setLastUsedOutgoingRequestResourceUrl(dataRequ.rrRscUrl);
 

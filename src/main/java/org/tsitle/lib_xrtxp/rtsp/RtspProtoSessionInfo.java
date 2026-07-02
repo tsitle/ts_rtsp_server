@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -21,8 +22,9 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -119,17 +121,17 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------------------
 
-	/** Resource URL per DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
-	private final @NonNull Map<@NonNull RtspProtoMessageType, @NonNull RtspProtoRscUrl> resourceUrlPerMtMap_nonSetup = new ConcurrentHashMap<>();
+	/** Resource URL that has been used in the last incoming DESCRIBE/OPTIONS/PLAY/PAUSE/TEARDOWN/... request */
+	private final @NonNull RtspProtoRscUrl lastRequestRscUrl_mainStream = RtspProtoRscUrl.ofEmpty();
 
-	// ----------------------------------------------------------------
-
+	/** Internal only: Results from the last incoming request */
+	private final @NonNull RtspProtoDataRequest lastIncomingRequestData = new RtspProtoDataRequest();
+	/** Time of the last incoming request */
+	private @Nullable Instant lastIncomingRequestTime = null;
 	/** Last used outgoing request Resource URL object */
 	private final @NonNull RtspProtoRscUrl lastUsedOutgoingRequestResourceUrlObj = RtspProtoRscUrl.ofEmpty();
 	/** Last used outgoing request message type */
 	private @NonNull RtspProtoMessageType lastUsedOutgoingRequestMsgType = RtspProtoMessageType.UNKNOWN;
-	/** Internal only: Results from the last incoming request */
-	private final @NonNull RtspProtoDataRequest lastIncomingRequestData = new RtspProtoDataRequest();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -596,28 +598,34 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------
 
-	public Optional<RtspProtoRscUrl> getResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt) {
-		if (mt == RtspProtoMessageType.UNKNOWN) {
-			throw new IllegalArgumentException("Cannot get Resource URL for UNKNOWN message type");
-		}
-		if (mt == RtspProtoMessageType.SETUP) {
-			throw new IllegalArgumentException("Cannot get Resource URL for SETUP message type");
-		}
+	public Optional<RtspProtoRscUrl> getLastRequestResourceUrl_mainStream() {
 		theReadLock.lock();
 		try {
-			if (! this.resourceUrlPerMtMap_nonSetup.containsKey(mt)) {
+			if (lastRequestRscUrl_mainStream.isEmpty()) {
 				return Optional.empty();
 			}
-			return Optional.of(this.resourceUrlPerMtMap_nonSetup.get(mt).clone());
+			return Optional.of(lastRequestRscUrl_mainStream.clone());
 		} finally {
 			theReadLock.unlock();
 		}
 	}
 
-	public Optional<RtspProtoRscUrl> getResourceUrlForMt_onlySetup(@NonNull RtspProtoIdSubStream idSubStream) {
+	public Optional<RtspProtoRscUrl> getRequestResourceUrl_subStream(@NonNull RtspProtoIdSubStream idSubStream) {
 		theReadLock.lock();
 		try {
 			return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	public long getLastIncomingRequestTimeDeltaSeconds() {
+		theReadLock.lock();
+		try {
+			if (lastIncomingRequestTime == null) {
+				return -1;
+			}
+			return Duration.between(lastIncomingRequestTime, Instant.now()).toSeconds();
 		} finally {
 			theReadLock.unlock();
 		}
@@ -662,7 +670,7 @@ public final class RtspProtoSessionInfo {
 			descrAvailableSubStreamIds.clear();
 			rhDescribeSdpStcObj.clear();
 			rhDescribeSdpStcIsSet = false;
-			resourceUrlPerMtMap_nonSetup.clear();
+			lastRequestRscUrl_mainStream.clear();
 			sessionState = RtspProtoSessionState.INIT;
 		} finally {
 			theWriteLock.unlock();
@@ -1046,12 +1054,41 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------
 
-	void putResourceUrlForMt_nonSetup(@NonNull RtspProtoMessageType mt, @NonNull RtspProtoRscUrl rscUrl) {
+	void setLastRequestRscUrl_mainStream(@NonNull RtspProtoRscUrl rscUrl) {
+		if (! rscUrl.idSubStream.isEmpty()) {
+			return;
+		}
 		theWriteLock.lock();
 		try {
-			RtspProtoRscUrl tmpObj = rscUrl.clone();
-			tmpObj.writeProtect();
-			resourceUrlPerMtMap_nonSetup.put(mt, tmpObj);
+			lastRequestRscUrl_mainStream.copyFrom(rscUrl);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@NonNull RtspProtoDataRequest getLastIncomingRequestData() {
+		theReadLock.lock();
+		try {
+			RtspProtoDataRequest resObj = new RtspProtoDataRequest();
+			resObj.copyFrom(lastIncomingRequestData);
+			return resObj;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+	void setLastIncomingRequestData(@NonNull RtspProtoDataRequest data) {
+		theWriteLock.lock();
+		try {
+			lastIncomingRequestData.copyFrom(data);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	void updateLastIncomingRequestTime() {
+		theWriteLock.lock();
+		try {
+			lastIncomingRequestTime = Instant.now();
 		} finally {
 			theWriteLock.unlock();
 		}
@@ -1072,25 +1109,6 @@ public final class RtspProtoSessionInfo {
 		theWriteLock.lock();
 		try {
 			lastUsedOutgoingRequestMsgType = requestMessageType;
-		} finally {
-			theWriteLock.unlock();
-		}
-	}
-
-	@NonNull RtspProtoDataRequest getLastIncomingRequestData() {
-		theReadLock.lock();
-		try {
-			RtspProtoDataRequest resObj = new RtspProtoDataRequest();
-			resObj.copyFrom(lastIncomingRequestData);
-			return resObj;
-		} finally {
-			theReadLock.unlock();
-		}
-	}
-	void setLastIncomingRequestData(@NonNull RtspProtoDataRequest data) {
-		theWriteLock.lock();
-		try {
-			lastIncomingRequestData.copyFrom(data);
 		} finally {
 			theWriteLock.unlock();
 		}

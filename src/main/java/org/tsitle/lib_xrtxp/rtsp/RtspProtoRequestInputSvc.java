@@ -354,6 +354,8 @@ public final class RtspProtoRequestInputSvc {
 			) {
 		rtspSessionInfo.setLastIncomingRequestData(dataRequ);
 
+		rtspSessionInfo.updateLastIncomingRequestTime();
+
 		//
 		rtspSessionInfo.setRtspProtoVersionToUse(dataRequ.getRtspProtoVersionToUse());
 		//
@@ -396,8 +398,8 @@ public final class RtspProtoRequestInputSvc {
 		//
 		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
 		//
-		if (requBasics.messageType != RtspProtoMessageType.SETUP) {
-			rtspSessionInfo.putResourceUrlForMt_nonSetup(requBasics.messageType, requBasics.rscUrl);
+		if (requBasics.rscUrl.idSubStream.isEmpty()) {
+			rtspSessionInfo.setLastRequestRscUrl_mainStream(requBasics.rscUrl);
 		}
 
 		//

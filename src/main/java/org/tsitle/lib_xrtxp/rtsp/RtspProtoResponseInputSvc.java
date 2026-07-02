@@ -364,7 +364,7 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		// get the Input Source ID
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getResourceUrlForMt_nonSetup(requestMessageType);
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = rtspSessionInfo.getLastRequestResourceUrl_mainStream();
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, "No Resource URL found for request message type: " + requestMessageType);
 			return false;
