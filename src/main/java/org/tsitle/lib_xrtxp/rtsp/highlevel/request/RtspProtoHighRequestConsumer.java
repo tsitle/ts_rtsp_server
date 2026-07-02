@@ -333,8 +333,6 @@ public final class RtspProtoHighRequestConsumer {
 					if (tmpOptHeaderSid.isPresent() && ! tmpOptHeaderSid.get().equals(currentIdSession)) {
 						throw new RtspProtoInvalidRequestException("Invalid Session ID");
 					}
-				} else if (isRequestFromClient && input.getHeaderSessionId().isPresent()) {
-					throw new RtspProtoInvalidRequestException("Session header present when not expected");
 				}
 				break;
 			default:
