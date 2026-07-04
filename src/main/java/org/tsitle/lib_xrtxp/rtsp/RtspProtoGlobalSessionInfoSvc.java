@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
 import org.tsitle.lib_xrtxp.common.helpers.UuidHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
@@ -13,10 +14,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,6 +37,8 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	private static final int MAX_AUTH_SERVER_NONCES = 10_000;
 	private static final int MAX_UNAUTHORIZED_ENTRIES = 1_000_000;
 	private static final int HASH_LEN = 8;
+
+	private static final int ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS = 4;
 
 	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
 	private final Lock theReadLock = theLock.readLock();
@@ -325,6 +325,29 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 			sessionInfoMap.remove(idSession);
 		} finally {
 			theWriteLock.unlock();
+		}
+	}
+
+	public void doHousekeepingForSessionInfos(@NonNull Set<@NonNull RtspProtoIdSession> dbgOutputDeletedSessionIds) {
+		dbgOutputDeletedSessionIds.clear();
+
+		theReadLock.lock();
+		try {
+			for (Map.Entry<RtspProtoIdSession, RtspProtoSessionInfo> entry : sessionInfoMap.entrySet()) {
+				if (! entry.getValue().getIsTransportUdp()) {
+					continue;
+				}
+				long tmpTimeDiff = entry.getValue().getLastIncomingRequestTimeDeltaSeconds();
+				if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT +
+						RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS) {
+					dbgOutputDeletedSessionIds.add(entry.getKey().clone());
+				}
+			}
+		} finally {
+			theReadLock.unlock();
+		}
+		for (RtspProtoIdSession tmpId : dbgOutputDeletedSessionIds) {
+			deleteSessionInfo(tmpId);
 		}
 	}
 

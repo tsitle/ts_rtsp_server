@@ -29,6 +29,8 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 
 	private static final int RTSP_THREADS_PLAY = 20;  // one thread per client session
 
+	private static final int ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS = 2;
+
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull CancelToken cancelToken;
 	private final @NonNull RtspConfig rtspConfig;
@@ -170,7 +172,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 			}
 			long tmpTimeDiff = threadRtspPlay.getLastIncomingRtspRequestTimeDeltaSeconds();
 			if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT +
-					RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + 2) {
+					RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS) {
 				logDebug(FNC_NAME, "RTSP session sid=" + entry.getKey().getIdStr().orElse("-unset-") +
 						" timeout after " + tmpTimeDiff + " seconds");
 				shutdownThreadBySessionId(entry.getKey());

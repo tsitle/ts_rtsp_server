@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.rtsp_server.config.RtspConfigStreamSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspConfig;
@@ -305,6 +306,8 @@ public class RtspServerApp {
 				boolean haveConn = false;
 				boolean isRtspsConn = false;
 				int loopCount = 0;
+				Set<@NonNull RtspProtoIdSession> dbgDeletedSessionIds = new HashSet<>();
+
 				while (! doStop.get()) {
 					if (listenSocketRtsps != null) {
 						try {
@@ -325,9 +328,16 @@ public class RtspServerApp {
 						}
 					}
 					if (! haveConn || socketRtspTcp == null) {
+						// start a queued Play thread
 						rtspPlayThreadMng.startNewPlayThreadFromQueue();
+						// clean up expired Play threads and Session Info objects
 						if (++loopCount % 50 == 0) {
 							rtspPlayThreadMng.doHousekeepingForPlayThreads();
+							//
+							globalSessionInfoSvc.doHousekeepingForSessionInfos(dbgDeletedSessionIds);
+							for (RtspProtoIdSession tmpId : dbgDeletedSessionIds) {
+								logDebug(FNC_NAME, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
+							}
 						}
 						continue;
 					}
