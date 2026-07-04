@@ -286,7 +286,12 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient();
 		//
 		if (lastSessionId.isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
+			/*
+			 * The Session Info pointer has changed because an existing Session Info object has been loaded.
+			 */
 			lastSessionId.copyFrom(sessionInfoPtr.ptr.getIdSession());
+			//
+			updateRtxpTcpRwSettings();
 		}
 
 		//
@@ -377,12 +382,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 						sessionInfoPtr.ptr.getIsTransportUdp() ? "UDP" : "TCP",
 						sessionInfoPtr.ptr.getIsRtspsConnection() ? "" : "o"));
 				//
-				rtxpTcpReadWrite.setIsRtpRtcpAllowed(! sessionInfoPtr.ptr.getIsTransportUdp());
-				if (sessionInfoPtr.ptr.getIsTransportUdp()) {
-					rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
-				} else {
-					rtxpTcpReadWrite.setTcpActivityTimeoutForRtxp();
-				}
+				updateRtxpTcpRwSettings();
+				//
 				if (isPlaybackPaused) {
 					isPlaybackPaused = false;
 					if (threadRtspPlay == null) {
@@ -468,6 +469,17 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			);
 		if (threadRtspPlay == null) {
 			logError(FNC_NAME, "could not start RTSP play thread");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void updateRtxpTcpRwSettings() {
+		rtxpTcpReadWrite.setIsRtpRtcpAllowed(! sessionInfoPtr.ptr.getIsTransportUdp());
+		if (sessionInfoPtr.ptr.getIsTransportUdp()) {
+			rtxpTcpReadWrite.setTcpActivityTimeoutForRtspOnly();
+		} else {
+			rtxpTcpReadWrite.setTcpActivityTimeoutForRtxp();
 		}
 	}
 
