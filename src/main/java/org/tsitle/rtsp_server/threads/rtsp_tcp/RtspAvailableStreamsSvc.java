@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound;
+package org.tsitle.rtsp_server.threads.rtsp_tcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp_server.config.RtspConfig;

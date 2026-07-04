@@ -13,7 +13,7 @@ import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.RtspPlayThreadMngInterface;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspPlayThreadMngInterface;
 
 import java.util.Map;
 import java.util.Queue;

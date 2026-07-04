@@ -13,8 +13,8 @@ import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
 import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.RtspServerConstants;
-import org.tsitle.rtsp_server.threads.rtsp_tcp_client_inbound.ThreadRtspTcpClientInbound;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.ThreadRtspTcpClientInbound;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
