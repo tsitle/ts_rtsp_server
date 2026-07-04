@@ -64,7 +64,7 @@ public final class ThreadRtspPlay extends RunnableBase
 			) {
 		super(logMsgInterface, cancelToken);
 
-		this.sessionInfoPtr = new RtspProtoPtrSessionInfo(rtspSessionInfo);
+		this.sessionInfoPtr = RtspProtoPtrSessionInfo.ofPointer(rtspSessionInfo);
 
 		//
 		this.threadName = "RTSP_PLAY#sid" + rtspSessionInfo.getIdSession().getIdStr().orElseThrow();

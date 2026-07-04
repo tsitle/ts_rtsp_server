@@ -54,7 +54,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private final @NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
-	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = new RtspProtoPtrSessionInfo(new RtspProtoSessionInfo());
+	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = RtspProtoPtrSessionInfo.ofNewSi();
 	private final @NonNull RtspProtoIdSession lastSessionId = RtspProtoIdSession.ofEmpty();
 
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;

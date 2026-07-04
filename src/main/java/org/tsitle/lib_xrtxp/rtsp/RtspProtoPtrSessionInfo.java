@@ -9,8 +9,16 @@ public final class RtspProtoPtrSessionInfo {
 
 	public @NonNull RtspProtoSessionInfo ptr;
 
-	public RtspProtoPtrSessionInfo(@NonNull RtspProtoSessionInfo ptr) {
+	private RtspProtoPtrSessionInfo(@NonNull RtspProtoSessionInfo ptr) {
 		this.ptr = ptr;
+	}
+
+	public static @NonNull RtspProtoPtrSessionInfo ofNewSi() {
+		return new RtspProtoPtrSessionInfo(new RtspProtoSessionInfo());
+	}
+
+	public static @NonNull RtspProtoPtrSessionInfo ofPointer(@NonNull RtspProtoSessionInfo ptrToObj) {
+		return new RtspProtoPtrSessionInfo(ptrToObj);
 	}
 
 }
