@@ -4,11 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
@@ -32,7 +32,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull CancelToken cancelToken;
 	private final @NonNull RtspConfig rtspConfig;
-	private final @NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final @NonNull Queue<VarsForNewThread> queueForNewThread = new ConcurrentLinkedQueue<>();
 
@@ -49,12 +49,12 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.cancelToken = cancelToken;
 		this.rtspConfig = rtspConfig;
-		this.globalSessionInfoSvc = globalSessionInfoSvc;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				varsForNewThread.rtspSessionInfo(),
 				varsForNewThread.childThreadsCbRtpTcpInterface(),
 				varsForNewThread.availableStreamsInterface(),
-				globalSessionInfoSvc
+				globalSessionInfoInterface
 			);
 
 		try {

@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp_server.config.RtspConfig;
@@ -51,7 +52,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	 * @param rtspSessionInfo Session info
 	 * @param rctcbRtpTcp Callback interface for RTSP child threads
 	 * @param availableStreamsInterface Available streams instance
-	 * @param globalSessionInfoSvc Global Session Info service
+	 * @param globalSessionInfoInterface Global Session Info service
 	 */
 	public ThreadRtspPlay(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -60,7 +61,7 @@ public final class ThreadRtspPlay extends RunnableBase
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		super(logMsgInterface, cancelToken);
 
@@ -91,7 +92,7 @@ public final class ThreadRtspPlay extends RunnableBase
 				rctcbRtpTcp,
 				this,
 				availableStreamsInterface,
-				globalSessionInfoSvc
+				globalSessionInfoInterface
 			);
 	}
 

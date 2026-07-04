@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
@@ -51,8 +52,8 @@ final class SrtxpRekeySvc {
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@NonNull RtspChildThreadsGetRunning childThreadsGetRunningInterface,
 				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
-				@NonNull RtspProtoAvailableStreamsInterface availableStreamsSvc,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.sessionInfoPtr = sessionInfoPtr;
@@ -69,8 +70,8 @@ final class SrtxpRekeySvc {
 				rtspConfig.getIsDebugPrintRtspSent(),
 				sessionInfoPtr,
 				rtxpTcpReadWrite,
-				availableStreamsSvc,
-				globalSessionInfoSvc
+				availableStreamsInterface,
+				globalSessionInfoInterface
 			);
 		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
 				logMsgInterface,

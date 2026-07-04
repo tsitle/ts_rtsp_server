@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueExcept
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendResponseFailedException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
@@ -48,7 +49,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	private final @NonNull RtspConfig rtspConfig;
 	private final @NonNull String cfgServerNameAndVersion;
-	private final @NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc;
+	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = RtspProtoPtrSessionInfo.ofNewSi();
@@ -74,7 +75,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	 * @param cancelToken Cancel token
 	 * @param rtspConfig RTSP configuration
 	 * @param cfgServerNameAndVersion RTSP server software name and version
-	 * @param globalSessionInfoSvc Global Session Info service
+	 * @param globalSessionInfoInterface Global Session Info service
 	 * @param clientConnectionNr Client connection number
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
 	 * @param isRtspsConnection True if the RTSP connection is over TLS/SSL
@@ -84,7 +85,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspConfig rtspConfig,
 				@NonNull String cfgServerNameAndVersion,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc,
+				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtspPlayThreadMngInterface playThreadMngInterface,
 				int clientConnectionNr,
 				@NonNull Socket rtspSocketTcp,
@@ -97,7 +98,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 		this.rtspConfig = rtspConfig;
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
-		this.globalSessionInfoSvc = globalSessionInfoSvc;
+		this.globalSessionInfoInterface = globalSessionInfoInterface;
 		this.playThreadMngInterface = playThreadMngInterface;
 
 		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
@@ -120,7 +121,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				logMsgInterface,
 				rtspConfig,
 				this.availableStreamsSvc,
-				globalSessionInfoSvc
+				globalSessionInfoInterface
 			);
 
 		//
@@ -139,7 +140,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				this.sessionInfoPtr,
 				userAuthSvc,
 				this.availableStreamsSvc,
-				globalSessionInfoSvc,
+				globalSessionInfoInterface,
 				this.rtspParamGetterSetterSvc,
 				this.rtxpTcpReadWrite
 			);
@@ -155,7 +156,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				rtspConfig.getIsDebugDisableTransportUdp(),
 				this.sessionInfoPtr,
 				this.availableStreamsSvc,
-				globalSessionInfoSvc,
+				globalSessionInfoInterface,
 				this.rtspParamGetterSetterSvc,
 				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("Lavf"),  // FFplay doesn't support MIKEY
 				this.rtxpTcpReadWrite
@@ -420,7 +421,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				// delete the Session Info from the global storage
 				RtspProtoIdSession tmpIdSessionBckp = sessionInfoPtr.ptr.getIdSession().clone();
 				sessionInfoPtr.ptr.clearAfterTeardown();
-				globalSessionInfoSvc.deleteSessionInfo(tmpIdSessionBckp);
+				globalSessionInfoInterface.deleteSessionInfo(tmpIdSessionBckp);
 				break;
 		}
 
@@ -452,7 +453,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				threadRtspPlay,
 				rtxpTcpReadWrite,
 				availableStreamsSvc,
-				globalSessionInfoSvc
+				globalSessionInfoInterface
 			);
 	}
 
