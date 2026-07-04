@@ -91,7 +91,6 @@ public class ClientRrSvcTest {
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
-	private @Nullable RtspProtoSessionInfo cliSessionInfo = null;
 	private @Nullable RtspProtoPtrSessionInfo cliPtrSessionInfo = null;
 	private @Nullable ParameterGetterSetter parameterGetterSetter = null;
 	private @Nullable RtspProtoRequestInputSvc inputSvc = null;
@@ -105,8 +104,7 @@ public class ClientRrSvcTest {
 	@BeforeEach
 	void setUp() throws IOException {
 		initRtxpTcpReadWrite();
-		cliSessionInfo = new RtspProtoSessionInfo();
-		cliPtrSessionInfo = new RtspProtoPtrSessionInfo(cliSessionInfo);
+		cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 		parameterGetterSetter = new ParameterGetterSetter();
 		initObjsInput();
 		initObjsOutput();
@@ -130,7 +128,7 @@ public class ClientRrSvcTest {
 	@Test
 	void recv_announce_ok() throws Exception {
 		Objects.requireNonNull(outputSvc);
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"ANNOUNCE rtsp://localhost/existing_stream RTSP/1.0",
@@ -152,12 +150,12 @@ public class ClientRrSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, resRequBas.messageType);
 
-		assertTrue(cliSessionInfo.getRhAnnouncedSdpStc().isPresent());
+		assertTrue(cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().isPresent());
 		assertEquals(
 				"rtsps://localhost:12345/existing_stream/?param=value",
-				cliSessionInfo.getRhAnnouncedSdpStc().orElseThrow().getContentBase().orElseThrow()
+				cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().orElseThrow().getContentBase().orElseThrow()
 			);
-		assertTrue(cliSessionInfo.getRhAnnouncedSdpStc().orElseThrow().findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
+		assertTrue(cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().orElseThrow().findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
 
 		// ----------------------------------------------------
 
@@ -167,7 +165,7 @@ public class ClientRrSvcTest {
 	@Test
 	void recv_options_unsuppFeature1() throws Exception {
 		Objects.requireNonNull(outputSvc);
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
@@ -187,7 +185,7 @@ public class ClientRrSvcTest {
 	@Test
 	void recv_setParam_invalidParamKey() throws Exception {
 		Objects.requireNonNull(outputSvc);
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 
 		final List<String> msgLines = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
@@ -203,8 +201,8 @@ public class ClientRrSvcTest {
 
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertTrue(cliSessionInfo.getRhInvalidParamNames().isPresent());
-		assertEquals(Set.of("packets_received"), cliSessionInfo.getRhInvalidParamNames().orElseThrow().getParamNames());
+		assertTrue(cliPtrSessionInfo.ptr.getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("packets_received"), cliPtrSessionInfo.ptr.getRhInvalidParamNames().orElseThrow().getParamNames());
 
 		// ----------------------------------------------------
 
@@ -215,7 +213,7 @@ public class ClientRrSvcTest {
 	void recv_setParam_getParam_ok() throws Exception {
 		Objects.requireNonNull(outputSvc);
 		Objects.requireNonNull(parameterGetterSetter);
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 
 		final List<String> msgLinesSet = List.of(
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
@@ -231,7 +229,7 @@ public class ClientRrSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, resRequBas.messageType);
 
-		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = cliSessionInfo.getRhSetParamValues();
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = cliPtrSessionInfo.ptr.getRhSetParamValues();
 		assertTrue(tmpOptKvs.isPresent());
 		assertEquals(Set.of("jitter"), tmpOptKvs.get().getParamKvsKeySet());
 		assertEquals("13.8", tmpOptKvs.get().getParamKvsValue("jitter").orElseThrow());
@@ -271,8 +269,8 @@ public class ClientRrSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.GET_PARAMETER, resRequBas.messageType);
 
-		assertTrue(cliSessionInfo.getRhGetParamNames().isPresent());
-		assertEquals(Set.of("jitter"), cliSessionInfo.getRhGetParamNames().orElseThrow().getParamNames());
+		assertTrue(cliPtrSessionInfo.ptr.getRhGetParamNames().isPresent());
+		assertEquals(Set.of("jitter"), cliPtrSessionInfo.ptr.getRhGetParamNames().orElseThrow().getParamNames());
 
 		// ----------------------------------------------------
 
@@ -294,7 +292,7 @@ public class ClientRrSvcTest {
 	}
 
 	private void initObjsInput() {
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
@@ -325,7 +323,7 @@ public class ClientRrSvcTest {
 	}
 
 	private void initObjsOutput() {
-		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
