@@ -263,7 +263,7 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		private boolean checkSessionId(@NonNull RtspProtoIdSession idSession) {
-			return idSession.equals(sessionInfoPtr.ptr.getIdSession());
+			return idSession.equals(sessionInfoPtr.ptr().getIdSession());
 		}
 
 		private boolean checkInputSource(@NonNull RtspProtoIdInputSource idInputSource) {
@@ -397,9 +397,9 @@ public class FullBidirRequRespSvcTest {
 		do_c2s_Describe(ct, rscUrlStr);
 
 		// client sends SETUP requests to server
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			do_c2s_Setup(
 					ct,
 					rscUrlForSs,
@@ -408,8 +408,8 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		// client sends OPTIONS requests to server
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			do_c2s_Options(ct, rscUrlForSs.getUrlStr());
 		}
 	}
@@ -428,9 +428,9 @@ public class FullBidirRequRespSvcTest {
 		do_c2s_Describe(ct, rscUrlStr);
 
 		// client sends SETUP requests to server
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			do_c2s_Setup(
 					ct,
 					rscUrlForSs,
@@ -441,7 +441,7 @@ public class FullBidirRequRespSvcTest {
 		// find Sub-Stream IDs - method 1
 		RtspProtoIdSubStream idSsVideo = RtspProtoIdSubStream.ofEmpty();
 		RtspProtoIdSubStream idSsAudio = RtspProtoIdSubStream.ofEmpty();
-		List<RtspProtoSdpDataMediaEntry> mediaEntries = cliPtrSiForCt.ptr.getRhDescribeSdpStc().orElseThrow().getMediaEntries();
+		List<RtspProtoSdpDataMediaEntry> mediaEntries = cliPtrSiForCt.ptr().getRhDescribeSdpStc().orElseThrow().getMediaEntries();
 		for (RtspProtoSdpDataMediaEntry mediaEntry : mediaEntries) {
 			if (mediaEntry.header().mediaType() == RtspProtoSdpMediaType.VIDEO) {
 				idSsVideo.copyFrom(mediaEntry.controlId());
@@ -454,10 +454,10 @@ public class FullBidirRequRespSvcTest {
 		assertFalse(idSsAudio.isEmpty());
 
 		// find Sub-Stream IDs - method 2
-		RtspProtoIdSubStream tmpM2IdSsVideo = cliPtrSiForCt.ptr.getRhDescribeSdpStc().orElseThrow()
+		RtspProtoIdSubStream tmpM2IdSsVideo = cliPtrSiForCt.ptr().getRhDescribeSdpStc().orElseThrow()
 				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.VIDEO).orElseThrow()
 				.controlId();
-		RtspProtoIdSubStream tmpM2IdSsAudio = cliPtrSiForCt.ptr.getRhDescribeSdpStc().orElseThrow()
+		RtspProtoIdSubStream tmpM2IdSsAudio = cliPtrSiForCt.ptr().getRhDescribeSdpStc().orElseThrow()
 				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).orElseThrow()
 				.controlId();
 
@@ -470,7 +470,7 @@ public class FullBidirRequRespSvcTest {
 				true,
 				false,
 				false,
-				cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
+				cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
 			);
 
 		// client sends SET_PARAMETER request for VIDEO Sub-Stream to server - get Sub-Stream URL method 1
@@ -479,7 +479,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				true,
 				false,
-				cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(idSsVideo).getRscUrlSubStreamPtr()  // <-- getDescrSetupInfoBySubStreamsId()
+				cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(idSsVideo).getRscUrlSubStreamPtr()  // <-- getDescrSetupInfoBySubStreamsId()
 			);
 
 		// client sends SET_PARAMETER request for AUDIO Sub-Stream to server - get Sub-Stream URL method 2
@@ -488,7 +488,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				false,
 				true,
-				cliPtrSiForCt.ptr.getRequestResourceUrl_subStream(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+				cliPtrSiForCt.ptr().getRequestResourceUrl_subStream(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
 			);
 
 		// client sends GET_PARAMETER request for the entire stream to server
@@ -497,7 +497,7 @@ public class FullBidirRequRespSvcTest {
 				true,
 				false,
 				false,
-				cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
+				cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow()  // <-- getResourceUrlForMt_nonSetup()
 			);
 
 		// client sends GET_PARAMETER request for VIDEO Sub-Stream to server
@@ -506,7 +506,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				true,
 				false,
-				cliPtrSiForCt.ptr.getRequestResourceUrl_subStream(idSsVideo).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+				cliPtrSiForCt.ptr().getRequestResourceUrl_subStream(idSsVideo).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
 			);
 
 		// client sends GET_PARAMETER request for AUDIO Sub-Stream to server
@@ -515,7 +515,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				false,
 				true,
-				cliPtrSiForCt.ptr.getRequestResourceUrl_subStream(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
+				cliPtrSiForCt.ptr().getRequestResourceUrl_subStream(idSsAudio).orElseThrow()  // <-- getResourceUrlForMt_onlySetup()
 			);
 	}
 
@@ -558,9 +558,9 @@ public class FullBidirRequRespSvcTest {
 		do_c2s_Describe(ct, rscUrlStr);
 
 		// client sends SETUP requests to server
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			do_c2s_Setup(
 					ct,
 					rscUrlForSs,
@@ -569,10 +569,10 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		// find Sub-Stream IDs
-		RtspProtoIdSubStream idSsVideo = cliPtrSiForCt.ptr.getRhDescribeSdpStc().orElseThrow()
+		RtspProtoIdSubStream idSsVideo = cliPtrSiForCt.ptr().getRhDescribeSdpStc().orElseThrow()
 				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.VIDEO).orElseThrow()
 				.controlId();
-		RtspProtoIdSubStream idSsAudio = cliPtrSiForCt.ptr.getRhDescribeSdpStc().orElseThrow()
+		RtspProtoIdSubStream idSsAudio = cliPtrSiForCt.ptr().getRhDescribeSdpStc().orElseThrow()
 				.findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).orElseThrow()
 				.controlId();
 
@@ -582,19 +582,19 @@ public class FullBidirRequRespSvcTest {
 		// client sends PLAY request to server
 		do_c2s_Play(
 				ct,
-				cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
+				cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
 			);
 
 		// client sends PAUSE request to server
 		do_c2s_Pause(
 				ct,
-				cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
+				cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
 			);
 
 		// client sends TEARDOWN request to server
 		do_c2s_Teardown(
 				ct,
-				cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
+				cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow().getUrlStr()
 			);
 	}
 
@@ -618,9 +618,9 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		// client sends SETUP requests to server
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			assertEquals(rscUrlStr + "/" + tmpIdSubStream.getIdStr().orElse("-unset-"), rscUrlForSs.getUrlStr());
 			assertFalse(rscUrlForSs.idSubStream.isEmpty());
 			do_c2s_Setup(
@@ -629,9 +629,9 @@ public class FullBidirRequRespSvcTest {
 					useTransportUdp
 				);
 			//
-			RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr.getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
+			RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr().getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsSrv);
-			RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr.getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
+			RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr().getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsClient);
 		}
 
@@ -652,7 +652,7 @@ public class FullBidirRequRespSvcTest {
 		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
 
 		// client sends OPTIONS request to server
-		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 		do_c2s_Options(ct, rscUrl.getUrlStr());
 
 		// client sends ANNOUNCE request to server - which contains the client's new outbound KMDs
@@ -670,18 +670,18 @@ public class FullBidirRequRespSvcTest {
 		do_c2s_Describe(ct, rscUrlStr);
 
 		// client sends SETUP requests to server
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			do_c2s_Setup(
 					ct,
 					rscUrlForSs,
 					useTransportUdp
 				);
 			//
-			RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr.getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
+			RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr().getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsSrv);
-			RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr.getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
+			RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr().getRequestResourceUrl_subStream(tmpIdSubStream).orElseThrow();
 			assertEquals(rscUrlForSs, checkRscUrlForSsClient);
 		}
 		do_checkSetupClientSide(ct, useTransportUdp);
@@ -694,7 +694,7 @@ public class FullBidirRequRespSvcTest {
 		do_checkKeys_afterSrvRekeying_clientAndServer(ct);
 
 		// client sends OPTIONS request to server
-		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 		do_c2s_Options(ct, rscUrl.getUrlStr());
 
 		// client sends SET_PARAMETER request to server - which contains the client's new outbound KMDs
@@ -713,34 +713,34 @@ public class FullBidirRequRespSvcTest {
 		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_describe(resourceUrl);
 		assertEquals(RtspProtoMessageType.DESCRIBE, mt);
 
-		RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl checkRscUrlForSsClient = cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 		assertEquals(resourceUrl, checkRscUrlForSsClient.getUrlStr());
 
 		// ----------------------------------------------------
 
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
-		assertEquals(RtspConnectionPolicy.CLOSE, srvPtrSessionInfo.ptr.getRhConnectionPolicy().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
+		assertEquals(RtspConnectionPolicy.CLOSE, srvPtrSessionInfo.ptr().getRhConnectionPolicy().orElseThrow());
 
-		RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl checkRscUrlForSsSrv = srvPtrSessionInfo.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 		assertEquals(resourceUrl, checkRscUrlForSsSrv.getUrlStr());
 
 		// ----------------------------------------------------
 
 		srvRespOutputSvc.sendResponse(resRequBas);
 
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds().size());
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrAvailableSubStreamIds().size());
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrAvailableSubStreamIds().size());
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
 	}
 
 	private void do_c2s_Setup(ClientType ct, @NonNull RtspProtoRscUrl rscUrlForSs, boolean useTransportUdp) throws Exception {
@@ -751,9 +751,9 @@ public class FullBidirRequRespSvcTest {
 
 		assertFalse(rscUrlForSs.idSubStream.isEmpty());
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl tmpCheckRscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl tmpCheckRscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			assertFalse(tmpCheckRscUrlForSs.idSubStream.isEmpty());
 		}
 
@@ -763,9 +763,9 @@ public class FullBidirRequRespSvcTest {
 			);
 		assertEquals(RtspProtoMessageType.SETUP, mt);
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds()) {
-			RtspProtoRscUrl tmpCheckRscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds()) {
+			RtspProtoRscUrl tmpCheckRscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 			assertFalse(tmpCheckRscUrlForSs.idSubStream.isEmpty());
 		}
 
@@ -773,19 +773,19 @@ public class FullBidirRequRespSvcTest {
 
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 
 		// ----------------------------------------------------
 
 		srvRespOutputSvc.sendResponse(resRequBas);
 
-		srvPtrSessionInfo.ptr.moveToNextSessionState(mt);
+		srvPtrSessionInfo.ptr().moveToNextSessionState(mt);
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 	}
 
 	private void do_checkSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
@@ -793,16 +793,16 @@ public class FullBidirRequRespSvcTest {
 
 		RtspProtoPtrSessionInfo cliPtrSiForCt = cliPtrSessionInfo.get(ct);
 
-		Set<RtspProtoIdSubStream> checkSubStrIds = cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds();
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrAvailableSubStreamIds().size());
+		Set<RtspProtoIdSubStream> checkSubStrIds = cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds();
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
 		int maxTcpChann = -1;
 
 		for (RtspProtoIdSubStream subStrId : checkSubStrIds) {
 			assertTrue(
-					cliPtrSiForCt.ptr.getDescrSetupInfoHaveSetupForSubStreamId(subStrId),
+					cliPtrSiForCt.ptr().getDescrSetupInfoHaveSetupForSubStreamId(subStrId),
 					"missing HaveSetup: ss=" + subStrId.getIdStr().orElse("-unset-")
 				);
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(subStrId);
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(subStrId);
 
 			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
 			assertFalse(tmpSiForSsClient.getSsrcOutboundPtr().isEmpty());
@@ -875,14 +875,14 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		Set<RtspProtoIdSubStream> previousSubStrIds = cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds();
+		Set<RtspProtoIdSubStream> previousSubStrIds = cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds();
 		assertEquals(2, previousSubStrIds.size());
 		Set<RtspProtoIdXsrc> previousInboundSsrcs = new HashSet<>();
 		Set<RtspProtoIdXsrc> previousOutboundSsrcs = new HashSet<>();
 		for (RtspProtoIdSubStream subStrId : previousSubStrIds) {
 			assertFalse(subStrId.isEmpty(), "Sub-Stream ID must not be empty");
 
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(subStrId);
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(subStrId);
 
 			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
 			previousInboundSsrcs.add(tmpSiForSsClient.getSsrcInboundPtr());
@@ -911,13 +911,13 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		Set<RtspProtoIdSubStream> newSubStrIds = cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds();
+		Set<RtspProtoIdSubStream> newSubStrIds = cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds();
 		Set<RtspProtoIdXsrc> newInboundSsrcs = new HashSet<>();
 		Set<RtspProtoIdXsrc> newOutboundSsrcs = new HashSet<>();
 		for (RtspProtoIdSubStream subStrId : newSubStrIds) {
 			assertFalse(subStrId.isEmpty(), "Sub-Stream ID must not be empty");
 
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(subStrId);
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(subStrId);
 
 			assertFalse(tmpSiForSsClient.getSsrcInboundPtr().isEmpty());
 			newInboundSsrcs.add(tmpSiForSsClient.getSsrcInboundPtr());
@@ -929,7 +929,7 @@ public class FullBidirRequRespSvcTest {
 		assertEquals(previousOutboundSsrcs, newOutboundSsrcs);
 
 		for (RtspProtoIdSubStream subStrId : newSubStrIds) {
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(subStrId);
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(subStrId);
 
 			assertNotEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getSsrcOutboundPtr());
 			assertTrue(
@@ -948,7 +948,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_options(rscUrl.getUrlStr());
 		assertEquals(RtspProtoMessageType.OPTIONS, mt);
@@ -961,13 +961,13 @@ public class FullBidirRequRespSvcTest {
 		// ----------------------------------------------------
 
 		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
-		assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
 
 	private void do_s2c_Announce_noCrypto(ClientType ct) throws Exception {
@@ -978,7 +978,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_announce(rscUrl.getUrlStr());
 		assertEquals(RtspProtoMessageType.ANNOUNCE, mt);
@@ -987,8 +987,8 @@ public class FullBidirRequRespSvcTest {
 
 		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
-		assertTrue(cliPtrSiForCt.ptr.getRhAnnouncedSdpStc().isPresent());
-		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliPtrSiForCt.ptr.getRhAnnouncedSdpStc().orElseThrow();
+		assertTrue(cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().isPresent());
+		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().orElseThrow();
 		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.VIDEO
 			);
@@ -1001,13 +1001,13 @@ public class FullBidirRequRespSvcTest {
 		// ----------------------------------------------------
 
 		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
-		assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
 
 	private void do_s2c_RekeyingAnnounce_sdes() throws Exception {
@@ -1020,20 +1020,20 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
 
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds()) {
-			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(srvPtrSessionInfo.ptr, tmpIdSubStream);
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(srvPtrSessionInfo.ptr(), tmpIdSubStream);
 
 			kmdsOutbound.putKmdForSubStream(kmdOutboundSs, tmpIdSubStream);
 		}
 
-		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = srvPtrSessionInfo.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 
 		RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundSdes(
 				rscUrl.getUrlStr(),
@@ -1046,14 +1046,14 @@ public class FullBidirRequRespSvcTest {
 		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertTrue(cliPtrSiForCt.ptr.getRhAnnouncedSdpStc().isPresent());
-		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliPtrSiForCt.ptr.getRhAnnouncedSdpStc().orElseThrow();
+		assertTrue(cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().isPresent());
+		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().orElseThrow();
 		Optional<RtspProtoSdpDataMediaEntry> tmpMediaEntry = requAnnouncedSdpStc.findFirstMediaEntryOfType(
 				RtspProtoSdpMediaType.VIDEO
 			);
 		assertTrue(tmpMediaEntry.isPresent());
 		RtspProtoIdSubStream tmpIdSs = tmpMediaEntry.get().controlId();
-		assertTrue(cliPtrSiForCt.ptr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		assertTrue(cliPtrSiForCt.ptr().getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		Optional<SrtxpKmd> tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
 			);
@@ -1066,7 +1066,7 @@ public class FullBidirRequRespSvcTest {
 			);
 		assertTrue(tmpMediaEntry.isPresent());
 		tmpIdSs = tmpMediaEntry.get().controlId();
-		assertTrue(cliPtrSiForCt.ptr.getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
+		assertTrue(cliPtrSiForCt.ptr().getDescrSetupInfoHaveSetupForSubStreamId(tmpIdSs));
 		tmpSrtxpKmd = requAnnouncedSdpStc.extractMediaEntrySrtxpKmd(
 				tmpMediaEntry.get()
 			);
@@ -1077,13 +1077,13 @@ public class FullBidirRequRespSvcTest {
 		// ----------------------------------------------------
 
 		cliRespOutputSvc.get(ct).sendResponse(resRequBas);
-		assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
+		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
 
 	private void do_s2c_RekeyingSetParam_mikey() throws Exception {
@@ -1096,15 +1096,15 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds().size());
-		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds()) {
-			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(srvPtrSessionInfo.ptr, tmpIdSubStream);
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds().size());
+		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(srvPtrSessionInfo.ptr(), tmpIdSubStream);
 
-			RtspProtoRscUrl rscUrlForSs = srvPtrSessionInfo.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+			RtspProtoRscUrl rscUrlForSs = srvPtrSessionInfo.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 
 			RtspProtoMessageType mt = srvRequOutputSvc.sendRequest_srtxpRekeyOutboundMikey(rscUrlForSs, kmdOutboundSs);
 			assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
@@ -1114,20 +1114,20 @@ public class FullBidirRequRespSvcTest {
 			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
 			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
 			assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().ssrcId());
 			assertEquals(SrtxpMki.of(2, 4), tmpSiForSsClient.getKmdInboundNextPtr().getKmd().orElseThrow().mki());
 
 			// ----------------------------------------------------
 
 			cliRespOutputSvc.get(ct).sendResponse(resRequBas);
-			assertEquals("server name and version", cliPtrSiForCt.ptr.getServerSoftware().orElseThrow());
+			assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
 			// ----------------------------------------------------
 
 			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
 			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
-			assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr.getClientUserAgent().orElseThrow());
+			assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 		}
 	}
 
@@ -1139,14 +1139,14 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
-		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds()) {
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
-			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvPtrSessionInfo.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds()) {
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvPtrSessionInfo.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
 
 			// check the client's inbound SSRC vs. the server's outbound SSRC
 			assertEquals(tmpSiForSsClient.getSsrcInboundPtr(), tmpSiForSsSrv.getSsrcOutboundPtr());
@@ -1236,14 +1236,14 @@ public class FullBidirRequRespSvcTest {
 		// ----------------------------------------------------
 
 		RtspProtoKmdsStream kmdsOutboundRekey = new  RtspProtoKmdsStream();
-		for (RtspProtoIdSubStream tmpIdSs : cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds() ) {
-			SrtxpKmd kmdReky = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(cliPtrSiForCt.ptr, tmpIdSs);
+		for (RtspProtoIdSubStream tmpIdSs : cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds() ) {
+			SrtxpKmd kmdReky = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(cliPtrSiForCt.ptr(), tmpIdSs);
 			kmdsOutboundRekey.putKmdForSubStream(kmdReky, tmpIdSs);
 		}
 
 		// ----------------------------------------------------
 
-		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr.getLastRequestResourceUrl_mainStream().orElseThrow();
+		RtspProtoRscUrl rscUrl = cliPtrSiForCt.ptr().getLastRequestResourceUrl_mainStream().orElseThrow();
 
 		RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_srtxpRekeyOutboundSdes(
 				rscUrl.getUrlStr(),
@@ -1276,14 +1276,14 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds()) {
-			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(cliPtrSiForCt.ptr, tmpIdSubStream);
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds()) {
+			SrtxpKmd kmdOutboundSs = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(cliPtrSiForCt.ptr(), tmpIdSubStream);
 
-			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
+			RtspProtoRscUrl rscUrlForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream).getRscUrlSubStreamPtr();
 
 			RtspProtoMessageType mt = cliRequOutputSvc.get(ct).sendRequest_srtxpRekeyOutboundMikey(rscUrlForSs, kmdOutboundSs);
 			assertEquals(RtspProtoMessageType.SET_PARAMETER, mt);
@@ -1312,14 +1312,14 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
-		assertEquals(2, srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
-		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr.getDescrSetupInfoSubStreamIds()) {
-			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
-			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvPtrSessionInfo.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+		for (RtspProtoIdSubStream tmpIdSubStream : srvPtrSessionInfo.ptr().getDescrSetupInfoSubStreamIds()) {
+			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+			RtspProtoSetupInfoForSubStream tmpSiForSsSrv = srvPtrSessionInfo.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
 
 			// check client's current outbound KMD's SSRC + MKI
 			if (ct == ClientType.MIKEY) {
@@ -1395,13 +1395,13 @@ public class FullBidirRequRespSvcTest {
 		// ----------------------------------------------------
 
 		// emulate the server setting its internal parameters
-		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvPtrSessionInfo.ptr.getRhSetParamValues();
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvPtrSessionInfo.ptr().getRhSetParamValues();
 		assertTrue(tmpOptKvs.isPresent());
 		for (Map.Entry<@NonNull String, @NonNull String> entry : tmpOptKvs.get().getParamKvsEntrySet()) {
 			try {
 				srvParameterGetterSetter.setRtspParameter(
 						false,
-						srvPtrSessionInfo.ptr.getIdSession(),
+						srvPtrSessionInfo.ptr().getIdSession(),
 						tmpOptKvs.get().getIdInputSource(),
 						tmpOptKvs.get().getIdSubStream(),
 						tmpOptKvs.get().getContentLang(),
@@ -1471,7 +1471,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		assertTrue(cliPtrSiForCt.ptr.getRhGetParamValues().isPresent());
+		assertTrue(cliPtrSiForCt.ptr().getRhGetParamValues().isPresent());
 
 		Set<Map.Entry<String, String>> expKvs = new HashSet<>();
 		if (isUrlStream) {
@@ -1482,7 +1482,7 @@ public class FullBidirRequRespSvcTest {
 		} else {
 			expKvs.add(Map.entry("volume", "99.9"));
 		}
-		assertEquals(expKvs, cliPtrSiForCt.ptr.getRhGetParamValues().orElseThrow().getParamKvsEntrySet());
+		assertEquals(expKvs, cliPtrSiForCt.ptr().getRhGetParamValues().orElseThrow().getParamKvsEntrySet());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -1503,27 +1503,27 @@ public class FullBidirRequRespSvcTest {
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals("npt=0.000-", srvPtrSessionInfo.ptr.getClientPlaybackRangeValue().orElseThrow());
+		assertEquals("npt=0.000-", srvPtrSessionInfo.ptr().getClientPlaybackRangeValue().orElseThrow());
 
 		// ----------------------------------------------------
 
 		srvRespOutputSvc.sendResponse(resRequBas);
 
-		srvPtrSessionInfo.ptr.moveToNextSessionState(mt);
+		srvPtrSessionInfo.ptr().moveToNextSessionState(mt);
 
 		// ----------------------------------------------------
 
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
-		assertEquals("npt=0.000-", cliPtrSiForCt.ptr.getServerPlaybackRangeValue().orElseThrow());
+		assertEquals("npt=0.000-", cliPtrSiForCt.ptr().getServerPlaybackRangeValue().orElseThrow());
 
-		assertEquals(2, cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds().size());
+		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
 
 		// ----------------------------------------------------
 
-		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr.getDescrSetupInfoSubStreamIds()) {
-			RtspProtoSetupInfoForSubStream tmpSiForSs = cliPtrSiForCt.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
+		for (RtspProtoIdSubStream tmpIdSubStream : cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds()) {
+			RtspProtoSetupInfoForSubStream tmpSiForSs = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
 			assertFalse(tmpSiForSs.getRtpSeqNrT0Ptr().isEmpty());
 			assertFalse(tmpSiForSs.getRtpTimestampT0Ptr().isEmpty());
 		}
@@ -1547,7 +1547,7 @@ public class FullBidirRequRespSvcTest {
 
 		srvRespOutputSvc.sendResponse(resRequBas);
 
-		srvPtrSessionInfo.ptr.moveToNextSessionState(mt);
+		srvPtrSessionInfo.ptr().moveToNextSessionState(mt);
 
 		// ----------------------------------------------------
 
@@ -1573,9 +1573,9 @@ public class FullBidirRequRespSvcTest {
 
 		srvRespOutputSvc.sendResponse(resRequBas);
 
-		srvPtrSessionInfo.ptr.moveToNextSessionState(mt);  // this is not actually needed because of the following clearAfterTeardown()
+		srvPtrSessionInfo.ptr().moveToNextSessionState(mt);  // this is not actually needed because of the following clearAfterTeardown()
 
-		srvPtrSessionInfo.ptr.clearAfterTeardown();
+		srvPtrSessionInfo.ptr().clearAfterTeardown();
 
 		// ----------------------------------------------------
 
@@ -1600,7 +1600,7 @@ public class FullBidirRequRespSvcTest {
 		srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
 
 		srvPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
-		srvPtrSessionInfo.ptr.setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
+		srvPtrSessionInfo.ptr().setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
 
 		srvAvailableStreams = new AvailableStreamsServerSide();
 		srvGlobalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();

@@ -214,8 +214,8 @@ public class ClientRequestInputSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.OPTIONS, resRequBas.messageType);
 
-		assertTrue(cliPtrSessionInfo.ptr.getServerSoftware().isPresent());
-		assertEquals("wonderful_piece_of_software/98.76", cliPtrSessionInfo.ptr.getServerSoftware().orElseThrow());
+		assertTrue(cliPtrSessionInfo.ptr().getServerSoftware().isPresent());
+		assertEquals("wonderful_piece_of_software/98.76", cliPtrSessionInfo.ptr().getServerSoftware().orElseThrow());
 
 		++cseqCorrect;
 	}
@@ -255,8 +255,8 @@ public class ClientRequestInputSvcTest {
 
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertTrue(cliPtrSessionInfo.ptr.getRhInvalidParamNames().isPresent());
-		assertEquals(Set.of("packets_received"), cliPtrSessionInfo.ptr.getRhInvalidParamNames().orElseThrow().getParamNames());
+		assertTrue(cliPtrSessionInfo.ptr().getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("packets_received"), cliPtrSessionInfo.ptr().getRhInvalidParamNames().orElseThrow().getParamNames());
 
 		++cseqCorrect;
 	}
@@ -275,8 +275,8 @@ public class ClientRequestInputSvcTest {
 
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
-		assertTrue(cliPtrSessionInfo.ptr.getRhInvalidParamNames().isPresent());
-		assertEquals(Set.of("jitter"), cliPtrSessionInfo.ptr.getRhInvalidParamNames().orElseThrow().getParamNames());
+		assertTrue(cliPtrSessionInfo.ptr().getRhInvalidParamNames().isPresent());
+		assertEquals(Set.of("jitter"), cliPtrSessionInfo.ptr().getRhInvalidParamNames().orElseThrow().getParamNames());
 
 		++cseqCorrect;
 	}
@@ -296,7 +296,7 @@ public class ClientRequestInputSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.SET_PARAMETER, resRequBas.messageType);
 
-		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = cliPtrSessionInfo.ptr.getRhSetParamValues();
+		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = cliPtrSessionInfo.ptr().getRhSetParamValues();
 		assertTrue(tmpOptKvs.isPresent());
 		assertEquals(Set.of("jitter"), tmpOptKvs.get().getParamKvsKeySet());
 		assertEquals("13.8", tmpOptKvs.get().getParamKvsValue("jitter").orElseThrow());
@@ -318,12 +318,12 @@ public class ClientRequestInputSvcTest {
 
 		// since the Session ID had already been stored as "bogus", the modified Session ID won't be accepted
 
-		assertEquals("bogus", cliPtrSessionInfo.ptr.getIdSession().getIdStr().orElse("-unset-"));
+		assertEquals("bogus", cliPtrSessionInfo.ptr().getIdSession().getIdStr().orElse("-unset-"));
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
 
 		assertEquals(RtspProtoStatusCode.SESSION_NOT_FOUND, resRequBas.statusCode);
-		assertEquals("bogus", cliPtrSessionInfo.ptr.getIdSession().getIdStr().orElse("-unset-"));
+		assertEquals("bogus", cliPtrSessionInfo.ptr().getIdSession().getIdStr().orElse("-unset-"));
 
 		++cseqCorrect;
 	}
@@ -348,8 +348,8 @@ public class ClientRequestInputSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.GET_PARAMETER, resRequBas.messageType);
 
-		assertTrue(cliPtrSessionInfo.ptr.getRhGetParamNames().isPresent());
-		assertEquals(Set.of("jitter"), cliPtrSessionInfo.ptr.getRhGetParamNames().orElseThrow().getParamNames());
+		assertTrue(cliPtrSessionInfo.ptr().getRhGetParamNames().isPresent());
+		assertEquals(Set.of("jitter"), cliPtrSessionInfo.ptr().getRhGetParamNames().orElseThrow().getParamNames());
 
 		++cseqCorrect;
 	}
@@ -375,12 +375,12 @@ public class ClientRequestInputSvcTest {
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(RtspProtoMessageType.ANNOUNCE, resRequBas.messageType);
 
-		assertTrue(cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().isPresent());
+		assertTrue(cliPtrSessionInfo.ptr().getRhAnnouncedSdpStc().isPresent());
 		assertEquals(
 				"rtsps://localhost:12345/existing_stream/?param=value",
-				cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().orElseThrow().getContentBase().orElseThrow()
+				cliPtrSessionInfo.ptr().getRhAnnouncedSdpStc().orElseThrow().getContentBase().orElseThrow()
 			);
-		assertTrue(cliPtrSessionInfo.ptr.getRhAnnouncedSdpStc().orElseThrow().findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
+		assertTrue(cliPtrSessionInfo.ptr().getRhAnnouncedSdpStc().orElseThrow().findFirstMediaEntryOfType(RtspProtoSdpMediaType.AUDIO).isPresent());
 
 		++cseqCorrect;
 	}
