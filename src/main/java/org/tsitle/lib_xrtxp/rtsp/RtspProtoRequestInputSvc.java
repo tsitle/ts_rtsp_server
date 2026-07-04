@@ -153,11 +153,11 @@ public final class RtspProtoRequestInputSvc {
 		if (! isRequestFromClient) {
 			throw new IllegalArgumentException(FNC_NAME + ": Requests can only be received from the server");
 		}
-		if (sessionInfoPtr.ptr.getClientIpAddr().isEmpty()) {
+		if (sessionInfoPtr.ptr().getClientIpAddr().isEmpty()) {
 			throw new IllegalArgumentException("Client IP address is empty");
 		}
 
-		return internalReceiveRequest(FNC_NAME, sessionInfoPtr.ptr.getClientIpAddr());
+		return internalReceiveRequest(FNC_NAME, sessionInfoPtr.ptr().getClientIpAddr());
 	}
 
 	/**
@@ -265,7 +265,7 @@ public final class RtspProtoRequestInputSvc {
 		if (isRequestFromClient) {
 			Objects.requireNonNull(requAuthSvc);
 			requAuthSvc.checkAuthorization(
-					sessionInfoPtr.ptr,
+					sessionInfoPtr.ptr(),
 					clientIpAddr,
 					resObj,
 					outputDataRequ.requAuthClient
@@ -342,61 +342,61 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataCntSessionState outputSessionState
 			) {
 		if (isRequestFromClient && globalSessionInfoInterface != null &&
-				sessionInfoPtr.ptr.getIdSession().isEmpty() && inpOptMsgIdSession != null && ! inpOptMsgIdSession.isEmpty()) {
+				sessionInfoPtr.ptr().getIdSession().isEmpty() && inpOptMsgIdSession != null && ! inpOptMsgIdSession.isEmpty()) {
 			try {
 				globalSessionInfoInterface.loadSessionInfo(inpOptMsgIdSession, sessionInfoPtr);
-				sessionInfoPtr.ptr.globalWriteLock();
+				sessionInfoPtr.ptr().globalWriteLock();
 			} catch (RtspProtoSessionInfoException e) {
 				// ignore
 			}
 		}
 
 		//
-		outputCurrentIdSession.copyFrom(sessionInfoPtr.ptr.getIdSession());
+		outputCurrentIdSession.copyFrom(sessionInfoPtr.ptr().getIdSession());
 		outputCurrentIdSession.writeProtect();
 
 		//
-		outputCseqRequ.cseqNr_lastRcvd.copyFrom(sessionInfoPtr.ptr.getCseqNr_requFromRem_lastRcvd());
-		outputCseqRequ.cseqNr_expected.copyFrom(sessionInfoPtr.ptr.getCseqNr_requFromRem_expected());
+		outputCseqRequ.cseqNr_lastRcvd.copyFrom(sessionInfoPtr.ptr().getCseqNr_requFromRem_lastRcvd());
+		outputCseqRequ.cseqNr_expected.copyFrom(sessionInfoPtr.ptr().getCseqNr_requFromRem_expected());
 		//
-		outputStreamTpMain.copyFrom(sessionInfoPtr.ptr.getStreamTpMain());
+		outputStreamTpMain.copyFrom(sessionInfoPtr.ptr().getStreamTpMain());
 		//
-		outputSetupInfosStream.copyFrom(sessionInfoPtr.ptr.getDescrSetupInfosStream());
+		outputSetupInfosStream.copyFrom(sessionInfoPtr.ptr().getDescrSetupInfosStream());
 		//
 		outputAvailableSubStreamIds.clear();
-		outputAvailableSubStreamIds.addAll(sessionInfoPtr.ptr.getDescrAvailableSubStreamIds());
+		outputAvailableSubStreamIds.addAll(sessionInfoPtr.ptr().getDescrAvailableSubStreamIds());
 		//
-		outputSessionState.setSessionState(sessionInfoPtr.ptr.getSessionState());
+		outputSessionState.setSessionState(sessionInfoPtr.ptr().getSessionState());
 	}
 
 	private void updateSessionInfo_immediate(
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoDataCntCseqRequInp cseqRequ
 			) {
-		sessionInfoPtr.ptr.setLastIncomingRequestData(dataRequ);
+		sessionInfoPtr.ptr().setLastIncomingRequestData(dataRequ);
 
-		sessionInfoPtr.ptr.updateLastIncomingRequestTime();
+		sessionInfoPtr.ptr().updateLastIncomingRequestTime();
 
 		//
-		sessionInfoPtr.ptr.setRtspProtoVersionToUse(dataRequ.getRtspProtoVersionToUse());
+		sessionInfoPtr.ptr().setRtspProtoVersionToUse(dataRequ.getRtspProtoVersionToUse());
 		//
-		sessionInfoPtr.ptr.setCseqNr_requFromRem_lastRcvd(cseqRequ.cseqNr_lastRcvd);
-		sessionInfoPtr.ptr.setCseqNr_requFromRem_expected(cseqRequ.cseqNr_expected);
+		sessionInfoPtr.ptr().setCseqNr_requFromRem_lastRcvd(cseqRequ.cseqNr_lastRcvd);
+		sessionInfoPtr.ptr().setCseqNr_requFromRem_expected(cseqRequ.cseqNr_expected);
 		//
 		if (! dataRequ.getClientUa().isEmpty()) {
-			sessionInfoPtr.ptr.setClientUserAgent(dataRequ.getClientUa());
+			sessionInfoPtr.ptr().setClientUserAgent(dataRequ.getClientUa());
 		}
 		if (! dataRequ.getServerSoftware().isEmpty()) {
-			sessionInfoPtr.ptr.setServerSoftware(dataRequ.getServerSoftware());
+			sessionInfoPtr.ptr().setServerSoftware(dataRequ.getServerSoftware());
 		}
 
 		//
-		sessionInfoPtr.ptr.setRhInvalidParamNames(dataRequ.rrInvalidParamNames);  // always overwrite
-		sessionInfoPtr.ptr.clearRhGetParamNames();
-		sessionInfoPtr.ptr.clearRhSetParamValues();
+		sessionInfoPtr.ptr().setRhInvalidParamNames(dataRequ.rrInvalidParamNames);  // always overwrite
+		sessionInfoPtr.ptr().clearRhGetParamNames();
+		sessionInfoPtr.ptr().clearRhSetParamValues();
 
 		//
-		if (isRequestFromClient && globalSessionInfoInterface != null && ! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
+		if (isRequestFromClient && globalSessionInfoInterface != null && ! sessionInfoPtr.ptr().getIdSession().isEmpty()) {
 			globalSessionInfoInterface.saveSessionInfo(sessionInfoPtr);
 		}
 	}
@@ -406,61 +406,61 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoSetupInfosStream setupInfosStream
 			) {
-		sessionInfoPtr.ptr.setLastIncomingRequestData(dataRequ);  // update again
+		sessionInfoPtr.ptr().setLastIncomingRequestData(dataRequ);  // update again
 
 		//
 		if (dataRequ.rrStreamTpMain.getForceRtpRtcpEncryption()) {  // only update one-way
-			sessionInfoPtr.ptr.setStreamTpMainForceRtpRtcpEncryption();
+			sessionInfoPtr.ptr().setStreamTpMainForceRtpRtcpEncryption();
 		}
 		if (dataRequ.rrStreamTpMain.getRtpRtcpEncryptionRequired()) {  // only update one-way
-			sessionInfoPtr.ptr.setStreamTpMainRtpRtcpEncryptionRequired();
+			sessionInfoPtr.ptr().setStreamTpMainRtpRtcpEncryptionRequired();
 		}
 		if (dataRequ.rrStreamTpMain.getIsTransportUdp()) {  // only update one-way
-			sessionInfoPtr.ptr.setStreamTpMainIsTransportUdp();
+			sessionInfoPtr.ptr().setStreamTpMainIsTransportUdp();
 		}
 		if (dataRequ.rrStreamTpMain.getIsTransportSrtpSrtcp()) {  // only update one-way
-			sessionInfoPtr.ptr.setStreamTpMainIsTransportSrtpSrtcp();
+			sessionInfoPtr.ptr().setStreamTpMainIsTransportSrtpSrtcp();
 		}
 		//
-		sessionInfoPtr.ptr.setDescrSetupInfosStream(setupInfosStream);
+		sessionInfoPtr.ptr().setDescrSetupInfosStream(setupInfosStream);
 		//
 		if (requBasics.rscUrl.idSubStream.isEmpty()) {
-			sessionInfoPtr.ptr.setLastRequestRscUrl_mainStream(requBasics.rscUrl);
+			sessionInfoPtr.ptr().setLastRequestRscUrl_mainStream(requBasics.rscUrl);
 		}
 
 		//
-		if (! isRequestFromClient && sessionInfoPtr.ptr.getIdSession().isEmpty()) {
-			if (! (sessionInfoPtr.ptr.getIdSession().isReadOnly() || dataRequ.rrIdSession.isEmpty())) {
-				sessionInfoPtr.ptr.setSessionId(dataRequ.rrIdSession);
+		if (! isRequestFromClient && sessionInfoPtr.ptr().getIdSession().isEmpty()) {
+			if (! (sessionInfoPtr.ptr().getIdSession().isReadOnly() || dataRequ.rrIdSession.isEmpty())) {
+				sessionInfoPtr.ptr().setSessionId(dataRequ.rrIdSession);
 			}
 		}
 
 		//
 		if (requBasics.messageType == RtspProtoMessageType.GET_PARAMETER) {
-			sessionInfoPtr.ptr.setRhGetParamNames(dataRequ.rrGetParamNames);
+			sessionInfoPtr.ptr().setRhGetParamNames(dataRequ.rrGetParamNames);
 		} else if (requBasics.messageType == RtspProtoMessageType.SET_PARAMETER) {
-			sessionInfoPtr.ptr.setRhSetParamValues(dataRequ.requSetParamValues);
+			sessionInfoPtr.ptr().setRhSetParamValues(dataRequ.requSetParamValues);
 		}
 
 		//
 		if (requBasics.messageType == RtspProtoMessageType.OPTIONS) {
-			sessionInfoPtr.ptr.setRhRequiredFeatures(dataRequ.requRequiredFeatures);
-			sessionInfoPtr.ptr.setRhProxyRequiredFeatures(dataRequ.requProxyRequiredFeatures);
+			sessionInfoPtr.ptr().setRhRequiredFeatures(dataRequ.requRequiredFeatures);
+			sessionInfoPtr.ptr().setRhProxyRequiredFeatures(dataRequ.requProxyRequiredFeatures);
 		}
 
 		//
 		if (requBasics.messageType == RtspProtoMessageType.ANNOUNCE) {
-			sessionInfoPtr.ptr.setRhAnnouncedSdpStc(dataRequ.requAnnouncedSdpStc);
+			sessionInfoPtr.ptr().setRhAnnouncedSdpStc(dataRequ.requAnnouncedSdpStc);
 		}
 
 		//
 		if (dataRequ.getConnectionPolicy() != RtspConnectionPolicy.NONE) {
-			sessionInfoPtr.ptr.setRhConnectionPolicy(dataRequ.getConnectionPolicy());
+			sessionInfoPtr.ptr().setRhConnectionPolicy(dataRequ.getConnectionPolicy());
 		}
 
 		//
 		if (! dataRequ.getPlaybackRangeValue().isEmpty()) {
-			sessionInfoPtr.ptr.setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
+			sessionInfoPtr.ptr().setClientPlaybackRangeValue(dataRequ.getPlaybackRangeValue());
 		}
 	}
 

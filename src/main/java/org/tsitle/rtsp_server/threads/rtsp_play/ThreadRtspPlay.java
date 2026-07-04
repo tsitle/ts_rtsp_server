@@ -148,7 +148,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void updateSessionInfo(@NonNull RtspProtoSessionInfo rtspSessionInfo) {
-		sessionInfoPtr.ptr = rtspSessionInfo;
+		sessionInfoPtr.updatePtr(rtspSessionInfo);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -161,12 +161,12 @@ public final class ThreadRtspPlay extends RunnableBase
 		if (cacheChildThreadsPerSsrcMap.containsKey(ssrcId)) {
 			ctfosToUse = cacheChildThreadsPerSsrcMap.get(ssrcId);
 		} else {
-			for (RtspProtoRscUrl tmpRscUrl : sessionInfoPtr.ptr.getDescrSetupInfoRscUrls()) {
+			for (RtspProtoRscUrl tmpRscUrl : sessionInfoPtr.ptr().getDescrSetupInfoRscUrls()) {
 				if (! ctfosMapContainsKey(tmpRscUrl.idSubStream)) {
 					continue;
 				}
 				try {
-					if (! sessionInfoPtr.ptr.getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
+					if (! sessionInfoPtr.ptr().getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
 						continue;
 					}
 				} catch (RtspProtoSessionInfoException e) {
@@ -223,7 +223,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	@Override
 	public synchronized @NonNull Boolean cbThreadMayStartPlayback() {
 		boolean areAllReady = true;
-		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr.getDescrSetupInfoSubStreamIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr().getDescrSetupInfoSubStreamIds()) {
 			if (! threadReadyStates.getOrDefault(tmpIdSs, false)) {
 				areAllReady = false;
 				break;
@@ -235,11 +235,11 @@ public final class ThreadRtspPlay extends RunnableBase
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean getIsTransportUdp() {
-		return sessionInfoPtr.ptr.getIsTransportUdp();
+		return sessionInfoPtr.ptr().getIsTransportUdp();
 	}
 
 	public long getLastIncomingRtspRequestTimeDeltaSeconds() {
-		return sessionInfoPtr.ptr.getLastIncomingRequestTimeDeltaSeconds();
+		return sessionInfoPtr.ptr().getLastIncomingRequestTimeDeltaSeconds();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -275,10 +275,10 @@ public final class ThreadRtspPlay extends RunnableBase
 	}
 
 	private void updateCongestionLevel() {
-		if (sessionInfoPtr.ptr.getSessionState() != RtspProtoSessionState.PLAYING) {
+		if (sessionInfoPtr.ptr().getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;
 		}
-		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr.getDescrSetupInfoSubStreamIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr().getDescrSetupInfoSubStreamIds()) {
 			if (! rtspChildThreadMng.ctfosMapContainsKey(tmpIdSs)) {
 				continue;
 			}
@@ -294,7 +294,7 @@ public final class ThreadRtspPlay extends RunnableBase
 		try {
 			if (startChildThreadsHasBeenRequested) {
 				rtspChildThreadMng.startChildThreads(
-						sessionInfoPtr.ptr.getLastRequestResourceUrl_mainStream().orElseThrow()
+						sessionInfoPtr.ptr().getLastRequestResourceUrl_mainStream().orElseThrow()
 					);
 				startChildThreadsHasBeenRequested = false;
 			}

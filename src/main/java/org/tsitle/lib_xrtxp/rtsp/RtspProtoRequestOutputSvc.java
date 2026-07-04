@@ -925,7 +925,7 @@ public final class RtspProtoRequestOutputSvc {
 			) {
 		// parse URL
 		try {
-			Set<@NonNull RtspProtoIdSubStream> tmpAvailableSubStreamIds = sessionInfoPtr.ptr.getDescrAvailableSubStreamIds();
+			Set<@NonNull RtspProtoIdSubStream> tmpAvailableSubStreamIds = sessionInfoPtr.ptr().getDescrAvailableSubStreamIds();
 			rtspProtoHighRequestProducer.parseOutputUrl(tmpAvailableSubStreamIds, dataRequ.rrRscUrl);
 		} catch (RtspProtoInvalidUriException e) {
 			logError(fncName, "Parsing the Resource URL UrlStr failed: " + e.getMessage());
@@ -947,14 +947,14 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		//
-		dataRequ.rrIdSession.copyFrom(sessionInfoPtr.ptr.getIdSession());
-		dataRequ.setRtspProtoVersionToUse(sessionInfoPtr.ptr.getRtspProtoVersionToUse());
-		dataRequ.copyAndIncrementCseqNrToSend(sessionInfoPtr.ptr.getCseqNr_requToRem_lastSent());
-		if (sessionInfoPtr.ptr.getClientUserAgent().isPresent()) {
-			dataRequ.setClientUa(sessionInfoPtr.ptr.getClientUserAgent().orElseThrow());
+		dataRequ.rrIdSession.copyFrom(sessionInfoPtr.ptr().getIdSession());
+		dataRequ.setRtspProtoVersionToUse(sessionInfoPtr.ptr().getRtspProtoVersionToUse());
+		dataRequ.copyAndIncrementCseqNrToSend(sessionInfoPtr.ptr().getCseqNr_requToRem_lastSent());
+		if (sessionInfoPtr.ptr().getClientUserAgent().isPresent()) {
+			dataRequ.setClientUa(sessionInfoPtr.ptr().getClientUserAgent().orElseThrow());
 		}
-		if (! sessionInfoPtr.ptr.getClientIpAddr().isEmpty()) {
-			dataRequ.rrClientIpAddr.copyFrom(sessionInfoPtr.ptr.getClientIpAddr());
+		if (! sessionInfoPtr.ptr().getClientIpAddr().isEmpty()) {
+			dataRequ.rrClientIpAddr.copyFrom(sessionInfoPtr.ptr().getClientIpAddr());
 		}
 
 		// server IP
@@ -970,13 +970,13 @@ public final class RtspProtoRequestOutputSvc {
 		}
 
 		// received structured SDP data
-		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && sessionInfoPtr.ptr.getRhDescribeSdpStc().isPresent()) {
-			dataRequ.requAnnouncedSdpStc.copyFrom(sessionInfoPtr.ptr.getRhDescribeSdpStc().orElseThrow());
+		if (requestMessageType == RtspProtoMessageType.ANNOUNCE && sessionInfoPtr.ptr().getRhDescribeSdpStc().isPresent()) {
+			dataRequ.requAnnouncedSdpStc.copyFrom(sessionInfoPtr.ptr().getRhDescribeSdpStc().orElseThrow());
 		}
 
 		// stream settings
 		if (requestMessageType == RtspProtoMessageType.ANNOUNCE || requestMessageType == RtspProtoMessageType.SETUP) {
-			Set<@NonNull RtspProtoIdSubStream> tmpSubStreamIds = sessionInfoPtr.ptr.getDescrSetupInfoSubStreamIds();
+			Set<@NonNull RtspProtoIdSubStream> tmpSubStreamIds = sessionInfoPtr.ptr().getDescrSetupInfoSubStreamIds();
 			if (tmpSubStreamIds.isEmpty()) {
 				String tmpErrMsgPfx = (requestMessageType == RtspProtoMessageType.ANNOUNCE ? "An" : "A");
 				logError(fncName, tmpErrMsgPfx + " " + requestMessageType +
@@ -987,7 +987,7 @@ public final class RtspProtoRequestOutputSvc {
 			for (RtspProtoIdSubStream tmpIdSs : tmpSubStreamIds) {
 				RtspProtoSetupInfoForSubStream tmpSiForSs;
 				try {
-					tmpSiForSs = sessionInfoPtr.ptr.getDescrSetupInfoBySubStreamsId(tmpIdSs);
+					tmpSiForSs = sessionInfoPtr.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSs);
 				} catch (RtspProtoSessionInfoException e) {
 					logError(fncName, e.getMessage());
 					return false;
@@ -998,7 +998,7 @@ public final class RtspProtoRequestOutputSvc {
 				if (! isRequestFromClient && globalSessionInfoInterface != null) {
 					try {
 						RtspProtoIdStreamSource tmpIdStreamSource = globalSessionInfoInterface
-								.getStreamSourceIdBySubStreamId(tmpIdSs, sessionInfoPtr.ptr.getClientIpAddr());
+								.getStreamSourceIdBySubStreamId(tmpIdSs, sessionInfoPtr.ptr().getClientIpAddr());
 						tmpAdSettForSs.idStreamSource.copyFrom(tmpIdStreamSource);
 					} catch (RtspProtoIdSubStreamNotFoundException e) {
 						logError(fncName, "Could not find Sub-Stream ID in Global Session Info for " +
@@ -1018,7 +1018,7 @@ public final class RtspProtoRequestOutputSvc {
 				requestMessageType == RtspProtoMessageType.DESCRIBE ||
 				requestMessageType == RtspProtoMessageType.SETUP ||
 				requestMessageType == RtspProtoMessageType.SET_PARAMETER) {
-			ioSetupInfosStream.copyFrom(sessionInfoPtr.ptr.getDescrSetupInfosStream());
+			ioSetupInfosStream.copyFrom(sessionInfoPtr.ptr().getDescrSetupInfosStream());
 		}
 
 		// authentication parameters
@@ -1026,11 +1026,11 @@ public final class RtspProtoRequestOutputSvc {
 			dataRequ.requAuthClient.setAuthUser(clientCredentials.getAuthUser().orElseThrow());
 			dataRequ.requAuthClient.setAuthPlainPassword(clientCredentials.getAuthPlainPassword().orElse(""));
 		}
-		dataRequ.requAuthClient.setAuthRealm(sessionInfoPtr.ptr.getPermAuthServer().getAuthRealm());
-		dataRequ.requAuthClient.setAuthNonce(sessionInfoPtr.ptr.getPermAuthServer().getAuthNonce());
+		dataRequ.requAuthClient.setAuthRealm(sessionInfoPtr.ptr().getPermAuthServer().getAuthRealm());
+		dataRequ.requAuthClient.setAuthNonce(sessionInfoPtr.ptr().getPermAuthServer().getAuthNonce());
 
 		// main transport parameters
-		dataRequ.rrStreamTpMain.copyFrom(sessionInfoPtr.ptr.getStreamTpMain());
+		dataRequ.rrStreamTpMain.copyFrom(sessionInfoPtr.ptr().getStreamTpMain());
 
 		return true;
 	}
@@ -1040,28 +1040,28 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoDataRequest dataRequ,
 				@NonNull RtspProtoSetupInfosStream setupInfosStream
 			) {
-		sessionInfoPtr.ptr.setCseqNr_requToRem_lastSent(dataRequ.getCseqNrToSend());
+		sessionInfoPtr.ptr().setCseqNr_requToRem_lastSent(dataRequ.getCseqNrToSend());
 
 		// main transport parameters
 		if (dataRequ.rrStreamTpMain.getIsTransportUdp()) {
-			sessionInfoPtr.ptr.setStreamTpMainIsTransportUdp();
+			sessionInfoPtr.ptr().setStreamTpMainIsTransportUdp();
 		} else {
-			sessionInfoPtr.ptr.setStreamTpMainIsTransportTcp();
+			sessionInfoPtr.ptr().setStreamTpMainIsTransportTcp();
 		}
 
 		// store the Resource URL object
 		if (isRequestFromClient && dataRequ.rrRscUrl.idSubStream.isEmpty()) {
-			sessionInfoPtr.ptr.setLastRequestRscUrl_mainStream(dataRequ.rrRscUrl);
+			sessionInfoPtr.ptr().setLastRequestRscUrl_mainStream(dataRequ.rrRscUrl);
 		}
-		sessionInfoPtr.ptr.setLastUsedOutgoingRequestResourceUrl(dataRequ.rrRscUrl);
+		sessionInfoPtr.ptr().setLastUsedOutgoingRequestResourceUrl(dataRequ.rrRscUrl);
 
 		// store the request message type
-		sessionInfoPtr.ptr.setLastUsedOutgoingRequestMsgType(requestMessageType);
+		sessionInfoPtr.ptr().setLastUsedOutgoingRequestMsgType(requestMessageType);
 
 		// store sub-stream setting from ANNOUNCE/(DESCRIBE)/SETUP/SET_PARAMETER request
 		if (requestMessageType == RtspProtoMessageType.ANNOUNCE || requestMessageType == RtspProtoMessageType.DESCRIBE ||
 				requestMessageType == RtspProtoMessageType.SET_PARAMETER || requestMessageType == RtspProtoMessageType.SETUP) {
-			sessionInfoPtr.ptr.setDescrSetupInfosStream(setupInfosStream);
+			sessionInfoPtr.ptr().setDescrSetupInfosStream(setupInfosStream);
 		}
 	}
 

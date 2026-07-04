@@ -295,7 +295,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 			if (! sessionInfoMap.containsKey(inputIdSession)) {
 				throw new RtspProtoSessionInfoException("Session ID not found: '" + inputIdSession.getIdStr().orElse("-unset-") + "'");
 			}
-			outputSiPtr.ptr = sessionInfoMap.get(inputIdSession);
+			outputSiPtr.updatePtr(sessionInfoMap.get(inputIdSession));
 		} finally {
 			theReadLock.unlock();
 		}
@@ -305,11 +305,11 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	public void saveSessionInfo(@NonNull RtspProtoPtrSessionInfo inputSiPtr) {
 		theWriteLock.lock();
 		try {
-			RtspProtoIdSession tmpId = inputSiPtr.ptr.getIdSession();
+			RtspProtoIdSession tmpId = inputSiPtr.ptr().getIdSession();
 			if (sessionInfoMap.containsKey(tmpId)) {
 				return;
 			}
-			sessionInfoMap.put(tmpId, inputSiPtr.ptr);
+			sessionInfoMap.put(tmpId, inputSiPtr.ptr());
 		} finally {
 			theWriteLock.unlock();
 		}

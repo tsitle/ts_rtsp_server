@@ -86,7 +86,7 @@ final class SrtxpRekeySvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	void srtxpRekeyInbound() {
-		if (sessionInfoPtr.ptr.getSessionState() != RtspProtoSessionState.PLAYING) {
+		if (sessionInfoPtr.ptr().getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;  // we're not ready yet
 		}
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
@@ -105,7 +105,7 @@ final class SrtxpRekeySvc {
 	boolean srtxpRekeyOutbound() throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound()";
 
-		if (sessionInfoPtr.ptr.getSessionState() != RtspProtoSessionState.PLAYING) {
+		if (sessionInfoPtr.ptr().getSessionState() != RtspProtoSessionState.PLAYING) {
 			return true;  // we're not ready yet
 		}
 
@@ -154,7 +154,7 @@ final class SrtxpRekeySvc {
 			SrtxpKmd tmpNextKmdOutbound;
 			try {
 				tmpNextKmdOutbound = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(
-						sessionInfoPtr.ptr,
+						sessionInfoPtr.ptr(),
 						ctfos.idSubStream
 					);
 			} catch (RtspProtoInvalidRequestException e) {
@@ -185,7 +185,7 @@ final class SrtxpRekeySvc {
 	private void srtxpRekeyInbound_oneStream(@NonNull ChildThreadsForOneStream ctfos) {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyInbound_oneStream()";
 
-		Optional<SrtxpKmd> tmpNextKmdInbound = sessionInfoPtr.ptr.getDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
+		Optional<SrtxpKmd> tmpNextKmdInbound = sessionInfoPtr.ptr().getDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
 		if (tmpNextKmdInbound.isEmpty()) {
 			return;  // nothing to do
 		}
@@ -195,7 +195,7 @@ final class SrtxpRekeySvc {
 		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
 		ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
 
-		sessionInfoPtr.ptr.clearDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
+		sessionInfoPtr.ptr().clearDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
 
 		ctfos.srtxpInboundRekeyingInProgress = true;
 	}
@@ -221,7 +221,7 @@ final class SrtxpRekeySvc {
 
 		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
 
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr.getRequestResourceUrl_subStream(ctfos.idSubStream);
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getRequestResourceUrl_subStream(ctfos.idSubStream);
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - no Resource URL found for Sub-Stream ID: '" +
 					ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
@@ -286,7 +286,7 @@ final class SrtxpRekeySvc {
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_sdes()";
 
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr.getLastRequestResourceUrl_mainStream();
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getLastRequestResourceUrl_mainStream();
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, "SRTxP re-keying failed - no Resource URL found");
 			return false;

@@ -203,7 +203,7 @@ public final class RtspProtoResponseOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",  // <-- intentional extra NL
 				msgStructured.statusCode,
-				sessionInfoPtr.ptr.getIdSession().isEmpty() ? "-" : sessionInfoPtr.ptr.getIdSession().getIdStr().orElseThrow(),
+				sessionInfoPtr.ptr().getIdSession().isEmpty() ? "-" : sessionInfoPtr.ptr().getIdSession().getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 	}
 
@@ -214,16 +214,16 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
-		dataResp.copyFromRequest(sessionInfoPtr.ptr.getLastIncomingRequestData());
+		dataResp.copyFromRequest(sessionInfoPtr.ptr().getLastIncomingRequestData());
 
 		//
-		dataResp.rrIdSession.copyFrom(sessionInfoPtr.ptr.getIdSession());
+		dataResp.rrIdSession.copyFrom(sessionInfoPtr.ptr().getIdSession());
 		//
-		dataResp.respAuthServer.copyFrom(sessionInfoPtr.ptr.getPermAuthServer());
+		dataResp.respAuthServer.copyFrom(sessionInfoPtr.ptr().getPermAuthServer());
 		//
-		dataResp.rrStreamTpMain.copyFrom(sessionInfoPtr.ptr.getStreamTpMain());
+		dataResp.rrStreamTpMain.copyFrom(sessionInfoPtr.ptr().getStreamTpMain());
 		//
-		setupInfosStream.copyFrom(sessionInfoPtr.ptr.getDescrSetupInfosStream());
+		setupInfosStream.copyFrom(sessionInfoPtr.ptr().getDescrSetupInfosStream());
 	}
 
 	private void updateSessionInfo(
@@ -233,23 +233,23 @@ public final class RtspProtoResponseOutputSvc {
 			) {
 		// store new Session ID if one has been generated
 		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
-		if (tmpOptIdSess.isPresent() && sessionInfoPtr.ptr.getIdSession().isEmpty() &&
-				! tmpOptIdSess.get().isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isReadOnly()) {
-			sessionInfoPtr.ptr.setSessionId(tmpOptIdSess.get());
+		if (tmpOptIdSess.isPresent() && sessionInfoPtr.ptr().getIdSession().isEmpty() &&
+				! tmpOptIdSess.get().isEmpty() && ! sessionInfoPtr.ptr().getIdSession().isReadOnly()) {
+			sessionInfoPtr.ptr().setSessionId(tmpOptIdSess.get());
 		}
 
 		// store permanent Auth data
-		if (! (isResponseFromClient || sessionInfoPtr.ptr.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
-			sessionInfoPtr.ptr.setPermAuthServer(dataResp.respAuthServer);
+		if (! (isResponseFromClient || sessionInfoPtr.ptr().getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			sessionInfoPtr.ptr().setPermAuthServer(dataResp.respAuthServer);
 		}
 
 		// store stream settings
-		sessionInfoPtr.ptr.setDescrSetupInfosStream(setupInfosStream);
+		sessionInfoPtr.ptr().setDescrSetupInfosStream(setupInfosStream);
 
 		// store the available Sub-Stream IDs from a DESCRIBE response
 		Set<@NonNull RtspProtoIdSubStream> tmpSiSsIds = setupInfosStream.getSubStreamIds();
 		if (! tmpSiSsIds.isEmpty()) {
-			sessionInfoPtr.ptr.setDescrAvailableSubStreamIds(tmpSiSsIds);
+			sessionInfoPtr.ptr().setDescrAvailableSubStreamIds(tmpSiSsIds);
 		}
 	}
 

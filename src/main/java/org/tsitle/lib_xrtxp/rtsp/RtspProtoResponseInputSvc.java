@@ -175,7 +175,7 @@ public final class RtspProtoResponseInputSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private Optional<RtspProtoMessageType> loadFromSessionInfo_onlyLastMsgType() {
-		return sessionInfoPtr.ptr.getLastUsedOutgoingRequestMsgType();
+		return sessionInfoPtr.ptr().getLastUsedOutgoingRequestMsgType();
 	}
 
 	private boolean loadFromSessionInfo(
@@ -189,11 +189,11 @@ public final class RtspProtoResponseInputSvc {
 		final String FNC_NAME = getClass().getSimpleName() + ".loadFromSessionInfo()";
 
 		// copy the last used Resource URL object
-		if (sessionInfoPtr.ptr.getLastUsedOutgoingRequestResourceUrl().isEmpty()) {
+		if (sessionInfoPtr.ptr().getLastUsedOutgoingRequestResourceUrl().isEmpty()) {
 			logError(FNC_NAME, "Resource URL UrlStr cannot be empty");
 			return false;
 		}
-		dataResp.rrRscUrl.copyFrom(sessionInfoPtr.ptr.getLastUsedOutgoingRequestResourceUrl().orElseThrow());
+		dataResp.rrRscUrl.copyFrom(sessionInfoPtr.ptr().getLastUsedOutgoingRequestResourceUrl().orElseThrow());
 		if (dataResp.rrRscUrl.idInputSource.isEmpty()) {
 			logError(FNC_NAME, "Resource URL idInputSource cannot be empty");
 			return false;
@@ -207,30 +207,30 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		//
-		currentIdSession.copyFrom(sessionInfoPtr.ptr.getIdSession());
+		currentIdSession.copyFrom(sessionInfoPtr.ptr().getIdSession());
 		currentIdSession.writeProtect();
 
 		//
-		cseqRespInp.cseqNr_expected.copyFrom(sessionInfoPtr.ptr.getCseqNr_requToRem_lastSent());
+		cseqRespInp.cseqNr_expected.copyFrom(sessionInfoPtr.ptr().getCseqNr_requToRem_lastSent());
 		cseqRespInp.writeProtect();
 
 		//
 		try {
-			RtspProtoSetupInfoForSubStream inpSiForSs = sessionInfoPtr.ptr.getDescrSetupInfoBySubStreamsId(idSsPtr);
+			RtspProtoSetupInfoForSubStream inpSiForSs = sessionInfoPtr.ptr().getDescrSetupInfoBySubStreamsId(idSsPtr);
 			dataResp.respSetupSubStreamTp.copyFrom(inpSiForSs.getSubStreamTpPtr());
 		} catch (RtspProtoSessionInfoException e) {
 			// ignore
 		}
-		dataResp.respSetupSubStreamTp.setIsUdp(sessionInfoPtr.ptr.getStreamTpMain().getIsTransportUdp());
-		dataResp.respSetupSubStreamTp.setIsInterleaved(! sessionInfoPtr.ptr.getStreamTpMain().getIsTransportUdp());
+		dataResp.respSetupSubStreamTp.setIsUdp(sessionInfoPtr.ptr().getStreamTpMain().getIsTransportUdp());
+		dataResp.respSetupSubStreamTp.setIsInterleaved(! sessionInfoPtr.ptr().getStreamTpMain().getIsTransportUdp());
 		dataResp.respSetupSubStreamTp.setIsUnicast(true);
-		dataResp.respSetupSubStreamTp.setIsEncr(sessionInfoPtr.ptr.getStreamTpMain().getIsTransportSrtpSrtcp());
+		dataResp.respSetupSubStreamTp.setIsEncr(sessionInfoPtr.ptr().getStreamTpMain().getIsTransportSrtpSrtcp());
 
 		//
 		availableSubStreamIds.clear();
-		availableSubStreamIds.addAll(sessionInfoPtr.ptr.getDescrAvailableSubStreamIds());
+		availableSubStreamIds.addAll(sessionInfoPtr.ptr().getDescrAvailableSubStreamIds());
 		//
-		ioSetupInfosStream.copyFrom(sessionInfoPtr.ptr.getDescrSetupInfosStream());
+		ioSetupInfosStream.copyFrom(sessionInfoPtr.ptr().getDescrSetupInfosStream());
 
 		return true;
 	}
@@ -240,34 +240,34 @@ public final class RtspProtoResponseInputSvc {
 				@NonNull RtspProtoSetupInfosStream ioSetupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
-		if (! (sessionInfoPtr.ptr.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
-			sessionInfoPtr.ptr.setPermAuthServer(dataResp.respAuthServer);
+		if (! (sessionInfoPtr.ptr().getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			sessionInfoPtr.ptr().setPermAuthServer(dataResp.respAuthServer);
 		}
 		//
-		if (! (sessionInfoPtr.ptr.getIdSession().isReadOnly() || dataResp.rrIdSession.isEmpty())) {
-			sessionInfoPtr.ptr.setSessionId(dataResp.rrIdSession);
+		if (! (sessionInfoPtr.ptr().getIdSession().isReadOnly() || dataResp.rrIdSession.isEmpty())) {
+			sessionInfoPtr.ptr().setSessionId(dataResp.rrIdSession);
 		}
 		//
 		if (! dataResp.respSuppMessageTypes.isMtsEmpty()) {
-			sessionInfoPtr.ptr.setRhSupportedMessageTypes(dataResp.respSuppMessageTypes);
+			sessionInfoPtr.ptr().setRhSupportedMessageTypes(dataResp.respSuppMessageTypes);
 		}
 		//
-		sessionInfoPtr.ptr.setUnsupportedFeatureName(dataResp.getUnsupportedFeatureName());  // always overwrite
+		sessionInfoPtr.ptr().setUnsupportedFeatureName(dataResp.getUnsupportedFeatureName());  // always overwrite
 		//
-		sessionInfoPtr.ptr.setRhInvalidParamNames(dataResp.rrInvalidParamNames);  // always overwrite
+		sessionInfoPtr.ptr().setRhInvalidParamNames(dataResp.rrInvalidParamNames);  // always overwrite
 		//
-		sessionInfoPtr.ptr.setRhGetParamValues(dataResp.respGetParamValues);  // always overwrite
+		sessionInfoPtr.ptr().setRhGetParamValues(dataResp.respGetParamValues);  // always overwrite
 		//
 		if (! dataResp.getClientUa().isEmpty()) {
-			sessionInfoPtr.ptr.setClientUserAgent(dataResp.getClientUa());
+			sessionInfoPtr.ptr().setClientUserAgent(dataResp.getClientUa());
 		}
 		//
 		if (! dataResp.getServerSoftware().isEmpty()) {
-			sessionInfoPtr.ptr.setServerSoftware(dataResp.getServerSoftware());
+			sessionInfoPtr.ptr().setServerSoftware(dataResp.getServerSoftware());
 		}
 		//
 		if (! dataResp.getPlaybackRangeValue().isEmpty()) {
-			sessionInfoPtr.ptr.setServerPlaybackRangeValue(dataResp.getPlaybackRangeValue());
+			sessionInfoPtr.ptr().setServerPlaybackRangeValue(dataResp.getPlaybackRangeValue());
 		}
 
 		// store stream settings from a SETUP response
@@ -278,7 +278,7 @@ public final class RtspProtoResponseInputSvc {
 
 		// store stream settings from a PLAY response
 		if (! isResponseFromClient && requestMessageType == RtspProtoMessageType.PLAY) {
-			sessionInfoPtr.ptr.setDescrSetupInfosStream(ioSetupInfosStream);
+			sessionInfoPtr.ptr().setDescrSetupInfosStream(ioSetupInfosStream);
 			return;
 		}
 
@@ -305,22 +305,22 @@ public final class RtspProtoResponseInputSvc {
 					tmpMeCtrlIdsOutput.add(tmpMeCtrlId);
 				}
 			}
-			sessionInfoPtr.ptr.setDescrSetupInfosStream(tmpSis);
+			sessionInfoPtr.ptr().setDescrSetupInfosStream(tmpSis);
 
 			// store the available Sub-Stream IDs from a DESCRIBE response
-			sessionInfoPtr.ptr.setDescrAvailableSubStreamIds(tmpMeCtrlIdsOutput);
+			sessionInfoPtr.ptr().setDescrAvailableSubStreamIds(tmpMeCtrlIdsOutput);
 
 			// store the encryption settings
 			for (RtspProtoIdSubStream tmpMeCtrlId : tmpMeCtrlIdsOutput) {
 				Optional<RtspProtoSetupInfoForSubStream> tmpOptSiForSsPtr = tmpSis.getSiPtrBySubStreamId(tmpMeCtrlId);
 				if (tmpOptSiForSsPtr.isPresent() && tmpOptSiForSsPtr.get().getSubStreamTpPtr().getIsEncr()) {
-					sessionInfoPtr.ptr.setStreamTpMainIsTransportSrtpSrtcp();
+					sessionInfoPtr.ptr().setStreamTpMainIsTransportSrtpSrtcp();
 					break;
 				}
 			}
 		}
 		// store the received structured SDP data
-		sessionInfoPtr.ptr.setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
+		sessionInfoPtr.ptr().setRhDescribeSdpStc(dataResp.respDescribeSdpStc);
 	}
 
 	private void storeSubStreamSettingsFromSetupResponse(
@@ -332,7 +332,7 @@ public final class RtspProtoResponseInputSvc {
 
 		RtspProtoSetupInfoForSubStream outSiForSs;
 		try {
-			outSiForSs = new RtspProtoSetupInfoForSubStream(sessionInfoPtr.ptr.getDescrSetupInfoBySubStreamsId(idSsPtr));
+			outSiForSs = new RtspProtoSetupInfoForSubStream(sessionInfoPtr.ptr().getDescrSetupInfoBySubStreamsId(idSsPtr));
 			outSiForSs.getSsrcInboundPtr().copyFrom(dataResp.respSetupSubStreamSsrc);
 		} catch (RtspProtoSessionInfoException e) {
 			logError(FNC_NAME, "Could not find Sub-Stream info for ss='" +
@@ -341,7 +341,7 @@ public final class RtspProtoResponseInputSvc {
 		}
 		outSiForSs.getSubStreamTpPtr().copyFrom(dataResp.respSetupSubStreamTp);
 		outSiForSs.setHaveSetup(true);
-		sessionInfoPtr.ptr.setDescrSetupInfosForSubStream(idSsPtr, outSiForSs);
+		sessionInfoPtr.ptr().setDescrSetupInfosForSubStream(idSsPtr, outSiForSs);
 	}
 
 	private boolean buildSubStreamSettingsFromDescribeResponse(
@@ -367,7 +367,7 @@ public final class RtspProtoResponseInputSvc {
 		}
 
 		// get the Input Source ID
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr.getLastRequestResourceUrl_mainStream();
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getLastRequestResourceUrl_mainStream();
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, "No Resource URL found for request message type: " + requestMessageType);
 			return false;
