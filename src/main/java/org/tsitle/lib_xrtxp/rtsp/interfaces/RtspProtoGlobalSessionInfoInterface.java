@@ -116,4 +116,10 @@ public interface RtspProtoGlobalSessionInfoInterface {
 	 */
 	void saveSessionInfo(@NonNull RtspProtoPtrSessionInfo inputSiPtr);
 
+	/**
+	 * Delete the Session Information for a given Session ID.
+	 * @param idSession Session ID
+	 */
+	void deleteSessionInfo(@NonNull RtspProtoIdSession idSession);
+
 }

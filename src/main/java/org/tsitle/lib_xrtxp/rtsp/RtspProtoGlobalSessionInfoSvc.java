@@ -315,6 +315,19 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 		}
 	}
 
+	@Override
+	public void deleteSessionInfo(@NonNull RtspProtoIdSession idSession) {
+		theWriteLock.lock();
+		try {
+			if (! sessionInfoMap.containsKey(idSession)) {
+				return;
+			}
+			sessionInfoMap.remove(idSession);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
