@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -146,7 +147,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
 	public @NonNull RtspRequestBasics receiveRequestFromClient()
-			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromClient()";
 
 		if (! isRequestFromClient) {
@@ -167,7 +168,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
 	public @NonNull RtspRequestBasics receiveRequestFromServer()
-			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromServer()";
 
 		if (isRequestFromClient) {
@@ -185,7 +186,7 @@ public final class RtspProtoRequestInputSvc {
 	private @NonNull RtspRequestBasics internalReceiveRequest(
 				@NonNull String fncName,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}

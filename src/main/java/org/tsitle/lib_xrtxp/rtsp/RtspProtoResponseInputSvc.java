@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
@@ -99,7 +100,7 @@ public final class RtspProtoResponseInputSvc {
 	 * @throws InputStreamNotReadyException If the input stream is not ready
 	 */
 	public @NonNull RtspResponseBasics receiveResponse()
-			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
 
 		if (rtxpTcpReadWrite.isSocketClosed()) {

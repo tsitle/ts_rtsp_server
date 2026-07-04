@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -231,7 +232,7 @@ public final class RtxpTcpReadWrite {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean canReadRtsp() throws TcpSocketIoException, TcpSocketClosedException {
+	public boolean canReadRtsp() throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTSP_RCVD);
 		} catch (InterruptedException e) {
@@ -273,7 +274,8 @@ public final class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean canReadRtcp(@NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException, TcpSocketClosedException {
+	public boolean canReadRtcp(@NonNull RtspProtoTcpChannelNr channNr)
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
 		} catch (InterruptedException e) {
@@ -300,7 +302,7 @@ public final class RtxpTcpReadWrite {
 	}
 
 	public boolean readRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		return internalReadRtpRtcpBinary(buf, channNr);
 	}
 
@@ -317,7 +319,7 @@ public final class RtxpTcpReadWrite {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void internalReadSocket() throws TcpSocketIoException, TcpSocketClosedException {
+	private void internalReadSocket() throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadSocket()";
 
 		try {
@@ -333,7 +335,7 @@ public final class RtxpTcpReadWrite {
 			int tmpQueueSize = 0;
 			boolean localIsRtpRtcpAllowed = isRtpRtcpAllowed.get();
 			while (! doStop.get()) {
-				checkTcpActivityTimeout(FNC_NAME);
+				checkTcpActivityTimeout();
 				boolean canContinue = true;
 				boolean haveSomething = false;
 				while (! doStop.get()) {
@@ -498,7 +500,7 @@ public final class RtxpTcpReadWrite {
 	}
 
 	private boolean internalReadRtpRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
 		} catch (InterruptedException e) {
@@ -586,9 +588,9 @@ public final class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private synchronized void checkTcpActivityTimeout(@NonNull String fncName) throws TcpSocketIoException {
+	private synchronized void checkTcpActivityTimeout() throws TcpSocketActivityTimeoutException {
 		if (Instant.now().minusSeconds(tcpActivityTimeout.get()).isAfter(lastActivityTime)) {
-			throw new TcpSocketIoException(fncName + ": TCP activity timeout");
+			throw new TcpSocketActivityTimeoutException();
 		}
 	}
 

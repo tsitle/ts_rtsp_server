@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.rtsp_tcp;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
@@ -12,10 +13,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.rtsp.*;
@@ -204,17 +201,22 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				playThreadMngInterface.shutdownThreadBySessionId(sessionInfoPtr.ptr.getIdSession());
 			}
 		} catch (TcpSocketClosedException e) {
-			logDebug(FNC_NAME, "TcpSocketClosedException: " + e.getMessage());
+			logDebug(FNC_NAME, "TcpSocketClosedException caught");
 		} catch (TcpSocketIoException e) {
-			logDebug(FNC_NAME, "TcpSocketIoException: " + e.getMessage());
+			logDebug(FNC_NAME, "TcpSocketIoException caught: " + e.getMessage());
+		} catch (TcpSocketActivityTimeoutException e) {
+			logDebug(FNC_NAME, "TcpSocketActivityTimeoutException caught");
+			if (! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
+				globalSessionInfoInterface.deleteSessionInfo(sessionInfoPtr.ptr.getIdSession());
+			}
 		} catch (UdpSocketIoException e) {
-			logError(FNC_NAME, "UdpSocketIoException: " + e.getMessage());
+			logError(FNC_NAME, "UdpSocketIoException caught: " + e.getMessage());
 		} catch (InterruptedException e2) {
-			logError(FNC_NAME, "InterruptedException");
+			logError(FNC_NAME, "InterruptedException caught");
 			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
 			//e.printStackTrace();
-			logError(FNC_NAME, "Exception: " + e.getMessage());
+			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			logInfo(FNC_NAME, String.format("Closing RTSP%s for %s:%d",
 					sessionInfoPtr.ptr.getIsRtspsConnection() ? "S" : "",
@@ -239,7 +241,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	}
 
 	@Override
-	public boolean cbCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException, TcpSocketClosedException {
+	public boolean cbCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr)
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
@@ -248,7 +251,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	@Override
 	public boolean cbReadRtcpBinaryOverTcp(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
@@ -273,7 +276,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
-			throws TcpSocketClosedException, TcpSocketIoException, InputStreamNotReadyException, UdpSocketIoException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+					InputStreamNotReadyException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveClientRequestAndRespond()";
 
 		cachedSetParamValues.clear();
@@ -470,7 +474,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private MainLoopResult mainLoop(final int loopCounter)
-			throws TcpSocketClosedException, TcpSocketIoException, UdpSocketIoException, InterruptedException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+					UdpSocketIoException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		if (loopCounter % 11 == 0 && sessionInfoPtr.ptr.getIsTransportUdp()) {  // 11^=roughly once every 1s

@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
@@ -219,7 +220,7 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
-		} catch (TcpSocketIoException | TcpSocketClosedException e) {
+		} catch (TcpSocketIoException | TcpSocketClosedException | TcpSocketActivityTimeoutException e) {
 			// fail silently
 		} finally {
 			if (parRtcpSocketUdp != null) {
@@ -242,10 +243,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException, TcpSocketClosedException {
+	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
-		//
 		try {
 			if (! isPaused.get() && ! queueSend.isEmpty()) {
 				sendFromQueue();

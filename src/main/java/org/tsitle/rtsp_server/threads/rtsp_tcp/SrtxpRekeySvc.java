@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtsp_tcp;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
@@ -100,7 +101,7 @@ final class SrtxpRekeySvc {
 		}
 	}
 
-	boolean srtxpRekeyOutbound() throws TcpSocketIoException, TcpSocketClosedException {
+	boolean srtxpRekeyOutbound() throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound()";
 
 		if (sessionInfoPtr.ptr.getSessionState() != RtspProtoSessionState.PLAYING) {
@@ -214,7 +215,7 @@ final class SrtxpRekeySvc {
 	private boolean srtxpRekeyOutbound_mikey_oneStream(
 				@NonNull ChildThreadsForOneStream ctfos,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
-			) throws TcpSocketIoException, TcpSocketClosedException {
+			) throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_mikey_oneStream()";
 
 		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
@@ -281,7 +282,7 @@ final class SrtxpRekeySvc {
 	}
 
 	private boolean srtxpRekeyOutbound_sdes(@NonNull RtspProtoKmdsStream kmdsOutbound)
-			throws TcpSocketIoException, TcpSocketClosedException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_sdes()";
 
 		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr.getLastRequestResourceUrl_mainStream();
@@ -340,7 +341,8 @@ final class SrtxpRekeySvc {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspProtoStatusCode recvResponseFromClient() throws TcpSocketClosedException, TcpSocketIoException {
+	private @NonNull RtspProtoStatusCode recvResponseFromClient()
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
 		int timeoutCnt = 0;
 		RtspResponseBasics respBasics = null;
 		while (++timeoutCnt < 100) {
