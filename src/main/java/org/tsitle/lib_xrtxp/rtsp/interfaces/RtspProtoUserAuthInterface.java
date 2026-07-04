@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntAuthClient;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
@@ -8,6 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 public interface RtspProtoUserAuthInterface {
 
 	boolean authenticate(
+				@NonNull RtspProtoSessionInfo sessionInfo,
 				@NonNull RtspProtoDataCntAuthClient requAuthClient,
 				@NonNull RtspProtoMessageType messageType
 			);

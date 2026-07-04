@@ -308,9 +308,6 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			srtcpVarsOutbound.ctxReadLock.lock();
 			try {
 				if (srtcpVarsOutbound.ctxObj != null) {
-					if (! srtcpVarsOutbound.ctxObj.getSsrcId().equals(params.getSsrcId())) {
-						throw new SrtxpSecurityException(FNC_NAME + ": SSRC mismatch");
-					}
 					srtcpVarsOutbound.ctxObj.protectRtcpSrCompound(
 							plainPktBuf,
 							params.getSsrcId(),
@@ -549,7 +546,9 @@ public class ThreadRtcpSendRecv extends ThreadPausableBase {
 			}
 		}
 		//
-		params.getCbNotifyRrPacketReceived().orElseThrow().accept(Instant.now());
+		if (parRtcpRwIfTcp != null) {
+			parRtcpRwIfTcp.cbNotifyRcvdRtcpRrPacketOverTcp(Instant.now());
+		}
 	}
 
 	private void handleRtcpPacketSR(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {

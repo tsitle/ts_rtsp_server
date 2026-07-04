@@ -32,8 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RtspServerApp {
 
-	private static final int RTSP_THREADS_CORE = 10;
-	private static final int RTSP_THREADS_MAX = 20;  // one thread per client connection
+	private static final int RTSP_THREADS_TCM = 20;  // one thread per client connection
 
 	private static RtspConfig rtspConfig = null;
 
@@ -43,15 +42,14 @@ public class RtspServerApp {
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 	private static RtxpLogger rtxpLoggerThread = new RtxpLogger();
-	private static final ExecutorService poolRtsp = new ThreadPoolExecutor(
-			RTSP_THREADS_CORE,
-			RTSP_THREADS_MAX,
+	private static final ExecutorService poolRtspTcm = new ThreadPoolExecutor(
+			RTSP_THREADS_TCM,
+			RTSP_THREADS_TCM,
 			60L, TimeUnit.SECONDS,
-			new LinkedBlockingQueue<>(100)
+			new SynchronousQueue<>(true)
 		);
 	private static @Nullable ExecutorService poolMqE2I;
-
-	private static final RtspThreadMng rtspThreadMng = new RtspThreadMng();
+	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -116,7 +114,7 @@ public class RtspServerApp {
 				Math.max(mqStreamSources.size(), 1),
 				Math.max(mqStreamSources.size(), 1),
 				60L, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<>(100)
+				new SynchronousQueue<>(true)
 			);
 		startMqs(mqStreamSources);
 
@@ -285,20 +283,28 @@ public class RtspServerApp {
 
 		final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 
+		rtspPlayThreadMng = new RtspPlayThreadMng(
+				RtspServerApp::addMsgForLogThread,
+				cancelToken,
+				rtspConfig,
+				globalSessionInfoSvc
+			);
+
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
 			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspConfig.getServerTcpPortRtsp()) : null)) {
 				if (listenSocketRtsps != null) {
 					logInfo(FNC_NAME, "Waiting for RTSPS connections on port " + rtspsTcpPort);
-					listenSocketRtsps.setSoTimeout(50);  // only for accept()
+					listenSocketRtsps.setSoTimeout(25);  // only for accept()
 				}
 				if (listenSocketRtsp != null) {
 					logInfo(FNC_NAME, "Waiting for RTSP connections on port " + rtspTcpPort);
-					listenSocketRtsp.setSoTimeout(50);  // only for accept()
+					listenSocketRtsp.setSoTimeout(25);  // only for accept()
 				}
 
 				Socket socketRtspTcp = null;
 				boolean haveConn = false;
 				boolean isRtspsConn = false;
+				int loopCount = 0;
 				while (! doStop.get()) {
 					if (listenSocketRtsps != null) {
 						try {
@@ -319,6 +325,10 @@ public class RtspServerApp {
 						}
 					}
 					if (! haveConn || socketRtspTcp == null) {
+						rtspPlayThreadMng.startNewPlayThreadFromQueue();
+						if (++loopCount % 50 == 0) {
+							rtspPlayThreadMng.doHousekeepingForPlayThreads();
+						}
 						continue;
 					}
 					haveConn = false;
@@ -331,14 +341,14 @@ public class RtspServerApp {
 							rtspConfig,
 							cfgServerNameAndVersion,
 							globalSessionInfoSvc,
-							rtspThreadMng,
+							rtspPlayThreadMng,
 							++clientConnectionCount,
 							socketRtspTcp,
 							isRtspsConn
 						);
 
 					try {
-						poolRtsp.submit(thread);
+						poolRtspTcm.submit(thread);
 					} catch (RejectedExecutionException e) {
 						logWarn(FNC_NAME, "RejectedExecutionException caught: " + e.getMessage());
 						try { socketRtspTcp.close(); } catch (IOException ignored) { }
@@ -361,13 +371,18 @@ public class RtspServerApp {
 	private static void stopThreads() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
 
-		poolRtsp.shutdown();
+		if (rtspPlayThreadMng != null) {
+			rtspPlayThreadMng.shutdownAllThreads();
+		}
+
+		//
+		poolRtspTcm.shutdown();
 		if (poolMqE2I != null) {
 			poolMqE2I.shutdown();
 		}
 		cancelToken.cancelled = true;
 
-		stopPool(FNC_NAME, "POOLRTSP", poolRtsp);
+		stopPool(FNC_NAME, "POOLRTSP", poolRtspTcm);
 
 		if (poolMqE2I != null) {
 			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);

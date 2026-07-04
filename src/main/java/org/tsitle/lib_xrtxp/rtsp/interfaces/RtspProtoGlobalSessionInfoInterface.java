@@ -1,8 +1,11 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
@@ -93,5 +96,24 @@ public interface RtspProtoGlobalSessionInfoInterface {
 	 * @return The number of unauthorized attempts
 	 */
 	int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource);
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Load the Session Information for a given Session ID.
+	 * @param inputIdSession Session ID
+	 * @param outputSiPtr Output for the Session Information pointer
+	 * @throws RtspProtoSessionInfoException If the Session ID was not found
+	 */
+	void loadSessionInfo(
+				@NonNull RtspProtoIdSession inputIdSession,
+				@NonNull RtspProtoPtrSessionInfo outputSiPtr
+			) throws RtspProtoSessionInfoException;
+
+	/**
+	 * Save the given Session Information.
+	 * @param inputSiPtr Input for the Session Information
+	 */
+	void saveSessionInfo(@NonNull RtspProtoPtrSessionInfo inputSiPtr);
 
 }

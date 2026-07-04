@@ -25,20 +25,17 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
-	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
-				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
-		this.rtspSessionInfo = rtspSessionInfo;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
@@ -48,6 +45,7 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	@Override
 	public boolean authenticate(
+				@NonNull RtspProtoSessionInfo sessionInfo,
 				@NonNull RtspProtoDataCntAuthClient requAuthClient,
 				@NonNull RtspProtoMessageType messageType
 			) {
@@ -64,14 +62,14 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! requAuthClient.getAuthRealm().equals(rtspSessionInfo.getPermAuthServerRealm().orElse("-unset-"))) {
+				! requAuthClient.getAuthRealm().equals(sessionInfo.getPermAuthServerRealm().orElse("-unset-"))) {
 			logDebug(FNC_NAME, "Invalid realm");
 			return false;
 		}
 		if (requAuthClient.getAuthPlainPassword().isBlank() &&
-				! (requAuthClient.getAuthNonce().equals(rtspSessionInfo.getPermAuthServerNonce().orElse("-unset-")) &&
+				! (requAuthClient.getAuthNonce().equals(sessionInfo.getPermAuthServerNonce().orElse("-unset-")) &&
 						globalSessionInfoInterface.existsAuthServerNonce(
-								rtspSessionInfo.getClientIpAddr(), rtspSessionInfo.getPermAuthServerNonce().orElse("-unset-")
+								sessionInfo.getClientIpAddr(), sessionInfo.getPermAuthServerNonce().orElse("-unset-")
 							))) {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;

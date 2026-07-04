@@ -16,8 +16,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 
 import java.net.DatagramSocket;
-import java.time.Instant;
-import java.util.function.Consumer;
 
 public class BuilderThreadRtcp {
 
@@ -49,8 +47,6 @@ public class BuilderThreadRtcp {
 		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
 		public Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
 		public Builder cryptoKmdOutboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
-
-		public Builder cbNotifyRrPacketReceived(@NonNull Consumer<@NonNull Instant> v) { this.threadParams.setCbNotifyRrPacketReceived(v); return this; }
 
 		//
 		public ThreadRtcpSendRecv build() {

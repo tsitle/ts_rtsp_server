@@ -36,7 +36,6 @@ public final class RtspChildThreadMng {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
-	private final int clientConnectionNr;
 	private final @NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds = new HashSet<>();
 	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 	private final @NonNull RtspProtoIpAddr clientIpAddr = RtspProtoIpAddr.ofLoopback();
@@ -59,7 +58,6 @@ public final class RtspChildThreadMng {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param rtspConfig RTSP configuration
-	 * @param clientConnectionNr Client connection number
 	 * @param subStreamIds Sub-Stream IDs
 	 * @param idSession Session ID
 	 * @param clientIpAddr Client IP address
@@ -73,7 +71,6 @@ public final class RtspChildThreadMng {
 	RtspChildThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspConfig rtspConfig,
-				int clientConnectionNr,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds,
 				@NonNull RtspProtoIdSession idSession,
 				@NonNull RtspProtoIpAddr clientIpAddr,
@@ -95,7 +92,6 @@ public final class RtspChildThreadMng {
 		}
 		this.logMsgInterface = logMsgInterface;
 		this.rtspConfig = rtspConfig;
-		this.clientConnectionNr = clientConnectionNr;
 		for (RtspProtoIdSubStream tmpIdSs : subStreamIds){
 			this.subStreamIds.add(tmpIdSs.clone());
 		}
@@ -332,10 +328,9 @@ public final class RtspChildThreadMng {
 				.cryptoIsRtxpEncryptionEnabled(tmpSiSs.getSubStreamTpPtr().getIsEncr())
 				.cryptoKmdInboundRtcp(tmpSiSs.getKmdInboundCurPtr().getKmd().orElse(null))
 				.cryptoKmdOutboundRtcp(tmpSiSs.getKmdOutboundPtr().getKmd().orElse(null))
-				.cbNotifyRrPacketReceived(rctcbRtcpFromRtp::cbRcvdRtcpRrPacket)
 				.build();
 		ctfos.rtcpThreadSendRecv.setName(
-				"RTCP#c" + clientConnectionNr +
+				"RTCP" +
 				"#sid" + idSession.getIdStr().orElseThrow() +
 				"#ss" + ctfos.idStreamSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()
@@ -382,7 +377,7 @@ public final class RtspChildThreadMng {
 							)
 					)
 				.comXsrcBlockEntry(xsrcBlock)
-				.comCbRtcpAppendToOutgoingQueue(rctcbRtcpFromRtp::cbSendRtcpPackets)
+				.comCbRtcpAppendToOutgoingQueue(rctcbRtcpFromRtp::cbSendRtcpPacketsFromRtp)
 				.comCbNotifyThreadReady(rctcbNtr::cbNotifyThreadReady)
 				.comCbThreadMayStartPlayback(rctcbNtr::cbThreadMayStartPlayback)
 				.comAvStreamIncomingUri(avSsi.inputUri());
@@ -524,7 +519,7 @@ public final class RtspChildThreadMng {
 				}
 		}
 		ctfos.rtpThreadSender.setName(
-				"RTP_#c" + clientConnectionNr +
+				"RTP_" +
 				"#sid" + idSession.getIdStr().orElseThrow() +
 				"#ss" + ctfos.idStreamSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()

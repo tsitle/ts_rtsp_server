@@ -38,7 +38,7 @@ public final class RtspProtoResponseOutputSvc {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
-	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
 	private final boolean isResponseFromClient;
 
@@ -57,7 +57,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
-	 * @param rtspSessionInfo RTSP session info
+	 * @param sessionInfoPtr Session Info pointer
 	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
 	 * @param parameterGetterInterface Parameter getter instance (can be null)
@@ -74,7 +74,7 @@ public final class RtspProtoResponseOutputSvc {
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
 				boolean cfgIsDebugDisableTransportUdp,
-				@NonNull RtspProtoSessionInfo rtspSessionInfo,
+				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
@@ -97,7 +97,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.logMsgInterface = logMsgInterface;
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
-		this.rtspSessionInfo = rtspSessionInfo;
+		this.sessionInfoPtr = sessionInfoPtr;
 		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
 		this.isResponseFromClient = isResponseFromClient;
 
@@ -203,7 +203,7 @@ public final class RtspProtoResponseOutputSvc {
 		rtspProtoLowMsgWriter.writeMessage(msgRaw);
 		logDebug(FNC_NAME, String.format("Sent response '%s' to remote host (<%s>, CSeq=%s)\n",  // <-- intentional extra NL
 				msgStructured.statusCode,
-				rtspSessionInfo.getIdSession().isEmpty() ? "-" : rtspSessionInfo.getIdSession().getIdStr().orElseThrow(),
+				sessionInfoPtr.ptr.getIdSession().isEmpty() ? "-" : sessionInfoPtr.ptr.getIdSession().getIdStr().orElseThrow(),
 				msgStructured.getHeaderCseq().isPresent() ? msgStructured.getHeaderCseq().get() + "" : "-"));
 	}
 
@@ -214,16 +214,16 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull RtspProtoSetupInfosStream setupInfosStream,
 				@NonNull RtspProtoDataResponse dataResp
 			) {
-		dataResp.copyFromRequest(rtspSessionInfo.getLastIncomingRequestData());
+		dataResp.copyFromRequest(sessionInfoPtr.ptr.getLastIncomingRequestData());
 
 		//
-		dataResp.rrIdSession.copyFrom(rtspSessionInfo.getIdSession());
+		dataResp.rrIdSession.copyFrom(sessionInfoPtr.ptr.getIdSession());
 		//
-		dataResp.respAuthServer.copyFrom(rtspSessionInfo.getPermAuthServer());
+		dataResp.respAuthServer.copyFrom(sessionInfoPtr.ptr.getPermAuthServer());
 		//
-		dataResp.rrStreamTpMain.copyFrom(rtspSessionInfo.getStreamTpMain());
+		dataResp.rrStreamTpMain.copyFrom(sessionInfoPtr.ptr.getStreamTpMain());
 		//
-		setupInfosStream.copyFrom(rtspSessionInfo.getDescrSetupInfosStream());
+		setupInfosStream.copyFrom(sessionInfoPtr.ptr.getDescrSetupInfosStream());
 	}
 
 	private void updateSessionInfo(
@@ -233,23 +233,23 @@ public final class RtspProtoResponseOutputSvc {
 			) {
 		// store new Session ID if one has been generated
 		Optional<RtspProtoIdSession> tmpOptIdSess = msgStructured.getHeaderSessionId();
-		if (tmpOptIdSess.isPresent() && rtspSessionInfo.getIdSession().isEmpty() &&
-				! tmpOptIdSess.get().isEmpty() && ! rtspSessionInfo.getIdSession().isReadOnly()) {
-			rtspSessionInfo.setSessionId(tmpOptIdSess.get());
+		if (tmpOptIdSess.isPresent() && sessionInfoPtr.ptr.getIdSession().isEmpty() &&
+				! tmpOptIdSess.get().isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isReadOnly()) {
+			sessionInfoPtr.ptr.setSessionId(tmpOptIdSess.get());
 		}
 
 		// store permanent Auth data
-		if (! (isResponseFromClient || rtspSessionInfo.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
-			rtspSessionInfo.setPermAuthServer(dataResp.respAuthServer);
+		if (! (isResponseFromClient || sessionInfoPtr.ptr.getPermAuthServer().isReadOnly() || dataResp.respAuthServer.isEmpty())) {
+			sessionInfoPtr.ptr.setPermAuthServer(dataResp.respAuthServer);
 		}
 
 		// store stream settings
-		rtspSessionInfo.setDescrSetupInfosStream(setupInfosStream);
+		sessionInfoPtr.ptr.setDescrSetupInfosStream(setupInfosStream);
 
 		// store the available Sub-Stream IDs from a DESCRIBE response
 		Set<@NonNull RtspProtoIdSubStream> tmpSiSsIds = setupInfosStream.getSubStreamIds();
 		if (! tmpSiSsIds.isEmpty()) {
-			rtspSessionInfo.setDescrAvailableSubStreamIds(tmpSiSsIds);
+			sessionInfoPtr.ptr.setDescrAvailableSubStreamIds(tmpSiSsIds);
 		}
 	}
 

@@ -24,5 +24,7 @@ public final class RtspProtoHighConstants {
 	 * instance will check for a timeout.
 	 */
 	public static final int DEFAULT_RTSP_SESSION_TIMEOUT = 20;
+	/** RTSP session timeout tolerance in seconds. Sometimes even compliant clients fail to send a keep-alive message in time. */
+	public static final int SESSION_TIMEOUT_TOLERANCE_SEC = 15;
 
 }

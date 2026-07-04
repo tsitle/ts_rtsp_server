@@ -1,13 +1,15 @@
 package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.*;
-import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
@@ -18,17 +20,28 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public final class ThreadRtspPlay extends RunnableBase implements RtspChildThreadsCbNotifyThreadReadyInterface {
+public final class ThreadRtspPlay extends RunnableBase
+		implements RtspChildThreadsCbNotifyThreadReadyInterface, RtspChildThreadsCbRtcpFromRtpInterface,
+				RtspChildThreadsGetRunning {
 
 	private final @NonNull String threadName;
 
-	private final @NonNull RtspProtoSessionInfo rtspSessionInfo;
+	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
 
 	private final @NonNull RtspChildThreadMng rtspChildThreadMng;
-
+	private final Map<@NonNull RtspProtoIdXsrc, @NonNull ChildThreadsForOneStream> cacheChildThreadsPerSsrcMap = new HashMap<>();
 	/** Track 'Thread-Is-Ready-For-Playback' states per Sub-Stream */
 	private final @NonNull Map<@NonNull RtspProtoIdSubStream, @NonNull Boolean> threadReadyStates = new ConcurrentHashMap<>();
+
+	private final ReadWriteLock theLockScthbr = new ReentrantReadWriteLock();
+	private final Lock theWriteLockScthbr = theLockScthbr.writeLock();
+	private boolean startChildThreadsHasBeenRequested = false;
+
+	private final @NonNull CancelToken localCancelToken = new CancelToken();
 
 	/**
 	 * Constructor.
@@ -37,10 +50,8 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 	 * @param rtspConfig RTSP configuration
 	 * @param rtspSessionInfo Session info
 	 * @param rctcbRtpTcp Callback interface for RTSP child threads
-	 * @param rctcbRtcpFromRtp Callback interface for RTSP child threads
 	 * @param availableStreamsInterface Available streams instance
 	 * @param globalSessionInfoSvc Global Session Info service
-	 * @param clientConnectionNr Client connection number
 	 */
 	public ThreadRtspPlay(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -48,17 +59,15 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 				@NonNull RtspConfig rtspConfig,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp,
-				@NonNull RtspChildThreadsCbRtcpFromRtpInterface rctcbRtcpFromRtp,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc,
-				int clientConnectionNr
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
 		super(logMsgInterface, cancelToken);
 
-		this.rtspSessionInfo = rtspSessionInfo;
+		this.sessionInfoPtr = new RtspProtoPtrSessionInfo(rtspSessionInfo);
 
 		//
-		this.threadName = "RTSP_PLAY#c" + clientConnectionNr;
+		this.threadName = "RTSP_PLAY#sid" + rtspSessionInfo.getIdSession().getIdStr().orElseThrow();
 
 		//
 		Map<RtspProtoIdSubStream, RtspProtoSetupInfoForSubStream> setupInfoPerSsMap = new HashMap<>();
@@ -74,14 +83,13 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 		this.rtspChildThreadMng = new RtspChildThreadMng(
 				logMsgInterface,
 				rtspConfig,
-				clientConnectionNr,
 				subStreamIds,
-				this.rtspSessionInfo.getIdSession(),
-				this.rtspSessionInfo.getClientIpAddr(),
+				rtspSessionInfo.getIdSession(),
+				rtspSessionInfo.getClientIpAddr(),
 				setupInfoPerSsMap,
 				this,
 				rctcbRtpTcp,
-				rctcbRtcpFromRtp,
+				this,
 				availableStreamsInterface,
 				globalSessionInfoSvc
 			);
@@ -98,12 +106,12 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 
 		//
 		isRunning.set(true);
-		logInfo(FNC_NAME, "Playing RTP");
+		logDebug(FNC_NAME, "Playing RTP");
 
 		//
 		try {
 			int loopCounter = 0;
-			while (! hasBeenRequestedToStop()) {
+			while (! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
 				if (! mainLoop(++loopCounter)) {
 					break;
 				}
@@ -123,8 +131,6 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 			//e.printStackTrace();
 			logError(FNC_NAME, "Exception: " + e.getMessage());
 		} finally {
-			logInfo(FNC_NAME, "Closing");
-			//
 			logDebug(FNC_NAME, "stopping thread");
 			// stop sending/receiving RTP/RTCP packets
 			rtspChildThreadMng.pauseOrStopChildThreads(false);
@@ -134,26 +140,68 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 		}
 	}
 
+	public void stopThread() {
+		localCancelToken.cancelled = true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void updateSessionInfo(@NonNull RtspProtoSessionInfo rtspSessionInfo) {
+		sessionInfoPtr.ptr = rtspSessionInfo;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public synchronized void cbSendRtcpPacketsFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
+		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpPackets()";
+
+		ChildThreadsForOneStream ctfosToUse = null;
+		if (cacheChildThreadsPerSsrcMap.containsKey(ssrcId)) {
+			ctfosToUse = cacheChildThreadsPerSsrcMap.get(ssrcId);
+		} else {
+			for (RtspProtoRscUrl tmpRscUrl : sessionInfoPtr.ptr.getDescrSetupInfoRscUrls()) {
+				if (! ctfosMapContainsKey(tmpRscUrl.idSubStream)) {
+					continue;
+				}
+				try {
+					if (! sessionInfoPtr.ptr.getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
+						continue;
+					}
+				} catch (RtspProtoSessionInfoException e) {
+					continue;
+				}
+				ctfosToUse = getCtfosMapValue(tmpRscUrl.idSubStream);
+				cacheChildThreadsPerSsrcMap.put(ssrcId.clone(), ctfosToUse);
+				break;
+			}
+		}
+		if (ctfosToUse == null) {
+			throw new IllegalStateException(FNC_NAME + ": No stream found for ssrcId: " + ssrcId);
+		}
+		if (ctfosToUse.rtcpThreadSendRecv != null &&
+				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
+				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
+			ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
 	public @NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesOnlyRunning() {
 		return rtspChildThreadMng.getCtfosMapValuesOnlyRunning();
-	}
-
-	public boolean ctfosMapContainsKey(@NonNull RtspProtoIdSubStream idSubStream) {
-		return rtspChildThreadMng.ctfosMapContainsKey(idSubStream);
-	}
-
-	public @NonNull ChildThreadsForOneStream getCtfosMapValue(@NonNull RtspProtoIdSubStream idSubStream) {
-		return rtspChildThreadMng.getCtfosMapValue(idSubStream);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void startChildThreads() {
-		rtspChildThreadMng.startChildThreads(
-				rtspSessionInfo.getResourceUrlForMt_nonSetup(RtspProtoMessageType.PLAY).orElseThrow()
-			);
+		theWriteLockScthbr.lock();
+		try {
+			startChildThreadsHasBeenRequested = true;
+		} finally {
+			theWriteLockScthbr.unlock();
+		}
 	}
 
 	public void pauseOrStopChildThreads(boolean doPause) {
@@ -174,7 +222,7 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 	@Override
 	public synchronized @NonNull Boolean cbThreadMayStartPlayback() {
 		boolean areAllReady = true;
-		for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfoSubStreamIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr.getDescrSetupInfoSubStreamIds()) {
 			if (! threadReadyStates.getOrDefault(tmpIdSs, false)) {
 				areAllReady = false;
 				break;
@@ -184,6 +232,26 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean getIsTransportUdp() {
+		return sessionInfoPtr.ptr.getIsTransportUdp();
+	}
+
+	public long getLastIncomingRtspRequestTimeDeltaSeconds() {
+		return sessionInfoPtr.ptr.getLastIncomingRequestTimeDeltaSeconds();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean ctfosMapContainsKey(@NonNull RtspProtoIdSubStream idSubStream) {
+		return rtspChildThreadMng.ctfosMapContainsKey(idSubStream);
+	}
+
+	private @NonNull ChildThreadsForOneStream getCtfosMapValue(@NonNull RtspProtoIdSubStream idSubStream) {
+		return rtspChildThreadMng.getCtfosMapValue(idSubStream);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void updateCongestionLevel_oneStream(@NonNull ChildThreadsForOneStream ctfos) {
@@ -206,10 +274,10 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 	}
 
 	private void updateCongestionLevel() {
-		if (rtspSessionInfo.getSessionState() != RtspProtoSessionState.PLAYING) {
+		if (sessionInfoPtr.ptr.getSessionState() != RtspProtoSessionState.PLAYING) {
 			return;
 		}
-		for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfoSubStreamIds()) {
+		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr.getDescrSetupInfoSubStreamIds()) {
 			if (! rtspChildThreadMng.ctfosMapContainsKey(tmpIdSs)) {
 				continue;
 			}
@@ -221,10 +289,25 @@ public final class ThreadRtspPlay extends RunnableBase implements RtspChildThrea
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean mainLoop(final int loopCounter) throws InterruptedException {
+		theWriteLockScthbr.lock();
+		try {
+			if (startChildThreadsHasBeenRequested) {
+				rtspChildThreadMng.startChildThreads(
+						sessionInfoPtr.ptr.getLastRequestResourceUrl_mainStream().orElseThrow()
+					);
+				startChildThreadsHasBeenRequested = false;
+			}
+		} finally {
+			theWriteLockScthbr.unlock();
+		}
+
 		if (loopCounter % 37 == 0) {
 			updateCongestionLevel();
 		}
+
+		//
 		Thread.sleep(50);
+
 		return true;
 	}
 

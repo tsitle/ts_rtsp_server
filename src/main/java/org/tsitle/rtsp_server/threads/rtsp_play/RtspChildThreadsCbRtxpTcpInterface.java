@@ -7,6 +7,8 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
+import java.time.Instant;
+
 /**
  * Callback interface for RTSP child threads.
  */
@@ -21,6 +23,7 @@ public interface RtspChildThreadsCbRtxpTcpInterface {
 			throws TcpSocketIoException, TcpSocketClosedException;
 	boolean cbReadRtcpBinaryOverTcp(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException;
+	void cbNotifyRcvdRtcpRrPacketOverTcp(@NonNull Instant time);
 	void cbSendRtcpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException;
 

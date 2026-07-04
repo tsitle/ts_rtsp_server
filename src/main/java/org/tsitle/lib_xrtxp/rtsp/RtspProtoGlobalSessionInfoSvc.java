@@ -5,7 +5,9 @@ import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
 import org.tsitle.lib_xrtxp.common.helpers.UuidHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -52,6 +54,8 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 
 	private final @NonNull String saltForIpHash;
 
+	private final @NonNull Map<@NonNull RtspProtoIdSession, @NonNull RtspProtoSessionInfo> sessionInfoMap = new HashMap<>();
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -72,6 +76,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param clientIpAddr Client's IP address
 	 * @return Unique Sub-Stream ID
 	 */
+	@Override
 	public @NonNull RtspProtoIdSubStream createSubStreamId(
 				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
@@ -137,6 +142,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @return Input Source ID
 	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
+	@Override
 	public @NonNull RtspProtoIdInputSource getInputSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
@@ -151,6 +157,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @return Stream Source ID
 	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
+	@Override
 	public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
@@ -165,6 +172,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param clientIpAddr Client's IP address
 	 * @return Nonce
 	 */
+	@Override
 	public @NonNull String createAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr) {
 		final String ipHash = getIpHash(clientIpAddr);
 		final String tmpUuid = UuidHelper.generateUuid(false);
@@ -190,6 +198,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param nonce Nonce
 	 * @return True if the nonce exists, false otherwise
 	 */
+	@Override
 	public boolean existsAuthServerNonce(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull String nonce) {
 		final String ipHash = getIpHash(clientIpAddr);
 
@@ -209,6 +218,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param idInputSource Input source ID
 	 * @return The new number of unauthorized attempts
 	 */
+	@Override
 	public int incrementUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String uaId = getUaId(clientIpAddr, idInputSource);
 
@@ -239,6 +249,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param clientIpAddr Client's IP address
 	 * @param idInputSource Input source ID
 	 */
+	@Override
 	public void resetUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String uaId = getUaId(clientIpAddr, idInputSource);
 
@@ -259,6 +270,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	 * @param idInputSource Input source ID
 	 * @return The number of unauthorized attempts
 	 */
+	@Override
 	public int getUnauthorized(@NonNull RtspProtoIpAddr clientIpAddr, @NonNull RtspProtoIdInputSource idInputSource) {
 		final String uaId = getUaId(clientIpAddr, idInputSource);
 
@@ -270,6 +282,36 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 			return 0;
 		} finally {
 			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public void loadSessionInfo(@NonNull RtspProtoIdSession inputIdSession, @NonNull RtspProtoPtrSessionInfo outputSiPtr)
+			throws RtspProtoSessionInfoException {
+		theReadLock.lock();
+		try {
+			if (! sessionInfoMap.containsKey(inputIdSession)) {
+				throw new RtspProtoSessionInfoException("Session ID not found: '" + inputIdSession.getIdStr().orElse("-unset-") + "'");
+			}
+			outputSiPtr.ptr = sessionInfoMap.get(inputIdSession);
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	@Override
+	public void saveSessionInfo(@NonNull RtspProtoPtrSessionInfo inputSiPtr) {
+		theWriteLock.lock();
+		try {
+			RtspProtoIdSession tmpId = inputSiPtr.ptr.getIdSession();
+			if (sessionInfoMap.containsKey(tmpId)) {
+				return;
+			}
+			sessionInfoMap.put(tmpId, inputSiPtr.ptr);
+		} finally {
+			theWriteLock.unlock();
 		}
 	}
 

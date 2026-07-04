@@ -663,8 +663,10 @@ public final class RtspProtoSessionInfo {
 		theWriteLock.lock();
 		try {
 			boolean isRtsps = streamTpMain.getIsRtspsConnection();
+			boolean isUdp = streamTpMain.getIsTransportUdp();
 			streamTpMain.clear();
 			streamTpMain.setIsRtspsConnection(isRtsps);
+			streamTpMain.setIsTransportUdp(isUdp);
 
 			descrSetupInfosStream.clear();
 			descrAvailableSubStreamIds.clear();

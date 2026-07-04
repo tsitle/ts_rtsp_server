@@ -18,7 +18,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 /**
  * RTSP Request Authentication and Authorization Service
  */
-public class RtspProtoRequAuthSvc {
+public final class RtspProtoRequAuthSvc {
 
 	/** Maximum number of unauthorized requests per client per Input Source. */
 	private static final int MAX_UNAUTHORIZED_REQUESTS_PER_CLIENT_PER_IS = 50;
@@ -47,6 +47,7 @@ public class RtspProtoRequAuthSvc {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void checkAuthorization(
+				@NonNull RtspProtoSessionInfo sessionInfo,
 				@NonNull RtspProtoIpAddr clientIpAddr,
 				@NonNull RtspRequestBasics ioRequestBasics,
 				@NonNull RtspProtoDataCntAuthClient requAuthClient
@@ -82,7 +83,7 @@ public class RtspProtoRequAuthSvc {
 
 		//
 		if (doCheckAuthorization) {
-			wasAuthentificationOk = userAuthInterface.authenticate(requAuthClient, ioRequestBasics.messageType);
+			wasAuthentificationOk = userAuthInterface.authenticate(sessionInfo, requAuthClient, ioRequestBasics.messageType);
 			//
 			if (wasAuthentificationOk) {
 				wasAuthorizationOk = userAuthInterface.checkAccessToInputSource(requAuthClient, tmpIdIs);
