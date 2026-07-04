@@ -54,8 +54,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private final @NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
-	private @NonNull RtspProtoSessionInfo internalSessionInfoObj = new RtspProtoSessionInfo();
-	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = new RtspProtoPtrSessionInfo(internalSessionInfoObj);
+	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = new RtspProtoPtrSessionInfo(new RtspProtoSessionInfo());
 	private final @NonNull RtspProtoIdSession lastSessionId = RtspProtoIdSession.ofEmpty();
 
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
@@ -281,9 +280,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 		//
 		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient();
-		if (internalSessionInfoObj != sessionInfoPtr.ptr) {
-			internalSessionInfoObj = sessionInfoPtr.ptr;  // store the updated pointer
-		}
 		//
 		if (lastSessionId.isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
 			lastSessionId.copyFrom(sessionInfoPtr.ptr.getIdSession());
