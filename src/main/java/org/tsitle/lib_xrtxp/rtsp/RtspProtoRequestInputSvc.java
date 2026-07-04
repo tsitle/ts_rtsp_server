@@ -345,6 +345,7 @@ public final class RtspProtoRequestInputSvc {
 				sessionInfoPtr.ptr.getIdSession().isEmpty() && inpOptMsgIdSession != null && ! inpOptMsgIdSession.isEmpty()) {
 			try {
 				globalSessionInfoInterface.loadSessionInfo(inpOptMsgIdSession, sessionInfoPtr);
+				sessionInfoPtr.ptr.globalWriteLock();
 			} catch (RtspProtoSessionInfoException e) {
 				// ignore
 			}

@@ -283,42 +283,46 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 		cachedSetParamValues.clear();
 
-		//
-		RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient();
-		//
-		if (lastSessionId.isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
-			/*
-			 * The Session Info pointer has changed because an existing Session Info object has been loaded.
-			 */
-			lastSessionId.copyFrom(sessionInfoPtr.ptr.getIdSession());
-			//
-			updateRtxpTcpRwSettings();
-		}
-
-		//
+		sessionInfoPtr.ptr.globalWriteLock();
 		try {
-			rtspProtoResponseOutputSvc.sendResponse(resObj);
-		} catch (RtspProtoSendResponseFailedException e) {
-			logError(FNC_NAME, "RtspProtoSendResponseFailedException caught: " + e.getMessage());
-			return resObj;
-		} catch (TcpSocketClosedException | TcpSocketIoException e) {
-			if (resObj.messageType != RtspProtoMessageType.TEARDOWN) {  // VLC closes the socket before we can send a response
-				throw e;
+			RtspRequestBasics resObj = rtspProtoRequestInputSvc.receiveRequestFromClient();
+			//
+			if (lastSessionId.isEmpty() && ! sessionInfoPtr.ptr.getIdSession().isEmpty()) {
+				/*
+				 * The Session Info pointer has changed because an existing Session Info object has been loaded.
+				 */
+				lastSessionId.copyFrom(sessionInfoPtr.ptr.getIdSession());
+				//
+				updateRtxpTcpRwSettings();
 			}
-		}
-
-		//
-		if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SET_PARAMETER) {
-			Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = sessionInfoPtr.ptr.getRhSetParamValues();
-			tmpOptKvs.ifPresent(cachedSetParamValues::copyFrom);
 
 			//
-			if (! lastSessionId.isEmpty()) {
-				playThreadMngInterface.updateThreadsSessionInfoBySessionId(lastSessionId, sessionInfoPtr.ptr);
+			try {
+				rtspProtoResponseOutputSvc.sendResponse(resObj);
+			} catch (RtspProtoSendResponseFailedException e) {
+				logError(FNC_NAME, "RtspProtoSendResponseFailedException caught: " + e.getMessage());
+				return resObj;
+			} catch (TcpSocketClosedException | TcpSocketIoException e) {
+				if (resObj.messageType != RtspProtoMessageType.TEARDOWN) {  // VLC closes the socket before we can send a response
+					throw e;
+				}
 			}
+
+			//
+			if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SET_PARAMETER) {
+				Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = sessionInfoPtr.ptr.getRhSetParamValues();
+				tmpOptKvs.ifPresent(cachedSetParamValues::copyFrom);
+
+				//
+				if (! lastSessionId.isEmpty()) {
+					playThreadMngInterface.updateThreadsSessionInfoBySessionId(lastSessionId, sessionInfoPtr.ptr);
+				}
+			}
+
+			return resObj;
+		} finally {
+			sessionInfoPtr.ptr.globalWriteUnlock();
 		}
-		//
-		return resObj;
 	}
 
 	private boolean handleSuccessfulRequest(@NonNull RtspRequestBasics rtspRequestBasics) throws TcpSocketClosedException {

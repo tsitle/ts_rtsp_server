@@ -31,9 +31,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class RtspProtoSessionInfo {
 
-	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
-	private final Lock theReadLock = theLock.readLock();
-	private final Lock theWriteLock = theLock.writeLock();
+	private final ReadWriteLock theLockFields = new ReentrantReadWriteLock();
+	private final Lock theReadLockFields = theLockFields.readLock();
+	private final Lock theWriteLockFields = theLockFields.writeLock();
+
+	private final ReadWriteLock globalLock = new ReentrantReadWriteLock();
+	private final Lock globalWriteLock = globalLock.writeLock();
 
 	/** Authentication-related info from the server */
 	private final @NonNull RtspProtoDataCntAuthSrv permAuthServer = new RtspProtoDataCntAuthSrv();
@@ -136,42 +139,52 @@ public final class RtspProtoSessionInfo {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void globalWriteLock() {
+		globalWriteLock.lock();
+	}
+
+	public void globalWriteUnlock() {
+		globalWriteLock.unlock();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public Optional<String> getPermAuthServerRealm() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (permAuthServer.getAuthRealm().isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(permAuthServer.getAuthRealm());
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<String> getPermAuthServerNonce() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (permAuthServer.getAuthNonce().isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(permAuthServer.getAuthNonce());
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public @NonNull RtspProtoIpAddr getClientIpAddr() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return clientIpAddr.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	public void setClientIpAddr(@NonNull RtspProtoIpAddr value) throws RtspProtoSessionInfoException {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			if (clientIpAddr.equals(value)) {
 				return;
@@ -183,22 +196,22 @@ public final class RtspProtoSessionInfo {
 			clientIpAddr.copyFrom(value);
 			clientIpAddr.writeProtect();
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public boolean getIsRtspsConnection() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return streamTpMain.getIsRtspsConnection();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	public void setIsRtspsConnection(boolean value) throws RtspProtoSessionInfoException {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			if (haveSetIsRtspsConnection && value == streamTpMain.getIsRtspsConnection()) {
 				return;
@@ -211,55 +224,55 @@ public final class RtspProtoSessionInfo {
 			streamTpMain.setIsRtspsConnection(value);
 			haveSetIsRtspsConnection = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	public boolean getIsTransportSrtpSrtcp() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return streamTpMain.getIsTransportSrtpSrtcp();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public boolean getIsTransportUdp() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return streamTpMain.getIsTransportUdp();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public @NonNull RtspProtoIdSession getIdSession() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return idSession.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<String> getUnsupportedFeatureName() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (unsupportedFeatureName.isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(unsupportedFeatureName);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntGetRequFeat> getRhRequiredFeatures() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (rhRequiredFeatures.isFeatureNamesEmpty()) {
 				return Optional.empty();
@@ -269,12 +282,12 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntGetRequFeat> getRhProxyRequiredFeatures() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (rhProxyRequiredFeatures.isFeatureNamesEmpty()) {
 				return Optional.empty();
@@ -284,14 +297,14 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<RtspProtoDataCntGetSetParamNames> getRhInvalidParamNames() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhInvalidParamNamesIsSet || rhInvalidParamNamesObj.isParamNamesEmpty()) {
 				return Optional.empty();
@@ -301,12 +314,12 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntGetSetParamNames> getRhGetParamNames() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhGetParamNamesIsSet || rhGetParamNamesObj.isParamNamesEmpty()) {
 				return Optional.empty();
@@ -316,12 +329,12 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntGetSetParamKvs> getRhGetParamValues() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhGetParamValuesIsSet || rhGetParamValuesObj.isParamKvsEmpty()) {
 				return Optional.empty();
@@ -331,12 +344,12 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntGetSetParamKvs> getRhSetParamValues() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhSetParamValuesIsSet || rhSetParamValuesObj.isParamKvsEmpty()) {
 				return Optional.empty();
@@ -346,99 +359,99 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<String> getClientPlaybackRangeValue() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (clientPlaybackRangeValue.isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(clientPlaybackRangeValue);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<String> getServerPlaybackRangeValue() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (serverPlaybackRangeValue.isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(serverPlaybackRangeValue);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<String> getClientUserAgent() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (clientUserAgent.isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(clientUserAgent);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<String> getServerSoftware() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (serverSoftware.isBlank()) {
 				return Optional.empty();
 			}
 			return Optional.of(serverSoftware);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public @NonNull RtspProtoDataCntMessageTypes getRhSupportedMessageTypes() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			RtspProtoDataCntMessageTypes resObj = new RtspProtoDataCntMessageTypes();
 			resObj.copyFrom(rhSupportedMessageTypes);
 			resObj.writeProtect();
 			return resObj;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public @NonNull Set<RtspProtoIdSubStream> getDescrSetupInfoSubStreamIds() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return descrSetupInfosStream.getSubStreamIds();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public @NonNull Set<RtspProtoRscUrl> getDescrSetupInfoRscUrls() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return descrSetupInfosStream.getRscUrls();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public @NonNull RtspProtoSetupInfoForSubStream getDescrSetupInfoBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			RtspProtoSetupInfoForSubStream tmpSiPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream).orElseThrow(() ->
 					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
@@ -448,34 +461,34 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return resObj;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public @NonNull RtspProtoIdXsrc getDescrSetupInfoSsrcOutboundBySubStreamsId(@NonNull RtspProtoIdSubStream idSubStream)
 			throws RtspProtoSessionInfoException {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return descrSetupInfosStream.getSsrcOutboundBySubStreamId(idSubStream).orElseThrow(() ->
 					new RtspProtoSessionInfoException("No Stream Info found for Sub-Stream ID='" +
 							idSubStream.getIdStr().orElse("-unset-") + "'")
 				).clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public boolean getDescrSetupInfoHaveSetupForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return descrSetupInfosStream.haveSetupForSubStreamId(idSubStream);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<SrtxpKmd> getDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSsPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream);
 			if (tmpOptSiSsPtr.isEmpty()) {
@@ -483,12 +496,12 @@ public final class RtspProtoSessionInfo {
 			}
 			return tmpOptSiSsPtr.get().getKmdInboundNextPtr().getKmd();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public void clearDescrSetupInfoNextKmdInboundForSubStreamId(@NonNull RtspProtoIdSubStream idSubStream) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			Optional<RtspProtoSetupInfoForSubStream> tmpOptSiSsPtr = descrSetupInfosStream.getSiPtrBySubStreamId(idSubStream);
 			if (tmpOptSiSsPtr.isEmpty()) {
@@ -496,14 +509,14 @@ public final class RtspProtoSessionInfo {
 			}
 			tmpOptSiSsPtr.get().getKmdInboundNextPtr().clear();
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// --------------------------------------------------
 
 	public @NonNull Set<@NonNull RtspProtoIdSubStream> getDescrAvailableSubStreamIds() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			Set<RtspProtoIdSubStream> resSet = new HashSet<>();
 			for (RtspProtoIdSubStream idSubStream : descrAvailableSubStreamIds) {
@@ -511,14 +524,14 @@ public final class RtspProtoSessionInfo {
 			}
 			return resSet;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<RtspProtoDataCntSdpStructured> getRhDescribeSdpStc() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhDescribeSdpStcIsSet) {
 				return Optional.empty();
@@ -528,12 +541,12 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoDataCntSdpStructured> getRhAnnouncedSdpStc() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (! rhAnnouncedSdpStcIsSet) {
 				return Optional.empty();
@@ -543,32 +556,32 @@ public final class RtspProtoSessionInfo {
 			resObj.writeProtect();
 			return Optional.of(resObj);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<RtspConnectionPolicy> getRhConnectionPolicy() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (rhConnectionPolicy == RtspConnectionPolicy.NONE) {
 				return Optional.empty();
 			}
 			return Optional.of(rhConnectionPolicy);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public @NonNull RtspProtoSessionState getSessionState() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return sessionState;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
@@ -578,7 +591,7 @@ public final class RtspProtoSessionInfo {
 	 * @return True if the Session State was changed, false otherwise.
 	 */
 	public boolean moveToNextSessionState(@NonNull RtspProtoMessageType messageType) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			RtspProtoSessionState nextState = sessionState;
 			switch (messageType) {
@@ -592,75 +605,75 @@ public final class RtspProtoSessionInfo {
 			sessionState = nextState;
 			return true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<RtspProtoRscUrl> getLastRequestResourceUrl_mainStream() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (lastRequestRscUrl_mainStream.isEmpty()) {
 				return Optional.empty();
 			}
 			return Optional.of(lastRequestRscUrl_mainStream.clone());
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoRscUrl> getRequestResourceUrl_subStream(@NonNull RtspProtoIdSubStream idSubStream) {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return descrSetupInfosStream.getResourceUrlBySubStreamId(idSubStream);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public long getLastIncomingRequestTimeDeltaSeconds() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (lastIncomingRequestTime == null) {
 				return -1;
 			}
 			return Duration.between(lastIncomingRequestTime, Instant.now()).toSeconds();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	public Optional<RtspProtoRscUrl> getLastUsedOutgoingRequestResourceUrl() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (lastUsedOutgoingRequestResourceUrlObj.isEmpty()) {
 				return Optional.empty();
 			}
 			return Optional.of(lastUsedOutgoingRequestResourceUrlObj.clone());
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	public Optional<RtspProtoMessageType> getLastUsedOutgoingRequestMsgType() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			if (lastUsedOutgoingRequestMsgType == RtspProtoMessageType.UNKNOWN) {
 				return Optional.empty();
 			}
 			return Optional.of(lastUsedOutgoingRequestMsgType);
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void clearAfterTeardown() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			boolean isRtsps = streamTpMain.getIsRtspsConnection();
 			boolean isUdp = streamTpMain.getIsTransportUdp();
@@ -675,7 +688,7 @@ public final class RtspProtoSessionInfo {
 			lastRequestRscUrl_mainStream.clear();
 			sessionState = RtspProtoSessionState.INIT;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
@@ -685,372 +698,372 @@ public final class RtspProtoSessionInfo {
 	// ----------------------------------------------------
 
 	@NonNull RtspProtoDataCntAuthSrv getPermAuthServer() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return permAuthServer.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setPermAuthServer(@NonNull RtspProtoDataCntAuthSrv value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			permAuthServer.copyFrom(value);
 			permAuthServer.writeProtect();
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	@NonNull RtspProtoDataCntStreamTpMain getStreamTpMain() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			RtspProtoDataCntStreamTpMain resObj = new RtspProtoDataCntStreamTpMain();
 			resObj.copyFrom(streamTpMain);
 			resObj.writeProtect();
 			return resObj;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setStreamTpMainForceRtpRtcpEncryption() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			streamTpMain.setForceRtpRtcpEncryption(true);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void setStreamTpMainRtpRtcpEncryptionRequired() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			streamTpMain.setRtpRtcpEncryptionRequired(true);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void setStreamTpMainIsTransportUdp() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			streamTpMain.setIsTransportUdp(true);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void setStreamTpMainIsTransportTcp() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			streamTpMain.setIsTransportUdp(false);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void setStreamTpMainIsTransportSrtpSrtcp() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			streamTpMain.setIsTransportSrtpSrtcp(true);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setSessionId(@NonNull RtspProtoIdSession value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			idSession.copyFrom(value);
 			idSession.writeProtect();
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	@NonNull RtspProtoCseqNr getCseqNr_requFromRem_lastRcvd() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return cseqNr_requFromRem_lastRcvd.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setCseqNr_requFromRem_lastRcvd(@NonNull RtspProtoCseqNr value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			cseqNr_requFromRem_lastRcvd.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	@NonNull RtspProtoCseqNr getCseqNr_requFromRem_expected() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return cseqNr_requFromRem_expected.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setCseqNr_requFromRem_expected(@NonNull RtspProtoCseqNr value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			cseqNr_requFromRem_expected.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	@NonNull RtspProtoCseqNr getCseqNr_requToRem_lastSent() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return cseqNr_requToRem_lastSent.clone();
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setCseqNr_requToRem_lastSent(@NonNull RtspProtoCseqNr value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			cseqNr_requToRem_lastSent.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setUnsupportedFeatureName(@NonNull String value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			unsupportedFeatureName = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhRequiredFeatures(@NonNull RtspProtoDataCntGetRequFeat value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhRequiredFeatures.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhProxyRequiredFeatures(@NonNull RtspProtoDataCntGetRequFeat value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhProxyRequiredFeatures.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setRhInvalidParamNames(@NonNull RtspProtoDataCntGetSetParamNames value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhInvalidParamNamesObj.copyFrom(value);
 			rhInvalidParamNamesIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhGetParamNames(@NonNull RtspProtoDataCntGetSetParamNames value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhGetParamNamesObj.copyFrom(value);
 			rhGetParamNamesIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void clearRhGetParamNames() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhGetParamNamesObj.clear();
 			rhGetParamNamesIsSet = false;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhGetParamValues(@NonNull RtspProtoDataCntGetSetParamKvs value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhGetParamValuesObj.copyFrom(value);
 			rhGetParamValuesIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhSetParamValues(@NonNull RtspProtoDataCntGetSetParamKvs setParamKvs) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhSetParamValuesObj.copyFrom(setParamKvs);
 			rhSetParamValuesIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void clearRhSetParamValues() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhSetParamValuesObj.clear();
 			rhSetParamValuesIsSet = false;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setClientPlaybackRangeValue(@NonNull String value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			clientPlaybackRangeValue = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setServerPlaybackRangeValue(@NonNull String value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			serverPlaybackRangeValue = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setClientUserAgent(@NonNull String value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			clientUserAgent = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setServerSoftware(@NonNull String value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			serverSoftware = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	@NonNull RtspProtocolVersion getRtspProtoVersionToUse() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			return rtspProtoVersionToUse;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setRtspProtoVersionToUse(@NonNull RtspProtocolVersion value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rtspProtoVersionToUse = value;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setRhSupportedMessageTypes(@NonNull RtspProtoDataCntMessageTypes value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhSupportedMessageTypes.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	@NonNull RtspProtoSetupInfosStream getDescrSetupInfosStream() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			RtspProtoSetupInfosStream resObj = new RtspProtoSetupInfosStream();
 			resObj.copyFrom(descrSetupInfosStream);
 			return resObj;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setDescrSetupInfosStream(@NonNull RtspProtoSetupInfosStream value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			descrSetupInfosStream.copyFrom(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 	void setDescrSetupInfosForSubStream(@NonNull RtspProtoIdSubStream idSubStream, @NonNull RtspProtoSetupInfoForSubStream value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			descrSetupInfosStream.replaceSiForSubStream(idSubStream, value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setDescrAvailableSubStreamIds(@NonNull Set<@NonNull RtspProtoIdSubStream> value) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			descrAvailableSubStreamIds.clear();
 			descrAvailableSubStreamIds.addAll(value);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setRhDescribeSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhDescribeSdpStcObj.copyFrom(sdpStructured);
 			rhDescribeSdpStcIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setRhAnnouncedSdpStc(@NonNull RtspProtoDataCntSdpStructured sdpStructured) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhAnnouncedSdpStcObj.copyFrom(sdpStructured);
 			rhAnnouncedSdpStcIsSet = true;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setRhConnectionPolicy(@NonNull RtspConnectionPolicy connectionPolicy) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			rhConnectionPolicy = connectionPolicy;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
@@ -1060,59 +1073,59 @@ public final class RtspProtoSessionInfo {
 		if (! rscUrl.idSubStream.isEmpty()) {
 			return;
 		}
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			lastRequestRscUrl_mainStream.copyFrom(rscUrl);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	@NonNull RtspProtoDataRequest getLastIncomingRequestData() {
-		theReadLock.lock();
+		theReadLockFields.lock();
 		try {
 			RtspProtoDataRequest resObj = new RtspProtoDataRequest();
 			resObj.copyFrom(lastIncomingRequestData);
 			return resObj;
 		} finally {
-			theReadLock.unlock();
+			theReadLockFields.unlock();
 		}
 	}
 	void setLastIncomingRequestData(@NonNull RtspProtoDataRequest data) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			lastIncomingRequestData.copyFrom(data);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void updateLastIncomingRequestTime() {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			lastIncomingRequestTime = Instant.now();
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	// ----------------------------------------------------
 
 	void setLastUsedOutgoingRequestResourceUrl(@NonNull RtspProtoRscUrl rscUrl) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			lastUsedOutgoingRequestResourceUrlObj.copyFrom(rscUrl);
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
 	void setLastUsedOutgoingRequestMsgType(@NonNull RtspProtoMessageType requestMessageType) {
-		theWriteLock.lock();
+		theWriteLockFields.lock();
 		try {
 			lastUsedOutgoingRequestMsgType = requestMessageType;
 		} finally {
-			theWriteLock.unlock();
+			theWriteLockFields.unlock();
 		}
 	}
 
