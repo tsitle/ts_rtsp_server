@@ -92,6 +92,7 @@ public class ClientRrSvcTest {
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
 	private @Nullable RtspProtoSessionInfo cliSessionInfo = null;
+	private @Nullable RtspProtoPtrSessionInfo cliPtrSessionInfo = null;
 	private @Nullable ParameterGetterSetter parameterGetterSetter = null;
 	private @Nullable RtspProtoRequestInputSvc inputSvc = null;
 	private @Nullable RtspProtoResponseOutputSvc outputSvc = null;
@@ -105,6 +106,7 @@ public class ClientRrSvcTest {
 	void setUp() throws IOException {
 		initRtxpTcpReadWrite();
 		cliSessionInfo = new RtspProtoSessionInfo();
+		cliPtrSessionInfo = new RtspProtoPtrSessionInfo(cliSessionInfo);
 		parameterGetterSetter = new ParameterGetterSetter();
 		initObjsInput();
 		initObjsOutput();
@@ -293,6 +295,7 @@ public class ClientRrSvcTest {
 
 	private void initObjsInput() {
 		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -312,7 +315,7 @@ public class ClientRrSvcTest {
 				Set.of(),
 				false,
 				false,
-				cliSessionInfo,
+				cliPtrSessionInfo,
 				null,
 				null,
 				null,
@@ -323,6 +326,7 @@ public class ClientRrSvcTest {
 
 	private void initObjsOutput() {
 		Objects.requireNonNull(cliSessionInfo);
+		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(rtxpTcpReadWrite);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
@@ -341,7 +345,7 @@ public class ClientRrSvcTest {
 				false,
 				true,
 				false,
-				cliSessionInfo,
+				cliPtrSessionInfo,
 				null,
 				null,
 				parameterGetterSetter,
