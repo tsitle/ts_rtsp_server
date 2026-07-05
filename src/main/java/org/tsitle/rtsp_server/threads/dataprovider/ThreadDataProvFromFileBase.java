@@ -213,7 +213,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		}
 	}
 
-	private void acquireData_sub(String fncName) {
+	private void acquireData_sub(@NonNull String fncName) {
 		// get the next frame from the input, as well as its size
 		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get()).buf;
 		TimestampEpochNs tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;

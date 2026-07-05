@@ -13,7 +13,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
 
 public class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
 
-	private final AudioAacParser aacParser;
+	private final @NonNull AudioAacParser aacParser;
 
 	/**
 	 * Constructor.
@@ -63,7 +63,7 @@ public class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioA
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		return aacParser.parseAacData(inputBuf);
 	}
 

@@ -19,8 +19,8 @@ public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<Vide
 
 	private final BufferExt cacheTempBuffer = new BufferExt();
 
-	private final ImageReencoder imageReencoder;
-	private final VideoJpegParser jpegParser;
+	private final @NonNull ImageReencoder imageReencoder;
+	private final @NonNull VideoJpegParser jpegParser;
 
 	/**
 	 * Constructor.
@@ -81,7 +81,7 @@ public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<Vide
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary

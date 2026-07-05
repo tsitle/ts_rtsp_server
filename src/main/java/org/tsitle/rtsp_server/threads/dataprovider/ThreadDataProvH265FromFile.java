@@ -12,7 +12,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommo
 
 public class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase<VideoH265Info> {
 
-	private final VideoH265Parser h265Parser;
+	private final @NonNull VideoH265Parser h265Parser;
 
 	/**
 	 * Constructor.
@@ -59,7 +59,7 @@ public class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase<Video
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		return h265Parser.parseH265Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,

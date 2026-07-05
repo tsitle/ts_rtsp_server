@@ -13,7 +13,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioPcmInfo> {
 
-	private final AudioPcmParser pcmParser;
+	private final @NonNull AudioPcmParser pcmParser;
 
 	/**
 	 * Constructor.
@@ -73,7 +73,7 @@ public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioP
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		return pcmParser.parsePcmData(inputBuf);
 	}
 

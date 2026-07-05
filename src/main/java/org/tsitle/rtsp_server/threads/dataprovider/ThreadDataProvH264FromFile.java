@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase<VideoH264Info> {
 
-	private final VideoH264Parser h264Parser;
+	private final @NonNull VideoH264Parser h264Parser;
 
 	private @Nullable H264PictureBoundaryInfo cachePictBoundInfoPrev = null;
 
@@ -73,7 +73,7 @@ public class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase<Video
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
 				mediaOutgoingStream.getMagicBytesLengthBits() / 8,

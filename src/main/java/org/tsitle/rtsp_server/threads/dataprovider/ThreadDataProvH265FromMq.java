@@ -13,7 +13,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommo
 
 public class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<VideoH265Info> {
 
-	private final VideoH265Parser h265Parser;
+	private final @NonNull VideoH265Parser h265Parser;
 
 	/**
 	 * Constructor.
@@ -60,7 +60,7 @@ public class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<VideoH265
 	}
 
 	@Override
-	protected int findNextMagicBytes(final BufferExt inputBuf) {
+	protected int findNextMagicBytes(final @NonNull BufferExt inputBuf) {
 		return findH26xNextNalUnit(inputBuf);
 	}
 

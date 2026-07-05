@@ -13,7 +13,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
 public class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<AudioPcmInfo> {
 
-	private final AudioPcmParser pcmParser;
+	private final @NonNull AudioPcmParser pcmParser;
 
 	/**
 	 * Constructor.
