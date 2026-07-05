@@ -108,7 +108,7 @@ public final class VideoJpegParser {
 			} else if (marker >= (byte)0xD0 && marker <= (byte)0xD7) {
 				// Restart marker (if DRI is used: 0xFFD0..FFD7) - this probably can only occur inside the scan data
 				logDebug(FNC_NAME, curBlockOffset,
-						String.format("RESTART(#%d,0x%02X)", marker - (byte)0xD0, marker));  // @TODO
+						String.format("RESTART(#%d,0x%02X)", marker - (byte)0xD0, marker));
 			} else if (marker == (byte)0xDD) {
 				// DRI marker (Define Restart Interval: 0xFFDD)
 				resObj.usesDri = true;
@@ -176,7 +176,7 @@ public final class VideoJpegParser {
 	 */
 	private int parseBlockSOS(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOS()";
+		//final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOS()";
 
 		/*
 		 * After the SOS marker, one cannot use a length field to skip the entire scan data.
@@ -198,8 +198,8 @@ public final class VideoJpegParser {
 			if (jpegBuf.get(curOffs) == (byte)0xFF &&
 					jpegBuf.get(curOffs + 1) >= (byte)0xD0 && jpegBuf.get(curOffs + 1) <= (byte)0xD7) {
 				jpegInfo.usesDri = true;
-				logDebug(FNC_NAME, curOffs,
-						String.format("RESTART(#%d,0x%02X)", jpegBuf.get(curOffs + 1) - (byte)0xD0, jpegBuf.get(curOffs + 1)));  // @TODO
+				/*logDebug(FNC_NAME, curOffs,
+						String.format("RESTART(#%d,0x%02X)", jpegBuf.get(curOffs + 1) - (byte)0xD0, jpegBuf.get(curOffs + 1)));*/
 			}
 			++curOffs;
 		}

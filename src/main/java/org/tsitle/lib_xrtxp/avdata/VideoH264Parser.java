@@ -16,8 +16,8 @@ public final class VideoH264Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 1;
 
-	private final Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext;
-	private final Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext;
+	private final @NonNull Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext;
+	private final @NonNull Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext;
 	/** Buffer used to store temporary data for parsing NAL Units */
 	private final BufferExt cacheH264RbspBuf = new BufferExt();
 
@@ -253,7 +253,7 @@ public final class VideoH264Parser {
 				profileIdc == 144);
 	}
 
-	private static void spsSkipScalingLists(BitReaderHelper br) throws BitReaderEosException {
+	private static void spsSkipScalingLists(@NonNull BitReaderHelper br) throws BitReaderEosException {
 		int count = 8;  // minimal safe skip for boundary parsing
 		for (int i = 0; i < count; i++) {
 			@SuppressWarnings("unused")
@@ -310,7 +310,7 @@ public final class VideoH264Parser {
 
 	private void parseSliceForBoundary(
 				@NonNull BufferExt nalDataRbsp,
-				H264PictureBoundaryInfo outPictBoundInfo
+				@NonNull H264PictureBoundaryInfo outPictBoundInfo
 			) throws BitReaderEosException {
 		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseSliceForBoundary()";
 

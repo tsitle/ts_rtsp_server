@@ -12,7 +12,7 @@ public interface CodecInfoInterface<I extends CodecInfoInterface<I>> {
 
 	void copyOf(@NonNull CodecInfoInterface<I> src);
 
-	String toString(boolean shortOutput);
+	@NonNull String toString(boolean shortOutput);
 
 	@NonNull String hashSum();
 

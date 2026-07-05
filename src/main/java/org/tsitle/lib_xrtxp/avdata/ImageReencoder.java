@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
 
@@ -32,8 +33,8 @@ public class ImageReencoder {
 	private static final boolean USE_IMAGEWRITER_CLASS = true;
 
 	private float compressionQuality;
-	private final ImageWriter writerObj;
-	private final JPEGImageWriteParam writerParamObj;
+	private final @Nullable ImageWriter writerObj;
+	private final @Nullable JPEGImageWriteParam writerParamObj;
 
 	/**
 	 * Constructor.
@@ -110,7 +111,7 @@ public class ImageReencoder {
 			cq = 1.0f;
 		}
 		compressionQuality = cq;
-		if (USE_IMAGEWRITER_CLASS) {
+		if (USE_IMAGEWRITER_CLASS && writerParamObj != null) {
 			writerParamObj.setCompressionQuality(compressionQuality);
 		}
 	}
@@ -213,7 +214,7 @@ public class ImageReencoder {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeImageToBufferExt()";
 
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			if (USE_IMAGEWRITER_CLASS) {
+			if (USE_IMAGEWRITER_CLASS && writerObj != null && writerParamObj != null) {
 				try (ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
 					IIOImage iioImage = new IIOImage(outputImage, null, null);
 					writerObj.setOutput(ios);

@@ -67,7 +67,7 @@ public final class AudioAacParser {
 	 * @return Parsed AAC information
 	 */
 	@SuppressWarnings("DanglingJavadoc")
-	public AudioAacInfo parseAacData(BufferExt aacBuf) throws AvInvalidCodecDataException {
+	public @NonNull AudioAacInfo parseAacData(@NonNull BufferExt aacBuf) throws AvInvalidCodecDataException {
 		final String FNC_NAME = AudioAacParser.class.getSimpleName() + ".parseAacData()";
 
 		if (aacBuf.getUsed() < AAC_HEADER_SIZE_MIN) {
@@ -205,8 +205,8 @@ public final class AudioAacParser {
 	 * @return AudioSpecificConfig as hex string
 	 */
 	private static @NonNull String buildAacAudioSpecificConfig(
-				AudioAacInfo.AudioObjectType audioObjectType,
-				AudioAacInfo.Samplerate samplingFrequency,
+				AudioAacInfo.@NonNull AudioObjectType audioObjectType,
+				AudioAacInfo.@NonNull Samplerate samplingFrequency,
 				int channelConfig
 			) {
 		BitWriterHelper bitWriter = new BitWriterHelper();
