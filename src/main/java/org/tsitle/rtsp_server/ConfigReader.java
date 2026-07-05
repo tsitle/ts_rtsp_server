@@ -45,7 +45,7 @@ public final class ConfigReader {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static ExclusionStrategy buildExlusionStrategy() {
+	private static ExclusionStrategy buildExclusionStrategy() {
 		return new ExclusionStrategy() {
 				@Override
 				public boolean shouldSkipClass(Class<?> clazz) {
@@ -100,7 +100,7 @@ public final class ConfigReader {
 		try {
 			GsonBuilder gsonBldr = new GsonBuilder()
 					.excludeFieldsWithoutExposeAnnotation()
-					.addDeserializationExclusionStrategy(buildExlusionStrategy());
+					.addDeserializationExclusionStrategy(buildExclusionStrategy());
 
 			Reader reader = new InputStreamReader(stream);
 
