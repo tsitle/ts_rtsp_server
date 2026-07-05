@@ -4,7 +4,7 @@ import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_aac.ThreadRtpSenderAac;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
 
-public class BuilderThreadRtpSenderAac {
+public final class BuilderThreadRtpSenderAac {
 
 	public static Builder builder() { return new Builder(); }
 

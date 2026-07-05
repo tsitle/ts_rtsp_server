@@ -15,7 +15,7 @@ import java.util.Optional;
  * RTCP Sender Report Packet.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3550#section-6.4.1">RFC-3550 Section 6.4.1</a>
  */
-public class RtcpPacketSR {
+public final class RtcpPacketSR {
 
 	/** Size of the inner RTCP header */
 	public static final int INNER_HEADER_SIZE = 4;

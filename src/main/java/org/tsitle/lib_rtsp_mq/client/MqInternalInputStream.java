@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Wraps the input from the Message Queue into an InputStream.
  */
 @SuppressWarnings("unused")
-public class MqInternalInputStream extends InputStream {
+public final class MqInternalInputStream extends InputStream {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 

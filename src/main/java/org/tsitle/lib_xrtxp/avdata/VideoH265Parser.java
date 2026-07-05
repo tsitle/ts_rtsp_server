@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 
-public class VideoH265Parser {
+public final class VideoH265Parser {
 
 	public static final int NAL_UNIT_HEADER_SIZE = 2;
 

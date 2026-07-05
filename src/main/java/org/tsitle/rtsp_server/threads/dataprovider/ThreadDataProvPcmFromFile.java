@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
-public class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioPcmInfo> {
+public final class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<AudioPcmInfo> {
 
 	private final @NonNull AudioPcmParser pcmParser;
 

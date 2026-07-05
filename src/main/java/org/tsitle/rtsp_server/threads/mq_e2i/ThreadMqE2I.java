@@ -16,7 +16,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
 import java.util.Optional;
 
-public class ThreadMqE2I extends RunnableBase {
+public final class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
 	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();

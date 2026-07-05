@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
 
-public class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
+public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
 
 	private final @NonNull AudioAacParser aacParser;
 

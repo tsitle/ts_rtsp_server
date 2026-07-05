@@ -9,6 +9,8 @@ import org.zeromq.ZMQ;
  */
 public final class MqMsgHandlerFactory {
 
+	private MqMsgHandlerFactory() { }
+
 	/**
 	 * Create a new MqMsgHandler instance for external MQs.
 	 * @param zmqSocket ZMQ socket

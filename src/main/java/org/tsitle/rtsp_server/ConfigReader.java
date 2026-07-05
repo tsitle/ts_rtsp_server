@@ -13,7 +13,12 @@ import java.nio.file.Paths;
 /**
  * Read configuration from a JSON file.
  */
-public class ConfigReader {
+public final class ConfigReader {
+
+	private ConfigReader() { }
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Read configuration from a JSON file.

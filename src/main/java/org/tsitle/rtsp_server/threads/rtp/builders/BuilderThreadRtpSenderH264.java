@@ -4,7 +4,7 @@ import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderH264;
 
-public class BuilderThreadRtpSenderH264 {
+public final class BuilderThreadRtpSenderH264 {
 
 	public static Builder builder() { return new Builder(); }
 

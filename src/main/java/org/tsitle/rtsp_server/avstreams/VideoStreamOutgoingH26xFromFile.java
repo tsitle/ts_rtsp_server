@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public class VideoStreamOutgoingH26xFromFile extends VideoStreamOutgoingFromFileBase {
+public final class VideoStreamOutgoingH26xFromFile extends VideoStreamOutgoingFromFileBase {
 
 	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
 	public static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};

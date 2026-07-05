@@ -8,7 +8,9 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
 
 import java.net.URI;
 
-public class AvStreamIncomingFactory {
+public final class AvStreamIncomingFactory {
+
+	private AvStreamIncomingFactory() { }
 
 	public static <AVSTRIC extends AvStreamIncomingBase> AVSTRIC createAvStreamIncoming(
 				Class<AVSTRIC> type,

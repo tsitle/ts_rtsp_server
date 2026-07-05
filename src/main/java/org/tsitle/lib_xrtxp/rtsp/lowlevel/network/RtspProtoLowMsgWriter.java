@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RtspProtoLowMsgWriter {
+public final class RtspProtoLowMsgWriter {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;

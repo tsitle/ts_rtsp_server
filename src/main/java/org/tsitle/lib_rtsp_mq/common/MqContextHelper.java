@@ -6,12 +6,14 @@ import org.zeromq.ZContext;
 /**
  * Helper class for managing the ZeroMQ context.
  */
-public class MqContextHelper {
+public final class MqContextHelper {
 
 	private static final int ZMQ_IO_THREAD_COUNT = 4;
 
 	private static ZContext zmqContextObj = null;  // one context for all MQs
 	private static int zmqContextRefCount = 0;
+
+	private MqContextHelper() { }
 
 	/**
 	 * Open the ZeroMQ context if it is not already open.

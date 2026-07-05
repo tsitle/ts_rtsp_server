@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * RTSP server configuration.
  */
-public class RtspConfig {
+public final class RtspConfig {
 
 	final int SERVER_USERNAME_LENGTH_MAX = 64;
 	final int SERVER_USERPASS_LENGTH_MIN = 8;

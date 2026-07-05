@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * HTTP client for JSON-based HTTP requests with basic authentication.
  */
-public class HttpClientJson {
+public final class HttpClientJson {
 
 	private final HttpClient httpClient;
 	private final Gson gson;

@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.avdata.subinfo;
 
 import org.jspecify.annotations.NonNull;
 
-public class H264SpsContext implements Cloneable {
+public final class H264SpsContext implements Cloneable {
 
 	/** seq_parameter_set_id */
 	public int id;

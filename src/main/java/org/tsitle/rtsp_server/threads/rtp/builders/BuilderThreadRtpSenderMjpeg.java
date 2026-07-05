@@ -5,7 +5,7 @@ import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingMjpegFromFile;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
-public class BuilderThreadRtpSenderMjpeg {
+public final class BuilderThreadRtpSenderMjpeg {
 
 	public static Builder builder() { return new Builder(); }
 

@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ThreadRtcpSendRecv extends ThreadPausableBase {
+public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final @NonNull ParamsThreadRtcp params;
 	private final @Nullable DatagramSocket parRtcpSocketUdp;

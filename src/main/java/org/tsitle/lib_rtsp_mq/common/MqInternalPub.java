@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Publisher for internal messages.
  */
-public class MqInternalPub implements AutoCloseable {
+public final class MqInternalPub implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();

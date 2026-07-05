@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Subscribes to an external Message Queue using authentication and optional encryption.
  */
-public class MqExternalSub extends MqReceiverSubBase {
+public final class MqExternalSub extends MqReceiverSubBase {
 
 	private static class MqSettingsExtended {
 		boolean haveSettings = false;

@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 
-public class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<VideoH265Info> {
+public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<VideoH265Info> {
 
 	private final @NonNull VideoH265Parser h265Parser;
 

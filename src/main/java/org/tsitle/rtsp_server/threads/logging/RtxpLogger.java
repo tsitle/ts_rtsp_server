@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RtxpLogger extends ThreadBase {
+public final class RtxpLogger extends ThreadBase {
 
 	private record LogEntry(
 			Instant timestampInstant,

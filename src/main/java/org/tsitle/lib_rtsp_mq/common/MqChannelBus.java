@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Message Queue channel bus for internal communication.
  */
-public class MqChannelBus {
+public final class MqChannelBus {
 
 	private static final int SEND_RECV_HWM = 10;
 

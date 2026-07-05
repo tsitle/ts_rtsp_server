@@ -17,7 +17,7 @@ import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterfa
 
 import java.net.DatagramSocket;
 
-public class BuilderThreadRtcp {
+public final class BuilderThreadRtcp {
 
 	public static Builder builder() { return new Builder(); }
 

@@ -24,7 +24,7 @@ import java.util.Locale;
 /**
  * Re-encodes an image into a fixed JPEG format (with fixed settings - except for the compression quality).
  */
-public class ImageReencoder {
+public final class ImageReencoder {
 
 	/**
 	 * Use ImageWriter object instead of the 'ImageIO.write()' method.<br />

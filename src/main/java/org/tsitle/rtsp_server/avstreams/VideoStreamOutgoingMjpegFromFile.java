@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public class VideoStreamOutgoingMjpegFromFile extends VideoStreamOutgoingFromFileBase {
+public final class VideoStreamOutgoingMjpegFromFile extends VideoStreamOutgoingFromFileBase {
 
 	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
 

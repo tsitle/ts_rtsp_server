@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RtspServerApp {
+public final class RtspServerApp {
 
 	private static final int RTSP_THREADS_TCM = 20;  // one thread per client connection
 
@@ -51,6 +51,8 @@ public class RtspServerApp {
 		);
 	private static @Nullable ExecutorService poolMqE2I;
 	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
+
+	private RtspServerApp() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------

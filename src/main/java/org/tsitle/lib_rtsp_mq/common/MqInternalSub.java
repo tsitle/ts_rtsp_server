@@ -12,7 +12,7 @@ import org.zeromq.ZMQ;
 /**
  * Subscriber for internal messages.
  */
-public class MqInternalSub extends MqReceiverSubBase {
+public final class MqInternalSub extends MqReceiverSubBase {
 
 	private static final boolean DO_VALIDATE_PAYLOAD = false;
 	private static final boolean DO_PRINT_DEBUG_STATS = false;

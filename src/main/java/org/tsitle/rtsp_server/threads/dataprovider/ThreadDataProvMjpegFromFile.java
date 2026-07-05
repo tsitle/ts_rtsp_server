@@ -15,7 +15,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommo
 
 import java.io.IOException;
 
-public class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
+public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
 
 	private final BufferExt cacheTempBuffer = new BufferExt();
 

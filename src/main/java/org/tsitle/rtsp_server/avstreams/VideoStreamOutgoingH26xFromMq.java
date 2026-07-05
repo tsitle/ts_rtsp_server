@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public class VideoStreamOutgoingH26xFromMq extends VideoStreamOutgoingFromMqBase {
+public final class VideoStreamOutgoingH26xFromMq extends VideoStreamOutgoingFromMqBase {
 
 	/**
 	 * Constructor.

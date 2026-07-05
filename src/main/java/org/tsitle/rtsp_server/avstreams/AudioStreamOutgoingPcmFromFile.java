@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase {
+public final class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase {
 
 	private final boolean isBigEndian;
 

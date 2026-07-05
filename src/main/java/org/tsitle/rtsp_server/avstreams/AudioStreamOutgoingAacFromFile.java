@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public class AudioStreamOutgoingAacFromFile extends AvStreamOutgoingFromFileBase {
+public final class AudioStreamOutgoingAacFromFile extends AvStreamOutgoingFromFileBase {
 
 	private static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};  // only 12 bits
 

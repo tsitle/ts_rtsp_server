@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
-public class BuilderThreadRtpSenderPcm {
+public final class BuilderThreadRtpSenderPcm {
 
 	public static Builder builder() { return new Builder(); }
 

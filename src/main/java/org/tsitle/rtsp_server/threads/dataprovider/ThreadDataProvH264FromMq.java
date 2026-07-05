@@ -18,7 +18,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommo
 import java.util.HashMap;
 import java.util.Map;
 
-public class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<VideoH264Info> {
+public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<VideoH264Info> {
 
 	private final @NonNull VideoH264Parser h264Parser;
 

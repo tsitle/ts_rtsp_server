@@ -24,7 +24,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfosStream;
 
 import java.util.*;
 
-public class RtspProtoHighResponseConsumer {
+public final class RtspProtoHighResponseConsumer {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isResponseFromClient;

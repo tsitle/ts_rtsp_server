@@ -28,7 +28,7 @@ import java.util.Optional;
 /**
  * Stream Source within an Input Source for RTSP streams.
  */
-public class RtspConfigStreamSource {
+public final class RtspConfigStreamSource {
 
 	/** Stream Source ID */
 	@GsonAnnoExclude
