@@ -15,7 +15,7 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 
 	private final @NonNull String inputUriPath;
 
-	private InputStream gis;
+	private @Nullable InputStream gis;
 
 	/**
 	 * Constructor.
@@ -79,7 +79,7 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 		try {
 			int totalDidRead = 0;
 			int stillToRead = length;
-			while (stillToRead > 0) {
+			while (stillToRead > 0 && gis != null) {
 				int tmpToRead = Math.min(stillToRead, 4 * 1024);
 				int tmpDidRead = gis.read(buf, destOffset, tmpToRead);
 				if (tmpDidRead == -1) {
