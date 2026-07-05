@@ -62,10 +62,14 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 			while (true) {
 				Optional<MqPacketAv> optPacket = mqInternalSub.receiveMessageAv(buf);
 				if (optPacket.isPresent()) {
-					TimestampEpochNs tmpTs = TimestampEpochNs.ofEpochMsUnsigned64bit(
-							optPacket.get().mdTimestampMs()
-						);
-					stTimestamp.copyFrom(tmpTs);
+					if (optPacket.get().mdTimestampMs() != 0L) {
+						TimestampEpochNs tmpTs = TimestampEpochNs.ofEpochMsUnsigned64bit(
+								optPacket.get().mdTimestampMs()
+							);
+						stTimestamp.copyFrom(tmpTs);
+					} else {
+						stTimestamp.clear();
+					}
 					break;
 				}
 				try {
