@@ -13,6 +13,7 @@ x-*.cmd
 data/**/*.raw
 data/**/*.h264
 data/**/*.h265
+data/**/*.webm
 data/**/*.mp3
 data/**/*.mp4
 data/**/*.m4a
