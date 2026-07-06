@@ -1,29 +1,29 @@
 package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 /**
- * Container for a Stream Source within an Input Source for RTSP streams.
+ * Container for an Elementary-Stream Source within an Input Source for RTSP streams.
  */
-public final class RtspProtoStreamSource {
+public final class RtspProtoElementaryStreamSource {
 
 	private boolean isWriteProtected = false;
 
-	/** Stream Source ID */
-	private final @NonNull RtspProtoIdStreamSource id = RtspProtoIdStreamSource.ofEmpty();
-	/** Is this Stream Source enabled? (default: true) */
+	/** Elementary-Stream Source ID */
+	private final @NonNull RtspProtoIdEsSource id = RtspProtoIdEsSource.ofEmpty();
+	/** Is this Elementary-Stream Source enabled? (default: true) */
 	private boolean enabled = true;
 
-	public RtspProtoStreamSource() { }
+	public RtspProtoElementaryStreamSource() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull RtspProtoIdStreamSource getIdStreamSource() {
+	public @NonNull RtspProtoIdEsSource getIdEsSource() {
 		return id.clone();
 	}
-	public void setIdStreamSource(@NonNull RtspProtoIdStreamSource id) {
+	public void setIdEsSource(@NonNull RtspProtoIdEsSource id) {
 		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}

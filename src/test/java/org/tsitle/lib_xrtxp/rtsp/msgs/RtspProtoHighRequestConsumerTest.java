@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.*;
@@ -70,25 +70,25 @@ class RtspProtoHighRequestConsumerTest {
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstVideoEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			return Optional.empty();
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstAudioEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			return Optional.empty();
 		}
 
 		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
+		public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
 
 		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
+		public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
 	}
 
@@ -1120,7 +1120,7 @@ class RtspProtoHighRequestConsumerTest {
 		generatedSubStreamId = resObj.createSubStreamId(
 				TEST_SUB_STREAM_ID_PREFIX,
 				RtspProtoIdInputSource.of("existing_stream"),
-				RtspProtoIdStreamSource.of("exists_12345_streamsource"),
+				RtspProtoIdEsSource.of("exists_12345_streamsource"),
 				RtspProtoIpAddr.ofLoopback()
 			);
 		return resObj;

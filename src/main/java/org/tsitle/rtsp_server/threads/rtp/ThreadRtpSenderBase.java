@@ -208,8 +208,8 @@ public abstract class ThreadRtpSenderBase<
 			if (srtpVarsOutbound.ctxObj == null) {
 				return;  // if we didn't have a KMD up until now, we don't need to set a new one
 			}
-			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (ss=" +
-					paramsCommon.getIdStreamSource().getIdStr().orElse("-unset-") +
+			logDebug(FNC_NAME, "Setting next SRTP outbound KMD (esSrc=" +
+					paramsCommon.getIdEsSource().getIdStr().orElse("-unset-") +
 					", MKI=" + Long.toUnsignedString(kmd.mki().getValue().orElse(0L)) + ")");
 			try {
 				srtpVarsOutbound.ctxUpdatePending.set(true);
@@ -247,7 +247,7 @@ public abstract class ThreadRtpSenderBase<
 		try (AVSTRIC tmpAvStreamInc = AvStreamIncomingFactory.createAvStreamIncoming(
 					avStreamIncomingType,
 					paramsCommon.getLogMsgInterface().orElse(null),
-					paramsCommon.getIdStreamSource(),
+					paramsCommon.getIdEsSource(),
 					tmpAvStreamIncomingUri
 				)) {
 			avStreamIncomingObj = tmpAvStreamInc;
@@ -635,7 +635,7 @@ public abstract class ThreadRtpSenderBase<
 			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataViewPtr == null");
 		}
 		//
-		if (paramsCommon.getIsStreamSourceFromFile()) {
+		if (paramsCommon.getIsEsSourceFromFile()) {
 			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
 			if (tmpDeltaFdsNs > 5_000_000L) {
 				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
@@ -645,12 +645,12 @@ public abstract class ThreadRtpSenderBase<
 		// only sleep if this is the first packet of the frame/AU
 		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
-			if (paramsCommon.getIsStreamSourceFromFile()) {
+			if (paramsCommon.getIsEsSourceFromFile()) {
 				adaptiveScheduler.waitForNextFrame();
 			}
 			//
 			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-			if (paramsCommon.getIsStreamSourceFromFile()) {
+			if (paramsCommon.getIsEsSourceFromFile()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 			} else if (frameData.stTimestamp.isEmpty()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));

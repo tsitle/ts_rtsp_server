@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -18,7 +18,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -26,14 +26,14 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Stream Source within an Input Source for RTSP streams.
+ * Elementary-Stream Source within an Input Source for RTSP streams.
  */
-public final class RtspConfigStreamSource {
+public final class RtspConfigElementaryStreamSource {
 
-	/** Stream Source ID */
+	/** Elementary-Stream Source ID */
 	@GsonAnnoExclude
 	private @NonNull Integer id;
-	/** Is this Stream Source enabled? (default: true) */
+	/** Is this Elementary-Stream Source enabled? (default: true) */
 	@Expose
 	private @NonNull Boolean enabled;
 	/** Path to the media file -- either {@code filePath} or {@code mq} must be set, but not both. */
@@ -41,10 +41,10 @@ public final class RtspConfigStreamSource {
 	private @NonNull String filePath;
 	/** Message Queue settings for the media stream -- either {@code filePath} or {@code mq} must be set, but not both. */
 	@Expose
-	private @Nullable RtspConfigSsMq mq;
+	private @Nullable RtspConfigEsMq mq;
 	/** Codec used for the stream -- only when {@code filePath} is set. */
 	@Expose
-	private final @NonNull ConfigSsCodec codec;
+	private final @NonNull ConfigEsCodec codec;
 	/** Video frames per second -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Double videoFps;
@@ -84,7 +84,7 @@ public final class RtspConfigStreamSource {
 	@GsonAnnoExclude
 	private byte mqDynamicAudioChannelCount = -1;
 
-	public RtspConfigStreamSource() {
+	public RtspConfigElementaryStreamSource() {
 		this.id = -1;
 		this.enabled = true;
 		this.filePath = "";
@@ -110,8 +110,8 @@ public final class RtspConfigStreamSource {
 		//noinspection ConstantValue
 		return (id == null ? -1 : id);
 	}
-	public @NonNull RtspProtoIdStreamSource getIdAsProtoId() {
-		RtspProtoIdStreamSource resObj = RtspProtoIdStreamSource.ofEmpty();
+	public @NonNull RtspProtoIdEsSource getIdAsProtoId() {
+		RtspProtoIdEsSource resObj = RtspProtoIdEsSource.ofEmpty();
 		resObj.setIdStr(Integer.toUnsignedString(getIdAsInt()));
 		resObj.writeProtect();
 		return resObj;
@@ -134,7 +134,7 @@ public final class RtspConfigStreamSource {
 		return mq.getInputUri();
 	}
 
-	public Optional<MqStreamSourceSettings> getInputMqSettings() {
+	public Optional<MqElementaryStreamSourceSettings> getInputMqSettings() {
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
 			return Optional.empty();
@@ -142,9 +142,9 @@ public final class RtspConfigStreamSource {
 		if (mq == null) {
 			throw new IllegalStateException("MQ is null");
 		}
-		MqStreamSourceSettings resObj;
+		MqElementaryStreamSourceSettings resObj;
 		try {
-			resObj = new MqStreamSourceSettings(
+			resObj = new MqElementaryStreamSourceSettings(
 					mq.getUsername(),
 					mq.getPassword(),
 					mq.getHost(),
@@ -277,7 +277,7 @@ public final class RtspConfigStreamSource {
 	}
 
 	/**
-	 * Post-process the Stream Source.
+	 * Post-process the Elementary-Stream Source.
 	 * @param dataDir Directory containing the media files
 	 */
 	public void postProcess(@NonNull Path dataDir) {
@@ -320,9 +320,9 @@ public final class RtspConfigStreamSource {
 	}
 
 	/**
-	 * Validate the Stream Source.
-	 * @param mapStreamSourceIdIntToExt Map of Stream Source IDs (internal) to their external representation
-	 * @throws ConfigInvalidException If the Stream Source is invalid
+	 * Validate the Elementary-Stream Source.
+	 * @param mapStreamSourceIdIntToExt Map of Elementary-Stream Source IDs (internal) to their external representation
+	 * @throws ConfigInvalidException If the Elementary-Stream Source is invalid
 	 */
 	public void validate(
 				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt
@@ -335,16 +335,17 @@ public final class RtspConfigStreamSource {
 		String tmpExtSsId = mapStreamSourceIdIntToExt.get(getIdAsInt());
 
 		if (getIdAsInt() < 0) {
-			throw new ConfigInvalidException(FNC_NAME + ": Stream Source has no ID");
+			throw new ConfigInvalidException(FNC_NAME + ": Elementary-Stream Source has no ID");
 		}
 
 		//
 		if (filePath.isBlank() && mq == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found for Stream Source ID '" + tmpExtSsId + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found for Elementary-Stream Source ID '" +
+					tmpExtSsId + "'");
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
-					"' for Stream Source ID '" + tmpExtSsId + "' - file not found");
+					"' for Elementary-Stream Source ID '" + tmpExtSsId + "' - file not found");
 		}
 		if (mq != null) {
 			mq.validate(tmpExtSsId);
@@ -354,25 +355,32 @@ public final class RtspConfigStreamSource {
 		if (getIsSourceFromFile()) {
 			//noinspection ConstantValue
 			if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
-				throw new ConfigInvalidException(FNC_NAME + ": No (valid) codec defined for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": No (valid) codec defined for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid codec for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid codec for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (internalCodec.isVideo() && getVideoFps() < 1.0) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (internalCodec.isAudio() && getAudioSamplerateHz() < 1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samplerate for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samplerate for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (internalCodec.isAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 			if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Stream Source ID '" + tmpExtSsId + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+						tmpExtSsId + "'");
 			}
 
 			//
@@ -384,7 +392,7 @@ public final class RtspConfigStreamSource {
 						break;
 					default:
 						throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
-								"for Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
+								"for Elementary-Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
 								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
 								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
 								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
@@ -400,15 +408,15 @@ public final class RtspConfigStreamSource {
 
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
-			throw new IllegalStateException("Stream Source has not been post-processed yet");
+			throw new IllegalStateException("Elementary-Stream Source has not been post-processed yet");
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readAacHeader(@NonNull RtspProtoIdStreamSource internalIdStreamSource, @NonNull String extSsId)
+	private void readAacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extSsId)
 			throws ConfigInvalidException {
-		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdStreamSource, getInputUri())) {
+		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
 			AudioStreamOutgoingAacFromFile asoAac = new AudioStreamOutgoingAacFromFile(avStreamIncoming);
 			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
@@ -418,26 +426,26 @@ public final class RtspConfigStreamSource {
 
 			if (aacInfo.audioObjectType != AudioAacInfo.AudioObjectType.AAC_LC) {
 				throw new ConfigInvalidException("Unsupported AAC AudioObjectType " + aacInfo.audioObjectType +
-						" for Stream Source ID '" + extSsId + "'");
+						" for Elementary-Stream Source ID '" + extSsId + "'");
 			}
 			if (aacInfo.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
-				throw new ConfigInvalidException("Could not parse AAC Samplerate for Stream Source ID '" + extSsId + "'");
+				throw new ConfigInvalidException("Could not parse AAC Samplerate for Elementary-Stream Source ID '" + extSsId + "'");
 			}
 			if (aacInfo.samplerate.getHz() != getAudioSamplerateHz()) {
-				throw new ConfigInvalidException("AAC Samplerate mismatch for Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AAC Samplerate mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
 						"config=" + getAudioSamplerateHz() + ", fileHeader=" + aacInfo.samplerate.getHz() + ")");
 			}
 			if (aacInfo.channelConfiguration != getAudioChannelCount()) {
-				throw new ConfigInvalidException("AAC ChannelCount mismatch for Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AAC ChannelCount mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
 						"config=" + getAudioChannelCount() + ", fileHeader=" + aacInfo.channelConfiguration + ")");
 			}
 
 			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from AAC file for Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
-			throw new ConfigInvalidException("Could not parse AAC header for Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not parse AAC header for Elementary-Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		}
 	}

@@ -3,11 +3,11 @@ package org.tsitle.lib_xrtxp.rtsp.interfaces;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
 import java.net.URI;
 import java.util.Optional;
@@ -32,26 +32,26 @@ public interface RtspProtoAvailableStreamsInterface {
 			throws RtspProtoIdInputSourceNotFoundException;
 
 	/**
-	 * Get the first (enabled) video Stream Source for the Input Source.
+	 * Get the first (enabled) video Elementary-Stream Source for the Input Source.
 	 * @param idInputSource Input Source ID
-	 * @return Stream Source
+	 * @return Elementary-Stream Source
 	 */
-	Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(
+	Optional<RtspProtoElementaryStreamSource> getFirstVideoEsSourceObj(
 				@NonNull RtspProtoIdInputSource idInputSource
 			);
 
 	/**
-	 * Get the first (enabled) audio Stream Source for the Input Source.
+	 * Get the first (enabled) audio Elementary-Stream Source for the Input Source.
 	 * @param idInputSource Input Source ID
-	 * @return Stream Source
+	 * @return Elementary-Stream Source
 	 */
-	Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(
+	Optional<RtspProtoElementaryStreamSource> getFirstAudioEsSourceObj(
 				@NonNull RtspProtoIdInputSource idInputSource
 			);
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	record StreamSourceInfo(
+	record ElementaryStreamSourceInfo(
 			@NonNull RtpPacketType codec,
 			boolean isSourceFromFile,
 			boolean isSourceFromMq,
@@ -65,22 +65,22 @@ public interface RtspProtoAvailableStreamsInterface {
 		) { }
 
 	/**
-	 * Get information about the given Stream Source.
-	 * @param idStreamSource Stream Source ID
-	 * @return Stream Source information
-	 * @throws RtspProtoIdStreamSourceNotFoundException If the Stream Source ID is not found
+	 * Get information about the given Elementary-Stream Source.
+	 * @param idEsSource Elementary-Stream Source ID
+	 * @return Elementary-Stream Source information
+	 * @throws RtspProtoIdEsSourceNotFoundException If the Elementary-Stream Source ID is not found
 	 */
-	@NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspProtoIdStreamSourceNotFoundException;
+	@NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+			throws RtspProtoIdEsSourceNotFoundException;
 
 	/**
-	 * Get audio samples per frame (matching the video frame rate) as required for RTP for the given audio Stream Source.
-	 * @param idStreamSource Stream Source ID
-	 * @param videoFps Stream Source ID
+	 * Get audio samples per frame (matching the video frame rate) as required for RTP for the given audio Elementary-Stream Source.
+	 * @param idEsSource Elementary-Stream Source ID
+	 * @param videoFps Frames per second value of the corresponding video sub-stream
 	 * @return Samples per frame
-	 * @throws RtspProtoIdStreamSourceNotFoundException If the Stream Source ID is not found
+	 * @throws RtspProtoIdEsSourceNotFoundException If the Elementary-Stream Source ID is not found
 	 */
-	int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-			throws RtspProtoIdStreamSourceNotFoundException;
+	int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+			throws RtspProtoIdEsSourceNotFoundException;
 
 }

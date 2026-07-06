@@ -26,7 +26,7 @@ public final class BuilderThreadRtpSenderH265 {
 			validateVideoCommon();
 			threadParamsH265.validate();
 
-			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderH265<>(
 						AvStreamIncomingFromFile.class,
 						VideoStreamOutgoingH26xFromFile.class,

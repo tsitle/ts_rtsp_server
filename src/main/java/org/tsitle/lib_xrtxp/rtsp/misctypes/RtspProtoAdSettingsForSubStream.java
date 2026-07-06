@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -12,7 +12,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
-	public @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
+	public @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 	public @NonNull RtspProtoIdSubStream idSubStream = RtspProtoIdSubStream.ofEmpty();
 	public @NonNull RtspProtoIdXsrc ssrcInbound = RtspProtoIdXsrc.ofEmpty();
 	public @NonNull RtspProtoIdXsrc ssrcOutbound = RtspProtoIdXsrc.ofEmpty();
@@ -32,7 +32,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		idStreamSource.clear();
+		idEsSource.clear();
 		idSubStream.clear();
 		ssrcInbound.clear();
 		ssrcOutbound.clear();
@@ -42,7 +42,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 	public void writeProtect() {
 		isWriteProtected = true;
 
-		idStreamSource.writeProtect();
+		idEsSource.writeProtect();
 		idSubStream.writeProtect();
 		ssrcInbound.writeProtect();
 		ssrcOutbound.writeProtect();
@@ -55,7 +55,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 		if (other == this) {
 			return;
 		}
-		idStreamSource.copyFrom(other.idStreamSource);
+		idEsSource.copyFrom(other.idEsSource);
 		idSubStream.copyFrom(other.idSubStream);
 		ssrcInbound.copyFrom(other.ssrcInbound);
 		ssrcOutbound.copyFrom(other.ssrcOutbound);
@@ -66,7 +66,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 	public RtspProtoAdSettingsForSubStream clone() {
 		try {
 			RtspProtoAdSettingsForSubStream cloned = (RtspProtoAdSettingsForSubStream)super.clone();
-			cloned.idStreamSource = idStreamSource.clone();
+			cloned.idEsSource = idEsSource.clone();
 			cloned.idSubStream = idSubStream.clone();
 			cloned.ssrcInbound = ssrcInbound.clone();
 			cloned.ssrcOutbound = ssrcOutbound.clone();
@@ -79,7 +79,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return "[" +
-				"idStreamSource=" + (idStreamSource.isEmpty() ? "-" : "'" + idStreamSource.getIdStr().orElseThrow() + "'") +
+				"idEsSource=" + (idEsSource.isEmpty() ? "-" : "'" + idEsSource.getIdStr().orElseThrow() + "'") +
 				", idSubStream=" + (idSubStream.isEmpty() ? "-" : "'" + idSubStream.getIdStr().orElseThrow() + "'") +
 				", ssrcInbound=" + (ssrcInbound.isEmpty() ? "-" : ssrcInbound.toHexString(true)) +
 				", ssrcOutbound=" + (ssrcOutbound.isEmpty() ? "-" : ssrcOutbound.toHexString(true)) +

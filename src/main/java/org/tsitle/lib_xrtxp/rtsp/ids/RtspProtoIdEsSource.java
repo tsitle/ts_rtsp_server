@@ -3,32 +3,32 @@ package org.tsitle.lib_xrtxp.rtsp.ids;
 import org.jspecify.annotations.NonNull;
 
 /**
- * Stream Source ID
+ * Elementary-Stream Source ID
  */
-public final class RtspProtoIdStreamSource extends RtspProtoBaseIdString implements Cloneable {
+public final class RtspProtoIdEsSource extends RtspProtoBaseIdString implements Cloneable {
 
-	private RtspProtoIdStreamSource() {
+	private RtspProtoIdEsSource() {
 		super();
 	}
 
-	private RtspProtoIdStreamSource(@NonNull String idStr) {
+	private RtspProtoIdEsSource(@NonNull String idStr) {
 		super(idStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoIdStreamSource ofEmpty() {
-		return new RtspProtoIdStreamSource();
+	public static RtspProtoIdEsSource ofEmpty() {
+		return new RtspProtoIdEsSource();
 	}
 
-	public static RtspProtoIdStreamSource of(@NonNull String idStr) {
-		return new RtspProtoIdStreamSource(idStr);
+	public static RtspProtoIdEsSource of(@NonNull String idStr) {
+		return new RtspProtoIdEsSource(idStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void copyFrom(@NonNull RtspProtoIdStreamSource other) {
+	public void copyFrom(@NonNull RtspProtoIdEsSource other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -41,8 +41,8 @@ public final class RtspProtoIdStreamSource extends RtspProtoBaseIdString impleme
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoIdStreamSource clone() {
-		return (RtspProtoIdStreamSource)super.clone();
+	public RtspProtoIdEsSource clone() {
+		return (RtspProtoIdEsSource)super.clone();
 	}
 
 }

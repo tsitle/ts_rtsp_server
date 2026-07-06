@@ -6,7 +6,7 @@ import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.*;
 import java.net.URI;
@@ -19,30 +19,30 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 
 	/**
 	 * Constructor.
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream Source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromFile(
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		this(null, idStreamSource, inputUri);
+		this(null, idEsSource, inputUri);
 	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream Source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromFile(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		super(logMsgInterface, idStreamSource);
+		super(logMsgInterface, idEsSource);
 
 		if (! "file".equals(inputUri.getScheme())) {
 			throw new IllegalArgumentException("Input URI scheme must be 'file'");

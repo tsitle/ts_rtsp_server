@@ -13,7 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestProducer;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -997,9 +997,9 @@ public final class RtspProtoRequestOutputSvc {
 				tmpAdSettForSs.idSubStream.copyFrom(tmpIdSs);
 				if (! isRequestFromClient && globalSessionInfoInterface != null) {
 					try {
-						RtspProtoIdStreamSource tmpIdStreamSource = globalSessionInfoInterface
-								.getStreamSourceIdBySubStreamId(tmpIdSs, sessionInfoPtr.ptr().getClientIpAddr());
-						tmpAdSettForSs.idStreamSource.copyFrom(tmpIdStreamSource);
+						RtspProtoIdEsSource tmpIdEsSource = globalSessionInfoInterface
+								.getElementaryStreamSourceIdBySubStreamId(tmpIdSs, sessionInfoPtr.ptr().getClientIpAddr());
+						tmpAdSettForSs.idEsSource.copyFrom(tmpIdEsSource);
 					} catch (RtspProtoIdSubStreamNotFoundException e) {
 						logError(fncName, "Could not find Sub-Stream ID in Global Session Info for " +
 								requestMessageType + " request");

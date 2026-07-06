@@ -7,9 +7,9 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import java.net.URI;
 
 /**
- * Message Queue settings for a Stream Source.
+ * Message Queue settings for an Elementary-Stream Source.
  */
-public final class MqStreamSourceSettings implements Cloneable {
+public final class MqElementaryStreamSourceSettings implements Cloneable {
 
 	/** Username for the Message Queue */
 	private final @NonNull String userName;
@@ -24,7 +24,7 @@ public final class MqStreamSourceSettings implements Cloneable {
 	/** Resource Channel of the Message Queue */
 	private final @NonNull String resourceChannel;
 
-	public MqStreamSourceSettings(
+	public MqElementaryStreamSourceSettings(
 				@NonNull String userName,
 				@NonNull String userPassword,
 				@NonNull String hostname,
@@ -80,9 +80,9 @@ public final class MqStreamSourceSettings implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull MqStreamSourceSettings clone() {
+	public @NonNull MqElementaryStreamSourceSettings clone() {
 		try {
-			MqStreamSourceSettings clone = (MqStreamSourceSettings)super.clone();
+			MqElementaryStreamSourceSettings clone = (MqElementaryStreamSourceSettings)super.clone();
 			clone.port = port.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {

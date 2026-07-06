@@ -13,10 +13,10 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSdpRaw;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSdpException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoDescribeRespSrtxpTypeDeciderInterface;
@@ -265,7 +265,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			throw new RtspProtoSdpException(fncName + ": Input Source not found");
 		}
 		if (! checkStreamsForInputSource(inputSourceObj)) {
-			throw new RtspProtoSdpException(fncName + ": No valid Stream Source found for Input Source '" +
+			throw new RtspProtoSdpException(fncName + ": No valid Elementary-Stream Source found for Input Source '" +
 					args.idInputSource.getIdStr().orElse("-unset-") + "'");
 		}
 
@@ -292,10 +292,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (availableStreamsInterface == null) {
 			throw new IllegalStateException("availableStreamsInterface must be set");
 		}
-		Optional<RtspProtoStreamSource> optSsObjVideo =
-				availableStreamsInterface.getFirstVideoStreamSourceObj(inputSourceObj.getIdInputSource());
-		Optional<RtspProtoStreamSource> optSsObjAudio =
-				availableStreamsInterface.getFirstAudioStreamSourceObj(inputSourceObj.getIdInputSource());
+		Optional<RtspProtoElementaryStreamSource> optSsObjVideo =
+				availableStreamsInterface.getFirstVideoEsSourceObj(inputSourceObj.getIdInputSource());
+		Optional<RtspProtoElementaryStreamSource> optSsObjAudio =
+				availableStreamsInterface.getFirstAudioEsSourceObj(inputSourceObj.getIdInputSource());
 		return (optSsObjVideo.isPresent() || optSsObjAudio.isPresent());
 	}
 
@@ -354,8 +354,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			buildSdpForSubStream(args, inputSourceObj, true, resL);
 			// optional Audio Stream
 			buildSdpForSubStream(args, inputSourceObj, false, resL);
-		} catch (RtspProtoIdStreamSourceNotFoundException e) {
-			throw new RtspProtoSdpException(FNC_NAME + ": Stream Source ID not found: " + e.getMessage());
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			throw new RtspProtoSdpException(FNC_NAME + ": Elementary-Stream Source ID not found: " + e.getMessage());
 		}
 
 		return resL;
@@ -368,7 +368,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoInputSource inputSourceObj,
 				boolean useVideo,
 				@NonNull List<@NonNull String> outputList
-			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
+			) throws RtspProtoSdpException, RtspProtoIdEsSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream()";
 
 		if (args.buildTarget != BuildTarget.DESCRIBE_FROM_SERVER && args.buildTarget != BuildTarget.ANNOUNCE_FROM_SERVER) {
@@ -381,22 +381,22 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			throw new IllegalStateException(FNC_NAME + ": globalSessionInfoInterface must be set");
 		}
 
-		Optional<RtspProtoStreamSource> tmpOptSsObj;
+		Optional<RtspProtoElementaryStreamSource> tmpOptSsObj;
 		if (useVideo) {
-			tmpOptSsObj = availableStreamsInterface.getFirstVideoStreamSourceObj(inputSourceObj.getIdInputSource());
+			tmpOptSsObj = availableStreamsInterface.getFirstVideoEsSourceObj(inputSourceObj.getIdInputSource());
 		} else {
-			tmpOptSsObj = availableStreamsInterface.getFirstAudioStreamSourceObj(inputSourceObj.getIdInputSource());
+			tmpOptSsObj = availableStreamsInterface.getFirstAudioEsSourceObj(inputSourceObj.getIdInputSource());
 		}
 		if (tmpOptSsObj.isEmpty()) {
 			return;
 		}
-		RtspProtoStreamSource ssObj = tmpOptSsObj.get();
-		final RtspProtoIdStreamSource ssId = ssObj.getIdStreamSource();
+		RtspProtoElementaryStreamSource ssObj = tmpOptSsObj.get();
+		final RtspProtoIdEsSource ssId = ssObj.getIdEsSource();
 
 		//
 		final RtspProtoIdSubStream tmpOutSubStreamId;
 		final long tmpOutRtspSsrcIdLong;
-		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = args.ioAdStreamSett.getSettingsByStreamSourceId(ssId);
+		Optional<RtspProtoAdSettingsForSubStream> tmpInpAdSubStreamSetts = args.ioAdStreamSett.getSettingsByElementaryStreamSourceId(ssId);
 		if (tmpInpAdSubStreamSetts.isPresent()) {
 			tmpOutSubStreamId = tmpInpAdSubStreamSetts.get().idSubStream;
 			if (tmpOutSubStreamId.isEmpty()) {
@@ -407,9 +407,9 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			}
 			tmpOutRtspSsrcIdLong = tmpInpAdSubStreamSetts.get().ssrcOutbound.getId32bit().orElse(-1L);
 		} else if (args.buildTarget == BuildTarget.ANNOUNCE_FROM_SERVER) {
-			throw new RtspProtoSdpException(FNC_NAME + ": Stream Source ID must be set in AdSettingsForSubStream");
+			throw new RtspProtoSdpException(FNC_NAME + ": Elementary-Stream Source ID must be set in AdSettingsForSubStream");
 		} else {  // only DESCRIBE
-			// create the Sub-Stream ID ('Input Stream and Stream Source' combination)
+			// create the Sub-Stream ID ('Input Stream and Elementary-Stream Source' combination)
 			tmpOutSubStreamId = globalSessionInfoInterface.createSubStreamId(
 					args.cfgSubStreamIdPrefixForDescribe,
 					inputSourceObj.getIdInputSource(),
@@ -436,7 +436,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		//
 		RtspProtoAdSettingsForSubStream settSubStream = new RtspProtoAdSettingsForSubStream();
 		if (args.buildTarget == BuildTarget.DESCRIBE_FROM_SERVER) {
-			settSubStream.idStreamSource.copyFrom(ssId);
+			settSubStream.idEsSource.copyFrom(ssId);
 			settSubStream.idSubStream.copyFrom(tmpOutSubStreamId);
 			settSubStream.ssrcOutbound.copyFrom(tmpOutRtspSsrcIdObj);
 			settSubStream.setUrlSubPathForSubStream(tmpSdpControlIdForSubStream);
@@ -509,17 +509,18 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	private void buildSdpForSubStream_output(
 				boolean requireSrtp,
 				boolean useVideo,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull String sdpControlIdForSubStream,
 				@NonNull List<@NonNull String> outputList
-			) throws RtspProtoSdpException, RtspProtoIdStreamSourceNotFoundException {
+			) throws RtspProtoSdpException, RtspProtoIdEsSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".buildSdpForSubStream_output()";
 
 		if (availableStreamsInterface == null) {
 			throw new IllegalStateException(FNC_NAME + ": availableStreamsInterface must be set");
 		}
 
-		final RtspProtoAvailableStreamsInterface.StreamSourceInfo ssInfo = availableStreamsInterface.getStreamSourceInfo(idStreamSource);
+		final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo ssInfo =
+				availableStreamsInterface.getElementaryStreamSourceInfo(idEsSource);
 		final int ssVideoRtpClockRate;
 		try {
 			ssVideoRtpClockRate = (useVideo ? ssInfo.codec().getVideoCodecRtpClockrate() : 0);

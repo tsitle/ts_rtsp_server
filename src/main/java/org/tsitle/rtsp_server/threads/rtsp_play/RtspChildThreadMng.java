@@ -18,9 +18,9 @@ import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
@@ -190,17 +190,17 @@ public final class RtspChildThreadMng {
 							tmpIdSs.getIdStr().orElse("-unset-") + "' already exists");
 				}
 				//
-				RtspProtoIdStreamSource tmpIdStreamSource;
+				RtspProtoIdEsSource tmpIdEs;
 				try {
-					tmpIdStreamSource = globalSessionInfoInterface.getStreamSourceIdBySubStreamId(tmpIdSs, clientIpAddr);
+					tmpIdEs = globalSessionInfoInterface.getElementaryStreamSourceIdBySubStreamId(tmpIdSs, clientIpAddr);
 				} catch (RtspProtoIdSubStreamNotFoundException e) {
-					logError(FNC_NAME, "Stream Source ID for ss='" +
+					logError(FNC_NAME, "Elementary-Stream Source ID for ss='" +
 							tmpIdSs.getIdStr().orElse("-unset-") + "' not found");
 					continue;
 				}
 				//
-				RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi =
-						availableStreamsInterface.getStreamSourceInfo(tmpIdStreamSource);
+				RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo tmpAvSsi =
+						availableStreamsInterface.getElementaryStreamSourceInfo(tmpIdEs);
 				//
 				if (tmpAvSsi.isSourceFromMq() && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
 					logError(FNC_NAME, "ss='" + tmpIdSs.getIdStr().orElse("-unset-") + "': " +
@@ -211,14 +211,14 @@ public final class RtspChildThreadMng {
 				ChildThreadsForOneStream ctfos = new ChildThreadsForOneStream(
 						tmpIdSs,
 						usedIdInputSource,
-						tmpIdStreamSource
+						tmpIdEs
 					);
 				childThreadsForOneStreamMap.put(tmpIdSs, ctfos);
 
 				startSendRtp_oneStream(ctfos, cnameHostname);
 				startRtcp_oneStream(ctfos);
 			}
-		} catch (RtspProtoIdStreamSourceNotFoundException e) {
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
 			throw new IllegalStateException(FNC_NAME + ": Could not find SSI: " + e.getMessage());
 		} finally {
 			theWriteLockCtfos.unlock();
@@ -301,19 +301,19 @@ public final class RtspChildThreadMng {
 		}
 		RtspProtoSetupInfoForSubStream tmpSiSs = setupInfoPerSsMap.get(ctfos.idSubStream);
 		//
-		RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi;
+		RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo tmpAvSsi;
 		try {
-			tmpAvSsi = availableStreamsInterface.getStreamSourceInfo(ctfos.idStreamSource);
-		} catch (RtspProtoIdStreamSourceNotFoundException e) {
-			throw new IllegalStateException(FNC_NAME + ": idStreamSource not found");
+			tmpAvSsi = availableStreamsInterface.getElementaryStreamSourceInfo(ctfos.idEsSource);
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			throw new IllegalStateException(FNC_NAME + ": idEsSource not found");
 		}
 		//
 		BuilderThreadRtcp.Builder tmpBuilder = BuilderThreadRtcp.builder()
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
-				.debugSessionId(idSession)
-				.idStreamSource(ctfos.idStreamSource)
+				.debugIdSession(idSession)
+				.idEsSource(ctfos.idEsSource)
 				.idSubStream(ctfos.idSubStream)
-				.ssrcId(tmpSiSs.getSsrcOutboundPtr())
+				.idSsrc(tmpSiSs.getSsrcOutboundPtr())
 				.tpClientIpAddr(clientIpAddr);
 		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
 			tmpBuilder
@@ -332,7 +332,7 @@ public final class RtspChildThreadMng {
 		ctfos.rtcpThreadSendRecv.setName(
 				"RTCP" +
 				"#sid" + idSession.getIdStr().orElseThrow() +
-				"#ss" + ctfos.idStreamSource.getIdStr().orElse("-unset-") +
+				"#es" + ctfos.idEsSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()
 			);
 		ctfos.rtcpThreadSendRecv.setDaemon(false);
@@ -343,8 +343,8 @@ public final class RtspChildThreadMng {
 			B buildThreadRtpSender(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
-					RtspProtoAvailableStreamsInterface.@NonNull StreamSourceInfo avSsi,
-					@NonNull RtspProtoIdStreamSource idStreamSource,
+					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
+					@NonNull RtspProtoIdEsSource idEsSource,
 					double avFps,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
@@ -359,10 +359,10 @@ public final class RtspChildThreadMng {
 		}
 		return builder
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
-				.comDebugSessionId(idSession)
-				.comIdStreamSource(idStreamSource)
+				.comDebugIdSession(idSession)
+				.comIdEsSource(idEsSource)
 				.comIdSubStream(streamInfo.getRscUrlSubStreamPtr().idSubStream)
-				.comSsrcId(streamInfo.getSsrcOutboundPtr())
+				.comIdSsrc(streamInfo.getSsrcOutboundPtr())
 				.comTpClientIpAddr(clientIpAddr)
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.getSubStreamTpPtr().getIsEncr())
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))
@@ -387,31 +387,31 @@ public final class RtspChildThreadMng {
 			B buildThreadVideo(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
-					RtspProtoAvailableStreamsInterface.@NonNull StreamSourceInfo avSsi,
-					@NonNull RtspProtoIdStreamSource idStreamSource,
+					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
+					@NonNull RtspProtoIdEsSource idEsSource,
 					double avFps,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idStreamSource, avFps, xsrcBlock);
+		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFps, xsrcBlock);
 	}
 
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
 			B buildThreadAudio(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
-					RtspProtoAvailableStreamsInterface.@NonNull StreamSourceInfo avSsi,
-					@NonNull RtspProtoIdStreamSource idStreamSource,
+					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
+					@NonNull RtspProtoIdEsSource idEsSource,
 					@SuppressWarnings("SameParameterValue") double avFps,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock,
 					int samplesPerFrame
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idStreamSource, avFps, xsrcBlock)
+		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFps, xsrcBlock)
 				.audComRtpAudioSpf(samplesPerFrame)
 				.audComSamplerateHz(avSsi.audioSampleRateHz());
 	}
 
 	private void startSendRtp_oneStream(@NonNull ChildThreadsForOneStream ctfos, @NonNull String cnameHostname)
-			throws RtspProtoIdStreamSourceNotFoundException {
+			throws RtspProtoIdEsSourceNotFoundException {
 		final String FNC_NAME = getClass().getSimpleName() + ".startSendRtp_oneStream()";
 
 		stopChildThread(ctfos.rtpThreadSender);
@@ -436,11 +436,11 @@ public final class RtspChildThreadMng {
 			throw new IllegalStateException(FNC_NAME + ": idSubStream is empty");
 		}
 		//
-		RtspProtoAvailableStreamsInterface.StreamSourceInfo tmpAvSsi;
+		RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo tmpAvSsi;
 		try {
-			tmpAvSsi = availableStreamsInterface.getStreamSourceInfo(ctfos.idStreamSource);
-		} catch (RtspProtoIdStreamSourceNotFoundException e) {
-			throw new IllegalStateException(FNC_NAME + ": idStreamSource not found");
+			tmpAvSsi = availableStreamsInterface.getElementaryStreamSourceInfo(ctfos.idEsSource);
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			throw new IllegalStateException(FNC_NAME + ": idEsSource not found");
 		}
 		//
 		switch (tmpAvSsi.codec()) {
@@ -451,7 +451,7 @@ public final class RtspChildThreadMng {
 						BuilderThreadRtpSenderAac.builder(),
 						tmpSiSs,
 						tmpAvSsi,
-						ctfos.idStreamSource,
+						ctfos.idEsSource,
 						tmpVirtualFpsAac,
 						xsrcBlock,
 						tmpAvSsi.audioAacSpf()
@@ -463,7 +463,7 @@ public final class RtspChildThreadMng {
 						BuilderThreadRtpSenderMjpeg.builder(),
 						tmpSiSs,
 						tmpAvSsi,
-						ctfos.idStreamSource,
+						ctfos.idEsSource,
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
@@ -474,7 +474,7 @@ public final class RtspChildThreadMng {
 						BuilderThreadRtpSenderH264.builder(),
 						tmpSiSs,
 						tmpAvSsi,
-						ctfos.idStreamSource,
+						ctfos.idEsSource,
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
@@ -485,7 +485,7 @@ public final class RtspChildThreadMng {
 						BuilderThreadRtpSenderH265.builder(),
 						tmpSiSs,
 						tmpAvSsi,
-						ctfos.idStreamSource,
+						ctfos.idEsSource,
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
@@ -500,11 +500,11 @@ public final class RtspChildThreadMng {
 							BuilderThreadRtpSenderPcm.builder(),
 							tmpSiSs,
 							tmpAvSsi,
-							ctfos.idStreamSource,
+							ctfos.idEsSource,
 							tmpVirtualFpsPcm,
 							xsrcBlock,
-							availableStreamsInterface.getStreamSourceRtpAudioSamplesPerFrame(
-									ctfos.idStreamSource,
+							availableStreamsInterface.getElementaryStreamSourceRtpAudioSamplesPerFrame(
+									ctfos.idEsSource,
 									tmpVirtualFpsPcm
 								)
 						);
@@ -521,7 +521,7 @@ public final class RtspChildThreadMng {
 		ctfos.rtpThreadSender.setName(
 				"RTP_" +
 				"#sid" + idSession.getIdStr().orElseThrow() +
-				"#ss" + ctfos.idStreamSource.getIdStr().orElse("-unset-") +
+				"#es" + ctfos.idEsSource.getIdStr().orElse("-unset-") +
 				"#" + tmpAvSsi.codec().getValue()
 			);
 		ctfos.rtpThreadSender.setDaemon(false);

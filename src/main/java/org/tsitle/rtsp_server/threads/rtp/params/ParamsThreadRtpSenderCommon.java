@@ -73,9 +73,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean debugRewindMediaFiles;
 	private boolean isSetDebugRewindMediaFiles;
 
-	/** Is Stream Source read from a file? */
-	private boolean isStreamSourceFromFile;
-	private boolean isSetIsStreamSourceFromFile;
+	/** Is Elementary-Stream Source read from a file? */
+	private boolean isEsSourceFromFile;
+	private boolean isSetIsEsSourceFromFile;
 
 	/** Video or audio frames per second */
 	private double avFramesPerSecond;
@@ -119,10 +119,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetDebugRewindMediaFiles = true;
 	}
 
-	public boolean getIsStreamSourceFromFile() { return isStreamSourceFromFile; }
-	public void setIsStreamSourceFromFile(boolean value) {
-		this.isStreamSourceFromFile = value;
-		this.isSetIsStreamSourceFromFile = true;
+	public boolean getIsEsSourceFromFile() { return isEsSourceFromFile; }
+	public void setIsEsSourceFromFile(boolean value) {
+		this.isEsSourceFromFile = value;
+		this.isSetIsEsSourceFromFile = true;
 	}
 
 	public double getAvFramesPerSecond() { return avFramesPerSecond; }
@@ -212,7 +212,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private void checkAllParamsSet() {
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
 
-		requireIsSet(isSetIsStreamSourceFromFile, "isSetIsStreamSourceFromFile");
+		requireIsSet(isSetIsEsSourceFromFile, "isEsSourceFromFile");
 
 		requireIsSet(isSetAvFramesPerSecond, "avFramesPerSecond");
 

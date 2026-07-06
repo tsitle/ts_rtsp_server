@@ -23,22 +23,22 @@ public final class RtspConfigInputSource implements Cloneable {
 	/** Does this Input Source need authentication? (default: true) */
 	@Expose
 	private @NonNull Boolean needsAuthentication;
-	/** Allowed User Account Groups for this input source */
+	/** Allowed User Account Groups for this Input Source */
 	@Expose
 	private @NonNull Set<@NonNull String> allowedUserAccountGroups;
 	/** Does this Input Source need encryption? (default: true) */
 	@Expose
 	private boolean needsEncryption;
-	/** Stream Source IDs to be used by this input source */
+	/** Elementary-Stream Source IDs to be used by this Input Source */
 	@Expose
-	private @NonNull Set<@NonNull String> streamSourceIds;
+	private @NonNull Set<@NonNull String> elementaryStreamSourceIds;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
-	/** Internal use: Stream Source IDs to be used by this input source */
+	/** Internal use: Elementary-Stream Source IDs to be used by this Input Source */
 	@SuppressWarnings("FieldMayBeFinal")
 	@GsonAnnoExclude
-	private @NonNull Set<@NonNull Integer> internalStreamSourceIds;
+	private @NonNull Set<@NonNull Integer> internalEsSourceIds;
 
 	public RtspConfigInputSource() {
 		this.id = "";
@@ -46,10 +46,10 @@ public final class RtspConfigInputSource implements Cloneable {
 		this.needsAuthentication = true;
 		this.allowedUserAccountGroups = new HashSet<>();
 		this.needsEncryption = true;
-		this.streamSourceIds = new HashSet<>();
+		this.elementaryStreamSourceIds = new HashSet<>();
 
 		//noinspection DataFlowIssue
-		this.internalStreamSourceIds = null;
+		this.internalEsSourceIds = null;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -90,20 +90,20 @@ public final class RtspConfigInputSource implements Cloneable {
 		return needsEncryption;
 	}
 
-	public @NonNull Set<@NonNull Integer> getStreamSourceIds() {
+	public @NonNull Set<@NonNull Integer> getElementaryStreamSourceIds() {
 		checkPostProcessed();
-		return Set.copyOf(internalStreamSourceIds);
+		return Set.copyOf(internalEsSourceIds);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Post-process the Input Source.
-	 * @param mapStreamSourceIdExtToInt Map of Stream Source IDs (external) to their internal representation
+	 * @param mapEsSourceIdExtToInt Map of Elementary-Stream Source IDs (external) to their internal representation
 	 * @throws ConfigInvalidException If the Input Source is invalid
 	 */
 	public void postProcess(
-				@NonNull Map<@NonNull String, @NonNull Integer> mapStreamSourceIdExtToInt
+				@NonNull Map<@NonNull String, @NonNull Integer> mapEsSourceIdExtToInt
 			) throws ConfigInvalidException {
 		internalHasBeenPostProcessed = true;
 
@@ -114,8 +114,8 @@ public final class RtspConfigInputSource implements Cloneable {
 		}
 		//
 		//noinspection ConstantValue
-		if (internalStreamSourceIds == null) {
-			createInternalStreamSourcesMap(mapStreamSourceIdExtToInt);
+		if (internalEsSourceIds == null) {
+			createInternalEsSourcesMap(mapEsSourceIdExtToInt);
 		}
 
 		//
@@ -135,14 +135,14 @@ public final class RtspConfigInputSource implements Cloneable {
 
 	/**
 	 * Validate the Input Source.
-	 * @param streamSources Map of all Stream Sources
-	 * @param mapStreamSourceIdIntToExt Map of Stream Source IDs (internal) to their external representation
+	 * @param elementaryStreamSources Map of all Elementary-Stream Sources
+	 * @param mapEsSourceIdIntToExt Map of Elementary-Stream Source IDs (internal) to their external representation
 	 * @param userAccountGroups Existing User Account Groups
 	 * @throws ConfigInvalidException If the Input Source is invalid
 	 */
 	public void validate(
-				@NonNull Map<@NonNull Integer, @NonNull RtspConfigStreamSource> streamSources,
-				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt,
+				@NonNull Map<@NonNull Integer, @NonNull RtspConfigElementaryStreamSource> elementaryStreamSources,
+				@NonNull Map<@NonNull Integer, @NonNull String> mapEsSourceIdIntToExt,
 				@NonNull Set<@NonNull String> userAccountGroups
 			) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
@@ -153,26 +153,27 @@ public final class RtspConfigInputSource implements Cloneable {
 			throw new ConfigInvalidException(FNC_NAME + ": Input Source has no ID");
 		}
 		//noinspection ConstantValue
-		if (streamSourceIds == null || internalStreamSourceIds.size() != streamSourceIds.size()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Not all Stream Source IDs could be mapped " +
+		if (elementaryStreamSourceIds == null || internalEsSourceIds.size() != elementaryStreamSourceIds.size()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Not all Elementary-Stream Source IDs could be mapped " +
 					"for Input Source ID '" + id + "'");
 		}
-		Set<Integer> tmpIsSsIdSet = getStreamSourceIds();
+		Set<Integer> tmpIsSsIdSet = getElementaryStreamSourceIds();
 		if (tmpIsSsIdSet.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No Stream Sources found for Input Source ID '" + id + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": No Elementary-Stream Sources found for Input Source ID '" + id + "'");
 		}
 		if (tmpIsSsIdSet.size() > 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Input Source ID '" + id + "' contains more than two Stream Sources");
+			throw new ConfigInvalidException(FNC_NAME + ": Input Source ID '" + id + "' contains more than two " +
+					"Elementary-Stream Sources");
 		}
 		for (int tmpSsId : tmpIsSsIdSet) {
-			if (! streamSources.containsKey(tmpSsId)) {
-				String tmpExtSsId = mapStreamSourceIdIntToExt.get(tmpSsId);
-				throw new ConfigInvalidException(FNC_NAME + ": Non-existing Stream Source ID '" + tmpExtSsId + "'" +
+			if (! elementaryStreamSources.containsKey(tmpSsId)) {
+				String tmpExtSsId = mapEsSourceIdIntToExt.get(tmpSsId);
+				throw new ConfigInvalidException(FNC_NAME + ": Non-existing Elementary-Stream Source ID '" + tmpExtSsId + "'" +
 						" used for Input Source ID '" + id + "'");
 			}
-			if (! streamSources.get(tmpSsId).getEnabled()) {
-				String tmpExtSsId = mapStreamSourceIdIntToExt.get(tmpSsId);
-				throw new ConfigInvalidException(FNC_NAME + ": Disabled Stream Source ID '" + tmpExtSsId + "'" +
+			if (! elementaryStreamSources.get(tmpSsId).getEnabled()) {
+				String tmpExtSsId = mapEsSourceIdIntToExt.get(tmpSsId);
+				throw new ConfigInvalidException(FNC_NAME + ": Disabled Elementary-Stream Source ID '" + tmpExtSsId + "'" +
 						" used for Input Source ID '" + id + "'");
 			}
 		}
@@ -197,8 +198,8 @@ public final class RtspConfigInputSource implements Cloneable {
 		try {
 			RtspConfigInputSource clone = (RtspConfigInputSource)super.clone();
 			clone.allowedUserAccountGroups = new HashSet<>(allowedUserAccountGroups);
-			clone.streamSourceIds = new HashSet<>(streamSourceIds);
-			clone.internalStreamSourceIds = new HashSet<>(internalStreamSourceIds);
+			clone.elementaryStreamSourceIds = new HashSet<>(elementaryStreamSourceIds);
+			clone.internalEsSourceIds = new HashSet<>(internalEsSourceIds);
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -214,30 +215,31 @@ public final class RtspConfigInputSource implements Cloneable {
 		}
 	}
 
-	private void createInternalStreamSourcesMap(
-				@NonNull Map<@NonNull String, @NonNull Integer> mapStreamSourceIdExtToInt
+	private void createInternalEsSourcesMap(
+				@NonNull Map<@NonNull String, @NonNull Integer> mapEsSourceIdExtToInt
 			) throws ConfigInvalidException {
-		final String FNC_NAME = getClass().getSimpleName() + ".createInternalStreamSourcesMap()";
+		final String FNC_NAME = getClass().getSimpleName() + ".createInternalEsSourcesMap()";
 
-		internalStreamSourceIds = new HashSet<>();
+		internalEsSourceIds = new HashSet<>();
 		//noinspection ConstantValue
-		if (streamSourceIds == null) {
+		if (elementaryStreamSourceIds == null) {
 			return;
 		}
-		for (String entry : streamSourceIds) {
+		for (String entry : elementaryStreamSourceIds) {
 			//noinspection ConstantValue
 			if (entry == null) {
 				continue;
 			}
 			if (entry.isBlank()) {
-				throw new ConfigInvalidException(FNC_NAME + ": Empty Stream Source ID for Input Source '" + getIdAsStr() + "'");
+				throw new ConfigInvalidException(FNC_NAME + ": Empty Elementary-Stream Source ID for Input Source '" +
+						getIdAsStr() + "'");
 			}
-			if (! mapStreamSourceIdExtToInt.containsKey(entry)) {
-				throw new ConfigInvalidException(FNC_NAME + ": Could not map Stream Source ID '" + entry +
+			if (! mapEsSourceIdExtToInt.containsKey(entry)) {
+				throw new ConfigInvalidException(FNC_NAME + ": Could not map Elementary-Stream Source ID '" + entry +
 						"' for Input Source '" + getIdAsStr() + "'");
 			}
-			internalStreamSourceIds.add(
-					mapStreamSourceIdExtToInt.get(entry)
+			internalEsSourceIds.add(
+					mapEsSourceIdExtToInt.get(entry)
 				);
 		}
 	}

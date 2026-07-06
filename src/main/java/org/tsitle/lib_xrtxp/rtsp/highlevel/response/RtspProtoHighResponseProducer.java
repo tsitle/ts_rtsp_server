@@ -434,7 +434,7 @@ public final class RtspProtoHighResponseProducer {
 	}
 
 	/**
-	 * The client makes one SETUP request per Stream Source (aka Sub-Stream).<br />
+	 * The client makes one SETUP request per Elementary-Stream Source (aka Sub-Stream).<br />
 	 * See <a href="https://datatracker.ietf.org/doc/html/rfc7826">RFC-7826: Real Time Streaming Protocol 2.0</a>
 	 * or <a href="https://datatracker.ietf.org/doc/html/rfc2326">RFC-2326: Real Time Streaming Protocol 1.0</a>
 	 */

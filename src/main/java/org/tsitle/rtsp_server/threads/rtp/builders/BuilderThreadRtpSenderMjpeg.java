@@ -27,7 +27,7 @@ public final class BuilderThreadRtpSenderMjpeg {
 			validateVideoCommon();
 			threadParamsMjpeg.validate();
 
-			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderMjpeg<>(
 						AvStreamIncomingFromFile.class,
 						VideoStreamOutgoingMjpegFromFile.class,

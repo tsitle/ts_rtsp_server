@@ -16,7 +16,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
@@ -61,25 +61,25 @@ public class C2sRrSvcTest {
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstVideoEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			return Optional.empty();
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstAudioEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			return Optional.empty();
 		}
 
 		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
+		public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
 
 		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("");
+		public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
 	}
 

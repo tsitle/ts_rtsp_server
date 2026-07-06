@@ -160,7 +160,7 @@ public final class RtspProtoHighRequestConsumer {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.FORBIDDEN);
 		} catch (RtspProtoInvalidRequestException | RtspProtoIdInputSourceNotFoundException |
-					RtspProtoIdStreamSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
+		         RtspProtoIdEsSourceNotFoundException | RtspProtoIdSubStreamNotFoundException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspRequestBasics.createKnownWithError(inputMsgStc.messageType, RtspProtoStatusCode.NOT_FOUND);
 		}
@@ -414,7 +414,7 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException, RtspProtoInvalidUriException,
 					RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException,
-					RtspProtoIdStreamSourceNotFoundException {
+			RtspProtoIdEsSourceNotFoundException {
 		if (ioStreamTpMain.getIsRtspsConnection() && ! resourceUrlStr.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://")) {
 			throw new RtspProtoInvalidUriException("Invalid URL for RTSPS");
 		}

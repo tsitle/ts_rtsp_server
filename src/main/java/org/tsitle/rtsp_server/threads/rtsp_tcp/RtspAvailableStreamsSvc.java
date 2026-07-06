@@ -3,14 +3,14 @@ package org.tsitle.rtsp_server.threads.rtsp_tcp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.config.RtspConfigInputSource;
-import org.tsitle.rtsp_server.config.RtspConfigStreamSource;
+import org.tsitle.rtsp_server.config.RtspConfigElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,25 +21,25 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	private final @NonNull RtspConfig rtspConfig;
 
 	private final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
-	private final @NonNull Map<@NonNull RtspProtoIdStreamSource, @NonNull RtspProtoStreamSource> streamSourceMap = new HashMap<>();
+	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> esSourceMap = new HashMap<>();
 
 	public RtspAvailableStreamsSvc(@NonNull RtspConfig rtspConfig) {
 		this.rtspConfig = rtspConfig;
 
 		//
-		Map<Integer, RtspProtoIdStreamSource> tmpStreamSourceIdMap = new HashMap<>();
-		for (Integer tmpSsIdInt : rtspConfig.getStreamSourceIds()) {
-			Optional<RtspConfigStreamSource> tmpOptSsObjInp = rtspConfig.getStreamSourceObj(tmpSsIdInt);
+		Map<Integer, RtspProtoIdEsSource> tmpStreamSourceIdMap = new HashMap<>();
+		for (Integer tmpSsIdInt : rtspConfig.getElementaryStreamSourceIds()) {
+			Optional<RtspConfigElementaryStreamSource> tmpOptSsObjInp = rtspConfig.getElementaryStreamSourceObj(tmpSsIdInt);
 			if (tmpOptSsObjInp.isEmpty()) {
 				continue;  // this should never happen
 			}
-			RtspConfigStreamSource tmpSsObjInp = tmpOptSsObjInp.get();
-			RtspProtoIdStreamSource tmpId = tmpSsObjInp.getIdAsProtoId().clone();
-			RtspProtoStreamSource tmpSsObjOut = new RtspProtoStreamSource();
-			tmpSsObjOut.setIdStreamSource(tmpId);
+			RtspConfigElementaryStreamSource tmpSsObjInp = tmpOptSsObjInp.get();
+			RtspProtoIdEsSource tmpId = tmpSsObjInp.getIdAsProtoId().clone();
+			RtspProtoElementaryStreamSource tmpSsObjOut = new RtspProtoElementaryStreamSource();
+			tmpSsObjOut.setIdEsSource(tmpId);
 			tmpSsObjOut.setEnabled(tmpSsObjInp.getEnabled());
 
-			this.streamSourceMap.put(tmpId, tmpSsObjOut);
+			this.esSourceMap.put(tmpId, tmpSsObjOut);
 
 			tmpStreamSourceIdMap.put(tmpSsIdInt, tmpId.clone());
 		}
@@ -59,11 +59,11 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 			tmpIsObjOut.setAllowedUserAccountGroups(tmpIsObjInp.getAllowedUserAccountGroups());
 			tmpIsObjOut.setNeedsEncryption(tmpIsObjInp.getNeedsEncryption());
 
-			for (Integer tmpSsIdInp : tmpIsObjInp.getStreamSourceIds()) {
+			for (Integer tmpSsIdInp : tmpIsObjInp.getElementaryStreamSourceIds()) {
 				if (! tmpStreamSourceIdMap.containsKey(tmpSsIdInp)) {
 					continue;
 				}
-				tmpIsObjOut.putIdStreamSource(
+				tmpIsObjOut.putIdEsSource(
 						tmpStreamSourceIdMap.get(tmpSsIdInp).clone()
 					);
 			}
@@ -90,28 +90,28 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	}
 
 	@Override
-	public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(
+	public Optional<RtspProtoElementaryStreamSource> getFirstVideoEsSourceObj(
 				@NonNull RtspProtoIdInputSource idInputSource
 			) {
-		return getFirstOfKindStreamSourceObj(idInputSource, true);
+		return getFirstOfKindEsSourceObj(idInputSource, true);
 	}
 
 	@Override
-	public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(
+	public Optional<RtspProtoElementaryStreamSource> getFirstAudioEsSourceObj(
 				@NonNull RtspProtoIdInputSource idInputSource
 			) {
-		return getFirstOfKindStreamSourceObj(idInputSource, false);
+		return getFirstOfKindEsSourceObj(idInputSource, false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspProtoIdStreamSourceNotFoundException {
-		RtspConfigStreamSource tmpCfgSs = getConfigStreamSourceObj(idStreamSource);
+	public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+			throws RtspProtoIdEsSourceNotFoundException {
+		RtspConfigElementaryStreamSource tmpCfgSs = getConfigEsSourceObj(idEsSource);
 
 		try {
-			return new StreamSourceInfo(
+			return new ElementaryStreamSourceInfo(
 					tmpCfgSs.getCodec(),
 					tmpCfgSs.getIsSourceFromFile(),
 					tmpCfgSs.getIsSourceFromMq(),
@@ -124,20 +124,20 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getVideoFps()
 				);
 		} catch (IllegalStateException e) {
-			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource) +
+			throw new RtspProtoIdEsSourceNotFoundException(getEsSourceIdForExcMsg(idEsSource) +
 					": " + e.getMessage());
 		}
 	}
 
 	@Override
-	public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-			throws RtspProtoIdStreamSourceNotFoundException {
-		RtspConfigStreamSource tmpCfgSs = getConfigStreamSourceObj(idStreamSource);
+	public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+			throws RtspProtoIdEsSourceNotFoundException {
+		RtspConfigElementaryStreamSource tmpCfgSs = getConfigEsSourceObj(idEsSource);
 
 		try {
 			return tmpCfgSs.getRtpAudioSamplesPerFrame(videoFps);
 		} catch (IllegalStateException e) {
-			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr().orElse("-unset-") +
+			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") +
 					"': " + e.getMessage());
 		}
 	}
@@ -146,12 +146,12 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Get the first enabled audio or video Stream Source for the Input Source.
+	 * Get the first enabled audio or video Elementary-Stream Source for the Input Source.
 	 * @param idInputSource Input Source ID
-	 * @param isVideo Get video Stream Source if true, audio Stream Source otherwise
-	 * @return Stream Source
+	 * @param isVideo Get video source if true, audio source otherwise
+	 * @return Elementary-Stream Source
 	 */
-	private Optional<RtspProtoStreamSource> getFirstOfKindStreamSourceObj(
+	private Optional<RtspProtoElementaryStreamSource> getFirstOfKindEsSourceObj(
 				@NonNull RtspProtoIdInputSource idInputSource,
 				boolean isVideo
 			) {
@@ -161,14 +161,14 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 		} catch (RtspProtoIdInputSourceNotFoundException e) {
 			return Optional.empty();
 		}
-		for (RtspProtoIdStreamSource tmpSsId : tmpInputSource.getStreamSourceIds()) {
-			if (! streamSourceMap.containsKey(tmpSsId)) {
+		for (RtspProtoIdEsSource tmpSsId : tmpInputSource.getEsSourceIds()) {
+			if (! esSourceMap.containsKey(tmpSsId)) {
 				continue;  // this should never happen
 			}
-			RtspConfigStreamSource streamSourceObj;
+			RtspConfigElementaryStreamSource streamSourceObj;
 			try {
-				streamSourceObj = getConfigStreamSourceObj(tmpSsId);
-			} catch (RtspProtoIdStreamSourceNotFoundException e) {
+				streamSourceObj = getConfigEsSourceObj(tmpSsId);
+			} catch (RtspProtoIdEsSourceNotFoundException e) {
 				return Optional.empty();
 			}
 			if (! streamSourceObj.getEnabled()) {
@@ -176,7 +176,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 			}
 			if ((isVideo && streamSourceObj.getCodec().isVideo()) ||
 					(! isVideo && streamSourceObj.getCodec().isAudio())) {
-				return Optional.of(streamSourceMap.get(tmpSsId));
+				return Optional.of(esSourceMap.get(tmpSsId));
 			}
 		}
 		return Optional.empty();
@@ -184,22 +184,22 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtspConfigStreamSource getConfigStreamSourceObj(@NonNull RtspProtoIdStreamSource idStreamSource)
-			throws RtspProtoIdStreamSourceNotFoundException {
-		if (! streamSourceMap.containsKey(idStreamSource)) {
-			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource));
+	private @NonNull RtspConfigElementaryStreamSource getConfigEsSourceObj(@NonNull RtspProtoIdEsSource idEsSource)
+			throws RtspProtoIdEsSourceNotFoundException {
+		if (! esSourceMap.containsKey(idEsSource)) {
+			throw new RtspProtoIdEsSourceNotFoundException(getEsSourceIdForExcMsg(idEsSource));
 		}
-		Optional<RtspConfigStreamSource> tmpOptCfgSs = rtspConfig.getStreamSourceObj(idStreamSource);
+		Optional<RtspConfigElementaryStreamSource> tmpOptCfgSs = rtspConfig.getElementaryStreamSourceObj(idEsSource);
 		if (tmpOptCfgSs.isEmpty()) {
-			throw new RtspProtoIdStreamSourceNotFoundException(getStreamSourceIdForExcMsg(idStreamSource));
+			throw new RtspProtoIdEsSourceNotFoundException(getEsSourceIdForExcMsg(idEsSource));
 		}
 		return tmpOptCfgSs.get();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String getStreamSourceIdForExcMsg(@NonNull RtspProtoIdStreamSource idStreamSource) {
-		return "ss='" + idStreamSource.getIdStr().orElse("-unset-") + "'";
+	private static @NonNull String getEsSourceIdForExcMsg(@NonNull RtspProtoIdEsSource idEsSource) {
+		return "esSrc='" + idEsSource.getIdStr().orElse("-unset-") + "'";
 	}
 
 }

@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
@@ -28,13 +28,13 @@ public final class BuilderThreadRtcp {
 		// Fluent setters
 		public Builder logMsgInterface(@NonNull LogMsgInterface v) { this.threadParams.setLogMsgInterface(v); return this; }
 
-		public Builder debugSessionId(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
+		public Builder debugIdSession(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
 
-		public Builder idStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParams.setIdStreamSource(v); return this; }
+		public Builder idEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParams.setIdEsSource(v); return this; }
 
 		public Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }
 
-		public Builder ssrcId(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
+		public Builder idSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
 
 		public Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
 		public Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }

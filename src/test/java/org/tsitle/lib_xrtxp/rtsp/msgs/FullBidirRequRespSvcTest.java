@@ -15,7 +15,7 @@ import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdStreamSourceNotFoundException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
@@ -75,30 +75,30 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstVideoStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstVideoEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			if (! existsInputSourceId(idInputSource)) {
 				return Optional.empty();
 			}
-			RtspProtoStreamSource resObj = new RtspProtoStreamSource();
-			resObj.setIdStreamSource(RtspProtoIdStreamSource.of("dummy-stream-source-video"));
+			RtspProtoElementaryStreamSource resObj = new RtspProtoElementaryStreamSource();
+			resObj.setIdEsSource(RtspProtoIdEsSource.of("dummy-stream-source-video"));
 			return Optional.of(resObj);
 		}
 
 		@Override
-		public Optional<RtspProtoStreamSource> getFirstAudioStreamSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
+		public Optional<RtspProtoElementaryStreamSource> getFirstAudioEsSourceObj(@NonNull RtspProtoIdInputSource idInputSource) {
 			if (! existsInputSourceId(idInputSource)) {
 				return Optional.empty();
 			}
-			RtspProtoStreamSource resObj = new RtspProtoStreamSource();
-			resObj.setIdStreamSource(RtspProtoIdStreamSource.of("dummy-stream-source-audio"));
+			RtspProtoElementaryStreamSource resObj = new RtspProtoElementaryStreamSource();
+			resObj.setIdEsSource(RtspProtoIdEsSource.of("dummy-stream-source-audio"));
 			return Optional.of(resObj);
 		}
 
 		@Override
-		public @NonNull StreamSourceInfo getStreamSourceInfo(@NonNull RtspProtoIdStreamSource idStreamSource)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			if (idStreamSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
-				return new StreamSourceInfo(
+		public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+				throws RtspProtoIdEsSourceNotFoundException {
+			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
+				return new ElementaryStreamSourceInfo(
 						RtpPacketType.V_H264,
 						true,
 						false,
@@ -111,8 +111,8 @@ public class FullBidirRequRespSvcTest {
 						15.0
 					);
 			}
-			if (idStreamSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
-				return new StreamSourceInfo(
+			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
+				return new ElementaryStreamSourceInfo(
 						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
 						true,
 						false,
@@ -125,13 +125,13 @@ public class FullBidirRequRespSvcTest {
 						-1.0
 					);
 			}
-			throw new RtspProtoIdStreamSourceNotFoundException("ss='" + idStreamSource.getIdStr().orElse("-unset-") + "'");
+			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") + "'");
 		}
 
 		@Override
-		public int getStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdStreamSource idStreamSource, double videoFps)
-				throws RtspProtoIdStreamSourceNotFoundException {
-			throw new RtspProtoIdStreamSourceNotFoundException("getStreamSourceRtpAudioSamplesPerFrame not implemented");
+		public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("getStreamSourceRtpAudioSamplesPerFrame not implemented");
 		}
 	}
 

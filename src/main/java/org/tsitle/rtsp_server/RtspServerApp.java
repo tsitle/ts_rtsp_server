@@ -2,9 +2,9 @@ package org.tsitle.rtsp_server;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.rtsp_server.config.RtspConfigStreamSource;
+import org.tsitle.rtsp_server.config.RtspConfigElementaryStreamSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.ssl.SslException;
@@ -17,7 +17,7 @@ import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.ThreadRtspTcpClientInbound;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -183,55 +183,56 @@ public final class RtspServerApp {
 
 	private static List<Integer> findMqStreamSources() {
 		List<Integer> resL = new ArrayList<>();
-		for (Integer streamSourceId : rtspConfig.getStreamSourceIds()) {
-			Optional<RtspConfigStreamSource> optSs = rtspConfig.getStreamSourceObj(streamSourceId);
+		for (Integer esSourceId : rtspConfig.getElementaryStreamSourceIds()) {
+			Optional<RtspConfigElementaryStreamSource> optSs = rtspConfig.getElementaryStreamSourceObj(esSourceId);
 			if (optSs.isEmpty()) {
 				continue;
 			}
 			if (optSs.get().getEnabled() && optSs.get().getIsSourceFromMq()) {
-				resL.add(streamSourceId);
+				resL.add(esSourceId);
 			}
 		}
 		return resL;
 	}
 
-	private static void startMqs(List<Integer> streamSourceIds) {
+	private static void startMqs(List<Integer> esSourceIds) {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMqs()";
 
 		assert poolMqE2I != null;
 
-		for (Integer streamSourceId : streamSourceIds) {
-			RtspConfigStreamSource tmpSs = rtspConfig.getStreamSourceObj(streamSourceId).orElseThrow();
+		for (Integer tmpEsSourceId : esSourceIds) {
+			RtspConfigElementaryStreamSource tmpEsSrcObj = rtspConfig.getElementaryStreamSourceObj(tmpEsSourceId).orElseThrow();
 			Optional<String> tmpSslCertPath;
 			try {
-				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(tmpSs.getInputUri());
+				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(tmpEsSrcObj.getInputUri());
 			} catch (ConfigInvalidException e) {
 				// should never happen
 				throw new IllegalStateException(e);
 			}
-			MqStreamSourceSettings mqSetts = tmpSs.getInputMqSettings().orElseThrow();
+			MqElementaryStreamSourceSettings mqSetts = tmpEsSrcObj.getInputMqSettings().orElseThrow();
 			logDebug(FNC_NAME, "Starting MqE2I for '" +
 					mqSetts.getHostname() + ":" + Integer.toUnsignedString(mqSetts.getPort().getPort16bit().orElseThrow()) + ":" +
 					mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,
 					cancelToken,
-					(@NonNull RtspProtoIdStreamSource cbArgIdStreamSource, @NonNull MqCodecSettings cbArgCodecSettings) -> {
-							RtspConfigStreamSource tmpCbSs = rtspConfig.getStreamSourceObj(cbArgIdStreamSource).orElseThrow();
+					(@NonNull RtspProtoIdEsSource cbArgIdEsSource, @NonNull MqCodecSettings cbArgCodecSettings) -> {
+							RtspConfigElementaryStreamSource tmpCbEsSrcObj =
+									rtspConfig.getElementaryStreamSourceObj(cbArgIdEsSource).orElseThrow();
 							if (cbArgCodecSettings.codec != null) {
-								tmpCbSs.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
+								tmpCbEsSrcObj.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
 							}
 							if (cbArgCodecSettings.videoFps != null) {
-								tmpCbSs.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
+								tmpCbEsSrcObj.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
 							}
 							if (cbArgCodecSettings.audioSamplerate != null) {
-								tmpCbSs.setMqDynamicAudioSamplerateHz(cbArgCodecSettings.audioSamplerate);
+								tmpCbEsSrcObj.setMqDynamicAudioSamplerateHz(cbArgCodecSettings.audioSamplerate);
 							}
 							if (cbArgCodecSettings.audioChannels != null) {
-								tmpCbSs.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
+								tmpCbEsSrcObj.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
 							}
 						},
-					tmpSs.getIdAsProtoId(),
+					tmpEsSrcObj.getIdAsProtoId(),
 					mqSetts,
 					tmpSslCertPath.orElse("")
 				);

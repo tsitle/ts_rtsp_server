@@ -8,7 +8,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,16 +37,16 @@ public final class MqInternalInputStream extends InputStream {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream source identifier
 	 */
 	public MqInternalInputStream(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource
+				@NonNull RtspProtoIdEsSource idEsSource
 			) {
 		this.logMsgInterface = logMsgInterface;
 
 		//
-		this.mqInternalSub = new MqInternalSub(logMsgInterface, idStreamSource);
+		this.mqInternalSub = new MqInternalSub(logMsgInterface, idEsSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
@@ -27,7 +27,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	private record SubStreamResolve(
 			@NonNull String clientIpAddrStr,
 			@NonNull RtspProtoIdInputSource idInputSource,
-			@NonNull RtspProtoIdStreamSource idStreamSource
+			@NonNull RtspProtoIdEsSource idEsSource
 		) { }
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -68,11 +68,11 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 
 	/**
 	 * Create a new Sub-Stream ID.<br />
-	 * A Sub-Stream ID is unique per DESCRIBE request per Stream Source. Even if the same client makes multiple DESCRIBE
-	 * requests for the same Input and Stream Source, the Sub-Stream ID will change every time.
+	 * A Sub-Stream ID is unique per DESCRIBE request per Elementary-Stream Source. Even if the same client makes multiple DESCRIBE
+	 * requests for the same Input and Elementary-Stream Source, the Sub-Stream ID will change every time.
 	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
 	 * @param idInputSource Input Source ID as requested from the client per DESCRIBE request
-	 * @param idStreamSource Stream Source ID as requested from the client per DESCRIBE request
+	 * @param idEsSource Elementary-Stream Source ID as requested from the client per DESCRIBE request
 	 * @param clientIpAddr Client's IP address
 	 * @return Unique Sub-Stream ID
 	 */
@@ -80,7 +80,7 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	public @NonNull RtspProtoIdSubStream createSubStreamId(
 				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) {
 		if (clientIpAddr.isEmpty()) {
@@ -89,8 +89,8 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 		if (idInputSource.isEmpty()) {
 			throw new IllegalArgumentException("Input Source ID must be set");
 		}
-		if (idStreamSource.isEmpty()) {
-			throw new IllegalArgumentException("Stream Source ID must be set");
+		if (idEsSource.isEmpty()) {
+			throw new IllegalArgumentException("Elementary-Stream Source ID must be set");
 		}
 
 		//
@@ -119,10 +119,10 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 			RtspProtoIdInputSource tmpIdIs = RtspProtoIdInputSource.ofEmpty();
 			tmpIdIs.copyFrom(idInputSource);
 			tmpIdIs.writeProtect();
-			RtspProtoIdStreamSource tmpIdSs = RtspProtoIdStreamSource.ofEmpty();
-			tmpIdSs.copyFrom(idStreamSource);
-			tmpIdSs.writeProtect();
-			subStreamResolveMap.put(tmpIdSub, new SubStreamResolve(ipStr, tmpIdIs, tmpIdSs));
+			RtspProtoIdEsSource tmpIdEs = RtspProtoIdEsSource.ofEmpty();
+			tmpIdEs.copyFrom(idEsSource);
+			tmpIdEs.writeProtect();
+			subStreamResolveMap.put(tmpIdSub, new SubStreamResolve(ipStr, tmpIdIs, tmpIdEs));
 			//
 			if (subStreamIds.size() > MAX_SUB_STREAM_IDS) {
 				// we simply remove the first one. Maybe it is still in use, but we don't care
@@ -151,18 +151,18 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 	}
 
 	/**
-	 * Get Stream Source ID by Sub-Stream ID.
+	 * Get Elementary-Stream Source ID by Sub-Stream ID.
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
-	 * @return Stream Source ID
+	 * @return Elementary-Stream Source ID
 	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
 	@Override
-	public @NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
+	public @NonNull RtspProtoIdEsSource getElementaryStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspProtoIdSubStreamNotFoundException {
-		return getResolveBySubStreamId(idSubStream, clientIpAddr).idStreamSource;
+		return getResolveBySubStreamId(idSubStream, clientIpAddr).idEsSource;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

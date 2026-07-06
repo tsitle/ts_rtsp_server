@@ -2,7 +2,7 @@ package org.tsitle.lib_rtsp_mq.client;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.MqMsgHandlerFactory;
 import org.tsitle.lib_rtsp_mq.common.httpdata.HttpResponseOpenMq;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -24,13 +24,13 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	private static class MqSettingsExtended {
 		boolean haveSettings = false;
 
-		final @NonNull MqStreamSourceSettings settsBasic;
+		final @NonNull MqElementaryStreamSourceSettings settsBasic;
 		@NonNull String serverEndpoint = "";
 		@NonNull String serverPublicKeyZ85 = "";
 		boolean isEncrypted = true;
 		boolean areMsgsSegmented = false;
 
-		MqSettingsExtended(@NonNull MqStreamSourceSettings mqSettingsBasic) {
+		MqSettingsExtended(@NonNull MqElementaryStreamSourceSettings mqSettingsBasic) {
 			this.settsBasic = mqSettingsBasic.clone();
 		}
 	}
@@ -54,7 +54,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	 */
 	public MqExternalSub(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull MqStreamSourceSettings mqSettings,
+				@NonNull MqElementaryStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, DO_VALIDATE_PAYLOAD, false);

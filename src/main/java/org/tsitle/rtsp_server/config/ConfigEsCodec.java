@@ -1,6 +1,6 @@
 package org.tsitle.rtsp_server.config;
 
-public enum ConfigSsCodec {
+public enum ConfigEsCodec {
 
 	AACLC,
 	PCMU,

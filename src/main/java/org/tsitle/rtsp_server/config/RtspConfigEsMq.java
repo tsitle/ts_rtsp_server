@@ -8,9 +8,9 @@ import org.tsitle.rtsp_server.exceptions.*;
 import java.net.URI;
 
 /**
- * Message Queue settings within a Stream Source.
+ * Message Queue settings within an Elementary-Stream Source.
  */
-public final class RtspConfigSsMq implements Cloneable {
+public final class RtspConfigEsMq implements Cloneable {
 
 	/** Username and password for the Message Queue, separated by a colon */
 	@Expose
@@ -25,7 +25,7 @@ public final class RtspConfigSsMq implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed = false;
 
-	public RtspConfigSsMq() {
+	public RtspConfigEsMq() {
 		this.userAndPassword = "";
 		this.hostAndPort = "";
 		this.resourceGroupAndChannel = "";
@@ -107,12 +107,12 @@ public final class RtspConfigSsMq implements Cloneable {
 	 * Validate the Message Queue settings.
 	 * @throws ConfigInvalidException If the settings are invalid
 	 */
-	public void validate(@NonNull String extSsId) throws ConfigInvalidException {
+	public void validate(@NonNull String extEsSrcId) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
 
 		checkPostProcessed();
 
-		final String errMsgPrefix = FNC_NAME + ": Invalid MQ settings for Stream Source ID '" + extSsId + "' - ";
+		final String errMsgPrefix = FNC_NAME + ": Invalid MQ settings for Elementary-Stream Source ID '" + extEsSrcId + "' - ";
 
 		if (! userAndPassword.contains(":")) {
 			throw new ConfigInvalidException(errMsgPrefix + "'userAndPassword' must contain username and password separated by a colon");
@@ -156,9 +156,9 @@ public final class RtspConfigSsMq implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspConfigSsMq clone() {
+	public @NonNull RtspConfigEsMq clone() {
 		try {
-			RtspConfigSsMq clone = (RtspConfigSsMq)super.clone();
+			RtspConfigEsMq clone = (RtspConfigEsMq)super.clone();
 			//
 			//noinspection StringOperationCanBeSimplified
 			clone.userAndPassword = new String(userAndPassword);

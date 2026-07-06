@@ -131,7 +131,7 @@ final class SrtxpRekeySvc {
 				continue;
 			}
 			//
-			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
+			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 			//
 			logDebug(FNC_NAME, String.format("%s90%% of maximum outbound RTP packet count reached: %s (RTCP in %s / out %s)",
 					logMsgPrefix,
@@ -149,7 +149,7 @@ final class SrtxpRekeySvc {
 		boolean rekeyingProtoIsMikey = true;
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
-			final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
+			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 			//
 			SrtxpKmd tmpNextKmdOutbound;
 			try {
@@ -191,7 +191,7 @@ final class SrtxpRekeySvc {
 		}
 
 		//
-		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
+		final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
 		ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
 
@@ -219,7 +219,7 @@ final class SrtxpRekeySvc {
 			) throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".srtxpRekeyOutbound_mikey_oneStream()";
 
-		final String logMsgPrefix = "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": ";
+		final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 
 		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getRequestResourceUrl_subStream(ctfos.idSubStream);
 		if (tmpOptRscUrl.isEmpty()) {

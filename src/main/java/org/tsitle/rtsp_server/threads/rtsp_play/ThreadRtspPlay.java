@@ -267,7 +267,7 @@ public final class ThreadRtspPlay extends RunnableBase
 			return;
 		}
 		if (ctfos.rtcpLastTargetCongestionLevel >= 0) {
-			logDebug(FNC_NAME, "ss=" + ctfos.idStreamSource.getIdStr().orElse("-unset-") + ": " +
+			logDebug(FNC_NAME, "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": " +
 					"Congestion level changed to: " + currentTcl);
 			ctfos.rtpThreadSender.notifyCongestionLevelChange(currentTcl);
 		}

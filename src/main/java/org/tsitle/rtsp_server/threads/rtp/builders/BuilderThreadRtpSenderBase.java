@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
@@ -34,13 +34,13 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B logMsgInterface(@NonNull LogMsgInterface v) { this.threadParamsCommon.setLogMsgInterface(v); return self(); }
 
-	public B comDebugSessionId(@NonNull RtspProtoIdSession v) { this.threadParamsCommon.setDebugSessionId(v); return self(); }
+	public B comDebugIdSession(@NonNull RtspProtoIdSession v) { this.threadParamsCommon.setDebugSessionId(v); return self(); }
 
-	public B comIdStreamSource(@NonNull RtspProtoIdStreamSource v) { this.threadParamsCommon.setIdStreamSource(v); return self(); }
+	public B comIdEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParamsCommon.setIdEsSource(v); return self(); }
 
 	public B comIdSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParamsCommon.setIdSubStream(v); return self(); }
 
-	public B comSsrcId(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcId(v); return self(); }
+	public B comIdSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcId(v); return self(); }
 
 	public B comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return self(); }
 	public B comTpClientDestUdpPortRtp(@NonNull RtspProtoSocketPortNr v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return self(); }
@@ -55,7 +55,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comDebugRewindMediaFiles(boolean v) { this.threadParamsCommon.setDebugRewindMediaFiles(v); return self(); }
 
-	public B comIsStreamSourceFromFile(boolean v) { this.threadParamsCommon.setIsStreamSourceFromFile(v); return self(); }
+	public B comIsStreamSourceFromFile(boolean v) { this.threadParamsCommon.setIsEsSourceFromFile(v); return self(); }
 
 	public B comAvFps(double v) { this.threadParamsCommon.setAvFramesPerSecond(v); return self(); }
 

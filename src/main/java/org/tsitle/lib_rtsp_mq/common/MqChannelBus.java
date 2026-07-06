@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelId;
 import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelName;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -26,17 +26,17 @@ public final class MqChannelBus {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Build a channel name for a stream source identifier.
-	 * @param idStreamSource Stream source identifier
+	 * Build a channel name for an Elementary-Stream Source identifier.
+	 * @param idEsSource Elementary-Stream Source identifier
 	 * @return Channel name
 	 */
 	public static @NonNull MqChannelBusChannelName buildChannelNameForStreamSourceId(
-				@NonNull RtspProtoIdStreamSource idStreamSource
+				@NonNull RtspProtoIdEsSource idEsSource
 			) {
-		if (idStreamSource.isEmpty()) {
-			throw new IllegalArgumentException("idStreamSource cannot be empty");
+		if (idEsSource.isEmpty()) {
+			throw new IllegalArgumentException("idEsSource cannot be empty");
 		}
-		return MqChannelBusChannelName.of(String.format("internal#%s#", idStreamSource.getIdStr().orElseThrow()));
+		return MqChannelBusChannelName.of(String.format("internal#%s#", idEsSource.getIdStr().orElseThrow()));
 	}
 
 	/**

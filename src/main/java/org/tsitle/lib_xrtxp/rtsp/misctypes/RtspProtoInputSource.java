@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +15,7 @@ public final class RtspProtoInputSource {
 	private boolean isWriteProtected = false;
 
 	/** Input Source ID */
-	private final @NonNull RtspProtoIdInputSource id = RtspProtoIdInputSource.ofEmpty();
+	private final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
 	/** Is this Input Source enabled? (default: true) */
 	private boolean enabled = true;
 	/** Does this Input Source need authentication? (default: true) */
@@ -24,8 +24,8 @@ public final class RtspProtoInputSource {
 	private final @NonNull Set<@NonNull String> allowedUserAccountGroups = new HashSet<>();
 	/** Does this Input Source need encryption? (default: true) */
 	private boolean needsEncryption = true;
-	/** Stream Source IDs to be used by this input source */
-	private final @NonNull Set<@NonNull RtspProtoIdStreamSource> streamSourceIds = new HashSet<>();
+	/** Elementary-Stream Source IDs to be used by this input source */
+	private final @NonNull Set<@NonNull RtspProtoIdEsSource> elementaryStreamSourceIds = new HashSet<>();
 
 	public RtspProtoInputSource() { }
 
@@ -33,7 +33,7 @@ public final class RtspProtoInputSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoIdInputSource getIdInputSource() {
-		RtspProtoIdInputSource resObj = id.clone();
+		RtspProtoIdInputSource resObj = idInputSource.clone();
 		resObj.writeProtect();
 		return resObj;
 	}
@@ -41,7 +41,7 @@ public final class RtspProtoInputSource {
 		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
-		this.id.copyFrom(id);
+		this.idInputSource.copyFrom(id);
 	}
 
 	public boolean getEnabled() {
@@ -86,22 +86,22 @@ public final class RtspProtoInputSource {
 		this.needsEncryption = needsEncryption;
 	}
 
-	public @NonNull Set<@NonNull RtspProtoIdStreamSource> getStreamSourceIds() {
-		Set<@NonNull RtspProtoIdStreamSource> resSet = new HashSet<>();
-		for (RtspProtoIdStreamSource tmpInp : streamSourceIds) {
-			RtspProtoIdStreamSource tmpOut = tmpInp.clone();
+	public @NonNull Set<@NonNull RtspProtoIdEsSource> getEsSourceIds() {
+		Set<@NonNull RtspProtoIdEsSource> resSet = new HashSet<>();
+		for (RtspProtoIdEsSource tmpInp : elementaryStreamSourceIds) {
+			RtspProtoIdEsSource tmpOut = tmpInp.clone();
 			tmpOut.writeProtect();
 			resSet.add(tmpOut);
 		}
 		return resSet;
 	}
-	public void putIdStreamSource(@NonNull RtspProtoIdStreamSource streamSourceId) {
+	public void putIdEsSource(@NonNull RtspProtoIdEsSource id) {
 		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
-		RtspProtoIdStreamSource tmpOut = streamSourceId.clone();
+		RtspProtoIdEsSource tmpOut = id.clone();
 		tmpOut.writeProtect();
-		this.streamSourceIds.add(tmpOut);
+		this.elementaryStreamSourceIds.add(tmpOut);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ public final class RtspProtoInputSource {
 	public void writeProtect() {
 		isWriteProtected = true;
 
-		id.writeProtect();
+		idInputSource.writeProtect();
 	}
 
 }

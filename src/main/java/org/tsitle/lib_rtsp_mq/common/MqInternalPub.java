@@ -8,7 +8,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class MqInternalPub implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
-	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
+	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 
 	private final @NonNull ZContext zmqContext;
 	private ZMQ.@Nullable Socket zmqSocket;
@@ -34,14 +34,14 @@ public final class MqInternalPub implements AutoCloseable {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream Source identifier
 	 */
 	public MqInternalPub(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource
+				@NonNull RtspProtoIdEsSource idEsSource
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.idStreamSource.copyFrom(idStreamSource);
+		this.idEsSource.copyFrom(idEsSource);
 
 		//
 		this.zmqContext = MqContextHelper.openMqContext();
@@ -61,7 +61,7 @@ public final class MqInternalPub implements AutoCloseable {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idStreamSource);
+		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idEsSource);
 		MqChannelBusChannelId chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
 		final ZMQ.Poller zmqPollerObj = zmqContext.createPoller(1);

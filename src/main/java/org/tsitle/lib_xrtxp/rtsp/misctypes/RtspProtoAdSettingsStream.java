@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 
 import java.util.HashSet;
@@ -50,14 +50,14 @@ public final class RtspProtoAdSettingsStream {
 		trg.copyFrom(settings);
 	}
 
-	public Optional<RtspProtoAdSettingsForSubStream> getSettingsByStreamSourceId(@NonNull RtspProtoIdStreamSource idStreamSource) {
-		if (idStreamSource.isEmpty()) {
+	public Optional<RtspProtoAdSettingsForSubStream> getSettingsByElementaryStreamSourceId(@NonNull RtspProtoIdEsSource idEsSource) {
+		if (idEsSource.isEmpty()) {
 			return Optional.empty();
 		}
 		RtspProtoAdSettingsForSubStream resObj;
-		if (! ss1.idStreamSource.isEmpty() && idStreamSource.equals(ss1.idStreamSource)) {
+		if (! ss1.idEsSource.isEmpty() && idEsSource.equals(ss1.idEsSource)) {
 			resObj = ss1;
-		} else if (! ss2.idStreamSource.isEmpty() && idStreamSource.equals(ss2.idStreamSource)) {
+		} else if (! ss2.idEsSource.isEmpty() && idEsSource.equals(ss2.idEsSource)) {
 			resObj = ss2;
 		} else {
 			return Optional.empty();

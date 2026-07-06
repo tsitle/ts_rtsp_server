@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundExceptio
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 
@@ -20,14 +20,14 @@ public interface RtspProtoGlobalSessionInfoInterface {
 	 * The Sub-Stream ID will be globally unique.
 	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs
 	 * @param idInputSource Input Source ID
-	 * @param idStreamSource Stream Source ID
+	 * @param idEsSource Elementary-Stream Source ID
 	 * @param clientIpAddr Client's IP Address
 	 * @return Sub-Stream ID
 	 */
 	@NonNull RtspProtoIdSubStream createSubStreamId(
 				@NonNull String cfgSubStreamIdPrefix,
 				@NonNull RtspProtoIdInputSource idInputSource,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			);
 
@@ -44,13 +44,13 @@ public interface RtspProtoGlobalSessionInfoInterface {
 			) throws RtspProtoIdSubStreamNotFoundException;
 
 	/**
-	 * Get Stream Source ID by Sub-Stream ID.
+	 * Get Elementary-Stream Source ID by Sub-Stream ID.
 	 * @param idSubStream Sub-Stream ID
 	 * @param clientIpAddr Client's IP Address (must match the one used to create the Sub-Stream ID)
-	 * @return Stream Source ID
+	 * @return Elementary-Stream Source ID
 	 * @throws RtspProtoIdSubStreamNotFoundException If the Sub-Stream ID is not found
 	 */
-	@NonNull RtspProtoIdStreamSource getStreamSourceIdBySubStreamId(
+	@NonNull RtspProtoIdEsSource getElementaryStreamSourceIdBySubStreamId(
 				@NonNull RtspProtoIdSubStream idSubStream,
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws RtspProtoIdSubStreamNotFoundException;

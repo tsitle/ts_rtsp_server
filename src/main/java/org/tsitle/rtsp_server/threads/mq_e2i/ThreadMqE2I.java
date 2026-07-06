@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.mq_e2i;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_rtsp_mq.client.types.MqStreamSourceSettings;
+import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.client.MqExternalSub;
 import org.tsitle.lib_rtsp_mq.common.MqInternalPub;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqCodecSettings;
@@ -12,15 +12,15 @@ import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.RunnableBase;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.util.Optional;
 
 public final class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
-	private final @NonNull RtspProtoIdStreamSource idStreamSource = RtspProtoIdStreamSource.ofEmpty();
-	private final @NonNull MqStreamSourceSettings mqSettings;
+	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
+	private final @NonNull MqElementaryStreamSourceSettings mqSettings;
 	private final @NonNull String mqSslCertPath;
 
 	private final String threadName;
@@ -35,7 +35,7 @@ public final class ThreadMqE2I extends RunnableBase {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream Source identifier
 	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
@@ -43,25 +43,25 @@ public final class ThreadMqE2I extends RunnableBase {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
-				@NonNull MqStreamSourceSettings mqSettings,
+				@NonNull RtspProtoIdEsSource idEsSource,
+				@NonNull MqElementaryStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath
 			) {
 		super(logMsgInterface, cancelToken);
 
 		//
 		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
-		this.idStreamSource.copyFrom(idStreamSource);
+		this.idEsSource.copyFrom(idEsSource);
 		//
 		this.mqSettings = mqSettings.clone();
 		this.mqSslCertPath = mqSslCertPath;
 
-		this.threadName = String.format("MQE2I#ss%s#%s:%s:%s",
-				idStreamSource.getIdStr().orElse("-unset-"), mqSettings.getHostname(),
+		this.threadName = String.format("MQE2I#es%s#%s:%s:%s",
+				idEsSource.getIdStr().orElse("-unset-"), mqSettings.getHostname(),
 				mqSettings.getRscGroup(), mqSettings.getRscChannel());
 
 		//
-		mqInternalPub = new MqInternalPub(logMsgInterface, idStreamSource);
+		mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ public final class ThreadMqE2I extends RunnableBase {
 			haveChanges = true;
 		}
 		if (haveChanges) {
-			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(idStreamSource, cacheCodecSettings);
+			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(idEsSource, cacheCodecSettings);
 		}
 		//
 		mqInternalPub.sendMessageAv(packet);

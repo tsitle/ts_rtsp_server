@@ -26,7 +26,7 @@ public final class BuilderThreadRtpSenderAac {
 			validateAudioCommon();
 			threadParamsAac.validate();
 
-			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderAac<>(
 						AvStreamIncomingFromFile.class,
 						AudioStreamOutgoingAacFromFile.class,

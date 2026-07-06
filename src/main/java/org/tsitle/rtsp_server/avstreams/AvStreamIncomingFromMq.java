@@ -11,7 +11,7 @@ import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_rtsp_mq.common.MqInternalSub;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.net.URI;
 import java.util.Optional;
@@ -23,16 +23,16 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param idStreamSource Stream source identifier
+	 * @param idEsSource Elementary-Stream source identifier
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromMq(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
-		super(logMsgInterface, idStreamSource);
+		super(logMsgInterface, idEsSource);
 
 		if (inputUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
@@ -42,7 +42,7 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 		}
 
 		//
-		this.mqInternalSub = new MqInternalSub(logMsgInterface, idStreamSource);
+		this.mqInternalSub = new MqInternalSub(logMsgInterface, idEsSource);
 		openInput();
 	}
 

@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.net.URI;
 
@@ -15,14 +15,14 @@ public final class AvStreamIncomingFactory {
 	public static <AVSTRIC extends AvStreamIncomingBase> AVSTRIC createAvStreamIncoming(
 				Class<AVSTRIC> type,
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdStreamSource idStreamSource,
+				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
 		if (type == AvStreamIncomingFromFile.class) {
-			return type.cast(new AvStreamIncomingFromFile(logMsgInterface, idStreamSource, inputUri));
+			return type.cast(new AvStreamIncomingFromFile(logMsgInterface, idEsSource, inputUri));
 		}
 		if (type == AvStreamIncomingFromMq.class) {
-			return type.cast(new AvStreamIncomingFromMq(logMsgInterface, idStreamSource, inputUri));
+			return type.cast(new AvStreamIncomingFromMq(logMsgInterface, idEsSource, inputUri));
 		}
 		throw new IllegalArgumentException("Unsupported type: " + type.getName());
 	}

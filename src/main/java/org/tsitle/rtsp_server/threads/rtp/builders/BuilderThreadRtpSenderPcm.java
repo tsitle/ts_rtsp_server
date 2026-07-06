@@ -27,7 +27,7 @@ public final class BuilderThreadRtpSenderPcm {
 			validateAudioCommon();
 			threadParamsPcm.validate();
 
-			if (threadParamsCommon.getIsStreamSourceFromFile()) {
+			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderPcm<>(
 						AvStreamIncomingFromFile.class,
 						AudioStreamOutgoingPcmFromFile.class,
