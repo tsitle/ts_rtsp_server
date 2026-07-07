@@ -23,7 +23,7 @@ public final class AudioPcmParser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Parses the PCMU/LinearPCM data and returns a PcmInfo object with the parsed information.
+	 * Parses the PCMA/PCMU/LinearPCM data and returns a PcmInfo object with the parsed information.
 	 * @param pcmBuf PCM data
 	 * @return Parsed PCM information
 	 */

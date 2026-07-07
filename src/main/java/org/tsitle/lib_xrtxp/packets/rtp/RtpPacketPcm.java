@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 /**
- * RTP Packet Payload for PCMU/LinearPCM.<br />
+ * RTP Packet Payload for PCMA/PCMU/LinearPCM.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3551">RFC-3551</a>
  */
 public final class RtpPacketPcm extends RtpPacketCodecBase {
