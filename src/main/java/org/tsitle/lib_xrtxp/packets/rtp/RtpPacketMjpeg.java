@@ -64,7 +64,6 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	 * Constructor.
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
-	@SuppressWarnings("unused")
 	public RtpPacketMjpeg(@NonNull BufferExt packetData) {
 		super(RtpPacketType.V_JPEG, packetData);
 
