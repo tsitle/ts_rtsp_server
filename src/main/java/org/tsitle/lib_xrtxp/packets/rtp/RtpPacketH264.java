@@ -94,7 +94,6 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 	 * Constructor.
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
-	@SuppressWarnings("unused")
 	public RtpPacketH264(@NonNull BufferExt packetData) {
 		super(RtpPacketType.V_H264, packetData);
 
