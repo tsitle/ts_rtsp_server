@@ -35,6 +35,8 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	private short hdInnAuSize;
 	/** Access Unit Index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits) */
 	private byte hdInnAuIndex;
+	/** Access Unit Index Delta ({@code AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS} bits) */
+	private byte hdInnAuIdxDelta;
 
 	/**
 	 * Constructor.
@@ -59,11 +61,26 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	 * Constructor.
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
-	@SuppressWarnings("unused")
 	public RtpPacketAac(@NonNull BufferExt packetData) {
+		this(packetData, HEADER_FLD_SIZE_LENGTH_BITS, HEADER_FLD_INDEX_LENGTH_BITS, HEADER_FLD_INDEXDELTA_LENGTH_BITS);
+	}
+
+	/**
+	 * Constructor.
+	 * @param packetData RTP packet bitstream including header and payload
+	 * @param headerFieldSizeLengthBits AU-header field 'size' length in bits
+	 * @param headerFieldIndexLengthBits AU-header field 'index' length in bits
+	 * @param headerFieldIndexDeltaLengthBits AU-header field 'index delta' length in bits
+	 */
+	public RtpPacketAac(
+				@NonNull BufferExt packetData,
+				int headerFieldSizeLengthBits,
+				int headerFieldIndexLengthBits,
+				int headerFieldIndexDeltaLengthBits
+			) {
 		super(RtpPacketType.A_AAC, packetData);
 
-		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + 5) {
+		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + 4 + 1) {  // 4^=inner header length, 1^=inner payload length
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
 		}
 
@@ -73,19 +90,24 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		try {
 			// AU-headers-length (16 bits)
 			int tmpAuHeadersLengthBits = bitReader.readBits(16);
+			if (tmpAuHeadersLengthBits != headerFieldSizeLengthBits + headerFieldIndexLengthBits + headerFieldIndexDeltaLengthBits) {
+				/*
+				 * Either there are multiple AU-headers - which is not supported - or the header field sizes are incorrect.
+				 */
+				throw new IllegalArgumentException("Invalid RTP packet: multiple AU-headers are not supported");
+			}
 			tmpReadBits += 16;
 			// AU-header (size + index + indexDelta)
-			this.hdInnAuSize = (short)bitReader.readBits(HEADER_FLD_SIZE_LENGTH_BITS);
-			tmpReadBits += HEADER_FLD_SIZE_LENGTH_BITS;
-			if (HEADER_FLD_INDEX_LENGTH_BITS > 0) {
-				this.hdInnAuIndex = (byte)bitReader.readBits(HEADER_FLD_INDEX_LENGTH_BITS);
-				tmpReadBits += HEADER_FLD_INDEX_LENGTH_BITS;
+			this.hdInnAuSize = (short)bitReader.readBits(headerFieldSizeLengthBits);
+			tmpReadBits += headerFieldSizeLengthBits;
+			if (headerFieldIndexLengthBits > 0) {
+				this.hdInnAuIndex = (byte)bitReader.readBits(headerFieldIndexLengthBits);
+				tmpReadBits += headerFieldIndexLengthBits;
 			}
-			if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
-				int tmpAuIdxDelta = bitReader.readBits(HEADER_FLD_INDEXDELTA_LENGTH_BITS);
-				tmpReadBits += HEADER_FLD_INDEXDELTA_LENGTH_BITS;
+			if (headerFieldIndexDeltaLengthBits > 0) {
+				this.hdInnAuIdxDelta = (byte)bitReader.readBits(headerFieldIndexDeltaLengthBits);
+				tmpReadBits += headerFieldIndexDeltaLengthBits;
 			}
-			//noinspection ConstantValue
 			if (tmpReadBits % 8 != 0) {
 				bitReader.readBits(8 - (tmpReadBits % 8));
 			}
@@ -96,10 +118,10 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		// determine the length of the inner header bitstream
 		this.payloadSpecHeaderSize = (tmpReadBits / 8);
 
-		if (packetData.getUsed() != RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize + hdInnAuSize) {
+		if (packetData.getUsed() != RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize + Short.toUnsignedInt(this.hdInnAuSize)) {
 			int tmpPaySz = packetData.getUsed() - RTP_CONT_HEADER_SIZE - this.payloadSpecHeaderSize;
 			throw new IllegalArgumentException("Invalid RTP payload size (is=" +
-					tmpPaySz + ", exp=" + hdInnAuSize + ")");
+					tmpPaySz + ", exp=" + Short.toUnsignedInt(this.hdInnAuSize) + ")");
 		}
 	}
 
@@ -168,10 +190,10 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private byte[] buildRawInnerHeaderFromFields() {
-		if (hdInnAuSize >= (1 << HEADER_FLD_SIZE_LENGTH_BITS)) {
+		if (Short.toUnsignedInt(hdInnAuSize) >= (1 << HEADER_FLD_SIZE_LENGTH_BITS)) {
 			throw new IllegalArgumentException("AAC frame too large for " + HEADER_FLD_SIZE_LENGTH_BITS + "-bit size field");
 		}
-		if (hdInnAuIndex >= (1 << HEADER_FLD_INDEX_LENGTH_BITS)) {
+		if (Byte.toUnsignedInt(hdInnAuIndex) >= (1 << HEADER_FLD_INDEX_LENGTH_BITS)) {
 			throw new IllegalArgumentException("AAC AU Index too large for " + HEADER_FLD_INDEX_LENGTH_BITS + "-bit index field");
 		}
 
@@ -190,12 +212,12 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		 * Index     :  3 bits                  111
 		 * IndexDelta:  3 bits                      1110 0000 0000 0000
 		 */
-		bitWriter.writeBits(hdInnAuSize, HEADER_FLD_SIZE_LENGTH_BITS);
+		bitWriter.writeBits(Short.toUnsignedInt(hdInnAuSize), HEADER_FLD_SIZE_LENGTH_BITS);
 		if (HEADER_FLD_INDEX_LENGTH_BITS > 0) {
-			bitWriter.writeBits(hdInnAuIndex, HEADER_FLD_INDEX_LENGTH_BITS);
+			bitWriter.writeBits(Byte.toUnsignedInt(hdInnAuIndex), HEADER_FLD_INDEX_LENGTH_BITS);
 		}
 		if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
-			bitWriter.writeBits(0, HEADER_FLD_INDEXDELTA_LENGTH_BITS);
+			bitWriter.writeBits(Byte.toUnsignedInt(hdInnAuIdxDelta), HEADER_FLD_INDEXDELTA_LENGTH_BITS);
 		}
 
 		return bitWriter.toByteArray();
