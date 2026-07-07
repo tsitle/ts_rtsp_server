@@ -12,7 +12,6 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 public final class RtpPacketPcm extends RtpPacketCodecBase {
 
 	/** Size of the main payload-specific RTP header */
-	@SuppressWarnings("unused")
 	public static final int INNER_HEADER_SIZE = 0;
 
 	/**
@@ -59,8 +58,8 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 			throw new IllegalArgumentException("Invalid RTP packet type");
 		}
 
-		// determine the length of the inner header bitstream (main header + optional QT header)
-		this.payloadSpecHeaderSize = 0;
+		// determine the length of the inner header bitstream
+		this.payloadSpecHeaderSize = INNER_HEADER_SIZE;
 
 		// parse inner main header fields
 		/* there are none */
@@ -91,7 +90,7 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 		/* there are none */
 
 		// build the inner header bitstream
-		this.payloadSpecHeaderSize = 0;
+		this.payloadSpecHeaderSize = INNER_HEADER_SIZE;
 		/* there is none */
 
 		// copy the inner payload bitstream
