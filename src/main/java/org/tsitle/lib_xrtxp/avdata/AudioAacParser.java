@@ -92,7 +92,7 @@ public final class AudioAacParser {
 			// Fixed Header - identical for every frame: 28 bits (bytes 0..3.5)
 			/// Verify syncword 0xFFF: bits 0-11 (12 bits)
 			if (bitReader.readBits(8) != 0xFF || bitReader.readBits(4) != 0x0F) {
-				throw new IllegalArgumentException("Invalid ADTS syncword");
+				throw new AvInvalidCodecDataException("Invalid ADTS syncword");
 			}
 
 			/// ID: bit 12 (1 bit)

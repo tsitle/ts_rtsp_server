@@ -311,7 +311,7 @@ public final class VideoH264Parser {
 	private void parseSliceForBoundary(
 				@NonNull BufferExt nalDataRbsp,
 				@NonNull H264PictureBoundaryInfo outPictBoundInfo
-			) throws BitReaderEosException {
+			) throws BitReaderEosException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseSliceForBoundary()";
 
 		outPictBoundInfo.reset();
@@ -338,14 +338,14 @@ public final class VideoH264Parser {
 		int tmpSpsId = 0;  // we assume that the SPS ID is 0 as long as we haven't received the PPS context
 		if (! mapPpsContext.isEmpty()) {
 			if (! mapPpsContext.containsKey(outPictBoundInfo.picParameterSetId)) {
-				throw new IllegalArgumentException(FNC_NAME + ": PPS context not found for ID=" +
+				throw new AvInvalidCodecDataException(FNC_NAME + ": PPS context not found for ID=" +
 						outPictBoundInfo.picParameterSetId);
 			}
 			H264PpsContext tmpPpsContext = mapPpsContext.get(outPictBoundInfo.picParameterSetId);
 			tmpSpsId = tmpPpsContext.spsId;
 		}
 		if (! mapSpsContext.containsKey(tmpSpsId)) {
-			throw new IllegalArgumentException(FNC_NAME + ": SPS context not found for ID=" + tmpSpsId);
+			throw new AvInvalidCodecDataException(FNC_NAME + ": SPS context not found for ID=" + tmpSpsId);
 		}
 		H264SpsContext tmpSpsContext = mapSpsContext.get(tmpSpsId);
 
