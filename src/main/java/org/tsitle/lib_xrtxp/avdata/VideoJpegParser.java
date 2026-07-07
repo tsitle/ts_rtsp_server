@@ -38,7 +38,7 @@ public final class VideoJpegParser {
 	 */
 	public @NonNull VideoJpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
 			throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseJpegData()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseJpegData()";
 
 		this.debugStreamOffset = debugStreamOffset;
 
@@ -146,7 +146,7 @@ public final class VideoJpegParser {
 	 */
 	private int parseBlockLength(@NonNull BufferExt jpegBuf, final int blockOffset)
 			throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockLength()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockLength()";
 
 		if (blockOffset + 4 >= jpegBuf.getUsed()) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data size");
@@ -176,7 +176,7 @@ public final class VideoJpegParser {
 	 */
 	private int parseBlockSOS(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
-		//final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOS()";
+		//final String FNC_NAME = getClass().getSimpleName() + ".parseBlockSOS()";
 
 		/*
 		 * After the SOS marker, one cannot use a length field to skip the entire scan data.
@@ -217,7 +217,7 @@ public final class VideoJpegParser {
 	 */
 	private int parseBlockSOF0(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockSOF0()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockSOF0()";
 
 		//logDebug(FNC_NAME, blockOffset, "SOF0");
 		int blockLen = parseBlockLength(jpegBuf, blockOffset);
@@ -313,7 +313,7 @@ public final class VideoJpegParser {
 	 */
 	private int parseBlockDQT(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoJpegParser.class.getSimpleName() + ".parseBlockDQT()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockDQT()";
 
 		//logDebug(FNC_NAME, blockOffset, "DQT");
 		int blockLen = parseBlockLength(jpegBuf, blockOffset);

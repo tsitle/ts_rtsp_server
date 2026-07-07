@@ -48,7 +48,7 @@ public final class VideoH264Parser {
 				@NonNull BufferExt h264Buf,
 				@Nullable H264PictureBoundaryInfo inpPictBoundInfoPrev
 			) throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseH264Data()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseH264Data()";
 
 		VideoH264Info resObj = new VideoH264Info();
 
@@ -312,7 +312,7 @@ public final class VideoH264Parser {
 				@NonNull BufferExt nalDataRbsp,
 				@NonNull H264PictureBoundaryInfo outPictBoundInfo
 			) throws BitReaderEosException {
-		final String FNC_NAME = VideoH264Parser.class.getSimpleName() + ".parseSliceForBoundary()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseSliceForBoundary()";
 
 		outPictBoundInfo.reset();
 

@@ -25,7 +25,7 @@ public final class VideoH265Parser {
 				int startCodeLen,
 				@NonNull BufferExt h265Buf
 			) throws AvInvalidCodecDataException {
-		final String FNC_NAME = VideoH265Parser.class.getSimpleName() + ".parseH265Data()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseH265Data()";
 
 		VideoH265Info resObj = new VideoH265Info();
 

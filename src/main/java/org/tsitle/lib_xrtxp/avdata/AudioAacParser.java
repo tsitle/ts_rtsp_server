@@ -68,7 +68,7 @@ public final class AudioAacParser {
 	 */
 	@SuppressWarnings("DanglingJavadoc")
 	public @NonNull AudioAacInfo parseAacData(@NonNull BufferExt aacBuf) throws AvInvalidCodecDataException {
-		final String FNC_NAME = AudioAacParser.class.getSimpleName() + ".parseAacData()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parseAacData()";
 
 		if (aacBuf.getUsed() < AAC_HEADER_SIZE_MIN) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size");

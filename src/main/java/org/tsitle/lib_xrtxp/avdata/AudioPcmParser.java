@@ -28,7 +28,7 @@ public final class AudioPcmParser {
 	 * @return Parsed PCM information
 	 */
 	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferExt pcmBuf) throws AvInvalidCodecDataException {
-		final String FNC_NAME = AudioPcmParser.class.getSimpleName() + ".parsePcmData()";
+		final String FNC_NAME = getClass().getSimpleName() + ".parsePcmData()";
 
 		if (pcmBuf.getUsed() < 1) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid PCM data size");
