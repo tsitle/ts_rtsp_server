@@ -96,7 +96,7 @@ final class AdaptiveScheduler {
 			if (warnIfInPast) {
 				logWarn(FNC_NAME,
 						String.format("Target time is in the past (%.3f us, r=%d)",
-								((double) targetTimeNanos - currentTime) / 1_000.0, curFrameNr
+								((double)targetTimeNanos - currentTime) / 1_000.0, curFrameNr
 					));
 			}
 			return;
