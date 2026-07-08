@@ -744,6 +744,7 @@ public abstract class ThreadRtpSenderBase<
 				sentTotalPktSize,
 				curPktSize,
 				curPktIndex,
+				estTotalPktCnt,
 				isLastPktOfPayload
 			);
 		RtpPacketContainerBase curPacketContainer = cbRtpPacketPayloadSupplier(curFragmentData);

@@ -13,6 +13,7 @@ public enum MqPacketCodec {
 	 */
 
 	AACLC("AACLC"),
+	AC3("AC3"),
 	PCMA("PCMA"),
 	PCMU("PCMU"),
 	LPCM08U("LPCM08U"),
@@ -42,6 +43,7 @@ public enum MqPacketCodec {
 	public @NonNull RtpPacketType convertToRtpPacketType(int audioSamplerateHz, byte audioChannelCount) {
 		return switch (this) {
 				case AACLC -> RtpPacketType.A_AAC;
+				case AC3 -> RtpPacketType.A_AC3;
 				case PCMA -> {
 						if (audioChannelCount == 1 && audioSamplerateHz == 8000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;

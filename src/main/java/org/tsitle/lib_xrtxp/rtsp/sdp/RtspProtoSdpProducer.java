@@ -27,6 +27,7 @@ import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -557,6 +558,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				final double tmpFrameDurAacSecs = ((double)ssInfo.audioAacSpf() /
 						(double)ssInfo.audioSampleRateHz());
 				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
+			} else if (ssInfo.codec() == RtpPacketType.A_AC3) {
+				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
+						(double)ssInfo.audioSampleRateHz());
+				tmpTimeMs = tmpFrameDurAc3Secs * 1000.0;
 			} else {
 				tmpTimeMs = RtspProtoSdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
 			}

@@ -458,6 +458,21 @@ public final class RtspChildThreadMng {
 					);
 				ctfos.rtpThreadSender = builderAac.build();
 				break;
+			case A_AC3:
+				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
+						(double)tmpAvSsi.audioSampleRateHz());
+				final double tmpVirtualFpsAc3 = (1.0 / tmpFrameDurAc3Secs);
+				BuilderThreadRtpSenderAc3.Builder builderAc3 = buildThreadAudio(
+						BuilderThreadRtpSenderAc3.builder(),
+						tmpSiSs,
+						tmpAvSsi,
+						ctfos.idEsSource,
+						tmpVirtualFpsAc3,
+						xsrcBlock,
+						RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO
+					);
+				ctfos.rtpThreadSender = builderAc3.build();
+				break;
 			case V_JPEG:
 				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
 						BuilderThreadRtpSenderMjpeg.builder(),
@@ -494,7 +509,7 @@ public final class RtspChildThreadMng {
 			default:
 				if (tmpAvSsi.codec().isPcmAudio()) {
 					// the virtual FPS value only when the source is a file
-					final double tmpVirtualFpsPcm = (1000.0 / (double) RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
+					final double tmpVirtualFpsPcm = (1000.0 / (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
 					//
 					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 							BuilderThreadRtpSenderPcm.builder(),

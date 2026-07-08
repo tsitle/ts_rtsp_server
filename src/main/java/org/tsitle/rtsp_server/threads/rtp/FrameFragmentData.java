@@ -9,6 +9,8 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
  * @param frameRtpTimestamp RTP timestamp
  * @param fragmentOffset Offset of the current fragment in the frame data
  * @param fragmentSize Size of the current fragment in the frame data
+ * @param fragmentIndex Index of the current fragment
+ * @param fragmentCount Number of fragments
  * @param isLastFragment Is this the last fragment of the frame?
  */
 public record FrameFragmentData(
@@ -17,5 +19,6 @@ public record FrameFragmentData(
 		int fragmentOffset,
 		int fragmentSize,
 		int fragmentIndex,
+		int fragmentCount,
 		boolean isLastFragment
 	) { }

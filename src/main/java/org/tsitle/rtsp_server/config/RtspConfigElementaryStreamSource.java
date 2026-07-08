@@ -307,6 +307,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		MqPacketCodec tmpMqPktCodec = switch (codec) {
 				case AACLC -> MqPacketCodec.AACLC;
+				case AC3 -> MqPacketCodec.AC3;
 				case PCMA -> MqPacketCodec.PCMA;
 				case PCMU -> MqPacketCodec.PCMU;
 				case LPCM08U -> MqPacketCodec.LPCM08U;
