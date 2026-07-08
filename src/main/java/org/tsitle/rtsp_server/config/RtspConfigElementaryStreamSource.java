@@ -5,6 +5,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
+import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
+import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
@@ -13,6 +15,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
+import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAc3FromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.*;
@@ -374,15 +377,15 @@ public final class RtspConfigElementaryStreamSource {
 			}
 			if (internalCodec.isAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
+						tmpExtSsId + "' (min=1, max=2)");
 			}
 			if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
+						tmpExtSsId + "' (should be mono)");
 			}
 			if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
+						tmpExtSsId + "' (should be stereo)");
 			}
 
 			//
@@ -401,6 +404,8 @@ public final class RtspConfigElementaryStreamSource {
 				}
 				//
 				readAacHeader(getIdAsProtoId(), tmpExtSsId);
+			} else if (enabled && internalCodec == RtpPacketType.A_AC3) {
+				readAc3Header(getIdAsProtoId(), tmpExtSsId);
 			}
 		}
 	}
@@ -448,6 +453,39 @@ public final class RtspConfigElementaryStreamSource {
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
 			throw new ConfigInvalidException("Could not parse AAC header for Elementary-Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		}
+	}
+
+	private void readAc3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extSsId)
+			throws ConfigInvalidException {
+		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
+			BufferExt tmpBuf = new BufferExt();
+			AudioStreamOutgoingAc3FromFile asoAc3 = new AudioStreamOutgoingAc3FromFile(avStreamIncoming);
+			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			asoAc3.getNextFrame(tmpBuf, tmpStTimestamp);
+
+			AudioAc3Info ac3Info = AudioAc3Parser.parseAc3Header(tmpBuf);
+
+			if (ac3Info.bitrate == AudioAc3Info.Bitrate.UNKNOWN) {
+				throw new ConfigInvalidException("Could not parse AC-3 Bitrate for Elementary-Stream Source ID '" + extSsId + "'");
+			}
+			if (ac3Info.samplerate == AudioAc3Info.Samplerate.UNKNOWN) {
+				throw new ConfigInvalidException("Could not parse AC-3 Samplerate for Elementary-Stream Source ID '" + extSsId + "'");
+			}
+			if (ac3Info.samplerate.getHz() != getAudioSamplerateHz()) {
+				throw new ConfigInvalidException("AC-3 Samplerate mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+						"config=" + getAudioSamplerateHz() + ", fileHeader=" + ac3Info.samplerate.getHz() + ")");
+			}
+			if (ac3Info.audioCodingMode.getChannelCount() != getAudioChannelCount()) {
+				throw new ConfigInvalidException("AC-3 ChannelCount mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+						"config=" + getAudioChannelCount() + ", fileHeader=" + ac3Info.audioCodingMode.getChannelCount() + ")");
+			}
+		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
+			throw new ConfigInvalidException("Could not read from AC-3 file for Elementary-Stream Source ID '" + extSsId + "': " +
+					e.getMessage());
+		} catch (AvInvalidCodecDataException e) {
+			throw new ConfigInvalidException("Could not parse AC-3 header for Elementary-Stream Source ID '" + extSsId + "': " +
 					e.getMessage());
 		}
 	}

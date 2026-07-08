@@ -106,7 +106,7 @@ public final class ThreadRtpSenderAc3<
 	@Override
 	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		/*
-		 * Only set the marker bit to 1 if this is the last fragment of the AAC frame.
+		 * Only set the marker bit to 1 if this is the last fragment of the AC-3 frame.
 		 * See https://datatracker.ietf.org/doc/html/rfc4184#section-4.1.1
 		 */
 		return isLastFragment;

@@ -60,6 +60,8 @@ public final class AudioAc3Info implements CodecInfoInterface<AudioAc3Info>, Clo
 		BR640,
 		UNKNOWN;
 
+		/** Get the nominal Bit Rate in kbps */
+		@SuppressWarnings("unused")
 		public int getBitrateAsInt() {
 			return switch (this) {
 					case BR032 -> 32;

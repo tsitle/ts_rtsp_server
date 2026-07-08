@@ -36,6 +36,21 @@ public final class AudioAc3Parser {
 		return ac3Info.frameLength - ac3Header.getUsed();
 	}
 
+	/**
+	 * Parse only the AC-3 header
+	 * @param ac3Header AC-3 header
+	 * @return AC-3 info
+	 */
+	public static @NonNull AudioAc3Info parseAc3Header(@NonNull BufferExt ac3Header)
+			throws AvInvalidCodecDataException {
+		if (ac3Header.getUsed() < AC3_HEADER_SIZE_MIN) {
+			throw new IllegalArgumentException("AC-3 header to short");
+		}
+
+		AudioAc3Parser ac3Parser = new AudioAc3Parser();
+		return ac3Parser.parseAc3Data(ac3Header);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
