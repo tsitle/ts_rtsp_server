@@ -180,7 +180,7 @@ public final class RtspConfigInputSource implements Cloneable {
 
 		//
 		if (needsAuthentication && allowedUserAccountGroups.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": Empty allowed User Account Groups list" +
+			throw new ConfigInvalidException(FNC_NAME + ": Empty Allowed User Account Groups list" +
 					" used in Input Source ID '" + id + "'");
 		}
 		for (String allowedUag : allowedUserAccountGroups) {
