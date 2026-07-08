@@ -14,7 +14,7 @@ import org.tsitle.lib_xrtxp.common.helpers.BitWriterHelper;
  */
 public final class RtpPacketAc3 extends RtpPacketCodecBase {
 
-	/** Audio Coding Mode according to ATSC A/52:2015 Table 5.8 */
+	/** Frame Type */
 	public enum FrameType {
 		/** One or more complete frames */
 		FT_ONE_OR_MORE_COMPLETE_FRAMES((byte)0),
