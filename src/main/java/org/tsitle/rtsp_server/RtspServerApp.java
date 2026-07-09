@@ -366,6 +366,10 @@ public final class RtspServerApp {
 						logWarn(FNC_NAME, "RejectedExecutionException caught: " + e.getMessage());
 						try { socketRtspTcp.close(); } catch (IOException ignored) { }
 					}
+
+					/*if (clientConnectionCount == 2) {  // for profiling only
+						break;
+					}*/
 				}
 			}
 		} catch (BindException e) {
