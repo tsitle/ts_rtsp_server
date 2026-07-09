@@ -274,9 +274,13 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean waitForQueueUnblockedAndThenBlock(boolean needAvailFrame) throws InputStreamEosException {
+		final String FNC_NAME = getClass().getSimpleName() + ".waitForQueueUnblockedAndThenBlock()";
+
 		lock.lock();
 		try {
-			while (! eosReached.get()) {
+			final int MAX_TIMEOUT = 1000;
+			int timeoutCnt = 0;
+			while (! eosReached.get() && ++timeoutCnt <= MAX_TIMEOUT) {
 				while (! doStop.get() && queueBlockedState.get()) {
 					queueBlockedChanged.await();
 				}
@@ -284,10 +288,15 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 					return false;
 				}
 				if (needAvailFrame && queueAvail.get() == 0) {
+					Thread.sleep(1);
 					continue;
 				}
 				queueBlockedState.set(true);
 				break;
+			}
+			if (timeoutCnt >= MAX_TIMEOUT) {
+				logWarn(FNC_NAME, "timeout waiting for queue");
+				return false;
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();  // restore flag
