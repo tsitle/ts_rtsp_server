@@ -222,7 +222,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 			if (doStop.get()) {
 				return;
 			}
-			if (tmpFrameBufPtr.getUsed() < mediaOutgoingStream.getMagicBytesLengthBits() / 8) {
+			if (tmpFrameBufPtr.getUsed() < mediaOutgoingStream.getMinimumMagicBytesLengthBits() / 8) {
 				// we have reached the end of the input
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- getNextFrame");
 				eosReached.set(true);

@@ -11,8 +11,10 @@ import java.util.Arrays;
 
 public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<AvStreamIncomingFromFile> {
 
-	private byte[] frameStartMagicbytes;
-	private int magicBytesLengthInBits;
+	private final byte[] frameStartMagicBytesPtr_fixed;
+	private final int magicBytesLengthInBits_fixed;
+	private byte[] frameStartMagicBytesPtr_a_long = null;
+	private byte[] frameStartMagicBytesPtr_b_short = null;
 
 	private byte[] cachedDataBuf = new byte[4 * 1024];  // 4 kB is only the initial size - it can dynamically grow
 	private int cachedDataLength = 0;
@@ -21,33 +23,40 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
-	 * @param frameStartMagicbytes Magic bytes array for frame start detection
-	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
+	 * @param frameStartMagicBytes Magic Bytes for frame start detection
+	 * @param magicBytesLengthInBits Length of the Magic Bytes array in bits
 	 */
 	protected AvStreamOutgoingFromFileBase(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming,
-				byte[] frameStartMagicbytes,
+				byte[] frameStartMagicBytes,
 				int magicBytesLengthInBits
 			) {
 		super(logMsgInterface, avStreamIncoming);
 
 		if (magicBytesLengthInBits % 4 != 0) {
-			throw new IllegalArgumentException("magicBytesLengthInBits must be a multiple of 4");
+			throw new IllegalArgumentException("magicBytesLengthInBits must be zero or a multiple of 4");
 		}
-		this.frameStartMagicbytes = frameStartMagicbytes;
-		this.magicBytesLengthInBits = magicBytesLengthInBits;
+		this.frameStartMagicBytesPtr_fixed = frameStartMagicBytes;
+		this.magicBytesLengthInBits_fixed = magicBytesLengthInBits;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Gets the length of the magic bytes array for frame start detection.
-	 * @return Length of the magic bytes array in bits
+	 * Gets the minimum length of the Magic Bytes for frame start detection.
+	 * @return Length of the Magic Bytes array in bits
 	 */
-	public int getMagicBytesLengthBits() {
-		return magicBytesLengthInBits;
+	public int getMinimumMagicBytesLengthBits() {
+		if (magicBytesLengthInBits_fixed > 0) {
+			return magicBytesLengthInBits_fixed;
+		}
+		int resI = (frameStartMagicBytesPtr_b_short == null ? 0 : frameStartMagicBytesPtr_b_short.length);
+		if (resI == 0) {
+			resI = (frameStartMagicBytesPtr_a_long == null ? 1 : frameStartMagicBytesPtr_a_long.length);
+		}
+		return resI * 8;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -64,39 +73,35 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 	 * @param fncName Name of the calling function for logging
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param isFirstFrame Is this the first frame in the stream?
-	 * @param magicBytesVersionA Version A of the magic bytes - needs to be the longer one
-	 * @param magicBytesVersionB Version B of the magic bytes - needs to be the shorter one
+	 * @param magicBytesVersionA_long Version A of the magic bytes - needs to be the longer one (can be null if not used)
+	 * @param magicBytesVersionB_short Version B of the magic bytes - needs to be the shorter one (can be null if not used)
 	 * @param readMaxBytes Maximum number of bytes to read from the stream (-1 for unlimited)
 	 */
 	protected void internalGetNextFrameWithStartCode(
 				@NonNull String fncName,
 				@NonNull BufferExt frameBuf,
 				boolean isFirstFrame,
-				byte[] magicBytesVersionA,
-				byte[] magicBytesVersionB,
+				byte[] magicBytesVersionA_long,
+				byte[] magicBytesVersionB_short,
 				int readMaxBytes
 			) throws InputStreamIoException, InputStreamEosException {
-		if ((! isFirstFrame || (magicBytesVersionA == null && magicBytesVersionB == null)) && frameStartMagicbytes.length == 0) {
-			throw new IllegalStateException(fncName + ": frameStartMagicbytes is not set");
+		if (magicBytesVersionA_long == null && magicBytesVersionB_short == null &&
+				frameStartMagicBytesPtr_fixed.length == 0) {
+			throw new IllegalStateException(fncName + ": frameStartMagicBytesPtr_fixed is not set");
 		}
+
+		frameStartMagicBytesPtr_a_long = magicBytesVersionA_long;
+		frameStartMagicBytesPtr_b_short = magicBytesVersionB_short;
+		final int minimumMagicBytesLengthBytes = getMinimumMagicBytesLengthBits() / 8;
 
 		while (true) {
 			int firstStart;
 
 			//
-			if (isFirstFrame && magicBytesVersionA != null && magicBytesVersionB != null) {
+			if (isFirstFrame && magicBytesVersionA_long != null && magicBytesVersionB_short != null) {
 				readMoreIntoCache();
-				frameStartMagicbytes = magicBytesVersionA;
-				magicBytesLengthInBits = frameStartMagicbytes.length * 8;
-				firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
-				if (firstStart < 0) {
-					frameStartMagicbytes = magicBytesVersionB;
-					magicBytesLengthInBits = frameStartMagicbytes.length * 8;
-					firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
-				}
-			} else {
-				firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
 			}
+			firstStart = findStartCode(cachedDataBuf, cachedDataLength, 0);
 
 			//
 			if (firstStart > 0) {
@@ -109,7 +114,7 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 
 			if (firstStart == 0) {
 				if (readMaxBytes == -1) {
-					int nextStart = findStartCode(cachedDataBuf, cachedDataLength, frameStartMagicbytes.length);
+					int nextStart = findStartCode(cachedDataBuf, cachedDataLength, minimumMagicBytesLengthBytes);
 					if (nextStart > 0) {
 						frameBuf.clear();
 						frameBuf.copyFrom(cachedDataBuf, 0, 0, nextStart);
@@ -195,19 +200,51 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 		cachedDataLength += tmpDidRead;
 	}
 
+	/**
+	 * Find the index of the start code in the given data array.
+	 * @param data Data to search in
+	 * @param length Length of the data array
+	 * @param startIdx Starting index to search from
+	 * @return Index of the start code in the given data array plus [startIdx], or -1 if not found.
+	 */
 	private int findStartCode(byte[] data, int length, int startIdx) {
-		if (magicBytesLengthInBits % 8 == 0) {
-			return findStartCodeEvenMB(data, length, startIdx);
+		if (magicBytesLengthInBits_fixed > 0 && magicBytesLengthInBits_fixed % 8 == 0) {
+			return findStartCodeEvenMB(frameStartMagicBytesPtr_fixed, data, length, startIdx);
 		}
-		return findStartCodeOddMB(data, length, startIdx);
+		if (magicBytesLengthInBits_fixed == 0 && frameStartMagicBytesPtr_a_long != null) {
+			if (frameStartMagicBytesPtr_b_short == null) {
+				return findStartCodeEvenMB(frameStartMagicBytesPtr_a_long, data, length, startIdx);
+			}
+
+			int tmpIx = findStartCodeEvenMB(frameStartMagicBytesPtr_b_short, data, length, startIdx);
+
+			if (tmpIx > startIdx) {
+				// we found the shorter Magic Bytes after [startIdx], so the longer Magic Bytes might start at [startIdx]
+				int tmpLonger = findStartCodeEvenMB(
+						frameStartMagicBytesPtr_a_long,
+						data,
+						tmpIx + frameStartMagicBytesPtr_b_short.length,
+						tmpIx - 1
+					);
+				if (tmpLonger >= 0 && tmpLonger == tmpIx - 1) {
+					// indeed we have found the longer Magic Bytes at [tmpIx - 1]
+					return tmpLonger;
+				}
+			}
+			return tmpIx;
+		}
+		if (magicBytesLengthInBits_fixed == 0) {
+			throw new IllegalStateException("magicBytesLengthInBits_fixed is not set");
+		}
+		return findStartCodeOddMB_fixed(data, length, startIdx);
 	}
 
-	private int findStartCodeEvenMB(byte[] data, int length, int startIdx) {
+	private static int findStartCodeEvenMB(byte[] magicBytes, byte[] data, int length, int startIdx) {
 		boolean isOk;
-		for (int i = startIdx; i + frameStartMagicbytes.length - 1 < length; i++) {
+		for (int i = startIdx; i + magicBytes.length - 1 < length; i++) {
 			isOk = true;
-			for (int j = 0; j < frameStartMagicbytes.length; j++) {
-				if (data[i + j] != frameStartMagicbytes[j]) {
+			for (int j = 0; j < magicBytes.length; j++) {
+				if (data[i + j] != magicBytes[j]) {
 					isOk = false;
 					break;
 				}
@@ -219,15 +256,15 @@ public abstract class AvStreamOutgoingFromFileBase extends AvStreamOutgoingBase<
 		return -1;
 	}
 
-	private int findStartCodeOddMB(byte[] data, int length, int startIdx) {
+	private int findStartCodeOddMB_fixed(byte[] data, int length, int startIdx) {
 		boolean isOk;
 		int magicBitsLeft;
-		for (int i = startIdx; i + frameStartMagicbytes.length - 1 < length; i++) {
+		for (int i = startIdx; i + frameStartMagicBytesPtr_fixed.length - 1 < length; i++) {
 			isOk = true;
-			magicBitsLeft = magicBytesLengthInBits;
-			for (int j = 0; j < frameStartMagicbytes.length; j++) {
-				if ((magicBitsLeft >= 8 && data[i + j] != frameStartMagicbytes[j]) ||
-						(magicBitsLeft == 4 && (byte)(data[i + j] & (byte)0xF0) != (byte)(frameStartMagicbytes[j] & (byte)0xF0))) {
+			magicBitsLeft = magicBytesLengthInBits_fixed;
+			for (int j = 0; j < frameStartMagicBytesPtr_fixed.length; j++) {
+				if ((magicBitsLeft >= 8 && data[i + j] != frameStartMagicBytesPtr_fixed[j]) ||
+						(magicBitsLeft == 4 && (byte)(data[i + j] & (byte)0xF0) != (byte)(frameStartMagicBytesPtr_fixed[j] & (byte)0xF0))) {
 					isOk = false;
 					break;
 				}

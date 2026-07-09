@@ -214,7 +214,7 @@ public abstract class ThreadRtpSenderH26xBase<
 		// get the next frame from the input stream
 		threadDataProv.getNextFrame(tmpLatestNud.rawPayloadData, tmpLatestNud.stTimestamp, tmpLatestNud.h26xInfo);
 		if (tmpLatestNud.rawPayloadData.isEmpty()) {
-			logWarn(FNC_NAME, "tmpLatestNud.rawPayloadData is empty");
+			logWarn(FNC_NAME, "next frame is empty");
 			throw new InputStreamEosException();
 		}
 

@@ -62,9 +62,22 @@ public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase
 	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		return h265Parser.parseH265Data(
 				debugStreamOffset,
-				mediaOutgoingStream.getMagicBytesLengthBits() / 8,
+				isMagicBytesLong(inputBuf) ?
+						VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length
+						: VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length,
 				inputBuf
 			);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static boolean isMagicBytesLong(@NonNull BufferExt inputBuf) {
+		return (inputBuf.getUsed() >= VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length &&
+				inputBuf.get(0) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[0] &&
+				inputBuf.get(1) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[1] &&
+				inputBuf.get(2) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[2] &&
+				inputBuf.get(3) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[3]);
 	}
 
 }
