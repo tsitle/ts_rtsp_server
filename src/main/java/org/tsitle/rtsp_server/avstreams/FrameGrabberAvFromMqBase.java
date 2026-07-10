@@ -8,14 +8,14 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public abstract class AvStreamOutgoingFromMqBase extends AvStreamOutgoingBase<AvStreamIncomingFromMq> {
+public abstract class FrameGrabberAvFromMqBase extends FrameGrabberAvBase<AvStreamIncomingFromMq> {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	protected AvStreamOutgoingFromMqBase(
+	protected FrameGrabberAvFromMqBase(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingMjpegFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromFile;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
@@ -30,7 +30,7 @@ public final class BuilderThreadRtpSenderMjpeg {
 			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderMjpeg<>(
 						AvStreamIncomingFromFile.class,
-						VideoStreamOutgoingMjpegFromFile.class,
+						FrameGrabberVideoMjpegFromFile.class,
 						threadParamsCommon,
 						threadParamsVideo,
 						threadParamsMjpeg

@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmParser;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingPcmFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioPcmFromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -43,7 +43,7 @@ public final class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<
 		paramsPcm.validate();
 
 		//
-		this.mediaOutgoingStream = new AudioStreamOutgoingPcmFromFile(
+		this.frameGrabber = new FrameGrabberAudioPcmFromFile(
 				logMsgInterface,
 				avStreamIncoming,
 				paramsPcm.getAudioChannelCount(),

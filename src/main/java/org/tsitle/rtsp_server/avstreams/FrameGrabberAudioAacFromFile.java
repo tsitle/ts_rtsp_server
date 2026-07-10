@@ -1,35 +1,47 @@
 package org.tsitle.rtsp_server.avstreams;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class VideoStreamOutgoingH26xFromFile extends VideoStreamOutgoingFromFileBase {
+public final class FrameGrabberAudioAacFromFile extends FrameGrabberAvFromFileBase {
 
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
-	public static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 4-byte version */
-	public static final byte[] H26X_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
+	private static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};  // only 12 bits
 
-	private boolean isFirstFrame = true;
+	/**
+	 * Constructor.
+	 * @param avStreamIncoming Incoming A/V stream
+	 */
+	public FrameGrabberAudioAacFromFile(
+				@NonNull AvStreamIncomingFromFile avStreamIncoming
+			) {
+		super(
+				null,
+				avStreamIncoming,
+				AAC_FRAME_START_MAGICBYTES,
+				12
+			);
+	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public VideoStreamOutgoingH26xFromFile(
+	public FrameGrabberAudioAacFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				new byte[0],
-				0
+				AAC_FRAME_START_MAGICBYTES,
+				12
 			);
 	}
 
@@ -37,30 +49,38 @@ public final class VideoStreamOutgoingH26xFromFile extends VideoStreamOutgoingFr
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Reads the next video frame from the stream.
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
+	 */
+	@Override
+	public boolean haveEos() {
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
+	}
+
+	/**
+	 * Reads the next audio frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
-			throws InputStreamIoException, InputStreamEosException {
+			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		stTimestamp.clear();
 
-		/*
-		 * A H264/H265 NAL Unit can either start with 0x00000001 or 0x000001.<br />
-		 * Therefore, we first need to check whether to use the 3-byte or the 4-byte version.
-		 */
 		internalGetNextFrameWithStartCode(
 				FNC_NAME,
 				frameBuf,
-				isFirstFrame,
-				H26X_FRAME_START_MAGICBYTES_4,
-				H26X_FRAME_START_MAGICBYTES_3,
-				-1
+				false,
+				null,
+				null,
+				AudioAacParser.AAC_HEADER_SIZE_MAX
 			);
-		isFirstFrame = false;
+		//
+		int remainingPayloadLength = AudioAacParser.getRemainingAacPayloadLengthToRead(frameBuf);
+		//
+		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}
 
 }

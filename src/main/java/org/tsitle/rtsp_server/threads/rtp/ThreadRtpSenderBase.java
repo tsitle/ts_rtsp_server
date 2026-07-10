@@ -15,7 +15,7 @@ import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFactory;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.exceptions.*;
@@ -43,8 +43,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ThreadRtpSenderBase<
 			I extends CodecInfoInterface<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>,
-			TDP extends ThreadDataProvBase<I, AVSTROG>
+			FGAV extends FrameGrabberAvBase<AVSTRIC>,
+			TDP extends ThreadDataProvBase<I, FGAV>
 		> extends ThreadPausableBase {
 
 	/** Interval for sending Sender Reports (in milliseconds) */
@@ -56,7 +56,7 @@ public abstract class ThreadRtpSenderBase<
 	protected final Class<AVSTRIC> avStreamIncomingType;
 	protected @Nullable AVSTRIC avStreamIncomingObj;
 	protected @Nullable TDP threadDataProv;
-	protected final Class<AVSTROG> avStreamOutgoingType;
+	protected final Class<FGAV> frameGrabberAvType;
 
 	/** Buffer view for reading the RTP/XXX payload */
 	protected @Nullable BufferView cacheRtpInnerPayloadBufView = null;
@@ -106,14 +106,14 @@ public abstract class ThreadRtpSenderBase<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Thread parameters
 	 * @param rtpClockrate RTP Clock Rate
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderBase(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<AVSTROG> avStreamOutgoingType,
+				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int rtpClockrate,
 				@NonNull RtpPacketType rtpPacketType
@@ -133,7 +133,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		this.avStreamIncomingType = avStreamIncomingType;
-		this.avStreamOutgoingType = avStreamOutgoingType;
+		this.frameGrabberAvType = frameGrabberAvType;
 		//
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);

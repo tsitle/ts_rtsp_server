@@ -7,24 +7,29 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class VideoStreamOutgoingMjpegFromFile extends VideoStreamOutgoingFromFileBase {
+public final class FrameGrabberVideoH26xFromFile extends FrameGrabberVideoFromFileBase {
 
-	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
+	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
+	public static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
+	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 4-byte version */
+	public static final byte[] H26X_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
+
+	private boolean isFirstFrame = true;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public VideoStreamOutgoingMjpegFromFile(
+	public FrameGrabberVideoH26xFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				MJPEG_FRAME_START_MAGICBYTES,
-				MJPEG_FRAME_START_MAGICBYTES.length * 8
+				new byte[0],
+				0
 			);
 	}
 
@@ -43,14 +48,19 @@ public final class VideoStreamOutgoingMjpegFromFile extends VideoStreamOutgoingF
 
 		stTimestamp.clear();
 
+		/*
+		 * A H264/H265 NAL Unit can either start with 0x00000001 or 0x000001.<br />
+		 * Therefore, we first need to check whether to use the 3-byte or the 4-byte version.
+		 */
 		internalGetNextFrameWithStartCode(
 				FNC_NAME,
 				frameBuf,
-				false,
-				null,
-				null,
+				isFirstFrame,
+				H26X_FRAME_START_MAGICBYTES_4,
+				H26X_FRAME_START_MAGICBYTES_3,
 				-1
 			);
+		isFirstFrame = false;
 	}
 
 }

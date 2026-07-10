@@ -18,8 +18,8 @@ import java.util.Objects;
 
 public final class ThreadRtpSenderMjpeg<
 			AVSTRIC extends AvStreamIncomingBase,
-			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
-		> extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, AVSTROG, ThreadDataProvBase<VideoJpegInfo, AVSTROG>> {
+			FGAV extends FrameGrabberAvBase<AVSTRIC>
+		> extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, FGAV, ThreadDataProvBase<VideoJpegInfo, FGAV>> {
 
 	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
@@ -29,21 +29,21 @@ public final class ThreadRtpSenderMjpeg<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param paramsMjpeg Thread-specific parameters
 	 */
 	public ThreadRtpSenderMjpeg(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<AVSTROG> avStreamOutgoingType,
+				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull ParamsThreadRtpSenderMjpeg paramsMjpeg
 			) {
 		super(
 				avStreamIncomingType,
-				avStreamOutgoingType,
+				frameGrabberAvType,
 				paramsCommon,
 				RtpPacketType.V_JPEG.getVideoCodecRtpClockrate(),
 				RtpPacketType.V_JPEG
@@ -77,9 +77,9 @@ public final class ThreadRtpSenderMjpeg<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvBase<VideoJpegInfo, AVSTROG> newThreadDataProv() {
-		if (avStreamOutgoingType != VideoStreamOutgoingMjpegFromFile.class) {
-			throw new RuntimeException("avStreamOutgoingType must be VideoStreamOutgoingMjpegFromFile");
+	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
+		if (frameGrabberAvType != FrameGrabberVideoMjpegFromFile.class) {
+			throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoMjpegFromXxx");
 		}
 		ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
@@ -89,7 +89,7 @@ public final class ThreadRtpSenderMjpeg<
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 		@SuppressWarnings("unchecked")
-		ThreadDataProvBase<VideoJpegInfo, AVSTROG> typedProvider = (ThreadDataProvBase<VideoJpegInfo, AVSTROG>)resObj;
+		ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
 		return typedProvider;
 	}
 

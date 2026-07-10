@@ -3,10 +3,10 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_aac;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketAac;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -23,8 +23,8 @@ import java.util.Objects;
 
 public final class ThreadRtpSenderAac<
 			AVSTRIC extends AvStreamIncomingBase,
-			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
-		> extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, AVSTROG, ThreadDataProvBase<AudioAacInfo, AVSTROG>> {
+			FGAV extends FrameGrabberAvBase<AVSTRIC>
+		> extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioAacInfo, FGAV>> {
 
 	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final ParamsThreadRtpSenderAac paramsAac;
@@ -35,21 +35,21 @@ public final class ThreadRtpSenderAac<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsAac Thread-specific parameters
 	 */
 	public ThreadRtpSenderAac(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<AVSTROG> avStreamOutgoingType,
+				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderAac paramsAac
 			) {
 		super(
 				avStreamIncomingType,
-				avStreamOutgoingType,
+				frameGrabberAvType,
 				paramsCommon,
 				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerateHz(),
 				RtpPacketType.A_AAC
@@ -79,9 +79,9 @@ public final class ThreadRtpSenderAac<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvBase<AudioAacInfo, AVSTROG> newThreadDataProv() {
-		if (avStreamOutgoingType != AudioStreamOutgoingAacFromFile.class) {
-			throw new RuntimeException("avStreamOutgoingType must be AudioStreamOutgoingAacFromFile");
+	protected @NonNull ThreadDataProvBase<AudioAacInfo, FGAV> newThreadDataProv() {
+		if (frameGrabberAvType != FrameGrabberAudioAacFromFile.class) {
+			throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAacFromXxx");
 		}
 		ThreadDataProvAacFromFile resObj = new ThreadDataProvAacFromFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
@@ -92,7 +92,7 @@ public final class ThreadRtpSenderAac<
 				paramsCommon.getDebugRewindMediaFiles()
 			);
 		@SuppressWarnings("unchecked")
-		ThreadDataProvBase<AudioAacInfo, AVSTROG> typedProvider = (ThreadDataProvBase<AudioAacInfo, AVSTROG>)resObj;
+		ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;
 		return typedProvider;
 	}
 

@@ -19,29 +19,29 @@ import java.util.Objects;
 
 public final class ThreadRtpSenderH264<
 			AVSTRIC extends AvStreamIncomingBase,
-			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>
-		> extends ThreadRtpSenderH26xBase<VideoH264Info, AVSTRIC, AVSTROG, ThreadDataProvBase<VideoH264Info, AVSTROG>> {
+			FGAV extends FrameGrabberAvBase<AVSTRIC>
+		> extends ThreadRtpSenderH26xBase<VideoH264Info, AVSTRIC, FGAV, ThreadDataProvBase<VideoH264Info, FGAV>> {
 
 	private @Nullable RtpPacketH264 cachePlainPacket = null;
 
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param paramsH264 Thread-specific parameters
 	 */
 	public ThreadRtpSenderH264(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<AVSTROG> avStreamOutgoingType,
+				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull ParamsThreadRtpSenderH264 paramsH264
 			) {
 		super(
 				avStreamIncomingType,
-				avStreamOutgoingType,
+				frameGrabberAvType,
 				paramsCommon,
 				paramsVideoCommon,
 				RtpPacketType.V_H264
@@ -55,8 +55,8 @@ public final class ThreadRtpSenderH264<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvBase<VideoH264Info, AVSTROG> newThreadDataProv() {
-		if (avStreamOutgoingType == VideoStreamOutgoingH26xFromFile.class) {
+	protected @NonNull ThreadDataProvBase<VideoH264Info, FGAV> newThreadDataProv() {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
 			ThreadDataProvH264FromFile resObj = new ThreadDataProvH264FromFile(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
 					paramsVideoCommon,
@@ -65,20 +65,20 @@ public final class ThreadRtpSenderH264<
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<VideoH264Info, AVSTROG> typedProvider = (ThreadDataProvBase<VideoH264Info, AVSTROG>)resObj;
+			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (avStreamOutgoingType == VideoStreamOutgoingH26xFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromMq.class) {
 			ThreadDataProvH264FromMq resObj = new ThreadDataProvH264FromMq(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
 					paramsVideoCommon,
 					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<VideoH264Info, AVSTROG> typedProvider = (ThreadDataProvBase<VideoH264Info, AVSTROG>)resObj;
+			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		throw new RuntimeException("avStreamOutgoingType must be VideoStreamOutgoingH26xFromXxx");
+		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoH26xFromXxx");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

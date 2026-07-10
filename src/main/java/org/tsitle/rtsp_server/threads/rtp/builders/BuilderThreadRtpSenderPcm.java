@@ -30,7 +30,7 @@ public final class BuilderThreadRtpSenderPcm {
 			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderPcm<>(
 						AvStreamIncomingFromFile.class,
-						AudioStreamOutgoingPcmFromFile.class,
+						FrameGrabberAudioPcmFromFile.class,
 						threadParamsCommon,
 						threadParamsAudio,
 						threadParamsPcm
@@ -38,7 +38,7 @@ public final class BuilderThreadRtpSenderPcm {
 			}
 			return new ThreadRtpSenderPcm<>(
 					AvStreamIncomingFromMq.class,
-					AudioStreamOutgoingPcmFromMq.class,
+					FrameGrabberAudioPcmFromMq.class,
 					threadParamsCommon,
 					threadParamsAudio,
 					threadParamsPcm

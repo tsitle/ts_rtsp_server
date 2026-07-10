@@ -29,7 +29,7 @@ public final class BuilderThreadRtpSenderAac {
 			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderAac<>(
 						AvStreamIncomingFromFile.class,
-						AudioStreamOutgoingAacFromFile.class,
+						FrameGrabberAudioAacFromFile.class,
 						threadParamsCommon,
 						threadParamsAudio,
 						threadParamsAac

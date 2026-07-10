@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFileBase {
+public final class FrameGrabberAudioPcmFromFile extends FrameGrabberAvFromFileBase {
 
 	private final boolean isBigEndian;
 
@@ -25,7 +25,7 @@ public final class AudioStreamOutgoingPcmFromFile extends AvStreamOutgoingFromFi
 	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public AudioStreamOutgoingPcmFromFile(
+	public FrameGrabberAudioPcmFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int channels,

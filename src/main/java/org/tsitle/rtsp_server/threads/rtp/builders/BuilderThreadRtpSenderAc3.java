@@ -1,6 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAc3FromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_ac3.ThreadRtpSenderAc3;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAc3;
@@ -30,7 +30,7 @@ public final class BuilderThreadRtpSenderAc3 {
 			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderAc3<>(
 						AvStreamIncomingFromFile.class,
-						AudioStreamOutgoingAc3FromFile.class,
+						FrameGrabberAudioAc3FromFile.class,
 						threadParamsCommon,
 						threadParamsAudio,
 						threadParamsAc3

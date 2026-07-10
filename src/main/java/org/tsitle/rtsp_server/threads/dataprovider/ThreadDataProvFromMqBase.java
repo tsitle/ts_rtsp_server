@@ -3,15 +3,15 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingFromMqBase;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingH26xFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromMqBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, AvStreamOutgoingFromMqBase> {
+public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromMqBase> {
 
 	private final boolean needMagicBytes;
 
@@ -74,7 +74,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	@Override
 	public synchronized boolean haveEos() {
-		return mediaOutgoingStream.haveEos();
+		return frameGrabber.haveEos();
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -100,7 +100,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 			BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
 			if (! needMagicBytes || remainingInputBuf.isEmpty()) {
 				try {
-					mediaOutgoingStream.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
+					frameGrabber.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
 				} catch (InputStreamIoException e) {
 					throw new InputStreamEosException();
 				}
@@ -156,15 +156,15 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	protected int findH26xMagicBytesLength(final @NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		int resI = 0;
-		if (inputBuf.getUsed() >= VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length) {
-			if (checkForH26xMagicBytes(VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4, inputBuf)) {
-				resI = VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length;
+		if (inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length) {
+			if (checkForH26xMagicBytes(FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4, inputBuf)) {
+				resI = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length;
 			}
 		}
 		if (resI == 0 &&
-				inputBuf.getUsed() >= VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length) {
-			if (checkForH26xMagicBytes(VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3, inputBuf)) {
-				resI = VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length;
+				inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length) {
+			if (checkForH26xMagicBytes(FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3, inputBuf)) {
+				resI = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length;
 			}
 		}
 		if (resI == 0) {

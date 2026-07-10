@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAc3FromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAc3;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
@@ -43,7 +43,7 @@ public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<
 		paramsAc3.validate();
 
 		//
-		this.mediaOutgoingStream = new AudioStreamOutgoingAc3FromFile(logMsgInterface, avStreamIncoming);
+		this.frameGrabber = new FrameGrabberAudioAc3FromFile(logMsgInterface, avStreamIncoming);
 		this.ac3Parser = new AudioAc3Parser();
 	}
 

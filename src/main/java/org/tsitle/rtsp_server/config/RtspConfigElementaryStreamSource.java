@@ -14,8 +14,8 @@ import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAc3FromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.*;
@@ -429,7 +429,7 @@ public final class RtspConfigElementaryStreamSource {
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			AudioStreamOutgoingAacFromFile asoAac = new AudioStreamOutgoingAacFromFile(avStreamIncoming);
+			FrameGrabberAudioAacFromFile asoAac = new FrameGrabberAudioAacFromFile(avStreamIncoming);
 			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
 			asoAac.getNextFrame(tmpBuf, tmpStTimestamp);
 
@@ -465,7 +465,7 @@ public final class RtspConfigElementaryStreamSource {
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			AudioStreamOutgoingAc3FromFile asoAc3 = new AudioStreamOutgoingAc3FromFile(avStreamIncoming);
+			FrameGrabberAudioAc3FromFile asoAc3 = new FrameGrabberAudioAc3FromFile(avStreamIncoming);
 			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
 			asoAc3.getNextFrame(tmpBuf, tmpStTimestamp);
 

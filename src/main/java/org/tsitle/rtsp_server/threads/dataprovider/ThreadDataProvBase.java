@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -12,11 +12,11 @@ import org.tsitle.rtsp_server.threads.ThreadBase;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, AVSTROG extends AvStreamOutgoingBase<?>> extends ThreadBase {
+public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV extends FrameGrabberAvBase<?>> extends ThreadBase {
 
 	protected long debugStreamOffset = 0;
 
-	protected AVSTROG mediaOutgoingStream;
+	protected FGAV frameGrabber;
 
 	protected final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a frame has been removed from the queue or the thread has been requested to stop */
@@ -30,7 +30,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, AVSTRO
 		super(logMsgInterface);
 
 		//
-		this.mediaOutgoingStream = null;  // needs to be set by the child class
+		this.frameGrabber = null;  // needs to be set by the child class
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

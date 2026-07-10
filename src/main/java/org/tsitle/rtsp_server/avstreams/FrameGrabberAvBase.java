@@ -11,7 +11,7 @@ import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
-public abstract class AvStreamOutgoingBase<T extends AvStreamIncomingBase> {
+public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	protected @NonNull T avStreamIncoming;
@@ -21,7 +21,7 @@ public abstract class AvStreamOutgoingBase<T extends AvStreamIncomingBase> {
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	protected AvStreamOutgoingBase(
+	protected FrameGrabberAvBase(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull T avStreamIncoming
 			) {

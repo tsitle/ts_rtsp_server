@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoH26xBase;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
@@ -18,9 +18,9 @@ import java.util.*;
 public abstract class ThreadRtpSenderH26xBase<
 			I extends CodecInfoH26xBase<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			AVSTROG extends AvStreamOutgoingBase<AVSTRIC>,
-			TDP extends ThreadDataProvBase<I, AVSTROG>
-		> extends ThreadRtpSenderBase<I, AVSTRIC, AVSTROG, TDP> {
+			FGAV extends FrameGrabberAvBase<AVSTRIC>,
+			TDP extends ThreadDataProvBase<I, FGAV>
+		> extends ThreadRtpSenderBase<I, AVSTRIC, FGAV, TDP> {
 
 	private enum AuState {
 		SEEKING_AU_START,  // Looking for the start of a new AU
@@ -57,21 +57,21 @@ public abstract class ThreadRtpSenderH26xBase<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param avStreamOutgoingType Class of the AvStreamOutgoing object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderH26xBase(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<AVSTROG> avStreamOutgoingType,
+				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull RtpPacketType rtpPacketType
 			) {
 		super(
 				avStreamIncomingType,
-				avStreamOutgoingType,
+				frameGrabberAvType,
 				paramsCommon,
 				rtpPacketType.getVideoCodecRtpClockrate(),
 				rtpPacketType

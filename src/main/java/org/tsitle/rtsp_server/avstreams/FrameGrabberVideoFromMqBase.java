@@ -3,14 +3,14 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public abstract class VideoStreamOutgoingFromMqBase extends AvStreamOutgoingFromMqBase {
+public abstract class FrameGrabberVideoFromMqBase extends FrameGrabberAvFromMqBase {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	protected VideoStreamOutgoingFromMqBase(
+	protected FrameGrabberVideoFromMqBase(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {

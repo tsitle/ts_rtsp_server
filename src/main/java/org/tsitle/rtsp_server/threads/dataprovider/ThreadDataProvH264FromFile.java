@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingH26xFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -48,7 +48,7 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 		paramsVideoCommon.validate();
 
 		//
-		this.mediaOutgoingStream = new VideoStreamOutgoingH26xFromFile(logMsgInterface, avStreamIncoming);
+		this.frameGrabber = new FrameGrabberVideoH26xFromFile(logMsgInterface, avStreamIncoming);
 		Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext = new HashMap<>();
 		Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext = new HashMap<>();
 		this.h264Parser = new VideoH264Parser(
@@ -77,8 +77,8 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
 				isMagicBytesLong(inputBuf) ?
-						VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length
-						: VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length,
+						FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length
+						: FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length,
 				inputBuf,
 				cachePictBoundInfoPrev
 			);
@@ -93,11 +93,11 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static boolean isMagicBytesLong(@NonNull BufferExt inputBuf) {
-		return (inputBuf.getUsed() >= VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length &&
-				inputBuf.get(0) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[0] &&
-				inputBuf.get(1) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[1] &&
-				inputBuf.get(2) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[2] &&
-				inputBuf.get(3) == VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[3]);
+		return (inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length &&
+				inputBuf.get(0) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[0] &&
+				inputBuf.get(1) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[1] &&
+				inputBuf.get(2) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[2] &&
+				inputBuf.get(3) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[3]);
 	}
 
 }

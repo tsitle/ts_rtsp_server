@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.avdata.ImageReencoder;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingMjpegFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
@@ -47,7 +47,7 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		paramsVideoCommon.validate();
 
 		//
-		this.mediaOutgoingStream = new VideoStreamOutgoingMjpegFromFile(logMsgInterface, avStreamIncoming);
+		this.frameGrabber = new FrameGrabberVideoMjpegFromFile(logMsgInterface, avStreamIncoming);
 		this.imageReencoder = new ImageReencoder();
 		this.jpegParser = new VideoJpegParser(
 				logMsgInterface,

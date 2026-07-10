@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
-import org.tsitle.rtsp_server.avstreams.AudioStreamOutgoingAacFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -43,7 +43,7 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 		paramsAac.validate();
 
 		//
-		this.mediaOutgoingStream = new AudioStreamOutgoingAacFromFile(logMsgInterface, avStreamIncoming);
+		this.frameGrabber = new FrameGrabberAudioAacFromFile(logMsgInterface, avStreamIncoming);
 		this.aacParser = new AudioAacParser();
 	}
 

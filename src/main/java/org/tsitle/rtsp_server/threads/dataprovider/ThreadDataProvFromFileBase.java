@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamOutgoingFromFileBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
 public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>>
-		extends ThreadDataProvBase<I, AvStreamOutgoingFromFileBase> {
+		extends ThreadDataProvBase<I, FrameGrabberAvFromFileBase> {
 
 	private static class DataQueueEntry {
 		final @NonNull BufferExt buf = new BufferExt();
@@ -179,11 +179,11 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	private void acquireData() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
-		if (mediaOutgoingStream.haveEos()) {
+		if (frameGrabber.haveEos()) {
 			if (doDebugRewindMediaFiles) {
 				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames, rewinding");
 				try {
-					mediaOutgoingStream.rewind();
+					frameGrabber.rewind();
 				} catch (AvCannotOpenInputException e) {
 					logError(FNC_NAME, "AvCannotOpenInputException caught while rewinding: " + e.getMessage());
 					// we have reached the end of the input
@@ -218,11 +218,11 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get()).buf;
 		TimestampEpochNs tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;
 		try {
-			mediaOutgoingStream.getNextFrame(tmpFrameBufPtr, tmpStTimestampPtr);
+			frameGrabber.getNextFrame(tmpFrameBufPtr, tmpStTimestampPtr);
 			if (doStop.get()) {
 				return;
 			}
-			if (tmpFrameBufPtr.getUsed() < mediaOutgoingStream.getMinimumMagicBytesLengthBits() / 8) {
+			if (tmpFrameBufPtr.getUsed() < frameGrabber.getMinimumMagicBytesLengthBits() / 8) {
 				// we have reached the end of the input
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- getNextFrame");
 				eosReached.set(true);

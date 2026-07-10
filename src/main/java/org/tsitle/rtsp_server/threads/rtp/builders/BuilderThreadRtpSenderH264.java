@@ -29,7 +29,7 @@ public final class BuilderThreadRtpSenderH264 {
 			if (threadParamsCommon.getIsEsSourceFromFile()) {
 				return new ThreadRtpSenderH264<>(
 						AvStreamIncomingFromFile.class,
-						VideoStreamOutgoingH26xFromFile.class,
+						FrameGrabberVideoH26xFromFile.class,
 						threadParamsCommon,
 						threadParamsVideo,
 						threadParamsH264
@@ -37,7 +37,7 @@ public final class BuilderThreadRtpSenderH264 {
 			}
 			return new ThreadRtpSenderH264<>(
 					AvStreamIncomingFromMq.class,
-					VideoStreamOutgoingH26xFromMq.class,
+					FrameGrabberVideoH26xFromMq.class,
 					threadParamsCommon,
 					threadParamsVideo,
 					threadParamsH264

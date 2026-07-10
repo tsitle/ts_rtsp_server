@@ -4,8 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
 import org.tsitle.lib_xrtxp.avdata.VideoH265Parser;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromMq;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingH26xFromFile;
-import org.tsitle.rtsp_server.avstreams.VideoStreamOutgoingH26xFromMq;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromMq;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -32,7 +32,7 @@ public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<Vid
 		paramsVideoCommon.validate();
 
 		//
-		this.mediaOutgoingStream = new VideoStreamOutgoingH26xFromMq(logMsgInterface, avStreamIncoming);
+		this.frameGrabber = new FrameGrabberVideoH26xFromMq(logMsgInterface, avStreamIncoming);
 		this.h265Parser = new VideoH265Parser();
 	}
 
@@ -44,8 +44,8 @@ public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<Vid
 		if (magicBytesLength == -1) {
 			magicBytesLength = findH26xMagicBytesLength(inputBuf);
 			magicBytesArrPtr = (magicBytesLength == 3 ?
-					VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_3 :
-					VideoStreamOutgoingH26xFromFile.H26X_FRAME_START_MAGICBYTES_4);
+					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3 :
+					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4);
 		}
 		//
 		VideoH265Info curFrameH265Info = h265Parser.parseH265Data(
