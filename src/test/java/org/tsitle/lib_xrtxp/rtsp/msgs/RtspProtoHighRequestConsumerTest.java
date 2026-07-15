@@ -95,7 +95,7 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private final static String TEST_SUB_STREAM_ID_PREFIX = "test_sub_stream_id_prefix";
+	private static final String TEST_SUB_STREAM_ID_PREFIX = "test_sub_stream_id_prefix";
 
 	private RtspProtoIdSubStream generatedSubStreamId = RtspProtoIdSubStream.ofEmpty();
 	private final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = buildGlobalSessionInfoSvc();

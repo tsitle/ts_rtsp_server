@@ -15,7 +15,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
  */
 public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterInterface, RtspProtoParameterSetterInterface {
 
-	public final static String CONTENT_LANGUAGE = "en";
+	public static final String CONTENT_LANGUAGE = "en";
 
 	private final RtspProtoIdSession currentSessionId = RtspProtoIdSession.ofEmpty();
 

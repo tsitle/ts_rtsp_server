@@ -10,19 +10,22 @@ build/
 x-*.sh
 x-*.cmd
 
-data/**/*.raw
+data/**/*.mkv
+data/**/*.mov
+data/**/*.mp4
+data/**/*.webm
+
 data/**/*.h264
 data/**/*.h265
-data/**/*.webm
-data/**/*.mp3
-data/**/*.mp4
-data/**/*.m4a
-data/**/*.wav
 data/**/*.mjpeg
-data/**/*.mkv
-data/**/*.eac3
-data/**/*.ac3
+
 data/**/*.aac
+data/**/*.ac3
+data/**/*.eac3
+data/**/*.m4a
+data/**/*.mp3
+data/**/*.raw
+data/**/*.wav
 
 data/**/*.sh
 data/**/*.crt

@@ -35,7 +35,7 @@ public final class MqCodecSettings {
 	public String toString() {
 		return getClass().getSimpleName() + " [" +
 				"codec=" + (codec == null ? "NULL" : codec) +
-				", videoFps=" + (videoFps == null ? "NULL" : String.format("%.2f", videoFps).replace(",", ".")) +
+				", videoFps=" + (videoFps == null ? "NULL" : String.format("%.3f", videoFps).replace(",", ".")) +
 				", audioSamplerate=" + (audioSamplerate == null ? "NULL" : audioSamplerate) +
 				", audioChannels=" + (audioChannels == null ? "NULL" : audioChannels) +
 				"]";

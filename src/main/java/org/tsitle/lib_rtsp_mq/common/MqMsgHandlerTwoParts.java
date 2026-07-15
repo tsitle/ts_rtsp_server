@@ -154,7 +154,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			tempBb.putInt(packet.mdVideoResoWidth());
 			tempBb.putInt(packet.mdVideoResoHeight());
 			writeString127ToMqBuf(
-					String.format("%.2f", packet.mdVideoFps()).replace(',', '.'),
+					String.format("%.3f", packet.mdVideoFps()).replace(',', '.'),
 					tempBb
 				);
 			tempBb.putInt(packet.mdVideoBitrate());

@@ -47,7 +47,7 @@ public record MqPacketAv(
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
 				(codec.isVideo() ? ", mdVideoResoWidth=" + Integer.toUnsignedString(mdVideoResoWidth) : "") +
 				(codec.isVideo() ? ", mdVideoResoHeight=" + Integer.toUnsignedString(mdVideoResoHeight) : "") +
-				(codec.isVideo() ? ", mdVideoFps=" + String.format("%.2f", mdVideoFps).replace(",", ".") : "") +
+				(codec.isVideo() ? ", mdVideoFps=" + String.format("%.3f", mdVideoFps).replace(",", ".") : "") +
 				(codec.isVideo() ? ", mdVideoBitrate=" + Integer.toUnsignedString(mdVideoBitrate) : "") +
 				(! codec.isVideo() ? ", mdAudioSamplerate=" + Integer.toUnsignedString(mdAudioSamplerate) : "") +
 				(! codec.isVideo() ? ", mdAudioChannelCount=" + Integer.toUnsignedString(mdAudioChannelCount) : "") +

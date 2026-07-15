@@ -87,8 +87,8 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static class UserAuthServerSide implements RtspProtoUserAuthInterface {
-		final static String USER = "USERabcd";
-		final static String PW = "PWmnoq";
+		static final String USER = "USERabcd";
+		static final String PW = "PWmnoq";
 
 		private final @NonNull LogMsgInterface logger;
 

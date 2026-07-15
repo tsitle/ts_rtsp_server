@@ -108,7 +108,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoHeight(), ZMQ.SNDMORE);
 			writeFieldToMqString127(
 					FNC_NAME,
-					String.format("%.2f", packet.mdVideoFps()).replace(',', '.'),
+					String.format("%.3f", packet.mdVideoFps()).replace(',', '.'),
 					ZMQ.SNDMORE
 				);
 			writeFieldToMqUint32(FNC_NAME, packet.mdVideoBitrate(), ZMQ.SNDMORE);

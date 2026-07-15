@@ -159,7 +159,7 @@ public final class ThreadMqE2I extends RunnableBase {
 			haveChanges = true;
 		}
 		if (packet.codec().isVideo() &&
-				(cacheCodecSettings.videoFps == null || cacheCodecSettings.videoFps != packet.mdVideoFps())) {
+				(cacheCodecSettings.videoFps == null || Math.abs(cacheCodecSettings.videoFps - packet.mdVideoFps()) > 0.000_1)) {
 			// the framerate can change during a session
 			cacheCodecSettings.videoFps = packet.mdVideoFps();
 			haveChanges = true;

@@ -573,7 +573,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (useVideo && ssInfo.isSourceFromFile()) {
 			// a: Session Attribute: video framerate
 			outputList.add(
-					String.format("a=framerate:%.2f", ssInfo.videoFps()).replace(",", ".")
+					String.format("a=framerate:%.3f", ssInfo.videoFps()).replace(",", ".")
 				);
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate

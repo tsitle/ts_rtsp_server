@@ -443,7 +443,6 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
 	private static void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
