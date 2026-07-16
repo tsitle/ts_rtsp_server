@@ -7,6 +7,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.zeromq.ZMQ;
 
@@ -153,8 +154,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		tempBb.putInt(packet.mdCounter());
 		if (packet.codec().isVideo()) {
 			tempBb.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
-			tempBb.putInt(packet.mdVideoResoWidth());
-			tempBb.putInt(packet.mdVideoResoHeight());
+			tempBb.putInt(packet.mdVideoReso().imgWidth());
+			tempBb.putInt(packet.mdVideoReso().imgHeight());
 			writeString127ToMqBuf(
 					String.format("%.3f", packet.mdVideoFps().getFrDbl()).replace(',', '.'),
 					tempBb
@@ -258,8 +259,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 					tmpMdTimestamp,
 					tmpMdCounter,
 					tmpMdVideoIsKeyframe,
-					tmpMdVideoResoWidth,
-					tmpMdVideoResoHeight,
+					ImageDimensions.of(tmpMdVideoResoWidth, tmpMdVideoResoHeight),
 					FrameRateEnum.of(tmpMdVideoFpsDbl),
 					tmpMdVideoBitrate,
 					SampleRateEnum.of(tmpMdAudioSamplerate),

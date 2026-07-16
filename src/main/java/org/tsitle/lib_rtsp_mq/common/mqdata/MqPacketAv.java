@@ -3,6 +3,7 @@ package org.tsitle.lib_rtsp_mq.common.mqdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 
 /**
@@ -13,8 +14,7 @@ import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
  * @param mdTimestampMs Metadata: sample time timestamp of the payload in milliseconds
  * @param mdCounter Metadata: packet counter
  * @param mdVideoIsKeyframe Metadata: is this a keyframe? (video only)
- * @param mdVideoResoWidth Metadata: resolution width (video only)
- * @param mdVideoResoHeight Metadata: resolution height (video only)
+ * @param mdVideoReso Metadata: resolution width and height (video only)
  * @param mdVideoFps Metadata: frames per second (video only)
  * @param mdVideoBitrate Metadata: bitrate (video only)
  * @param mdAudioSamplerate Metadata: audio samplerate (audio only)
@@ -29,8 +29,7 @@ public record MqPacketAv(
 			long mdTimestampMs,
 			int mdCounter,
 			boolean mdVideoIsKeyframe,
-			int mdVideoResoWidth,
-			int mdVideoResoHeight,
+			@NonNull ImageDimensions mdVideoReso,
 			@NonNull FrameRateEnum mdVideoFps,
 			int mdVideoBitrate,
 			@NonNull SampleRateEnum mdAudioSamplerate,
@@ -42,6 +41,8 @@ public record MqPacketAv(
 	@Override
 	public @NonNull String toString() {
 		String tmpFpsStr = String.format("%.3f", mdVideoFps.getFrDbl()).replace(",", ".");
+		String tmpResoStr = Integer.toUnsignedString(mdVideoReso.imgWidth()) + "x" +
+				Integer.toUnsignedString(mdVideoReso.imgHeight());
 		return getClass().getSimpleName() + " [" +
 				"msgNr=" + Long.toUnsignedString(msgNr) +
 				", codec=" + codec +
@@ -49,8 +50,7 @@ public record MqPacketAv(
 				", mdTimestampMs=" + Long.toUnsignedString(mdTimestampMs) +
 				", mdCounter=" + Integer.toUnsignedString(mdCounter) +
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
-				(codec.isVideo() ? ", mdVideoResoWidth=" + Integer.toUnsignedString(mdVideoResoWidth) : "") +
-				(codec.isVideo() ? ", mdVideoResoHeight=" + Integer.toUnsignedString(mdVideoResoHeight) : "") +
+				(codec.isVideo() ? ", mdVideoReso=" + tmpResoStr : "") +
 				(codec.isVideo() ? ", mdVideoFps=" + tmpFpsStr : "") +
 				(codec.isVideo() ? ", mdVideoBitrate=" + Integer.toUnsignedString(mdVideoBitrate) : "") +
 				(! codec.isVideo() ? ", mdAudioSamplerate=" + mdAudioSamplerate.getSrHz() : "") +

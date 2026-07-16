@@ -7,6 +7,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.zeromq.ZMQ;
 
@@ -106,8 +107,8 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		writeFieldToMqUint32(FNC_NAME, packet.mdCounter(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(FNC_NAME, packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoWidth(), ZMQ.SNDMORE);
-			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoHeight(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdVideoReso().imgWidth(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdVideoReso().imgHeight(), ZMQ.SNDMORE);
 			writeFieldToMqString127(
 					FNC_NAME,
 					String.format("%.3f", packet.mdVideoFps().getFrDbl()).replace(',', '.'),
@@ -199,8 +200,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				tmpMdTimestamp,
 				tmpMdCounter,
 				tmpMdVideoIsKeyframe,
-				tmpMdVideoResoWidth,
-				tmpMdVideoResoHeight,
+				ImageDimensions.of(tmpMdVideoResoWidth, tmpMdVideoResoHeight),
 				FrameRateEnum.of(tmpMdVideoFpsDbl),
 				tmpMdVideoBitrate,
 				SampleRateEnum.of(tmpMdAudioSamplerate),
