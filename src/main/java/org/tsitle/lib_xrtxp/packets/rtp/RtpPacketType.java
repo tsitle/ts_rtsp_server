@@ -39,7 +39,7 @@ public enum RtpPacketType {
 	/** Audio: Linear PCM (clock rate and samplerate variable; channels variable; signed 16 bits per sample; Big-Endian) */
 	A_LINEAR_PCM_S16_VAR((byte)(96 + 7)),  // dynamic, RFC-3551 Section 4.5.11
 	/** Video: MJPEG or JPEG (clock rate 90000 Hz) */
-	V_JPEG((byte)26),  // fixed, RFC-3551 Section 5.2 + 6
+	V_MJPEG((byte)26),  // fixed, RFC-3551 Section 5.2 + 6
 	/** Video: H261 (clock rate 90000 Hz) */
 	V_H261_UNSUPPORTED((byte)31),  // fixed, RFC-3551 Section 5.3 + 6
 	/** Video: H263 as defined 1996 by ITU-T (clock rate 90000 Hz) */
@@ -78,12 +78,12 @@ public enum RtpPacketType {
 	public boolean isVideo() {
 		return switch(this) {
 				case
-						V_JPEG,
 						V_H261_UNSUPPORTED,
 						V_H263_1996_UNSUPPORTED,
 						V_H263_1998_UNSUPPORTED,
 						V_H264,
-						V_H265
+						V_H265,
+						V_MJPEG
 					-> true;
 				default -> false;
 			};
@@ -159,7 +159,7 @@ public enum RtpPacketType {
 				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
 				case A_LINEAR_PCM_U08_VAR -> "L8";
 				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> "L16";
-				case V_JPEG -> "JPEG";
+				case V_MJPEG -> "JPEG";
 				case V_H264 -> "H264";
 				case V_H265 -> "H265";
 				default -> throw new IllegalStateException("Unsupported codec: " + this);
@@ -169,7 +169,7 @@ public enum RtpPacketType {
 	/** Get RTP Clock rate for the packet type (or codec) */
 	public int getVideoCodecRtpClockrate() {
 		return switch(this) {
-				case V_JPEG, V_H264, V_H265 -> 90000;
+				case V_MJPEG, V_H264, V_H265 -> 90000;
 				default -> throw new IllegalStateException("Unsupported video codec: " + this);
 			};
 	}

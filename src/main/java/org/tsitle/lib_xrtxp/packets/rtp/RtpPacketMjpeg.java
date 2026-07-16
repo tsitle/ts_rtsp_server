@@ -54,7 +54,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				@NonNull VideoJpegInfo jpegInfo,
 				@NonNull BufferView payloadView
 			) {
-		super(RtpPacketType.V_JPEG, paramsBase);
+		super(RtpPacketType.V_MJPEG, paramsBase);
 
 		//
 		updatePacket(paramsBase, fragmentOffset, jpegInfo, payloadView);
@@ -65,7 +65,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
 	public RtpPacketMjpeg(@NonNull BufferExt packetData) {
-		super(RtpPacketType.V_JPEG, packetData);
+		super(RtpPacketType.V_MJPEG, packetData);
 
 		if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE) {
 			throw new IllegalArgumentException("Invalid RTP packet size");

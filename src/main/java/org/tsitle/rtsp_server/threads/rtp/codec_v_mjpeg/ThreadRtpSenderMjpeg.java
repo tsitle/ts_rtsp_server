@@ -45,12 +45,12 @@ public final class ThreadRtpSenderMjpeg<
 				avStreamIncomingType,
 				frameGrabberAvType,
 				paramsCommon,
-				RtpPacketType.V_JPEG.getVideoCodecRtpClockrate(),
-				RtpPacketType.V_JPEG
+				RtpPacketType.V_MJPEG.getVideoCodecRtpClockrate(),
+				RtpPacketType.V_MJPEG
 			);
 
 		//
-		this.rtpTicksPerFrame = (long)((double)RtpPacketType.V_JPEG.getVideoCodecRtpClockrate() /
+		this.rtpTicksPerFrame = (long)((double)RtpPacketType.V_MJPEG.getVideoCodecRtpClockrate() /
 				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
 
 		//

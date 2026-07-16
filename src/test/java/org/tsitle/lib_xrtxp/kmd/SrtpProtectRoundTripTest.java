@@ -263,7 +263,7 @@ class SrtpProtectRoundTripTest {
 		final String mikeyMsgB64 = "AQAFAB689BUBAADerb7vAAAAAAsA7d5Ie+CvLKQKEGl58Bsf8vm5EK1lNv8UYmoBAAAAHgABAQEBEAIBAQMB" +
 				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAelSS9tk6FSVy058rqi+UTmFBjpxrb6PnjjRaGBRuxBAAAAAEA";
 		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
-		final RtpPacketType expPktType = RtpPacketType.V_JPEG;
+		final RtpPacketType expPktType = RtpPacketType.V_MJPEG;
 		final RtspProtoRtpSeqNr expSeqNr = RtspProtoRtpSeqNr.of(4660);
 		final RtspProtoRtpTimestamp expTimestamp = RtspProtoRtpTimestamp.of(16909060L);
 		final boolean expIsMarkerSet = false;
@@ -323,7 +323,7 @@ class SrtpProtectRoundTripTest {
 		final String mikeyMsgB64 = "AQAFAB689BUBAADerb7vAAAAAAsA7d5Ie+CvLKQKEGl58Bsf8vm5EK1lNv8UYmoBAAAAHgABAQEBEAIBAQMB" +
 				"FAQBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAelSS9tk6FSVy058rqi+UTmFBjpxrb6PnjjRaGBRuxBAAAAAEA";
 		final RtspProtoIdXsrc expSenderSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
-		final RtpPacketType expPktType = RtpPacketType.V_JPEG;
+		final RtpPacketType expPktType = RtpPacketType.V_MJPEG;
 		final RtspProtoRtpSeqNr expSeqNr = RtspProtoRtpSeqNr.of(4660);
 		final RtspProtoRtpTimestamp expTimestamp = RtspProtoRtpTimestamp.of(16909060L);
 		final boolean expIsMarkerSet = false;

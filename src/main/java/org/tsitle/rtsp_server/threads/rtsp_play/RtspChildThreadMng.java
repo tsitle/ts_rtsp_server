@@ -474,7 +474,7 @@ public final class RtspChildThreadMng {
 					);
 				ctfos.rtpThreadSender = builderAc3.build();
 				break;
-			case V_JPEG:
+			case V_MJPEG:
 				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
 						BuilderThreadRtpSenderMjpeg.builder(),
 						tmpSiSs,

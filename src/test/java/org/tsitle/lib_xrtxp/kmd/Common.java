@@ -216,7 +216,7 @@ class Common {
 			throw new RuntimeException(e);
 		}
 		RtpPacketContainerBase rtpPktCb = RtpPacketContainerBase.createPacketHeader(
-				RtpPacketType.V_JPEG,
+				RtpPacketType.V_MJPEG,
 				new ParamsContainerBase(
 						hdSsrc,
 						hdSeqNr,

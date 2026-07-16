@@ -70,7 +70,7 @@ public enum MqPacketCodec {
 						}
 						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
 					}
-				case MJPEG -> RtpPacketType.V_JPEG;
+				case MJPEG -> RtpPacketType.V_MJPEG;
 				case H264 -> RtpPacketType.V_H264;
 				case H265 -> RtpPacketType.V_H265;
 			};

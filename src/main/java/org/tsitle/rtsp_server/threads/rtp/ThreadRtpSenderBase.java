@@ -168,7 +168,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		udpMaxPacketLenDelta = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4;
-		if (rtpPacketType == RtpPacketType.V_JPEG) {
+		if (rtpPacketType == RtpPacketType.V_MJPEG) {
 			// RTP/JPEG header can be rather big
 			udpMaxPacketLenDelta += RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE +
 					RtpPacketMjpeg.INNER_HEADER_QT_PRE_SIZE + 128 * 2;
