@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -104,11 +106,11 @@ public class FullBidirRequRespSvcTest {
 						false,
 						URI.create("file:///dummy-file-video"),
 						(byte)-1,
-						-1,
+						SampleRateEnum.UNKNOWN,
 						false,
 						-1,
 						"",
-						15.0
+						FrameRateEnum.FPS_15_0
 					);
 			}
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
@@ -118,11 +120,11 @@ public class FullBidirRequRespSvcTest {
 						false,
 						URI.create("file:///dummy-file-audio"),
 						(byte)2,
-						44100,
+						SampleRateEnum.SR_044100,
 						false,
 						-1,
 						"",
-						-1.0
+						FrameRateEnum.UNKNOWN
 					);
 			}
 			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") + "'");
