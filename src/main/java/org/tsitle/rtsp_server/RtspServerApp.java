@@ -3,6 +3,8 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.rtsp_server.config.RtspConfigElementaryStreamSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
@@ -49,7 +51,7 @@ public final class RtspServerApp {
 			60L, TimeUnit.SECONDS,
 			new SynchronousQueue<>(true)
 		);
-	private static @Nullable ExecutorService poolMqE2I;
+	private static @Nullable ExecutorService poolMqE2I = null;
 	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
 
 	private RtspServerApp() { }
@@ -181,7 +183,7 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static List<Integer> findMqStreamSources() {
+	private static @NonNull List<@NonNull Integer> findMqStreamSources() {
 		List<Integer> resL = new ArrayList<>();
 		for (Integer esSourceId : rtspConfig.getElementaryStreamSourceIds()) {
 			Optional<RtspConfigElementaryStreamSource> optSs = rtspConfig.getElementaryStreamSourceObj(esSourceId);
@@ -195,7 +197,7 @@ public final class RtspServerApp {
 		return resL;
 	}
 
-	private static void startMqs(List<Integer> esSourceIds) {
+	private static void startMqs(@NonNull List<@NonNull Integer> esSourceIds) {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMqs()";
 
 		assert poolMqE2I != null;
@@ -222,10 +224,12 @@ public final class RtspServerApp {
 							if (cbArgCodecSettings.codec != null) {
 								tmpCbEsSrcObj.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
 							}
-							if (cbArgCodecSettings.videoFps != null) {
+							if (cbArgCodecSettings.videoFps != null &&
+									cbArgCodecSettings.videoFps != FrameRateEnum.UNKNOWN) {
 								tmpCbEsSrcObj.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
 							}
-							if (cbArgCodecSettings.audioSamplerate != null) {
+							if (cbArgCodecSettings.audioSamplerate != null &&
+									cbArgCodecSettings.audioSamplerate != SampleRateEnum.UNKNOWN) {
 								tmpCbEsSrcObj.setMqDynamicAudioSamplerateHz(cbArgCodecSettings.audioSamplerate);
 							}
 							if (cbArgCodecSettings.audioChannels != null) {

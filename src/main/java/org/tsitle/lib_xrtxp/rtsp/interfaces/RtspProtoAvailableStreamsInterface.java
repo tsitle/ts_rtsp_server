@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -57,11 +59,11 @@ public interface RtspProtoAvailableStreamsInterface {
 			boolean isSourceFromMq,
 			@NonNull URI inputUri,
 			byte audioChannelCount,
-			int audioSampleRateHz,
+			@NonNull SampleRateEnum audioSampleRate,
 			boolean isAudioBigEndian,
 			int audioAacSpf,
 			@NonNull String audioAacHexCfg,
-			double videoFps
+			@NonNull FrameRateEnum videoFps
 		) { }
 
 	/**

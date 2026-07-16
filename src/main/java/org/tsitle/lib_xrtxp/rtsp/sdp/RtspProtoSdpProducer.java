@@ -540,7 +540,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		//outputList.add("c=IN IP4 0.0.0.0");
 		//
 		if (ssInfo.codec().isPcmAudio() && ssInfo.codec().getPcmAudioBitsPerSample().isPresent()) {
-			int tmpBw = (ssInfo.audioChannelCount() * ssInfo.audioSampleRateHz() *
+			int tmpBw = (ssInfo.audioChannelCount() * ssInfo.audioSampleRate().getSrHz() *
 					ssInfo.codec().getPcmAudioBitsPerSample().get());
 			// b: Bandwidth Information
 			outputList.add(String.format("b=AS:%d", tmpBw));
@@ -556,11 +556,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			double tmpTimeMs;
 			if (ssInfo.codec() == RtpPacketType.A_AAC) {
 				final double tmpFrameDurAacSecs = ((double)ssInfo.audioAacSpf() /
-						(double)ssInfo.audioSampleRateHz());
+						(double)ssInfo.audioSampleRate().getSrHz());
 				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
 			} else if (ssInfo.codec() == RtpPacketType.A_AC3) {
 				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
-						(double)ssInfo.audioSampleRateHz());
+						(double)ssInfo.audioSampleRate().getSrHz());
 				tmpTimeMs = tmpFrameDurAc3Secs * 1000.0;
 			} else {
 				tmpTimeMs = RtspProtoSdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
@@ -573,14 +573,14 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (useVideo && ssInfo.isSourceFromFile()) {
 			// a: Session Attribute: video framerate
 			outputList.add(
-					String.format("a=framerate:%.3f", ssInfo.videoFps()).replace(",", ".")
+					String.format("a=framerate:%.3f", ssInfo.videoFps().getFrDbl()).replace(",", ".")
 				);
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
 		final String tmpA_Map = ssInfo.codec().getSdpCodecName() +
 				"/" +
-				(useVideo ? ssVideoRtpClockRate : ssInfo.audioSampleRateHz()) +
-				(useVideo ? "" : "/" + ssInfo.audioChannelCount());
+				(useVideo ? ssVideoRtpClockRate : ssInfo.audioSampleRate().getSrHz()) +
+				(useVideo || ! ssInfo.codec().isPcmAudio() ? "" : "/" + ssInfo.audioChannelCount());
 		outputList.add(String.format("a=rtpmap:%d %s", ssInfo.codec().getValue(), tmpA_Map));
 		//
 		switch (ssInfo.codec()) {

@@ -2,6 +2,8 @@ package org.tsitle.lib_rtsp_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 
 /**
  * Audio/video packet.
@@ -29,15 +31,17 @@ public record MqPacketAv(
 			boolean mdVideoIsKeyframe,
 			int mdVideoResoWidth,
 			int mdVideoResoHeight,
-			double mdVideoFps,
+			@NonNull FrameRateEnum mdVideoFps,
 			int mdVideoBitrate,
-			int mdAudioSamplerate,
+			@NonNull SampleRateEnum mdAudioSamplerate,
 			byte mdAudioChannelCount,
 			byte mdPayloadCRC8,
 			@NonNull BufferExt payloadDataPtr
 		) {
+
 	@Override
 	public @NonNull String toString() {
+		String tmpFpsStr = String.format("%.3f", mdVideoFps.getFrDbl()).replace(",", ".");
 		return getClass().getSimpleName() + " [" +
 				"msgNr=" + Long.toUnsignedString(msgNr) +
 				", codec=" + codec +
@@ -47,12 +51,13 @@ public record MqPacketAv(
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
 				(codec.isVideo() ? ", mdVideoResoWidth=" + Integer.toUnsignedString(mdVideoResoWidth) : "") +
 				(codec.isVideo() ? ", mdVideoResoHeight=" + Integer.toUnsignedString(mdVideoResoHeight) : "") +
-				(codec.isVideo() ? ", mdVideoFps=" + String.format("%.3f", mdVideoFps).replace(",", ".") : "") +
+				(codec.isVideo() ? ", mdVideoFps=" + tmpFpsStr : "") +
 				(codec.isVideo() ? ", mdVideoBitrate=" + Integer.toUnsignedString(mdVideoBitrate) : "") +
-				(! codec.isVideo() ? ", mdAudioSamplerate=" + Integer.toUnsignedString(mdAudioSamplerate) : "") +
+				(! codec.isVideo() ? ", mdAudioSamplerate=" + mdAudioSamplerate.getSrHz() : "") +
 				(! codec.isVideo() ? ", mdAudioChannelCount=" + Integer.toUnsignedString(mdAudioChannelCount) : "") +
 				", mdPayloadCRC8=" + String.format("0x%02X", mdPayloadCRC8) +
 				", payload.sz=" + payloadDataPtr.getUsed() +
 				"]";
 	}
+
 }

@@ -6,6 +6,8 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.zeromq.ZMQ;
 
 import java.nio.ByteBuffer;
@@ -108,12 +110,12 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			writeFieldToMqUint32(FNC_NAME, packet.mdVideoResoHeight(), ZMQ.SNDMORE);
 			writeFieldToMqString127(
 					FNC_NAME,
-					String.format("%.3f", packet.mdVideoFps()).replace(',', '.'),
+					String.format("%.3f", packet.mdVideoFps().getFrDbl()).replace(',', '.'),
 					ZMQ.SNDMORE
 				);
 			writeFieldToMqUint32(FNC_NAME, packet.mdVideoBitrate(), ZMQ.SNDMORE);
 		} else {
-			writeFieldToMqUint32(FNC_NAME, packet.mdAudioSamplerate(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdAudioSamplerate().getSrHz(), ZMQ.SNDMORE);
 			writeFieldToMqUint08(FNC_NAME, packet.mdAudioChannelCount(), ZMQ.SNDMORE);
 		}
 		writeFieldToMqUint08(FNC_NAME, packet.mdPayloadCRC8(), ZMQ.SNDMORE);
@@ -199,9 +201,9 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				tmpMdVideoIsKeyframe,
 				tmpMdVideoResoWidth,
 				tmpMdVideoResoHeight,
-				tmpMdVideoFpsDbl,
+				FrameRateEnum.of(tmpMdVideoFpsDbl),
 				tmpMdVideoBitrate,
-				tmpMdAudioSamplerate,
+				SampleRateEnum.of(tmpMdAudioSamplerate),
 				tmpMdAudioChannelCount,
 				tmpMdPayloadCRC8,
 				payloadDataPtr

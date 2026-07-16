@@ -1,15 +1,16 @@
 package org.tsitle.rtsp_server.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 
 public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 
 	/** Audio samples per frame as required for RTP */
 	private int rtpAudioSpf;
 	private boolean isSetRtpAudioSpf;
-	/** Audio samplerate in Hz */
-	private int audioSamplerateHz;
-	private boolean isSetAudioSamplerateHz;
+	/** Audio samplerate */
+	private @NonNull SampleRateEnum audioSamplerate = SampleRateEnum.UNKNOWN;
+	private boolean isSetAudioSamplerate;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -20,10 +21,10 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 		this.isSetRtpAudioSpf = true;
 	}
 
-	public int getAudioSamplerateHz() { return audioSamplerateHz; }
-	public void setAudioSamplerateHz(int value) {
-		this.audioSamplerateHz = value;
-		this.isSetAudioSamplerateHz = true;
+	public @NonNull SampleRateEnum getAudioSamplerate() { return audioSamplerate; }
+	public void setAudioSamplerate(@NonNull SampleRateEnum value) {
+		this.audioSamplerate = value;
+		this.isSetAudioSamplerate = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -47,7 +48,7 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 
 	private void checkAllParamsSet() {
 		requireIsSet(isSetRtpAudioSpf, "rtpAudioSpf");
-		requireIsSet(isSetAudioSamplerateHz, "audioSamplerateHz");
+		requireIsSet(isSetAudioSamplerate, "audioSamplerate");
 	}
 
 	private void validateParamValues() {
@@ -56,8 +57,8 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 		if (rtpAudioSpf <= 0) {
 			throw new IllegalArgumentException(errPrefix + "rtpAudioSpf must be > 0");
 		}
-		if (audioSamplerateHz <= 0 || audioSamplerateHz > 96000) {
-			throw new IllegalArgumentException(errPrefix + "audioSamplerateHz must be > 0 and <= 96000");
+		if (audioSamplerate == SampleRateEnum.UNKNOWN) {
+			throw new IllegalArgumentException(errPrefix + "audioSamplerate must be valid");
 		}
 	}
 

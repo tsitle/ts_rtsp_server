@@ -86,7 +86,8 @@ public final class RationalNumber {
 		if (compareDblTimeBase(value, 1.0 / 1_000_000_000.0)) { return new RationalNumber(sign, 1, 1_000_000_000); }
 
 		for (SampleRateEnum tmpSrEn : SampleRateEnum.values()) {
-			if (compareDblTimeBase(value, 1.0 / (double)tmpSrEn.getSrHz())) {
+			if (tmpSrEn != SampleRateEnum.UNKNOWN &&
+					compareDblTimeBase(value, 1.0 / (double)tmpSrEn.getSrHz())) {
 				return new RationalNumber(sign, 1, tmpSrEn.getSrHz());
 			}
 		}

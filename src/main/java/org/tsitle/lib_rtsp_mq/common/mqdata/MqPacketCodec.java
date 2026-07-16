@@ -1,6 +1,7 @@
 package org.tsitle.lib_rtsp_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 /**
@@ -40,28 +41,31 @@ public enum MqPacketCodec {
 
 	public boolean isVideo() { return (this == MJPEG || this == H264 || this == H265); }
 
-	public @NonNull RtpPacketType convertToRtpPacketType(int audioSamplerateHz, byte audioChannelCount) {
+	public @NonNull RtpPacketType convertToRtpPacketType(
+				@NonNull SampleRateEnum audioSamplerate,
+				byte audioChannelCount
+			) {
 		return switch (this) {
 				case AACLC -> RtpPacketType.A_AAC;
 				case AC3 -> RtpPacketType.A_AC3;
 				case PCMA -> {
-						if (audioChannelCount == 1 && audioSamplerateHz == 8000) {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;
 						}
 						yield RtpPacketType.A_PCMA_VAR;
 					}
 				case PCMU -> {
-						if (audioChannelCount == 1 && audioSamplerateHz == 8000) {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMU_8KHZ_MONO;
 						}
 						yield RtpPacketType.A_PCMU_VAR;
 					}
 				case LPCM08U -> RtpPacketType.A_LINEAR_PCM_U08_VAR;
 				case LPCM16S -> {
-						if (audioChannelCount == 1 && audioSamplerateHz == 44100) {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_044100) {
 							yield RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
 						}
-						if (audioChannelCount == 2 && audioSamplerateHz == 44100) {
+						if (audioChannelCount == 2 && audioSamplerate == SampleRateEnum.SR_044100) {
 							yield RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
 						}
 						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;

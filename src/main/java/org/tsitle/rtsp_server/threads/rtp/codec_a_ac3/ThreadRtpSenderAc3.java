@@ -51,7 +51,7 @@ public final class ThreadRtpSenderAc3<
 				avStreamIncomingType,
 				frameGrabberAvType,
 				paramsCommon,
-				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerateHz(),
+				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerate().getSrHz(),
 				RtpPacketType.A_AC3
 			);
 

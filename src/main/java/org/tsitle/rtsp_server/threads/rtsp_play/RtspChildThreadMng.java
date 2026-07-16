@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
@@ -345,7 +346,7 @@ public final class RtspChildThreadMng {
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
 					@NonNull RtspProtoIdEsSource idEsSource,
-					double avFps,
+					double avFpsAsDbl,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
 		if (streamInfo.getSubStreamTpPtr().getIsUdp()) {
@@ -368,7 +369,7 @@ public final class RtspChildThreadMng {
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
 				.comIsStreamSourceFromFile(avSsi.isSourceFromFile())
-				.comAvFps(avFps)
+				.comAvFps(avFpsAsDbl)
 				.comRtpSeqNrT0(streamInfo.getRtpSeqNrT0Ptr())
 				.comRtpTimestampT0(
 						new ParamsThreadRtpSenderCommon.RtpTsT0WithEpoch(
@@ -389,10 +390,10 @@ public final class RtspChildThreadMng {
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
 					@NonNull RtspProtoIdEsSource idEsSource,
-					double avFps,
+					@NonNull FrameRateEnum avFpsAsEn,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFps, xsrcBlock);
+		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsEn.getFrDbl(), xsrcBlock);
 	}
 
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
@@ -401,13 +402,13 @@ public final class RtspChildThreadMng {
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
 					@NonNull RtspProtoIdEsSource idEsSource,
-					@SuppressWarnings("SameParameterValue") double avFps,
+					double avFpsAsDbl,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock,
 					int samplesPerFrame
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFps, xsrcBlock)
+		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsDbl, xsrcBlock)
 				.audComRtpAudioSpf(samplesPerFrame)
-				.audComSamplerateHz(avSsi.audioSampleRateHz());
+				.audComSamplerate(avSsi.audioSampleRate());
 	}
 
 	private void startSendRtp_oneStream(@NonNull ChildThreadsForOneStream ctfos, @NonNull String cnameHostname)
@@ -445,7 +446,7 @@ public final class RtspChildThreadMng {
 		//
 		switch (tmpAvSsi.codec()) {
 			case A_AAC:
-				final double tmpFrameDurAacSecs = ((double)tmpAvSsi.audioAacSpf() / (double)tmpAvSsi.audioSampleRateHz());
+				final double tmpFrameDurAacSecs = ((double)tmpAvSsi.audioAacSpf() / (double)tmpAvSsi.audioSampleRate().getSrHz());
 				final double tmpVirtualFpsAac = (1.0 / tmpFrameDurAacSecs);
 				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
 						BuilderThreadRtpSenderAac.builder(),
@@ -460,7 +461,7 @@ public final class RtspChildThreadMng {
 				break;
 			case A_AC3:
 				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
-						(double)tmpAvSsi.audioSampleRateHz());
+						(double)tmpAvSsi.audioSampleRate().getSrHz());
 				final double tmpVirtualFpsAc3 = (1.0 / tmpFrameDurAc3Secs);
 				BuilderThreadRtpSenderAc3.Builder builderAc3 = buildThreadAudio(
 						BuilderThreadRtpSenderAc3.builder(),
