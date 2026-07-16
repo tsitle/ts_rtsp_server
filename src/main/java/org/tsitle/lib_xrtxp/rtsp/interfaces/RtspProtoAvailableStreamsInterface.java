@@ -57,6 +57,7 @@ public interface RtspProtoAvailableStreamsInterface {
 			@NonNull RtpPacketType codec,
 			boolean isSourceFromFile,
 			boolean isSourceFromMq,
+			boolean isSourceFromDemuxedMs,
 			@NonNull URI inputUri,
 			byte audioChannelCount,
 			@NonNull SampleRateEnum audioSampleRate,

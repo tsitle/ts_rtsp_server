@@ -227,6 +227,17 @@ public final class RtspConfigInputSource implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	void addVirtualEsSource(
+				@NonNull String virtualExternalEsId,
+				@NonNull RtspConfigElementaryStreamSource esSrcObj
+			) {
+		internalEsSourceIds.add(esSrcObj.getIdAsInt());
+		elementaryStreamSourceIds.add(virtualExternalEsId);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
 			throw new IllegalStateException("Input Source has not been post-processed yet");

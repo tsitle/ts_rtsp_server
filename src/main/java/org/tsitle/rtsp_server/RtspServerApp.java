@@ -194,7 +194,7 @@ public final class RtspServerApp {
 			if (optSs.isEmpty()) {
 				continue;
 			}
-			if (optSs.get().getEnabled() && optSs.get().getIsSourceFromMq()) {
+			if (optSs.get().getEnabled() && optSs.get().getSourceType() == RtspConfigElementaryStreamSource.SourceType.ST_ES_MQ) {
 				resL.add(esSourceId);
 			}
 		}

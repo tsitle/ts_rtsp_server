@@ -3,6 +3,9 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_ffmpeg.FfmpegCodec;
+import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
+import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
@@ -35,6 +38,15 @@ import java.util.Optional;
  */
 public final class RtspConfigElementaryStreamSource {
 
+	public enum SourceType {
+		/** Elementary-Stream from a file */
+		ST_ES_FILE,
+		/** Elementary-Stream from a Message Queue */
+		ST_ES_MQ,
+		/** Demuxed Elementary-Stream from a Muxed-Stream Source */
+		ST_DEMUX_MS
+	}
+
 	/** Elementary-Stream Source ID */
 	@GsonAnnoExclude
 	private @NonNull Integer id;
@@ -65,7 +77,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	/** Only for AAC: Audio samples per frame -- only when {@code filePath} is set. */
 	@Expose
-	private final @NonNull Integer aacSamplesPerFrame;
+	private @NonNull Integer aacSamplesPerFrame;
 	/** Only for AAC: AudioSpecificConfig as hex string */
 	@GsonAnnoExclude
 	private @NonNull String aacAudioSpecificConfigHex;
@@ -101,6 +113,13 @@ public final class RtspConfigElementaryStreamSource {
 	@GsonAnnoExclude
 	private byte mqDynamicAudioChannelCount;
 
+	/** for Demuxed Muxed-Stream Sources: Muxed-Stream Source ID */
+	@GsonAnnoExclude
+	private @Nullable Integer msSourceId;
+	/** for Demuxed Muxed-Stream Sources: FFmpeg Stream Index */
+	@GsonAnnoExclude
+	private @Nullable Integer msSourceFfmpegStreamIx;  // @TODO use this somehow
+
 	public RtspConfigElementaryStreamSource() {
 		this.id = -1;
 		this.enabled = true;
@@ -127,6 +146,72 @@ public final class RtspConfigElementaryStreamSource {
 		this.mqDynamicVideoFps = FrameRateEnum.UNKNOWN;
 		this.mqDynamicAudioSamplerateHz = SampleRateEnum.UNKNOWN;
 		this.mqDynamicAudioChannelCount = -1;
+
+		this.msSourceId = null;
+		this.msSourceFfmpegStreamIx = null;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamVideo(
+				int esSourceId,
+				int msSourceId,
+				@NonNull FfmpegStreamInfoVideo streamInfo
+			) {
+		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamVideo()";
+
+		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
+		resObj.id = esSourceId;
+		resObj.msSourceId = msSourceId;
+		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
+
+		resObj.internalHasBeenPostProcessed = true;
+
+		resObj.internalCodec = convertFfmpegVideoCodecToRtpPacketType(streamInfo.ffmpegCodec);
+
+		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
+		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
+			throw new IllegalArgumentException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps);
+		}
+
+		return resObj;
+	}
+
+	public static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamAudio(
+				int esSourceId,
+				int msSourceId,
+				@NonNull FfmpegStreamInfoAudio streamInfo
+			) {
+		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamAudio()";
+
+		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
+		resObj.id = esSourceId;
+		resObj.msSourceId = msSourceId;
+		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
+
+		resObj.internalHasBeenPostProcessed = true;
+
+		resObj.internalCodec = convertFfmpegAudioCodecToRtpPacketType(
+				streamInfo.ffmpegCodec,
+				streamInfo.sampleRate,
+				(byte)streamInfo.channelCount
+			);
+
+		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
+		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
+			throw new IllegalArgumentException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate);
+		}
+		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
+		if (resObj.internalAudioChannelCount < 1 || resObj.internalAudioChannelCount > 10) {  // just in case
+			throw new IllegalArgumentException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount);
+		}
+		resObj.internalIsAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
+
+		resObj.aacSamplesPerFrame = streamInfo.aacSamplesPerFrame;
+		resObj.aacAudioSpecificConfigHex = streamInfo.aacAudioSpecificConfigHex;
+
+		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -185,19 +270,25 @@ public final class RtspConfigElementaryStreamSource {
 		return Optional.of(resObj);
 	}
 
-	public boolean getIsSourceFromFile() {
-		checkPostProcessed();
-		return (! filePath.isBlank());
-	}
+	public @NonNull SourceType getSourceType() {
+		final String FNC_NAME = getClass().getSimpleName() + ".getSourceType()";
 
-	public boolean getIsSourceFromMq() {
 		checkPostProcessed();
-		return filePath.isBlank();
+		if (! filePath.isBlank()) {
+			return SourceType.ST_ES_FILE;
+		}
+		if (mq != null) {
+			return SourceType.ST_ES_MQ;
+		}
+		if (msSourceId != null) {
+			return SourceType.ST_DEMUX_MS;
+		}
+		throw new IllegalStateException(FNC_NAME + ": could not identify Source Type");
 	}
 
 	public synchronized @NonNull RtpPacketType getCodec() {
 		checkPostProcessed();
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			// the actual codec will be determined dynamically when reading from a MQ
 			return mqDynamicCodec;
 		}
@@ -207,7 +298,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull FrameRateEnum getVideoFps() {
 		checkPostProcessed();
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			// the actual FPS doesn't matter when reading from a MQ, but it will be determined dynamically when reading from a MQ
 			return mqDynamicVideoFps;
 		}
@@ -216,7 +307,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull SampleRateEnum getAudioSamplerate() {
 		checkPostProcessed();
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			// the actual samplerate will be determined dynamically when reading from a MQ
 			return mqDynamicAudioSamplerateHz;
 		}
@@ -225,7 +316,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized byte getAudioChannelCount() {
 		checkPostProcessed();
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			// the actual channel count will be determined dynamically when reading from a MQ
 			return mqDynamicAudioChannelCount;
 		}
@@ -236,7 +327,7 @@ public final class RtspConfigElementaryStreamSource {
 	public int getRtpAudioSamplesPerFrame(double videoFpsAsDbl) {
 		checkPostProcessed();
 		//
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			return 1;  // the actual value doesn't matter when reading from a MQ
 		}
 		if (videoFpsAsDbl < 0.1) {
@@ -262,7 +353,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public boolean getIsAudioBigEndian() {
 		checkPostProcessed();
-		if (getIsSourceFromMq()) {
+		if (getSourceType() == SourceType.ST_ES_MQ) {
 			return true;  // when reading from a MQ, the audio data is expected to be big-endian
 		}
 		return internalIsAudioBigEndian;
@@ -385,61 +476,63 @@ public final class RtspConfigElementaryStreamSource {
 			mq.validate(tmpExtSsId);
 		}
 
-		//
-		if (getIsSourceFromFile()) {
-			//noinspection ConstantValue
-			if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
-				throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
-			}
-			if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
-			}
-			if (internalCodec.isVideo() && getVideoFps() == FrameRateEnum.UNKNOWN) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Elementary-Stream Source ID '" +
-						tmpExtSsId + "'");
-			}
-			if (internalCodec.isPcmAudio() && getAudioSamplerate() == SampleRateEnum.UNKNOWN) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Elementary-Stream Source ID '" +
-						tmpExtSsId + "' (PCM needs a valid Sample Rate)");
-			}
-			if (internalCodec.isPcmAudio() && getAudioChannelCount() < 1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "' (PCM: min=1, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
-			}
-			if (internalCodec.isPcmAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "' (PCM: min=1, max=2, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
-			}
-			if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "' (should be mono)");
-			}
-			if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-						tmpExtSsId + "' (should be stereo)");
-			}
+		// ----------------------------------------------------
 
-			//
-			if (enabled && internalCodec == RtpPacketType.A_AAC) {
-				switch (aacSamplesPerFrame) {
-					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
-					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
-					case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
-						break;
-					default:
-						throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
-								"for Elementary-Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
-								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
-								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
-								RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
-				}
-				//
-				readAacHeader(getIdAsProtoId(), tmpExtSsId);
-			} else if (enabled && internalCodec == RtpPacketType.A_AC3) {
-				readAc3Header(getIdAsProtoId(), tmpExtSsId);
+		if (getSourceType() != SourceType.ST_ES_FILE) {
+			return;
+		}
+		//noinspection ConstantValue
+		if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
+			throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined for Elementary-Stream Source ID '" +
+					tmpExtSsId + "'");
+		}
+		if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec for Elementary-Stream Source ID '" +
+					tmpExtSsId + "'");
+		}
+		if (internalCodec.isVideo() && getVideoFps() == FrameRateEnum.UNKNOWN) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Elementary-Stream Source ID '" +
+					tmpExtSsId + "'");
+		}
+		if (internalCodec.isPcmAudio() && getAudioSamplerate() == SampleRateEnum.UNKNOWN) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (PCM needs a valid Sample Rate)");
+		}
+		if (internalCodec.isPcmAudio() && getAudioChannelCount() < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (PCM: min=1, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
+		}
+		if (internalCodec.isPcmAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (PCM: min=1, max=2, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
+		}
+		if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (should be mono)");
+		}
+		if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (should be stereo)");
+		}
+
+		//
+		if (enabled && internalCodec == RtpPacketType.A_AAC) {
+			switch (aacSamplesPerFrame) {
+				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
+				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
+				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
+					break;
+				default:
+					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
+							"for Elementary-Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
+							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
+							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
+							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
 			}
+			//
+			readAacHeader(getIdAsProtoId(), tmpExtSsId);
+		} else if (enabled && internalCodec == RtpPacketType.A_AC3) {
+			readAc3Header(getIdAsProtoId(), tmpExtSsId);
 		}
 	}
 
@@ -531,6 +624,55 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException("Could not parse AC-3 header for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull RtpPacketType convertFfmpegVideoCodecToRtpPacketType(@NonNull FfmpegCodec ffmpegCodec) {
+		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".convertFfmpegVideoCodecToRtpPacketType()";
+
+		return switch (ffmpegCodec) {
+				case V_H264 -> RtpPacketType.V_H264;
+				case V_H265 -> RtpPacketType.V_H265;
+				case V_MJPEG -> RtpPacketType.V_MJPEG;
+				default -> throw new IllegalArgumentException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
+			};
+	}
+
+	private static @NonNull RtpPacketType convertFfmpegAudioCodecToRtpPacketType(
+				@NonNull FfmpegCodec ffmpegCodec,
+				@NonNull SampleRateEnum audioSamplerate,
+				byte audioChannelCount
+			) {
+		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".convertFfmpegAudioCodecToRtpPacketType()";
+
+		return switch (ffmpegCodec) {
+				case A_AAC -> RtpPacketType.A_AAC;
+				case A_AC3 -> RtpPacketType.A_AC3;
+				case A_PCM_ALAW -> {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
+							yield RtpPacketType.A_PCMA_8KHZ_MONO;
+						}
+						yield RtpPacketType.A_PCMA_VAR;
+					}
+				case A_PCM_MULAW -> {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
+							yield RtpPacketType.A_PCMU_8KHZ_MONO;
+						}
+						yield RtpPacketType.A_PCMU_VAR;
+					}
+				case A_PCM_U8 -> RtpPacketType.A_LINEAR_PCM_U08_VAR;
+				case A_PCM_S16BE, A_PCM_S16LE -> {
+						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_044100) {
+							yield RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
+						}
+						if (audioChannelCount == 2 && audioSamplerate == SampleRateEnum.SR_044100) {
+							yield RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
+						}
+						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
+					}
+				default -> throw new IllegalArgumentException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
+			};
 	}
 
 }

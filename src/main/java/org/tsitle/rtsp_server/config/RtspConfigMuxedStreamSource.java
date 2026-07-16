@@ -34,6 +34,11 @@ public final class RtspConfigMuxedStreamSource {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
+	@GsonAnnoExclude
+	private final FfmpegStreamInfoVideo ffStreamInfoVideo = new FfmpegStreamInfoVideo();
+	@GsonAnnoExclude
+	private final FfmpegStreamInfoAudio ffStreamInfoAudio = new FfmpegStreamInfoAudio();
+
 	public RtspConfigMuxedStreamSource() {
 		this.id = -1;
 		this.enabled = true;
@@ -73,6 +78,14 @@ public final class RtspConfigMuxedStreamSource {
 			throw new IllegalStateException("filePath is blank");
 		}
 		return URI.create("file:" + filePath);
+	}
+
+	public @NonNull FfmpegStreamInfoVideo getFfStreamInfoVideoPtr() {
+		return ffStreamInfoVideo;
+	}
+
+	public @NonNull FfmpegStreamInfoAudio getFfStreamInfoAudioPtr() {
+		return ffStreamInfoAudio;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -131,7 +144,7 @@ public final class RtspConfigMuxedStreamSource {
 		}
 
 		//
-		readSubStreamHeaders(tmpExtSsId);
+		readSubStreamInfos(tmpExtSsId);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -145,11 +158,7 @@ public final class RtspConfigMuxedStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readSubStreamHeaders(@NonNull String extMsId)
-			throws ConfigInvalidException {
-		FfmpegStreamInfoVideo streamInfoVideo = new FfmpegStreamInfoVideo();
-		FfmpegStreamInfoAudio streamInfoAudio = new FfmpegStreamInfoAudio();
-
+	private void readSubStreamInfos(@NonNull String extMsId) throws ConfigInvalidException {
 		try {
 			FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					null,
@@ -157,30 +166,30 @@ public final class RtspConfigMuxedStreamSource {
 					1L,
 					null
 				);
-			ffmpegDemuxer.readStreamInfos(streamInfoVideo, streamInfoAudio);
+			ffmpegDemuxer.readStreamInfos(ffStreamInfoVideo, ffStreamInfoAudio);
 		} catch (FfmpegGenericException e) {
-			throw new ConfigInvalidException("Failed to read sub-stream headers " +
+			throw new ConfigInvalidException("Failed to read sub-stream infos " +
 					"for Muxed-Stream Source ID '" + extMsId + "': " + e.getMessage());
 		}
 
-		if (streamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && streamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
 			throw new ConfigInvalidException("No A/V sub-streams found " +
 					"for Muxed-Stream Source ID '" + extMsId + "'");
 		}
 
-		if (streamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+		if (ffStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
 			Set<FfmpegCodec> allowedCodecs = new HashSet<>() {{
 					add(FfmpegCodec.V_H264);
 					add(FfmpegCodec.V_H265);
 					add(FfmpegCodec.V_MJPEG);
 				}};
-			if (! allowedCodecs.contains(streamInfoVideo.ffmpegCodec)) {
-				throw new ConfigInvalidException("Video sub-stream codec " + streamInfoVideo.ffmpegCodec + " is not supported " +
+			if (! allowedCodecs.contains(ffStreamInfoVideo.ffmpegCodec)) {
+				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
 		}
-		if (streamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (streamInfoAudio.ffmpegCodec.isPcmAudio() && streamInfoAudio.channelCount > 2) {
+		if (ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+			if (ffStreamInfoAudio.ffmpegCodec.isPcmAudio() && ffStreamInfoAudio.channelCount > 2) {
 				throw new ConfigInvalidException("Audio sub-stream is PCM with more than 2 channels " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
@@ -193,8 +202,8 @@ public final class RtspConfigMuxedStreamSource {
 					add(FfmpegCodec.A_PCM_S16LE);
 					add(FfmpegCodec.A_PCM_U8);
 				}};
-			if (! allowedCodecs.contains(streamInfoAudio.ffmpegCodec)) {
-				throw new ConfigInvalidException("Audio sub-stream codec " + streamInfoAudio.ffmpegCodec + " is not supported " +
+			if (! allowedCodecs.contains(ffStreamInfoAudio.ffmpegCodec)) {
+				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
 		}

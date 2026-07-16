@@ -104,6 +104,7 @@ public class FullBidirRequRespSvcTest {
 						RtpPacketType.V_H264,
 						true,
 						false,
+						false,
 						URI.create("file:///dummy-file-video"),
 						(byte)-1,
 						SampleRateEnum.UNKNOWN,
@@ -117,6 +118,7 @@ public class FullBidirRequRespSvcTest {
 				return new ElementaryStreamSourceInfo(
 						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
 						true,
+						false,
 						false,
 						URI.create("file:///dummy-file-audio"),
 						(byte)2,

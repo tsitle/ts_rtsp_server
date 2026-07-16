@@ -113,8 +113,9 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 		try {
 			return new ElementaryStreamSourceInfo(
 					tmpCfgSs.getCodec(),
-					tmpCfgSs.getIsSourceFromFile(),
-					tmpCfgSs.getIsSourceFromMq(),
+					tmpCfgSs.getSourceType() == RtspConfigElementaryStreamSource.SourceType.ST_ES_FILE,
+					tmpCfgSs.getSourceType() == RtspConfigElementaryStreamSource.SourceType.ST_ES_MQ,
+					tmpCfgSs.getSourceType() == RtspConfigElementaryStreamSource.SourceType.ST_DEMUX_MS,
 					tmpCfgSs.getInputUri(),
 					tmpCfgSs.getAudioChannelCount(),
 					tmpCfgSs.getAudioSamplerate(),

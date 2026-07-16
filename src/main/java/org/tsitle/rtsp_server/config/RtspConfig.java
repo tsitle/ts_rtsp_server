@@ -3,6 +3,8 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
+import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -552,7 +554,7 @@ public final class RtspConfig {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Post-process the configuration by setting record IDs
+	 * Post-process the configuration.
 	 */
 	public void postProcess() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".postProcess()";
@@ -654,6 +656,9 @@ public final class RtspConfig {
 		validateSectionEsSources();
 		validateSectionMsSources();
 		validateSectionInputSources();
+
+		//
+		createEsForMsSources();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -691,6 +696,49 @@ public final class RtspConfig {
 			throw new ConfigInvalidException("Empty value for '" + desc + "'");
 		}
 		getAbsoluteFilePath("Invalid file path for '" + desc + "'", filename).orElseThrow();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void checkPostProcessed() {
+		if (! internalHasBeenPostProcessed) {
+			throw new IllegalStateException("Configuration has not been post-processed yet");
+		}
+	}
+
+	private void createInternalEsSourcesMap() {
+		internalEsSources = new HashMap<>();
+		if (elementaryStreamSources == null) {
+			return;
+		}
+
+		int idCounter = 10;
+		for (Map.Entry<String, RtspConfigElementaryStreamSource> entry : elementaryStreamSources.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			internalEsSources.put(idCounter, entry.getValue());
+			internalMapEsSourceIdIntToExt.put(idCounter, entry.getKey());
+			internalMapEsSourceIdExtToInt.put(entry.getKey(), idCounter++);
+		}
+	}
+
+	private void createInternalMsSourcesMap() {
+		internalMsSources = new HashMap<>();
+		if (muxedStreamSources == null) {
+			return;
+		}
+
+		final int maxId = internalMapEsSourceIdIntToExt.keySet().stream().max(Integer::compareTo).orElse(0);
+		int idCounter = Math.max(500, maxId + 1);
+		for (Map.Entry<String, RtspConfigMuxedStreamSource> entry : muxedStreamSources.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			internalMsSources.put(idCounter, entry.getValue());
+			internalMapMsSourceIdIntToExt.put(idCounter, entry.getKey());
+			internalMapMsSourceIdExtToInt.put(entry.getKey(), idCounter++);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -804,13 +852,14 @@ public final class RtspConfig {
 			RtspConfigElementaryStreamSource tmpSsObj = getElementaryStreamSourceObj(tmpSsId).orElseThrow();
 			tmpSsObj.validate(internalMapEsSourceIdIntToExt);
 			//
-			if (tmpSsObj.getIsSourceFromMq() && tmpSsObj.getEnabled()) {
-				Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());
-				if (tmpCert.isEmpty()) {
-					String tmpExtSsId = internalMapEsSourceIdIntToExt.get(tmpSsId);
-					System.err.println(FNC_NAME + ": Warning: Elementary-Stream Source '" + tmpExtSsId +
-							"' has no SSL certificate");
-				}
+			if (tmpSsObj.getSourceType() != RtspConfigElementaryStreamSource.SourceType.ST_ES_MQ || ! tmpSsObj.getEnabled()) {
+				continue;
+			}
+			Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());
+			if (tmpCert.isEmpty()) {
+				String tmpExtSsId = internalMapEsSourceIdIntToExt.get(tmpSsId);
+				System.err.println(FNC_NAME + ": Warning: Elementary-Stream Source '" + tmpExtSsId +
+						"' has no SSL certificate");
 			}
 		}
 	}
@@ -848,7 +897,7 @@ public final class RtspConfig {
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	// -------------------------------------------------
 
 	private void validateUserOrGroupName(@NonNull String username, boolean isUser) throws ConfigInvalidException {
 		//noinspection ConstantValue
@@ -887,44 +936,57 @@ public final class RtspConfig {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void checkPostProcessed() {
-		if (! internalHasBeenPostProcessed) {
-			throw new IllegalStateException("Configuration has not been post-processed yet");
+	private void createEsForMsSources() {
+		final int maxId = internalMapEsSourceIdIntToExt.keySet().stream().max(Integer::compareTo).orElse(0);
+		int idCounter = Math.max(1000, maxId + 1);
+
+		for (String tmpIsId : getInputSourceIds()) {
+			RtspConfigInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
+			Optional<Integer> tmpOptMsIdAsInt = tmpIsObj.getMuxedStreamSourceId();
+			if (tmpOptMsIdAsInt.isEmpty()) {
+				continue;
+			}
+			int tmpMsIdAsInt = tmpOptMsIdAsInt.orElseThrow();
+			if (! internalMsSources.containsKey(tmpMsIdAsInt)) {
+				throw new IllegalStateException("this should not happen");
+			}
+			RtspConfigMuxedStreamSource tmpMsSrcObj = getMuxedStreamSourceObj(tmpMsIdAsInt).orElseThrow();
+
+			FfmpegStreamInfoVideo tmpFfSiVid = tmpMsSrcObj.getFfStreamInfoVideoPtr();
+			if (tmpFfSiVid.ffmpegCodec.isVideo()) {
+				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamVideo(
+						idCounter,
+						tmpMsIdAsInt,
+						tmpFfSiVid
+					);
+				addEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
+				++idCounter;
+			}
+
+			FfmpegStreamInfoAudio tmpFfSiAud = tmpMsSrcObj.getFfStreamInfoAudioPtr();
+			if (tmpFfSiAud.ffmpegCodec.isAudio()) {
+				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamAudio(
+						idCounter,
+						tmpMsIdAsInt,
+						tmpFfSiAud
+					);
+				addEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
+				++idCounter;
+			}
 		}
 	}
 
-	private void createInternalEsSourcesMap() {
-		internalEsSources = new HashMap<>();
-		if (elementaryStreamSources == null) {
-			return;
-		}
+	private void addEsToIsSources(
+				@NonNull RtspConfigInputSource isSrcObj,
+				int msSrcIdAsInt,
+				@NonNull RtspConfigElementaryStreamSource esSrcObj
+			) {
+		internalEsSources.put(esSrcObj.getIdAsInt(), esSrcObj);
+		String externalEsId = String.format("demuxed_from_#%d#-virtual_es_#%d#", msSrcIdAsInt, esSrcObj.getIdAsInt());
+		internalMapEsSourceIdIntToExt.put(esSrcObj.getIdAsInt(), externalEsId);
+		internalMapEsSourceIdExtToInt.put(externalEsId, esSrcObj.getIdAsInt());
 
-		int idCounter = 10;
-		for (Map.Entry<String, RtspConfigElementaryStreamSource> entry : elementaryStreamSources.entrySet()) {
-			if (entry.getKey() == null || entry.getValue() == null) {
-				continue;
-			}
-			internalEsSources.put(idCounter, entry.getValue());
-			internalMapEsSourceIdIntToExt.put(idCounter, entry.getKey());
-			internalMapEsSourceIdExtToInt.put(entry.getKey(), idCounter++);
-		}
-	}
-
-	private void createInternalMsSourcesMap() {
-		internalMsSources = new HashMap<>();
-		if (muxedStreamSources == null) {
-			return;
-		}
-
-		int idCounter = 100;
-		for (Map.Entry<String, RtspConfigMuxedStreamSource> entry : muxedStreamSources.entrySet()) {
-			if (entry.getKey() == null || entry.getValue() == null) {
-				continue;
-			}
-			internalMsSources.put(idCounter, entry.getValue());
-			internalMapMsSourceIdIntToExt.put(idCounter, entry.getKey());
-			internalMapMsSourceIdExtToInt.put(entry.getKey(), idCounter++);
-		}
+		isSrcObj.addVirtualEsSource(externalEsId, esSrcObj);
 	}
 
 }
