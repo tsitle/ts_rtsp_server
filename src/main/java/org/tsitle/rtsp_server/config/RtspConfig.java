@@ -658,7 +658,7 @@ public final class RtspConfig {
 		validateSectionInputSources();
 
 		//
-		createEsForMsSources();
+		createVirtualEsForMsSources();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -936,7 +936,7 @@ public final class RtspConfig {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void createEsForMsSources() {
+	private void createVirtualEsForMsSources() {
 		final int maxId = internalMapEsSourceIdIntToExt.keySet().stream().max(Integer::compareTo).orElse(0);
 		int idCounter = Math.max(1000, maxId + 1);
 
@@ -959,7 +959,7 @@ public final class RtspConfig {
 						tmpMsIdAsInt,
 						tmpFfSiVid
 					);
-				addEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
+				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
 				++idCounter;
 			}
 
@@ -970,13 +970,13 @@ public final class RtspConfig {
 						tmpMsIdAsInt,
 						tmpFfSiAud
 					);
-				addEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
+				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
 				++idCounter;
 			}
 		}
 	}
 
-	private void addEsToIsSources(
+	private void addVirtualEsToIsSources(
 				@NonNull RtspConfigInputSource isSrcObj,
 				int msSrcIdAsInt,
 				@NonNull RtspConfigElementaryStreamSource esSrcObj
