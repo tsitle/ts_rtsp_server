@@ -68,9 +68,15 @@ dependencies {
 	testImplementation(platform("org.junit:junit-bom:5.10.0"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
 	implementation("org.jspecify:jspecify:1.0.0")
+
 	implementation("com.google.code.gson:gson:2.13.2")  // for JSON deserialization
+
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
+
+	implementation("org.bytedeco:ffmpeg-platform:7.1-1.5.11")
+	//implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
 }
 
 tasks.test {
@@ -88,6 +94,7 @@ application {
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-XX:+UseZGC"
 	//applicationDefaultJvmArgs += "-XX:+ZGenerational"  // this flag was removed in JDK 24
+	applicationDefaultJvmArgs += "--enable-native-access=ALL-UNNAMED"  // for FFmpeg
 }
 
 tasks.jar {
