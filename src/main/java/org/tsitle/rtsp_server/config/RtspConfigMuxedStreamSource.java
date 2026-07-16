@@ -61,7 +61,6 @@ public final class RtspConfigMuxedStreamSource {
 		resObj.writeProtect();
 		return resObj;
 	}
-	public void setIdAsInt(int id) { this.id = id; }
 
 	public boolean getEnabled() {
 		checkPostProcessed();
@@ -80,17 +79,12 @@ public final class RtspConfigMuxedStreamSource {
 		return URI.create("file:" + filePath);
 	}
 
-	public @NonNull FfmpegStreamInfoVideo getFfStreamInfoVideoPtr() {
-		return ffStreamInfoVideo;
-	}
-
-	public @NonNull FfmpegStreamInfoAudio getFfStreamInfoAudioPtr() {
-		return ffStreamInfoAudio;
-	}
-
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
+	void setIdAsInt(int id) { this.id = id; }
+
+	static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
 		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
 	}
 
@@ -98,7 +92,7 @@ public final class RtspConfigMuxedStreamSource {
 	 * Post-process the Muxed-Stream Source.
 	 * @param dataDir Directory containing the media files
 	 */
-	public void postProcess(@NonNull Path dataDir) {
+	void postProcess(@NonNull Path dataDir) {
 		internalHasBeenPostProcessed = true;
 		//
 		//noinspection ConstantValue
@@ -119,7 +113,7 @@ public final class RtspConfigMuxedStreamSource {
 	 * @param mapStreamSourceIdIntToExt Map of Muxed-Stream Source IDs (internal) to their external representation
 	 * @throws ConfigInvalidException If the Muxed-Stream Source is invalid
 	 */
-	public void validate(
+	void validate(
 				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt
 			) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
@@ -145,6 +139,14 @@ public final class RtspConfigMuxedStreamSource {
 
 		//
 		readSubStreamInfos(tmpExtSsId);
+	}
+
+	@NonNull FfmpegStreamInfoVideo getFfStreamInfoVideoPtr() {
+		return ffStreamInfoVideo;
+	}
+
+	@NonNull FfmpegStreamInfoAudio getFfStreamInfoAudioPtr() {
+		return ffStreamInfoAudio;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

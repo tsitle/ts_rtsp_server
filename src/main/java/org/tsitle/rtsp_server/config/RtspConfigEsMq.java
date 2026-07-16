@@ -83,10 +83,30 @@ public final class RtspConfigEsMq implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	public @NonNull RtspConfigEsMq clone() {
+		try {
+			RtspConfigEsMq clone = (RtspConfigEsMq)super.clone();
+			//
+			//noinspection StringOperationCanBeSimplified
+			clone.userAndPassword = new String(userAndPassword);
+			//noinspection StringOperationCanBeSimplified
+			clone.hostAndPort = new String(hostAndPort);
+			//noinspection StringOperationCanBeSimplified
+			clone.resourceGroupAndChannel = new String(resourceGroupAndChannel);
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Post-process the Message Queue settings.
 	 */
-	public void postProcess() {
+	void postProcess() {
 		internalHasBeenPostProcessed = true;
 		//
 		//noinspection ConstantValue
@@ -107,7 +127,7 @@ public final class RtspConfigEsMq implements Cloneable {
 	 * Validate the Message Queue settings.
 	 * @throws ConfigInvalidException If the settings are invalid
 	 */
-	public void validate(@NonNull String extEsSrcId) throws ConfigInvalidException {
+	void validate(@NonNull String extEsSrcId) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
 
 		checkPostProcessed();
@@ -150,25 +170,6 @@ public final class RtspConfigEsMq implements Cloneable {
 		}
 		if (getRscChannel().isBlank()) {
 			throw new ConfigInvalidException(errMsgPrefix + "resource channel must not be empty");
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public @NonNull RtspConfigEsMq clone() {
-		try {
-			RtspConfigEsMq clone = (RtspConfigEsMq)super.clone();
-			//
-			//noinspection StringOperationCanBeSimplified
-			clone.userAndPassword = new String(userAndPassword);
-			//noinspection StringOperationCanBeSimplified
-			clone.hostAndPort = new String(hostAndPort);
-			//noinspection StringOperationCanBeSimplified
-			clone.resourceGroupAndChannel = new String(resourceGroupAndChannel);
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
 		}
 	}
 

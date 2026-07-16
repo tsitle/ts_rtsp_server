@@ -75,10 +75,6 @@ public final class RtspConfigInputSource implements Cloneable {
 		resObj.writeProtect();
 		return resObj;
 	}
-	public void setId(@NonNull String id) {
-		//noinspection ConstantValue
-		this.id = (id == null ? "" : id.strip());
-	}
 
 	public boolean getEnabled() {
 		checkPostProcessed();
@@ -116,13 +112,34 @@ public final class RtspConfigInputSource implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	public RtspConfigInputSource clone() {
+		try {
+			RtspConfigInputSource clone = (RtspConfigInputSource)super.clone();
+			clone.allowedUserAccountGroups = new HashSet<>(allowedUserAccountGroups);
+			clone.elementaryStreamSourceIds = new HashSet<>(elementaryStreamSourceIds);
+			clone.internalEsSourceIds = new HashSet<>(internalEsSourceIds);
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	void setId(@NonNull String id) {
+		//noinspection ConstantValue
+		this.id = (id == null ? "" : id.strip());
+	}
+
 	/**
 	 * Post-process the Input Source.
 	 * @param mapEsSourceIdExtToInt Map of Elementary-Stream Source IDs (external) to their internal representation
 	 * @param mapMsSourceIdExtToInt Map of Muxed-Stream Source IDs (external) to their internal representation
 	 * @throws ConfigInvalidException If the Input Source is invalid
 	 */
-	public void postProcess(
+	void postProcess(
 				@NonNull Map<@NonNull String, @NonNull Integer> mapEsSourceIdExtToInt,
 				@NonNull Map<@NonNull String, @NonNull Integer> mapMsSourceIdExtToInt
 			) throws ConfigInvalidException {
@@ -167,7 +184,7 @@ public final class RtspConfigInputSource implements Cloneable {
 	 * @param userAccountGroups Existing User Account Groups
 	 * @throws ConfigInvalidException If the Input Source is invalid
 	 */
-	public void validate(
+	void validate(
 				@NonNull Map<@NonNull Integer, @NonNull RtspConfigElementaryStreamSource> elementaryStreamSources,
 				@NonNull Map<@NonNull Integer, @NonNull String> mapEsSourceIdIntToExt,
 				@NonNull Map<@NonNull Integer, @NonNull RtspConfigMuxedStreamSource> muxedStreamSources,
@@ -208,24 +225,6 @@ public final class RtspConfigInputSource implements Cloneable {
 			}
 		}
 	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public RtspConfigInputSource clone() {
-		try {
-			RtspConfigInputSource clone = (RtspConfigInputSource)super.clone();
-			clone.allowedUserAccountGroups = new HashSet<>(allowedUserAccountGroups);
-			clone.elementaryStreamSourceIds = new HashSet<>(elementaryStreamSourceIds);
-			clone.internalEsSourceIds = new HashSet<>(internalEsSourceIds);
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new AssertionError();
-		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
 
 	void addVirtualEsSource(
 				@NonNull String virtualExternalEsId,

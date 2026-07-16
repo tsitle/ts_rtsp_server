@@ -154,7 +154,7 @@ public final class RtspConfigElementaryStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamVideo(
+	static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamVideo(
 				int esSourceId,
 				int msSourceId,
 				@NonNull FfmpegStreamInfoVideo streamInfo
@@ -178,7 +178,7 @@ public final class RtspConfigElementaryStreamSource {
 		return resObj;
 	}
 
-	public static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamAudio(
+	static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamAudio(
 				int esSourceId,
 				int msSourceId,
 				@NonNull FfmpegStreamInfoAudio streamInfo
@@ -228,7 +228,6 @@ public final class RtspConfigElementaryStreamSource {
 		resObj.writeProtect();
 		return resObj;
 	}
-	public void setIdAsInt(int id) { this.id = id; }
 
 	public boolean getEnabled() {
 		checkPostProcessed();
@@ -384,8 +383,11 @@ public final class RtspConfigElementaryStreamSource {
 	public synchronized void setMqDynamicAudioChannelCount(byte value) { this.mqDynamicAudioChannelCount = value; }
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
+	void setIdAsInt(int id) { this.id = id; }
+
+	static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
 		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
 	}
 
@@ -393,7 +395,7 @@ public final class RtspConfigElementaryStreamSource {
 	 * Post-process the Elementary-Stream Source.
 	 * @param dataDir Directory containing the media files
 	 */
-	public void postProcess(@NonNull Path dataDir) {
+	void postProcess(@NonNull Path dataDir) {
 		internalHasBeenPostProcessed = true;
 		//
 		//noinspection ConstantValue
@@ -449,7 +451,7 @@ public final class RtspConfigElementaryStreamSource {
 	 * @param mapStreamSourceIdIntToExt Map of Elementary-Stream Source IDs (internal) to their external representation
 	 * @throws ConfigInvalidException If the Elementary-Stream Source is invalid
 	 */
-	public void validate(
+	void validate(
 				@NonNull Map<@NonNull Integer, @NonNull String> mapStreamSourceIdIntToExt
 			) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
