@@ -454,7 +454,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readAacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extSsId)
+	private void readAacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
@@ -466,19 +466,19 @@ public final class RtspConfigElementaryStreamSource {
 
 			if (aacInfo.audioObjectType != AudioAacInfo.AudioObjectType.AAC_LC) {
 				throw new ConfigInvalidException("Unsupported AAC AudioObjectType " + aacInfo.audioObjectType +
-						" for Elementary-Stream Source ID '" + extSsId + "'");
+						" for Elementary-Stream Source ID '" + extEsId + "'");
 			}
 			if (aacInfo.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
-				throw new ConfigInvalidException("Could not parse AAC Samplerate for Elementary-Stream Source ID '" + extSsId + "'");
+				throw new ConfigInvalidException("Could not parse AAC Samplerate for Elementary-Stream Source ID '" + extEsId + "'");
 			}
 			if (getAudioSamplerate() != SampleRateEnum.UNKNOWN &&
 					SampleRateEnum.of(aacInfo.samplerate.getHz()) != getAudioSamplerate()) {
-				throw new ConfigInvalidException("AAC Samplerate mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AAC Samplerate mismatch for Elementary-Stream Source ID '" + extEsId + "' (" +
 						"config=" + getAudioSamplerate().getSrHz() + ", fileHeader=" + aacInfo.samplerate.getHz() + ")");
 			}
 			internalAudioSampleRate = SampleRateEnum.of(aacInfo.samplerate.getHz());
 			if (getAudioChannelCount() > 0 && aacInfo.channelConfiguration != getAudioChannelCount()) {
-				throw new ConfigInvalidException("AAC ChannelCount mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AAC ChannelCount mismatch for Elementary-Stream Source ID '" + extEsId + "' (" +
 						"config=" + getAudioChannelCount() + ", fileHeader=" + aacInfo.channelConfiguration + ")");
 			}
 			internalAudioChannelCount = (byte)aacInfo.channelConfiguration;
@@ -487,15 +487,15 @@ public final class RtspConfigElementaryStreamSource {
 
 			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
-			throw new ConfigInvalidException("Could not parse AAC header for Elementary-Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not parse AAC header for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		}
 	}
 
-	private void readAc3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extSsId)
+	private void readAc3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
@@ -506,29 +506,29 @@ public final class RtspConfigElementaryStreamSource {
 			AudioAc3Info ac3Info = AudioAc3Parser.parseAc3Header(tmpBuf);
 
 			if (ac3Info.bitrate == AudioAc3Info.Bitrate.UNKNOWN) {
-				throw new ConfigInvalidException("Could not parse AC-3 Bitrate for Elementary-Stream Source ID '" + extSsId + "'");
+				throw new ConfigInvalidException("Could not parse AC-3 Bitrate for Elementary-Stream Source ID '" + extEsId + "'");
 			}
 			if (ac3Info.samplerate == AudioAc3Info.Samplerate.UNKNOWN) {
-				throw new ConfigInvalidException("Could not parse AC-3 Samplerate for Elementary-Stream Source ID '" + extSsId + "'");
+				throw new ConfigInvalidException("Could not parse AC-3 Samplerate for Elementary-Stream Source ID '" + extEsId + "'");
 			}
 			if (getAudioSamplerate() != SampleRateEnum.UNKNOWN &&
 					SampleRateEnum.of(ac3Info.samplerate.getHz()) != getAudioSamplerate()) {
-				throw new ConfigInvalidException("AC-3 Samplerate mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AC-3 Samplerate mismatch for Elementary-Stream Source ID '" + extEsId + "' (" +
 						"config=" + getAudioSamplerate().getSrHz() + ", fileHeader=" + ac3Info.samplerate.getHz() + ")");
 			}
 			internalAudioSampleRate = SampleRateEnum.of(ac3Info.samplerate.getHz());
 			if (getAudioChannelCount() > 0 && ac3Info.audioCodingMode.getChannelCount() != getAudioChannelCount()) {
-				throw new ConfigInvalidException("AC-3 ChannelCount mismatch for Elementary-Stream Source ID '" + extSsId + "' (" +
+				throw new ConfigInvalidException("AC-3 ChannelCount mismatch for Elementary-Stream Source ID '" + extEsId + "' (" +
 						"config=" + getAudioChannelCount() + ", fileHeader=" + ac3Info.audioCodingMode.getChannelCount() + ")");
 			}
 			internalAudioChannelCount = (byte)ac3Info.audioCodingMode.getChannelCount();
 
 			internalIsAudioBigEndian = false;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from AC-3 file for Elementary-Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not read from AC-3 file for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
-			throw new ConfigInvalidException("Could not parse AC-3 header for Elementary-Stream Source ID '" + extSsId + "': " +
+			throw new ConfigInvalidException("Could not parse AC-3 header for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		}
 	}

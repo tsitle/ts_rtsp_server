@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_ffmpeg.FfmpegLogLevelHelper;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
@@ -99,6 +100,9 @@ public final class RtspServerApp {
 					System.out.println("Interrupted by Ctrl+C");
 					System.exit(1);
 				});*/
+
+		// set the log level for FFmpeg
+		FfmpegLogLevelHelper.muteLogMsgs();
 
 		// read the configuration
 		try {

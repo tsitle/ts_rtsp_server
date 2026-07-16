@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
@@ -163,23 +164,34 @@ public final class RtspConfig {
 	private @NonNull Map<@NonNull String, @NonNull String> remoteMqServerSslCertificates;
 	/** Map of Elementary-Stream Sources (the map keys are unique Elementary-Stream Source identifiers) */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull RtspConfigElementaryStreamSource> elementaryStreamSources;
+	private @Nullable Map<@NonNull String, @NonNull RtspConfigElementaryStreamSource> elementaryStreamSources;
+	/** Map of Muxed-Stream Sources (the map keys are unique Muxed-Stream Source identifiers) */
+	@Expose
+	private @Nullable Map<@NonNull String, @NonNull RtspConfigMuxedStreamSource> muxedStreamSources;
 	/** Map of Input Sources (the map keys are unique Input Source identifiers) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull RtspConfigInputSource> inputSources;
 
 	@GsonAnnoExclude
-	private boolean internalHasBeenPostProcessed = false;
+	private boolean internalHasBeenPostProcessed;
 	/** Internal use: Map of Elementary-Stream Sources (the map keys are unique Elementary-Stream Source identifiers) */
 	@GsonAnnoExclude
 	private @NonNull Map<@NonNull Integer, @NonNull RtspConfigElementaryStreamSource> internalEsSources;
 	/** Internal use: Map internal to external Elementary-Stream Source IDs */
 	@GsonAnnoExclude
-	private @NonNull Map<@NonNull Integer, @NonNull String> internalMapEsSourceIdIntToExt;
+	private final @NonNull Map<@NonNull Integer, @NonNull String> internalMapEsSourceIdIntToExt;
 	/** Internal use: Map external to internal Elementary-Stream Source IDs */
-	@SuppressWarnings("FieldMayBeFinal")
 	@GsonAnnoExclude
-	private @NonNull Map<@NonNull String, @NonNull Integer> internalMapEsSourceIdExtToInt;
+	private final @NonNull Map<@NonNull String, @NonNull Integer> internalMapEsSourceIdExtToInt;
+	/** Internal use: Map of Muxed-Stream Sources (the map keys are unique Muxed-Stream Source identifiers) */
+	@GsonAnnoExclude
+	private @NonNull Map<@NonNull Integer, @NonNull RtspConfigMuxedStreamSource> internalMsSources;
+	/** Internal use: Map internal to external Muxed-Stream Source IDs */
+	@GsonAnnoExclude
+	private final @NonNull Map<@NonNull Integer, @NonNull String> internalMapMsSourceIdIntToExt;
+	/** Internal use: Map external to internal Muxed-Stream Source IDs */
+	@GsonAnnoExclude
+	private final @NonNull Map<@NonNull String, @NonNull Integer> internalMapMsSourceIdExtToInt;
 
 	/**
 	 * Constructor.
@@ -192,12 +204,18 @@ public final class RtspConfig {
 		this.userAccountGroups = new HashMap<>();
 		this.remoteMqServerSslCertificates = new HashMap<>();
 		this.elementaryStreamSources = new HashMap<>();
+		this.muxedStreamSources = new HashMap<>();
 		this.inputSources = new HashMap<>();
 
+		this.internalHasBeenPostProcessed = false;
 		//noinspection DataFlowIssue
 		this.internalEsSources = null;
 		this.internalMapEsSourceIdIntToExt = new HashMap<>();
 		this.internalMapEsSourceIdExtToInt = new HashMap<>();
+		//noinspection DataFlowIssue
+		this.internalMsSources = null;
+		this.internalMapMsSourceIdIntToExt = new HashMap<>();
+		this.internalMapMsSourceIdExtToInt = new HashMap<>();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -336,13 +354,13 @@ public final class RtspConfig {
 
 	/**
 	 * Get Elementary-Stream Source object by Elementary-Stream Source ID.
-	 * @param streamSourceId Elementary-Stream Source ID
+	 * @param esSourceIdAsInt Elementary-Stream Source ID
 	 * @return Elementary-Stream Source object
 	 */
-	public Optional<RtspConfigElementaryStreamSource> getElementaryStreamSourceObj(int streamSourceId) {
+	public Optional<RtspConfigElementaryStreamSource> getElementaryStreamSourceObj(int esSourceIdAsInt) {
 		checkPostProcessed();
 		//noinspection OptionalOfNullableMisuse,DataFlowIssue
-		return Optional.ofNullable(internalEsSources.getOrDefault(streamSourceId, null));
+		return Optional.ofNullable(internalEsSources.getOrDefault(esSourceIdAsInt, null));
 	}
 
 	/**
@@ -356,6 +374,47 @@ public final class RtspConfig {
 		for (RtspConfigElementaryStreamSource tmpSs : internalEsSources.values()) {
 			if (tmpSs.getIdAsProtoId().equals(idEsSource)) {
 				return Optional.of(tmpSs);
+			}
+		}
+		return Optional.empty();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Get a list of all Muxed-Stream Source IDs.
+	 * @return Muxed-Stream Source IDs
+	 */
+	public @NonNull List<@NonNull Integer> getMuxedStreamSourceIds() {
+		checkPostProcessed();
+		return List.copyOf(
+				internalMsSources.keySet().stream().sorted().toList()
+			);
+	}
+
+	/**
+	 * Get Muxed-Stream Source object by Muxed-Stream Source ID.
+	 * @param msSourceIdAsInt Muxed-Stream Source ID
+	 * @return Muxed-Stream Source object
+	 */
+	public Optional<RtspConfigMuxedStreamSource> getMuxedStreamSourceObj(int msSourceIdAsInt) {
+		checkPostProcessed();
+		//noinspection OptionalOfNullableMisuse,DataFlowIssue
+		return Optional.ofNullable(internalMsSources.getOrDefault(msSourceIdAsInt, null));
+	}
+
+	/**
+	 * Get Muxed-Stream Source object by Muxed-Stream Source ID.
+	 * @param idMsSource Muxed-Stream Source ID
+	 * @return Muxed-Stream Source object
+	 */
+	@SuppressWarnings("unused")
+	public Optional<RtspConfigMuxedStreamSource> getMuxedStreamSourceObj(@NonNull RtspProtoIdMsSource idMsSource) {
+		checkPostProcessed();
+		//
+		for (RtspConfigMuxedStreamSource tmpMs : internalMsSources.values()) {
+			if (tmpMs.getIdAsProtoId().equals(idMsSource)) {
+				return Optional.of(tmpMs);
 			}
 		}
 		return Optional.empty();
@@ -513,8 +572,6 @@ public final class RtspConfig {
 			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'remoteMqServerSslCertificates'");
 		}
 		//noinspection ConstantValue
-		if (elementaryStreamSources == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'streamSources'"); }
-		//noinspection ConstantValue
 		if (inputSources == null) { throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'inputSources'"); }
 
 		//
@@ -549,23 +606,34 @@ public final class RtspConfig {
 
 		//noinspection ConstantValue
 		if (internalEsSources == null) {
-			createInternalStreamSourcesMap();
+			createInternalEsSourcesMap();
+		}
+		//noinspection ConstantValue
+		if (internalMsSources == null) {
+			createInternalMsSourcesMap();
 		}
 		//
 		internalHasBeenPostProcessed = true;
 		//
-		List<Integer> tmpSsIdList = getElementaryStreamSourceIds();
-		for (int tmpSsId : tmpSsIdList) {
-			RtspConfigElementaryStreamSource tmpSsObj = getElementaryStreamSourceObj(tmpSsId).orElseThrow();
-			tmpSsObj.setIdAsInt(tmpSsId);
-			tmpSsObj.postProcess(getDataDirAsPath());
+		List<Integer> tmpEsIdList = getElementaryStreamSourceIds();
+		for (int tmpEsId : tmpEsIdList) {
+			RtspConfigElementaryStreamSource tmpEsObj = getElementaryStreamSourceObj(tmpEsId).orElseThrow();
+			tmpEsObj.setIdAsInt(tmpEsId);
+			tmpEsObj.postProcess(getDataDirAsPath());
+		}
+		//
+		List<Integer> tmpMsIdList = getMuxedStreamSourceIds();
+		for (int tmpMsId : tmpMsIdList) {
+			RtspConfigMuxedStreamSource tmpMsObj = getMuxedStreamSourceObj(tmpMsId).orElseThrow();
+			tmpMsObj.setIdAsInt(tmpMsId);
+			tmpMsObj.postProcess(getDataDirAsPath());
 		}
 		//
 		List<String> tmpIsIdList = getInputSourceIds();
 		for (String tmpIsId : tmpIsIdList) {
 			RtspConfigInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
 			tmpIsObj.setId(tmpIsId);
-			tmpIsObj.postProcess(internalMapEsSourceIdExtToInt);
+			tmpIsObj.postProcess(internalMapEsSourceIdExtToInt, internalMapMsSourceIdExtToInt);
 		}
 	}
 
@@ -584,6 +652,7 @@ public final class RtspConfig {
 		validateSectionUag();
 		validateSectionMqSslCerts();
 		validateSectionEsSources();
+		validateSectionMsSources();
 		validateSectionInputSources();
 	}
 
@@ -729,7 +798,7 @@ public final class RtspConfig {
 
 		List<Integer> tmpSsIdList = getElementaryStreamSourceIds();
 		if (tmpSsIdList.isEmpty()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No Elementary-Stream Sources found in configuration");
+			return;
 		}
 		for (int tmpSsId : tmpSsIdList) {
 			RtspConfigElementaryStreamSource tmpSsObj = getElementaryStreamSourceObj(tmpSsId).orElseThrow();
@@ -746,6 +815,17 @@ public final class RtspConfig {
 		}
 	}
 
+	private void validateSectionMsSources() throws ConfigInvalidException {
+		List<Integer> tmpMsIdList = getMuxedStreamSourceIds();
+		if (tmpMsIdList.isEmpty()) {
+			return;
+		}
+		for (int tmpMsId : tmpMsIdList) {
+			RtspConfigMuxedStreamSource tmpMsObj = getMuxedStreamSourceObj(tmpMsId).orElseThrow();
+			tmpMsObj.validate(internalMapMsSourceIdIntToExt);
+		}
+	}
+
 	private void validateSectionInputSources() throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validateSectionInputSources()";
 
@@ -755,13 +835,16 @@ public final class RtspConfig {
 		}
 		for (String tmpIsId : tmpIsIdList) {
 			RtspConfigInputSource tmpIsObj = getInputSourceObj(tmpIsId).orElseThrow();
-			if (tmpIsObj.getEnabled()) {
-				tmpIsObj.validate(
-						internalEsSources,
-						internalMapEsSourceIdIntToExt,
-						userAccountGroups.keySet()
-					);
+			if (! tmpIsObj.getEnabled()) {
+				continue;
 			}
+			tmpIsObj.validate(
+					internalEsSources,
+					internalMapEsSourceIdIntToExt,
+					internalMsSources,
+					internalMapMsSourceIdIntToExt,
+					userAccountGroups.keySet()
+				);
 		}
 	}
 
@@ -810,15 +893,13 @@ public final class RtspConfig {
 		}
 	}
 
-	private void createInternalStreamSourcesMap() {
+	private void createInternalEsSourcesMap() {
 		internalEsSources = new HashMap<>();
-		internalMapEsSourceIdIntToExt = new HashMap<>();
-		//noinspection ConstantValue
 		if (elementaryStreamSources == null) {
 			return;
 		}
 
-		int idCounter = 0;
+		int idCounter = 10;
 		for (Map.Entry<String, RtspConfigElementaryStreamSource> entry : elementaryStreamSources.entrySet()) {
 			if (entry.getKey() == null || entry.getValue() == null) {
 				continue;
@@ -826,6 +907,23 @@ public final class RtspConfig {
 			internalEsSources.put(idCounter, entry.getValue());
 			internalMapEsSourceIdIntToExt.put(idCounter, entry.getKey());
 			internalMapEsSourceIdExtToInt.put(entry.getKey(), idCounter++);
+		}
+	}
+
+	private void createInternalMsSourcesMap() {
+		internalMsSources = new HashMap<>();
+		if (muxedStreamSources == null) {
+			return;
+		}
+
+		int idCounter = 100;
+		for (Map.Entry<String, RtspConfigMuxedStreamSource> entry : muxedStreamSources.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			internalMsSources.put(idCounter, entry.getValue());
+			internalMapMsSourceIdIntToExt.put(idCounter, entry.getKey());
+			internalMapMsSourceIdExtToInt.put(entry.getKey(), idCounter++);
 		}
 	}
 
