@@ -29,7 +29,7 @@ import java.util.List;
  */
 public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements AutoCloseable {
 
-	private final int sourceAudioSampleRate;
+	private final @NonNull SampleRateEnum sourceAudioSampleRate;
 	private final @NonNull FfmpegTcSettingsAudio tcSettingsAud;
 
 	private @Nullable SwrContext swrCtx = null;
@@ -62,7 +62,7 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 				@Nullable FfmpegReceiveTcAvInterface ffmpegReceiveTcAvInterface,
 				@NonNull FfmpegCodec sourceFfmpegCodec,
 				@NonNull RationalNumber sourceAudioTimeBase,
-				int sourceAudioSampleRate,
+				@NonNull SampleRateEnum sourceAudioSampleRate,
 				@NonNull FfmpegTcSettingsAudio tcSettingsAud
 			) {
 		super(
@@ -74,8 +74,11 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 				tcSettingsAud
 			);
 
+		if (tcSettingsAud.ffmpegCodec != FfmpegCodec.UNKNOWN && sourceAudioSampleRate == SampleRateEnum.UNKNOWN) {
+			throw new IllegalArgumentException("sourceAudioSampleRate must be set");
+		}
 		if (tcSettingsAud.ffmpegCodec != FfmpegCodec.UNKNOWN && tcSettingsAud.sampleRate == SampleRateEnum.UNKNOWN) {
-			throw new IllegalArgumentException("Sample rate must be set");
+			throw new IllegalArgumentException("tcSettingsAud.sampleRate must be set");
 		}
 
 		this.sourceAudioSampleRate = sourceAudioSampleRate;
@@ -139,7 +142,7 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 		}
 
 		// Required basics
-		decoderCtx.sample_rate(sourceAudioSampleRate);
+		decoderCtx.sample_rate(sourceAudioSampleRate.getSrHz());
 		// @TODO channel layout + sample format
 
 		// Optional but often helpful if known

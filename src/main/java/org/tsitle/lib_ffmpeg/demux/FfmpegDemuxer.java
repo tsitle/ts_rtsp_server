@@ -16,6 +16,7 @@ import org.tsitle.lib_ffmpeg.*;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegDecoderNotFoundException;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegEncoderNotFoundException;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.jspecify.annotations.NonNull;
@@ -23,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HexFormat;
 
 /**
  * Demuxer for A/V streams.
@@ -262,10 +264,20 @@ public final class FfmpegDemuxer {
 		}
 		AVStream st = inputAvFmtCtx.streams(ioStreamInfoAudio.streamIx);
 		ioStreamInfoAudio.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
-		ioStreamInfoAudio.sampleRate = st.codecpar().sample_rate();
+		ioStreamInfoAudio.sampleRate = SampleRateEnum.of(st.codecpar().sample_rate());
 		ioStreamInfoAudio.channelCount = st.codecpar().ch_layout().nb_channels();
 		ioStreamInfoAudio.bitRate = st.codecpar().bit_rate();
 		ioStreamInfoAudio.bitsPerCodedSample = st.codecpar().bits_per_coded_sample();
+		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AAC &&
+				st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
+			ioStreamInfoAudio.aacSamplesPerFrame = st.codecpar().frame_size();
+			try (BytePointer tmpBp = st.codecpar().extradata()) {
+				int extradataSize = st.codecpar().extradata_size();
+				byte[] ascBytes = new byte[extradataSize];
+				tmpBp.position(0).get(ascBytes, 0, extradataSize);
+				ioStreamInfoAudio.aacAudioSpecificConfigHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
+			}
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

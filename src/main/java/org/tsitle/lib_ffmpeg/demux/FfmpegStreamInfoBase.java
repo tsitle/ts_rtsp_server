@@ -6,16 +6,18 @@ import org.jspecify.annotations.NonNull;
 
 public class FfmpegStreamInfoBase {
 
-	public int streamIx = -1;
-	public @NonNull FfmpegCodec ffmpegCodec = FfmpegCodec.UNKNOWN;
-	public @NonNull RationalNumber timeBasePts = RationalNumber.ofEmpty();
+	public int streamIx;
+	public @NonNull FfmpegCodec ffmpegCodec;
+	public @NonNull RationalNumber timeBasePts;
 	/**
 	 * Audio: works for AC3 and PCM, sometimes AAC, doesn't work for Opus<br />
 	 * Video: works sometimes for H26x
 	 */
-	public long bitRate = -1L;
+	public long bitRate;
 
-	protected FfmpegStreamInfoBase() { }
+	protected FfmpegStreamInfoBase() {
+		baseReset();
+	}
 
 	protected void baseReset() {
 		streamIx = -1;
