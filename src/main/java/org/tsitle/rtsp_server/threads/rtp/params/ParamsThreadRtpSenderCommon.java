@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 
 import java.net.URI;
 import java.util.Objects;
@@ -73,9 +74,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean debugRewindMediaFiles;
 	private boolean isSetDebugRewindMediaFiles;
 
-	/** Is Elementary-Stream Source read from a file? */
-	private boolean isEsSourceFromFile;
-	private boolean isSetIsEsSourceFromFile;
+	/** Elementary-Stream Source Type */
+	private @Nullable RtspConfigEsSourceType esSourceType = null;
+	private boolean isSetEsSourceType;
 
 	/** Video or audio frames per second */
 	private double avFramesPerSecond;
@@ -119,10 +120,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetDebugRewindMediaFiles = true;
 	}
 
-	public boolean getIsEsSourceFromFile() { return isEsSourceFromFile; }
-	public void setIsEsSourceFromFile(boolean value) {
-		this.isEsSourceFromFile = value;
-		this.isSetIsEsSourceFromFile = true;
+	public Optional<RtspConfigEsSourceType> getEsSourceType() { return Optional.ofNullable(esSourceType); }
+	public void setEsSourceType(@NonNull RtspConfigEsSourceType value) {
+		this.esSourceType = value;
+		this.isSetEsSourceType = true;
 	}
 
 	public double getAvFramesPerSecond() { return avFramesPerSecond; }
@@ -212,7 +213,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private void checkAllParamsSet() {
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
 
-		requireIsSet(isSetIsEsSourceFromFile, "isEsSourceFromFile");
+		requireIsSet(isSetEsSourceType, "esSourceType");
 
 		requireIsSet(isSetAvFramesPerSecond, "avFramesPerSecond");
 

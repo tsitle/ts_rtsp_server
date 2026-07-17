@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -55,7 +56,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public B comDebugRewindMediaFiles(boolean v) { this.threadParamsCommon.setDebugRewindMediaFiles(v); return self(); }
 
-	public B comIsStreamSourceFromFile(boolean v) { this.threadParamsCommon.setIsEsSourceFromFile(v); return self(); }
+	public B comEsStreamSourceType(@NonNull RtspConfigEsSourceType v) { this.threadParamsCommon.setEsSourceType(v); return self(); }
 
 	public B comAvFps(double v) { this.threadParamsCommon.setAvFramesPerSecond(v); return self(); }
 

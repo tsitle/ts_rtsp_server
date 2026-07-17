@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
@@ -203,7 +204,7 @@ public final class RtspChildThreadMng {
 				RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo tmpAvSsi =
 						availableStreamsInterface.getElementaryStreamSourceInfo(tmpIdEs);
 				//
-				if (tmpAvSsi.isSourceFromMq() && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
+				if (tmpAvSsi.esSourceType() == RtspConfigEsSourceType.ST_ES_MQ && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
 					logError(FNC_NAME, "ss='" + tmpIdSs.getIdStr().orElse("-unset-") + "': " +
 							"Source is a message queue, but codec is not set");
 					continue;
@@ -368,7 +369,7 @@ public final class RtspChildThreadMng {
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.getSubStreamTpPtr().getIsEncr())
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))
 				.comDebugRewindMediaFiles(rtspConfig.getIsDebugRewindMediaFiles())
-				.comIsStreamSourceFromFile(avSsi.isSourceFromFile())
+				.comEsStreamSourceType(avSsi.esSourceType())
 				.comAvFps(avFpsAsDbl)
 				.comRtpSeqNrT0(streamInfo.getRtpSeqNrT0Ptr())
 				.comRtpTimestampT0(
@@ -508,31 +509,30 @@ public final class RtspChildThreadMng {
 				ctfos.rtpThreadSender = builderH265.build();
 				break;
 			default:
-				if (tmpAvSsi.codec().isPcmAudio()) {
-					// the virtual FPS value only when the source is a file
-					final double tmpVirtualFpsPcm = (1000.0 / (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
-					//
-					BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
-							BuilderThreadRtpSenderPcm.builder(),
-							tmpSiSs,
-							tmpAvSsi,
-							ctfos.idEsSource,
-							tmpVirtualFpsPcm,
-							xsrcBlock,
-							availableStreamsInterface.getElementaryStreamSourceRtpAudioSamplesPerFrame(
-									ctfos.idEsSource,
-									tmpVirtualFpsPcm
-								)
-						);
-					ctfos.rtpThreadSender = builderPcm
-							.audPcmChannelCount(tmpAvSsi.audioChannelCount())
-							.audPcmBitsPerSample(tmpAvSsi.codec().getPcmAudioBitsPerSample().orElseThrow())
-							.audPcmInputBigEndian(tmpAvSsi.isAudioBigEndian())
-							.audPcmCodec(tmpAvSsi.codec())
-							.build();
-				} else {
+				if (! tmpAvSsi.codec().isPcmAudio()) {
 					throw new IllegalStateException(FNC_NAME + ": Unsupported codec: " + tmpAvSsi.codec());
 				}
+				// the virtual FPS value only when the source is a file
+				final double tmpVirtualFpsPcm = (1000.0 / (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
+				//
+				BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
+						BuilderThreadRtpSenderPcm.builder(),
+						tmpSiSs,
+						tmpAvSsi,
+						ctfos.idEsSource,
+						tmpVirtualFpsPcm,
+						xsrcBlock,
+						availableStreamsInterface.getElementaryStreamSourceRtpAudioSamplesPerFrame(
+								ctfos.idEsSource,
+								tmpVirtualFpsPcm
+							)
+					);
+				ctfos.rtpThreadSender = builderPcm
+						.audPcmChannelCount(tmpAvSsi.audioChannelCount())
+						.audPcmBitsPerSample(tmpAvSsi.codec().getPcmAudioBitsPerSample().orElseThrow())
+						.audPcmInputBigEndian(tmpAvSsi.isAudioBigEndian())
+						.audPcmCodec(tmpAvSsi.codec())
+						.build();
 		}
 		ctfos.rtpThreadSender.setName(
 				"RTP_" +

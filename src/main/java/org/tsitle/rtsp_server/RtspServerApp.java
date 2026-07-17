@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.rtsp_server.config.RtspConfigElementaryStreamSource;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.ssl.SslException;
@@ -194,7 +195,7 @@ public final class RtspServerApp {
 			if (optSs.isEmpty()) {
 				continue;
 			}
-			if (optSs.get().getEnabled() && optSs.get().getSourceType() == RtspConfigElementaryStreamSource.SourceType.ST_ES_MQ) {
+			if (optSs.get().getEnabled() && optSs.get().getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 				resL.add(esSourceId);
 			}
 		}

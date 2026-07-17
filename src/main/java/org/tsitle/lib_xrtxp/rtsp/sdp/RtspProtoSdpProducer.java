@@ -545,7 +545,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			// b: Bandwidth Information
 			outputList.add(String.format("b=AS:%d", tmpBw));
 		}
-		if (ssInfo.codec().isAudio() && ssInfo.isSourceFromFile()) {
+		if (ssInfo.codec().isAudio() && ssInfo.esSourceType().isFromFile()) {
 			/*
 			 * a: Session Attribute: Packetization interval (in milliseconds)
 			 *    Length of time in milliseconds represented by the media in a packet.
@@ -570,7 +570,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				);
 		}
 		//
-		if (useVideo && ssInfo.isSourceFromFile()) {
+		if (useVideo && ssInfo.esSourceType().isFromFile()) {
 			// a: Session Attribute: video framerate
 			outputList.add(
 					String.format("a=framerate:%.3f", ssInfo.videoFps().getFrDbl()).replace(",", ".")

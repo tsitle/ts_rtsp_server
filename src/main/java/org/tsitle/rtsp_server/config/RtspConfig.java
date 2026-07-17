@@ -852,7 +852,7 @@ public final class RtspConfig {
 			RtspConfigElementaryStreamSource tmpSsObj = getElementaryStreamSourceObj(tmpSsId).orElseThrow();
 			tmpSsObj.validate(internalMapEsSourceIdIntToExt);
 			//
-			if (tmpSsObj.getSourceType() != RtspConfigElementaryStreamSource.SourceType.ST_ES_MQ || ! tmpSsObj.getEnabled()) {
+			if (tmpSsObj.getSourceType() != RtspConfigEsSourceType.ST_ES_MQ || ! tmpSsObj.getEnabled()) {
 				continue;
 			}
 			Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());

@@ -31,21 +31,13 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Elementary-Stream Source within an Input Source for RTSP streams.
  */
 public final class RtspConfigElementaryStreamSource {
-
-	public enum SourceType {
-		/** Elementary-Stream from a file */
-		ST_ES_FILE,
-		/** Elementary-Stream from a Message Queue */
-		ST_ES_MQ,
-		/** Demuxed Elementary-Stream from a Muxed-Stream Source */
-		ST_DEMUX_MS
-	}
 
 	/** Elementary-Stream Source ID */
 	@GsonAnnoExclude
@@ -118,7 +110,7 @@ public final class RtspConfigElementaryStreamSource {
 	private @Nullable Integer msSourceId;
 	/** for Demuxed Muxed-Stream Sources: FFmpeg Stream Index */
 	@GsonAnnoExclude
-	private @Nullable Integer msSourceFfmpegStreamIx;  // @TODO use this somehow
+	private @Nullable Integer msSourceFfmpegStreamIx;
 
 	public RtspConfigElementaryStreamSource() {
 		this.id = -1;
@@ -236,13 +228,11 @@ public final class RtspConfigElementaryStreamSource {
 
 	public @NonNull URI getInputUri() {
 		checkPostProcessed();
-		if (! filePath.isBlank()) {
-			return URI.create("file:" + filePath);
-		}
-		if (mq == null) {
-			throw new IllegalStateException("MQ is null");
-		}
-		return mq.getInputUri();
+		return switch (getSourceType()) {
+				case ST_ES_FILE -> URI.create("file:" + filePath);
+				case ST_ES_MQ -> Objects.requireNonNull(mq).getInputUri();
+				case ST_DEMUX_MS_FILE -> URI.create(String.format("http://msSource.local/?%d#%d", msSourceId, msSourceFfmpegStreamIx));
+			};
 	}
 
 	public Optional<MqElementaryStreamSourceSettings> getInputMqSettings() {
@@ -269,25 +259,25 @@ public final class RtspConfigElementaryStreamSource {
 		return Optional.of(resObj);
 	}
 
-	public @NonNull SourceType getSourceType() {
+	public @NonNull RtspConfigEsSourceType getSourceType() {
 		final String FNC_NAME = getClass().getSimpleName() + ".getSourceType()";
 
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
-			return SourceType.ST_ES_FILE;
+			return RtspConfigEsSourceType.ST_ES_FILE;
 		}
 		if (mq != null) {
-			return SourceType.ST_ES_MQ;
+			return RtspConfigEsSourceType.ST_ES_MQ;
 		}
-		if (msSourceId != null) {
-			return SourceType.ST_DEMUX_MS;
+		if (msSourceId != null && msSourceFfmpegStreamIx != null) {
+			return RtspConfigEsSourceType.ST_DEMUX_MS_FILE;
 		}
 		throw new IllegalStateException(FNC_NAME + ": could not identify Source Type");
 	}
 
 	public synchronized @NonNull RtpPacketType getCodec() {
 		checkPostProcessed();
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			// the actual codec will be determined dynamically when reading from a MQ
 			return mqDynamicCodec;
 		}
@@ -297,7 +287,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull FrameRateEnum getVideoFps() {
 		checkPostProcessed();
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			// the actual FPS doesn't matter when reading from a MQ, but it will be determined dynamically when reading from a MQ
 			return mqDynamicVideoFps;
 		}
@@ -306,7 +296,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull SampleRateEnum getAudioSamplerate() {
 		checkPostProcessed();
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			// the actual samplerate will be determined dynamically when reading from a MQ
 			return mqDynamicAudioSamplerateHz;
 		}
@@ -315,7 +305,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized byte getAudioChannelCount() {
 		checkPostProcessed();
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			// the actual channel count will be determined dynamically when reading from a MQ
 			return mqDynamicAudioChannelCount;
 		}
@@ -326,7 +316,7 @@ public final class RtspConfigElementaryStreamSource {
 	public int getRtpAudioSamplesPerFrame(double videoFpsAsDbl) {
 		checkPostProcessed();
 		//
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			return 1;  // the actual value doesn't matter when reading from a MQ
 		}
 		if (videoFpsAsDbl < 0.1) {
@@ -352,7 +342,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public boolean getIsAudioBigEndian() {
 		checkPostProcessed();
-		if (getSourceType() == SourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			return true;  // when reading from a MQ, the audio data is expected to be big-endian
 		}
 		return internalIsAudioBigEndian;
@@ -480,7 +470,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		// ----------------------------------------------------
 
-		if (getSourceType() != SourceType.ST_ES_FILE) {
+		if (getSourceType() != RtspConfigEsSourceType.ST_ES_FILE) {
 			return;
 		}
 		//noinspection ConstantValue

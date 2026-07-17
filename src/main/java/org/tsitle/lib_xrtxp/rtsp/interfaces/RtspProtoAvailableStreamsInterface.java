@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 
 import java.net.URI;
 import java.util.Optional;
@@ -55,9 +56,7 @@ public interface RtspProtoAvailableStreamsInterface {
 
 	record ElementaryStreamSourceInfo(
 			@NonNull RtpPacketType codec,
-			boolean isSourceFromFile,
-			boolean isSourceFromMq,
-			boolean isSourceFromDemuxedMs,
+			@NonNull RtspConfigEsSourceType esSourceType,
 			@NonNull URI inputUri,
 			byte audioChannelCount,
 			@NonNull SampleRateEnum audioSampleRate,

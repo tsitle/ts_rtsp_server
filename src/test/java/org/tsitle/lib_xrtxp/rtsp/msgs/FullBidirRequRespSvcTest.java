@@ -31,6 +31,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -102,9 +103,7 @@ public class FullBidirRequRespSvcTest {
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
 				return new ElementaryStreamSourceInfo(
 						RtpPacketType.V_H264,
-						true,
-						false,
-						false,
+						RtspConfigEsSourceType.ST_ES_FILE,
 						URI.create("file:///dummy-file-video"),
 						(byte)-1,
 						SampleRateEnum.UNKNOWN,
@@ -117,9 +116,7 @@ public class FullBidirRequRespSvcTest {
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
 				return new ElementaryStreamSourceInfo(
 						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
-						true,
-						false,
-						false,
+						RtspConfigEsSourceType.ST_ES_FILE,
 						URI.create("file:///dummy-file-audio"),
 						(byte)2,
 						SampleRateEnum.SR_044100,
