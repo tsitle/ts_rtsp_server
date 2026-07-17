@@ -122,7 +122,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 			 */
 			if (needMagicBytes) {
 				int nextOffset = findNextMagicBytes(remainingInputBuf);
-				if (nextOffset == -1) {
+				if (nextOffset < 1) {
 					buf.copyOf(remainingInputBuf);
 					remainingInputBuf.clear();
 				} else {
@@ -154,7 +154,9 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 		return -1;
 	}
 
+	// @TODO move this to MagicBytesH26xHelper
 	protected int findH26xMagicBytesLength(final @NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		// @TODO fix this
 		int resI = 0;
 		if (inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length) {
 			if (checkForH26xMagicBytes(FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4, inputBuf)) {
@@ -173,12 +175,14 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 		return resI;
 	}
 
+	// @TODO move this to MagicBytesH26xHelper
 	protected int findH26xNextNalUnit(final @NonNull BufferExt inputBuf) {
 		if (magicBytesArrPtr == null) {
 			throw new IllegalStateException("magicBytesArrPtr is null");
 		}
 		int resI = -1;
 		boolean found;
+		// minimum starting offset is 1
 		for (int ix1 = magicBytesArrPtr.length; ix1 < inputBuf.getUsed() - magicBytesArrPtr.length; ix1++) {
 			found = true;
 			for (int ix2 = 0; ix2 < magicBytesArrPtr.length; ix2++) {
@@ -198,6 +202,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	// @TODO move this to MagicBytesH26xHelper
 	private boolean checkForH26xMagicBytes(final byte[] magicBytes, final @NonNull BufferExt inputBuf) {
 		for (int i = 0; i < magicBytes.length; i++) {
 			if (inputBuf.get(i) != magicBytes[i]) {
