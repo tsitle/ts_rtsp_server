@@ -18,16 +18,12 @@ public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param paramsAudioCommon Common Audio thread parameters
-	 * @param paramsAc3 Thread-specific parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvAc3FromFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
-				@NonNull ParamsThreadRtpSenderAc3 paramsAc3,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
@@ -37,10 +33,6 @@ public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<
 				queueSize,
 				debugRewindMediaFiles
 			);
-
-		//
-		paramsAudioCommon.validate();
-		paramsAc3.validate();
 
 		//
 		this.frameGrabber = new FrameGrabberAudioAc3FromFile(logMsgInterface, avStreamIncoming);

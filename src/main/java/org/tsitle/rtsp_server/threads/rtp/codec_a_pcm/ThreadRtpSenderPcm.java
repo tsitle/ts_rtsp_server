@@ -89,6 +89,7 @@ public final class ThreadRtpSenderPcm<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioPcmInfo, FGAV> newThreadDataProv() {
+		// @TODO add FrameGrabberAudioPcmFromDemuxMs
 		if (frameGrabberAvType == FrameGrabberAudioPcmFromFile.class) {
 			ThreadDataProvPcmFromFile resObj = new ThreadDataProvPcmFromFile(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
@@ -105,7 +106,6 @@ public final class ThreadRtpSenderPcm<
 		if (frameGrabberAvType == FrameGrabberAudioPcmFromMq.class) {
 			ThreadDataProvPcmFromMq resObj = new ThreadDataProvPcmFromMq(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
-					paramsAudioCommon,
 					paramsPcm,
 					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
 				);

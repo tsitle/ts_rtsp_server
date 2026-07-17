@@ -27,18 +27,13 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
 	public ThreadDataProvH264FromMq(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {
 		super(logMsgInterface, true);
-
-		//
-		paramsVideoCommon.validate();
 
 		//
 		this.frameGrabber = new FrameGrabberVideoH26xFromMq(logMsgInterface, avStreamIncoming);
@@ -56,6 +51,7 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 	@Override
 	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
 		if (magicBytesLength == -1) {
+			// @TODO fix this
 			magicBytesLength = findH26xMagicBytesLength(inputBuf);
 			magicBytesArrPtr = (magicBytesLength == 3 ?
 					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3 :

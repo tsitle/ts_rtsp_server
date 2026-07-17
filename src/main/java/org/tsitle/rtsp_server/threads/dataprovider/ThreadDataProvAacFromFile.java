@@ -18,7 +18,6 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsAac Thread-specific parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
@@ -26,7 +25,6 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 	 */
 	public ThreadDataProvAacFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderAac paramsAac,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
@@ -39,7 +37,6 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 			);
 
 		//
-		paramsAudioCommon.validate();
 		paramsAac.validate();
 
 		//

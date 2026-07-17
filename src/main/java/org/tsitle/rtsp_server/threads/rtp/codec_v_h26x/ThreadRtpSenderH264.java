@@ -56,10 +56,10 @@ public final class ThreadRtpSenderH264<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoH264Info, FGAV> newThreadDataProv() {
+		// @TODO add FrameGrabberVideoH26xFromDemuxMs
 		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
 			ThreadDataProvH264FromFile resObj = new ThreadDataProvH264FromFile(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
-					paramsVideoCommon,
 					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
@@ -71,7 +71,6 @@ public final class ThreadRtpSenderH264<
 		if (frameGrabberAvType == FrameGrabberVideoH26xFromMq.class) {
 			ThreadDataProvH264FromMq resObj = new ThreadDataProvH264FromMq(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
-					paramsVideoCommon,
 					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
 				);
 			@SuppressWarnings("unchecked")

@@ -21,6 +21,7 @@ public final class ThreadRtpSenderMjpeg<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, FGAV, ThreadDataProvBase<VideoJpegInfo, FGAV>> {
 
+	@SuppressWarnings("FieldCanBeLocal")
 	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
 
 	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
@@ -78,12 +79,12 @@ public final class ThreadRtpSenderMjpeg<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
+		// @TODO add FrameGrabberVideoMjpegFromMq + FrameGrabberVideoMjpegFromDemuxMs
 		if (frameGrabberAvType != FrameGrabberVideoMjpegFromFile.class) {
 			throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoMjpegFromXxx");
 		}
 		ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
-				paramsVideoCommon,
 				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
 				10,
 				paramsCommon.getDebugRewindMediaFiles()

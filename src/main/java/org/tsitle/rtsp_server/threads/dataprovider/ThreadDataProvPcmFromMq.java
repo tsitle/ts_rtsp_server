@@ -18,20 +18,17 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsPcm Thread-specific parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
 	public ThreadDataProvPcmFromMq(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm,
 				@NonNull AvStreamIncomingFromMq avStreamIncoming
 			) {
 		super(logMsgInterface, false);
 
 		//
-		paramsAudioCommon.validate();
 		paramsPcm.validate();
 
 		//

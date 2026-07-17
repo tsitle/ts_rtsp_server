@@ -26,7 +26,9 @@ public final class ThreadRtpSenderAc3<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<AudioAc3Info, AVSTRIC, FGAV, ThreadDataProvBase<AudioAc3Info, FGAV>> {
 
+	@SuppressWarnings("FieldCanBeLocal")
 	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
+	@SuppressWarnings("FieldCanBeLocal")
 	private final ParamsThreadRtpSenderAc3 paramsAc3;
 
 	private final AudioAc3Info curFrameAc3Info = new AudioAc3Info();
@@ -80,13 +82,12 @@ public final class ThreadRtpSenderAc3<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioAc3Info, FGAV> newThreadDataProv() {
+		// @TODO add FrameGrabberAudioAc3FromMq + FrameGrabberAudioAc3FromDemuxMs
 		if (frameGrabberAvType != FrameGrabberAudioAc3FromFile.class) {
 			throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAc3FromXxx");
 		}
 		ThreadDataProvAc3FromFile resObj = new ThreadDataProvAc3FromFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
-				paramsAudioCommon,
-				paramsAc3,
 				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
 				10,
 				paramsCommon.getDebugRewindMediaFiles()

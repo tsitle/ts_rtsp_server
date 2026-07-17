@@ -25,14 +25,12 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvMjpegFromFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
 				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
@@ -42,9 +40,6 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 				queueSize,
 				debugRewindMediaFiles
 			);
-
-		//
-		paramsVideoCommon.validate();
 
 		//
 		this.frameGrabber = new FrameGrabberVideoMjpegFromFile(logMsgInterface, avStreamIncoming);
