@@ -30,7 +30,7 @@ public final class MqChannelBus {
 	 * @param idEsSource Elementary-Stream Source identifier
 	 * @return Channel name
 	 */
-	public static @NonNull MqChannelBusChannelName buildChannelNameForStreamSourceId(
+	public static @NonNull MqChannelBusChannelName buildChannelNameForEsSourceId(
 				@NonNull RtspProtoIdEsSource idEsSource
 			) {
 		if (idEsSource.isEmpty()) {

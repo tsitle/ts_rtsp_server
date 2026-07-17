@@ -43,7 +43,7 @@ public final class MqInternalSub extends MqReceiverSubBase {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idEsSource);
+		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForEsSourceId(idEsSource);
 		MqChannelBusChannelId chanId = MqChannelBus.getChannelId(chanName);
 		zmqSocket = MqChannelBus.createSubscriber(chanId, zmqContext);
 		//

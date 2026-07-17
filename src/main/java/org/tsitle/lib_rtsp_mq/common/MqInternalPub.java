@@ -61,7 +61,7 @@ public final class MqInternalPub implements AutoCloseable {
 		if (stateClosed.get()) {
 			throw new MqException(FNC_NAME + ": Stream had already been closed");
 		}
-		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForStreamSourceId(idEsSource);
+		MqChannelBusChannelName chanName = MqChannelBus.buildChannelNameForEsSourceId(idEsSource);
 		MqChannelBusChannelId chanId = MqChannelBus.registerChannel(chanName);
 		zmqSocket = MqChannelBus.createPublisher(chanId, zmqContext);
 		final ZMQ.Poller zmqPollerObj = zmqContext.createPoller(1);
