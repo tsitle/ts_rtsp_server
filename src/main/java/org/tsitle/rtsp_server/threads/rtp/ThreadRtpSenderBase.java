@@ -591,6 +591,8 @@ public abstract class ThreadRtpSenderBase<
 		return rtpTsT0Adj.add((rtpFrameNr - 1) * rtpTicksPerFrame);
 	}
 
+	private Long lastRtpTsElapsedTicks = null;
+
 	private @NonNull RtspProtoRtpTimestamp getRtpTimestampAsInt_t0adj_forNow(
 				@NonNull TimestampEpochNs currentSysNanos,
 				boolean sourceIsMq
@@ -606,6 +608,21 @@ public abstract class ThreadRtpSenderBase<
 		long elapsedNs = currentSysNanos.getEpochNsUnsigned64bit().orElse(0L) -
 				rtpTsT0GenAdj.getEpochNsUnsigned64bit().orElse(0L);
 		long elapsedTicks = ((elapsedNs * rtpClockrate) / 1_000_000_000L);
+
+		// ensure that the timestamp is monotonically increasing
+		long remainder = elapsedTicks % rtpTicksPerFrame;
+		if (remainder > 0) {
+			if (remainder <= rtpTicksPerFrame / 2) {
+				elapsedTicks -= remainder;
+			} else {
+				elapsedTicks += rtpTicksPerFrame - remainder;
+			}
+		}
+		if (lastRtpTsElapsedTicks != null && Long.compareUnsigned(elapsedTicks, lastRtpTsElapsedTicks) <= 0) {
+			elapsedTicks = lastRtpTsElapsedTicks + rtpTicksPerFrame;
+		}
+		lastRtpTsElapsedTicks = elapsedTicks;
+
 		return rtpTsT0Adj.add(elapsedTicks);
 	}
 
@@ -635,7 +652,7 @@ public abstract class ThreadRtpSenderBase<
 			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataViewPtr == null");
 		}
 		//
-		if (paramsCommon.getIsEsSourceFromFile()) {
+		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
 			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
 			if (tmpDeltaFdsNs > 5_000_000L) {
 				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
@@ -645,12 +662,10 @@ public abstract class ThreadRtpSenderBase<
 		// only sleep if this is the first packet of the frame/AU
 		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
-			if (paramsCommon.getIsEsSourceFromFile()) {
-				adaptiveScheduler.waitForNextFrame();
-			}
+			adaptiveScheduler.waitForNextFrame();
 			//
 			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-			if (paramsCommon.getIsEsSourceFromFile()) {
+			if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 			} else if (frameData.stTimestamp.isEmpty()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));
