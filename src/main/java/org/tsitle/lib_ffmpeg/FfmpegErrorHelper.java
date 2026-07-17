@@ -15,7 +15,8 @@ public final class FfmpegErrorHelper {
 	public static @NonNull String ffmpegErrorText(int errCode) {
 		try (BytePointer errBuf = new BytePointer(256)) {
 			avutil.av_strerror(errCode, errBuf, 256);
-			return errBuf.getString() + " (" + errCode + ")";
+			long slen = avutil.av_strnlen(errBuf, 256);
+			return errBuf.getString().substring(0, (int)slen) + " (" + errCode + ")";
 		}
 	}
 

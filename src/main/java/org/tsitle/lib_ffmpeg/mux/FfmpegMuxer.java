@@ -314,8 +314,11 @@ public final class FfmpegMuxer implements FfmpegReceiveTcAvInterface, AutoClosea
 
 			avcodec.av_packet_rescale_ts(pkt, src, outStream.time_base());
 
-			r = avformat.av_interleaved_write_frame(outFmtCtx, pkt);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_interleaved_write_frame()", r);
+			if (r == avutil.AVERROR_EINVAL()) {
+				logDebug(FNC_NAME, "av_interleaved_write_frame() rejected invalid data - ignoring");
+			} else {
+				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_interleaved_write_frame()", r);
+			}
 		} finally {
 			avcodec.av_packet_free(pkt);
 		}
