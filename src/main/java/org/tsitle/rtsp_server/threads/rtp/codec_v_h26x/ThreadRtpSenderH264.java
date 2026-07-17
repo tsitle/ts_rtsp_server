@@ -56,7 +56,6 @@ public final class ThreadRtpSenderH264<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoH264Info, FGAV> newThreadDataProv() {
-		// @TODO add FrameGrabberVideoH26xFromDemuxMs
 		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
 			ThreadDataProvH264FromFile resObj = new ThreadDataProvH264FromFile(
 					paramsCommon.getLogMsgInterface().orElseThrow(),
@@ -77,6 +76,7 @@ public final class ThreadRtpSenderH264<
 			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
 			return typedProvider;
 		}
+		// @TODO add FrameGrabberVideoH26xFromDemuxMs
 		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoH26xFromXxx");
 	}
 

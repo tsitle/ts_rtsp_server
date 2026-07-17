@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.rtsp_server.avstreams.*;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderH264;
 
@@ -26,22 +27,30 @@ public final class BuilderThreadRtpSenderH264 {
 			validateVideoCommon();
 			threadParamsH264.validate();
 
-			if (threadParamsCommon.getIsEsSourceFromFile()) {
-				return new ThreadRtpSenderH264<>(
-						AvStreamIncomingFromFile.class,
-						FrameGrabberVideoH26xFromFile.class,
-						threadParamsCommon,
-						threadParamsVideo,
-						threadParamsH264
-					);
-			}
-			return new ThreadRtpSenderH264<>(
-					AvStreamIncomingFromMq.class,
-					FrameGrabberVideoH26xFromMq.class,
-					threadParamsCommon,
-					threadParamsVideo,
-					threadParamsH264
-				);
+			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			return switch (esSourceType) {
+					case ST_ES_FILE -> new ThreadRtpSenderH264<>(
+							AvStreamIncomingFromFile.class,
+							FrameGrabberVideoH26xFromFile.class,
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsH264
+						);
+					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderH264<>(
+							AvStreamIncomingFromFile.class,  // @TODO
+							FrameGrabberVideoH26xFromFile.class,  // @TODO
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsH264
+						);
+					default -> new ThreadRtpSenderH264<>(
+							AvStreamIncomingFromMq.class,
+							FrameGrabberVideoH26xFromMq.class,
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsH264
+						);
+				};
 		}
 
 	}

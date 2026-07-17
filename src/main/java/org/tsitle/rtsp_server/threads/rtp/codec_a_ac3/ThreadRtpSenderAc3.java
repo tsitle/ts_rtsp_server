@@ -6,11 +6,9 @@ import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketAc3;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
+import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvAc3FromFile;
+import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvAc3FromMq;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
@@ -82,19 +80,28 @@ public final class ThreadRtpSenderAc3<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioAc3Info, FGAV> newThreadDataProv() {
-		// @TODO add FrameGrabberAudioAc3FromMq + FrameGrabberAudioAc3FromDemuxMs
-		if (frameGrabberAvType != FrameGrabberAudioAc3FromFile.class) {
-			throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAc3FromXxx");
+		if (frameGrabberAvType == FrameGrabberAudioAc3FromFile.class) {
+			ThreadDataProvAc3FromFile resObj = new ThreadDataProvAc3FromFile(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					10,
+					paramsCommon.getDebugRewindMediaFiles()
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
+			return typedProvider;
 		}
-		ThreadDataProvAc3FromFile resObj = new ThreadDataProvAc3FromFile(
-				paramsCommon.getLogMsgInterface().orElseThrow(),
-				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-				10,
-				paramsCommon.getDebugRewindMediaFiles()
-			);
-		@SuppressWarnings("unchecked")
-		ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
-		return typedProvider;
+		if (frameGrabberAvType == FrameGrabberAudioAc3FromMq.class) {
+			ThreadDataProvAc3FromMq resObj = new ThreadDataProvAc3FromMq(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
+			return typedProvider;
+		}
+		// @TODO add FrameGrabberAudioAc3FromDemuxMs
+		throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAc3FromXxx");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

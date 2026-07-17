@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.rtsp_server.avstreams.*;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_aac.ThreadRtpSenderAac;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
 
@@ -26,16 +27,30 @@ public final class BuilderThreadRtpSenderAac {
 			validateAudioCommon();
 			threadParamsAac.validate();
 
-			if (threadParamsCommon.getIsEsSourceFromFile()) {
-				return new ThreadRtpSenderAac<>(
-						AvStreamIncomingFromFile.class,
-						FrameGrabberAudioAacFromFile.class,
-						threadParamsCommon,
-						threadParamsAudio,
-						threadParamsAac
-					);
-			}
-			throw new RuntimeException("Not implemented");
+			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			return switch (esSourceType) {
+					case ST_ES_FILE -> new ThreadRtpSenderAac<>(
+							AvStreamIncomingFromFile.class,
+							FrameGrabberAudioAacFromFile.class,
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsAac
+						);
+					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderAac<>(
+							AvStreamIncomingFromFile.class,  // @TODO
+							FrameGrabberAudioAacFromFile.class,  // @TODO
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsAac
+						);
+					default -> new ThreadRtpSenderAac<>(
+							AvStreamIncomingFromMq.class,
+							FrameGrabberAudioAacFromMq.class,
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsAac
+						);
+				};
 		}
 
 	}

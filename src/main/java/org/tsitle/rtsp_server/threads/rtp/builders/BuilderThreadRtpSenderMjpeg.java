@@ -1,7 +1,10 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromMq;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
@@ -27,16 +30,30 @@ public final class BuilderThreadRtpSenderMjpeg {
 			validateVideoCommon();
 			threadParamsMjpeg.validate();
 
-			if (threadParamsCommon.getIsEsSourceFromFile()) {
-				return new ThreadRtpSenderMjpeg<>(
-						AvStreamIncomingFromFile.class,
-						FrameGrabberVideoMjpegFromFile.class,
-						threadParamsCommon,
-						threadParamsVideo,
-						threadParamsMjpeg
-					);
-			}
-			throw new RuntimeException("Not implemented");
+			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			return switch (esSourceType) {
+					case ST_ES_FILE -> new ThreadRtpSenderMjpeg<>(
+							AvStreamIncomingFromFile.class,
+							FrameGrabberVideoMjpegFromFile.class,
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsMjpeg
+						);
+					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderMjpeg<>(
+							AvStreamIncomingFromFile.class,  // @TODO
+							FrameGrabberVideoMjpegFromFile.class,  // @TODO
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsMjpeg
+						);
+					default -> new ThreadRtpSenderMjpeg<>(
+							AvStreamIncomingFromMq.class,
+							FrameGrabberVideoMjpegFromMq.class,
+							threadParamsCommon,
+							threadParamsVideo,
+							threadParamsMjpeg
+						);
+				};
 		}
 
 	}

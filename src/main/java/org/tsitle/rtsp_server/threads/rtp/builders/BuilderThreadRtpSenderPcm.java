@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
@@ -27,22 +28,30 @@ public final class BuilderThreadRtpSenderPcm {
 			validateAudioCommon();
 			threadParamsPcm.validate();
 
-			if (threadParamsCommon.getIsEsSourceFromFile()) {
-				return new ThreadRtpSenderPcm<>(
-						AvStreamIncomingFromFile.class,
-						FrameGrabberAudioPcmFromFile.class,
-						threadParamsCommon,
-						threadParamsAudio,
-						threadParamsPcm
-					);
-			}
-			return new ThreadRtpSenderPcm<>(
-					AvStreamIncomingFromMq.class,
-					FrameGrabberAudioPcmFromMq.class,
-					threadParamsCommon,
-					threadParamsAudio,
-					threadParamsPcm
-				);
+			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			return switch (esSourceType) {
+					case ST_ES_FILE -> new ThreadRtpSenderPcm<>(
+							AvStreamIncomingFromFile.class,
+							FrameGrabberAudioPcmFromFile.class,
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsPcm
+						);
+					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderPcm<>(
+							AvStreamIncomingFromFile.class,  // @TODO
+							FrameGrabberAudioPcmFromFile.class,  // @TODO
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsPcm
+						);
+					default -> new ThreadRtpSenderPcm<>(
+							AvStreamIncomingFromMq.class,
+							FrameGrabberAudioPcmFromMq.class,
+							threadParamsCommon,
+							threadParamsAudio,
+							threadParamsPcm
+						);
+				};
 		}
 
 	}

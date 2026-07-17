@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvMjpegFromFile;
+import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvMjpegFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
@@ -79,19 +80,28 @@ public final class ThreadRtpSenderMjpeg<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
-		// @TODO add FrameGrabberVideoMjpegFromMq + FrameGrabberVideoMjpegFromDemuxMs
-		if (frameGrabberAvType != FrameGrabberVideoMjpegFromFile.class) {
-			throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoMjpegFromXxx");
+		if (frameGrabberAvType == FrameGrabberVideoMjpegFromFile.class) {
+			ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					10,
+					paramsCommon.getDebugRewindMediaFiles()
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
+			return typedProvider;
 		}
-		ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
-				paramsCommon.getLogMsgInterface().orElseThrow(),
-				Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
-				10,
-				paramsCommon.getDebugRewindMediaFiles()
-			);
-		@SuppressWarnings("unchecked")
-		ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
-		return typedProvider;
+		if (frameGrabberAvType == FrameGrabberVideoMjpegFromMq.class) {
+			ThreadDataProvMjpegFromMq resObj = new ThreadDataProvMjpegFromMq(
+					paramsCommon.getLogMsgInterface().orElseThrow(),
+					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		// @TODO add FrameGrabberVideoMjpegFromDemuxMs
+		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoMjpegFromXxx");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
