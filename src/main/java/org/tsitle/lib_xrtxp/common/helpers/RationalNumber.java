@@ -9,9 +9,9 @@ import java.util.Objects;
  */
 public final class RationalNumber {
 
-	private final boolean sign;
-	private final int num;
-	private final int den;
+	private boolean sign;
+	private int num;
+	private int den;
 
 	private RationalNumber(boolean sign, int num, int den) {
 		this.sign = sign;
@@ -100,6 +100,12 @@ public final class RationalNumber {
 		int tmpNum = (int)(value * 1_000.0);
 		if (tmpNum < 1) { return new RationalNumber(sign, 0, 1); }
 		return ofSimplified(tmpNum, 1_000);
+	}
+
+	public void copyFrom(@NonNull RationalNumber other) {
+		sign = other.sign;
+		num = other.num;
+		den = other.den;
 	}
 
 	public int getNumerator() {
