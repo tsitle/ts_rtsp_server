@@ -33,8 +33,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	public enum ReadResult {
 		RR_EOF,
 		RR_OK_VID,
-		RR_OK_AUD,
-		RR_INTERNAL_OK_OTHER
+		RR_OK_AUD
 	}
 
 	private static final long FPS_MEASURE_INTERVAL_MS = 10_000L;
@@ -42,6 +41,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final @NonNull String inputFilePath;
 	private final long cfgMaxSecs;
+	private final boolean cfgOutputH26xAsAnnexB;
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
 	private @Nullable AVFormatContext inputAvFmtCtx;
@@ -52,22 +52,27 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private @Nullable AVPacket cacheAvPkt = null;
 	private boolean haveReachedMaxSecs = false;
 
+	private @Nullable BsfH26xAnnexB bsfH26xAnnexB = null;
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
 	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
+	 * @param cfgOutputH26xAsAnnexB Output H.26x as Annex B (true) or as-is?
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	public FfmpegDemuxer(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
 				long cfgMaxSecs,
+				boolean cfgOutputH26xAsAnnexB,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.inputFilePath = inputFilePath;
 		this.cfgMaxSecs = cfgMaxSecs;
+		this.cfgOutputH26xAsAnnexB = cfgOutputH26xAsAnnexB;
 		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
 		if (inputFilePath.isBlank()) {
@@ -108,13 +113,13 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		//
-		ReadResult resEn;
+		Optional<ReadResult> tmpOptResEn;
 		while (true) {
-			resEn = internalReadNextAvPacket();
-			if (resEn == ReadResult.RR_EOF) {
+			tmpOptResEn = internalReadNextAvPacket();
+			if (tmpOptResEn.isPresent() && tmpOptResEn.get() == ReadResult.RR_EOF) {
 				return ReadResult.RR_EOF;
 			}
-			if (resEn == ReadResult.RR_INTERNAL_OK_OTHER) {
+			if (tmpOptResEn.isEmpty()) {
 				avcodec.av_packet_unref(cacheAvPkt);
 				continue;
 			}
@@ -124,6 +129,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (cacheAvPkt == null) {
 			return ReadResult.RR_EOF;
 		}
+
+		ReadResult resEn = tmpOptResEn.get();
 
 		outputData.pktBe.increaseSize(cacheAvPkt.size());
 		cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
@@ -172,6 +179,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	public void close() {
 		if (inputAvFmtCtx != null) { avformat.avformat_free_context(inputAvFmtCtx); inputAvFmtCtx = null; }
 		if (cacheAvPkt != null) { avcodec.av_packet_free(cacheAvPkt); cacheAvPkt = null; }
+		if (bsfH26xAnnexB != null) { bsfH26xAnnexB.close(); bsfH26xAnnexB = null; }
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -341,7 +349,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull ReadResult internalReadNextAvPacket() throws FfmpegGenericException {
+	private Optional<ReadResult> internalReadNextAvPacket() throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadNextAvPacket()";
 
 		if (inputAvFmtCtx == null) {
@@ -353,7 +361,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (haveReachedMaxSecs) {
 			logDebug(FNC_NAME, "cfgMaxSecs reached, stopping");
-			return ReadResult.RR_EOF;
+			return Optional.of(ReadResult.RR_EOF);
 		}
 
 		if (! isInputOpen) {
@@ -370,10 +378,26 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			}
 		}
 
+		// ---------------------------------------------------
+
+		if (bsfH26xAnnexB == null && cfgOutputH26xAsAnnexB &&
+				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
+			bsfH26xAnnexB = new BsfH26xAnnexB(
+					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
+					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
+				);
+		}
+
+		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOnePacket(cacheAvPkt)) {
+			return Optional.of(ReadResult.RR_OK_VID);
+		}
+
+		// ---------------------------------------------------
+
 		int r = avformat.av_read_frame(inputAvFmtCtx, cacheAvPkt);
 		if (r == avutil.AVERROR_EOF()) {
 			statsUpdateOverall();
-			return ReadResult.RR_EOF;
+			return Optional.of(ReadResult.RR_EOF);
 		}
 		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_read_frame", r);
 
@@ -385,21 +409,28 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			demuxHandlePktAudio();
 			resEn = ReadResult.RR_OK_AUD;
 		} else {
-			resEn = ReadResult.RR_INTERNAL_OK_OTHER;
+			return Optional.empty();
 		}
 
-		if (resEn != ReadResult.RR_INTERNAL_OK_OTHER) {
-			boolean tmpStatsUpdated = statsUpdateCurrent();
-			if (recvDemuxerStatsInterface != null && tmpStatsUpdated) {
-				recvDemuxerStatsInterface.cbReceiveDemuxerStats(stats);
-			}
-
-			if (cfgMaxSecs > 0 && (long) stats.currentMaxPtsSecs >= cfgMaxSecs) {
-				haveReachedMaxSecs = true;
-			}
+		boolean tmpStatsUpdated = statsUpdateCurrent();
+		if (recvDemuxerStatsInterface != null && tmpStatsUpdated) {
+			recvDemuxerStatsInterface.cbReceiveDemuxerStats(stats);
 		}
 
-		return resEn;
+		// ---------------------------------------------------
+
+		if (resEn == ReadResult.RR_OK_VID && bsfH26xAnnexB != null) {
+			bsfH26xAnnexB.setInputPacket(cacheAvPkt);
+			return Optional.empty();
+		}
+
+		// ---------------------------------------------------
+
+		if (cfgMaxSecs > 0 && (long) stats.currentMaxPtsSecs >= cfgMaxSecs) {
+			haveReachedMaxSecs = true;
+		}
+
+		return Optional.of(resEn);
 	}
 
 	private void demuxHandlePktVideo() {

@@ -150,7 +150,6 @@ public abstract class FfmpegTranscoderBase {
 		int r = avcodec.av_new_packet(cacheInputPkt, inputFrameData.pktBe.getUsed());
 		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
 		cacheInputPkt.data().put(inputFrameData.pktBe.getBaPtr(), 0, inputFrameData.pktBe.getUsed());
-		//System.err.format("  0x%02X%02X%02X%02X%n", inputFrameData.pktBe.get(0), inputFrameData.pktBe.get(1), inputFrameData.pktBe.get(2), inputFrameData.pktBe.get(3));
 
 		cacheInputPkt.pts(inputFrameData.pts);
 		cacheInputPkt.dts(inputFrameData.dts);

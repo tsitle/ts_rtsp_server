@@ -161,13 +161,13 @@ public final class RtspConfigMuxedStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void readSubStreamInfos(@NonNull String extMsId) throws ConfigInvalidException {
-		try {
-			FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
+		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					null,
 					getInputUri().getPath(),
 					1L,
+					true,
 					null
-				);
+				)) {
 			ffmpegDemuxer.readStreamInfos(ffStreamInfoVideo, ffStreamInfoAudio);
 		} catch (FfmpegGenericException e) {
 			throw new ConfigInvalidException("Failed to read sub-stream infos " +
