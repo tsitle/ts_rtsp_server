@@ -7,7 +7,6 @@ import org.tsitle.lib_xrtxp.avdata.VideoH264Parser;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromMq;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -55,13 +54,8 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 		if (h264Parser == null) {
 			throw new IllegalStateException("h264Parser is null");
 		}
-		if (magicBytesLength == -1) {
-			// @TODO fix this
-			magicBytesLength = findH26xMagicBytesLength(inputBuf);
-			magicBytesArrPtr = (magicBytesLength == 3 ?
-					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3 :
-					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4);
-		}
+
+		int magicBytesLength = MagicBytesH26xHelper.findH26xMagicBytesLength(inputBuf);
 		//
 		VideoH264Info curFrameH264Info = h264Parser.parseH264Data(
 				debugStreamOffset,
@@ -79,7 +73,7 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 
 	@Override
 	protected int findNextMagicBytes(final @NonNull BufferExt inputBuf) {
-		return findH26xNextNalUnit(inputBuf);
+		return MagicBytesH26xHelper.findH26xNextNalUnit(inputBuf);
 	}
 
 }

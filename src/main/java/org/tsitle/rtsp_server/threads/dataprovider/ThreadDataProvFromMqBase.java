@@ -6,7 +6,6 @@ import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromMqBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -23,8 +22,6 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	protected boolean haveAllRequiredMetadataPackets = false;
 	private final BufferExt remainingInputBuf = new BufferExt();
 	private final TimestampEpochNs stTimestampCurFrame = TimestampEpochNs.ofEmpty();
-	protected int magicBytesLength = -1;
-	protected byte[] magicBytesArrPtr = null;
 
 	/**
 	 * Constructor.
@@ -182,64 +179,6 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	protected int findNextMagicBytes(final @NonNull BufferExt inputBuf) {
 		return -1;
-	}
-
-	// @TODO move this to MagicBytesH26xHelper
-	protected int findH26xMagicBytesLength(final @NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		// @TODO fix this
-		int resI = 0;
-		if (inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length) {
-			if (checkForH26xMagicBytes(FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4, inputBuf)) {
-				resI = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length;
-			}
-		}
-		if (resI == 0 &&
-				inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length) {
-			if (checkForH26xMagicBytes(FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3, inputBuf)) {
-				resI = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length;
-			}
-		}
-		if (resI == 0) {
-			throw new AvInvalidCodecDataException("could not determine Magic Bytes");
-		}
-		return resI;
-	}
-
-	// @TODO move this to MagicBytesH26xHelper
-	protected int findH26xNextNalUnit(final @NonNull BufferExt inputBuf) {
-		if (magicBytesArrPtr == null) {
-			throw new IllegalStateException("magicBytesArrPtr is null");
-		}
-		int resI = -1;
-		boolean found;
-		// minimum starting offset is 1
-		for (int ix1 = magicBytesArrPtr.length; ix1 < inputBuf.getUsed() - magicBytesArrPtr.length; ix1++) {
-			found = true;
-			for (int ix2 = 0; ix2 < magicBytesArrPtr.length; ix2++) {
-				if (inputBuf.get(ix1 + ix2) != magicBytesArrPtr[ix2]) {
-					found = false;
-					break;
-				}
-			}
-			if (found) {
-				resI = ix1;
-				break;
-			}
-		}
-		return resI;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	// @TODO move this to MagicBytesH26xHelper
-	private boolean checkForH26xMagicBytes(final byte[] magicBytes, final @NonNull BufferExt inputBuf) {
-		for (int i = 0; i < magicBytes.length; i++) {
-			if (inputBuf.get(i) != magicBytes[i]) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 }
