@@ -13,8 +13,6 @@ import org.bytedeco.javacpp.BytePointer;
 import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
 import org.tsitle.lib_ffmpeg.*;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegDecoderNotFoundException;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegEncoderNotFoundException;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -25,44 +23,61 @@ import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Optional;
 
 /**
  * Demuxer for A/V streams.
  */
-public final class FfmpegDemuxer {
+public final class FfmpegDemuxer implements AutoCloseable {
+
+	public enum ReadResult {
+		RR_EOF,
+		RR_OK_VID,
+		RR_OK_AUD,
+		RR_INTERNAL_OK_OTHER
+	}
 
 	private static final long FPS_MEASURE_INTERVAL_MS = 10_000L;
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final @NonNull String inputFilePath;
-	private final long outputMaxSecs;
-	private final @Nullable FfmpegReceiveDemuxedAvInterface receiveDemuxedAvInterface;
+	private final long cfgMaxSecs;
+	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
-	private @Nullable AVFormatContext inputAvFmtCtx = null;
+	private @Nullable AVFormatContext inputAvFmtCtx;
 	private final @NonNull FfmpegStreamInfoVideo inputStreamInfoVid = new FfmpegStreamInfoVideo();
 	private final @NonNull FfmpegStreamInfoAudio inputStreamInfoAud = new FfmpegStreamInfoAudio();
-	private @NonNull FfmpegDemuxerStats stats = new FfmpegDemuxerStats();
+	private final @NonNull FfmpegDemuxerStats stats = new FfmpegDemuxerStats();
+	private boolean isInputOpen = false;
+	private @Nullable AVPacket cacheAvPkt = null;
+	private boolean haveReachedMaxSecs = false;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
-	 * @param outputMaxSecs Maximum seconds to demux (<= 0 means no limit)
-	 * @param receiveDemuxedAvInterface 'Receive demuxed A/V data' instance (can be null)
+	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
+	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	public FfmpegDemuxer(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
-				long outputMaxSecs,
-				@Nullable FfmpegReceiveDemuxedAvInterface receiveDemuxedAvInterface
+				long cfgMaxSecs,
+				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.inputFilePath = inputFilePath;
-		this.outputMaxSecs = outputMaxSecs;
-		this.receiveDemuxedAvInterface = receiveDemuxedAvInterface;
+		this.cfgMaxSecs = cfgMaxSecs;
+		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
 		if (inputFilePath.isBlank()) {
 			throw new IllegalArgumentException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): inputFilePath is blank");
+		}
+
+		//
+		inputAvFmtCtx = avformat.avformat_alloc_context();
+		if (inputAvFmtCtx == null) {
+			throw new IllegalStateException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): could not allocate inputAvFmtCtx");
 		}
 	}
 
@@ -73,72 +88,54 @@ public final class FfmpegDemuxer {
 				@NonNull FfmpegStreamInfoVideo streamInfoVid,
 				@NonNull FfmpegStreamInfoAudio streamInfoAud
 			) throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".readStreamInfos()";
-
-		logDebug(FNC_NAME, "Read file: '" + inputFilePath + "'");
-
 		streamInfoVid.reset();
 		streamInfoAud.reset();
 
-		//
-		inputAvFmtCtx = avformat.avformat_alloc_context();
-		if (inputAvFmtCtx == null) {
-			throw new IllegalStateException(FNC_NAME + ": could not allocate inputAvFmtCtx");
-		}
+		internalReadStreamInfos();
 
-		try {
-			int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
-
-			r = avformat.avformat_find_stream_info(inputAvFmtCtx, (AVDictionary)null);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_find_stream_info", r);
-
-			findStreamIndices();
-
-			if (inputStreamInfoVid.streamIx == -1 && inputStreamInfoAud.streamIx == -1) {
-				throw new FfmpegGenericException(FNC_NAME + ": No supported video or audio stream found");
-			}
-
-			// ------------------------------------------------
-
-			if (inputStreamInfoVid.streamIx != -1) {
-				getStreamInfoVideo(inputAvFmtCtx, inputStreamInfoVid);
-			}
-			if (inputStreamInfoAud.streamIx != -1) {
-				getStreamInfoAudio(inputAvFmtCtx, inputStreamInfoAud);
-			}
-		} finally {
-			avformat.avformat_free_context(inputAvFmtCtx);
-			inputAvFmtCtx = null;
-		}
-
-		//
 		streamInfoVid.copyFrom(inputStreamInfoVid);
 		streamInfoAud.copyFrom(inputStreamInfoAud);
 	}
 
-	public void startDemuxing() throws FfmpegGenericException, FfmpegDecoderNotFoundException, FfmpegEncoderNotFoundException {
-		final String FNC_NAME = getClass().getSimpleName() + ".startDemuxing()";
+	// -----------------------------------------------------------------------------------------------------------------
 
-		logDebug(FNC_NAME, "Demux file: '" + inputFilePath + "'" +
-				(outputMaxSecs > 0 ? " (max secs: " + outputMaxSecs + ")" : ""));
+	public @NonNull ReadResult readNextAvPacket(@NonNull FfmpegAvPktBasics outputData) throws FfmpegGenericException {
+		outputData.pktBe.clear();
 
-		inputAvFmtCtx = avformat.avformat_alloc_context();
-		if (inputAvFmtCtx == null) {
-			throw new IllegalStateException(FNC_NAME + ": could not allocate inputAvFmtCtx");
+		//
+		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+			internalReadStreamInfos();
 		}
 
-		stats = new FfmpegDemuxerStats();
-
-		try {
-			int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
-
-			demuxAllPackets();
-		} finally {
-			avformat.avformat_free_context(inputAvFmtCtx);
-			inputAvFmtCtx = null;
+		//
+		ReadResult resEn;
+		while (true) {
+			resEn = internalReadNextAvPacket();
+			if (resEn == ReadResult.RR_EOF) {
+				return ReadResult.RR_EOF;
+			}
+			if (resEn == ReadResult.RR_INTERNAL_OK_OTHER) {
+				avcodec.av_packet_unref(cacheAvPkt);
+				continue;
+			}
+			break;
 		}
+
+		if (cacheAvPkt == null) {
+			return ReadResult.RR_EOF;
+		}
+
+		outputData.pktBe.increaseSize(cacheAvPkt.size());
+		cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
+		outputData.pktBe.setUsed(cacheAvPkt.size());
+
+		outputData.pts = cacheAvPkt.pts();
+		outputData.dts = cacheAvPkt.dts();
+		outputData.timeBase.copyFrom(RationalNumber.of(cacheAvPkt.time_base().num(), cacheAvPkt.time_base().den()));
+
+		avcodec.av_packet_unref(cacheAvPkt);
+
+		return resEn;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -148,8 +145,70 @@ public final class FfmpegDemuxer {
 		return stats;
 	}
 
+	@SuppressWarnings("unused")
+	public Optional<AVFormatContext> getFfAvFmtCtxPtr() {
+		return Optional.ofNullable(inputAvFmtCtx);
+	}
+
+	@SuppressWarnings("unused")
+	public Optional<Integer> getFfAvStreamIxVideo() {
+		if (inputStreamInfoVid.streamIx < 0) {
+			return Optional.empty();
+		}
+		return Optional.of(inputStreamInfoVid.streamIx);
+	}
+
+	@SuppressWarnings("unused")
+	public Optional<Integer> getFfAvStreamIxAudio() {
+		if (inputStreamInfoAud.streamIx < 0) {
+			return Optional.empty();
+		}
+		return Optional.of(inputStreamInfoAud.streamIx);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public void close() {
+		if (inputAvFmtCtx != null) { avformat.avformat_free_context(inputAvFmtCtx); inputAvFmtCtx = null; }
+		if (cacheAvPkt != null) { avcodec.av_packet_free(cacheAvPkt); cacheAvPkt = null; }
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private void internalReadStreamInfos() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalReadStreamInfos()";
+
+		if (inputAvFmtCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
+		}
+
+		logDebug(FNC_NAME, "Read file: '" + inputFilePath + "'");
+
+		int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
+
+		r = avformat.avformat_find_stream_info(inputAvFmtCtx, (AVDictionary)null);
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_find_stream_info", r);
+
+		findStreamIndices();
+
+		if (inputStreamInfoVid.streamIx == -1 && inputStreamInfoAud.streamIx == -1) {
+			avformat.avformat_close_input(inputAvFmtCtx);
+			throw new FfmpegGenericException(FNC_NAME + ": No supported video or audio stream found");
+		}
+
+		// ------------------------------------------------
+
+		if (inputStreamInfoVid.streamIx != -1) {
+			getStreamInfoVideo(inputAvFmtCtx, inputStreamInfoVid);
+		}
+		if (inputStreamInfoAud.streamIx != -1) {
+			getStreamInfoAudio(inputAvFmtCtx, inputStreamInfoAud);
+		}
+		avformat.avformat_close_input(inputAvFmtCtx);
+	}
 
 	private void findStreamIndices() {
 		final String FNC_NAME = getClass().getSimpleName() + ".findStreamIndices()";
@@ -282,91 +341,102 @@ public final class FfmpegDemuxer {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void demuxAllPackets()
-			throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
-		final String FNC_NAME = getClass().getSimpleName() + ".demuxAllPackets()";
+	private @NonNull ReadResult internalReadNextAvPacket() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalReadNextAvPacket()";
 
 		if (inputAvFmtCtx == null) {
 			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
 		}
+		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+			throw new IllegalStateException(FNC_NAME + ": need at least one input stream");
+		}
 
-		AVPacket pkt = new AVPacket();
+		if (haveReachedMaxSecs) {
+			logDebug(FNC_NAME, "cfgMaxSecs reached, stopping");
+			return ReadResult.RR_EOF;
+		}
 
-		//
-		stats.startTime = Instant.now();
+		if (! isInputOpen) {
+			int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
+			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
+			isInputOpen = true;
+			stats.startTime = Instant.now();
+		}
 
-		while (avformat.av_read_frame(inputAvFmtCtx, pkt) >= 0) {
-			if (pkt.stream_index() == inputStreamInfoVid.streamIx) {
-				demuxHandlePktVideo(pkt);
-			} else if (pkt.stream_index() == inputStreamInfoAud.streamIx) {
-				demuxHandlePktAudio(pkt);
-			}
-
-			avcodec.av_packet_unref(pkt);
-
-			if (receiveDemuxedAvInterface != null && statsUpdateCurrent()) {
-				receiveDemuxedAvInterface.cbReceiveDemuxerStats(stats);
-			}
-
-			if (outputMaxSecs > 0 && (long)stats.currentMaxPtsSecs >= outputMaxSecs) {
-				break;
+		if (cacheAvPkt == null) {
+			cacheAvPkt = avcodec.av_packet_alloc();
+			if (cacheAvPkt == null) {
+				throw new RuntimeException(FNC_NAME + ": Cannot allocate AVPacket");
 			}
 		}
 
-		//
-		statsUpdateOverall();
+		int r = avformat.av_read_frame(inputAvFmtCtx, cacheAvPkt);
+		if (r == avutil.AVERROR_EOF()) {
+			statsUpdateOverall();
+			return ReadResult.RR_EOF;
+		}
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_read_frame", r);
+
+		ReadResult resEn;
+		if (cacheAvPkt.stream_index() == inputStreamInfoVid.streamIx) {
+			demuxHandlePktVideo();
+			resEn = ReadResult.RR_OK_VID;
+		} else if (cacheAvPkt.stream_index() == inputStreamInfoAud.streamIx) {
+			demuxHandlePktAudio();
+			resEn = ReadResult.RR_OK_AUD;
+		} else {
+			resEn = ReadResult.RR_INTERNAL_OK_OTHER;
+		}
+
+		if (resEn != ReadResult.RR_INTERNAL_OK_OTHER) {
+			boolean tmpStatsUpdated = statsUpdateCurrent();
+			if (recvDemuxerStatsInterface != null && tmpStatsUpdated) {
+				recvDemuxerStatsInterface.cbReceiveDemuxerStats(stats);
+			}
+
+			if (cfgMaxSecs > 0 && (long) stats.currentMaxPtsSecs >= cfgMaxSecs) {
+				haveReachedMaxSecs = true;
+			}
+		}
+
+		return resEn;
 	}
 
-	private void demuxHandlePktVideo(@NonNull AVPacket pkt)
-			throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
+	private void demuxHandlePktVideo() {
+		if (cacheAvPkt == null) {
+			return;
+		}
 		++stats.pktsAndDataVid.countPkt;
-		stats.pktsAndDataVid.countData += pkt.size();
+		stats.pktsAndDataVid.countData += cacheAvPkt.size();
 
-		stats.pktsAndDataVid.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoVid.timeBasePts, pkt.pts());
+		stats.pktsAndDataVid.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoVid.timeBasePts, cacheAvPkt.pts());
 		/*
 		logDebug(FNC_NAME, "Video frame #" + Integer.toUnsignedString(stats.pktsAndDataVid.countPkt) + ": " +
-				"ptsUnits=" + (pkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : pkt.pts()) +
+				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
 				", ptsSecs=" + Double.toString(ptsSeconds) +
-				", dtsUnits=" + (pkt.dts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : pkt.dts()) +
-				", dataSz=" + pkt.size());
+				", dtsUnits=" + (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.dts()) +
+				", dataSz=" + cacheAvPkt.size());
 		*/
 
-		// [pkt] contains one compressed video frame (or one packet, depending on codec)
-
-		if (inputAvFmtCtx == null || receiveDemuxedAvInterface == null) {
-			return;
-		}
-
-		/*byte[] frameBa = new byte[pkt.size()];
-		pkt.data().get(frameBa);
-		transcoderVideo.transcodePacketFromBuffer(frameBa);*/
-
-		receiveDemuxedAvInterface.cbReceiveDemuxedVideoFrame(inputAvFmtCtx, inputStreamInfoVid.streamIx, pkt);
+		// [cacheAvPkt] contains one compressed video frame (or one packet, depending on codec)
 	}
 
-	private void demuxHandlePktAudio(@NonNull AVPacket pkt)
-			throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
-		++stats.pktsAndDataAud.countPkt;
-		stats.pktsAndDataAud.countData += pkt.size();
-
-		stats.pktsAndDataAud.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoAud.timeBasePts, pkt.pts());
-		/*
-		logDebug(FNC_NAME, "Audio frame #" + Integer.toUnsignedString(stats.pktsAndDataAud.countPkt) + ": " +
-				"ptsUnits=" + (pkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : pkt.pts()) +
-				", ptsSecs=" + Double.toString(ptsSeconds) +
-				", dtsUnits=" + (pkt.dts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : pkt.dts()));
-		*/
-
-		// [pkt] contains one (un-)compressed audio packet
-
-		if (inputAvFmtCtx == null || receiveDemuxedAvInterface == null) {
+	private void demuxHandlePktAudio() {
+		if (cacheAvPkt == null) {
 			return;
 		}
+		++stats.pktsAndDataAud.countPkt;
+		stats.pktsAndDataAud.countData += cacheAvPkt.size();
 
-		//byte[] samples = new byte[pkt.size()];
-		//pkt.data().get(samples);
+		stats.pktsAndDataAud.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoAud.timeBasePts, cacheAvPkt.pts());
+		/*
+		logDebug(FNC_NAME, "Audio frame #" + Integer.toUnsignedString(stats.pktsAndDataAud.countPkt) + ": " +
+				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
+				", ptsSecs=" + Double.toString(ptsSeconds) +
+				", dtsUnits=" + (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.dts()));
+		*/
 
-		receiveDemuxedAvInterface.cbReceiveDemuxedAudioSamples(inputAvFmtCtx, inputStreamInfoAud.streamIx, pkt);
+		// [cacheAvPkt] contains one (un-)compressed audio packet
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

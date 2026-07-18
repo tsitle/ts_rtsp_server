@@ -11,9 +11,8 @@ import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
 import org.bytedeco.ffmpeg.global.avutil;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
 import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
-import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.FfmpegErrorHelper;
@@ -45,7 +44,7 @@ public final class FfmpegMuxer implements FfmpegReceiveTcAvInterface, AutoClosea
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface 'Log message' instance (can be null)
+	 * @param logMsgInterface 'Log message' instance
 	 * @param destVideoCodec Output video codec (can be {@link FfmpegCodec#UNKNOWN})
 	 * @param destVideoImgDims Output video image dimensions (can be empty if video codec is not used)
 	 * @param destAudioCodec Output audio codec (can be {@link FfmpegCodec#UNKNOWN})
@@ -248,41 +247,25 @@ public final class FfmpegMuxer implements FfmpegReceiveTcAvInterface, AutoClosea
 	}
 
 	@Override
-	public void cbReceiveTranscodedVideoFrame(
-				@NonNull BufferExt videoFrame,
-				long pts,
-				long dts,
-				@NonNull RationalNumber timeBase
-			) throws FfmpegGenericException {
-		writePacket(videoFrame, pts, dts, timeBase, outVideoStream);
+	public void cbReceiveTranscodedVideoFrame(@NonNull FfmpegAvPktBasics videoFrame) throws FfmpegGenericException {
+		writePacket(videoFrame, outVideoStream);
 	}
 
 	@Override
-	public void cbReceiveTranscodedAudioSamples(
-				@NonNull BufferExt audioSamples,
-				long pts,
-				long dts,
-				@NonNull RationalNumber timeBase
-			) throws FfmpegGenericException {
-		writePacket(audioSamples, pts, dts, timeBase, outAudioStream);
+	public void cbReceiveTranscodedAudioSamples(@NonNull FfmpegAvPktBasics audioSamples) throws FfmpegGenericException {
+		writePacket(audioSamples, outAudioStream);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void writePacket(
-				@NonNull BufferExt payload,
-				long pts,
-				long dts,
-				@NonNull RationalNumber srcTb,
-				@Nullable AVStream outStream
-			) throws FfmpegGenericException {
+	private void writePacket(@NonNull FfmpegAvPktBasics payload, @Nullable AVStream outStream) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writePacket()";
 
 		if (! isOpened) {
 			throw new IllegalStateException(FNC_NAME + ": Muxer has not been opened");
 		}
-		if (outFmtCtx == null || outStream == null || payload.getUsed() == 0) {
+		if (outFmtCtx == null || outStream == null || payload.pktBe.getUsed() == 0) {
 			return;
 		}
 
@@ -301,19 +284,20 @@ public final class FfmpegMuxer implements FfmpegReceiveTcAvInterface, AutoClosea
 		}
 
 		try (AVRational src = new AVRational()) {
-			int r = avcodec.av_new_packet(pkt, payload.getUsed());
+			int r = avcodec.av_new_packet(pkt, payload.pktBe.getUsed());
 			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
-			pkt.data().put(payload.getBaPtr(), 0, payload.getUsed());
+			pkt.data().put(payload.pktBe.getBaPtr(), 0, payload.pktBe.getUsed());
 
 			pkt.stream_index(outStream.index());
-			pkt.pts(pts);
-			pkt.dts(dts);
+			pkt.pts(payload.pts);
+			pkt.dts(payload.dts);
 
-			src.num(srcTb.getNumerator());
-			src.den(srcTb.getDenominator());
+			src.num(payload.timeBase.getNumerator());
+			src.den(payload.timeBase.getDenominator());
 
 			avcodec.av_packet_rescale_ts(pkt, src, outStream.time_base());
 
+			r = avformat.av_interleaved_write_frame(outFmtCtx, pkt);
 			if (r == avutil.AVERROR_EINVAL()) {
 				logDebug(FNC_NAME, "av_interleaved_write_frame() rejected invalid data - ignoring");
 			} else {

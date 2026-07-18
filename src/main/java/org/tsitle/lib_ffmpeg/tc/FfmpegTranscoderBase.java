@@ -6,7 +6,7 @@ import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avutil;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
 import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.FfmpegErrorHelper;
@@ -30,15 +30,16 @@ public abstract class FfmpegTranscoderBase {
 	protected final @NonNull RationalNumber sourceTimeBase;
 	private final @NonNull FfmpegTcSettingsBase tcSettingsBase;
 
-	private @Nullable AVPacket tpfbInPkt = null;
+	private @Nullable AVPacket cacheInputPkt = null;
 
 	protected boolean isTranscoderReady = false;
 	protected @Nullable AVCodecContext encoderCtx = null;
 	protected @Nullable AVPacket encodedPacket = null;
-	private final @NonNull BufferExt encodedBe = new BufferExt();
 	protected @Nullable AVCodecContext decoderCtx = null;
 	protected @Nullable AVFrame decodedFrame = null;
 	protected @Nullable AVFrame convertedFrame = null;
+
+	private final @NonNull FfmpegAvPktBasics cacheAvPktBasics = new FfmpegAvPktBasics();
 
 	/**
 	 * Constructor.
@@ -68,11 +69,9 @@ public abstract class FfmpegTranscoderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public final void transcodePacketFromBuffer(@NonNull BufferExt inputFrameData)
+	public final void transcodePacketFromBuffer(@NonNull FfmpegAvPktBasics inputFrameData)
 			throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
-		final String FNC_NAME = getClass().getSimpleName() + ".transcodePacketFromBuffer()";
-
-		if (inputFrameData.isEmpty()) {
+		if (inputFrameData.pktBe.isEmpty()) {
 			return;
 		}
 		if (sourceFfmpegCodec == FfmpegCodec.UNKNOWN || tcSettingsBase.ffmpegCodec == FfmpegCodec.UNKNOWN) {
@@ -84,25 +83,20 @@ public abstract class FfmpegTranscoderBase {
 			initTranscoder(false, null, null);
 		}
 
-		if (tpfbInPkt == null) {
-			tpfbInPkt = avcodec.av_packet_alloc();
-			if (tpfbInPkt == null) {
-				throw new RuntimeException(FNC_NAME + ": Cannot allocate TPFB Input Packet");
-			}
+		convertBufferExtToAvPacket(inputFrameData);
+		if (cacheInputPkt != null) {
+			internalTranscodePacket(cacheInputPkt);
 		}
-		int r = avcodec.av_new_packet(tpfbInPkt, inputFrameData.getUsed());
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
-		tpfbInPkt.data().put(inputFrameData.getBaPtr(), 0, inputFrameData.getUsed());
-		//System.err.format("  0x%02X%02X%02X%02X%n", inputFrameData.get(0), inputFrameData.get(1), inputFrameData.get(2), inputFrameData.get(3));
-
-		internalTranscodePacket(tpfbInPkt);
 	}
 
 	public final void transcodePacketFromAvPkt(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				int streamIx,
-				@NonNull AVPacket inputPkt
+				@NonNull FfmpegAvPktBasics inputFrameData
 			) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
+		if (inputFrameData.pktBe.isEmpty()) {
+			return;
+		}
 		if (sourceFfmpegCodec == FfmpegCodec.UNKNOWN || tcSettingsBase.ffmpegCodec == FfmpegCodec.UNKNOWN) {
 			return;
 		}
@@ -112,7 +106,10 @@ public abstract class FfmpegTranscoderBase {
 			initTranscoder(true, inputAvFmtCtx, streamIx);
 		}
 
-		internalTranscodePacket(inputPkt);
+		convertBufferExtToAvPacket(inputFrameData);
+		if (cacheInputPkt != null) {
+			internalTranscodePacket(cacheInputPkt);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -125,7 +122,7 @@ public abstract class FfmpegTranscoderBase {
 		) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException;
 
 	protected final void closeTranscoder() {
-		if (tpfbInPkt != null) { avcodec.av_packet_free(tpfbInPkt); tpfbInPkt = null; }
+		if (cacheInputPkt != null) { avcodec.av_packet_free(cacheInputPkt); cacheInputPkt = null; }
 
 		//
 		if (encodedPacket != null) { avcodec.av_packet_free(encodedPacket); encodedPacket = null; }
@@ -140,6 +137,26 @@ public abstract class FfmpegTranscoderBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private void convertBufferExtToAvPacket(@NonNull FfmpegAvPktBasics inputFrameData) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".convertBufferExtToAvPacket()";
+
+		if (cacheInputPkt == null) {
+			cacheInputPkt = avcodec.av_packet_alloc();
+			if (cacheInputPkt == null) {
+				throw new RuntimeException(FNC_NAME + ": Cannot allocate Cache Input Packet");
+			}
+		}
+		int r = avcodec.av_new_packet(cacheInputPkt, inputFrameData.pktBe.getUsed());
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
+		cacheInputPkt.data().put(inputFrameData.pktBe.getBaPtr(), 0, inputFrameData.pktBe.getUsed());
+		//System.err.format("  0x%02X%02X%02X%02X%n", inputFrameData.pktBe.get(0), inputFrameData.pktBe.get(1), inputFrameData.pktBe.get(2), inputFrameData.pktBe.get(3));
+
+		cacheInputPkt.pts(inputFrameData.pts);
+		cacheInputPkt.dts(inputFrameData.dts);
+		cacheInputPkt.time_base().num(inputFrameData.timeBase.getNumerator());
+		cacheInputPkt.time_base().den(inputFrameData.timeBase.getDenominator());
+	}
 
 	protected abstract void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException;
 
@@ -161,24 +178,18 @@ public abstract class FfmpegTranscoderBase {
 			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_receive_packet()", r);
 
 			if (ffmpegReceiveTcAvInterface != null && encodedPacket.data() != null) {
-				encodedBe.increaseSize(encodedPacket.size());
-				encodedPacket.data().get(encodedBe.getBaPtr(), 0, encodedPacket.size());
-				encodedBe.setUsed(encodedPacket.size());
+				cacheAvPktBasics.pktBe.increaseSize(encodedPacket.size());
+				encodedPacket.data().get(cacheAvPktBasics.pktBe.getBaPtr(), 0, encodedPacket.size());
+				cacheAvPktBasics.pktBe.setUsed(encodedPacket.size());
+
+				cacheAvPktBasics.pts = encodedPacket.pts();
+				cacheAvPktBasics.dts = encodedPacket.dts();
+				cacheAvPktBasics.timeBase.copyFrom(RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den()));
 
 				if (isTranscoderForVideo) {
-					ffmpegReceiveTcAvInterface.cbReceiveTranscodedVideoFrame(
-							encodedBe,
-							encodedPacket.pts(),
-							encodedPacket.dts(),
-							RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den())
-						);
+					ffmpegReceiveTcAvInterface.cbReceiveTranscodedVideoFrame(cacheAvPktBasics);
 				} else {
-					ffmpegReceiveTcAvInterface.cbReceiveTranscodedAudioSamples(
-							encodedBe,
-							encodedPacket.pts(),
-							encodedPacket.dts(),
-							RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den())
-						);
+					ffmpegReceiveTcAvInterface.cbReceiveTranscodedAudioSamples(cacheAvPktBasics);
 				}
 			}
 
