@@ -82,9 +82,8 @@ public final class ThreadRtpSenderAac<
 	protected @NonNull ThreadDataProvBase<AudioAacInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberAudioAacFromFile.class) {
 			ThreadDataProvAacFromFile resObj = new ThreadDataProvAacFromFile(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsCommon,
 					paramsAac,
-					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -94,8 +93,7 @@ public final class ThreadRtpSenderAac<
 		}
 		if (frameGrabberAvType == FrameGrabberAudioAacFromMq.class) {
 			ThreadDataProvAacFromMq resObj = new ThreadDataProvAacFromMq(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+					paramsCommon
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;

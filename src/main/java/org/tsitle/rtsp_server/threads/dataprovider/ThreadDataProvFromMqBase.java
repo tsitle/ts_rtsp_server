@@ -1,19 +1,24 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromMqBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromMqBase> {
 
 	private final boolean needMagicBytes;
+
+	protected @Nullable AvStreamIncomingFromMq avStreamIncoming = null;
 
 	protected boolean haveAllRequiredMetadataPackets = false;
 	private final BufferExt remainingInputBuf = new BufferExt();
@@ -23,12 +28,16 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
+	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param needMagicBytes Do we need 'Magic Bytes'?
 	 */
-	protected ThreadDataProvFromMqBase(@NonNull LogMsgInterface logMsgInterface, boolean needMagicBytes) {
-		super(logMsgInterface);
+	protected ThreadDataProvFromMqBase(
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				boolean needMagicBytes
+			) {
+		super(paramsCommon);
 
+		//
 		this.needMagicBytes = needMagicBytes;
 	}
 
@@ -39,6 +48,15 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
+		try {
+			createAvStreamIncoming();
+			createFrameGrabber();
+		} catch (AvCannotOpenInputException e) {
+			logError(FNC_NAME, "cannot open input: " + e.getMessage());
+			return;
+		}
+
+		//
 		isRunning.set(true);
 		logDebug(FNC_NAME, "Thread started");
 
@@ -49,10 +67,10 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 				Thread.sleep(50);
 			}
 		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException");
+			logError(FNC_NAME, "InterruptedException caught");
 			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
-			logError(FNC_NAME, "Exception: " + e.getMessage());
+			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
@@ -74,7 +92,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	@Override
 	public synchronized boolean haveEos() {
-		return frameGrabber.haveEos();
+		return (frameGrabber == null || frameGrabber.haveEos());
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -97,6 +115,9 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 			throw new InputStreamEosException();
 		}
 		do {
+			if (frameGrabber == null) {
+				throw new InputStreamEosException();
+			}
 			BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
 			if (! needMagicBytes || remainingInputBuf.isEmpty()) {
 				try {
@@ -147,6 +168,15 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
+		this.avStreamIncoming = new AvStreamIncomingFromMq(
+				logMsgInterface,
+				paramsCommon.getIdEsSource(),
+				paramsCommon.getAvStreamIncomingUri().orElseThrow()
+			);
+	}
 
 	protected abstract @NonNull I parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException;
 

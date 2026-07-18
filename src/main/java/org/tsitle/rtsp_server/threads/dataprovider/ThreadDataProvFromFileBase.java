@@ -4,13 +4,14 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +26,10 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		final @NonNull TimestampEpochNs stTimestamp = TimestampEpochNs.ofEmpty();
 	}
 
+	private final boolean doDebugRewindMediaFiles;
+
+	protected @Nullable AvStreamIncomingFromFile avStreamIncoming = null;
+
 	private final ArrayList<@NonNull DataQueueEntry> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
 
@@ -38,31 +43,31 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	/** Condition to signal that the queue has been unblocked */
 	private final Condition queueBlockedChanged = lock.newCondition();
 
-	private final boolean doDebugRewindMediaFiles;
-
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
+	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	protected ThreadDataProvFromFileBase(
-				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
-		super(logMsgInterface);
+		super(paramsCommon);
 
 		if (queueSize <= 0) {
 			throw new IllegalArgumentException("queueSize must be positive");
 		}
 
 		//
+		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
+
+		//
 		for (int i = 0; i < queueSize; ++i) {
 			dataQueue.add(new DataQueueEntry());
 			infoQueue.add(null);
 		}
-		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -72,6 +77,15 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
+		try {
+			createAvStreamIncoming();
+			createFrameGrabber();
+		} catch (AvCannotOpenInputException e) {
+			logError(FNC_NAME, "cannot open input: " + e.getMessage());
+			return;
+		}
+
+		//
 		isRunning.set(true);
 		logDebug(FNC_NAME, "Thread started");
 
@@ -81,10 +95,10 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 				mainLoop();
 			}
 		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException");
+			logError(FNC_NAME, "InterruptedException caught");
 			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
-			logError(FNC_NAME, "Exception: " + e.getMessage());
+			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
@@ -149,6 +163,15 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
+		this.avStreamIncoming = new AvStreamIncomingFromFile(
+				logMsgInterface,
+				paramsCommon.getIdEsSource(),
+				paramsCommon.getAvStreamIncomingUri().orElseThrow()
+			);
+	}
+
 	protected abstract I parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException;
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -179,8 +202,8 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	private void acquireData() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
-		if (frameGrabber.haveEos()) {
-			if (doDebugRewindMediaFiles) {
+		if (frameGrabber == null || frameGrabber.haveEos()) {
+			if (frameGrabber != null && doDebugRewindMediaFiles) {
 				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames, rewinding");
 				try {
 					frameGrabber.rewind();
@@ -214,6 +237,10 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	}
 
 	private void acquireData_sub(@NonNull String fncName) {
+		if (frameGrabber == null) {
+			return;
+		}
+
 		// get the next frame from the input, as well as its size
 		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get()).buf;
 		TimestampEpochNs tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;

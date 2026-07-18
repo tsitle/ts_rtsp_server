@@ -1,52 +1,41 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.ImageReencoder;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.io.IOException;
 
 public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
 
-	private final BufferExt cacheTempBuffer = new BufferExt();
+	private @Nullable ImageReencoder imageReencoder = null;
+	private @Nullable VideoJpegParser jpegParser = null;
 
-	private final @NonNull ImageReencoder imageReencoder;
-	private final @NonNull VideoJpegParser jpegParser;
+	private final BufferExt cacheTempBuffer = new BufferExt();
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
-	 * @param avStreamIncoming Incoming A/V stream
+	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvMjpegFromFile(
-				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming,
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
 		super(
-				logMsgInterface,
+				paramsCommon,
 				queueSize,
 				debugRewindMediaFiles
-			);
-
-		//
-		this.frameGrabber = new FrameGrabberVideoMjpegFromFile(logMsgInterface, avStreamIncoming);
-		this.imageReencoder = new ImageReencoder();
-		this.jpegParser = new VideoJpegParser(
-				logMsgInterface,
-				Thread.currentThread().getName()
 			);
 	}
 
@@ -62,6 +51,9 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		if (congestionLevel < 0 || congestionLevel > 4) {
 			throw new IllegalArgumentException("congestionLevel must be in range 0..4");
 		}
+		if (imageReencoder == null) {
+			return;
+		}
 		/*
 		 * CL 0 --> CQ 100%
 		 * CL 1 --> CQ  85%
@@ -76,7 +68,30 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
+	protected void createFrameGrabber() {
+		if (avStreamIncoming == null) {
+			throw new IllegalStateException("avStreamIncoming is null");
+		}
+		this.frameGrabber = new FrameGrabberVideoMjpegFromFile(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				avStreamIncoming
+			);
+		this.imageReencoder = new ImageReencoder();
+		this.jpegParser = new VideoJpegParser(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				Thread.currentThread().getName()
+			);
+	}
+
+	@Override
 	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		if (jpegParser == null) {
+			throw new IllegalStateException("jpegParser is null");
+		}
+		if (imageReencoder == null) {
+			throw new IllegalStateException("imageReencoder is null");
+		}
+
 		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
 
 		// re-encode or scale the image if necessary

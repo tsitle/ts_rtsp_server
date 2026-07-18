@@ -91,10 +91,9 @@ public final class ThreadRtpSenderPcm<
 	protected @NonNull ThreadDataProvBase<AudioPcmInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberAudioPcmFromFile.class) {
 			ThreadDataProvPcmFromFile resObj = new ThreadDataProvPcmFromFile(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
+					paramsCommon,
 					paramsAudioCommon,
 					paramsPcm,
-					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -104,9 +103,8 @@ public final class ThreadRtpSenderPcm<
 		}
 		if (frameGrabberAvType == FrameGrabberAudioPcmFromMq.class) {
 			ThreadDataProvPcmFromMq resObj = new ThreadDataProvPcmFromMq(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					paramsPcm,
-					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+					paramsCommon,
+					paramsPcm
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioPcmInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioPcmInfo, FGAV>)resObj;

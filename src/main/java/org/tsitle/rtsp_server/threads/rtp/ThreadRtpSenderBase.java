@@ -14,7 +14,6 @@ import org.tsitle.lib_xrtxp.packets.rtp.*;
 import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFactory;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
@@ -34,7 +33,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -54,7 +52,6 @@ public abstract class ThreadRtpSenderBase<
 	protected static final int UDP_PACKET_LEN = 1000 + RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4 + (128 * 2);
 
 	protected final Class<AVSTRIC> avStreamIncomingType;
-	protected @Nullable AVSTRIC avStreamIncomingObj;
 	protected @Nullable TDP threadDataProv;
 	protected final Class<FGAV> frameGrabberAvType;
 
@@ -243,16 +240,7 @@ public abstract class ThreadRtpSenderBase<
 
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-		final URI tmpAvStreamIncomingUri = paramsCommon.getAvStreamIncomingUri().orElseThrow();
-		try (AVSTRIC tmpAvStreamInc = AvStreamIncomingFactory.createAvStreamIncoming(
-					avStreamIncomingType,
-					paramsCommon.getLogMsgInterface().orElse(null),
-					paramsCommon.getIdEsSource(),
-					tmpAvStreamIncomingUri
-				)) {
-			avStreamIncomingObj = tmpAvStreamInc;
-
-			//
+		try {
 			resetRtpTsFrameNr();
 			//
 			beforeRunHook();
@@ -287,8 +275,6 @@ public abstract class ThreadRtpSenderBase<
 					break;
 				}
 			}
-		} catch (AvCannotOpenInputException e) {
-			logError(FNC_NAME, "AvCannotOpenInputException caught: " + e.getMessage());
 		} catch (InputStreamEosException e) {
 			logError(FNC_NAME, "InputStreamEosException caught");
 		} catch (UdpSocketIoException e) {
@@ -305,7 +291,6 @@ public abstract class ThreadRtpSenderBase<
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
-			avStreamIncomingObj = null;
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
@@ -327,26 +312,29 @@ public abstract class ThreadRtpSenderBase<
 		//
 		int loopCnt = 0;
 		while (! doStop.get() && threadDataProv != null &&
-				(! (threadDataProv.isRunning() && threadDataProv.haveFullInputQueue())) &&
-				! threadDataProv.haveEos()) {
+				(! (threadDataProv.isRunning() && threadDataProv.haveFullInputQueue()))) {
 			//noinspection BusyWait
-			Thread.sleep(50);
-			if (++loopCnt % 10 == 0) {
+			Thread.sleep(10);
+			if (++loopCnt % 50 == 0) {
 				logDebug(FNC_NAME, "Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
 			}
-			if (loopCnt >= 10 * 10) {  // 5 seconds
+			if (loopCnt >= 100 * 5) {  // 5 seconds
 				break;
 			}
 		}
-		if (! doStop.get() && threadDataProv != null && threadDataProv.isRunning() &&
+		if (doStop.get()) {
+			logError(FNC_NAME, "DataProv start-up failed: doStop==true");
+			return;
+		}
+		if (threadDataProv == null) {
+			logError(FNC_NAME, "DataProv start-up failed: threadDataProv==null");
+			throw new InputStreamEosException();
+		}
+		if (threadDataProv.isRunning() &&
 				threadDataProv.haveFullInputQueue() && ! threadDataProv.haveEos()) {
 			logDebug(FNC_NAME, "DataProv ready");
 		} else {
-			if (doStop.get()) {
-				logError(FNC_NAME, "DataProv start-up failed: doStop==true");
-			} else if (threadDataProv == null) {
-				logError(FNC_NAME, "DataProv start-up failed: threadDataProv==null");
-			} else if (! threadDataProv.isRunning()) {
+			if (! threadDataProv.isRunning()) {
 				logError(FNC_NAME, "DataProv start-up failed: !isRunning");
 			} else if (! threadDataProv.haveFullInputQueue()) {
 				logError(FNC_NAME, "DataProv start-up failed: !haveFullInputQueue");

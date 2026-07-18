@@ -15,8 +15,6 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
 
-import java.util.Objects;
-
 public final class ThreadRtpSenderH265<
 			AVSTRIC extends AvStreamIncomingBase,
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
@@ -58,8 +56,7 @@ public final class ThreadRtpSenderH265<
 	protected @NonNull ThreadDataProvBase<VideoH265Info, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
 			ThreadDataProvH265FromFile resObj = new ThreadDataProvH265FromFile(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					paramsCommon,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -69,8 +66,7 @@ public final class ThreadRtpSenderH265<
 		}
 		if (frameGrabberAvType == FrameGrabberVideoH26xFromMq.class) {
 			ThreadDataProvH265FromMq resObj = new ThreadDataProvH265FromMq(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+					paramsCommon
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;

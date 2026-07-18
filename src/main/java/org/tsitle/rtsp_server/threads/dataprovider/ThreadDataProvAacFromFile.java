@@ -1,47 +1,40 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
 
-	private final @NonNull AudioAacParser aacParser;
+	private @Nullable AudioAacParser aacParser = null;
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
+	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param paramsAac Thread-specific parameters
-	 * @param avStreamIncoming Incoming A/V stream
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvAacFromFile(
-				@NonNull LogMsgInterface logMsgInterface,
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderAac paramsAac,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
 		super(
-				logMsgInterface,
+				paramsCommon,
 				queueSize,
 				debugRewindMediaFiles
 			);
 
 		//
 		paramsAac.validate();
-
-		//
-		this.frameGrabber = new FrameGrabberAudioAacFromFile(logMsgInterface, avStreamIncoming);
-		this.aacParser = new AudioAacParser();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,7 +53,22 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
+	protected void createFrameGrabber() {
+		if (avStreamIncoming == null) {
+			throw new IllegalStateException("avStreamIncoming is null");
+		}
+		this.frameGrabber = new FrameGrabberAudioAacFromFile(
+				paramsCommon.getLogMsgInterface().orElseThrow(),
+				avStreamIncoming
+			);
+		this.aacParser = new AudioAacParser();
+	}
+
+	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		if (aacParser == null) {
+			throw new IllegalStateException("aacParser is null");
+		}
 		return aacParser.parseAacData(inputBuf);
 	}
 

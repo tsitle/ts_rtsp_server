@@ -82,8 +82,7 @@ public final class ThreadRtpSenderMjpeg<
 	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberVideoMjpegFromFile.class) {
 			ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					paramsCommon,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -93,8 +92,7 @@ public final class ThreadRtpSenderMjpeg<
 		}
 		if (frameGrabberAvType == FrameGrabberVideoMjpegFromMq.class) {
 			ThreadDataProvMjpegFromMq resObj = new ThreadDataProvMjpegFromMq(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+					paramsCommon
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;

@@ -82,8 +82,7 @@ public final class ThreadRtpSenderAc3<
 	protected @NonNull ThreadDataProvBase<AudioAc3Info, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberAudioAc3FromFile.class) {
 			ThreadDataProvAc3FromFile resObj = new ThreadDataProvAc3FromFile(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromFile)avStreamIncomingObj),
+					paramsCommon,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -93,8 +92,7 @@ public final class ThreadRtpSenderAc3<
 		}
 		if (frameGrabberAvType == FrameGrabberAudioAc3FromMq.class) {
 			ThreadDataProvAc3FromMq resObj = new ThreadDataProvAc3FromMq(
-					paramsCommon.getLogMsgInterface().orElseThrow(),
-					Objects.requireNonNull((AvStreamIncomingFromMq)avStreamIncomingObj)
+					paramsCommon
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;

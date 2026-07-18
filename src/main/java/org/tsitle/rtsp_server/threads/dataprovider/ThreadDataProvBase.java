@@ -1,22 +1,26 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV extends FrameGrabberAvBase<?>> extends ThreadBase {
 
+	protected final @NonNull ParamsThreadRtpSenderCommon paramsCommon;
+
 	protected long debugStreamOffset = 0;
 
-	protected FGAV frameGrabber;
+	protected @Nullable FGAV frameGrabber;
 
 	protected final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a frame has been removed from the queue or the thread has been requested to stop */
@@ -24,10 +28,14 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 
 	/**
 	 * Constructor.
-	 * @param logMsgInterface Functional interface for logging messages
+	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	protected ThreadDataProvBase(@NonNull LogMsgInterface logMsgInterface) {
-		super(logMsgInterface);
+	protected ThreadDataProvBase(@NonNull ParamsThreadRtpSenderCommon paramsCommon) {
+		super(paramsCommon.getLogMsgInterface().orElseThrow());
+
+		//
+		paramsCommon.validate();
+		this.paramsCommon = paramsCommon.clone();
 
 		//
 		this.frameGrabber = null;  // needs to be set by the child class
@@ -64,5 +72,11 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 			lock.unlock();
 		}
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected abstract void createAvStreamIncoming() throws AvCannotOpenInputException;
+
+	protected abstract void createFrameGrabber();
 
 }
