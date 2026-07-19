@@ -105,7 +105,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull ReadResult readNextAvPacket(@NonNull FfmpegAvPktBasics outputData) throws FfmpegGenericException {
-		outputData.pktBe.clear();
+		outputData.clear();
 
 		//
 		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {

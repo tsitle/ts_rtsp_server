@@ -11,4 +11,11 @@ public final class FfmpegAvPktBasics {
 	public long dts = -1L;
 	public final @NonNull RationalNumber timeBase = RationalNumber.ofEmpty();
 
+	public void clear() {
+		pktBe.clear();
+		pts = -1L;
+		dts = -1L;
+		timeBase.copyFrom(RationalNumber.ofEmpty());
+	}
+
 }
