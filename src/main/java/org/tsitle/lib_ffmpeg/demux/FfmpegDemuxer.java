@@ -136,8 +136,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
 		outputData.pktBe.setUsed(cacheAvPkt.size());
 
-		outputData.pts = cacheAvPkt.pts();
-		outputData.dts = cacheAvPkt.dts();
+		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
+		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
 		outputData.timeBase.copyFrom(RationalNumber.of(cacheAvPkt.time_base().num(), cacheAvPkt.time_base().den()));
 
 		avcodec.av_packet_unref(cacheAvPkt);
@@ -440,7 +440,10 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		++stats.pktsAndDataVid.countPkt;
 		stats.pktsAndDataVid.countData += cacheAvPkt.size();
 
-		stats.pktsAndDataVid.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoVid.timeBasePts, cacheAvPkt.pts());
+		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
+		tmpFfAvPktBas.timeBase.copyFrom(inputStreamInfoVid.timeBasePts);
+		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
+		stats.pktsAndDataVid.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
 		/*
 		logDebug(FNC_NAME, "Video frame #" + Integer.toUnsignedString(stats.pktsAndDataVid.countPkt) + ": " +
 				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
@@ -459,7 +462,10 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		++stats.pktsAndDataAud.countPkt;
 		stats.pktsAndDataAud.countData += cacheAvPkt.size();
 
-		stats.pktsAndDataAud.currentPtsSecs = ptsUnitsToSeconds(inputStreamInfoAud.timeBasePts, cacheAvPkt.pts());
+		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
+		tmpFfAvPktBas.timeBase.copyFrom(inputStreamInfoAud.timeBasePts);
+		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
+		stats.pktsAndDataAud.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
 		/*
 		logDebug(FNC_NAME, "Audio frame #" + Integer.toUnsignedString(stats.pktsAndDataAud.countPkt) + ": " +
 				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
@@ -471,13 +477,6 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	private static double ptsUnitsToSeconds(@NonNull RationalNumber timeBasePts, long ptsUnits) {
-		if (ptsUnits == avutil.AV_NOPTS_VALUE) {
-			return -1.0;
-		}
-		return ((double)ptsUnits * (double)timeBasePts.getNumerator()) / (double)timeBasePts.getDenominator();
-	}
 
 	private boolean statsUpdateCurrent() {
 		if (stats.startTime == null || FPS_MEASURE_INTERVAL_MS < 1) {

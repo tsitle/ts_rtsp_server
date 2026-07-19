@@ -289,8 +289,8 @@ public final class FfmpegMuxer implements FfmpegReceiveTcAvInterface, AutoClosea
 			pkt.data().put(payload.pktBe.getBaPtr(), 0, payload.pktBe.getUsed());
 
 			pkt.stream_index(outStream.index());
-			pkt.pts(payload.pts);
-			pkt.dts(payload.dts);
+			pkt.pts(payload.ptsUnits == null ? avutil.AV_NOPTS_VALUE : payload.ptsUnits);
+			pkt.dts(payload.dtsUnits == null ? avutil.AV_NOPTS_VALUE : payload.dtsUnits);
 
 			src.num(payload.timeBase.getNumerator());
 			src.den(payload.timeBase.getDenominator());

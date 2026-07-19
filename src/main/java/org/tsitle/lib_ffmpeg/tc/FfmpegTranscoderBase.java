@@ -151,8 +151,8 @@ public abstract class FfmpegTranscoderBase {
 		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
 		cacheInputPkt.data().put(inputFrameData.pktBe.getBaPtr(), 0, inputFrameData.pktBe.getUsed());
 
-		cacheInputPkt.pts(inputFrameData.pts);
-		cacheInputPkt.dts(inputFrameData.dts);
+		cacheInputPkt.pts(inputFrameData.ptsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.ptsUnits);
+		cacheInputPkt.dts(inputFrameData.dtsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.dtsUnits);
 		cacheInputPkt.time_base().num(inputFrameData.timeBase.getNumerator());
 		cacheInputPkt.time_base().den(inputFrameData.timeBase.getDenominator());
 	}
@@ -181,8 +181,8 @@ public abstract class FfmpegTranscoderBase {
 				encodedPacket.data().get(cacheAvPktBasics.pktBe.getBaPtr(), 0, encodedPacket.size());
 				cacheAvPktBasics.pktBe.setUsed(encodedPacket.size());
 
-				cacheAvPktBasics.pts = encodedPacket.pts();
-				cacheAvPktBasics.dts = encodedPacket.dts();
+				cacheAvPktBasics.ptsUnits = (encodedPacket.pts() == avutil.AV_NOPTS_VALUE ? null : encodedPacket.pts());
+				cacheAvPktBasics.dtsUnits = (encodedPacket.dts() == avutil.AV_NOPTS_VALUE ? null : encodedPacket.dts());
 				cacheAvPktBasics.timeBase.copyFrom(RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den()));
 
 				if (isTranscoderForVideo) {
