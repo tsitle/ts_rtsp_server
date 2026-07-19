@@ -14,6 +14,8 @@ public final class TimestampEpochNs implements Cloneable {
 	private long epochNs = 0L;
 	private boolean isSet = false;
 
+	private TimestampEpochNs() { }
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
