@@ -22,6 +22,8 @@ public final class NtpTimestamp implements Cloneable {
 	private long ntpSecondsSince1900_32bit = -1L;
 	private long ntpFraction_32bit = -1L;
 
+	private NtpTimestamp() { }
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
