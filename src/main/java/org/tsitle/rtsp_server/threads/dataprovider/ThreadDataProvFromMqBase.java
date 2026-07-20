@@ -20,8 +20,6 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	protected @Nullable AvStreamIncomingFromEsMq avStreamIncoming = null;
 
-	protected boolean haveAllRequiredMetadataPackets = false;
-
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
@@ -124,6 +122,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 				);
 		}
 		packetSplitter.getNextSplitPacket(buf, stTimestamp, infoObj);
+		debugStreamOffset = packetSplitter.getDebugStreamOffset();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

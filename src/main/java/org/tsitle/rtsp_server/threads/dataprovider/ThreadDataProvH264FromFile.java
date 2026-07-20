@@ -59,11 +59,7 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 
 	@Override
 	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		VideoH264Info curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
-
-		//haveAllRequiredMetadataPackets = packetParser.haveAllRequiredMetadataPackets();
-
-		return curPktInfo;
+		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
 	}
 
 }

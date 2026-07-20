@@ -39,11 +39,7 @@ public final class ThreadDataProvH265FromDemuxMs extends ThreadDataProvFromDemux
 
 	@Override
 	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		VideoH265Info curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
-		//
-		haveAllRequiredMetadataPackets = true;
-		//
-		return curPktInfo;
+		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
 	}
 
 	@Override

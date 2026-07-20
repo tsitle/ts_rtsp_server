@@ -41,11 +41,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 
 	@Override
 	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		VideoJpegInfo curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
-
-		haveAllRequiredMetadataPackets = true;
-
-		return curPktInfo;
+		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
 	}
 
 	@Override

@@ -20,6 +20,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 
 	private final BufferExt remainingInputBuf = new BufferExt();
 	private final TimestampEpochNs stTimestampCurFrame = TimestampEpochNs.ofEmpty();
+	private long debugStreamOffset = 0L;
 
 	PacketSplitter(
 				@NonNull PsLogErrorInterface logErrorMsgInterface,
@@ -38,55 +39,57 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	long getDebugStreamOffset() {
+		return debugStreamOffset;
+	}
+
 	void getNextSplitPacket(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException, AvInvalidCodecDataException, InputStreamThreadEndedException {
-		//do {
-			BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
-			if (! needMagicBytes || remainingInputBuf.isEmpty()) {
+		BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
+		if (! needMagicBytes || remainingInputBuf.isEmpty()) {
+			try {
+				frameGrabberPtr.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
+			} catch (InputStreamIoException e) {
+				throw new InputStreamEosException();
+			}
+		}
+		//
+		try {
+			final I tmpInfoObj = packetParseAndConvertData.parseAndConvertData(readIntoBufPtr);
+			infoObj.copyOf(tmpInfoObj);
+		} catch (Exception e) {
+			logErrorMsgInterface.logErrorMsg("caught: " + e);
+			throw new InputStreamEosException();
+		}
+
+		stTimestamp.copyFrom(stTimestampCurFrame);
+
+		/*
+		 * IP cameras tend to send, for instance, 'SPS', 'PPS' and a VCL NAL Unit in a single packet.
+		 * So we need to find the next magic bytes to split the buffer into multiple NAL Units.
+		 */
+		if (needMagicBytes) {
+			int nextOffset = packetFindNextMagicBytes.findNextMagicBytes(remainingInputBuf);
+			if (nextOffset < 1) {
+				buf.copyOf(remainingInputBuf);
+				remainingInputBuf.clear();
+			} else {
+				buf.copyOf(remainingInputBuf, 0, nextOffset);
+				BufferExt tmpBuf = new BufferExt();
+				tmpBuf.copyOf(remainingInputBuf, nextOffset, remainingInputBuf.getUsed() - nextOffset);
+				remainingInputBuf.copyOf(tmpBuf);
+				// parse the new buffer again
 				try {
-					frameGrabberPtr.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
-				} catch (InputStreamIoException e) {
+					final I tmpInfoObj = packetParseAndConvertData.parseAndConvertData(buf);
+					infoObj.copyOf(tmpInfoObj);
+				} catch (Exception e) {
+					logErrorMsgInterface.logErrorMsg("caught: " + e);
 					throw new InputStreamEosException();
 				}
 			}
-			//
-			try {
-				final I tmpInfoObj = packetParseAndConvertData.parseAndConvertData(readIntoBufPtr);
-				infoObj.copyOf(tmpInfoObj);
-			} catch (Exception e) {
-				logErrorMsgInterface.logErrorMsg("caught: " + e);
-				throw new InputStreamEosException();
-			}
-
-			stTimestamp.copyFrom(stTimestampCurFrame);
-
-			/*
-			 * IP cameras tend to send, for instance, 'SPS', 'PPS' and a VCL NAL Unit in a single packet.
-			 * So we need to find the next magic bytes to split the buffer into multiple NAL Units.
-			 */
-			if (needMagicBytes) {
-				int nextOffset = packetFindNextMagicBytes.findNextMagicBytes(remainingInputBuf);
-				if (nextOffset < 1) {
-					buf.copyOf(remainingInputBuf);
-					remainingInputBuf.clear();
-				} else {
-					buf.copyOf(remainingInputBuf, 0, nextOffset);
-					BufferExt tmpBuf = new BufferExt();
-					tmpBuf.copyOf(remainingInputBuf, nextOffset, remainingInputBuf.getUsed() - nextOffset);
-					remainingInputBuf.copyOf(tmpBuf);
-					// parse the new buffer again
-					try {
-						final I tmpInfoObj = packetParseAndConvertData.parseAndConvertData(buf);
-						infoObj.copyOf(tmpInfoObj);
-					} catch (Exception e) {
-						logErrorMsgInterface.logErrorMsg("caught: " + e);
-						throw new InputStreamEosException();
-					}
-				}
-			}
-			//
-			//debugStreamOffset += buf.getUsed();  // @TODO
-		//} while (! haveAllRequiredMetadataPackets);
+		}
+		//
+		debugStreamOffset += buf.getUsed();
 	}
 
 }

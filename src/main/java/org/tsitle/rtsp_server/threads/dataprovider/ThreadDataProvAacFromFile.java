@@ -65,11 +65,7 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioAacInfo curPktInfo = packetParser.parseAndConvertData(inputBuf);
-
-		//haveAllRequiredMetadataPackets = true;
-
-		return curPktInfo;
+		return packetParser.parseAndConvertData(inputBuf);
 	}
 
 }

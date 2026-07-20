@@ -20,8 +20,6 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 
 	protected @Nullable AvStreamIncomingFromDemuxMs avStreamIncoming = null;
 
-	protected boolean haveAllRequiredMetadataPackets = false;
-
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
@@ -127,6 +125,7 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 				);
 		}
 		packetSplitter.getNextSplitPacket(buf, stTimestamp, infoObj);
+		debugStreamOffset = packetSplitter.getDebugStreamOffset();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

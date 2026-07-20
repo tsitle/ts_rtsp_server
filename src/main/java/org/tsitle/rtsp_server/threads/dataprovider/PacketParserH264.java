@@ -17,16 +17,11 @@ final class PacketParserH264 {
 
 	private final @NonNull VideoH264Parser pktParser;
 	private @Nullable H264PictureBoundaryInfo cachePictBoundInfoPrev = null;
-	private boolean haveAllRequiredMetadataPackets = false;
 
 	PacketParserH264() {
 		Map<@NonNull Integer, @NonNull H264SpsContext> mapSpsContext = new HashMap<>();
 		Map<@NonNull Integer, @NonNull H264PpsContext> mapPpsContext = new HashMap<>();
 		this.pktParser = new VideoH264Parser(mapSpsContext, mapPpsContext);
-	}
-
-	boolean haveAllRequiredMetadataPackets() {
-		return haveAllRequiredMetadataPackets;
 	}
 
 	@NonNull VideoH264Info parseAndConvertData(long debugStreamOffset, @NonNull BufferExt inputBuf)
@@ -42,8 +37,6 @@ final class PacketParserH264 {
 		if (curFrameH264Info.isVclNalUnit) {
 			cachePictBoundInfoPrev = curFrameH264Info.pictBoundInfo.clone();
 		}
-
-		haveAllRequiredMetadataPackets = pktParser.haveAllRequiredMetadataPackets();
 
 		return curFrameH264Info;
 	}

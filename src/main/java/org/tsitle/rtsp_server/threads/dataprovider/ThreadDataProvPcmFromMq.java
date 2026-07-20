@@ -54,11 +54,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioPcmInfo curPktInfo = packetParser.parseAndConvertData(inputBuf);
-
-		haveAllRequiredMetadataPackets = true;
-
-		return curPktInfo;
+		return packetParser.parseAndConvertData(inputBuf);
 	}
 
 	@Override

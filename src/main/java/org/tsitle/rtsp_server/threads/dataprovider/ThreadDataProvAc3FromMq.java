@@ -39,11 +39,7 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected @NonNull AudioAc3Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		AudioAc3Info curPktInfo = packetParser.parseAndConvertData(inputBuf);
-
-		haveAllRequiredMetadataPackets = true;
-
-		return curPktInfo;
+		return packetParser.parseAndConvertData(inputBuf);
 	}
 
 	@Override
