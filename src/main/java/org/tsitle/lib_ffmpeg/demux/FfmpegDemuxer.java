@@ -42,6 +42,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private final @NonNull String inputFilePath;
 	private final long cfgMaxSecs;
 	private final boolean cfgOutputH26xAsAnnexB;
+	private final boolean cfgOutputAacWithAdts;
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
 	private @Nullable AVFormatContext inputAvFmtCtx;
@@ -53,6 +54,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private boolean haveReachedMaxSecs = false;
 
 	private @Nullable BsfH26xAnnexB bsfH26xAnnexB = null;
+	private @Nullable AacAdtsPacketizer aacAdtsPacketizer = null;
 
 	/**
 	 * Constructor.
@@ -60,19 +62,22 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param inputFilePath Path to the input file
 	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
 	 * @param cfgOutputH26xAsAnnexB Output H.26x as Annex B (true) or as-is?
+	 * @param cfgOutputAacWithAdts Output AAC with ADTS header (true) or as-is?
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
-	public FfmpegDemuxer(
+	private FfmpegDemuxer(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
 				long cfgMaxSecs,
 				boolean cfgOutputH26xAsAnnexB,
+				boolean cfgOutputAacWithAdts,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.inputFilePath = inputFilePath;
 		this.cfgMaxSecs = cfgMaxSecs;
 		this.cfgOutputH26xAsAnnexB = cfgOutputH26xAsAnnexB;
+		this.cfgOutputAacWithAdts = cfgOutputAacWithAdts;
 		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
 		if (inputFilePath.isBlank()) {
@@ -89,21 +94,94 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void readStreamInfos(
-				@NonNull FfmpegStreamInfoVideo streamInfoVid,
-				@NonNull FfmpegStreamInfoAudio streamInfoAud
+	/**
+	 * Read the stream info from the input file.
+	 * @param logMsgInterface 'Log message' instance (can be null)
+	 * @param inputFilePath Path to the input file
+	 * @param outStreamInfoVid Output for the video stream info
+	 * @param outStreamInfoAud Output for the audio stream info
+	 * @throws FfmpegGenericException If any FFmpeg error occurs
+	 */
+	public static void readStreamInfos(
+				@Nullable LogMsgInterface logMsgInterface,
+				@NonNull String inputFilePath,
+				@NonNull FfmpegStreamInfoVideo outStreamInfoVid,
+				@NonNull FfmpegStreamInfoAudio outStreamInfoAud
 			) throws FfmpegGenericException {
-		streamInfoVid.reset();
-		streamInfoAud.reset();
+		outStreamInfoVid.reset();
+		outStreamInfoAud.reset();
 
-		internalReadStreamInfos();
+		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
+					logMsgInterface,
+					inputFilePath,
+					1L,
+					false,
+					false,
+					null
+				)) {
+			ffmpegDemuxer.internalReadStreamInfos();
 
-		streamInfoVid.copyFrom(inputStreamInfoVid);
-		streamInfoAud.copyFrom(inputStreamInfoAud);
+			outStreamInfoVid.copyFrom(ffmpegDemuxer.inputStreamInfoVid);
+			outStreamInfoAud.copyFrom(ffmpegDemuxer.inputStreamInfoAud);
+		}
+	}
+
+	/**
+	 * Create a Demuxer for demuxing only.
+	 * @param logMsgInterface 'Log message' instance (can be null)
+	 * @param inputFilePath Path to the input file
+	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
+	 * @param cfgOutputH26xAsAnnexB Output H.26x as Annex B (true) or as-is?
+	 * @param cfgOutputAacWithAdts Output AAC with ADTS header (true) or as-is?
+	 */
+	public static FfmpegDemuxer createForDemuxingOnly(
+				@Nullable LogMsgInterface logMsgInterface,
+				@NonNull String inputFilePath,
+				long cfgMaxSecs,
+				boolean cfgOutputH26xAsAnnexB,
+				boolean cfgOutputAacWithAdts
+			) {
+		return new FfmpegDemuxer(
+				logMsgInterface,
+				inputFilePath,
+				cfgMaxSecs,
+				cfgOutputH26xAsAnnexB,
+				cfgOutputAacWithAdts,
+				null
+			);
+	}
+
+	/**
+	 * Create a Demuxer for transcoding.
+	 * @param logMsgInterface 'Log message' instance (can be null)
+	 * @param inputFilePath Path to the input file
+	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
+	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
+	 */
+	public static FfmpegDemuxer createForTranscoding(
+				@Nullable LogMsgInterface logMsgInterface,
+				@NonNull String inputFilePath,
+				long cfgMaxSecs,
+				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
+			) {
+		return new FfmpegDemuxer(
+				logMsgInterface,
+				inputFilePath,
+				cfgMaxSecs,
+				false,
+				false,
+				recvDemuxerStatsInterface
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	/**
+	 * Read the next A/V packet.
+	 * @param outputData Output data
+	 * @return Read result
+	 * @throws FfmpegGenericException If any FFmpeg error occurs
+	 */
 	public @NonNull ReadResult readNextAvPacket(@NonNull FfmpegAvPktBasics outputData) throws FfmpegGenericException {
 		outputData.clear();
 
@@ -132,13 +210,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		ReadResult resEn = tmpOptResEn.get();
 
-		outputData.pktBe.increaseSize(cacheAvPkt.size());
-		cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
-		outputData.pktBe.setUsed(cacheAvPkt.size());
-
-		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
-		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
-		outputData.timeBase.copyFrom(RationalNumber.of(cacheAvPkt.time_base().num(), cacheAvPkt.time_base().den()));
+		copyCachedAvPacketToOutput(resEn == ReadResult.RR_OK_VID, outputData);
 
 		avcodec.av_packet_unref(cacheAvPkt);
 
@@ -380,16 +452,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ---------------------------------------------------
 
-		if (bsfH26xAnnexB == null && cfgOutputH26xAsAnnexB &&
-				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
-			bsfH26xAnnexB = new BsfH26xAnnexB(
-					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
-					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
-				);
-		}
-
-		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOnePacket(cacheAvPkt)) {
-			return Optional.of(ReadResult.RR_OK_VID);
+		Optional<ReadResult> tmpOptRrEn = fetchAvPacketFromFilter();
+		if (tmpOptRrEn.isPresent()) {
+			return tmpOptRrEn;
 		}
 
 		// ---------------------------------------------------
@@ -419,8 +484,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ---------------------------------------------------
 
-		if (resEn == ReadResult.RR_OK_VID && bsfH26xAnnexB != null) {
-			bsfH26xAnnexB.setInputPacket(cacheAvPkt);
+		boolean tmpResB = setAvPacketForFilter(resEn == ReadResult.RR_OK_VID);
+		if (tmpResB) {
 			return Optional.empty();
 		}
 
@@ -474,6 +539,78 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		*/
 
 		// [cacheAvPkt] contains one (un-)compressed audio packet
+	}
+
+	// ---------------------------------------------------
+
+	private Optional<ReadResult> fetchAvPacketFromFilter() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".fetchAvPacketFromFilter()";
+
+		if (inputAvFmtCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
+		}
+		if (cacheAvPkt == null) {
+			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
+		}
+
+		if (bsfH26xAnnexB == null && cfgOutputH26xAsAnnexB &&
+				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
+			bsfH26xAnnexB = new BsfH26xAnnexB(
+					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
+					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
+				);
+		}
+
+		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOnePacket(cacheAvPkt)) {
+			return Optional.of(ReadResult.RR_OK_VID);
+		}
+		return Optional.empty();
+	}
+
+	private boolean setAvPacketForFilter(boolean isVideo) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".setAvPacketForFilter()";
+
+		if (inputAvFmtCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
+		}
+		if (cacheAvPkt == null) {
+			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
+		}
+
+		if (isVideo && bsfH26xAnnexB != null) {
+			bsfH26xAnnexB.setInputPacket(cacheAvPkt);
+			return true;
+		}
+
+		return false;
+	}
+
+	// ---------------------------------------------------
+
+	private void copyCachedAvPacketToOutput(
+				boolean isVideo,
+				@NonNull FfmpegAvPktBasics outputData
+			) {
+		final String FNC_NAME = getClass().getSimpleName() + ".copyCachedAvPacketToOutput()";
+
+		if (cacheAvPkt == null) {
+			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
+		}
+
+		if (! isVideo && cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
+			if (aacAdtsPacketizer == null) {
+				aacAdtsPacketizer = AacAdtsPacketizer.fromAsc(inputStreamInfoAud.aacAudioSpecificConfigHex);
+			}
+			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
+		} else {
+			outputData.pktBe.increaseSize(cacheAvPkt.size());
+			cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
+			outputData.pktBe.setUsed(cacheAvPkt.size());
+		}
+
+		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
+		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
+		outputData.timeBase.copyFrom(RationalNumber.of(cacheAvPkt.time_base().num(), cacheAvPkt.time_base().den()));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
