@@ -158,6 +158,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
+	@SuppressWarnings("unused")
 	public static FfmpegDemuxer createForTranscoding(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
@@ -610,7 +611,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
 		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
-		outputData.timeBase.copyFrom(RationalNumber.of(cacheAvPkt.time_base().num(), cacheAvPkt.time_base().den()));
+		outputData.timeBase.copyFrom(
+				isVideo ? inputStreamInfoVid.timeBasePts : inputStreamInfoAud.timeBasePts
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
