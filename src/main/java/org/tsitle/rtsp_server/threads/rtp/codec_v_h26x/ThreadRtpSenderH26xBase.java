@@ -3,10 +3,12 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_h26x;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoH26xBase;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
@@ -129,6 +131,14 @@ public abstract class ThreadRtpSenderH26xBase<
 				cacheFrameData.haveErrorEos = true;
 				cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
 				return cacheFrameData;
+			} catch (InputStreamThreadEndedException e) {
+				cacheFrameData.haveErrorEos = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": Input thread ended";
+				return cacheFrameData;
+			} catch (AvInvalidCodecDataException e) {
+				cacheFrameData.haveErrorEos = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": Invalid Codec Data: " + e.getMessage();
+				return cacheFrameData;
 			}
 		}
 
@@ -189,7 +199,8 @@ public abstract class ThreadRtpSenderH26xBase<
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void frameDataSupplierGrabNalUnit() throws InputStreamEosException {
+	private void frameDataSupplierGrabNalUnit()
+			throws InputStreamEosException, InputStreamThreadEndedException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".frameDataSupplierGrabNalUnit()";
 
 		if (threadDataProv == null || ! threadDataProv.isRunning()) {

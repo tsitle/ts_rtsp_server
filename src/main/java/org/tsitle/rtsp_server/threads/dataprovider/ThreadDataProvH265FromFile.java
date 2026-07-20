@@ -1,17 +1,15 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
-import org.tsitle.lib_xrtxp.avdata.VideoH265Parser;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase<VideoH265Info> {
 
-	private @Nullable VideoH265Parser h265Parser = null;
+	private final @NonNull PacketParserH265 packetParser;
 
 	/**
 	 * Constructor.
@@ -29,6 +27,8 @@ public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase
 				queueSize,
 				debugRewindMediaFiles
 			);
+
+		this.packetParser = new PacketParserH265();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -51,25 +51,19 @@ public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoH26xFromFile(
+		this.frameGrabber = new FrameGrabberVideoH26xFromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
-		this.h265Parser = new VideoH265Parser();
 	}
 
 	@Override
 	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		if (h265Parser == null) {
-			throw new IllegalStateException("h265Parser is null");
-		}
-		return h265Parser.parseH265Data(
-				debugStreamOffset,
-				MagicBytesH26xHelper.isMagicBytesLong(inputBuf) ?
-						FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length
-						: FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length,
-				inputBuf
-			);
+		VideoH265Info curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+		//
+		//haveAllRequiredMetadataPackets = true;
+		//
+		return curPktInfo;
 	}
 
 }

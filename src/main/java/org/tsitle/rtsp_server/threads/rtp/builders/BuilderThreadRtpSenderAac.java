@@ -30,22 +30,22 @@ public final class BuilderThreadRtpSenderAac {
 			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderAac<>(
-							AvStreamIncomingFromFile.class,
-							FrameGrabberAudioAacFromFile.class,
+							AvStreamIncomingFromEsFile.class,
+							FrameGrabberAudioAacFromEsFile.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsAac
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderAac<>(
-							AvStreamIncomingFromFile.class,  // @TODO
-							FrameGrabberAudioAacFromFile.class,  // @TODO
+							AvStreamIncomingFromDemuxMs.class,
+							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsAac
 						);
 					default -> new ThreadRtpSenderAac<>(
-							AvStreamIncomingFromMq.class,
-							FrameGrabberAudioAacFromMq.class,
+							AvStreamIncomingFromEsMq.class,
+							FrameGrabberAudioAacFromEsMq.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsAac

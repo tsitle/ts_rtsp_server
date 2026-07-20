@@ -3,22 +3,22 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsMqBase;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
-public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromEsMqBase> {
+public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromDemuxMs> {
 
-	private @Nullable PacketSplitter<I, FrameGrabberAvFromEsMqBase> packetSplitter = null;
+	private @Nullable PacketSplitter<I, FrameGrabberAvFromDemuxMs> packetSplitter = null;
 	private final boolean needMagicBytes;
 
-	protected @Nullable AvStreamIncomingFromEsMq avStreamIncoming = null;
+	protected @Nullable AvStreamIncomingFromDemuxMs avStreamIncoming = null;
 
 	protected boolean haveAllRequiredMetadataPackets = false;
 
@@ -27,13 +27,16 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param needMagicBytes Do we need 'Magic Bytes'?
 	 */
-	protected ThreadDataProvFromMqBase(
+	protected ThreadDataProvFromDemuxMsBase(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				boolean needMagicBytes
 			) {
 		super(paramsCommon);
 
-		//
+		if (paramsCommon.getDemuxReadNextAvPacketInterface().isEmpty()) {
+			throw new IllegalArgumentException("demuxReadNextAvPacketInterface must be set");
+		}
+
 		this.needMagicBytes = needMagicBytes;
 	}
 
@@ -131,10 +134,11 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	@Override
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
-		this.avStreamIncoming = new AvStreamIncomingFromEsMq(
+		this.avStreamIncoming = new AvStreamIncomingFromDemuxMs(
 				logMsgInterface,
 				paramsCommon.getIdEsSource(),
-				paramsCommon.getAvStreamIncomingUri().orElseThrow()
+				paramsCommon.getIsVideoThread(),
+				paramsCommon.getDemuxReadNextAvPacketInterface().orElseThrow()
 			);
 	}
 

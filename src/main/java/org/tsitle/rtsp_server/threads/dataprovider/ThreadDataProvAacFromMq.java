@@ -1,17 +1,15 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromMq;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<AudioAacInfo> {
 
-	private @Nullable AudioAacParser aacParser = null;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
@@ -21,6 +19,8 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
 		super(paramsCommon, false);
+
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -31,22 +31,24 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAacFromMq(
+		this.frameGrabber = new FrameGrabberAudioAacFromEsMq(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
-		this.aacParser = new AudioAacParser();
 	}
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		if (aacParser == null) {
-			throw new IllegalStateException("aacParser is null");
-		}
-		AudioAacInfo curFrameAacInfo = aacParser.parseAacData(inputBuf);
+		AudioAacInfo curPktInfo = packetParser.parseAndConvertData(inputBuf);
+
 		haveAllRequiredMetadataPackets = true;
-		//
-		return curFrameAacInfo;
+
+		return curPktInfo;
+	}
+
+	@Override
+	protected int findNextMagicBytes(@NonNull BufferExt inputBuf) {
+		return -1;
 	}
 
 }

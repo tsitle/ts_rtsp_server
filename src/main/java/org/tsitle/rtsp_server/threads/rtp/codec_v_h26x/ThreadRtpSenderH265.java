@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketH265;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH265FromDemuxMs;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH265FromFile;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH265FromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
@@ -54,7 +55,7 @@ public final class ThreadRtpSenderH265<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoH265Info, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsFile.class) {
 			ThreadDataProvH265FromFile resObj = new ThreadDataProvH265FromFile(
 					paramsCommon,
 					10,
@@ -64,7 +65,7 @@ public final class ThreadRtpSenderH265<
 			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsMq.class) {
 			ThreadDataProvH265FromMq resObj = new ThreadDataProvH265FromMq(
 					paramsCommon
 				);
@@ -72,8 +73,15 @@ public final class ThreadRtpSenderH265<
 			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberVideoH26xFromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoH26xFromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvH265FromDemuxMs resObj = new ThreadDataProvH265FromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -16,7 +16,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import java.net.URI;
 import java.util.Optional;
 
-public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
+public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 
 	private final @NonNull MqInternalSub mqInternalSub;
 
@@ -27,7 +27,7 @@ public final class AvStreamIncomingFromMq extends AvStreamIncomingBase {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromMq(
+	public AvStreamIncomingFromEsMq(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri

@@ -22,9 +22,6 @@ public final class ThreadRtpSenderMjpeg<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, FGAV, ThreadDataProvBase<VideoJpegInfo, FGAV>> {
 
-	@SuppressWarnings("FieldCanBeLocal")
-	private final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
-
 	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
 	private @Nullable RtpPacketMjpeg cachePlainPacket = null;
 
@@ -57,7 +54,6 @@ public final class ThreadRtpSenderMjpeg<
 
 		//
 		paramsVideoCommon.validate();
-		this.paramsVideoCommon = paramsVideoCommon.clone();
 		paramsMjpeg.validate();
 	}
 
@@ -80,7 +76,7 @@ public final class ThreadRtpSenderMjpeg<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberVideoMjpegFromFile.class) {
+		if (frameGrabberAvType == FrameGrabberVideoMjpegFromEsFile.class) {
 			ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
 					paramsCommon,
 					10,
@@ -90,7 +86,7 @@ public final class ThreadRtpSenderMjpeg<
 			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberVideoMjpegFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberVideoMjpegFromEsMq.class) {
 			ThreadDataProvMjpegFromMq resObj = new ThreadDataProvMjpegFromMq(
 					paramsCommon
 				);

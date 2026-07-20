@@ -19,9 +19,9 @@ import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromEsFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAc3FromEsFile;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -108,6 +108,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** for Demuxed Muxed-Stream Sources: Muxed-Stream Source ID */
 	@GsonAnnoExclude
 	private @Nullable Integer msSourceId;
+	/** for Demuxed Muxed-Stream Sources: Muxed-Stream Source URI */
+	@GsonAnnoExclude
+	private @Nullable URI msSourceUri;
 	/** for Demuxed Muxed-Stream Sources: FFmpeg Stream Index */
 	@GsonAnnoExclude
 	private @Nullable Integer msSourceFfmpegStreamIx;
@@ -140,6 +143,7 @@ public final class RtspConfigElementaryStreamSource {
 		this.mqDynamicAudioChannelCount = -1;
 
 		this.msSourceId = null;
+		this.msSourceUri = null;
 		this.msSourceFfmpegStreamIx = null;
 	}
 
@@ -149,6 +153,7 @@ public final class RtspConfigElementaryStreamSource {
 	static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamVideo(
 				int esSourceId,
 				int msSourceId,
+				@NonNull URI msSourceUri,
 				@NonNull FfmpegStreamInfoVideo streamInfo
 			) {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamVideo()";
@@ -156,6 +161,7 @@ public final class RtspConfigElementaryStreamSource {
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
 		resObj.msSourceId = msSourceId;
+		resObj.msSourceUri = msSourceUri;
 		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
 
 		resObj.internalHasBeenPostProcessed = true;
@@ -173,6 +179,7 @@ public final class RtspConfigElementaryStreamSource {
 	static @NonNull RtspConfigElementaryStreamSource createFromDemuxedSubStreamAudio(
 				int esSourceId,
 				int msSourceId,
+				@NonNull URI msSourceUri,
 				@NonNull FfmpegStreamInfoAudio streamInfo
 			) {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamAudio()";
@@ -180,6 +187,7 @@ public final class RtspConfigElementaryStreamSource {
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
 		resObj.msSourceId = msSourceId;
+		resObj.msSourceUri = msSourceUri;
 		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
 
 		resObj.internalHasBeenPostProcessed = true;
@@ -231,7 +239,7 @@ public final class RtspConfigElementaryStreamSource {
 		return switch (getSourceType()) {
 				case ST_ES_FILE -> URI.create("file:" + filePath);
 				case ST_ES_MQ -> Objects.requireNonNull(mq).getInputUri();
-				case ST_DEMUX_MS_FILE -> URI.create(String.format("http://msSource.local/?%d#%d", msSourceId, msSourceFfmpegStreamIx));
+				case ST_DEMUX_MS_FILE -> Objects.requireNonNull(msSourceUri);
 			};
 	}
 
@@ -541,9 +549,9 @@ public final class RtspConfigElementaryStreamSource {
 
 	private void readAacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
-		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
+		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberAudioAacFromFile asoAac = new FrameGrabberAudioAacFromFile(avStreamIncoming);
+			FrameGrabberAudioAacFromEsFile asoAac = new FrameGrabberAudioAacFromEsFile(avStreamIncoming);
 			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
 			asoAac.getNextFrame(tmpBuf, tmpStTimestamp);
 
@@ -582,9 +590,9 @@ public final class RtspConfigElementaryStreamSource {
 
 	private void readAc3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
-		try (AvStreamIncomingFromFile avStreamIncoming = new AvStreamIncomingFromFile(internalIdEsSource, getInputUri())) {
+		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberAudioAc3FromFile asoAc3 = new FrameGrabberAudioAc3FromFile(avStreamIncoming);
+			FrameGrabberAudioAc3FromEsFile asoAc3 = new FrameGrabberAudioAc3FromEsFile(avStreamIncoming);
 			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
 			asoAc3.getNextFrame(tmpBuf, tmpStTimestamp);
 

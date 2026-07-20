@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
@@ -17,6 +18,7 @@ import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.exceptions.*;
 import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
@@ -276,7 +278,7 @@ public abstract class ThreadRtpSenderBase<
 				}
 			}
 		} catch (InputStreamEosException e) {
-			logError(FNC_NAME, "InputStreamEosException caught");
+			logDebug(FNC_NAME, "InputStreamEosException caught");
 		} catch (UdpSocketIoException e) {
 			logError(FNC_NAME, e.toString());
 		} catch (TcpSocketIoException e) {
@@ -404,6 +406,12 @@ public abstract class ThreadRtpSenderBase<
 			} catch (InputStreamEosException e) {
 				cacheFrameData.haveErrorEos = true;
 				cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
+			} catch (InputStreamThreadEndedException e) {
+				cacheFrameData.haveErrorEos = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": Input thread ended";
+			} catch (AvInvalidCodecDataException e) {
+				cacheFrameData.haveErrorEos = true;
+				cacheFrameData.errorMsg = FNC_NAME + ": Invalid Codec Data: " + e.getMessage();
 			}
 		}
 
@@ -653,7 +661,7 @@ public abstract class ThreadRtpSenderBase<
 			adaptiveScheduler.waitForNextFrame();
 			//
 			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-			if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
+			if (paramsCommon.getEsSourceType().orElseThrow() == RtspConfigEsSourceType.ST_ES_FILE) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 			} else if (frameData.stTimestamp.isEmpty()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));

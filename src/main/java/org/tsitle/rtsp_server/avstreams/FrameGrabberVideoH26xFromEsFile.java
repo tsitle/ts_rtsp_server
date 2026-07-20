@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberVideoH26xFromFile extends FrameGrabberVideoFromFileBase {
+public final class FrameGrabberVideoH26xFromEsFile extends FrameGrabberVideoFromEsFileBase {
 
 	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
 	public static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
@@ -21,9 +21,9 @@ public final class FrameGrabberVideoH26xFromFile extends FrameGrabberVideoFromFi
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberVideoH26xFromFile(
+	public FrameGrabberVideoH26xFromEsFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,

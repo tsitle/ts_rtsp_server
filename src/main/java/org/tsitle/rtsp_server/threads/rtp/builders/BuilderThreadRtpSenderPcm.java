@@ -31,22 +31,22 @@ public final class BuilderThreadRtpSenderPcm {
 			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderPcm<>(
-							AvStreamIncomingFromFile.class,
-							FrameGrabberAudioPcmFromFile.class,
+							AvStreamIncomingFromEsFile.class,
+							FrameGrabberAudioPcmFromEsFile.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsPcm
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderPcm<>(
-							AvStreamIncomingFromFile.class,  // @TODO
-							FrameGrabberAudioPcmFromFile.class,  // @TODO
+							AvStreamIncomingFromEsFile.class,  // @TODO
+							FrameGrabberAudioPcmFromEsFile.class,  // @TODO
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsPcm
 						);
 					default -> new ThreadRtpSenderPcm<>(
-							AvStreamIncomingFromMq.class,
-							FrameGrabberAudioPcmFromMq.class,
+							AvStreamIncomingFromEsMq.class,
+							FrameGrabberAudioPcmFromEsMq.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsPcm

@@ -24,11 +24,6 @@ public final class ThreadRtpSenderAc3<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<AudioAc3Info, AVSTRIC, FGAV, ThreadDataProvBase<AudioAc3Info, FGAV>> {
 
-	@SuppressWarnings("FieldCanBeLocal")
-	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
-	@SuppressWarnings("FieldCanBeLocal")
-	private final ParamsThreadRtpSenderAc3 paramsAc3;
-
 	private final AudioAc3Info curFrameAc3Info = new AudioAc3Info();
 	private @Nullable RtpPacketAc3 cachePlainPacket = null;
 
@@ -60,9 +55,7 @@ public final class ThreadRtpSenderAc3<
 
 		//
 		paramsAudioCommon.validate();
-		this.paramsAudioCommon = paramsAudioCommon.clone();
 		paramsAc3.validate();
-		this.paramsAc3 = paramsAc3.clone();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -80,7 +73,7 @@ public final class ThreadRtpSenderAc3<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioAc3Info, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberAudioAc3FromFile.class) {
+		if (frameGrabberAvType == FrameGrabberAudioAc3FromEsFile.class) {
 			ThreadDataProvAc3FromFile resObj = new ThreadDataProvAc3FromFile(
 					paramsCommon,
 					10,
@@ -90,7 +83,7 @@ public final class ThreadRtpSenderAc3<
 			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAudioAc3FromMq.class) {
+		if (frameGrabberAvType == FrameGrabberAudioAc3FromEsMq.class) {
 			ThreadDataProvAc3FromMq resObj = new ThreadDataProvAc3FromMq(
 					paramsCommon
 				);

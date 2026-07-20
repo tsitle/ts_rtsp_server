@@ -25,8 +25,6 @@ public final class ThreadRtpSenderAac<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioAacInfo, FGAV>> {
 
-	@SuppressWarnings("FieldCanBeLocal")
-	private final ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final ParamsThreadRtpSenderAac paramsAac;
 
 	private final AudioAacInfo curFrameAacInfo = new AudioAacInfo();
@@ -60,7 +58,6 @@ public final class ThreadRtpSenderAac<
 
 		//
 		paramsAudioCommon.validate();
-		this.paramsAudioCommon = paramsAudioCommon.clone();
 		paramsAac.validate();
 		this.paramsAac = paramsAac.clone();
 	}
@@ -80,7 +77,7 @@ public final class ThreadRtpSenderAac<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioAacInfo, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberAudioAacFromFile.class) {
+		if (frameGrabberAvType == FrameGrabberAudioAacFromEsFile.class) {
 			ThreadDataProvAacFromFile resObj = new ThreadDataProvAacFromFile(
 					paramsCommon,
 					paramsAac,
@@ -91,7 +88,7 @@ public final class ThreadRtpSenderAac<
 			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAudioAacFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberAudioAacFromEsMq.class) {
 			ThreadDataProvAacFromMq resObj = new ThreadDataProvAacFromMq(
 					paramsCommon
 				);
@@ -99,8 +96,15 @@ public final class ThreadRtpSenderAac<
 			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberAudioAacFromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAacFromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvAacFromDemuxMs resObj = new ThreadDataProvAacFromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

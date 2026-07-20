@@ -1,10 +1,8 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
-import org.tsitle.lib_xrtxp.avdata.AudioPcmParser;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioPcmFromMq;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioPcmFromEsMq;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -14,7 +12,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 
 	private final @NonNull ParamsThreadRtpSenderPcm paramsPcm;
 
-	private @Nullable AudioPcmParser pcmParser = null;
+	private final @NonNull PacketParserPcm packetParser;
 
 	/**
 	 * Constructor.
@@ -30,9 +28,11 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 		//
 		paramsPcm.validate();
 		this.paramsPcm = paramsPcm.clone();
-
 		//
-		this.haveAllRequiredMetadataPackets = true;
+		this.packetParser = new PacketParserPcm(
+				paramsPcm.getAudioChannelCount(),
+				paramsPcm.getAudioBitsPerSample()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -43,25 +43,27 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioPcmFromMq(
+		this.frameGrabber = new FrameGrabberAudioPcmFromEsMq(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming,
 				paramsPcm.getAudioChannelCount(),
 				paramsPcm.getAudioBitsPerSample(),
 				paramsPcm.getIsAudioInputBigEndian()
 			);
-		this.pcmParser = new AudioPcmParser(
-				paramsPcm.getAudioChannelCount(),
-				paramsPcm.getAudioBitsPerSample()
-			);
 	}
 
 	@Override
 	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		if (pcmParser == null) {
-			throw new IllegalStateException("pcmParser is null");
-		}
-		return pcmParser.parsePcmData(inputBuf);
+		AudioPcmInfo curPktInfo = packetParser.parseAndConvertData(inputBuf);
+
+		haveAllRequiredMetadataPackets = true;
+
+		return curPktInfo;
+	}
+
+	@Override
+	protected int findNextMagicBytes(@NonNull BufferExt inputBuf) {
+		return -1;
 	}
 
 }

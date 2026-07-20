@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 
-public final class FrameGrabberAudioAc3FromFile extends FrameGrabberAvFromFileBase {
+public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFileBase {
 
 	private static final byte[] AC3_FRAME_START_MAGICBYTES = {(byte)0x0B, (byte)0x77};
 
@@ -17,8 +17,8 @@ public final class FrameGrabberAudioAc3FromFile extends FrameGrabberAvFromFileBa
 	 * Constructor.
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioAc3FromFile(
-				@NonNull AvStreamIncomingFromFile avStreamIncoming
+	public FrameGrabberAudioAc3FromEsFile(
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
 			) {
 		super(
 				null,
@@ -33,9 +33,9 @@ public final class FrameGrabberAudioAc3FromFile extends FrameGrabberAvFromFileBa
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioAc3FromFile(
+	public FrameGrabberAudioAc3FromEsFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,

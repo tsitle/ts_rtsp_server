@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketH264;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH264FromDemuxMs;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH264FromFile;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvH264FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
@@ -54,7 +55,7 @@ public final class ThreadRtpSenderH264<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<VideoH264Info, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromFile.class) {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsFile.class) {
 			ThreadDataProvH264FromFile resObj = new ThreadDataProvH264FromFile(
 					paramsCommon,
 					10,
@@ -64,7 +65,7 @@ public final class ThreadRtpSenderH264<
 			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsMq.class) {
 			ThreadDataProvH264FromMq resObj = new ThreadDataProvH264FromMq(
 					paramsCommon
 				);
@@ -72,8 +73,15 @@ public final class ThreadRtpSenderH264<
 			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberVideoH26xFromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoH26xFromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvH264FromDemuxMs resObj = new ThreadDataProvH264FromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoH264Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH264Info, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

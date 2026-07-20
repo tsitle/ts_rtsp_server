@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
+import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -36,6 +37,8 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B logMsgInterface(@NonNull LogMsgInterface v) { this.threadParamsCommon.setLogMsgInterface(v); return self(); }
 
 	public B comDebugIdSession(@NonNull RtspProtoIdSession v) { this.threadParamsCommon.setDebugSessionId(v); return self(); }
+
+	public B comIsVideoThread(boolean v) { this.threadParamsCommon.setIsVideoThread(v); return self(); }
 
 	public B comIdEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParamsCommon.setIdEsSource(v); return self(); }
 
@@ -73,6 +76,9 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public B comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return self(); }
 
 	public B comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return self(); }
+
+	@SuppressWarnings("UnusedReturnValue")
+	public B comDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface v) { this.threadParamsCommon.setDemuxReadNextAvPacketInterface(v); return self(); }
 
 	//
 	public abstract T build() throws Exception;

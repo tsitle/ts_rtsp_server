@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
+import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
 
 import java.net.URI;
 import java.util.Objects;
@@ -74,6 +75,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean debugRewindMediaFiles;
 	private boolean isSetDebugRewindMediaFiles;
 
+	/** Are the parameters for a video thread? (if false, they are for an audio thread) */
+	private boolean isVideoThread;
+	private boolean isSetIsVideoThread;
+
 	/** Elementary-Stream Source Type */
 	private @Nullable RtspConfigEsSourceType esSourceType = null;
 	private boolean isSetEsSourceType;
@@ -107,6 +112,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private @Nullable URI avStreamIncomingUri = null;
 	private boolean isSetAvStreamIncomingUri;
 
+	/** Optional: 'Demuxer: Read next A/V packet' instance */
+	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
+
 	public ParamsThreadRtpSenderCommon() {
 		super(false, true);
 	}
@@ -118,6 +126,12 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	public void setDebugRewindMediaFiles(boolean debugRewindMediaFiles) {
 		this.debugRewindMediaFiles = debugRewindMediaFiles;
 		this.isSetDebugRewindMediaFiles = true;
+	}
+
+	public boolean getIsVideoThread() { return isVideoThread; }
+	public void setIsVideoThread(boolean value) {
+		this.isVideoThread = value;
+		this.isSetIsVideoThread = true;
 	}
 
 	public Optional<RtspConfigEsSourceType> getEsSourceType() { return Optional.ofNullable(esSourceType); }
@@ -181,6 +195,11 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetAvStreamIncomingUri = true;
 	}
 
+	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
+	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
+		this.demuxReadNextAvPacketInterface = value;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void validate() {
@@ -212,6 +231,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 
 	private void checkAllParamsSet() {
 		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
+
+		requireIsSet(isSetIsVideoThread, "isVideoThread");
 
 		requireIsSet(isSetEsSourceType, "esSourceType");
 

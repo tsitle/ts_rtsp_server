@@ -1,26 +1,26 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromEsMq;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
-public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<VideoH265Info> {
+public final class ThreadDataProvH264FromDemuxMs extends ThreadDataProvFromDemuxMsBase<VideoH264Info> {
 
-	private final @NonNull PacketParserH265 packetParser;
+	private final @NonNull PacketParserH264 packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvH265FromMq(
+	public ThreadDataProvH264FromDemuxMs(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
 		super(paramsCommon, true);
 
-		this.packetParser = new PacketParserH265();
+		this.packetParser = new PacketParserH264();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -31,18 +31,18 @@ public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<Vid
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoH26xFromEsMq(
+		this.frameGrabber = new FrameGrabberAvFromDemuxMs(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		VideoH265Info curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
-		//
-		haveAllRequiredMetadataPackets = true;
-		//
+	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
+		VideoH264Info curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+
+		haveAllRequiredMetadataPackets = packetParser.haveAllRequiredMetadataPackets();
+
 		return curPktInfo;
 	}
 

@@ -3,11 +3,13 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
+import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
@@ -52,7 +54,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 	public abstract int getInputQueueSize();
 
 	public abstract void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
-			throws InputStreamEosException;
+			throws InputStreamEosException, InputStreamThreadEndedException, AvInvalidCodecDataException;
 
 	/**
 	 * Receives a notification about the current congestion level.

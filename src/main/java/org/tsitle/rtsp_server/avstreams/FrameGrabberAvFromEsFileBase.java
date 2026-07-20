@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 import java.util.Arrays;
 
-public abstract class FrameGrabberAvFromFileBase extends FrameGrabberAvBase<AvStreamIncomingFromFile> {
+public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<AvStreamIncomingFromEsFile> {
 
 	private final byte[] frameStartMagicBytesPtr_fixed;
 	private final int magicBytesLengthInBits_fixed;
@@ -26,9 +26,9 @@ public abstract class FrameGrabberAvFromFileBase extends FrameGrabberAvBase<AvSt
 	 * @param frameStartMagicBytes Magic Bytes for frame start detection
 	 * @param magicBytesLengthInBits Length of the Magic Bytes array in bits
 	 */
-	protected FrameGrabberAvFromFileBase(
+	protected FrameGrabberAvFromEsFileBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming,
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming,
 				byte[] frameStartMagicBytes,
 				int magicBytesLengthInBits
 			) {

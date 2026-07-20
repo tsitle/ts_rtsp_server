@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import java.io.*;
 import java.net.URI;
 
-public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
+public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
 
 	private final @NonNull String inputUriPath;
 
@@ -23,7 +23,7 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromFile(
+	public AvStreamIncomingFromEsFile(
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
@@ -37,7 +37,7 @@ public final class AvStreamIncomingFromFile extends AvStreamIncomingBase {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromFile(
+	public AvStreamIncomingFromEsFile(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri

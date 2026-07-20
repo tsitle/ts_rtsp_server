@@ -16,6 +16,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.rtsp_server.threads.dataprovider_demux.ThreadDataProvDemux;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
@@ -52,6 +53,8 @@ public final class RtspChildThreadMng {
 	private final Lock theReadLockCtfos = theLockCtfos.readLock();
 	private final Lock theWriteLockCtfos = theLockCtfos.writeLock();
 	private final Map<@NonNull RtspProtoIdSubStream, @NonNull ChildThreadsForOneStream> childThreadsForOneStreamMap = new HashMap<>();
+
+	public @Nullable ThreadDataProvDemux childThreadDemux = null;
 
 	/** Input Source ID currently in use */
 	private final @NonNull RtspProtoIdInputSource usedIdInputSource = RtspProtoIdInputSource.ofEmpty();
@@ -210,6 +213,21 @@ public final class RtspChildThreadMng {
 					continue;
 				}
 				//
+				if (tmpAvSsi.esSourceType() == RtspConfigEsSourceType.ST_DEMUX_MS_FILE && childThreadDemux == null) {
+					childThreadDemux = new ThreadDataProvDemux(
+							logMsgInterface,
+							tmpAvSsi.inputUri()
+						);
+					childThreadDemux.setName(
+							"RTP_" +
+							"#sid" + idSession.getIdStr().orElseThrow() +
+							"#" + tmpAvSsi.codec().getValue() +
+							"-demux"
+						);
+					childThreadDemux.setDaemon(false);
+					childThreadDemux.start();
+				}
+				//
 				ChildThreadsForOneStream ctfos = new ChildThreadsForOneStream(
 						tmpIdSs,
 						usedIdInputSource,
@@ -233,6 +251,10 @@ public final class RtspChildThreadMng {
 		}
 		theReadLockCtfos.lock();
 		try {
+			if (! doPause && childThreadDemux != null) {
+				childThreadDemux.stopThread();  // blocks until the thread has actually stopped
+			}
+			//
 			for (RtspProtoIdSubStream tmpIdSs : subStreamIds) {
 				if (! childThreadsForOneStreamMap.containsKey(tmpIdSs)) {
 					continue;
@@ -359,6 +381,9 @@ public final class RtspChildThreadMng {
 					.comTpClientDestTcpIf(rctcbRtpTcp)
 					.comTpClientDestTcpChannRtp(streamInfo.getSubStreamTpPtr().getClientTcpChannRtpPtr());
 		}
+		if (childThreadDemux != null) {
+			builder.comDemuxReadNextAvPacketInterface(childThreadDemux);
+		}
 		return builder
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
 				.comDebugIdSession(idSession)
@@ -394,7 +419,8 @@ public final class RtspChildThreadMng {
 					@NonNull FrameRateEnum avFpsAsEn,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsEn.getFrDbl(), xsrcBlock);
+		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsEn.getFrDbl(), xsrcBlock)
+				.comIsVideoThread(true);
 	}
 
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
@@ -408,6 +434,7 @@ public final class RtspChildThreadMng {
 					int samplesPerFrame
 				) {
 		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsDbl, xsrcBlock)
+				.comIsVideoThread(false)
 				.audComRtpAudioSpf(samplesPerFrame)
 				.audComSamplerate(avSsi.audioSampleRate());
 	}

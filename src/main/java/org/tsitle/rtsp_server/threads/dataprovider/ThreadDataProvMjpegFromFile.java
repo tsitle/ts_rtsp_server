@@ -1,25 +1,15 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.ImageReencoder;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
-import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-
-import java.io.IOException;
 
 public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
 
-	private @Nullable ImageReencoder imageReencoder = null;
-	private @Nullable VideoJpegParser jpegParser = null;
-
-	private final BufferExt cacheTempBuffer = new BufferExt();
+	private final @NonNull PacketParserMjpeg packetParser;
 
 	/**
 	 * Constructor.
@@ -37,6 +27,10 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 				queueSize,
 				debugRewindMediaFiles
 			);
+
+		this.packetParser = new PacketParserMjpeg(
+				paramsCommon.getLogMsgInterface().orElseThrow()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -51,9 +45,6 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		if (congestionLevel < 0 || congestionLevel > 4) {
 			throw new IllegalArgumentException("congestionLevel must be in range 0..4");
 		}
-		if (imageReencoder == null) {
-			return;
-		}
 		/*
 		 * CL 0 --> CQ 100%
 		 * CL 1 --> CQ  85%
@@ -61,7 +52,7 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		 * CL 3 --> CQ  55%
 		 * CL 4 --> CQ  40%
 		 */
-		imageReencoder.setCompressionQuality(1.0f - (0.15f * (float)congestionLevel));
+		packetParser.setCompressionQuality(1.0f - (0.15f * (float)congestionLevel));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -72,73 +63,19 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoMjpegFromFile(
+		this.frameGrabber = new FrameGrabberVideoMjpegFromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
-			);
-		this.imageReencoder = new ImageReencoder();
-		this.jpegParser = new VideoJpegParser(
-				paramsCommon.getLogMsgInterface().orElseThrow(),
-				Thread.currentThread().getName()
 			);
 	}
 
 	@Override
 	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		if (jpegParser == null) {
-			throw new IllegalStateException("jpegParser is null");
-		}
-		if (imageReencoder == null) {
-			throw new IllegalStateException("imageReencoder is null");
-		}
+		VideoJpegInfo curPktInfo = packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
 
-		VideoJpegInfo curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
+		//haveAllRequiredMetadataPackets = true;
 
-		// re-encode or scale the image if necessary
-		if ((curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
-					curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
-				curFrameJpegInfo.sof0_quantTableSelY == curFrameJpegInfo.sof0_quantTableSelCb ||
-				curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-				curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
-			cacheTempBuffer.copyOf(inputBuf);
-			/*
-			 * To provide a compatible JPEG image, we need to re-encode the image.
-			 */
-			try {
-				if (curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-						curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
-					imageReencoder.scaleImage(
-							cacheTempBuffer,
-							RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
-							inputBuf
-						);
-				} else {
-					imageReencoder.reencodeImage(cacheTempBuffer, inputBuf);
-				}
-			} catch (ImageReencoderIoException e) {
-				throw new AvInvalidCodecDataException("ImageReencoderIoException caught: " + e.getMessage());
-			}
-			/*if (frameCountInp == 0) {
-				writeJpegToFile(curImageDataPtr, "reenc", (int)(frameCountInp + 1));
-			}*/
-
-			//
-			curFrameJpegInfo = jpegParser.parseJpegData(debugStreamOffset, inputBuf);
-		}
-
-		return curFrameJpegInfo;
-	}
-
-	/**
-	 * For debugging purposes only.
-	 */
-	@SuppressWarnings({"unused", "SameParameterValue"})
-	private void writeJpegToFile(@NonNull BufferExt data, @NonNull String baseFilename, int frameNr) {
-		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(String.format("%s_%06d.jpg", baseFilename, frameNr))) {
-			fos.write(data.getBaPtr(), 0, data.getUsed());
-		} catch (IOException e) {
-			logError("writeJpegToFile()", "IOException caught: " + e.getMessage());
-		}
+		return curPktInfo;
 	}
 
 }

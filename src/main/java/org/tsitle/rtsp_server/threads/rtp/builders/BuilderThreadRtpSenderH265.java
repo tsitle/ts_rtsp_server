@@ -30,22 +30,22 @@ public final class BuilderThreadRtpSenderH265 {
 			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderH265<>(
-							AvStreamIncomingFromFile.class,
-							FrameGrabberVideoH26xFromFile.class,
+							AvStreamIncomingFromEsFile.class,
+							FrameGrabberVideoH26xFromEsFile.class,
 							threadParamsCommon,
 							threadParamsVideo,
 							threadParamsH265
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderH265<>(
-							AvStreamIncomingFromFile.class,  // @TODO
-							FrameGrabberVideoH26xFromFile.class,  // @TODO
+							AvStreamIncomingFromDemuxMs.class,
+							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,
 							threadParamsVideo,
 							threadParamsH265
 						);
 					default -> new ThreadRtpSenderH265<>(
-							AvStreamIncomingFromMq.class,
-							FrameGrabberVideoH26xFromMq.class,
+							AvStreamIncomingFromEsMq.class,
+							FrameGrabberVideoH26xFromEsMq.class,
 							threadParamsCommon,
 							threadParamsVideo,
 							threadParamsH265

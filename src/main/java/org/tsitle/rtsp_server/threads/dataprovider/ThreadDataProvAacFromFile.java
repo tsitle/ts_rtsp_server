@@ -1,10 +1,8 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
@@ -12,7 +10,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
 
-	private @Nullable AudioAacParser aacParser = null;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
@@ -35,6 +33,8 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 
 		//
 		paramsAac.validate();
+		//
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -57,19 +57,19 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAacFromFile(
+		this.frameGrabber = new FrameGrabberAudioAacFromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
-		this.aacParser = new AudioAacParser();
 	}
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		if (aacParser == null) {
-			throw new IllegalStateException("aacParser is null");
-		}
-		return aacParser.parseAacData(inputBuf);
+		AudioAacInfo curPktInfo = packetParser.parseAndConvertData(inputBuf);
+
+		//haveAllRequiredMetadataPackets = true;
+
+		return curPktInfo;
 	}
 
 }

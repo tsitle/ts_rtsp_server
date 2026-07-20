@@ -89,7 +89,7 @@ public final class ThreadRtpSenderPcm<
 
 	@Override
 	protected @NonNull ThreadDataProvBase<AudioPcmInfo, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberAudioPcmFromFile.class) {
+		if (frameGrabberAvType == FrameGrabberAudioPcmFromEsFile.class) {
 			ThreadDataProvPcmFromFile resObj = new ThreadDataProvPcmFromFile(
 					paramsCommon,
 					paramsAudioCommon,
@@ -101,7 +101,7 @@ public final class ThreadRtpSenderPcm<
 			ThreadDataProvBase<AudioPcmInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioPcmInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAudioPcmFromMq.class) {
+		if (frameGrabberAvType == FrameGrabberAudioPcmFromEsMq.class) {
 			ThreadDataProvPcmFromMq resObj = new ThreadDataProvPcmFromMq(
 					paramsCommon,
 					paramsPcm

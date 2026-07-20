@@ -1,35 +1,38 @@
 package org.tsitle.rtsp_server.avstreams;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberVideoMjpegFromFile extends FrameGrabberVideoFromFileBase {
-
-	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
+public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase<AvStreamIncomingFromEsMq> {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberVideoMjpegFromFile(
-				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromFile avStreamIncoming
+	protected FrameGrabberAvFromEsMqBase(
+				@Nullable LogMsgInterface logMsgInterface,
+				@NonNull AvStreamIncomingFromEsMq avStreamIncoming
 			) {
-		super(
-				logMsgInterface,
-				avStreamIncoming,
-				MJPEG_FRAME_START_MAGICBYTES,
-				MJPEG_FRAME_START_MAGICBYTES.length * 8
-			);
+		super(logMsgInterface, avStreamIncoming);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
+	 */
+	@Override
+	public boolean haveEos() {
+		return avStreamIncoming.haveEos();
+	}
 
 	/**
 	 * Reads the next video frame from the stream.
@@ -39,18 +42,7 @@ public final class FrameGrabberVideoMjpegFromFile extends FrameGrabberVideoFromF
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
-		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
-
-		stTimestamp.clear();
-
-		internalGetNextFrameWithStartCode(
-				FNC_NAME,
-				frameBuf,
-				false,
-				null,
-				null,
-				-1
-			);
+		avStreamIncoming.readFrame(frameBuf, stTimestamp);
 	}
 
 }

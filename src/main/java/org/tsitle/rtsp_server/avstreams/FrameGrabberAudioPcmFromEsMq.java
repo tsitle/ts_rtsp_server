@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberAudioPcmFromMq extends FrameGrabberAvFromMqBase {
+public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBase {
 
 	private final boolean isBigEndian;
 
@@ -23,9 +23,9 @@ public final class FrameGrabberAudioPcmFromMq extends FrameGrabberAvFromMqBase {
 	 * @param bitsPerSample Bits per sample (8 or 16)
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public FrameGrabberAudioPcmFromMq(
+	public FrameGrabberAudioPcmFromEsMq(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromMq avStreamIncoming,
+				@NonNull AvStreamIncomingFromEsMq avStreamIncoming,
 				int channels,
 				int bitsPerSample,
 				boolean isBigEndian
@@ -50,15 +50,6 @@ public final class FrameGrabberAudioPcmFromMq extends FrameGrabberAvFromMqBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Checks if we can still read data from the stream.
-	 * @return True if the end of the stream has been reached, false otherwise
-	 */
-	@Override
-	public boolean haveEos() {
-		return avStreamIncoming.haveEos();
-	}
 
 	/**
 	 * Reads the next audio samples from the stream.

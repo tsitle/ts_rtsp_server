@@ -3,27 +3,19 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromEsFile;
 
 final class MagicBytesH26xHelper {
 
 	private MagicBytesH26xHelper() { }
 
-	static boolean isMagicBytesLong(@NonNull BufferExt inputBuf) {
-		return (inputBuf.getUsed() >= FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length &&
-				inputBuf.get(0) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[0] &&
-				inputBuf.get(1) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[1] &&
-				inputBuf.get(2) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[2] &&
-				inputBuf.get(3) == FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4[3]);
-	}
-
 	static int findH26xMagicBytesLength(final @NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		final int MB_3_LEN = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3.length;
-		final int MB_4_LEN = FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length;
+		final int MB_3_LEN = FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_3.length;
+		final int MB_4_LEN = FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_4.length;
 
 		int resI = -1;
 		int tmpOffs = findH26xMagicBytesOffset(
-				FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3,
+				FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_3,
 				inputBuf,
 				0,
 				MB_4_LEN  // check the first 4 bytes
@@ -33,7 +25,7 @@ final class MagicBytesH26xHelper {
 		}
 		if (tmpOffs == 1) {
 			tmpOffs = findH26xMagicBytesOffset(
-					FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4,
+					FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_4,
 					inputBuf,
 					0,
 					MB_4_LEN
@@ -52,7 +44,7 @@ final class MagicBytesH26xHelper {
 
 	static int findH26xNextNalUnit(final @NonNull BufferExt inputBuf) {
 		int resI = findH26xMagicBytesOffset(
-				FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_3,
+				FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_3,
 				inputBuf,
 				3,
 				inputBuf.getUsed()
@@ -61,10 +53,10 @@ final class MagicBytesH26xHelper {
 			return -1;
 		}
 		int tmpOffset = findH26xMagicBytesOffset(
-				FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4,
+				FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_4,
 				inputBuf,
 				resI - 1,
-				FrameGrabberVideoH26xFromFile.H26X_FRAME_START_MAGICBYTES_4.length
+				FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_4.length
 			);
 		if (tmpOffset == resI - 1) {
 			resI = tmpOffset;

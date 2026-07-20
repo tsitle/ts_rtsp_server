@@ -957,6 +957,7 @@ public final class RtspConfig {
 				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamVideo(
 						idCounter,
 						tmpMsIdAsInt,
+						tmpMsSrcObj.getInputUri(),
 						tmpFfSiVid
 					);
 				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
@@ -968,6 +969,7 @@ public final class RtspConfig {
 				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamAudio(
 						idCounter,
 						tmpMsIdAsInt,
+						tmpMsSrcObj.getInputUri(),
 						tmpFfSiAud
 					);
 				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);

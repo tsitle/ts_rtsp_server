@@ -3,20 +3,26 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberAudioAacFromMq extends FrameGrabberAvFromMqBase {
+public abstract class FrameGrabberVideoFromEsFileBase extends FrameGrabberAvFromEsFileBase {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
+	 * @param frameStartMagicbytes Magic bytes array for frame start detection
+	 * @param magicBytesLengthInBits Length of the magic bytes array in bits
 	 */
-	public FrameGrabberAudioAacFromMq(
+	protected FrameGrabberVideoFromEsFileBase(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromMq avStreamIncoming
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming,
+				byte[] frameStartMagicbytes,
+				int magicBytesLengthInBits
 			) {
 		super(
 				logMsgInterface,
-				avStreamIncoming
+				avStreamIncoming,
+				frameStartMagicbytes,
+				magicBytesLengthInBits
 			);
 	}
 
@@ -29,7 +35,7 @@ public final class FrameGrabberAudioAacFromMq extends FrameGrabberAvFromMqBase {
 	 */
 	@Override
 	public boolean haveEos() {
-		return avStreamIncoming.haveEos();
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
 	}
 
 }

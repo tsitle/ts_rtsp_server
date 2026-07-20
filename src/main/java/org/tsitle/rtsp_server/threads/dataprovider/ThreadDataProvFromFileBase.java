@@ -4,13 +4,14 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromFile;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromFileBase;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
+import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
 public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>>
-		extends ThreadDataProvBase<I, FrameGrabberAvFromFileBase> {
+		extends ThreadDataProvBase<I, FrameGrabberAvFromEsFileBase> {
 
 	private static class DataQueueEntry {
 		final @NonNull BufferExt buf = new BufferExt();
@@ -28,7 +29,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	private final boolean doDebugRewindMediaFiles;
 
-	protected @Nullable AvStreamIncomingFromFile avStreamIncoming = null;
+	protected @Nullable AvStreamIncomingFromEsFile avStreamIncoming = null;
 
 	private final ArrayList<@NonNull DataQueueEntry> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
@@ -165,7 +166,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	@Override
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
-		this.avStreamIncoming = new AvStreamIncomingFromFile(
+		this.avStreamIncoming = new AvStreamIncomingFromEsFile(
 				logMsgInterface,
 				paramsCommon.getIdEsSource(),
 				paramsCommon.getAvStreamIncomingUri().orElseThrow()
@@ -255,12 +256,16 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 				eosReached.set(true);
 				throw new InputStreamEosException();
 			}
-		} catch (InputStreamIoException | InputStreamEosException e) {
+		} catch (InputStreamIoException | InputStreamEosException | InputStreamThreadEndedException e) {
 			if (doStop.get()) {
 				return;
 			}
 			if (e instanceof InputStreamIoException) {
 				logError(fncName, "InputStreamIoException caught while reading next frame: " + e.getMessage());
+				// we have reached the end of the input
+				eosReached.set(true);
+			} else if (e instanceof InputStreamThreadEndedException) {
+				logError(fncName, "InputStreamThreadEndedException caught while reading next frame: " + e.getMessage());
 				// we have reached the end of the input
 				eosReached.set(true);
 			} else {
