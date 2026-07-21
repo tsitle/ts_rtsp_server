@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
+import org.tsitle.rtsp_server.threads.dataprovider.codec_a_ac3.ThreadDataProvAc3FromDemuxMs;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_a_ac3.ThreadDataProvAc3FromFile;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_a_ac3.ThreadDataProvAc3FromMq;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
@@ -93,8 +94,15 @@ public final class ThreadRtpSenderAc3<
 			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberAudioAc3FromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioAc3FromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvAc3FromDemuxMs resObj = new ThreadDataProvAc3FromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioAc3Info, FGAV> typedProvider = (ThreadDataProvBase<AudioAc3Info, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

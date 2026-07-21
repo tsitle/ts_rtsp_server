@@ -1,6 +1,8 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
@@ -40,8 +42,8 @@ public final class BuilderThreadRtpSenderAc3 {
 							threadParamsAc3
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderAc3<>(
-							AvStreamIncomingFromEsFile.class,  // @TODO
-							FrameGrabberAudioAc3FromEsFile.class,  // @TODO
+							AvStreamIncomingFromDemuxMs.class,
+							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsAc3
