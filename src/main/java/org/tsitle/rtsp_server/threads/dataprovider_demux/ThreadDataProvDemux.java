@@ -19,7 +19,7 @@ import java.util.concurrent.locks.*;
 
 public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxReadNextAvPacketInterface {
 
-	private static final int CACHE_SIZE_DEFAULT = 50;
+	private static final int CACHE_SIZE_DEFAULT = 10;
 	private static final int CACHE_SIZE_MAX = 1_000;
 
 	private static class FfPktCacheEntry {
