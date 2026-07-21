@@ -43,7 +43,7 @@ class AacParserTest {
 				f8159bdc2146aca883f00f11c0""");
 
 		AudioAacParser aacParser = new AudioAacParser();
-		AudioAacInfo aacInfoOrg = aacParser.parseAacData(orgFrame);
+		AudioAacInfo aacInfoOrg = aacParser.parseAacData(new BufferView(orgFrame));
 
 		assertEquals(orgFrame.getUsed(), aacInfoOrg.frameLength);
 		assertEquals(365, aacInfoOrg.frameLength);
@@ -81,7 +81,7 @@ class AacParserTest {
 		assertEquals(orgFrame.toHexString(), outputAacFrame.toHexString());
 
 		//
-		AudioAacInfo aacInfoTwo = aacParser.parseAacData(outputAacFrame);
+		AudioAacInfo aacInfoTwo = aacParser.parseAacData(new BufferView(outputAacFrame));
 		assertEquals(aacInfoOrg.hashSum(), aacInfoTwo.hashSum());
 
 		//

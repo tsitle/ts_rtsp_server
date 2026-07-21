@@ -65,7 +65,7 @@ class Ac3ParserTest {
 				390000000000000000000000a803""");
 
 		AudioAc3Parser ac3Parser = new AudioAc3Parser();
-		AudioAc3Info ac3InfoOrg = ac3Parser.parseAc3Data(orgFrame);
+		AudioAc3Info ac3InfoOrg = ac3Parser.parseAc3Data(new BufferView(orgFrame));
 
 		assertEquals(696, ac3InfoOrg.frameLength);
 		assertEquals(696, ac3InfoOrg.samplesLength);
@@ -76,7 +76,7 @@ class Ac3ParserTest {
 
 		//
 		BufferExt secondSyncframe = orgFrame.slice(ac3InfoOrg.frameLength);
-		AudioAc3Info secondAc3Info = ac3Parser.parseAc3Data(secondSyncframe);
+		AudioAc3Info secondAc3Info = ac3Parser.parseAc3Data(new BufferView(secondSyncframe));
 
 		assertEquals(secondSyncframe.getUsed(), secondAc3Info.frameLength);
 		assertEquals(698, secondAc3Info.frameLength);
