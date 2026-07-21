@@ -304,19 +304,20 @@ public final class FfmpegDemuxer implements AutoCloseable {
 					++curStreamNumberVid;
 					if (! tmpFfmpegCodec.isVideo()) {
 						logDebug(FNC_NAME,
-								String.format("(ignoring video track #%d with unsupported codec [%s])",
+								String.format("(ignoring video track #v:%d with unsupported codec [%s])",
 										curStreamNumberVid, tmpCodecName)
 							);
 						continue;
 					}
 					if (inputStreamInfoVid.streamIx < 0 &&
 							(dmxSettings.cfgSelectStreamNumberVideo < 1 ||
-									curStreamNumberVid == dmxSettings.cfgSelectStreamNumberVideo)) {
-						logDebug(FNC_NAME, String.format("found video track #%d [%s]", curStreamNumberVid, tmpCodecName));
+									curStreamNumberVid == dmxSettings.cfgSelectStreamNumberVideo) &&
+							(! dmxSettings.cfgAllowOnlySpecificCodecsVideo || dmxSettings.cfgAllowedCodecsVideo.contains(tmpFfmpegCodec))) {
+						logDebug(FNC_NAME, String.format("found video track #v:%d [%s]", curStreamNumberVid, tmpCodecName));
 						inputStreamInfoVid.streamIx = i;
 					} else {
 						logDebug(FNC_NAME,
-								String.format("(ignoring other video track #%d [%s])",
+								String.format("(ignoring other video track #v:%d [%s])",
 										curStreamNumberVid, tmpCodecName)
 							);
 					}
@@ -325,19 +326,20 @@ public final class FfmpegDemuxer implements AutoCloseable {
 					++curStreamNumberAud;
 					if (! tmpFfmpegCodec.isAudio()) {
 						logDebug(FNC_NAME,
-								String.format("(ignoring audio track #%d with unsupported codec [%s])",
+								String.format("(ignoring audio track #a:%d with unsupported codec [%s])",
 										curStreamNumberAud, tmpCodecName)
 							);
 						continue;
 					}
 					if (inputStreamInfoAud.streamIx < 0 &&
 							(dmxSettings.cfgSelectStreamNumberAudio < 1 ||
-									curStreamNumberAud == dmxSettings.cfgSelectStreamNumberAudio)) {
-						logDebug(FNC_NAME, String.format("found audio track #%d [%s]", curStreamNumberAud, tmpCodecName));
+									curStreamNumberAud == dmxSettings.cfgSelectStreamNumberAudio) &&
+							(! dmxSettings.cfgAllowOnlySpecificCodecsAudio || dmxSettings.cfgAllowedCodecsAudio.contains(tmpFfmpegCodec))) {
+						logDebug(FNC_NAME, String.format("found audio track #a:%d [%s]", curStreamNumberAud, tmpCodecName));
 						inputStreamInfoAud.streamIx = i;
 					} else {
 						logDebug(FNC_NAME,
-								String.format("(ignoring other audio track #%d [%s])",
+								String.format("(ignoring other audio track #a:%d [%s])",
 										curStreamNumberAud, tmpCodecName)
 							);
 					}
