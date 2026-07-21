@@ -113,6 +113,81 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	protected void initTranscoder(
+				boolean isFromFile,
+				@Nullable AVFormatContext inputAvFmtCtx,
+				@Nullable Integer streamIx
+			) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
+		openDecoderCtx(isFromFile, inputAvFmtCtx, streamIx);
+
+		//
+		openEncoderCtx();
+
+		//
+		openSwResamplerCtx();
+
+		//
+		openFifoCtx();
+
+		//
+		if (ffmpegReceiveTcAvInterface != null && encoderCtx != null) {
+			ffmpegReceiveTcAvInterface.cbSetEncoderCtxForAudioParams(encoderCtx);
+		}
+
+		//
+		nextAudioPts = 0L;
+		isTranscoderReady = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalTranscodePacket()";
+
+		if (! isTranscoderReady) {
+			throw new IllegalStateException(FNC_NAME + ": Transcoder not initialized. Call initTranscoder() first.");
+		}
+		if (decoderCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": decoderCtx is null");
+		}
+
+		int r = avcodec.avcodec_send_packet(decoderCtx, inPkt);
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
+
+		recvAllFrames();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void flushEverythingBeforeClosing() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".flushEverythingBeforeClosing()";
+
+		if (! isTranscoderReady) {
+			return;
+		}
+		if (decoderCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": decoderCtx is null");
+		}
+
+		// flush decoder: send null packet, pull remaining decoded frames
+		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
+		if (r < 0 && r != avutil.AVERROR_EOF) {
+			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
+		}
+
+		// receive all remaining decoded frames
+		recvAllFrames();
+
+		// flush encoder
+		flushAudioPipelineToEncoder();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void prepareDecoderCtxFromFile(@NonNull AVFormatContext inputAvFmtCtx, int streamIx)
 			throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".prepareDecoderCtxFromFile()";
@@ -370,33 +445,6 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 		}
 	}
 
-	@Override
-	protected void initTranscoder(
-				boolean isFromFile,
-				@Nullable AVFormatContext inputAvFmtCtx,
-				@Nullable Integer streamIx
-			) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
-		openDecoderCtx(isFromFile, inputAvFmtCtx, streamIx);
-
-		//
-		openEncoderCtx();
-
-		//
-		openSwResamplerCtx();
-
-		//
-		openFifoCtx();
-
-		//
-		if (ffmpegReceiveTcAvInterface != null && encoderCtx != null) {
-			ffmpegReceiveTcAvInterface.cbSetEncoderCtxForAudioParams(encoderCtx);
-		}
-
-		//
-		nextAudioPts = 0L;
-		isTranscoderReady = true;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void pushFrameToFifo(@NonNull AVFrame src) throws FfmpegGenericException {
@@ -647,9 +695,8 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	protected void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".internalTranscodePacket()";
+	private void recvAllFrames() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".recvAllFrames()";
 
 		if (! isTranscoderReady) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder not initialized. Call initTranscoder() first.");
@@ -664,11 +711,8 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 			throw new IllegalStateException(FNC_NAME + ": convertedFrame is null");
 		}
 
-		int r = avcodec.avcodec_send_packet(decoderCtx, inPkt);
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
-
 		while (true) {
-			r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
+			int r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
 			if (r == avutil.AVERROR_EAGAIN() || r == avutil.AVERROR_EOF) {
 				break;
 			}
@@ -700,63 +744,6 @@ public final class FfmpegTranscoderAudio extends FfmpegTranscoderBase implements
 				avutil.av_frame_unref(convertedFrame);
 			}
 		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	protected void flushEverythingBeforeClosing() throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".flushEverythingBeforeClosing()";
-
-		if (!isTranscoderReady) {
-			return;
-		}
-
-		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
-		if (r < 0 && r != avutil.AVERROR_EOF) {
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
-		}
-
-		while (true) {
-			r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
-			if (r == avutil.AVERROR_EAGAIN() || r == avutil.AVERROR_EOF) {
-				break;
-			}
-			if (r < 0) {
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_receive_frame()", r);
-			}
-
-			AVFrame frameForFifo = decodedFrame;
-			if (needsAudioConversion && decodedFrame != null && convertedFrame != null && encoderCtx != null) {
-				ensureSwrForInputFrame(decodedFrame);
-
-				avutil.av_frame_unref(convertedFrame);
-				convertedFrame.format(encoderCtx.sample_fmt());
-				convertedFrame.sample_rate(encoderCtx.sample_rate());
-				r = avutil.av_channel_layout_copy(convertedFrame.ch_layout(), encoderCtx.ch_layout());
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_channel_layout_copy()", r);
-
-				convertedFrame.nb_samples(decodedFrame.nb_samples());
-				r = avutil.av_frame_get_buffer(convertedFrame, 0);
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_frame_get_buffer()", r);
-
-				r = swresample.swr_convert_frame(swrCtx, convertedFrame, decodedFrame);
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "swr_convert_frame()", r);
-				frameForFifo = convertedFrame;
-			}
-
-			if (frameForFifo != null) {
-				pushFrameToFifo(frameForFifo);
-				encodeAvailableFullFrames();
-			}
-
-			avutil.av_frame_unref(decodedFrame);
-			if (needsAudioConversion) {
-				avutil.av_frame_unref(convertedFrame);
-			}
-		}
-
-		flushAudioPipelineToEncoder();
 	}
 
 }

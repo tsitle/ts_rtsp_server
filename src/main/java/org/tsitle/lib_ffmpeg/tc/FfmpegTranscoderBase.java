@@ -69,6 +69,7 @@ public abstract class FfmpegTranscoderBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public final void transcodePacketFromBuffer(@NonNull FfmpegAvPktBasics inputFrameData)
 			throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
 		if (inputFrameData.pktBe.isEmpty()) {
@@ -89,6 +90,7 @@ public abstract class FfmpegTranscoderBase {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	public final void transcodePacketFromAvPkt(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				int streamIx,
@@ -138,25 +140,6 @@ public abstract class FfmpegTranscoderBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void convertBufferExtToAvPacket(@NonNull FfmpegAvPktBasics inputFrameData) throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".convertBufferExtToAvPacket()";
-
-		if (cacheInputPkt == null) {
-			cacheInputPkt = avcodec.av_packet_alloc();
-			if (cacheInputPkt == null) {
-				throw new RuntimeException(FNC_NAME + ": Cannot allocate Cache Input Packet");
-			}
-		}
-		int r = avcodec.av_new_packet(cacheInputPkt, inputFrameData.pktBe.getUsed());
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
-		cacheInputPkt.data().put(inputFrameData.pktBe.getBaPtr(), 0, inputFrameData.pktBe.getUsed());
-
-		cacheInputPkt.pts(inputFrameData.ptsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.ptsUnits);
-		cacheInputPkt.dts(inputFrameData.dtsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.dtsUnits);
-		cacheInputPkt.time_base().num(inputFrameData.timeBase.getNumerator());
-		cacheInputPkt.time_base().den(inputFrameData.timeBase.getDenominator());
-	}
-
 	protected abstract void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException;
 
 	protected final void drainEncoderPackets() throws FfmpegGenericException {
@@ -205,9 +188,35 @@ public abstract class FfmpegTranscoderBase {
 	protected void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
+
 	protected void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void convertBufferExtToAvPacket(@NonNull FfmpegAvPktBasics inputFrameData) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".convertBufferExtToAvPacket()";
+
+		if (cacheInputPkt == null) {
+			cacheInputPkt = avcodec.av_packet_alloc();
+			if (cacheInputPkt == null) {
+				throw new RuntimeException(FNC_NAME + ": Cannot allocate Cache Input Packet");
+			}
+		}
+		int r = avcodec.av_new_packet(cacheInputPkt, inputFrameData.pktBe.getUsed());
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
+		cacheInputPkt.data().put(inputFrameData.pktBe.getBaPtr(), 0, inputFrameData.pktBe.getUsed());
+
+		cacheInputPkt.pts(inputFrameData.ptsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.ptsUnits);
+		cacheInputPkt.dts(inputFrameData.dtsUnits == null ? avutil.AV_NOPTS_VALUE : inputFrameData.dtsUnits);
+		cacheInputPkt.time_base().num(inputFrameData.timeBase.getNumerator());
+		cacheInputPkt.time_base().den(inputFrameData.timeBase.getDenominator());
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		if (logMsgInterface == null) {
 			return;

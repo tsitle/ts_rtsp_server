@@ -107,6 +107,79 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Override
+	protected void initTranscoder(
+				boolean isFromFile,
+				@Nullable AVFormatContext inputAvFmtCtx,
+				@Nullable Integer streamIx
+			) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
+		destImgDims = sourceImgDims.scale(tcSettingsVid.imgDimsMax);
+
+		//
+		openDecoderCtx(isFromFile, inputAvFmtCtx, streamIx);
+
+		//
+		openEncoderCtx();
+
+		//
+		isTranscoderReady = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalTranscodePacket()";
+
+		if (! isTranscoderReady) {
+			throw new IllegalStateException(FNC_NAME + ": Transcoder not initialized. Call initTranscoder() first.");
+		}
+		if (decoderCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": decoderCtx is null");
+		}
+
+		int r = avcodec.avcodec_send_packet(decoderCtx, inPkt);
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
+
+		recvAllFrames();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected void flushEverythingBeforeClosing() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".flushEverythingBeforeClosing()";
+
+		if (! isTranscoderReady) {
+			return;
+		}
+		if (decoderCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": decoderCtx is null");
+		}
+		if (encoderCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": encoderCtx is null");
+		}
+
+		// flush decoder: send null packet, pull remaining decoded frames
+		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
+		if (r < 0 && r != avutil.AVERROR_EOF) {
+			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
+		}
+
+		// receive all remaining decoded frames
+		recvAllFrames();
+
+		// flush encoder: send null frame, pull delayed re-encoded video packets
+		r = avcodec.avcodec_send_frame(encoderCtx, (AVFrame)null);
+		if (r < 0 && r != avutil.AVERROR_EOF) {
+			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_frame(null)", r);
+		}
+		drainEncoderPackets();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	private static void setEnDeCoderBasics(
 				@NonNull AVCodecContext enDeCoderCtx,
 				@NonNull ImageDimensions imgDims,
@@ -423,29 +496,27 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_frame_get_buffer()", r);
 	}
 
-	@Override
-	protected void initTranscoder(
-				boolean isFromFile,
-				@Nullable AVFormatContext inputAvFmtCtx,
-				@Nullable Integer streamIx
-			) throws FfmpegDecoderNotFoundException, FfmpegGenericException, FfmpegEncoderNotFoundException {
-		destImgDims = sourceImgDims.scale(tcSettingsVid.imgDimsMax);
-
-		//
-		openDecoderCtx(isFromFile, inputAvFmtCtx, streamIx);
-
-		//
-		openEncoderCtx();
-
-		//
-		isTranscoderReady = true;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	protected void internalTranscodePacket(@NonNull AVPacket inPkt) throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".internalTranscodePacket()";
+	private void assignFramePtsToEncoderTimeBase(@NonNull AVFrame frame, @NonNull RationalNumber srcTb) {
+		if (encoderCtx == null) {
+			return;
+		}
+		if (frame.pts() == avutil.AV_NOPTS_VALUE) {
+			return;
+		}
+		RationalNumber encTb = RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den());
+		long ptsRescaled;
+		try (AVRational src = new AVRational(); AVRational dst = new AVRational()) {
+			src.num(srcTb.getNumerator()).den(srcTb.getDenominator());
+			dst.num(encTb.getNumerator()).den(encTb.getDenominator());
+			ptsRescaled = avutil.av_rescale_q(frame.pts(), src, dst);
+		}
+		frame.pts(ptsRescaled);
+	}
+
+	private void recvAllFrames() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".recvAllFrames()";
 
 		if (! isTranscoderReady) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder not initialized. Call initTranscoder() first.");
@@ -460,11 +531,8 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 			throw new IllegalStateException(FNC_NAME + ": convertedFrame is null");
 		}
 
-		int r = avcodec.avcodec_send_packet(decoderCtx, inPkt);
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
-
 		while (true) {
-			r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
+			int r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
 			if (r == avutil.AVERROR_EAGAIN() || r == avutil.AVERROR_EOF) {
 				break;
 			}
@@ -510,81 +578,6 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 
 			avutil.av_frame_unref(decodedFrame);
 		}
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	protected void flushEverythingBeforeClosing() throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".flushEverythingBeforeClosing()";
-
-		if (!isTranscoderReady) {
-			return;
-		}
-
-		// 1) Flush decoder: send null packet, pull remaining decoded frames
-		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
-		if (r < 0 && r != avutil.AVERROR_EOF) {
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
-		}
-
-		while (true) {
-			r = avcodec.avcodec_receive_frame(decoderCtx, decodedFrame);
-			if (r == avutil.AVERROR_EAGAIN() || r == avutil.AVERROR_EOF) {
-				break;
-			}
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_receive_frame()", r);
-
-			AVFrame frameForEncoder = decodedFrame;
-			if (needsSwScaler) {
-				r = avutil.av_frame_make_writable(convertedFrame);
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_frame_make_writable()", r);
-
-				r = swscale.sws_scale_frame(swsCtx, convertedFrame, decodedFrame);
-				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "sws_scale_frame()", r);
-
-				if (convertedFrame != null && decodedFrame != null) {
-					convertedFrame.pts(decodedFrame.pts());
-					frameForEncoder = convertedFrame;
-				}
-			}
-
-			if (frameForEncoder != null) {
-				assignFramePtsToEncoderTimeBase(frameForEncoder, sourceTimeBase);
-			}
-
-			r = avcodec.avcodec_send_frame(encoderCtx, frameForEncoder);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_frame(frameForEncoder)", r);
-
-			drainEncoderPackets();
-			avutil.av_frame_unref(decodedFrame);
-		}
-
-		// 2) Flush encoder: send null frame, pull delayed re-encoded video packets
-		r = avcodec.avcodec_send_frame(encoderCtx, (AVFrame)null);
-		if (r < 0 && r != avutil.AVERROR_EOF) {
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_frame(null)", r);
-		}
-		drainEncoderPackets();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void assignFramePtsToEncoderTimeBase(@NonNull AVFrame frame, @NonNull RationalNumber srcTb) {
-		if (encoderCtx == null) {
-			return;
-		}
-		if (frame.pts() == avutil.AV_NOPTS_VALUE) {
-			return;
-		}
-		RationalNumber encTb = RationalNumber.of(encoderCtx.time_base().num(), encoderCtx.time_base().den());
-		long ptsRescaled;
-		try (AVRational src = new AVRational(); AVRational dst = new AVRational()) {
-			src.num(srcTb.getNumerator()).den(srcTb.getDenominator());
-			dst.num(encTb.getNumerator()).den(encTb.getDenominator());
-			ptsRescaled = avutil.av_rescale_q(frame.pts(), src, dst);
-		}
-		frame.pts(ptsRescaled);
 	}
 
 }
