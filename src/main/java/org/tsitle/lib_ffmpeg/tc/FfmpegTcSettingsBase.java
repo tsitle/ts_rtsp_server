@@ -3,6 +3,9 @@ package org.tsitle.lib_ffmpeg.tc;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.jspecify.annotations.NonNull;
 
+/**
+ * Base class for transcoding settings.
+ */
 public class FfmpegTcSettingsBase {
 
 	public @NonNull FfmpegCodec ffmpegCodec = FfmpegCodec.UNKNOWN;
