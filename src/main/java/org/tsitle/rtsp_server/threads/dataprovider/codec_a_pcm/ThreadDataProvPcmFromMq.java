@@ -25,7 +25,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm
 			) {
-		super(paramsCommon, false, false);
+		super(paramsCommon, false, false, false);
 
 		//
 		paramsPcm.validate();
@@ -56,7 +56,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
@@ -66,10 +66,12 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		return -1;
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull AudioPcmInfo avInfo) { return -1; }
+	protected int readFrameLenFromAvInfo(final @NonNull AudioPcmInfo avInfo) {
+		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
+	}
 
 }

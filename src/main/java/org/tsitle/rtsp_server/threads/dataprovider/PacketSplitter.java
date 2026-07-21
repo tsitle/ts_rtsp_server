@@ -16,11 +16,12 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 
 	private final @NonNull PsLogErrorInterface logErrorMsgInterface;
 	private final @NonNull FGAV frameGrabberPtr;
-	private final boolean needMagicBytes;
 	private final @Nullable PsParseAndConvertDataInterface<I> packetParseAndConvertData;
 	private final @Nullable PsParseOnlyDataInterface<I> packetParseOnlyData;
 	private final @NonNull PsFindNextMagicBytesInterface packetFindNextMagicBytes;
 	private final @Nullable PsGetFrameLenFromAvInfoInterface<I> psGetFrameLenFromAvInfo;
+
+	private final boolean useSplitBuf;
 
 	private final BufferExt remainingInputBuf = new BufferExt();
 	private final BufferView remainingInputBv = new BufferView(remainingInputBuf);
@@ -31,31 +32,41 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 				@NonNull PsLogErrorInterface logErrorMsgInterface,
 				@NonNull FGAV frameGrabberPtr,
 				boolean needMagicBytes,
+				boolean needConvertData,
 				@Nullable PsParseAndConvertDataInterface<I> packetParseAndConvertData,
 				@Nullable PsParseOnlyDataInterface<I> packetParseOnlyData,
 				@NonNull PsFindNextMagicBytesInterface packetFindNextMagicBytes,
 				@Nullable PsGetFrameLenFromAvInfoInterface<I> psGetFrameLenFromAvInfo
 			) {
+		String tmpErrMsgPrefix = PacketSplitter.class.getSimpleName() + ".ctor(): ";
 		if (packetParseAndConvertData != null && packetParseOnlyData != null) {
-			throw new IllegalStateException("only one of packetParseAndConvertData or packetParseOnlyData allowed");
+			throw new IllegalStateException(tmpErrMsgPrefix + "only one of packetParseAndConvertData or packetParseOnlyData allowed");
 		}
 		if (packetParseAndConvertData == null && packetParseOnlyData == null) {
-			throw new IllegalStateException("need either packetParseAndConvertData or packetParseOnlyData");
+			throw new IllegalStateException(tmpErrMsgPrefix + "need either packetParseAndConvertData or packetParseOnlyData");
 		}
-		if (! needMagicBytes && packetParseAndConvertData == null) {
-			throw new IllegalStateException("need packetParseAndConvertData if needMagicBytes==false");
+		if (needConvertData && packetParseAndConvertData == null) {
+			throw new IllegalStateException(tmpErrMsgPrefix + "need packetParseAndConvertData if needConvertData==true");
 		}
-		if (needMagicBytes && packetParseOnlyData == null) {
-			throw new IllegalStateException("need packetParseOnlyData if needMagicBytes==true");
+		if (packetParseAndConvertData != null && needMagicBytes) {
+			throw new IllegalStateException(tmpErrMsgPrefix + "packetParseAndConvertData must be null if needMagicBytes==true");
+		}
+		if (packetParseAndConvertData != null && psGetFrameLenFromAvInfo != null) {
+			throw new IllegalStateException(tmpErrMsgPrefix + "either packetParseAndConvertData or psGetFrameLenFromAvInfo must be null");
+		}
+		if (! needConvertData && packetParseOnlyData == null) {
+			throw new IllegalStateException(tmpErrMsgPrefix + "need packetParseOnlyData if needConvertData==false");
 		}
 
 		this.logErrorMsgInterface = logErrorMsgInterface;
 		this.frameGrabberPtr = frameGrabberPtr;
-		this.needMagicBytes = needMagicBytes;
 		this.packetParseAndConvertData = packetParseAndConvertData;
 		this.packetParseOnlyData = packetParseOnlyData;
 		this.packetFindNextMagicBytes = packetFindNextMagicBytes;
 		this.psGetFrameLenFromAvInfo = psGetFrameLenFromAvInfo;
+
+		//
+		this.useSplitBuf = (needMagicBytes || psGetFrameLenFromAvInfo != null);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -67,8 +78,8 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 
 	void getNextSplitPacket(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException, AvInvalidCodecDataException, InputStreamThreadEndedException {
-		BufferExt readIntoBufPtr = (needMagicBytes ? remainingInputBuf : buf);
-		if (! needMagicBytes || remainingInputBv.getLength() == 0) {
+		BufferExt readIntoBufPtr = (useSplitBuf ? remainingInputBuf : buf);
+		if (! useSplitBuf || remainingInputBv.getLength() == 0) {
 			try {
 				frameGrabberPtr.getNextFrame(readIntoBufPtr, stTimestampCurFrame);
 			} catch (InputStreamIoException e) {
@@ -82,10 +93,12 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 			final I tmpInfoObj;
 			if (packetParseAndConvertData != null) {
 				tmpInfoObj = packetParseAndConvertData.parseAndConvertData(buf);
-			} else if (packetParseOnlyData != null) {
+			} else if (! useSplitBuf && packetParseOnlyData != null) {
+				tmpInfoObj = packetParseOnlyData.parseData(new BufferView(buf));
+			} else if (useSplitBuf && packetParseOnlyData != null) {
 				tmpInfoObj = packetParseOnlyData.parseData(remainingInputBv);
 			} else {
-				throw new IllegalStateException("this should not happen");
+				throw new IllegalStateException("this should not happen #1");
 			}
 			infoObj.copyOf(tmpInfoObj);
 		} catch (Exception e) {
@@ -100,7 +113,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 		 * The same can happen when demuxing from an MKV/MP4/... file.
 		 * So we need to find the next magic bytes to split the buffer into multiple NAL Units.
 		 */
-		if (needMagicBytes && packetParseOnlyData != null) {
+		if (useSplitBuf) {
 			int nextOffset;
 			if (psGetFrameLenFromAvInfo != null) {
 				nextOffset = psGetFrameLenFromAvInfo.getFrameLen(infoObj);
@@ -111,7 +124,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 				remainingInputBv.copyViewIntoBe(buf);
 				remainingInputBuf.clear();
 				remainingInputBv.clear();
-			} else {
+			} else if (packetParseOnlyData != null) {
 				remainingInputBv.setLength(nextOffset);
 				remainingInputBv.copyViewIntoBe(buf);
 
@@ -126,6 +139,8 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 					logErrorMsgInterface.logErrorMsg("caught on parsing the split packet: " + e);
 					throw new InputStreamEosException();
 				}
+			} else {
+				throw new IllegalStateException("this should not happen #2");
 			}
 		}
 		//

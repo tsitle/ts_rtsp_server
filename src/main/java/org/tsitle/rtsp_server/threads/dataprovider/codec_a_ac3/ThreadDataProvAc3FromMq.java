@@ -20,7 +20,7 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 	public ThreadDataProvAc3FromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, false, false);
+		super(paramsCommon, false, false, true);
 
 		this.packetParser = new PacketParserAc3();
 	}
@@ -41,7 +41,7 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected @NonNull AudioAc3Info parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
@@ -51,10 +51,12 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		return -1;
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull AudioAc3Info avInfo) { return -1; }
+	protected int readFrameLenFromAvInfo(final @NonNull AudioAc3Info avInfo) {
+		return avInfo.frameLength;
+	}
 
 }

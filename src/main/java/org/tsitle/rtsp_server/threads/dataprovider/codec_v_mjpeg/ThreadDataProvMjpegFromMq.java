@@ -20,7 +20,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 	public ThreadDataProvMjpegFromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true, false);
+		super(paramsCommon, false, true, false);
 
 		this.packetParser = new PacketParserMjpeg(
 				paramsCommon.getLogMsgInterface().orElseThrow()
@@ -48,15 +48,17 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 
 	@Override
 	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseData(): not implemented");
 	}
 
 	@Override
 	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		return -1;
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoJpegInfo avInfo) { return -1; }
+	protected int readFrameLenFromAvInfo(final @NonNull VideoJpegInfo avInfo) {
+		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
+	}
 
 }

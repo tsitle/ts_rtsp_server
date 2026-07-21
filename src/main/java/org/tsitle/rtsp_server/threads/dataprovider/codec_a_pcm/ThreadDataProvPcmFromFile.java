@@ -84,7 +84,7 @@ public final class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<
 
 	@Override
 	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override

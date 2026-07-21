@@ -62,7 +62,7 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 
 	@Override
 	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override

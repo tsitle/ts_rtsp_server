@@ -79,7 +79,7 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 
 	@Override
 	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseData(): not implemented");
 	}
 
 }

@@ -20,7 +20,7 @@ public final class ThreadDataProvAacFromDemuxMs extends ThreadDataProvFromDemuxM
 	public ThreadDataProvAacFromDemuxMs(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true, true);
+		super(paramsCommon, true, false, true);
 
 		this.packetParser = new PacketParserAac();
 	}
@@ -41,7 +41,7 @@ public final class ThreadDataProvAacFromDemuxMs extends ThreadDataProvFromDemuxM
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public final class ThreadDataProvAacFromDemuxMs extends ThreadDataProvFromDemuxM
 
 	@Override
 	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
-		return -1;
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override

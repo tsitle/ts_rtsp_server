@@ -68,7 +68,7 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override

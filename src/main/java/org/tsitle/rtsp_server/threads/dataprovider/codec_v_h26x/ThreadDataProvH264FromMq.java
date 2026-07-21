@@ -20,7 +20,7 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 	public ThreadDataProvH264FromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true, false);
+		super(paramsCommon, true, false, false);
 
 		this.packetParser = new PacketParserH264();
 	}
@@ -41,7 +41,7 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 
 	@Override
 	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
@@ -55,6 +55,8 @@ public final class ThreadDataProvH264FromMq extends ThreadDataProvFromMqBase<Vid
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoH264Info avInfo) { return -1; }
+	protected int readFrameLenFromAvInfo(final @NonNull VideoH264Info avInfo) {
+		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
+	}
 
 }

@@ -20,7 +20,7 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 	public ThreadDataProvAacFromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, false, true);
+		super(paramsCommon, false, false, true);
 
 		this.packetParser = new PacketParserAac();
 	}
@@ -41,7 +41,7 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException("not implemented");
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		return -1;
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override

@@ -18,6 +18,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 
 	private @Nullable PacketSplitter<I, FrameGrabberAvFromEsMqBase> packetSplitter = null;
 	private final boolean needMagicBytes;
+	private final boolean needConvertData;
 	private final boolean canReadFrameLenFromAvInfo;
 
 	protected @Nullable AvStreamIncomingFromEsMq avStreamIncoming = null;
@@ -26,17 +27,20 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param needMagicBytes Do we need 'Magic Bytes'?
+	 * @param needConvertData Do we need the 'Parse and Convert' callback? (if false, then we need 'Parse Only' callback)
 	 * @param canReadFrameLenFromAvInfo Can we read the frame length from the A/V info?
 	 */
 	protected ThreadDataProvFromMqBase(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				boolean needMagicBytes,
+				boolean needConvertData,
 				boolean canReadFrameLenFromAvInfo
 			) {
 		super(paramsCommon);
 
 		//
 		this.needMagicBytes = needMagicBytes;
+		this.needConvertData = needConvertData;
 		this.canReadFrameLenFromAvInfo = canReadFrameLenFromAvInfo;
 	}
 
@@ -122,8 +126,9 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 					(@NonNull String cbErrorMsg) -> logError(FNC_NAME, cbErrorMsg),
 					frameGrabber,
 					needMagicBytes,
-					needMagicBytes ? null : this::parseAndConvertData,
-					needMagicBytes ? this::parseData : null,
+					needConvertData,
+					needConvertData ? this::parseAndConvertData : null,
+					needConvertData ? null : this::parseData,
 					this::findNextMagicBytes,
 					canReadFrameLenFromAvInfo ? this::readFrameLenFromAvInfo : null
 				);
