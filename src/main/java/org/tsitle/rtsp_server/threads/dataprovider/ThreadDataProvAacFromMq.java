@@ -50,7 +50,7 @@ public final class ThreadDataProvAacFromMq extends ThreadDataProvFromMqBase<Audi
 
 	@Override
 	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		return MagicBytesAacHelper.findNextFrame(inputBv);
+		return -1;
 	}
 
 	@Override

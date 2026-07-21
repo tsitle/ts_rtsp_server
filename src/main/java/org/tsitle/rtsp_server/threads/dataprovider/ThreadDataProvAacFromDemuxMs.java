@@ -50,7 +50,7 @@ public final class ThreadDataProvAacFromDemuxMs extends ThreadDataProvFromDemuxM
 
 	@Override
 	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
-		return MagicBytesAacHelper.findNextFrame(inputBv);
+		return -1;
 	}
 
 	@Override
