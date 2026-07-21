@@ -137,13 +137,15 @@ public final class ImageReencoder {
 			throws ImageReencoderIoException {
 		int curWidth = inputImage.getWidth(null);
 		int curHeight = inputImage.getHeight(null);
-		if (curWidth < 1 || curHeight < 1) {
+		if (curWidth < 2 || curHeight < 2) {
 			throw new IllegalArgumentException("Invalid image size");
 		}
 
 		int targetW = curWidth;
 		int targetH = curHeight;
-		final float orgRatio = (float)curWidth / (float)curHeight;
+		final double orgRatio = (double)curWidth / (double)curHeight;
+		if (targetW % 2 != 0) { targetW--; }
+		if (targetH % 2 != 0) { targetH--; }
 
 		/*
 		 * We scale the image in divide-by-two steps
@@ -155,13 +157,17 @@ public final class ImageReencoder {
 				if (targetW < maxImageWidthHeight) {
 					targetW = maxImageWidthHeight;
 				}
-				targetH = (int)((float)targetW / orgRatio);
+				if (targetW % 2 != 0) { targetW--; }
+				targetH = (int)((double)targetW / orgRatio);
+				if (targetH % 2 != 0) { targetH--; }
 			} else if (targetH > maxImageWidthHeight) {
 				targetH /= 2;
 				if (targetH < maxImageWidthHeight) {
 					targetH = maxImageWidthHeight;
 				}
-				targetW = (int)((float)targetH * orgRatio);
+				if (targetH % 2 != 0) { targetH--; }
+				targetW = (int)((double)targetH * orgRatio);
+				if (targetW % 2 != 0) { targetW--; }
 			}
 			outputImage = rewriteImageWithScaling(outputImage, targetW, targetH);
 		} while (targetW > maxImageWidthHeight || targetH > maxImageWidthHeight);
@@ -181,8 +187,8 @@ public final class ImageReencoder {
 				throw new ImageReencoderIoException(FNC_NAME + ": Unsupported image type: " + inputImage.getType());
 			}
 			BufferedImage scaledImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_3BYTE_BGR);
-			float factorX = (float) targetWidth / (float) inputImage.getWidth(null);
-			float factorY = (float) targetHeight / (float) inputImage.getHeight(null);
+			double factorX = (double)targetWidth / (double)inputImage.getWidth(null);
+			double factorY = (double)targetHeight / (double)inputImage.getHeight(null);
 			final AffineTransform at = AffineTransform.getScaleInstance(factorX, factorY);
 			final AffineTransformOp ato = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
 			return ato.filter(inputImage, scaledImage);
