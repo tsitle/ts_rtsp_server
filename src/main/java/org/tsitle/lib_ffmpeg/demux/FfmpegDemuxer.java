@@ -40,9 +40,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final @NonNull String inputFilePath;
-	private final long cfgMaxSecs;
-	private final boolean cfgOutputH26xAsAnnexB;
-	private final boolean cfgOutputAacWithAdts;
+	private final @NonNull FfmpegDmxSettingsInternal dmxSettings;
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
 	private @Nullable AVFormatContext inputAvFmtCtx;
@@ -60,24 +58,18 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * Constructor.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
-	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
-	 * @param cfgOutputH26xAsAnnexB Output H.26x as Annex B (true) or as-is?
-	 * @param cfgOutputAacWithAdts Output AAC with ADTS header (true) or as-is?
+	 * @param dmxSettings Settings for demuxing
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	private FfmpegDemuxer(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
-				long cfgMaxSecs,
-				boolean cfgOutputH26xAsAnnexB,
-				boolean cfgOutputAacWithAdts,
+				@NonNull FfmpegDmxSettingsInternal dmxSettings,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.inputFilePath = inputFilePath;
-		this.cfgMaxSecs = cfgMaxSecs;
-		this.cfgOutputH26xAsAnnexB = cfgOutputH26xAsAnnexB;
-		this.cfgOutputAacWithAdts = cfgOutputAacWithAdts;
+		this.dmxSettings = dmxSettings;
 		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
 		if (inputFilePath.isBlank()) {
@@ -98,6 +90,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * Read the stream info from the input file.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
+	 * @param dmxSettings Settings for demuxing (only for reading the sub-stream infos)
 	 * @param outStreamInfoVid Output for the video stream info
 	 * @param outStreamInfoAud Output for the audio stream info
 	 * @throws FfmpegGenericException If any FFmpeg error occurs
@@ -105,6 +98,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	public static void readStreamInfos(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
+				@NonNull FfmpegDmxSettingsRsi dmxSettings,
 				@NonNull FfmpegStreamInfoVideo outStreamInfoVid,
 				@NonNull FfmpegStreamInfoAudio outStreamInfoAud
 			) throws FfmpegGenericException {
@@ -114,9 +108,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					logMsgInterface,
 					inputFilePath,
-					1L,
-					false,
-					false,
+					FfmpegDmxSettingsInternal.of(dmxSettings),
 					null
 				)) {
 			ffmpegDemuxer.internalReadStreamInfos();
@@ -130,23 +122,17 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * Create a Demuxer for demuxing only.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
-	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
-	 * @param cfgOutputH26xAsAnnexB Output H.26x as Annex B (true) or as-is?
-	 * @param cfgOutputAacWithAdts Output AAC with ADTS header (true) or as-is?
+	 * @param dmxSettings Settings for demuxing
 	 */
 	public static FfmpegDemuxer createForDemuxingOnly(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
-				long cfgMaxSecs,
-				boolean cfgOutputH26xAsAnnexB,
-				boolean cfgOutputAacWithAdts
+				@NonNull FfmpegDmxSettingsDemux dmxSettings
 			) {
 		return new FfmpegDemuxer(
 				logMsgInterface,
 				inputFilePath,
-				cfgMaxSecs,
-				cfgOutputH26xAsAnnexB,
-				cfgOutputAacWithAdts,
+				FfmpegDmxSettingsInternal.of(dmxSettings),
 				null
 			);
 	}
@@ -155,22 +141,20 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * Create a Demuxer for transcoding.
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputFilePath Path to the input file
-	 * @param cfgMaxSecs Maximum seconds to demux (<= 0 means no limit)
+	 * @param dmxSettings Settings for demuxing
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	@SuppressWarnings("unused")
 	public static FfmpegDemuxer createForTranscoding(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
-				long cfgMaxSecs,
+				@NonNull FfmpegDmxSettingsTc dmxSettings,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		return new FfmpegDemuxer(
 				logMsgInterface,
 				inputFilePath,
-				cfgMaxSecs,
-				false,
-				false,
+				FfmpegDmxSettingsInternal.of(dmxSettings),
 				recvDemuxerStatsInterface
 			);
 	}
@@ -301,6 +285,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		inputStreamInfoVid.streamIx = -1;
 		inputStreamInfoAud.streamIx = -1;
 
+		int curStreamNumberVid = 0;
+		int curStreamNumberAud = 0;
+
 		for (int i = 0; i < inputAvFmtCtx.nb_streams(); i++) {
 			AVStream st = inputAvFmtCtx.streams(i);
 			AVCodecParameters par = st.codecpar();
@@ -314,27 +301,45 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			logDebug(FNC_NAME, "Codec type: " + par.codec_type());*/
 			switch (par.codec_type()) {
 				case avutil.AVMEDIA_TYPE_VIDEO:
+					++curStreamNumberVid;
 					if (! tmpFfmpegCodec.isVideo()) {
-						logDebug(FNC_NAME, "(ignoring video track with unsupported codec [" + tmpCodecName + "])");
+						logDebug(FNC_NAME,
+								String.format("(ignoring video track #%d with unsupported codec [%s])",
+										curStreamNumberVid, tmpCodecName)
+							);
 						continue;
 					}
-					if (inputStreamInfoVid.streamIx < 0) {
-						logDebug(FNC_NAME, "found video track [" + tmpCodecName + "]");
+					if (inputStreamInfoVid.streamIx < 0 &&
+							(dmxSettings.cfgSelectStreamNumberVideo < 1 ||
+									curStreamNumberVid == dmxSettings.cfgSelectStreamNumberVideo)) {
+						logDebug(FNC_NAME, String.format("found video track #%d [%s]", curStreamNumberVid, tmpCodecName));
 						inputStreamInfoVid.streamIx = i;
 					} else {
-						logDebug(FNC_NAME, "(ignoring other video track [" + tmpCodecName + "])");
+						logDebug(FNC_NAME,
+								String.format("(ignoring other video track #%d [%s])",
+										curStreamNumberVid, tmpCodecName)
+							);
 					}
 					break;
 				case avutil.AVMEDIA_TYPE_AUDIO:
+					++curStreamNumberAud;
 					if (! tmpFfmpegCodec.isAudio()) {
-						logDebug(FNC_NAME, "(ignoring audio track with unsupported codec [" + tmpCodecName + "])");
+						logDebug(FNC_NAME,
+								String.format("(ignoring audio track #%d with unsupported codec [%s])",
+										curStreamNumberAud, tmpCodecName)
+							);
 						continue;
 					}
-					if (inputStreamInfoAud.streamIx < 0) {
-						logDebug(FNC_NAME, "found audio track [" + tmpCodecName + "]");
+					if (inputStreamInfoAud.streamIx < 0 &&
+							(dmxSettings.cfgSelectStreamNumberAudio < 1 ||
+									curStreamNumberAud == dmxSettings.cfgSelectStreamNumberAudio)) {
+						logDebug(FNC_NAME, String.format("found audio track #%d [%s]", curStreamNumberAud, tmpCodecName));
 						inputStreamInfoAud.streamIx = i;
 					} else {
-						logDebug(FNC_NAME, "(ignoring other audio track [" + tmpCodecName + "])");
+						logDebug(FNC_NAME,
+								String.format("(ignoring other audio track #%d [%s])",
+										curStreamNumberAud, tmpCodecName)
+							);
 					}
 					break;
 				case avutil.AVMEDIA_TYPE_SUBTITLE:
@@ -492,7 +497,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ---------------------------------------------------
 
-		if (cfgMaxSecs > 0 && (long) stats.currentMaxPtsSecs >= cfgMaxSecs) {
+		if (dmxSettings.cfgMaxSecs > 0 && (long) stats.currentMaxPtsSecs >= dmxSettings.cfgMaxSecs) {
 			haveReachedMaxSecs = true;
 		}
 
@@ -554,7 +559,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (bsfH26xAnnexB == null && cfgOutputH26xAsAnnexB &&
+		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
 				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
 			bsfH26xAnnexB = new BsfH26xAnnexB(
 					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
@@ -598,7 +603,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (! isVideo && cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
+		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			if (aacAdtsPacketizer == null) {
 				aacAdtsPacketizer = AacAdtsPacketizer.fromAsc(inputStreamInfoAud.aacAudioSpecificConfigHex);
 			}
