@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -25,7 +26,8 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles
+				debugRewindMediaFiles,
+				false
 			);
 
 		this.packetParser = new PacketParserH264();
@@ -58,8 +60,13 @@ public final class ThreadDataProvH264FromFile extends ThreadDataProvFromFileBase
 	}
 
 	@Override
-	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException("not implemented");
+	}
+
+	@Override
+	protected @NonNull VideoH264Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(debugStreamOffset, inputBv);
 	}
 
 }

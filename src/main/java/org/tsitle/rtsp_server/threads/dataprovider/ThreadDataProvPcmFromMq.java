@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioPcmFromEsMq;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -23,7 +24,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm
 			) {
-		super(paramsCommon, false);
+		super(paramsCommon, false, false);
 
 		//
 		paramsPcm.validate();
@@ -53,13 +54,21 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 	}
 
 	@Override
-	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(inputBuf);
+	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
-	protected int findNextMagicBytes(@NonNull BufferExt inputBuf) {
+	protected @NonNull AudioPcmInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(inputBv);
+	}
+
+	@Override
+	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
 		return -1;
 	}
+
+	@Override
+	protected int readFrameLenFromAvInfo(final @NonNull AudioPcmInfo avInfo) { return -1; }
 
 }

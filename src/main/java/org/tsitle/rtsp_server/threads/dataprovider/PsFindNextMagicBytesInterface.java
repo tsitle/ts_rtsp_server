@@ -1,10 +1,15 @@
 package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 interface PsFindNextMagicBytesInterface {
 
-	int findNextMagicBytes(final @NonNull BufferExt inputBuf);
+	/**
+	 * Find the next frame start in the Buffer View.
+	 * @param inputBv Input Buffer View
+	 * @return Offset of the next frame start within the Buffer View, or -1 if not found
+	 */
+	int findNextMagicBytes(final @NonNull BufferView inputBv);
 
 }

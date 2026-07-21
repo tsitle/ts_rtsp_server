@@ -3,10 +3,10 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
-interface PsParseAndConvertDataInterface<I extends CodecInfoInterface<I>> {
+interface PsParseOnlyDataInterface<I extends CodecInfoInterface<I>> {
 
-	@NonNull I parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException;
+	@NonNull I parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException;
 
 }

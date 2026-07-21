@@ -246,8 +246,8 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		try {
 			if ((haveInputVideo && cacheVid.count == CACHE_SIZE_MAX) ||
 					(haveInputAudio && cacheAud.count == CACHE_SIZE_MAX)) {
-				logDebug(FNC_NAME, "cache full");
-				return;
+				logError(FNC_NAME, "cache is full");
+				throw new InputStreamEosException();  // something went wrong, so we abort here
 			}
 
 			//

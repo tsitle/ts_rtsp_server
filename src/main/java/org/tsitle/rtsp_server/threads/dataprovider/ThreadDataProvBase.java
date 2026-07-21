@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -80,5 +81,9 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 	protected abstract void createAvStreamIncoming() throws AvCannotOpenInputException;
 
 	protected abstract void createFrameGrabber();
+
+	protected abstract @NonNull I parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException;
+
+	protected abstract @NonNull I parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException;
 
 }

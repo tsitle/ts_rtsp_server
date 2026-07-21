@@ -1,8 +1,8 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 public final class AudioPcmParser {
 
@@ -24,13 +24,13 @@ public final class AudioPcmParser {
 
 	/**
 	 * Parses the PCMA/PCMU/LinearPCM data and returns a PcmInfo object with the parsed information.
-	 * @param pcmBuf PCM data
+	 * @param inputBv PCM data
 	 * @return Parsed PCM information
 	 */
-	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferExt pcmBuf) throws AvInvalidCodecDataException {
+	public @NonNull AudioPcmInfo parsePcmData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parsePcmData()";
 
-		if (pcmBuf.getUsed() < 1) {
+		if (inputBv.getLength() < 1) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid PCM data size");
 		}
 		if (channels < 1 || channels > 2) {
@@ -44,10 +44,10 @@ public final class AudioPcmParser {
 		AudioPcmInfo resObj = new AudioPcmInfo();
 
 		resObj.samplesOffset = 0;
-		resObj.samplesLength = pcmBuf.getUsed();
+		resObj.samplesLength = inputBv.getLength();
 		resObj.channels = channels;
 		resObj.bitsPerSample = bitsPerSample;
-		resObj.samplesPerChannelInAudioData = pcmBuf.getUsed() / (channels * (bitsPerSample / 8));
+		resObj.samplesPerChannelInAudioData = inputBv.getLength() / (channels * (bitsPerSample / 8));
 
 		return resObj;
 	}

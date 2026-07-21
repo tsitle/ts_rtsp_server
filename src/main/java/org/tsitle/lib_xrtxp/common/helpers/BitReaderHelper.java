@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.common.helpers;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 
 /**
@@ -9,7 +10,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
  */
 public final class BitReaderHelper {
 
-	private final BufferExt buffer;
+	private final BufferView bufView;
 	private int currentByte;
 	private int bytePos;
 	private int bitPos = 8;
@@ -19,8 +20,17 @@ public final class BitReaderHelper {
 	 * @param buffer Input buffer
 	 */
 	public BitReaderHelper(@NonNull BufferExt buffer, int offset) {
-		this.buffer = buffer;
+		this.bufView = new BufferView(buffer);
 		this.bytePos = offset;
+	}
+
+	/**
+	 * Constructor.
+	 * @param bufView Input Buffer View
+	 */
+	public BitReaderHelper(@NonNull BufferView bufView) {
+		this.bufView = bufView;
+		this.bytePos = 0;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,10 +43,10 @@ public final class BitReaderHelper {
 	 */
 	public int readBit() throws BitReaderEosException {
 		if (bitPos == 8) {
-			if (bytePos >= buffer.getUsed()) {
+			if (bytePos >= bufView.getLength()) {
 				throw new BitReaderEosException();
 			}
-			currentByte = buffer.get(bytePos++) & 0xFF;
+			currentByte = bufView.getByte(bytePos++) & 0xFF;
 			bitPos = 0;
 		}
 		int bit = (currentByte >> (7 - bitPos)) & 1;

@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAudioAacFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -28,7 +29,8 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles
+				debugRewindMediaFiles,
+				false
 			);
 
 		//
@@ -64,8 +66,13 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 	}
 
 	@Override
-	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(inputBuf);
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException("not implemented");
+	}
+
+	@Override
+	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(inputBv);
 	}
 
 }

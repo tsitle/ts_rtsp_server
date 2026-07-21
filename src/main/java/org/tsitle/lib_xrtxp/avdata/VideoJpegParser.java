@@ -1,8 +1,9 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
@@ -32,11 +33,11 @@ public final class VideoJpegParser {
 
 	/**
 	 * Parses the JPEG data and returns a JpegInfo object with the parsed information.
-	 * @param jpegBuf JPEG data
+	 * @param inputBv JPEG data
 	 * @param debugStreamOffset Offset of the JPEG data in the MJPEG stream (used for error messages)
 	 * @return Parsed JPEG information
 	 */
-	public @NonNull VideoJpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferExt jpegBuf)
+	public @NonNull VideoJpegInfo parseJpegData(long debugStreamOffset, @NonNull BufferView inputBv)
 			throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseJpegData()";
 
@@ -46,14 +47,14 @@ public final class VideoJpegParser {
 		VideoJpegInfo resObj = new VideoJpegInfo();
 
 		int offs = 0;
-		if (jpegBuf.getUsed() < 4) {
+		if (inputBv.getLength() < 4) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data size");
 		}
 		// find SOI marker (Start of Image: 0xFFD8)
-		while (offs + 1 < jpegBuf.getUsed()) {
-			if (jpegBuf.get(offs) != (byte)0xFF || jpegBuf.get(offs + 1) != (byte)0xD8) {
+		while (offs + 1 < inputBv.getLength()) {
+			if (inputBv.getByte(offs) != (byte)0xFF || inputBv.getByte(offs + 1) != (byte)0xD8) {
 				logError(FNC_NAME, String.format("skipping invalid JPEG data @ 0x%08X: 0x%02X 0x%02X%n",
-						offs + debugStreamOffset, jpegBuf.get(offs), jpegBuf.get(offs + 1)));
+						offs + debugStreamOffset, inputBv.getByte(offs), inputBv.getByte(offs + 1)));
 				if (offs > 20) {
 					throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data - too much garbage");
 				}
@@ -63,8 +64,8 @@ public final class VideoJpegParser {
 			break;
 		}
 		offs += 2;
-		while (offs + 1 < jpegBuf.getUsed()) {
-			byte marker = jpegBuf.get(offs++);
+		while (offs + 1 < inputBv.getLength()) {
+			byte marker = inputBv.getByte(offs++);
 			if (marker != (byte)0xFF) {
 				throw new AvInvalidCodecDataException(
 						String.format("%s: Invalid JPEG data - invalid marker @ 0x%08X: 0x%02X",
@@ -72,21 +73,21 @@ public final class VideoJpegParser {
 					);
 			}
 			int curBlockOffset = offs - 1;
-			marker = jpegBuf.get(offs++);
+			marker = inputBv.getByte(offs++);
 
 			if (marker == (byte)0xC0) {
 				// SOF0 marker (Start of Frame - Baseline DCT: 0xFFC0)
-				offs = parseBlockSOF0(jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockSOF0(inputBv, resObj, curBlockOffset);
 				continue;
 			}
 			if (marker == (byte)0xDA) {
 				// SOS marker (Start of Scan: 0xFFDA) followed immediately by the entropy-coded scan data
-				offs = parseBlockSOS(jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockSOS(inputBv, resObj, curBlockOffset);
 				continue;
 			}
 			if (marker == (byte)0xDB) {
 				// DQT marker (Define Quantization Table: 0xFFDB)
-				offs = parseBlockDQT(jpegBuf, resObj, curBlockOffset);
+				offs = parseBlockDQT(inputBv, resObj, curBlockOffset);
 				continue;
 			}
 
@@ -129,7 +130,7 @@ public final class VideoJpegParser {
 			}
 
 			// skip over the block data
-			int blockLen = parseBlockLength(jpegBuf, curBlockOffset);
+			int blockLen = parseBlockLength(inputBv, curBlockOffset);
 			offs += 2 + blockLen;
 		}
 		return resObj;
@@ -140,27 +141,27 @@ public final class VideoJpegParser {
 
 	/**
 	 * Parses the length of a block.
-	 * @param jpegBuf JPEG data
+	 * @param inputBv JPEG data
 	 * @param blockOffset Start offset of the block marker
 	 * @return Block length
 	 */
-	private int parseBlockLength(@NonNull BufferExt jpegBuf, final int blockOffset)
+	private int parseBlockLength(@NonNull BufferView inputBv, final int blockOffset)
 			throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockLength()";
 
-		if (blockOffset + 4 >= jpegBuf.getUsed()) {
+		if (blockOffset + 4 >= inputBv.getLength()) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data size");
 		}
 		int curOffs = blockOffset + 2;
 		// the block length includes the two bytes for the length itself
-		int blockLen = ( ( ((jpegBuf.get(curOffs) << 8) & 0xFF00) | (jpegBuf.get(curOffs + 1) & 0xFF) ) & 0xFFFF);
+		int blockLen = ( ( ((inputBv.getByte(curOffs) << 8) & 0xFF00) | (inputBv.getByte(curOffs + 1) & 0xFF) ) & 0xFFFF);
 		if (blockLen < 2) {
 			throw new AvInvalidCodecDataException(
 					String.format("%s: Invalid JPEG data - invalid block length %d @ 0x%08X",
 							FNC_NAME, blockLen, debugStreamOffset + curOffs)
 				);
 		}
-		if (blockOffset + 2 + blockLen >= jpegBuf.getUsed()) {
+		if (blockOffset + 2 + blockLen >= inputBv.getLength()) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG data - data too small");
 		}
 		//logDebug(FNC_NAME, curOffs, String.format("__ blockLen %d", blockLen));
@@ -169,12 +170,12 @@ public final class VideoJpegParser {
 
 	/**
 	 * Parses the SOS (Start of Scan: 0xFFDA) block.
-	 * @param jpegBuf JPEG data
+	 * @param inputBv JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockSOS(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOS(@NonNull BufferView inputBv, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
 		//final String FNC_NAME = getClass().getSimpleName() + ".parseBlockSOS()";
 
@@ -185,21 +186,21 @@ public final class VideoJpegParser {
 		 * The next marker is an 0xFF followed by a byte that is not 0x00.
 		 */
 		//logDebug(FNC_NAME, blockOffset, "SOS");
-		int blockLen = parseBlockLength(jpegBuf, blockOffset);
+		int blockLen = parseBlockLength(inputBv, blockOffset);
 		int curOffs = blockOffset + 2 + 2 + blockLen;
 		// now find the end of the scan data
 		jpegInfo.sos_scanDataOffs = curOffs;
-		while (curOffs + 1 < jpegBuf.getUsed()) {
-			if (jpegBuf.get(curOffs) == (byte)0xFF &&
-					jpegBuf.get(curOffs + 1) != (byte)0x00 &&
-					(jpegBuf.get(curOffs + 1) < (byte)0xD0 || jpegBuf.get(curOffs + 1) > (byte)0xD7)) {
+		while (curOffs + 1 < inputBv.getLength()) {
+			if (inputBv.getByte(curOffs) == (byte)0xFF &&
+					inputBv.getByte(curOffs + 1) != (byte)0x00 &&
+					(inputBv.getByte(curOffs + 1) < (byte)0xD0 || inputBv.getByte(curOffs + 1) > (byte)0xD7)) {
 				break;
 			}
-			if (jpegBuf.get(curOffs) == (byte)0xFF &&
-					jpegBuf.get(curOffs + 1) >= (byte)0xD0 && jpegBuf.get(curOffs + 1) <= (byte)0xD7) {
+			if (inputBv.getByte(curOffs) == (byte)0xFF &&
+					inputBv.getByte(curOffs + 1) >= (byte)0xD0 && inputBv.getByte(curOffs + 1) <= (byte)0xD7) {
 				jpegInfo.usesDri = true;
 				/*logDebug(FNC_NAME, curOffs,
-						String.format("RESTART(#%d,0x%02X)", jpegBuf.get(curOffs + 1) - (byte)0xD0, jpegBuf.get(curOffs + 1)));*/
+						String.format("RESTART(#%d,0x%02X)", inputBv.getByte(curOffs + 1) - (byte)0xD0, inputBv.getByte(curOffs + 1)));*/
 			}
 			++curOffs;
 		}
@@ -210,17 +211,17 @@ public final class VideoJpegParser {
 
 	/**
 	 * Parses the SOF0 (Start of Frame - Baseline DCT: 0xFFC0) block.
-	 * @param jpegBuf JPEG data
+	 * @param inputBv JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockSOF0(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockSOF0(@NonNull BufferView inputBv, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockSOF0()";
 
 		//logDebug(FNC_NAME, blockOffset, "SOF0");
-		int blockLen = parseBlockLength(jpegBuf, blockOffset);
+		int blockLen = parseBlockLength(inputBv, blockOffset);
 		int curOffs = blockOffset + 2 + 2;
 
 		if (blockLen < 6) {
@@ -232,16 +233,16 @@ public final class VideoJpegParser {
 		int innerOffs = curOffs;
 
 		// precision field
-		jpegInfo.sof0_precision = jpegBuf.get(innerOffs++);
+		jpegInfo.sof0_precision = inputBv.getByte(innerOffs++);
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ prec %d", jpegInfo.sof0_precision));
 
 		// image dimensions
-		jpegInfo.sof0_imgHeight = ( ( ((jpegBuf.get(innerOffs++) << 8) & 0xFF00) | (jpegBuf.get(innerOffs++) & 0xFF) ) & 0xFFFF);
-		jpegInfo.sof0_imgWidth = ( ( ((jpegBuf.get(innerOffs++) << 8) & 0xFF00) | (jpegBuf.get(innerOffs++) & 0xFF) ) & 0xFFFF);
+		jpegInfo.sof0_imgHeight = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
+		jpegInfo.sof0_imgWidth = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
 		//logDebug(FNC_NAME, innerOffs - 4, String.format("__ image %d x %d", jpegInfo.sof0_imgWidth, jpegInfo.sof0_imgHeight));
 
 		// channel encoding (e.g. 'YCbCr 4:2:0')
-		byte paramNf = jpegBuf.get(innerOffs++);
+		byte paramNf = inputBv.getByte(innerOffs++);
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ Nf %d", paramNf));
 		if (blockLen < 6 + (paramNf * 3)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
@@ -249,19 +250,19 @@ public final class VideoJpegParser {
 		byte tmpMaxH = 0;
 		byte tmpMaxV = 0;
 		for (byte componentIx = 0; componentIx < paramNf; ++componentIx) {
-			byte componentId = jpegBuf.get(innerOffs++);
+			byte componentId = inputBv.getByte(innerOffs++);
 			if (componentId < 0 || componentId > 3) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid component ID");
 			}
 			/*
 			 * We are going to assume that the components come in the order Y, Cb, Cr - regardless of ID value.
 			 */
-			byte componentTmpHiVi = jpegBuf.get(innerOffs++);
+			byte componentTmpHiVi = inputBv.getByte(innerOffs++);
 			byte componentHi = (byte)((componentTmpHiVi >> 4) & 0x0F);
 			tmpMaxH = (byte)(Math.max(tmpMaxH, componentHi));
 			byte componentVi = (byte)(componentTmpHiVi & 0x0F);
 			tmpMaxV = (byte)(Math.max(tmpMaxV, componentVi));
-			byte componentQuantTableSel = jpegBuf.get(innerOffs++);
+			byte componentQuantTableSel = inputBv.getByte(innerOffs++);
 			/*String tmpDebugCompName = switch (componentIx) { case 0 -> "Y"; case 1 -> "Cb"; default -> "Cr"; };
 			logDebug(FNC_NAME, innerOffs - 3,
 					String.format("__ Ci %d (%s), HiVi %d (%d / %d), Tqi %d",
@@ -306,23 +307,23 @@ public final class VideoJpegParser {
 
 	/**
 	 * Parses the DQT (Define Quantization Table: 0xFFDB) block.
-	 * @param jpegBuf JPEG data
+	 * @param inputBv JPEG data
 	 * @param jpegInfo Parsed JPEG information
 	 * @param blockOffset Start offset of the block marker
 	 * @return Offset after the block in the JPEG data
 	 */
-	private int parseBlockDQT(@NonNull BufferExt jpegBuf, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
+	private int parseBlockDQT(@NonNull BufferView inputBv, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
 			throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockDQT()";
 
 		//logDebug(FNC_NAME, blockOffset, "DQT");
-		int blockLen = parseBlockLength(jpegBuf, blockOffset);
+		int blockLen = parseBlockLength(inputBv, blockOffset);
 		int curOffs = blockOffset + 2 + 2;
 
 		int innerOffs = curOffs;
 
 		//
-		byte tmpPqTq = jpegBuf.get(innerOffs++);
+		byte tmpPqTq = inputBv.getByte(innerOffs++);
 		byte tmpPq = (byte)((tmpPqTq >> 4) & 0x0F);  // Pq=0 for 8-bit, Pq=1 for 16-bit quantization tables
 		if (tmpPq != 0 && tmpPq != 1) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DQT Table Precision");
@@ -360,8 +361,13 @@ public final class VideoJpegParser {
 		int copyLen = (tmpPq == 0 ?
 				Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length
 				: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length);
-		jpegBuf.copyInto(
-				innerOffs,
+		BufferView bvForCopy = inputBv.clone();
+		bvForCopy.setOffset(innerOffs);
+		bvForCopy.setLength(copyLen);
+		BufferExt beForCopy = new BufferExt();
+		bvForCopy.copyViewIntoBe(beForCopy);
+		beForCopy.copyInto(
+				0,
 				tmpPq == 0 ?
 						Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData
 						: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData,

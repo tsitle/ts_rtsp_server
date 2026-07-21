@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
@@ -17,6 +18,7 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 
 	private @Nullable PacketSplitter<I, FrameGrabberAvFromDemuxMs> packetSplitter = null;
 	private final boolean needMagicBytes;
+	private final boolean canReadFrameLenFromAvInfo;
 
 	protected @Nullable AvStreamIncomingFromDemuxMs avStreamIncoming = null;
 
@@ -24,10 +26,12 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param needMagicBytes Do we need 'Magic Bytes'?
+	 * @param canReadFrameLenFromAvInfo Can we read the frame length from the A/V info?
 	 */
 	protected ThreadDataProvFromDemuxMsBase(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				boolean needMagicBytes
+				boolean needMagicBytes,
+				boolean canReadFrameLenFromAvInfo
 			) {
 		super(paramsCommon);
 
@@ -36,6 +40,7 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 		}
 
 		this.needMagicBytes = needMagicBytes;
+		this.canReadFrameLenFromAvInfo = canReadFrameLenFromAvInfo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -120,8 +125,10 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 					(@NonNull String cbErrorMsg) -> logError(FNC_NAME, cbErrorMsg),
 					frameGrabber,
 					needMagicBytes,
-					this::parseAndConvertData,
-					this::findNextMagicBytes
+					needMagicBytes ? null : this::parseAndConvertData,
+					needMagicBytes ? this::parseData : null,
+					this::findNextMagicBytes,
+					canReadFrameLenFromAvInfo ? this::readFrameLenFromAvInfo : null
 				);
 		}
 		packetSplitter.getNextSplitPacket(buf, stTimestamp, infoObj);
@@ -141,8 +148,8 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 			);
 	}
 
-	protected abstract @NonNull I parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException;
+	protected abstract int findNextMagicBytes(final @NonNull BufferView inputBv);
 
-	protected abstract int findNextMagicBytes(final @NonNull BufferExt inputBuf);
+	protected abstract int readFrameLenFromAvInfo(final @NonNull I avInfo);
 
 }

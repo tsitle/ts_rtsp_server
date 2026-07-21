@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PictureBoundaryInfo;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +24,14 @@ final class PacketParserH264 {
 		this.pktParser = new VideoH264Parser(mapSpsContext, mapPpsContext);
 	}
 
-	@NonNull VideoH264Info parseAndConvertData(long debugStreamOffset, @NonNull BufferExt inputBuf)
+	@NonNull VideoH264Info parseData(long debugStreamOffset, @NonNull BufferView inputBv)
 			throws AvInvalidCodecDataException {
-		int magicBytesLength = MagicBytesH26xHelper.findH26xMagicBytesLength(inputBuf);
+		int magicBytesLength = MagicBytesH26xHelper.findH26xMagicBytesLength(inputBv);
 		//
 		VideoH264Info curFrameH264Info = pktParser.parseH264Data(
 				debugStreamOffset,
 				magicBytesLength,
-				inputBuf,
+				inputBv,
 				cachePictBoundInfoPrev
 			);
 		if (curFrameH264Info.isVclNalUnit) {

@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 final class PacketParserPcm {
 
@@ -14,9 +14,9 @@ final class PacketParserPcm {
 		this.pktParser = new AudioPcmParser(channels, bitsPerSample);
 	}
 
-	@NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt inputBuf)
+	@NonNull AudioPcmInfo parseData(@NonNull BufferView inputBv)
 			throws AvInvalidCodecDataException {
-		return pktParser.parsePcmData(inputBuf);
+		return pktParser.parsePcmData(inputBv);
 	}
 
 }

@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
@@ -28,6 +29,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	}
 
 	private final boolean doDebugRewindMediaFiles;
+	private final boolean needConvertData;
 
 	protected @Nullable AvStreamIncomingFromEsFile avStreamIncoming = null;
 
@@ -49,11 +51,13 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
+	 * @param needConvertData If true, the data will be converted before being outputted
 	 */
 	protected ThreadDataProvFromFileBase(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int queueSize,
-				boolean debugRewindMediaFiles
+				boolean debugRewindMediaFiles,
+				boolean needConvertData
 			) {
 		super(paramsCommon);
 
@@ -63,6 +67,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 		//
 		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
+		this.needConvertData = needConvertData;
 
 		//
 		for (int i = 0; i < queueSize; ++i) {
@@ -172,8 +177,6 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 				paramsCommon.getAvStreamIncomingUri().orElseThrow()
 			);
 	}
-
-	protected abstract I parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -288,7 +291,10 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 		//
 		try {
-			I tmpInfoObj = parseAndConvertData(tmpFrameBufPtr);
+			I tmpInfoObj = (needConvertData ?
+					parseAndConvertData(tmpFrameBufPtr)
+					: parseData(new BufferView(tmpFrameBufPtr))
+				);
 			infoQueue.set(queueIxWrite.get(), tmpInfoObj);
 		} catch (Exception e) {
 			logError(fncName, "caught: " + e);

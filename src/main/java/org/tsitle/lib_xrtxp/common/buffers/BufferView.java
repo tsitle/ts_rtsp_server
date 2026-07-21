@@ -50,7 +50,6 @@ public final class BufferView implements Cloneable {
 	 * Get a copy of the buffer in the view.
 	 * @return Buffer copy
 	 */
-	@SuppressWarnings("unused")
 	public @NonNull BufferExt getViewAsBe() {
 		BufferExt resObj = new BufferExt();
 		resObj.copyOf(bufPtr, offset, length);

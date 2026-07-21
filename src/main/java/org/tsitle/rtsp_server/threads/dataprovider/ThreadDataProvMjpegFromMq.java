@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
@@ -18,7 +19,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 	public ThreadDataProvMjpegFromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true);
+		super(paramsCommon, true, false);
 
 		this.packetParser = new PacketParserMjpeg(
 				paramsCommon.getLogMsgInterface().orElseThrow()
@@ -40,13 +41,21 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
+		return packetParser.parseAndConvertData(debugStreamOffset, ioBuf);
 	}
 
 	@Override
-	protected int findNextMagicBytes(@NonNull BufferExt inputBuf) {
+	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
+		throw new RuntimeException("not implemented");
+	}
+
+	@Override
+	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
 		return -1;
 	}
+
+	@Override
+	protected int readFrameLenFromAvInfo(final @NonNull VideoJpegInfo avInfo) { return -1; }
 
 }

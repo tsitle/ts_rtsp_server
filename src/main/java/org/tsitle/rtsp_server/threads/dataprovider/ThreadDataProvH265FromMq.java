@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoH26xFromEsMq;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -18,7 +19,7 @@ public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<Vid
 	public ThreadDataProvH265FromMq(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true);
+		super(paramsCommon, true, false);
 
 		this.packetParser = new PacketParserH265();
 	}
@@ -38,13 +39,21 @@ public final class ThreadDataProvH265FromMq extends ThreadDataProvFromMqBase<Vid
 	}
 
 	@Override
-	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
-	protected int findNextMagicBytes(final @NonNull BufferExt inputBuf) {
-		return MagicBytesH26xHelper.findH26xNextNalUnit(inputBuf);
+	protected @NonNull VideoH265Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(debugStreamOffset, inputBv);
 	}
+
+	@Override
+	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
+		return MagicBytesH26xHelper.findH26xNextNalUnit(inputBv);
+	}
+
+	@Override
+	protected int readFrameLenFromAvInfo(final @NonNull VideoH265Info avInfo) { return -1; }
 
 }

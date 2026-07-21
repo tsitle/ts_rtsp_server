@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.ImageReencoderIoException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
 
@@ -30,9 +31,9 @@ final class PacketParserMjpeg {
 		imageReencoder.setCompressionQuality(quality);
 	}
 
-	@NonNull VideoJpegInfo parseAndConvertData(long debugStreamOffset, @NonNull BufferExt inputBuf)
+	@NonNull VideoJpegInfo parseAndConvertData(long debugStreamOffset, @NonNull BufferExt ioBuf)
 			throws AvInvalidCodecDataException {
-		VideoJpegInfo curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, inputBuf);
+		VideoJpegInfo curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, new BufferView(ioBuf));
 
 		// re-encode or scale the image if necessary
 		if ((curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
@@ -40,7 +41,7 @@ final class PacketParserMjpeg {
 				curFrameJpegInfo.sof0_quantTableSelY == curFrameJpegInfo.sof0_quantTableSelCb ||
 				curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
 				curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
-			cacheTempBuffer.copyOf(inputBuf);
+			cacheTempBuffer.copyOf(ioBuf);
 			/*
 			 * To provide a compatible JPEG image, we need to re-encode the image.
 			 */
@@ -50,10 +51,10 @@ final class PacketParserMjpeg {
 					imageReencoder.scaleImage(
 							cacheTempBuffer,
 							RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,
-							inputBuf
+							ioBuf
 						);
 				} else {
-					imageReencoder.reencodeImage(cacheTempBuffer, inputBuf);
+					imageReencoder.reencodeImage(cacheTempBuffer, ioBuf);
 				}
 			} catch (ImageReencoderIoException e) {
 				throw new AvInvalidCodecDataException("ImageReencoderIoException caught: " + e.getMessage());
@@ -63,7 +64,7 @@ final class PacketParserMjpeg {
 			}*/
 
 			//
-			curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, inputBuf);
+			curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, new BufferView(ioBuf));
 		}
 
 		return curFrameJpegInfo;

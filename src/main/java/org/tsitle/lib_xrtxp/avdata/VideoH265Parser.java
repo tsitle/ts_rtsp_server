@@ -1,8 +1,8 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 public final class VideoH265Parser {
 
@@ -17,24 +17,24 @@ public final class VideoH265Parser {
 	 * Parses the H265 data and returns an H265Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H265 data in the H265 stream (used for error messages)
 	 * @param startCodeLen Length of the start code (3 or 4 bytes for H.265)
-	 * @param h265Buf H265 data
+	 * @param inputBv H265 data
 	 * @return Parsed H265 information
 	 */
 	public @NonNull VideoH265Info parseH265Data(
 				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
-				@NonNull BufferExt h265Buf
+				@NonNull BufferView inputBv
 			) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseH265Data()";
 
 		VideoH265Info resObj = new VideoH265Info();
 
 		resObj.nalUnitOffset = startCodeLen;
-		if (h265Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
+		if (inputBv.getLength() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid H265 data size");
 		}
-		resObj.nalUnitLength = h265Buf.getUsed() - resObj.nalUnitOffset;
-		while (resObj.nalUnitLength > 0 && h265Buf.get(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
+		resObj.nalUnitLength = inputBv.getLength() - resObj.nalUnitOffset;
+		while (resObj.nalUnitLength > 0 && inputBv.getByte(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
 			--resObj.nalUnitLength;  // remove trailing zero bytes
 		}
 
@@ -50,18 +50,18 @@ public final class VideoH265Parser {
 		 */
 
 		/*debugLog(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X%02X",
-				h265Buf.getByteAt(0), h265Buf.getByteAt(1)));*/
+				inputBv.getByte(0), inputBv.getByte(1)));*/
 		int offs = resObj.nalUnitOffset;
-		if ((byte)(h265Buf.get(offs) & 0x80) != 0) {
+		if ((byte)(inputBv.getByte(offs) & 0x80) != 0) {
 			throw new AvInvalidCodecDataException(
-					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((h265Buf.get(offs) & 0x80) >> 7))
+					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((inputBv.getByte(offs) & 0x80) >> 7))
 				);
 		}
-		resObj.nalUnitTypeBy = (byte)( ((h265Buf.get(offs) & 0x7E) >>> 1) & 0x3F);
+		resObj.nalUnitTypeBy = (byte)( ((inputBv.getByte(offs) & 0x7E) >>> 1) & 0x3F);
 		resObj.nalUnitTypeEn = VideoH265Info.NalUnitType.of(resObj.nalUnitTypeBy);
-		resObj.nuhLayerId = (byte)( ( ((h265Buf.get(offs++) & 0x01) << 5) |
-				((h265Buf.get(offs) & 0xF8) >> 3) ) & 0x3F);
-		resObj.nuhTemporalIdPlus1 = (byte)(h265Buf.get(offs++) & 0x07);
+		resObj.nuhLayerId = (byte)( ( ((inputBv.getByte(offs++) & 0x01) << 5) |
+				((inputBv.getByte(offs) & 0xF8) >> 3) ) & 0x3F);
+		resObj.nuhTemporalIdPlus1 = (byte)(inputBv.getByte(offs++) & 0x07);
 
 		if (resObj.nuhLayerId != 0) {
 			throw new AvInvalidCodecDataException(
@@ -83,10 +83,10 @@ public final class VideoH265Parser {
 			 *   ... 00 00 03 01 ... --> ... 00 00 01 ...
 			 * This is done to prevent having the start code (0x000001) in a NAL Unit.
 			 */
-			if (h265Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE + 1) {
+			if (inputBv.getLength() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE + 1) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid H265 data size");
 			}
-			resObj.isVclFirstSliceSegmentInPic = ((byte)(h265Buf.get(offs) & 0x80) == (byte)0x80);
+			resObj.isVclFirstSliceSegmentInPic = ((byte)(inputBv.getByte(offs) & 0x80) == (byte)0x80);
 			/*debugLog(FNC_NAME, debugStreamOffset, offs,
 					String.format("isVclFirstSliceSegmentInPic=%b", resObj.isVclFirstSliceSegmentInPic));*/
 

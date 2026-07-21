@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.avdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 
@@ -31,7 +32,7 @@ public final class AudioAc3Parser {
 		}
 
 		AudioAc3Parser ac3Parser = new AudioAc3Parser();
-		AudioAc3Info ac3Info = ac3Parser.parseAc3Data(ac3Header);
+		AudioAc3Info ac3Info = ac3Parser.parseAc3Data(new BufferView(ac3Header));
 
 		return ac3Info.frameLength - ac3Header.getUsed();
 	}
@@ -48,20 +49,20 @@ public final class AudioAc3Parser {
 		}
 
 		AudioAc3Parser ac3Parser = new AudioAc3Parser();
-		return ac3Parser.parseAc3Data(ac3Header);
+		return ac3Parser.parseAc3Data(new BufferView(ac3Header));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Parses the AC-3 data and returns an Ac3Info object with the parsed information.
-	 * @param ac3Buf AC-3 data
+	 * @param inputBv AC-3 data
 	 * @return Parsed AC-3 information
 	 */
-	public @NonNull AudioAc3Info parseAc3Data(@NonNull BufferExt ac3Buf) throws AvInvalidCodecDataException {
+	public @NonNull AudioAc3Info parseAc3Data(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseAc3Data()";
 
-		if (ac3Buf.getUsed() < AC3_HEADER_SIZE_MIN) {
+		if (inputBv.getLength() < AC3_HEADER_SIZE_MIN) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 data size");
 		}
 
@@ -69,9 +70,9 @@ public final class AudioAc3Parser {
 		AudioAc3Info resObj = new AudioAc3Info();
 
 		resObj.samplesOffset = 0;
-		resObj.samplesLength = ac3Buf.getUsed();
+		resObj.samplesLength = inputBv.getLength();
 
-		BitReaderHelper bitReader = new BitReaderHelper(ac3Buf, 0);
+		BitReaderHelper bitReader = new BitReaderHelper(inputBv);
 
 		try {
 			// Syncinfo: Verify syncword 0x0B77: bits 0-15 (16 bits)

@@ -18,7 +18,6 @@ import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.exceptions.*;
 import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
@@ -291,6 +290,7 @@ public abstract class ThreadRtpSenderBase<
 			logError(FNC_NAME, "Interrupted while sleeping");
 			Thread.currentThread().interrupt();  // restore flag
 		} catch (Exception e) {
+			//e.printStackTrace();
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			isRunning.set(false);
@@ -661,7 +661,7 @@ public abstract class ThreadRtpSenderBase<
 			adaptiveScheduler.waitForNextFrame();
 			//
 			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-			if (paramsCommon.getEsSourceType().orElseThrow() == RtspConfigEsSourceType.ST_ES_FILE) {
+			if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 			} else if (frameData.stTimestamp.isEmpty()) {
 				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));

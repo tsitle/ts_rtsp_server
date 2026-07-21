@@ -11,7 +11,8 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFileBase {
 
-	private static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};  // only 12 bits
+	/** AAC Magic Bytes (12 bits long) */
+	public static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};
 
 	/**
 	 * Constructor.

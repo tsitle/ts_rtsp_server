@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 
@@ -38,14 +39,14 @@ public final class VideoH264Parser {
 	 * Parses the H264 data and returns an H264Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H264 data in the H264 stream (used for error messages)
 	 * @param startCodeLen Length of the start code (3 or 4 bytes for H.264)
-	 * @param h264Buf H264 data
+	 * @param inputBv H264 data
 	 * @param inpPictBoundInfoPrev Input: previous picture boundary information (can be null)
 	 * @return Parsed H264 information
 	 */
 	public @NonNull VideoH264Info parseH264Data(
 				@SuppressWarnings("unused") long debugStreamOffset,
 				int startCodeLen,
-				@NonNull BufferExt h264Buf,
+				@NonNull BufferView inputBv,
 				@Nullable H264PictureBoundaryInfo inpPictBoundInfoPrev
 			) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseH264Data()";
@@ -53,11 +54,11 @@ public final class VideoH264Parser {
 		VideoH264Info resObj = new VideoH264Info();
 
 		resObj.nalUnitOffset = startCodeLen;
-		if (h264Buf.getUsed() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
+		if (inputBv.getLength() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid H264 data size");
 		}
-		resObj.nalUnitLength = h264Buf.getUsed() - resObj.nalUnitOffset;
-		while (resObj.nalUnitLength > 0 && h264Buf.get(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
+		resObj.nalUnitLength = inputBv.getLength() - resObj.nalUnitOffset;
+		while (resObj.nalUnitLength > 0 && inputBv.getByte(resObj.nalUnitOffset + resObj.nalUnitLength - 1) == 0) {
 			--resObj.nalUnitLength;  // remove trailing zero bytes
 		}
 
@@ -71,15 +72,15 @@ public final class VideoH264Parser {
 		 *  +---------------+
 		 */
 
-		/*logDebugTemp(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", h264Buf.getByteAt(0)));*/
+		/*logDebugTemp(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", inputBv.getByte(0)));*/
 		int offs = resObj.nalUnitOffset;
-		if ((byte)(h264Buf.get(offs) & 0x80) != 0) {
+		if ((byte)(inputBv.getByte(offs) & 0x80) != 0) {
 			throw new AvInvalidCodecDataException(
-					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((h264Buf.get(offs) & 0x80) >> 7))
+					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((inputBv.getByte(offs) & 0x80) >> 7))
 				);
 		}
-		resObj.nuhRefIdc = (byte)( ((h264Buf.get(offs) & 0x60) >>> 5) & 0x03);
-		resObj.nalUnitTypeBy = (byte)(h264Buf.get(offs) & 0x1F);
+		resObj.nuhRefIdc = (byte)( ((inputBv.getByte(offs) & 0x60) >>> 5) & 0x03);
+		resObj.nalUnitTypeBy = (byte)(inputBv.getByte(offs) & 0x1F);
 		resObj.nalUnitTypeEn = VideoH264Info.NalUnitType.of(resObj.nalUnitTypeBy);
 
 		// prepare RBSP decoded data
@@ -88,7 +89,7 @@ public final class VideoH264Parser {
 				resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS ||
 				resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_PPS) {
 			removeEmulationPreventionBytes(
-					h264Buf,
+					inputBv,
 					resObj.nalUnitOffset,
 					Math.min(20, resObj.nalUnitLength),  // convert a maximum of 20 bytes
 					cacheH264RbspBuf
@@ -98,6 +99,9 @@ public final class VideoH264Parser {
 		try {
 			if (VideoH264Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
 				if (haveAllRequiredMetadataPackets()) {
+					if (cacheH264RbspBuf.isEmpty()) {
+						throw new AvInvalidCodecDataException(FNC_NAME + ": RBSP buffer is empty");
+					}
 					parseSliceForBoundary(
 							cacheH264RbspBuf,
 							resObj.pictBoundInfo
@@ -111,10 +115,16 @@ public final class VideoH264Parser {
 				resObj.isVclNalUnit = true;
 			} else {
 				if (resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS) {
+					if (cacheH264RbspBuf.isEmpty()) {
+						throw new AvInvalidCodecDataException(FNC_NAME + ": RBSP buffer is empty");
+					}
 					H264SpsContext tmpSpsContext = new H264SpsContext();
 					parseSps(cacheH264RbspBuf, tmpSpsContext);
 					mapSpsContext.put(tmpSpsContext.id, tmpSpsContext);
 				} else if (resObj.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_PPS) {
+					if (cacheH264RbspBuf.isEmpty()) {
+						throw new AvInvalidCodecDataException(FNC_NAME + ": RBSP buffer is empty");
+					}
 					H264PpsContext tmpPpsContext = new H264PpsContext();
 					parsePps(cacheH264RbspBuf, tmpPpsContext);
 					mapPpsContext.put(tmpPpsContext.id, tmpPpsContext);
@@ -139,13 +149,13 @@ public final class VideoH264Parser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void removeEmulationPreventionBytes(
-				@NonNull BufferExt inputEbsp,
+				@NonNull BufferView inputBvEbsp,
 				int srcOffset,
 				int srcLen,
 				@NonNull BufferExt outputRbsp
 			) {
-		if (inputEbsp.getUsed() < 3) {
-			outputRbsp.copyOf(inputEbsp);
+		if (inputBvEbsp.getLength() < 3) {
+			inputBvEbsp.copyViewIntoBe(outputRbsp);
 			return;
 		}
 
@@ -155,7 +165,7 @@ public final class VideoH264Parser {
 		int zeroCount = 0;
 
 		for (int i = srcOffset; i < srcOffset + srcLen; i++) {
-			byte b = inputEbsp.get(i);
+			byte b = inputBvEbsp.getByte(i);
 
 			if (zeroCount == 2 && b == 0x03) {
 				// skip this emulation prevention byte

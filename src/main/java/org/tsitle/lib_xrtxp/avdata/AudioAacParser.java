@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.avdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 import org.tsitle.lib_xrtxp.common.helpers.BitWriterHelper;
@@ -37,7 +38,7 @@ public final class AudioAacParser {
 		}
 
 		AudioAacParser aacParser = new AudioAacParser();
-		AudioAacInfo aacInfo = aacParser.parseAacData(adtsHeader);
+		AudioAacInfo aacInfo = aacParser.parseAacData(new BufferView(adtsHeader));
 
 		return aacInfo.frameLength - adtsHeader.getUsed();
 	}
@@ -56,21 +57,20 @@ public final class AudioAacParser {
 		}
 
 		AudioAacParser aacParser = new AudioAacParser();
-		return aacParser.parseAacData(adtsHeader);
+		return aacParser.parseAacData(new BufferView(adtsHeader));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Parses the AAC data and returns an AacInfo object with the parsed information.
-	 * @param aacBuf AAC data
+	 * @param inputBv AAC data
 	 * @return Parsed AAC information
 	 */
-	@SuppressWarnings("DanglingJavadoc")
-	public @NonNull AudioAacInfo parseAacData(@NonNull BufferExt aacBuf) throws AvInvalidCodecDataException {
+	public @NonNull AudioAacInfo parseAacData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseAacData()";
 
-		if (aacBuf.getUsed() < AAC_HEADER_SIZE_MIN) {
+		if (inputBv.getLength() < AAC_HEADER_SIZE_MIN) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size");
 		}
 
@@ -85,46 +85,48 @@ public final class AudioAacParser {
 		 *   ISO/IEC 14496-3:2001(E), Section 1.A.2.2 Audio_Data_Transport_Stream frame, ADTS
 		 */
 
-		BitReaderHelper bitReader = new BitReaderHelper(aacBuf, 0);
+		BitReaderHelper bitReader = new BitReaderHelper(inputBv);
 
 		try {
 			// --------------------------------------------------------------------
 			// Fixed Header - identical for every frame: 28 bits (bytes 0..3.5)
-			/// Verify syncword 0xFFF: bits 0-11 (12 bits)
+
+			// Verify syncword 0xFFF: bits 0-11 (12 bits)
 			if (bitReader.readBits(8) != 0xFF || bitReader.readBits(4) != 0x0F) {
 				throw new AvInvalidCodecDataException("Invalid ADTS syncword");
 			}
 
-			/// ID: bit 12 (1 bit)
+			// ID: bit 12 (1 bit)
 			resObj.internalInfo.idBit = (bitReader.readBits(1) == 1);
 
-			/// Layer: bits 13-14 (2 bits): Always 00
+			// Layer: bits 13-14 (2 bits): Always 00
 			resObj.internalInfo.layer2Bits = bitReader.readBits(2);
 
-			/// Protection Absent: bit 15 (1 bit): 1 if no CRC, 0 if CRC exists
+			// Protection Absent: bit 15 (1 bit): 1 if no CRC, 0 if CRC exists
 			resObj.internalInfo.crcBit = (bitReader.readBits(1) == 0);
 
-			/// MPEG-4 Audio Object Type: bits 16-17 (2 bits)
+			// MPEG-4 Audio Object Type: bits 16-17 (2 bits)
 			byte tmpAot = (byte)bitReader.readBits(2);
 			resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAot + 1);
 			if (resObj.audioObjectType == AudioAacInfo.AudioObjectType.UNKNOWN) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid audio object type");
 			}
 
-			/// sampling_frequency_index: bits 18-21 (4 bits)
+			// sampling_frequency_index: bits 18-21 (4 bits)
 			int tmpSamplingFrequIndex = bitReader.readBits(4);
 			resObj.samplerate = AudioAacInfo.Samplerate.of(tmpSamplingFrequIndex);
 			if (resObj.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid samplerate (index=" + tmpSamplingFrequIndex + ")");
 			}
 			if (resObj.samplerate.getHz() > AAC_SAMPLERATE_MAX) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Samplerate too high (max. " + AAC_SAMPLERATE_MAX + " Hz");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Samplerate too high (is=" + resObj.samplerate.getHz() +
+						", max=" + AAC_SAMPLERATE_MAX + " Hz)");
 			}
 
-			/// Private Bit: bit 22 (1 bit): Set by user
+			// Private Bit: bit 22 (1 bit): Set by user
 			resObj.internalInfo.privateBit = (bitReader.readBits(1) == 1);
 
-			/// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
+			// channel_configuration: bits 23-25 (3 bits), 1 bit from byte 2 + 2 bits from byte 3
 			resObj.channelConfiguration = bitReader.readBits(3);
 			if (resObj.channelConfiguration == 0) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid channel configuration");
@@ -134,27 +136,28 @@ public final class AudioAacParser {
 						", max=" + AAC_CHANNELS_MAX + ")");
 			}
 
-			/// Original/Copy: bit 26 (1 bit)
+			// Original/Copy: bit 26 (1 bit)
 			resObj.internalInfo.originalCopyBit = (bitReader.readBits(1) == 1);
 
-			/// Home: bit 27 (1 bit)
+			// Home: bit 27 (1 bit)
 			resObj.internalInfo.homeBit = (bitReader.readBits(1) == 1);
 
 			// --------------------------------------------------------------------
 			// Variable Header - changes per frame: 28 bits (bytes 3.5..7)
-			/// Copyright ID Bit: bit 28 (1 bit)
+
+			// Copyright ID Bit: bit 28 (1 bit)
 			resObj.internalInfo.copyrightIdBit = (bitReader.readBits(1) == 1);
 
-			/// Copyright ID Start: bit 29 (1 bit)
+			// Copyright ID Start: bit 29 (1 bit)
 			resObj.internalInfo.copyrightIdStartBit = (bitReader.readBits(1) == 1);
 
-			/// Frame Length: bits 30-42 (13 bits): Length of the frame including header, in bytes
+			// Frame Length: bits 30-42 (13 bits): Length of the frame including header, in bytes
 			resObj.frameLength = bitReader.readBits(13);
 
-			/// Buffer Fullness: bits 43-53 (11 bits): 0x7FF for VBR (variable bit rate)
+			// Buffer Fullness: bits 43-53 (11 bits): 0x7FF for VBR (variable bit rate)
 			resObj.internalInfo.bufferFullness11Bits = bitReader.readBits(11);
 
-			/// Number of RAW Data Blocks: 54-55 (2 bits): Number of AAC frames minus 1
+			// Number of RAW Data Blocks: 54-55 (2 bits): Number of AAC frames minus 1
 			resObj.internalInfo.numRawDataBlocks2Bits = (byte)(bitReader.readBits(2) + 1);
 			if (resObj.internalInfo.numRawDataBlocks2Bits > 1) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": More than one AAC frame");
@@ -173,7 +176,7 @@ public final class AudioAacParser {
 		// --------------------------------------------------------------------
 		// CRC if 'Protection Absent' is set to 0: 2 bytes (bytes 7..8)
 		if (resObj.internalInfo.crcBit) {
-			if (aacBuf.getUsed() < AAC_HEADER_SIZE_MAX) {
+			if (inputBv.getLength() < AAC_HEADER_SIZE_MAX) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AAC data size (missing CRC)");
 			}
 			resObj.samplesOffset += 2;

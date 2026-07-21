@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 final class PacketParserAc3 {
 
@@ -14,8 +14,8 @@ final class PacketParserAc3 {
 		this.pktParser = new AudioAc3Parser();
 	}
 
-	@NonNull AudioAc3Info parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return pktParser.parseAc3Data(inputBuf);
+	@NonNull AudioAc3Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return pktParser.parseAc3Data(inputBv);
 	}
 
 }

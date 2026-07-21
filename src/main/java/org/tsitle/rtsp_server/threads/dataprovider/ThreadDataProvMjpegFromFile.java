@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.dataprovider;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -25,7 +26,8 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles
+				debugRewindMediaFiles,
+				true
 			);
 
 		this.packetParser = new PacketParserMjpeg(
@@ -70,8 +72,13 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt inputBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(debugStreamOffset, inputBuf);
+	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
+		return packetParser.parseAndConvertData(debugStreamOffset, ioBuf);
+	}
+
+	@Override
+	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
+		throw new RuntimeException("not implemented");
 	}
 
 }
