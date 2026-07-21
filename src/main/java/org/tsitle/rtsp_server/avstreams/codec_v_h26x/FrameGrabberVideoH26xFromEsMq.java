@@ -3,9 +3,9 @@ package org.tsitle.rtsp_server.avstreams.codec_v_h26x;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoFromEsMqBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsMqBase;
 
-public final class FrameGrabberVideoH26xFromEsMq extends FrameGrabberVideoFromEsMqBase {
+public final class FrameGrabberVideoH26xFromEsMq extends FrameGrabberAvFromEsMqBase {
 
 	/**
 	 * Constructor.

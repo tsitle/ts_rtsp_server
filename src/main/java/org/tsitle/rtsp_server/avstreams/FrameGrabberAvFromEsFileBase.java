@@ -59,6 +59,15 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<Av
 		return resI * 8;
 	}
 
+	/**
+	 * Checks if we can still read data from the stream.
+	 * @return True if the end of the stream has been reached, false otherwise
+	 */
+	@Override
+	public boolean haveEos() {
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 

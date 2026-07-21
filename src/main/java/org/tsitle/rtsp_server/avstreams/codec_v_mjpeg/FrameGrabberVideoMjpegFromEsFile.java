@@ -5,11 +5,11 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberVideoFromEsFileBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberVideoMjpegFromEsFile extends FrameGrabberVideoFromEsFileBase {
+public final class FrameGrabberVideoMjpegFromEsFile extends FrameGrabberAvFromEsFileBase {
 
 	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
 

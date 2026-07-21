@@ -51,15 +51,6 @@ public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFi
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Checks if we can still read data from the stream.
-	 * @return True if the end of the stream has been reached, false otherwise
-	 */
-	@Override
-	public boolean haveEos() {
-		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
-	}
-
-	/**
 	 * Reads the next audio frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param stTimestamp Output for sample-time timestamp
