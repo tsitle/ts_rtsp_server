@@ -13,13 +13,13 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
 
 import java.io.IOException;
 
-final class PacketParserMjpeg {
+final class PacketPacMjpeg {
 
 	private final @NonNull VideoJpegParser pktParser;
 	private final @NonNull ImageReencoder imageReencoder;
 	private final BufferExt cacheTempBuffer = new BufferExt();
 
-	PacketParserMjpeg(@NonNull LogMsgInterface logMsgInterface) {
+	PacketPacMjpeg(@NonNull LogMsgInterface logMsgInterface) {
 		this.pktParser = new VideoJpegParser(
 				logMsgInterface,
 				Thread.currentThread().getName()
@@ -78,7 +78,7 @@ final class PacketParserMjpeg {
 		try (java.io.FileOutputStream fos = new java.io.FileOutputStream(String.format("%s_%06d.jpg", baseFilename, frameNr))) {
 			fos.write(data.getBaPtr(), 0, data.getUsed());
 		} catch (IOException e) {
-			System.err.println(PacketParserMjpeg.class.getSimpleName() + ".writeJpegToFile(): IOException caught: " + e.getMessage());
+			System.err.println(PacketPacMjpeg.class.getSimpleName() + ".writeJpegToFile(): IOException caught: " + e.getMessage());
 		}
 	}
 

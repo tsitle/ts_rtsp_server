@@ -11,7 +11,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<VideoJpegInfo> {
 
-	private final @NonNull PacketParserMjpeg packetParser;
+	private final @NonNull PacketPacMjpeg packetPac;
 
 	/**
 	 * Constructor.
@@ -22,7 +22,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 			) {
 		super(paramsCommon, false, true, false);
 
-		this.packetParser = new PacketParserMjpeg(
+		this.packetPac = new PacketPacMjpeg(
 				paramsCommon.getLogMsgInterface().orElseThrow()
 			);
 	}
@@ -43,7 +43,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 
 	@Override
 	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
-		return packetParser.parseAndConvertData(debugStreamOffset, ioBuf);
+		return packetPac.parseAndConvertData(debugStreamOffset, ioBuf);
 	}
 
 	@Override
