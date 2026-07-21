@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.dataprovider_demux;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDemuxer;
+import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -10,6 +11,7 @@ import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -87,12 +89,18 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		String inputFilePath = (inputSourceDemuxMsUri.getPath() == null ? "" : inputSourceDemuxMsUri.getPath());
 
 		//
+		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
+		dmxSettingsDemux.cfgOutputH26xAsAnnexB = true;
+		dmxSettingsDemux.cfgOutputAacWithAdts = true;
+		dmxSettingsDemux.cfgAllowOnlySpecificCodecsVideo = true;
+		dmxSettingsDemux.cfgAllowedCodecsVideo.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO);
+		dmxSettingsDemux.cfgAllowOnlySpecificCodecsAudio = true;
+		dmxSettingsDemux.cfgAllowedCodecsAudio.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO);
+
 		try (FfmpegDemuxer ffmpegDemuxer = FfmpegDemuxer.createForDemuxingOnly(
 					logMsgInterface,
 					inputFilePath,
-					-1L,
-					true,
-					true
+					dmxSettingsDemux
 				)) {
 			boolean readNextPkt;
 			while (! doStop.get()) {
@@ -113,7 +121,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 				}
 				//
 				if (! haveInputSi || readNextPkt) {
-					//logDebug(FNC_NAME, "read next cv=" + cacheVid.count + ", ca=" + cacheAud.count);  // @TODO
+					//logDebug(FNC_NAME, "read next cv=" + cacheVid.count + ", ca=" + cacheAud.count);  // @TODO check for long running stream
 					internalReadNextAvPacket(ffmpegDemuxer);
 				} else {
 					boolean tmpDoSignV;

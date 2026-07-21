@@ -3,18 +3,15 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_ffmpeg.demux.FfmpegDemuxer;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
+import org.tsitle.lib_ffmpeg.demux.*;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Muxed-Stream Source within an Input Source for RTSP streams.
@@ -161,10 +158,17 @@ public final class RtspConfigMuxedStreamSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void readSubStreamInfos(@NonNull String extMsId) throws ConfigInvalidException {
+		FfmpegDmxSettingsRsi dmxSettingsRsi = new FfmpegDmxSettingsRsi();
+		dmxSettingsRsi.cfgAllowOnlySpecificCodecsVideo = true;
+		dmxSettingsRsi.cfgAllowedCodecsVideo.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO);
+		dmxSettingsRsi.cfgAllowOnlySpecificCodecsAudio = true;
+		dmxSettingsRsi.cfgAllowedCodecsAudio.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO);
+
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
 					getInputUri().getPath(),
+					dmxSettingsRsi,
 					ffStreamInfoVideo,
 					ffStreamInfoAudio
 				);
@@ -179,12 +183,7 @@ public final class RtspConfigMuxedStreamSource {
 		}
 
 		if (ffStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			Set<FfmpegCodec> allowedCodecs = new HashSet<>() {{
-					add(FfmpegCodec.V_H264);
-					add(FfmpegCodec.V_H265);
-					add(FfmpegCodec.V_MJPEG);
-				}};
-			if (! allowedCodecs.contains(ffStreamInfoVideo.ffmpegCodec)) {
+			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffStreamInfoVideo.ffmpegCodec)) {
 				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
@@ -194,16 +193,7 @@ public final class RtspConfigMuxedStreamSource {
 				throw new ConfigInvalidException("Audio sub-stream is PCM with more than 2 channels " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
-			Set<FfmpegCodec> allowedCodecs = new HashSet<>() {{
-					add(FfmpegCodec.A_AAC);
-					add(FfmpegCodec.A_AC3);
-					add(FfmpegCodec.A_PCM_ALAW);
-					add(FfmpegCodec.A_PCM_MULAW);
-					add(FfmpegCodec.A_PCM_S16BE);
-					add(FfmpegCodec.A_PCM_S16LE);
-					add(FfmpegCodec.A_PCM_U8);
-				}};
-			if (! allowedCodecs.contains(ffStreamInfoAudio.ffmpegCodec)) {
+			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffStreamInfoAudio.ffmpegCodec)) {
 				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
 			}
