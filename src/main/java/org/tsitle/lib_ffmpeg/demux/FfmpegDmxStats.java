@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class FfmpegDemuxerStats {
+public final class FfmpegDmxStats {
 
 	public static class PktsAndData {
 		public int countPkt = 0;

@@ -46,7 +46,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private @Nullable AVFormatContext inputAvFmtCtx;
 	private final @NonNull FfmpegStreamInfoVideo inputStreamInfoVid = new FfmpegStreamInfoVideo();
 	private final @NonNull FfmpegStreamInfoAudio inputStreamInfoAud = new FfmpegStreamInfoAudio();
-	private final @NonNull FfmpegDemuxerStats stats = new FfmpegDemuxerStats();
+	private final @NonNull FfmpegDmxStats stats = new FfmpegDmxStats();
 	private boolean isInputOpen = false;
 	private @Nullable AVPacket cacheAvPkt = null;
 	private boolean haveReachedMaxSecs = false;
@@ -205,7 +205,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("unused")
-	public @NonNull FfmpegDemuxerStats getStatsPtr() {
+	public @NonNull FfmpegDmxStats getStatsPtr() {
 		return stats;
 	}
 
