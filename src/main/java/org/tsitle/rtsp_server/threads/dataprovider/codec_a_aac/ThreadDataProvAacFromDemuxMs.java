@@ -20,7 +20,7 @@ public final class ThreadDataProvAacFromDemuxMs extends ThreadDataProvFromDemuxM
 	public ThreadDataProvAacFromDemuxMs(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon
 			) {
-		super(paramsCommon, true, false, true);
+		super(paramsCommon, false, false, true);
 
 		this.packetParser = new PacketParserAac();
 	}
