@@ -936,7 +936,7 @@ public final class RtspConfig {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void createVirtualEsForMsSources() {
+	private void createVirtualEsForMsSources() throws ConfigInvalidException {
 		final int maxId = internalMapEsSourceIdIntToExt.keySet().stream().max(Integer::compareTo).orElse(0);
 		int idCounter = Math.max(1000, maxId + 1);
 

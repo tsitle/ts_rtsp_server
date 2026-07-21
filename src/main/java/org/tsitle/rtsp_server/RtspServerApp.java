@@ -116,6 +116,10 @@ public final class RtspServerApp {
 			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
+		} catch (IllegalArgumentException e) {
+			System.err.println(FNC_NAME + ": IllegalArgumentException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
+			System.exit(1);
 		}
 
 		// start the ('external to internal') Message Queue threads

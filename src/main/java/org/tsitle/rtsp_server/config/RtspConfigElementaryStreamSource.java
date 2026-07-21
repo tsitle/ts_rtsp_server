@@ -155,7 +155,7 @@ public final class RtspConfigElementaryStreamSource {
 				int msSourceId,
 				@NonNull URI msSourceUri,
 				@NonNull FfmpegStreamInfoVideo streamInfo
-			) {
+			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamVideo()";
 
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
@@ -170,7 +170,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
 		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
-			throw new IllegalArgumentException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps);
 		}
 
 		return resObj;
@@ -181,7 +181,7 @@ public final class RtspConfigElementaryStreamSource {
 				int msSourceId,
 				@NonNull URI msSourceUri,
 				@NonNull FfmpegStreamInfoAudio streamInfo
-			) {
+			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamAudio()";
 
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
@@ -200,11 +200,11 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
 		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
-			throw new IllegalArgumentException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate);
 		}
 		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
 		if (resObj.internalAudioChannelCount < 1 || resObj.internalAudioChannelCount > 10) {  // just in case
-			throw new IllegalArgumentException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount);
 		}
 		resObj.internalIsAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
 
@@ -628,14 +628,15 @@ public final class RtspConfigElementaryStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull RtpPacketType convertFfmpegVideoCodecToRtpPacketType(@NonNull FfmpegCodec ffmpegCodec) {
+	private static @NonNull RtpPacketType convertFfmpegVideoCodecToRtpPacketType(@NonNull FfmpegCodec ffmpegCodec)
+			throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".convertFfmpegVideoCodecToRtpPacketType()";
 
 		return switch (ffmpegCodec) {
 				case V_H264 -> RtpPacketType.V_H264;
 				case V_H265 -> RtpPacketType.V_H265;
 				case V_MJPEG -> RtpPacketType.V_MJPEG;
-				default -> throw new IllegalArgumentException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
+				default -> throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
 			};
 	}
 
@@ -643,7 +644,7 @@ public final class RtspConfigElementaryStreamSource {
 				@NonNull FfmpegCodec ffmpegCodec,
 				@NonNull SampleRateEnum audioSamplerate,
 				byte audioChannelCount
-			) {
+			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".convertFfmpegAudioCodecToRtpPacketType()";
 
 		return switch (ffmpegCodec) {
@@ -671,7 +672,7 @@ public final class RtspConfigElementaryStreamSource {
 						}
 						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
 					}
-				default -> throw new IllegalArgumentException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
+				default -> throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
 			};
 	}
 
