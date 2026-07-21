@@ -48,6 +48,11 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 	private int swsLastSrcH = -2;
 	private int swsLastSrcFmt = -2;
 
+	private long nextEncoderPts = 0L;
+	private long lastSentEncoderPts = Long.MIN_VALUE;
+
+	private long droppedFrameCount = 0L;
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface 'Log message' instance (can be null)
@@ -86,6 +91,11 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public long getDroppedFrameCount() {
+		return droppedFrameCount;
+	}
 
 	@Override
 	public void close() {
@@ -571,10 +581,20 @@ public final class FfmpegTranscoderVideo extends FfmpegTranscoderBase implements
 
 			assignFramePtsToEncoderTimeBase(frameForEncoder, sourceTimeBase);
 
-			r = avcodec.avcodec_send_frame(encoderCtx, frameForEncoder);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_frame()", r);
+			if (frameForEncoder.pts() == avutil.AV_NOPTS_VALUE) {
+				frameForEncoder.pts(nextEncoderPts++);
+				lastSentEncoderPts = frameForEncoder.pts();
+			}
+			if (lastSentEncoderPts == Long.MIN_VALUE || frameForEncoder.pts() > lastSentEncoderPts) {
+				lastSentEncoderPts = frameForEncoder.pts();
 
-			drainEncoderPackets();
+				r = avcodec.avcodec_send_frame(encoderCtx, frameForEncoder);
+				FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avcodec_send_frame()", r);
+
+				drainEncoderPackets();
+			} else {
+				++droppedFrameCount;
+			}
 
 			avutil.av_frame_unref(decodedFrame);
 		}
