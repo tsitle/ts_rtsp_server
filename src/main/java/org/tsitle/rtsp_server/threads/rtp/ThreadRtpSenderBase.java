@@ -370,12 +370,15 @@ public abstract class ThreadRtpSenderBase<
 		cacheFrameData.reset();
 
 		//
-		if (threadDataProv == null || ! threadDataProv.isRunning()) {
+		if (threadDataProv == null) {
 			cacheFrameData.haveErrorOther = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
+			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread non-existent";
 		} else if (threadDataProv.haveEos()) {
 			cacheFrameData.haveErrorEos = true;
-			cacheFrameData.errorMsg = FNC_NAME + ": EOS reached";
+			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread reached EOS";
+		} else if (! threadDataProv.isRunning()) {
+			cacheFrameData.haveErrorEos = true;
+			cacheFrameData.errorMsg = FNC_NAME + ": DataProvider thread not running";
 		} else {
 			// get the next frame to send over the wire from the input stream
 			try {
