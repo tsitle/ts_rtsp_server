@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider.codec_v_mjpeg.ThreadDataProvMjpegFromDemuxMs;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_v_mjpeg.ThreadDataProvMjpegFromFile;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_v_mjpeg.ThreadDataProvMjpegFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
@@ -96,8 +97,15 @@ public final class ThreadRtpSenderMjpeg<
 			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberVideoMjpegFromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberVideoMjpegFromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvMjpegFromDemuxMs resObj = new ThreadDataProvMjpegFromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

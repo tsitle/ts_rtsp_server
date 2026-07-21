@@ -1,7 +1,9 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
 import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
@@ -40,8 +42,8 @@ public final class BuilderThreadRtpSenderMjpeg {
 							threadParamsMjpeg
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderMjpeg<>(
-							AvStreamIncomingFromEsFile.class,  // @TODO
-							FrameGrabberVideoMjpegFromEsFile.class,  // @TODO
+							AvStreamIncomingFromDemuxMs.class,
+							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,
 							threadParamsVideo,
 							threadParamsMjpeg
