@@ -9,6 +9,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 	public int streamNumberVideo;
 	public @NonNull RationalNumber fps;
 	public @NonNull ImageDimensions imgDims;
+	public @NonNull String extradataHex;
 
 	public FfmpegStreamInfoVideo() {
 		reset();
@@ -20,6 +21,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 		streamNumberVideo = -1;
 		fps = RationalNumber.ofEmpty();
 		imgDims = ImageDimensions.ofEmpty();
+		extradataHex = "";
 	}
 
 	public void copyFrom(@NonNull FfmpegStreamInfoVideo other) {
@@ -31,6 +33,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 		streamNumberVideo = other.streamNumberVideo;
 		fps = RationalNumber.of(other.fps);
 		imgDims = ImageDimensions.of(other.imgDims);
+		extradataHex = other.extradataHex;
 	}
 
 }

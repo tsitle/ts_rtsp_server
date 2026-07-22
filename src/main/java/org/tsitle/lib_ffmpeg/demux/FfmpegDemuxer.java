@@ -269,11 +269,16 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ------------------------------------------------
 
+		long durationTs = inputAvFmtCtx.duration();  // in AV_TIME_BASE units, can be AV_NOPTS_VALUE
+		double durationSecs = (durationTs != avutil.AV_NOPTS_VALUE ? durationTs / (double)avutil.AV_TIME_BASE : -1.0);
+
+		// ------------------------------------------------
+
 		if (inputStreamInfoVid.streamIx != -1) {
-			getStreamInfoVideo(inputAvFmtCtx, inputStreamInfoVid);
+			getStreamInfoVideo(inputAvFmtCtx, durationSecs, inputStreamInfoVid);
 		}
 		if (inputStreamInfoAud.streamIx != -1) {
-			getStreamInfoAudio(inputAvFmtCtx, inputStreamInfoAud);
+			getStreamInfoAudio(inputAvFmtCtx, durationSecs, inputStreamInfoAud);
 		}
 		avformat.avformat_close_input(inputAvFmtCtx);
 	}
@@ -369,6 +374,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	private static void getStreamInfoVideo(
 				@NonNull AVFormatContext inputAvFmtCtx,
+				double durationSecs,
 				@NonNull FfmpegStreamInfoVideo ioStreamInfoVideo
 			) {
 		ioStreamInfoVideo.timeBasePts = getStreamTimeBase(inputAvFmtCtx, ioStreamInfoVideo.streamIx);
@@ -380,10 +386,19 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		AVStream st = inputAvFmtCtx.streams(ioStreamInfoVideo.streamIx);
 		ioStreamInfoVideo.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
 		ioStreamInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
+		ioStreamInfoVideo.durationSecs = durationSecs;
 		ioStreamInfoVideo.bitRate = st.codecpar().bit_rate();
-		/*
-		 * We might need to extract st.codecpar().extradata() as well (SPS/PPS for H26x)
-		 */
+		if (st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
+			/*
+			 * Extract st.codecpar().extradata(), e.g. for SPS/PPS of H26x
+			 */
+			try (BytePointer tmpBp = st.codecpar().extradata()) {
+				int extradataSize = st.codecpar().extradata_size();
+				byte[] ascBytes = new byte[extradataSize];
+				tmpBp.position(0).get(ascBytes, 0, extradataSize);
+				ioStreamInfoVideo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
+			}
+		}
 
 		//
 		int tmpFpsNum = 0;
@@ -406,6 +421,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	private static void getStreamInfoAudio(
 				@NonNull AVFormatContext inputAvFmtCtx,
+				double durationSecs,
 				@NonNull FfmpegStreamInfoAudio ioStreamInfoAudio
 			) {
 		ioStreamInfoAudio.timeBasePts = getStreamTimeBase(inputAvFmtCtx, ioStreamInfoAudio.streamIx);
@@ -418,6 +434,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioStreamInfoAudio.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
 		ioStreamInfoAudio.sampleRate = SampleRateEnum.of(st.codecpar().sample_rate());
 		ioStreamInfoAudio.channelCount = st.codecpar().ch_layout().nb_channels();
+		ioStreamInfoAudio.durationSecs = durationSecs;
 		ioStreamInfoAudio.bitRate = st.codecpar().bit_rate();
 		ioStreamInfoAudio.bitsPerCodedSample = st.codecpar().bits_per_coded_sample();
 		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AC3) {

@@ -9,6 +9,7 @@ public class FfmpegStreamInfoBase {
 	public int streamIx;
 	public @NonNull FfmpegCodec ffmpegCodec;
 	public @NonNull RationalNumber timeBasePts;
+	public double durationSecs;
 	/**
 	 * Audio: works for AC3 and PCM, sometimes AAC, doesn't work for Opus<br />
 	 * Video: works sometimes for H26x
@@ -23,6 +24,7 @@ public class FfmpegStreamInfoBase {
 		streamIx = -1;
 		ffmpegCodec = FfmpegCodec.UNKNOWN;
 		timeBasePts = RationalNumber.ofEmpty();
+		durationSecs = -1.0;
 		bitRate = -1L;
 	}
 
@@ -33,6 +35,7 @@ public class FfmpegStreamInfoBase {
 		streamIx = other.streamIx;
 		ffmpegCodec = other.ffmpegCodec;
 		timeBasePts = RationalNumber.of(other.timeBasePts);
+		durationSecs = other.durationSecs;
 		bitRate = other.bitRate;
 	}
 
