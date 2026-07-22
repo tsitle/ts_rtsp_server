@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;
 import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider.codec_a_pcm.ThreadDataProvPcmFromDemuxMs;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_a_pcm.ThreadDataProvPcmFromFile;
 import org.tsitle.rtsp_server.threads.dataprovider.codec_a_pcm.ThreadDataProvPcmFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
@@ -38,6 +39,8 @@ public final class ThreadRtpSenderPcm<
 	private final AudioPcmInfo curFramePcmInfo = new AudioPcmInfo();
 	private @Nullable RtpPacketPcm cachePlainPacket = null;
 
+	private int lastSpciad = -1;
+
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
@@ -63,6 +66,9 @@ public final class ThreadRtpSenderPcm<
 
 		//
 		this.rtpTicksPerFrame = paramsAudioCommon.getRtpAudioSpf();
+		if (this.rtpTicksPerFrame < 1L) {
+			this.rtpTicksPerFrame = 1L;  // it is necessary to determine this for each PCM frame (or at least once)
+		}
 
 		//
 		paramsAudioCommon.validate();
@@ -106,14 +112,24 @@ public final class ThreadRtpSenderPcm<
 		if (frameGrabberAvType == FrameGrabberAudioPcmFromEsMq.class) {
 			ThreadDataProvPcmFromMq resObj = new ThreadDataProvPcmFromMq(
 					paramsCommon,
+					paramsAudioCommon,
 					paramsPcm
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioPcmInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioPcmInfo, FGAV>)resObj;
 			return typedProvider;
 		}
-		// @TODO add FrameGrabberAudioPcmFromDemuxMs
-		throw new RuntimeException("frameGrabberAvType must be FrameGrabberAudioPcmFromXxx");
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvPcmFromDemuxMs resObj = new ThreadDataProvPcmFromDemuxMs(
+					paramsCommon,
+					paramsAudioCommon,
+					paramsPcm
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioPcmInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioPcmInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -138,6 +154,19 @@ public final class ThreadRtpSenderPcm<
 		if (cacheRtpInnerPayloadBufView == null) {
 			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
 		}
+		//
+		if (lastSpciad != curFramePcmInfo.samplesPerChannelInAudioData) {
+			/*
+			 * For PCM, the frame duration should be constant, but we need to adjust the sleep time
+			 * and the [rtpTicksPerFrame] at least once
+			 */
+			lastSpciad = curFramePcmInfo.samplesPerChannelInAudioData;
+			final double tmpFrameDurSecs = ((double)lastSpciad / (double)curFramePcmInfo.samplerate.getSrHz());
+			nextFpsForAdaptiveScheduler = (1.0 / tmpFrameDurSecs);
+
+			rtpTicksPerFrame = lastSpciad;
+		}
+		//
 		if (cachePlainPacket == null) {
 			cachePlainPacket = new RtpPacketPcm(
 					cacheParamsBase,

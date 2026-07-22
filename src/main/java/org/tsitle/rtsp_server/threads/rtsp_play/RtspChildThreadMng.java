@@ -17,7 +17,6 @@ import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.ThreadDataProvDemux;
-import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -474,31 +473,26 @@ public final class RtspChildThreadMng {
 		//
 		switch (tmpAvSsi.codec()) {
 			case A_AAC:
-				final double tmpFrameDurAacSecs = ((double)tmpAvSsi.audioAacSpf() / (double)tmpAvSsi.audioSampleRate().getSrHz());
-				final double tmpVirtualFpsAac = (1.0 / tmpFrameDurAacSecs);
 				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
 						BuilderThreadRtpSenderAac.builder(),
 						tmpSiSs,
 						tmpAvSsi,
 						ctfos.idEsSource,
-						tmpVirtualFpsAac,
+						availableStreamsInterface.computeElementaryStreamSource_virtualFps(ctfos.idEsSource),
 						xsrcBlock,
-						tmpAvSsi.audioAacSpf()
+						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
 				ctfos.rtpThreadSender = builderAac.build();
 				break;
 			case A_AC3:
-				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
-						(double)tmpAvSsi.audioSampleRate().getSrHz());
-				final double tmpVirtualFpsAc3 = (1.0 / tmpFrameDurAc3Secs);
 				BuilderThreadRtpSenderAc3.Builder builderAc3 = buildThreadAudio(
 						BuilderThreadRtpSenderAc3.builder(),
 						tmpSiSs,
 						tmpAvSsi,
 						ctfos.idEsSource,
-						tmpVirtualFpsAc3,
+						availableStreamsInterface.computeElementaryStreamSource_virtualFps(ctfos.idEsSource),
 						xsrcBlock,
-						RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO
+						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
 				ctfos.rtpThreadSender = builderAc3.build();
 				break;
@@ -539,25 +533,20 @@ public final class RtspChildThreadMng {
 				if (! tmpAvSsi.codec().isPcmAudio()) {
 					throw new IllegalStateException(FNC_NAME + ": Unsupported codec: " + tmpAvSsi.codec());
 				}
-				// the virtual FPS value only when the source is a file
-				final double tmpVirtualFpsPcm = (1000.0 / (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS);
 				//
 				BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
 						BuilderThreadRtpSenderPcm.builder(),
 						tmpSiSs,
 						tmpAvSsi,
 						ctfos.idEsSource,
-						tmpVirtualFpsPcm,
+						availableStreamsInterface.computeElementaryStreamSource_virtualFps(ctfos.idEsSource),
 						xsrcBlock,
-						availableStreamsInterface.getElementaryStreamSourceRtpAudioSamplesPerFrame(
-								ctfos.idEsSource,
-								tmpVirtualFpsPcm
-							)
+						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
 				ctfos.rtpThreadSender = builderPcm
 						.audPcmChannelCount(tmpAvSsi.audioChannelCount())
 						.audPcmBitsPerSample(tmpAvSsi.codec().getPcmAudioBitsPerSample().orElseThrow())
-						.audPcmInputBigEndian(tmpAvSsi.isAudioBigEndian())
+						.audPcmInputBigEndian(tmpAvSsi.isAudioPcmBigEndian())
 						.audPcmCodec(tmpAvSsi.codec())
 						.build();
 		}

@@ -3,7 +3,6 @@ package org.tsitle.rtsp_server.threads.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +12,7 @@ public final class RtpConstants {
 	private RtpConstants() { }
 
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
-	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = RtspProtoSdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
+	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
 	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
 	/** Samples per frame for AAC-LC audio -- Default Type 2 */

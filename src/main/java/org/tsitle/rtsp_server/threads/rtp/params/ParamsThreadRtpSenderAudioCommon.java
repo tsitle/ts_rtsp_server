@@ -54,9 +54,6 @@ public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (rtpAudioSpf <= 0) {
-			throw new IllegalArgumentException(errPrefix + "rtpAudioSpf must be > 0");
-		}
 		if (audioSamplerate == SampleRateEnum.UNKNOWN) {
 			throw new IllegalArgumentException(errPrefix + "audioSamplerate must be valid");
 		}

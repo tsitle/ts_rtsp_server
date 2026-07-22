@@ -89,6 +89,7 @@ public abstract class ThreadRtpSenderBase<
 	private boolean isFirstPktOfFrame = true;
 
 	private final AdaptiveScheduler adaptiveScheduler;
+	protected double nextFpsForAdaptiveScheduler = -1.0;
 	private final TimeNtpTsInfo timeNtpTsInfo = new TimeNtpTsInfo();
 	private final SenderInfoStats siStats = new SenderInfoStats();
 	/** State A: send frame; State B: optionally send RTCP SR */
@@ -118,15 +119,17 @@ public abstract class ThreadRtpSenderBase<
 			) {
 		super(paramsCommon.getLogMsgInterface().orElseThrow());
 
+		final String errMsgPrefix = getClass().getSimpleName() + ".ctor(): ";
+
 		// sanity check
 		if (UDP_PACKET_LEN > 1400) {
-			throw new AssertionError("UDP_PACKET_LEN is too large: " + UDP_PACKET_LEN);
+			throw new RuntimeException(errMsgPrefix + "UDP_PACKET_LEN is too large: " + UDP_PACKET_LEN);
 		}
 
 		//
 		paramsCommon.validate();
 		if (rtpClockrate < 1 || rtpClockrate > 90000 * 2) {
-			throw new IllegalArgumentException("Invalid RTP clock rate: " + rtpClockrate);
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid RTP clock rate: " + rtpClockrate);
 		}
 
 		//
@@ -137,9 +140,14 @@ public abstract class ThreadRtpSenderBase<
 		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);
 		this.parComRtpRwIfTcp = paramsCommon.getTpClientDestTcpIf().orElse(null);
 		//
-		final double sendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
-		if (sendIntervalNs < 1_000_000.0) {  // sanity check
-			throw new IllegalStateException("sendInterval is < 1ms");
+		if (rtpPacketType.isVideo() && paramsCommon.getAvFramesPerSecond() < 0.1) {
+			throw new IllegalStateException(errMsgPrefix + "FPS < 0.1");
+		}
+		if (paramsCommon.getAvFramesPerSecond() >= 0.1) {
+			final double tmpSendIntervalNs = (1_000_000_000.0 / paramsCommon.getAvFramesPerSecond());
+			if (tmpSendIntervalNs < 1_000_000.0) {  // sanity check
+				throw new IllegalStateException(errMsgPrefix + "sendInterval is < 1ms");
+			}
 		}
 		this.rtpClockrate = rtpClockrate;
 		this.rtpTicksPerFrame = -1L;  // needs to be set by child class
@@ -157,8 +165,7 @@ public abstract class ThreadRtpSenderBase<
 			try {
 				this.srtpVarsOutbound.ctxObj = new SrtpContextOutbound(paramsCommon.getCryptoKmdOutbound().orElseThrow());
 			} catch (SrtxpSecurityException e) {
-				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-						"SrtxpSecurityException caught: " + e.getMessage());
+				throw new IllegalArgumentException(errMsgPrefix + "SrtxpSecurityException caught: " + e.getMessage());
 			}
 		} else {
 			this.srtpVarsOutbound.ctxObj = null;
@@ -175,12 +182,12 @@ public abstract class ThreadRtpSenderBase<
 		}
 		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			if (this.srtpVarsOutbound.ctxObj == null) {
-				throw new IllegalStateException("srtpCtxOutbound == null");
+				throw new IllegalStateException(errMsgPrefix + "srtpCtxOutbound == null");
 			}
 			udpMaxPacketLenDelta += this.srtpVarsOutbound.ctxObj.getSrtpExtraPacketLength();
 		}
 		if (UDP_PACKET_LEN - udpMaxPacketLenDelta < 128) {
-			throw new AssertionError("UDP packet length too small");
+			throw new IllegalStateException(errMsgPrefix + "UDP packet length too small");
 		}
 		while ((UDP_PACKET_LEN - udpMaxPacketLenDelta) % 4 != 0) {
 			++udpMaxPacketLenDelta;
@@ -232,7 +239,7 @@ public abstract class ThreadRtpSenderBase<
 
 		// sanity check
 		if (rtpTicksPerFrame < 1L) {
-			throw new AssertionError("rtpTicksPerFrame is < 1");
+			throw new RuntimeException(FNC_NAME + ": rtpTicksPerFrame is < 1");
 		}
 
 		//
@@ -490,7 +497,6 @@ public abstract class ThreadRtpSenderBase<
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
 	protected long getRtpTsFrameNr() {
 		return rtpTsFrameNr.get();
 	}
@@ -661,6 +667,15 @@ public abstract class ThreadRtpSenderBase<
 		// only sleep if this is the first packet of the frame/AU
 		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
+			/*
+			 * E.g., for E-AC-3, the frame duration is not constant, so we need to adjust the sleep time
+			 * and the [rtpTicksPerFrame]. The latter is done directly in e.g., [ThreadRtpSenderEac3].
+			 */
+			if (nextFpsForAdaptiveScheduler > 0.0) {
+				adaptiveScheduler.setFps(nextFpsForAdaptiveScheduler);
+				nextFpsForAdaptiveScheduler = -1.0;
+			}
+			//
 			adaptiveScheduler.waitForNextFrame();
 			//
 			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
@@ -732,7 +747,8 @@ public abstract class ThreadRtpSenderBase<
 			isMainLoopStateA = false;
 			//
 			long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(getNtpTimestamp());
-			if (tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
+			if (adaptiveScheduler.getIsWaitForNextFrameEnabled() &&
+					tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
 				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 			}
 		}

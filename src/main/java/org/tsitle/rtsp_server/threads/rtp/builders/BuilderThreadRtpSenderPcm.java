@@ -40,8 +40,8 @@ public final class BuilderThreadRtpSenderPcm {
 							threadParamsPcm
 						);
 					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderPcm<>(
-							AvStreamIncomingFromEsFile.class,  // @TODO
-							FrameGrabberAudioPcmFromEsFile.class,  // @TODO
+							AvStreamIncomingFromDemuxMs.class,
+							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,
 							threadParamsAudio,
 							threadParamsPcm

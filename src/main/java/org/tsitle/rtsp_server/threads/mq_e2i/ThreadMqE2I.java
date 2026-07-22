@@ -152,9 +152,25 @@ public final class ThreadMqE2I extends RunnableBase {
 			// the codec should never actually change during a session - but we need to read it once
 			cacheCodecSettings.codec = packet.codec();
 			if (! packet.codec().isVideo()) {
-				// samplerate and channel count should never actually change during a session - but we need to read them once
+				/*
+				 * samplerate, channel count and samples per frame should never actually change during a session,
+				 * but we need to read them at least once
+				 */
 				cacheCodecSettings.audioSamplerate = packet.mdAudioSamplerate();
 				cacheCodecSettings.audioChannels = packet.mdAudioChannelCount();
+				if (cacheCodecSettings.codec.isPcmAudio()) {
+					int tmpBytesPerSample = switch (cacheCodecSettings.codec) {
+							case PCMA, PCMU, LPCM08U -> 1;
+							case LPCM16S -> 2;
+							default -> throw new RuntimeException(getClass().getSimpleName() + ".mainLoop(): " +
+									"Unsupported PCM audio codec: " + cacheCodecSettings.codec);
+						};
+					cacheCodecSettings.audioSamplesPerFrame =
+							(int)(((double)packet.payloadDataPtr().getUsed() / (double)cacheCodecSettings.audioChannels) /
+									(double)tmpBytesPerSample);
+				} else {
+					cacheCodecSettings.audioSamplesPerFrame = -1;  // @TODO
+				}
 			}
 			haveChanges = true;
 		}

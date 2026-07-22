@@ -63,9 +63,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** Audio channel count -- only when {@code filePath} is set. */
 	@Expose
 	private final @NonNull Integer audioChannelCount;
-	/** Is audio input big-endian? -- only when {@code filePath} is set. */
+	/** Is PCM Audio input big-endian? -- only when {@code filePath} is set. */
 	@Expose
-	private final @NonNull Boolean isAudioBigEndian;
+	private final @NonNull Boolean isPcmAudioBigEndian;
 
 	/** Only for AAC: Audio samples per frame -- only when {@code filePath} is set. */
 	@Expose
@@ -88,9 +88,12 @@ public final class RtspConfigElementaryStreamSource {
 	/** Internal use: Audio channel count */
 	@GsonAnnoExclude
 	private byte internalAudioChannelCount;
-	/** Internal use: Is Audio input big-endian? */
+	/** Internal use: Is PCM Audio input big-endian? */
 	@GsonAnnoExclude
-	private boolean internalIsAudioBigEndian;
+	private boolean internalIsPcmAudioBigEndian;
+	/** Internal use: Audio Samples per Frame */
+	@GsonAnnoExclude
+	private int internalAudioSamplesPerFrame;
 
 	/** for MQs: Codec */
 	@GsonAnnoExclude
@@ -104,6 +107,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** for MQs: Audio channel count */
 	@GsonAnnoExclude
 	private byte mqDynamicAudioChannelCount;
+	/** for MQs: Audio samples per frame */
+	@GsonAnnoExclude
+	private int mqDynamicAudioSamplesPerFrame;
 
 	/** for Demuxed Muxed-Stream Sources: Muxed-Stream Source ID */
 	@GsonAnnoExclude
@@ -125,7 +131,7 @@ public final class RtspConfigElementaryStreamSource {
 		this.videoFps = -1.0;
 		this.audioSamplerateHz = -1;
 		this.audioChannelCount = -1;
-		this.isAudioBigEndian = false;
+		this.isPcmAudioBigEndian = false;
 
 		this.aacSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
 		this.aacAudioSpecificConfigHex = "";
@@ -135,12 +141,14 @@ public final class RtspConfigElementaryStreamSource {
 		this.internalVideoFps = FrameRateEnum.UNKNOWN;
 		this.internalAudioSampleRate = SampleRateEnum.UNKNOWN;
 		this.internalAudioChannelCount = -1;
-		this.internalIsAudioBigEndian = false;
+		this.internalIsPcmAudioBigEndian = false;
+		this.internalAudioSamplesPerFrame = -1;
 
 		this.mqDynamicCodec = RtpPacketType.UNKNOWN;
 		this.mqDynamicVideoFps = FrameRateEnum.UNKNOWN;
 		this.mqDynamicAudioSamplerateHz = SampleRateEnum.UNKNOWN;
 		this.mqDynamicAudioChannelCount = -1;
+		this.mqDynamicAudioSamplesPerFrame = -1;
 
 		this.msSourceId = null;
 		this.msSourceUri = null;
@@ -200,15 +208,18 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
 		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate + " " +
+					"for MS Source '" + msSourceUri + "'");
 		}
 		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
 		if (resObj.internalAudioChannelCount < 1 || resObj.internalAudioChannelCount > 10) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount + " " +
+					"for MS Source '" + msSourceUri + "'");
 		}
-		resObj.internalIsAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
+		resObj.internalIsPcmAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
+		resObj.internalAudioSamplesPerFrame = streamInfo.samplesPerFrame;
 
-		resObj.aacSamplesPerFrame = streamInfo.aacSamplesPerFrame;
+		resObj.aacSamplesPerFrame = streamInfo.samplesPerFrame;
 		resObj.aacAudioSpecificConfigHex = streamInfo.aacAudioSpecificConfigHex;
 
 		return resObj;
@@ -320,18 +331,20 @@ public final class RtspConfigElementaryStreamSource {
 		return internalAudioChannelCount;
 	}
 
-	/** Get audio samples per frame as required for RTP. */
-	public int getRtpAudioSamplesPerFrame(double videoFpsAsDbl) {
+	/**
+	 * Compute the virtual framerate as required for RTP.
+	 * @return Frames per second or -1.0 if the framerate cannot be computed
+	 * @throws IllegalArgumentException If the samplerate is not valid
+	 */
+	public double computeAudioVirtualFps() {
 		checkPostProcessed();
 		//
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
-			return 1;  // the actual value doesn't matter when reading from a MQ
-		}
-		if (videoFpsAsDbl < 0.1) {
-			throw new IllegalArgumentException("videoFpsAsDbl must be positive");
-		}
-		if (internalAudioSampleRate == SampleRateEnum.UNKNOWN) {
+		if (getAudioSamplerate() == SampleRateEnum.UNKNOWN) {
 			throw new IllegalArgumentException("audioSamplerateHz must be valid");
+		}
+		final int tmpSpf = getAudioSamplesPerFrame();
+		if (tmpSpf < 1) {
+			return -1.0;
 		}
 		/*
 		 * 25 fps ^= 1 frame each 40 ms
@@ -341,24 +354,35 @@ public final class RtspConfigElementaryStreamSource {
 		 * 15 fps ^= 1 frame each 66.7 ms
 		 * 8000 samples/sec ^= 1 sample each 0.125 ms
 		 * 66.7 ms / 0.125 ms == 533 samples per frame
+		 *
+		 * SampleIntv = 1 / SpS
+		 * FrameIntv = SpF * SampleIntv --- SpF = FrameIntv / SampleIntv
+		 *
+		 * FpS = 1 / FrameIntv
 		 */
-		double videoFrameIntervalMs = 1000.0 / videoFpsAsDbl;
-		double audioSampleIntervalMs = 1000.0 / internalAudioSampleRate.getSrHz();
-		int resI = (int)(videoFrameIntervalMs / audioSampleIntervalMs);
-		return Math.max(1, resI);
+		double frameIntv = (double)tmpSpf / (double)getAudioSamplerate().getSrHz();
+		return (1.0 / frameIntv);
 	}
 
-	public boolean getIsAudioBigEndian() {
+	/**
+	 * Get the number of audio samples per frame as required for RTP.
+	 * @return Samples per frame or -1 if the value is not available
+	 */
+	public int getAudioSamplesPerFrame() {
+		checkPostProcessed();
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+			// the actual number of samples per frame will be determined dynamically when reading from a MQ
+			return mqDynamicAudioSamplesPerFrame;
+		}
+		return internalAudioSamplesPerFrame;
+	}
+
+	public boolean getIsPcmAudioBigEndian() {
 		checkPostProcessed();
 		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
 			return true;  // when reading from a MQ, the audio data is expected to be big-endian
 		}
-		return internalIsAudioBigEndian;
-	}
-
-	public synchronized int getAacSamplesPerFrame() {
-		checkPostProcessed();
-		return aacSamplesPerFrame;
+		return internalIsPcmAudioBigEndian;
 	}
 
 	/**
@@ -379,6 +403,8 @@ public final class RtspConfigElementaryStreamSource {
 	public synchronized void setMqDynamicAudioSamplerateHz(@NonNull SampleRateEnum value) { this.mqDynamicAudioSamplerateHz = value; }
 
 	public synchronized void setMqDynamicAudioChannelCount(byte value) { this.mqDynamicAudioChannelCount = value; }
+
+	public synchronized void setMqDynamicAudioSamplesPerFrame(int value) { this.mqDynamicAudioSamplesPerFrame = value; }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -441,7 +467,18 @@ public final class RtspConfigElementaryStreamSource {
 		//noinspection ConstantValue
 		internalAudioChannelCount = (byte)(audioChannelCount == null ? -1 : audioChannelCount);
 		//noinspection ConstantValue
-		internalIsAudioBigEndian = (isAudioBigEndian != null && isAudioBigEndian);
+		internalIsPcmAudioBigEndian = (isPcmAudioBigEndian != null && isPcmAudioBigEndian);
+		if (getSourceType() == RtspConfigEsSourceType.ST_ES_FILE) {
+			if (internalCodec == RtpPacketType.A_AAC) {
+				internalAudioSamplesPerFrame = aacSamplesPerFrame;
+			} else if (internalCodec == RtpPacketType.A_AC3) {
+				internalAudioSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO;
+			} else if (internalCodec.isPcmAudio()) {
+				double tmpSampleIntvMs = 1000.0 / (double)internalAudioSampleRate.getSrHz();
+				double tmpSpF = (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS / tmpSampleIntvMs;
+				internalAudioSamplesPerFrame = (int)tmpSpF;
+			}
+		}
 	}
 
 	/**
@@ -514,6 +551,10 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
 					tmpExtSsId + "' (should be stereo)");
 		}
+		if (internalCodec.isAudio() && getAudioSamplesPerFrame() < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samples Per Frame for Elementary-Stream Source ID '" +
+					tmpExtSsId + "' (needs to be positive)");
+		}
 
 		//
 		if (enabled && internalCodec == RtpPacketType.A_AAC) {
@@ -576,8 +617,6 @@ public final class RtspConfigElementaryStreamSource {
 			}
 			internalAudioChannelCount = (byte)aacInfo.channelConfiguration;
 
-			internalIsAudioBigEndian = false;
-
 			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extEsId + "': " +
@@ -615,8 +654,6 @@ public final class RtspConfigElementaryStreamSource {
 						"config=" + getAudioChannelCount() + ", fileHeader=" + ac3Info.audioCodingMode.getChannelCount() + ")");
 			}
 			internalAudioChannelCount = (byte)ac3Info.audioCodingMode.getChannelCount();
-
-			internalIsAudioBigEndian = false;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from AC-3 file for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());

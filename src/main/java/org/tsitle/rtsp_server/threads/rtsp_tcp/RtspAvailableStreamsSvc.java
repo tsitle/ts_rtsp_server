@@ -117,8 +117,8 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getInputUri(),
 					tmpCfgSs.getAudioChannelCount(),
 					tmpCfgSs.getAudioSamplerate(),
-					tmpCfgSs.getIsAudioBigEndian(),
-					tmpCfgSs.getAacSamplesPerFrame(),
+					tmpCfgSs.getAudioSamplesPerFrame(),
+					tmpCfgSs.getIsPcmAudioBigEndian(),
 					tmpCfgSs.getAacAudioSpecificConfigHexStr(),
 					tmpCfgSs.getVideoFps()
 				);
@@ -129,12 +129,25 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 	}
 
 	@Override
-	public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+	public double computeElementaryStreamSource_virtualFps(@NonNull RtspProtoIdEsSource idEsSource)
 			throws RtspProtoIdEsSourceNotFoundException {
 		RtspConfigElementaryStreamSource tmpCfgSs = getConfigEsSourceObj(idEsSource);
 
 		try {
-			return tmpCfgSs.getRtpAudioSamplesPerFrame(videoFps);
+			return tmpCfgSs.computeAudioVirtualFps();
+		} catch (IllegalStateException e) {
+			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") +
+					"': " + e.getMessage());
+		}
+	}
+
+	@Override
+	public int getElementaryStreamSource_samplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource)
+			throws RtspProtoIdEsSourceNotFoundException {
+		RtspConfigElementaryStreamSource tmpCfgSs = getConfigEsSourceObj(idEsSource);
+
+		try {
+			return tmpCfgSs.getAudioSamplesPerFrame();
 		} catch (IllegalStateException e) {
 			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") +
 					"': " + e.getMessage());

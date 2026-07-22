@@ -244,6 +244,9 @@ public final class RtspServerApp {
 							if (cbArgCodecSettings.audioChannels != null) {
 								tmpCbEsSrcObj.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
 							}
+							if (cbArgCodecSettings.audioSamplesPerFrame != null) {
+								tmpCbEsSrcObj.setMqDynamicAudioSamplesPerFrame(cbArgCodecSettings.audioSamplesPerFrame);
+							}
 						},
 					tmpEsSrcObj.getIdAsProtoId(),
 					mqSetts,

@@ -15,6 +15,7 @@ public final class MqCodecSettings {
 	public @Nullable FrameRateEnum videoFps = null;
 	public @Nullable SampleRateEnum audioSamplerate = null;
 	public @Nullable Byte audioChannels = null;
+	public @Nullable Integer audioSamplesPerFrame = null;
 
 	public @NonNull RtpPacketType getAsRtpPacketType() {
 		if (codec == null) {
@@ -42,6 +43,7 @@ public final class MqCodecSettings {
 				", videoFps=" + tmpFpsStr +
 				", audioSamplerate=" + (audioSamplerate == null ? "NULL" : audioSamplerate) +
 				", audioChannels=" + (audioChannels == null ? "NULL" : audioChannels) +
+				", audioSamplesPerFrame=" + (audioSamplesPerFrame == null ? "NULL" : audioSamplesPerFrame) +
 				"]";
 	}
 

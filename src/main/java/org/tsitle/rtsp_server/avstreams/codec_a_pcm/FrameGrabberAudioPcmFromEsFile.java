@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
@@ -11,12 +12,13 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFileBase {
 
+	private final int channels;
+	private final int bitsPerSample;
+	private final int rtpSamplesPerFrame;
 	private final boolean isBigEndian;
 
-	private final int bytesPerSample;
-	private final int bytesPerChannelAndSample;
-	private final int rtpFrameSizeBytes;
-	private final BufferExt cachedDataBuf2 = new BufferExt();
+	private final @NonNull BufferExt cachedDataFromAsi = new BufferExt();
+	private @Nullable PcmFrameHandler pcmFrameHandler = null;
 
 	/**
 	 * Constructor.
@@ -43,23 +45,21 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 			);
 
 		//
-		if (channels < 1 || channels > 2) {
-			throw new IllegalArgumentException("Invalid audio channel count: " + channels);
+		final String errMsgPrefix = getClass().getSimpleName() + ".ctor(): ";
+		if (channels < 1 || channels > 2) {  // @TODO
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid audio channel count: " + channels);
 		}
-		if (bitsPerSample != 8 && bitsPerSample != 16) {
-			throw new IllegalArgumentException("Invalid audio bits per sample: " + bitsPerSample);
+		if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 32) {
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid audio bits per sample: " + bitsPerSample);
 		}
 		if (rtpSamplesPerFrame < 1) {
-			throw new IllegalArgumentException("Invalid audio samples per frame: " + rtpSamplesPerFrame);
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid audio samples per frame: " + rtpSamplesPerFrame);
 		}
 
+		this.channels = channels;
+		this.bitsPerSample = bitsPerSample;
+		this.rtpSamplesPerFrame = rtpSamplesPerFrame;
 		this.isBigEndian = isBigEndian;
-
-		this.bytesPerSample = bitsPerSample / 8;
-		this.bytesPerChannelAndSample = channels * bytesPerSample;
-		this.rtpFrameSizeBytes = channels * rtpSamplesPerFrame * this.bytesPerSample;
-
-		this.cachedDataBuf2.increaseSize(this.rtpFrameSizeBytes);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -82,33 +82,20 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
+		frameBuf.clear();
 		stTimestamp.clear();
 
-		BufferExt readIntoPtr = (isBigEndian || bytesPerSample == 1 ? frameBuf : cachedDataBuf2);
+		if (pcmFrameHandler == null) {
+			pcmFrameHandler = new PcmFrameHandler(channels, bitsPerSample, rtpSamplesPerFrame, isBigEndian);
+		}
+		cachedDataFromAsi.increaseSize(pcmFrameHandler.getFrameSizeBytes());
+
 		//
-		frameBuf.clear();
-		frameBuf.increaseSize(rtpFrameSizeBytes);
+		int tmpRead = avStreamIncoming.readBytes(cachedDataFromAsi.getBaPtr(), pcmFrameHandler.getFrameSizeBytes());
+		cachedDataFromAsi.setUsed(tmpRead);
+
 		//
-		int tmpRead = avStreamIncoming.readBytes(readIntoPtr.getBaPtr(), rtpFrameSizeBytes);
-		if (tmpRead > 0 && tmpRead % bytesPerChannelAndSample != 0) {
-			// discard any partial samples
-			tmpRead -= (tmpRead % bytesPerChannelAndSample);
-		}
-		if (tmpRead <= 0) {
-			throw new InputStreamEosException();
-		}
-		readIntoPtr.setUsed(tmpRead);
-		//
-		if (isBigEndian || bytesPerSample == 1) {
-			return;
-		}
-// @TODO put conversion code for MQ/File/Demux into helper class
-		// convert to big-endian
-		for (int i = 0; i + 1 < tmpRead; i += bytesPerSample) {
-			frameBuf.getBaPtr()[i] = readIntoPtr.get(i + 1);
-			frameBuf.getBaPtr()[i + 1] = readIntoPtr.get(i);
-		}
-		frameBuf.setUsed(tmpRead);
+		pcmFrameHandler.convertToBigEndian(cachedDataFromAsi, frameBuf);
 	}
 
 }

@@ -5,12 +5,13 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsMqBase;
-import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
+import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 
-public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBase {
+public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDemuxMs {
 
 	private final int channels;
 	private final int bitsPerSample;
@@ -29,9 +30,9 @@ public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBa
 	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public FrameGrabberAudioPcmFromEsMq(
+	public FrameGrabberAudioPcmFromDemuxMs(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsMq avStreamIncoming,
+				@NonNull AvStreamIncomingFromDemuxMs avStreamIncoming,
 				int channels,
 				int bitsPerSample,
 				int rtpSamplesPerFrame,
@@ -64,7 +65,7 @@ public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBa
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
-			throws InputStreamIoException, InputStreamEosException {
+			throws InputStreamIoException, InputStreamEosException, InputStreamThreadEndedException {
 		frameBuf.clear();
 		stTimestamp.clear();
 

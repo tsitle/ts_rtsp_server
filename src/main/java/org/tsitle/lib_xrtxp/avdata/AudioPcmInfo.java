@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 
 import java.io.ByteArrayOutputStream;
 
@@ -17,6 +18,8 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 	public int bitsPerSample;
 	/** Number of samples per channel that the audio data contains */
 	public int samplesPerChannelInAudioData;
+	/** Sample rate */
+	public @NonNull SampleRateEnum samplerate;
 
 	public AudioPcmInfo() {
 		reset();
@@ -39,6 +42,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 		channels = 0;
 		bitsPerSample = 0;
 		samplesPerChannelInAudioData = 0;
+		samplerate = SampleRateEnum.UNKNOWN;
 	}
 
 	@Override
@@ -51,6 +55,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 		channels = tmpSrc.channels;
 		bitsPerSample = tmpSrc.bitsPerSample;
 		samplesPerChannelInAudioData = tmpSrc.samplesPerChannelInAudioData;
+		samplerate = tmpSrc.samplerate;
 	}
 
 	@Override
@@ -70,6 +75,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 				", channels=" + Integer.toUnsignedString(channels) +
 				", bitsPerSample=" + Integer.toUnsignedString(bitsPerSample) +
 				", samplesPerChannelInAudioData=" + Integer.toUnsignedString(samplesPerChannelInAudioData) +
+				", samplerate=" + samplerate +
 				"]";
 	}
 
@@ -87,6 +93,7 @@ public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Clo
 		baos.write(channels);
 		baos.write(bitsPerSample);
 		baos.write(samplesPerChannelInAudioData);
+		baos.write(samplerate.getSrHz());
 
 		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 	}

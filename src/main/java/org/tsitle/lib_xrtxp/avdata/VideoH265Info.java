@@ -143,7 +143,7 @@ public final class VideoH265Info extends CodecInfoH26xBase<VideoH265Info> implem
 		try {
 			return (VideoH265Info)super.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new AssertionError(e);
+			throw new AssertionError();
 		}
 	}
 

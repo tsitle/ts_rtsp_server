@@ -7,9 +7,6 @@ public final class RtspProtoSdpConstants {
 
 	private RtspProtoSdpConstants() { }
 
-	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
-	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
-
 	/**
 	 * AAC: AU-header field AU-Size length in bits.<br />
 	 * See RFC-3640 Section 3.3.6

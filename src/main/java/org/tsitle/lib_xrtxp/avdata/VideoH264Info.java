@@ -139,7 +139,7 @@ public final class VideoH264Info extends CodecInfoH26xBase<VideoH264Info> implem
 			clone.pictBoundInfo = pictBoundInfo.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
-			throw new AssertionError(e);
+			throw new AssertionError();
 		}
 	}
 

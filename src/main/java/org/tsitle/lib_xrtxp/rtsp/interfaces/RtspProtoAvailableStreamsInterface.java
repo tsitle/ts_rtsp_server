@@ -60,8 +60,8 @@ public interface RtspProtoAvailableStreamsInterface {
 			@NonNull URI inputUri,
 			byte audioChannelCount,
 			@NonNull SampleRateEnum audioSampleRate,
-			boolean isAudioBigEndian,
-			int audioAacSpf,
+			int audioSamplesPerFrame,
+			boolean isAudioPcmBigEndian,
 			@NonNull String audioAacHexCfg,
 			@NonNull FrameRateEnum videoFps
 		) { }
@@ -76,13 +76,21 @@ public interface RtspProtoAvailableStreamsInterface {
 			throws RtspProtoIdEsSourceNotFoundException;
 
 	/**
-	 * Get audio samples per frame (matching the video frame rate) as required for RTP for the given audio Elementary-Stream Source.
+	 * Compute the virtual framerate as required for RTP for the given Elementary-Stream Source.
 	 * @param idEsSource Elementary-Stream Source ID
-	 * @param videoFps Frames per second value of the corresponding video sub-stream
-	 * @return Samples per frame
+	 * @return Frames per second or -1.0 if the framerate cannot be computed
 	 * @throws RtspProtoIdEsSourceNotFoundException If the Elementary-Stream Source ID is not found
 	 */
-	int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+	double computeElementaryStreamSource_virtualFps(@NonNull RtspProtoIdEsSource idEsSource)
+			throws RtspProtoIdEsSourceNotFoundException;
+
+	/**
+	 * Get the number of audio samples per frame as required for RTP for the given Elementary-Stream Source.
+	 * @param idEsSource Elementary-Stream Source ID
+	 * @return Samples per frame or -1 if the value is not available
+	 * @throws RtspProtoIdEsSourceNotFoundException If the Elementary-Stream Source ID is not found
+	 */
+	int getElementaryStreamSource_samplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource)
 			throws RtspProtoIdEsSourceNotFoundException;
 
 }

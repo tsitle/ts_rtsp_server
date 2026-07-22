@@ -37,7 +37,7 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 		}
 		if (pcmInfo.samplesPerChannelInAudioData < 1 || pcmInfo.samplesPerChannelInAudioData > 0xFFFFFF ||
 				(pcmInfo.bitsPerSample != 8 && pcmInfo.bitsPerSample != 16) ||
-				pcmInfo.channels < 1 || pcmInfo.channels > 2) {
+				pcmInfo.channels < 1 || pcmInfo.channels > 2) {  // @TODO
 			throw new IllegalArgumentException("Cannot process this kind of PCM");
 		}
 

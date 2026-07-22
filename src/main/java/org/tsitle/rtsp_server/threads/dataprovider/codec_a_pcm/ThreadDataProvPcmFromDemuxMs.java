@@ -2,16 +2,16 @@ package org.tsitle.rtsp_server.threads.dataprovider.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvFromMqBase;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromDemuxMs;
+import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvFromDemuxMsBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 
-public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<AudioPcmInfo> {
+public final class ThreadDataProvPcmFromDemuxMs extends ThreadDataProvFromDemuxMsBase<AudioPcmInfo> {
 
 	private final @NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon;
 	private final @NonNull ParamsThreadRtpSenderPcm paramsPcm;
@@ -24,7 +24,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsPcm Thread-specific parameters
 	 */
-	public ThreadDataProvPcmFromMq(
+	public ThreadDataProvPcmFromDemuxMs(
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadRtpSenderPcm paramsPcm
@@ -52,7 +52,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioPcmFromEsMq(
+		this.frameGrabber = new FrameGrabberAudioPcmFromDemuxMs(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming,
 				paramsPcm.getAudioChannelCount(),
@@ -73,7 +73,7 @@ public final class ThreadDataProvPcmFromMq extends ThreadDataProvFromMqBase<Audi
 	}
 
 	@Override
-	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
+	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
 		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 

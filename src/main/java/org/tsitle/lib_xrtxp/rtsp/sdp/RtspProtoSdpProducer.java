@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -27,7 +28,6 @@ import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
-import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -520,11 +520,11 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			throw new IllegalStateException(FNC_NAME + ": availableStreamsInterface must be set");
 		}
 
-		final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo ssInfo =
+		final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo esInfo =
 				availableStreamsInterface.getElementaryStreamSourceInfo(idEsSource);
 		final int ssVideoRtpClockRate;
 		try {
-			ssVideoRtpClockRate = (useVideo ? ssInfo.codec().getVideoCodecRtpClockrate() : 0);
+			ssVideoRtpClockRate = (useVideo ? esInfo.codec().getVideoCodecRtpClockrate() : 0);
 		} catch (IllegalStateException e) {
 			throw new RtspProtoSdpException(FNC_NAME + ": " + e.getMessage());
 		}
@@ -535,17 +535,17 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				(useVideo ? RtspProtoSdpMediaType.VIDEO.name() : RtspProtoSdpMediaType.AUDIO.name()).toLowerCase(),
 				tmpM_port,
 				(requireSrtp ? RtspProtoSdpTransport.RTP_SAVP : RtspProtoSdpTransport.RTP_AVP).getStrValue(),
-				ssInfo.codec().getValue()));
+				esInfo.codec().getValue()));
 		// c: Connection Information (can be an IP address or a hostname)
 		//outputList.add("c=IN IP4 0.0.0.0");
 		//
-		if (ssInfo.codec().isPcmAudio() && ssInfo.codec().getPcmAudioBitsPerSample().isPresent()) {
-			int tmpBw = (ssInfo.audioChannelCount() * ssInfo.audioSampleRate().getSrHz() *
-					ssInfo.codec().getPcmAudioBitsPerSample().get());
+		if (esInfo.codec().isPcmAudio() && esInfo.codec().getPcmAudioBitsPerSample().isPresent()) {
+			int tmpBw = (esInfo.audioChannelCount() * esInfo.audioSampleRate().getSrHz() *
+					esInfo.codec().getPcmAudioBitsPerSample().get());
 			// b: Bandwidth Information
 			outputList.add(String.format("b=AS:%d", tmpBw));
 		}
-		if (ssInfo.codec().isAudio() && ssInfo.esSourceType().isFromFile()) {
+		if (esInfo.codec().isAudio() && esInfo.audioSamplesPerFrame() > 0) {
 			/*
 			 * a: Session Attribute: Packetization interval (in milliseconds)
 			 *    Length of time in milliseconds represented by the media in a packet.
@@ -553,37 +553,28 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			 *    to know ptime to decode RTP or vat audio, and it is intended
 			 *    as a recommendation for the encoding/packetisation of audio.
 			 */
-			double tmpTimeMs;
-			if (ssInfo.codec() == RtpPacketType.A_AAC) {
-				final double tmpFrameDurAacSecs = ((double)ssInfo.audioAacSpf() /
-						(double)ssInfo.audioSampleRate().getSrHz());
-				tmpTimeMs = tmpFrameDurAacSecs * 1000.0;
-			} else if (ssInfo.codec() == RtpPacketType.A_AC3) {
-				final double tmpFrameDurAc3Secs = ((double)RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO /
-						(double)ssInfo.audioSampleRate().getSrHz());
-				tmpTimeMs = tmpFrameDurAc3Secs * 1000.0;
-			} else {
-				tmpTimeMs = RtspProtoSdpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS;
-			}
+			final double tmpFrameIntvSecs = ((double)esInfo.audioSamplesPerFrame() /
+					(double)esInfo.audioSampleRate().getSrHz());
+			final double tmpFrameIntvMs = tmpFrameIntvSecs * 1000.0;
 			outputList.add(
-					String.format("a=ptime:%.5f", tmpTimeMs).replace(",", ".")
+					String.format("a=ptime:%.5f", tmpFrameIntvMs).replace(",", ".")
 				);
 		}
 		//
-		if (useVideo && ssInfo.esSourceType().isFromFile()) {
+		if (useVideo && esInfo.videoFps() != FrameRateEnum.UNKNOWN) {
 			// a: Session Attribute: video framerate
 			outputList.add(
-					String.format("a=framerate:%.3f", ssInfo.videoFps().getFrDbl()).replace(",", ".")
+					String.format("a=framerate:%.3f", esInfo.videoFps().getFrDbl()).replace(",", ".")
 				);
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
-		final String tmpA_Map = ssInfo.codec().getSdpCodecName() +
+		final String tmpA_Map = esInfo.codec().getSdpCodecName() +
 				"/" +
-				(useVideo ? ssVideoRtpClockRate : ssInfo.audioSampleRate().getSrHz()) +
-				(useVideo || ! ssInfo.codec().isPcmAudio() ? "" : "/" + ssInfo.audioChannelCount());
-		outputList.add(String.format("a=rtpmap:%d %s", ssInfo.codec().getValue(), tmpA_Map));
+				(useVideo ? ssVideoRtpClockRate : esInfo.audioSampleRate().getSrHz()) +
+				(useVideo || ! esInfo.codec().isPcmAudio() ? "" : "/" + esInfo.audioChannelCount());
+		outputList.add(String.format("a=rtpmap:%d %s", esInfo.codec().getValue(), tmpA_Map));
 		//
-		switch (ssInfo.codec()) {
+		switch (esInfo.codec()) {
 			case RtpPacketType.A_AAC:
 				outputList.add(
 						String.format(
@@ -596,14 +587,14 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
 								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
 								"constantDuration=%d",  // optional: 512/960/1024 samples per frame
-								ssInfo.codec().getValue(),
+								esInfo.codec().getValue(),
 								RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
 								RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
-								ssInfo.audioAacHexCfg(),
+								esInfo.audioAacHexCfg(),
 								RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
 								RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
 								RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
-								ssInfo.audioAacSpf()
+								esInfo.audioSamplesPerFrame()
 					));
 				break;
 			case RtpPacketType.V_H264:
@@ -611,7 +602,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 						String.format(
 								"a=fmtp:%d " +
 								"packetization-mode=%d",
-								ssInfo.codec().getValue(),
+								esInfo.codec().getValue(),
 								RtspProtoSdpPrivateConstants.H26xPacketizationMode.NON_INTERLEAVED.value
 					));
 				break;

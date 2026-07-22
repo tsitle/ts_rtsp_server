@@ -253,8 +253,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (avFramesPerSecond <= 0.1f || avFramesPerSecond > 100.0f) {
-			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be > 0.1 and <= 100.0");
+		if (avFramesPerSecond > 100.0f) {
+			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be <= 100.0 (is=" +
+					String.format("%.3f", avFramesPerSecond) + ")");
 		}
 
 		requireNonNull(rtpSeqNrT0, "rtpSeqNrT0");

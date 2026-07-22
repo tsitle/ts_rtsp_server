@@ -48,7 +48,8 @@ public final class ThreadDataProvPcmFromFile extends ThreadDataProvFromFileBase<
 		//
 		this.packetParser = new PacketParserPcm(
 				paramsPcm.getAudioChannelCount(),
-				paramsPcm.getAudioBitsPerSample()
+				paramsPcm.getAudioBitsPerSample(),
+				paramsAudioCommon.getAudioSamplerate()
 			);
 	}
 
