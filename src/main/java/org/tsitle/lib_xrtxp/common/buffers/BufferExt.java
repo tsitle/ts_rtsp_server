@@ -43,10 +43,12 @@ public final class BufferExt implements Cloneable {
 	 */
 	public void setUsed(int used) {
 		if (used > buf.length) {
-			throw new IllegalArgumentException("Used size cannot exceed buffer length");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".setUsed(): " +
+					"Used size cannot exceed buffer length");
 		}
 		if (used < 0) {
-			throw new IllegalArgumentException("Used size cannot be negative");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".setUsed(): " +
+					"Used size cannot be negative");
 		}
 		this.used = used;
 	}
@@ -82,10 +84,12 @@ public final class BufferExt implements Cloneable {
 	 */
 	public byte get(int index) {
 		if (index < 0) {
-			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds");
+			throw new IndexOutOfBoundsException(getClass().getSimpleName() + ".get(): " +
+					"Index " + index + " is out of bounds");
 		}
 		if (index >= used) {
-			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds for used buffer size " + used);
+			throw new IndexOutOfBoundsException(getClass().getSimpleName() + ".get(): " +
+					"Index " + index + " is out of bounds for used buffer size " + used);
 		}
 		return buf[index];
 	}
@@ -97,10 +101,12 @@ public final class BufferExt implements Cloneable {
 	 */
 	public void set(int index, byte value) {
 		if (index < 0) {
-			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds");
+			throw new IndexOutOfBoundsException(getClass().getSimpleName() + ".set(): " +
+					"Index " + index + " is out of bounds");
 		}
 		if (index >= used) {
-			throw new IndexOutOfBoundsException("Index " + index + " is out of bounds for used buffer size " + used);
+			throw new IndexOutOfBoundsException(getClass().getSimpleName() + ".set(): " +
+					"Index " + index + " is out of bounds for used buffer size " + used);
 		}
 		buf[index] = value;
 	}
@@ -113,7 +119,9 @@ public final class BufferExt implements Cloneable {
 	 * @param len Length of data to copy
 	 */
 	public void copyFrom(byte[] srcData, int srcOffset, int dstOffset, int len) {
-		validateArgs(srcData == null ? 0 : srcData.length, srcOffset, dstOffset, len);
+		final String FNC_NAME = getClass().getSimpleName() + ".copyFrom()";
+
+		validateArgs(FNC_NAME, srcData == null ? 0 : srcData.length, srcOffset, dstOffset, len);
 		if (dstOffset + len > buf.length) {
 			increaseSize(dstOffset + len);
 		}
@@ -185,9 +193,11 @@ public final class BufferExt implements Cloneable {
 	 * @param len Length of data to copy
 	 */
 	public void copyInto(int srcOffset, byte[] dstData, int dstOffset, int len) {
-		validateArgs(used, srcOffset, dstOffset, len);
+		final String FNC_NAME = getClass().getSimpleName() + ".copyInto()";
+
+		validateArgs(FNC_NAME, used, srcOffset, dstOffset, len);
 		if (dstData == null || dstOffset + len > dstData.length) {
-			throw new IllegalArgumentException("Invalid destination offset / len");
+			throw new IllegalArgumentException(FNC_NAME + ": " + "Invalid destination offset / len");
 		}
 		System.arraycopy(buf, srcOffset, dstData, dstOffset, len);
 	}
@@ -198,7 +208,9 @@ public final class BufferExt implements Cloneable {
 	 * @return Buffer containing the slice
 	 */
 	public @NonNull BufferExt slice(int offset) {
-		validateArgs(used, offset, 0, getUsed() - offset);
+		final String FNC_NAME = getClass().getSimpleName() + ".slice()";
+
+		validateArgs(FNC_NAME, used, offset, 0, getUsed() - offset);
 		return slice(offset, getUsed() - offset);
 	}
 
@@ -209,7 +221,9 @@ public final class BufferExt implements Cloneable {
 	 * @return Buffer containing the slice
 	 */
 	public @NonNull BufferExt slice(int offset, int len) {
-		validateArgs(used, offset, 0, len);
+		final String FNC_NAME = getClass().getSimpleName() + ".slice()";
+
+		validateArgs(FNC_NAME, used, offset, 0, len);
 		return new BufferExt(buf, offset, len);
 	}
 
@@ -219,7 +233,8 @@ public final class BufferExt implements Cloneable {
 	 */
 	public void increaseSize(int newSize) {
 		if (newSize < 0) {
-			throw new IllegalArgumentException("Invalid buffer size");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".increaseSize(): " +
+					"Invalid buffer size");
 		}
 		if (newSize <= buf.length) {
 			return;
@@ -284,7 +299,8 @@ public final class BufferExt implements Cloneable {
 				byte[] tmpBa = HexFormat.of().parseHex(hexString);  // throws IllegalArgumentException or NumberFormatException
 				resObj.copyOf(tmpBa);
 			} catch (IllegalArgumentException e) {
-				throw new IllegalArgumentException("Invalid hex string");
+				throw new IllegalArgumentException(BufferExt.class.getSimpleName() + ".decodeHexString(): " +
+						"Invalid hex string");
 			}
 		}
 		return resObj;
@@ -295,7 +311,6 @@ public final class BufferExt implements Cloneable {
 	 * @param base64String Base64-encoded string
 	 * @return New buffer
 	 */
-	@SuppressWarnings("unused")
 	static public @NonNull BufferExt decodeBase64String(@NonNull String base64String) {
 		if (base64String.startsWith("b64:")) {
 			base64String = base64String.substring(4);
@@ -306,7 +321,8 @@ public final class BufferExt implements Cloneable {
 			try {
 				tmpBa = Base64.getDecoder().decode(base64String);  // throws IllegalArgumentException
 			} catch (IllegalArgumentException e) {
-				throw new IllegalArgumentException("Invalid base64 encoding");
+				throw new IllegalArgumentException(BufferExt.class.getSimpleName() + ".decodeBase64String(): " +
+						"Invalid base64 encoding");
 			}
 			resObj.copyOf(tmpBa);
 		}
@@ -414,18 +430,19 @@ public final class BufferExt implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void validateArgs(int srcDataLen, int srcOffset, int dstOffset, int len) {
+	private static void validateArgs(@NonNull String fncName, int srcDataLen, int srcOffset, int dstOffset, int len) {
+		final String errMsgPrefix = fncName + ": ";
 		if (srcOffset < 0) {
-			throw new IllegalArgumentException("Invalid source offset");
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid source offset");
 		}
 		if (dstOffset < 0) {
-			throw new IllegalArgumentException("Invalid destination offset");
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid destination offset");
 		}
 		if (len < 0) {
-			throw new IllegalArgumentException("Invalid length");
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid length");
 		}
 		if (srcOffset + len > srcDataLen) {
-			throw new IllegalArgumentException("Invalid source offset / len");
+			throw new IllegalArgumentException(errMsgPrefix + "Invalid source offset / len");
 		}
 	}
 
