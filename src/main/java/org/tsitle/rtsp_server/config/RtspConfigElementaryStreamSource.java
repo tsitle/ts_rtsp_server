@@ -212,7 +212,8 @@ public final class RtspConfigElementaryStreamSource {
 					"for MS Source '" + msSourceUri + "'");
 		}
 		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
-		if (resObj.internalAudioChannelCount < 1 || resObj.internalAudioChannelCount > 10) {  // just in case
+		if (resObj.internalAudioChannelCount < 1 ||
+				resObj.internalAudioChannelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {  // just in case
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount + " " +
 					"for MS Source '" + msSourceUri + "'");
 		}
@@ -494,7 +495,8 @@ public final class RtspConfigElementaryStreamSource {
 		checkPostProcessed();
 
 		//
-		String tmpExtSsId = mapStreamSourceIdIntToExt.get(getIdAsInt());
+		final String tmpExtSsId = mapStreamSourceIdIntToExt.get(getIdAsInt());
+		final String errMsgSuffix = " for Elementary-Stream Source ID '" + tmpExtSsId + "'";
 
 		if (getIdAsInt() < 0) {
 			throw new ConfigInvalidException(FNC_NAME + ": Elementary-Stream Source has no ID");
@@ -502,12 +504,11 @@ public final class RtspConfigElementaryStreamSource {
 
 		//
 		if (filePath.isBlank() && mq == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found for Elementary-Stream Source ID '" +
-					tmpExtSsId + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found " + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
-					"' for Elementary-Stream Source ID '" + tmpExtSsId + "' - file not found");
+					"' " + errMsgSuffix + " - file not found");
 		}
 		if (mq != null) {
 			mq.validate(tmpExtSsId);
@@ -520,40 +521,39 @@ public final class RtspConfigElementaryStreamSource {
 		}
 		//noinspection ConstantValue
 		if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined for Elementary-Stream Source ID '" +
-					tmpExtSsId + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined " + errMsgSuffix);
 		}
 		if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec for Elementary-Stream Source ID '" +
-					tmpExtSsId + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec " + errMsgSuffix);
 		}
 		if (internalCodec.isVideo() && getVideoFps() == FrameRateEnum.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS for Elementary-Stream Source ID '" +
-					tmpExtSsId + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS " + errMsgSuffix);
 		}
 		if (internalCodec.isPcmAudio() && getAudioSamplerate() == SampleRateEnum.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (PCM needs a valid Sample Rate)");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate " + errMsgSuffix +
+					" (PCM needs a valid Sample Rate)");
 		}
 		if (internalCodec.isPcmAudio() && getAudioChannelCount() < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (PCM: min=1, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+					" (PCM: min=1, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
-		if (internalCodec.isPcmAudio() && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (PCM: min=1, max=2, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
+		if (internalCodec.isPcmAudio() &&
+				(getAudioChannelCount() < 1 || getAudioChannelCount() > RtpConstants.RTP_AUDIO_CHANNELS_MAX)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+					" (PCM: min=1, max=" + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
+					", is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
 		if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (should be mono)");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+					" (should be mono)");
 		}
 		if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (should be stereo)");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+					" (should be stereo)");
 		}
 		if (internalCodec.isAudio() && getAudioSamplesPerFrame() < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samples Per Frame for Elementary-Stream Source ID '" +
-					tmpExtSsId + "' (needs to be positive)");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samples Per Frame " + errMsgSuffix +
+					" (needs to be positive)");
 		}
 
 		//
@@ -565,7 +565,7 @@ public final class RtspConfigElementaryStreamSource {
 					break;
 				default:
 					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
-							"for Elementary-Stream Source ID '" + tmpExtSsId + "' (allowed values: " +
+							errMsgSuffix + " (allowed values: " +
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");

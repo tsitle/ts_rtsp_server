@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.rtp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,6 +25,8 @@ public final class RtpConstants {
 	public static final int RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
 	/** Samples per frame for AC-3 audio */
 	public static final int RTP_SAMPLES_PER_FRAME_AC3_AUDIO = 1536;
+	/** Maximum channel count for audio */
+	public static final int RTP_AUDIO_CHANNELS_MAX = AudioPcmInfo.AUDIO_CHANNELS_MAX;
 
 	/** Interval for re-keying the SRTxP master key and salt (in packets) as integer */
 	public static final long SRTXP_REKEYING_INTERVAL_PACKETS_INT = 1048576;  // ^=2^20

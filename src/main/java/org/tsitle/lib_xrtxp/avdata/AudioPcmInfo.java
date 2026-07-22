@@ -8,6 +8,8 @@ import java.io.ByteArrayOutputStream;
 
 public final class AudioPcmInfo implements CodecInfoInterface<AudioPcmInfo>, Cloneable {
 
+	public static final int AUDIO_CHANNELS_MAX = 10;  // arbitrary limit
+
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
 	/** Length of the audio samples in the audio data */

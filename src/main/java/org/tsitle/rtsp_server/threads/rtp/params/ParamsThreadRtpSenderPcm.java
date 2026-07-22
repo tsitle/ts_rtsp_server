@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 public final class ParamsThreadRtpSenderPcm implements Cloneable {
 
@@ -74,8 +75,9 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (audioChannelCount < 1 || audioChannelCount > 10) {
-			throw new IllegalArgumentException(errPrefix + "audioChannelCount must be >= 1 and <= 10");
+		if (audioChannelCount < 1 || audioChannelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
+			throw new IllegalArgumentException(errPrefix + "audioChannelCount must be >= 1 and <= " +
+					RtpConstants.RTP_AUDIO_CHANNELS_MAX);
 		}
 		if (audioBitsPerSample != 8 && audioBitsPerSample != 16) {
 			throw new IllegalArgumentException(errPrefix + "audioBitsPerSample must be 8 or 16");

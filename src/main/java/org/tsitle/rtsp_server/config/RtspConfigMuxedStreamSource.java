@@ -166,6 +166,8 @@ public final class RtspConfigMuxedStreamSource {
 		dmxSettingsRsi.cfgAllowOnlySpecificCodecsAudio = true;
 		dmxSettingsRsi.cfgAllowedCodecsAudio.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO);
 
+		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extMsId + "'";
+
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
@@ -175,33 +177,30 @@ public final class RtspConfigMuxedStreamSource {
 					ffStreamInfoAudio
 				);
 		} catch (FfmpegGenericException e) {
-			throw new ConfigInvalidException("Failed to read sub-stream infos " +
-					"for Muxed-Stream Source ID '" + extMsId + "': " + e.getMessage());
+			throw new ConfigInvalidException("Failed to read sub-stream infos " + errMsgSuffix + ": " + e.getMessage());
 		}
 
 		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			throw new ConfigInvalidException("No A/V sub-streams found " +
-					"for Muxed-Stream Source ID '" + extMsId + "'");
+			throw new ConfigInvalidException("No A/V sub-streams found " + errMsgSuffix);
 		}
 
 		if (ffStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
 			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffStreamInfoVideo.ffmpegCodec)) {
 				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
-						"for Muxed-Stream Source ID '" + extMsId + "'");
+						errMsgSuffix);
 			}
 		}
 		if (ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
 			if (ffStreamInfoAudio.channelCount < 1) {
-				throw new ConfigInvalidException("Audio sub-stream has no channels " +
-						"for Muxed-Stream Source ID '" + extMsId + "'");
+				throw new ConfigInvalidException("Audio sub-stream has no channels " + errMsgSuffix);
 			}
-			if (ffStreamInfoAudio.channelCount > 10) {
-				throw new ConfigInvalidException("Audio sub-stream with more than 10 channels " +
-						"for Muxed-Stream Source ID '" + extMsId + "'");
+			if (ffStreamInfoAudio.channelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
+				throw new ConfigInvalidException("Audio sub-stream with more than " + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
+						" channels " + errMsgSuffix);
 			}
 			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffStreamInfoAudio.ffmpegCodec)) {
 				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
-						"for Muxed-Stream Source ID '" + extMsId + "'");
+						errMsgSuffix);
 			}
 		}
 	}

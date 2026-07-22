@@ -9,6 +9,7 @@ import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFileBase {
 
@@ -46,7 +47,7 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 
 		//
 		final String errMsgPrefix = getClass().getSimpleName() + ".ctor(): ";
-		if (channels < 1 || channels > 10) {
+		if (channels < 1 || channels > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
 			throw new IllegalArgumentException(errMsgPrefix + "Invalid audio channel count: " + channels);
 		}
 		if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 32) {
