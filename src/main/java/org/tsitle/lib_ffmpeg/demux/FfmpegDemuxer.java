@@ -38,6 +38,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	private static final long FPS_MEASURE_INTERVAL_MS = 10_000L;
 
+	/** Samples per frame for AC-3 audio */
+	private static final int AUDIO_SAMPLES_PER_FRAME_AC3 = 1536;
+
 	private final @Nullable LogMsgInterface logMsgInterface;
 	private final @NonNull String inputFilePath;
 	private final @NonNull FfmpegDmxSettingsInternal dmxSettings;
@@ -415,9 +418,16 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioStreamInfoAudio.channelCount = st.codecpar().ch_layout().nb_channels();
 		ioStreamInfoAudio.bitRate = st.codecpar().bit_rate();
 		ioStreamInfoAudio.bitsPerCodedSample = st.codecpar().bits_per_coded_sample();
+		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AC3) {
+			ioStreamInfoAudio.samplesPerFrame = AUDIO_SAMPLES_PER_FRAME_AC3;
+		} else {
+			ioStreamInfoAudio.samplesPerFrame = st.codecpar().frame_size();
+		}
+		if (ioStreamInfoAudio.samplesPerFrame < 1) {
+			ioStreamInfoAudio.samplesPerFrame = -1;
+		}
 		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AAC &&
 				st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
-			ioStreamInfoAudio.aacSamplesPerFrame = st.codecpar().frame_size();
 			try (BytePointer tmpBp = st.codecpar().extradata()) {
 				int extradataSize = st.codecpar().extradata_size();
 				byte[] ascBytes = new byte[extradataSize];

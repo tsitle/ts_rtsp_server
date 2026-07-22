@@ -9,7 +9,8 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 	public int channelCount;
 	/** works for PCM, doesn't work for Opus, sometimes works for AC3 and AAC */
 	public int bitsPerCodedSample;
-	public int aacSamplesPerFrame;
+	/** works for PCM and AC3, doesn't work for E-AC-3 or Opus */
+	public int samplesPerFrame;
 	public @NonNull String aacAudioSpecificConfigHex;
 
 	public FfmpegStreamInfoAudio() {
@@ -22,7 +23,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 		sampleRate = SampleRateEnum.UNKNOWN;
 		channelCount = -1;
 		bitsPerCodedSample = -1;
-		aacSamplesPerFrame = -1;
+		samplesPerFrame = -1;
 		aacAudioSpecificConfigHex = "";
 	}
 
@@ -35,7 +36,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 		sampleRate = other.sampleRate;
 		channelCount = other.channelCount;
 		bitsPerCodedSample = other.bitsPerCodedSample;
-		aacSamplesPerFrame = other.aacSamplesPerFrame;
+		samplesPerFrame = other.samplesPerFrame;
 		aacAudioSpecificConfigHex = other.aacAudioSpecificConfigHex;
 	}
 
