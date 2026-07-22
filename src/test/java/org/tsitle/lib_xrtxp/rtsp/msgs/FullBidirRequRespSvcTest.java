@@ -107,8 +107,8 @@ public class FullBidirRequRespSvcTest {
 						URI.create("file:///dummy-file-video"),
 						(byte)-1,
 						SampleRateEnum.UNKNOWN,
-						false,
 						-1,
+						false,
 						"",
 						FrameRateEnum.FPS_15_0
 					);
@@ -120,8 +120,8 @@ public class FullBidirRequRespSvcTest {
 						URI.create("file:///dummy-file-audio"),
 						(byte)2,
 						SampleRateEnum.SR_044100,
-						false,
 						-1,
+						false,
 						"",
 						FrameRateEnum.UNKNOWN
 					);
@@ -130,9 +130,15 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		@Override
-		public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+		public double computeElementaryStreamSource_virtualFps(@NonNull RtspProtoIdEsSource idEsSource)
 				throws RtspProtoIdEsSourceNotFoundException {
-			throw new RtspProtoIdEsSourceNotFoundException("getStreamSourceRtpAudioSamplesPerFrame not implemented");
+			throw new RtspProtoIdEsSourceNotFoundException("");
+		}
+
+		@Override
+		public int getElementaryStreamSource_samplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
 	}
 

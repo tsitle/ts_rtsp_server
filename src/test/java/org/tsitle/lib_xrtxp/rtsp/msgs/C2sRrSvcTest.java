@@ -77,7 +77,13 @@ public class C2sRrSvcTest {
 		}
 
 		@Override
-		public int getElementaryStreamSourceRtpAudioSamplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource, double videoFps)
+		public double computeElementaryStreamSource_virtualFps(@NonNull RtspProtoIdEsSource idEsSource)
+				throws RtspProtoIdEsSourceNotFoundException {
+			throw new RtspProtoIdEsSourceNotFoundException("");
+		}
+
+		@Override
+		public int getElementaryStreamSource_samplesPerFrame(@NonNull RtspProtoIdEsSource idEsSource)
 				throws RtspProtoIdEsSourceNotFoundException {
 			throw new RtspProtoIdEsSourceNotFoundException("");
 		}
