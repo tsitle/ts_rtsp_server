@@ -41,6 +41,8 @@ public enum MqPacketCodec {
 
 	public boolean isVideo() { return (this == MJPEG || this == H264 || this == H265); }
 
+	public boolean isAudio() { return (isPcmAudio() || this == AACLC || this == AC3); }
+
 	public boolean isPcmAudio() { return (this == PCMA || this == PCMU || this == LPCM08U || this == LPCM16S); }
 
 	public @NonNull RtpPacketType convertToRtpPacketType(

@@ -84,7 +84,6 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		}
 	}
 
-	@SuppressWarnings("DanglingJavadoc")
 	public void writeMsgAvToMq(@NonNull MqPacketAv packet) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
 
@@ -92,12 +91,14 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 			throw new IllegalStateException(FNC_NAME + ": MQ socket not initialized");
 		}
 
+		// --------------------------------------------
 		// write the header to the Message Queue
-		/// Header Marker
+
+		// Header Marker
 		writeFieldToMqBinData(FNC_NAME, cacheHeaderMarkerWr, ZMQ.SNDMORE);
-		/// Header Message Nr
+		// Header Message Nr
 		writeFieldToMqUint64(FNC_NAME, packet.msgNr(), ZMQ.SNDMORE);
-		///
+		//
 		writeFieldToMqBool(FNC_NAME, packet.codec().isVideo(), ZMQ.SNDMORE);
 		writeFieldToMqString127(FNC_NAME, packet.codec().getCodecName(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
@@ -118,10 +119,12 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		} else {
 			writeFieldToMqUint32(FNC_NAME, packet.mdAudioSamplerate().getSrHz(), ZMQ.SNDMORE);
 			writeFieldToMqUint08(FNC_NAME, packet.mdAudioChannelCount(), ZMQ.SNDMORE);
+			writeFieldToMqUint32(FNC_NAME, packet.mdAudioSamplesPerFrame(), ZMQ.SNDMORE);
 		}
 		writeFieldToMqUint08(FNC_NAME, packet.mdPayloadCRC8(), ZMQ.SNDMORE);
 		writeFieldToMqUint32(FNC_NAME, packet.payloadDataPtr().getUsed(), ZMQ.SNDMORE);
 
+		// --------------------------------------------
 		// write the payload data to the Message Queue
 		writeFieldToMqBinData(FNC_NAME, packet.payloadDataPtr(), ZMQ.DONTWAIT);
 	}
@@ -188,6 +191,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		final int tmpMdVideoBitrate = (tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
 		final int tmpMdAudioSamplerate = (! tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
 		final byte tmpMdAudioChannelCount = (! tmpIsVideo ? decodeFieldUint08(FNC_NAME, frames, frameIx++) : 0);  // UI08
+		final int tmpMdAudioSpf = (! tmpIsVideo ? decodeFieldUint32(FNC_NAME, frames, frameIx++) : 0);  // UI32
 		final byte tmpMdPayloadCRC8 = decodeFieldUint08(FNC_NAME, frames, frameIx++);  // UI08
 		final int tmpBinDataLen = decodeFieldUint32(FNC_NAME, frames, frameIx++);  // UI32
 
@@ -205,6 +209,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				tmpMdVideoBitrate,
 				SampleRateEnum.of(tmpMdAudioSamplerate),
 				tmpMdAudioChannelCount,
+				tmpMdAudioSpf,
 				tmpMdPayloadCRC8,
 				payloadDataPtr
 			);

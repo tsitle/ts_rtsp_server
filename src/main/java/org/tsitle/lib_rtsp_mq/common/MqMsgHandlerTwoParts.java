@@ -164,6 +164,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		} else {
 			tempBb.putInt(packet.mdAudioSamplerate().getSrHz());
 			tempBb.put(packet.mdAudioChannelCount());
+			tempBb.putInt(packet.mdAudioSamplesPerFrame());
 		}
 		tempBb.put(packet.mdPayloadCRC8());
 		tempBb.putInt(packet.payloadDataPtr().getUsed());
@@ -249,6 +250,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			int tmpMdVideoBitrate = (tmpIsVideo ? tempBb.getInt() : 0);  // UI32
 			int tmpMdAudioSamplerate = (! tmpIsVideo ? tempBb.getInt() : 0);  // UI32
 			byte tmpMdAudioChannelCount = (! tmpIsVideo ? tempBb.get() : 0);  // UI08
+			int tmpMdAudioSpf = (! tmpIsVideo ? tempBb.getInt() : 0);  // UI32
 			byte tmpMdPayloadCRC8 = tempBb.get();  // UI08
 			payloadDataSize = tempBb.getInt();  // UI32
 
@@ -264,6 +266,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 					tmpMdVideoBitrate,
 					SampleRateEnum.of(tmpMdAudioSamplerate),
 					tmpMdAudioChannelCount,
+					tmpMdAudioSpf,
 					tmpMdPayloadCRC8,
 					payloadDataPtr
 				);

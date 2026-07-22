@@ -19,6 +19,7 @@ import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
  * @param mdVideoBitrate Metadata: bitrate (video only)
  * @param mdAudioSamplerate Metadata: audio samplerate (audio only)
  * @param mdAudioChannelCount Metadata: audio channel count (audio only)
+ * @param mdAudioSamplesPerFrame Metadata: audio samples per frame (audio only)
  * @param mdPayloadCRC8 Metadata: CRC8 checksum of the payload
  * @param payloadDataPtr Pointer to the payload data buffer
  */
@@ -34,6 +35,7 @@ public record MqPacketAv(
 			int mdVideoBitrate,
 			@NonNull SampleRateEnum mdAudioSamplerate,
 			byte mdAudioChannelCount,
+			int mdAudioSamplesPerFrame,
 			byte mdPayloadCRC8,
 			@NonNull BufferExt payloadDataPtr
 		) {
@@ -55,6 +57,7 @@ public record MqPacketAv(
 				(codec.isVideo() ? ", mdVideoBitrate=" + Integer.toUnsignedString(mdVideoBitrate) : "") +
 				(! codec.isVideo() ? ", mdAudioSamplerate=" + mdAudioSamplerate.getSrHz() : "") +
 				(! codec.isVideo() ? ", mdAudioChannelCount=" + Integer.toUnsignedString(mdAudioChannelCount) : "") +
+				(! codec.isVideo() ? ", mdAudioSamplesPerFrame=" + Integer.toUnsignedString(mdAudioSamplesPerFrame) : "") +
 				", mdPayloadCRC8=" + String.format("0x%02X", mdPayloadCRC8) +
 				", payload.sz=" + payloadDataPtr.getUsed() +
 				"]";

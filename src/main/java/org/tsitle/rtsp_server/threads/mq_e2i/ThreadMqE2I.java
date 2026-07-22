@@ -151,33 +151,25 @@ public final class ThreadMqE2I extends RunnableBase {
 		if (cacheCodecSettings.codec == null || cacheCodecSettings.codec.ordinal() != packet.codec().ordinal()) {
 			// the codec should never actually change during a session - but we need to read it once
 			cacheCodecSettings.codec = packet.codec();
-			if (! packet.codec().isVideo()) {
+			if (packet.codec().isAudio()) {
 				/*
-				 * samplerate, channel count and samples per frame should never actually change during a session,
+				 * The Samplerate and Channel Count should never actually change during a session,
 				 * but we need to read them at least once
 				 */
 				cacheCodecSettings.audioSamplerate = packet.mdAudioSamplerate();
 				cacheCodecSettings.audioChannels = packet.mdAudioChannelCount();
-				if (cacheCodecSettings.codec.isPcmAudio()) {
-					int tmpBytesPerSample = switch (cacheCodecSettings.codec) {
-							case PCMA, PCMU, LPCM08U -> 1;
-							case LPCM16S -> 2;
-							default -> throw new RuntimeException(getClass().getSimpleName() + ".mainLoop(): " +
-									"Unsupported PCM audio codec: " + cacheCodecSettings.codec);
-						};
-					cacheCodecSettings.audioSamplesPerFrame =
-							(int)(((double)packet.payloadDataPtr().getUsed() / (double)cacheCodecSettings.audioChannels) /
-									(double)tmpBytesPerSample);
-				} else {
-					cacheCodecSettings.audioSamplesPerFrame = -1;  // @TODO
-				}
 			}
 			haveChanges = true;
 		}
 		if (packet.codec().isVideo() &&
 				(cacheCodecSettings.videoFps == null || cacheCodecSettings.videoFps != packet.mdVideoFps())) {
-			// the framerate can change during a session
+			// the Framerate can change during a session
 			cacheCodecSettings.videoFps = packet.mdVideoFps();
+			haveChanges = true;
+		} else if (packet.codec().isAudio() &&
+				(cacheCodecSettings.audioSamplesPerFrame == null ||
+						cacheCodecSettings.audioSamplesPerFrame != packet.mdAudioSamplesPerFrame())) {
+			cacheCodecSettings.audioSamplesPerFrame = packet.mdAudioSamplesPerFrame();
 			haveChanges = true;
 		}
 		if (haveChanges) {
