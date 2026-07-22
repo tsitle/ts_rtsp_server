@@ -6,6 +6,7 @@ import org.jspecify.annotations.NonNull;
 
 public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 
+	public int streamNumberVideo;
 	public @NonNull RationalNumber fps;
 	public @NonNull ImageDimensions imgDims;
 
@@ -16,6 +17,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 	public void reset() {
 		baseReset();
 
+		streamNumberVideo = -1;
 		fps = RationalNumber.ofEmpty();
 		imgDims = ImageDimensions.ofEmpty();
 	}
@@ -26,6 +28,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 		}
 		baseCopyFrom(other);
 
+		streamNumberVideo = other.streamNumberVideo;
 		fps = RationalNumber.of(other.fps);
 		imgDims = ImageDimensions.of(other.imgDims);
 	}

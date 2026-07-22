@@ -208,8 +208,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("unused")
-	public @NonNull FfmpegDmxStats getStatsPtr() {
-		return stats;
+	public @NonNull FfmpegDmxStats getStats() {
+		return stats.clone();
 	}
 
 	@SuppressWarnings("unused")
@@ -318,6 +318,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 							(! dmxSettings.cfgAllowOnlySpecificCodecsVideo || dmxSettings.cfgAllowedCodecsVideo.contains(tmpFfmpegCodec))) {
 						logDebug(FNC_NAME, String.format("found video track #v:%d [%s]", curStreamNumberVid, tmpCodecName));
 						inputStreamInfoVid.streamIx = i;
+						inputStreamInfoVid.streamNumberVideo = curStreamNumberVid;
 					} else {
 						logDebug(FNC_NAME,
 								String.format("(ignoring other video track #v:%d [%s])",
@@ -340,6 +341,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 							(! dmxSettings.cfgAllowOnlySpecificCodecsAudio || dmxSettings.cfgAllowedCodecsAudio.contains(tmpFfmpegCodec))) {
 						logDebug(FNC_NAME, String.format("found audio track #a:%d [%s]", curStreamNumberAud, tmpCodecName));
 						inputStreamInfoAud.streamIx = i;
+						inputStreamInfoAud.streamNumberAudio = curStreamNumberAud;
 					} else {
 						logDebug(FNC_NAME,
 								String.format("(ignoring other audio track #a:%d [%s])",
@@ -497,7 +499,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		boolean tmpStatsUpdated = statsUpdateCurrent();
 		if (recvDemuxerStatsInterface != null && tmpStatsUpdated) {
-			recvDemuxerStatsInterface.cbReceiveDemuxerStats(stats);
+			recvDemuxerStatsInterface.cbReceiveDemuxerStats(stats.clone());
 		}
 
 		// ---------------------------------------------------

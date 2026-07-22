@@ -4,6 +4,6 @@ import org.jspecify.annotations.NonNull;
 
 public interface FfmpegReceiveDemuxerStatsInterface {
 
-	void cbReceiveDemuxerStats(@NonNull FfmpegDmxStats statsPtr);
+	void cbReceiveDemuxerStats(@NonNull FfmpegDmxStats stats);
 
 }

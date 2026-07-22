@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 
 public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 
+	public int streamNumberAudio;
 	public @NonNull SampleRateEnum sampleRate;
 	public int channelCount;
 	/** works for PCM, doesn't work for Opus, sometimes works for AC3 and AAC */
@@ -20,6 +21,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 	public void reset() {
 		baseReset();
 
+		streamNumberAudio = -1;
 		sampleRate = SampleRateEnum.UNKNOWN;
 		channelCount = -1;
 		bitsPerCodedSample = -1;
@@ -33,6 +35,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 		}
 		baseCopyFrom(other);
 
+		streamNumberAudio = other.streamNumberAudio;
 		sampleRate = other.sampleRate;
 		channelCount = other.channelCount;
 		bitsPerCodedSample = other.bitsPerCodedSample;
