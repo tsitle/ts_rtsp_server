@@ -191,10 +191,14 @@ public final class RtspConfigMuxedStreamSource {
 			}
 		}
 		if (ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (ffStreamInfoAudio.ffmpegCodec.isPcmAudio() && ffStreamInfoAudio.channelCount > 2) {
-				throw new ConfigInvalidException("Audio sub-stream is PCM with more than 2 channels " +
+			if (ffStreamInfoAudio.channelCount < 1) {
+				throw new ConfigInvalidException("Audio sub-stream has no channels " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");
-			}  // @TODO
+			}
+			if (ffStreamInfoAudio.channelCount > 10) {
+				throw new ConfigInvalidException("Audio sub-stream with more than 10 channels " +
+						"for Muxed-Stream Source ID '" + extMsId + "'");
+			}
 			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffStreamInfoAudio.ffmpegCodec)) {
 				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
 						"for Muxed-Stream Source ID '" + extMsId + "'");

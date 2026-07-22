@@ -42,7 +42,7 @@ public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDem
 
 		//
 		final String errMsgPrefix = getClass().getSimpleName() + ".ctor(): ";
-		if (channels < 1 || channels > 2) {  // @TODO
+		if (channels < 1 || channels > 10) {
 			throw new IllegalArgumentException(errMsgPrefix + "Invalid audio channel count: " + channels);
 		}
 		if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 32) {

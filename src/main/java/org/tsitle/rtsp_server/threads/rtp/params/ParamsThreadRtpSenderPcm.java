@@ -74,8 +74,8 @@ public final class ParamsThreadRtpSenderPcm implements Cloneable {
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (audioChannelCount < 1 || audioChannelCount > 2) {  // @TODO
-			throw new IllegalArgumentException(errPrefix + "audioChannelCount must be 1 or 2");
+		if (audioChannelCount < 1 || audioChannelCount > 10) {
+			throw new IllegalArgumentException(errPrefix + "audioChannelCount must be >= 1 and <= 10");
 		}
 		if (audioBitsPerSample != 8 && audioBitsPerSample != 16) {
 			throw new IllegalArgumentException(errPrefix + "audioBitsPerSample must be 8 or 16");
