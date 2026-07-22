@@ -11,7 +11,9 @@ final class AdaptiveScheduler {
 	@SuppressWarnings("FieldCanBeLocal")
 	private final LogMsgInterface logMsgInterface;
 
-	private final double targetIntervalNs;
+	private double targetIntervalNs;
+	private boolean isWaitForNextFrameEnabled;
+
 	@SuppressWarnings("FieldCanBeLocal")
 	private long lastFrameTimeNs = 0;
 	private long nextFrameTimeNs = 0;
@@ -26,19 +28,31 @@ final class AdaptiveScheduler {
 			) {
 		this.logMsgInterface = logMsgInterface;
 
-		this.targetIntervalNs = 1_000_000_000.0 / fps;
+		setFps(fps);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public void setFps(double fps) {
+		this.targetIntervalNs = (fps >= 0.1 ? 1_000_000_000.0 / fps : -1.0);
+		this.isWaitForNextFrameEnabled = (fps >= 0.1);
+	}
 
 	public long getSendIntervalNs() {
 		return (long)targetIntervalNs;
 	}
 
+	public boolean getIsWaitForNextFrameEnabled() {
+		return isWaitForNextFrameEnabled;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void waitForNextFrame() {
+		if (! isWaitForNextFrameEnabled) {
+			return;
+		}
 		if (curFrameNr == 0) {
 			lastFrameTimeNs = System.nanoTime();
 			nextFrameTimeNs = (lastFrameTimeNs + (long)targetIntervalNs);
