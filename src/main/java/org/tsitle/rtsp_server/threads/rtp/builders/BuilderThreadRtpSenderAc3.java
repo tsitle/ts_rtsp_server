@@ -1,12 +1,12 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_ac3.ThreadRtpSenderAc3;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAc3;
 
@@ -32,7 +32,7 @@ public final class BuilderThreadRtpSenderAc3 {
 			validateAudioCommon();
 			threadParamsAc3.validate();
 
-			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderAc3<>(
 							AvStreamIncomingFromEsFile.class,

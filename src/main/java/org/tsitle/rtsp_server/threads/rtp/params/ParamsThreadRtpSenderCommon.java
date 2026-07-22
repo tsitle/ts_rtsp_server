@@ -6,10 +6,10 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
 
 import java.net.URI;
@@ -80,7 +80,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean isSetIsVideoThread;
 
 	/** Elementary-Stream Source Type */
-	private @Nullable RtspConfigEsSourceType esSourceType = null;
+	private @Nullable RtspProtoEsSourceType esSourceType = null;
 	private boolean isSetEsSourceType;
 
 	/** Video or audio frames per second */
@@ -134,8 +134,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetIsVideoThread = true;
 	}
 
-	public Optional<RtspConfigEsSourceType> getEsSourceType() { return Optional.ofNullable(esSourceType); }
-	public void setEsSourceType(@NonNull RtspConfigEsSourceType value) {
+	public Optional<RtspProtoEsSourceType> getEsSourceType() { return Optional.ofNullable(esSourceType); }
+	public void setEsSourceType(@NonNull RtspProtoEsSourceType value) {
 		this.esSourceType = value;
 		this.isSetEsSourceType = true;
 	}

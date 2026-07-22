@@ -1,10 +1,10 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
@@ -30,7 +30,7 @@ public final class BuilderThreadRtpSenderPcm {
 			validateAudioCommon();
 			threadParamsPcm.validate();
 
-			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderPcm<>(
 							AvStreamIncomingFromEsFile.class,

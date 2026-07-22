@@ -6,11 +6,11 @@ import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 
 import java.net.URI;
 import java.util.Optional;
@@ -56,7 +56,7 @@ public interface RtspProtoAvailableStreamsInterface {
 
 	record ElementaryStreamSourceInfo(
 			@NonNull RtpPacketType codec,
-			@NonNull RtspConfigEsSourceType esSourceType,
+			@NonNull RtspProtoEsSourceType esSourceType,
 			@NonNull URI inputUri,
 			byte audioChannelCount,
 			@NonNull SampleRateEnum audioSampleRate,

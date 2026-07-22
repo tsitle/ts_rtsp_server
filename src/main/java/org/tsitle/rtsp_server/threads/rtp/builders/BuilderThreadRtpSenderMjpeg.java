@@ -1,12 +1,12 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
@@ -32,7 +32,7 @@ public final class BuilderThreadRtpSenderMjpeg {
 			validateVideoCommon();
 			threadParamsMjpeg.validate();
 
-			RtspConfigEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
+			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
 			return switch (esSourceType) {
 					case ST_ES_FILE -> new ThreadRtpSenderMjpeg<>(
 							AvStreamIncomingFromEsFile.class,

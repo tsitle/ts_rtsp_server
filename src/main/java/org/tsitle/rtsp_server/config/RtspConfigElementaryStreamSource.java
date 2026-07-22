@@ -18,6 +18,7 @@ import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
@@ -279,25 +280,25 @@ public final class RtspConfigElementaryStreamSource {
 		return Optional.of(resObj);
 	}
 
-	public @NonNull RtspConfigEsSourceType getSourceType() {
+	public @NonNull RtspProtoEsSourceType getSourceType() {
 		final String FNC_NAME = getClass().getSimpleName() + ".getSourceType()";
 
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
-			return RtspConfigEsSourceType.ST_ES_FILE;
+			return RtspProtoEsSourceType.ST_ES_FILE;
 		}
 		if (mq != null) {
-			return RtspConfigEsSourceType.ST_ES_MQ;
+			return RtspProtoEsSourceType.ST_ES_MQ;
 		}
 		if (msSourceId != null && msSourceFfmpegStreamIx != null) {
-			return RtspConfigEsSourceType.ST_DEMUX_MS_FILE;
+			return RtspProtoEsSourceType.ST_DEMUX_MS_FILE;
 		}
 		throw new IllegalStateException(FNC_NAME + ": could not identify Source Type");
 	}
 
 	public synchronized @NonNull RtpPacketType getCodec() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			// the actual codec will be determined dynamically when reading from a MQ
 			return mqDynamicCodec;
 		}
@@ -307,7 +308,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull FrameRateEnum getVideoFps() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			// the actual FPS doesn't matter when reading from a MQ, but it will be determined dynamically when reading from a MQ
 			return mqDynamicVideoFps;
 		}
@@ -316,7 +317,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized @NonNull SampleRateEnum getAudioSamplerate() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			// the actual samplerate will be determined dynamically when reading from a MQ
 			return mqDynamicAudioSamplerateHz;
 		}
@@ -325,7 +326,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized byte getAudioChannelCount() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			// the actual channel count will be determined dynamically when reading from a MQ
 			return mqDynamicAudioChannelCount;
 		}
@@ -371,7 +372,7 @@ public final class RtspConfigElementaryStreamSource {
 	 */
 	public int getAudioSamplesPerFrame() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			// the actual number of samples per frame will be determined dynamically when reading from a MQ
 			return mqDynamicAudioSamplesPerFrame;
 		}
@@ -380,7 +381,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	public boolean getIsPcmAudioBigEndian() {
 		checkPostProcessed();
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_MQ) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
 			return true;  // when reading from a MQ, the audio data is expected to be big-endian
 		}
 		return internalIsPcmAudioBigEndian;
@@ -469,7 +470,7 @@ public final class RtspConfigElementaryStreamSource {
 		internalAudioChannelCount = (byte)(audioChannelCount == null ? -1 : audioChannelCount);
 		//noinspection ConstantValue
 		internalIsPcmAudioBigEndian = (isPcmAudioBigEndian != null && isPcmAudioBigEndian);
-		if (getSourceType() == RtspConfigEsSourceType.ST_ES_FILE) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_FILE) {
 			if (internalCodec == RtpPacketType.A_AAC) {
 				internalAudioSamplesPerFrame = aacSamplesPerFrame;
 			} else if (internalCodec == RtpPacketType.A_AC3) {
@@ -516,7 +517,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		// ----------------------------------------------------
 
-		if (getSourceType() != RtspConfigEsSourceType.ST_ES_FILE) {
+		if (getSourceType() != RtspProtoEsSourceType.ST_ES_FILE) {
 			return;
 		}
 		//noinspection ConstantValue

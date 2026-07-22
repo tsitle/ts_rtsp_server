@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
 import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
@@ -852,7 +853,7 @@ public final class RtspConfig {
 			RtspConfigElementaryStreamSource tmpSsObj = getElementaryStreamSourceObj(tmpSsId).orElseThrow();
 			tmpSsObj.validate(internalMapEsSourceIdIntToExt);
 			//
-			if (tmpSsObj.getSourceType() != RtspConfigEsSourceType.ST_ES_MQ || ! tmpSsObj.getEnabled()) {
+			if (tmpSsObj.getSourceType() != RtspProtoEsSourceType.ST_ES_MQ || ! tmpSsObj.getEnabled()) {
 				continue;
 			}
 			Optional<String> tmpCert = getMqServerSslCertificatePath(tmpSsObj.getInputUri());

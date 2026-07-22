@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
@@ -13,7 +14,6 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.config.RtspConfigEsSourceType;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.ThreadDataProvDemux;
@@ -206,13 +206,13 @@ public final class RtspChildThreadMng {
 				RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo tmpAvSsi =
 						availableStreamsInterface.getElementaryStreamSourceInfo(tmpIdEs);
 				//
-				if (tmpAvSsi.esSourceType() == RtspConfigEsSourceType.ST_ES_MQ && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
+				if (tmpAvSsi.esSourceType() == RtspProtoEsSourceType.ST_ES_MQ && tmpAvSsi.codec() == RtpPacketType.UNKNOWN) {
 					logError(FNC_NAME, "ss='" + tmpIdSs.getIdStr().orElse("-unset-") + "': " +
 							"Source is a message queue, but codec is not set");
 					continue;
 				}
 				//
-				if (tmpAvSsi.esSourceType() == RtspConfigEsSourceType.ST_DEMUX_MS_FILE && childThreadDemux == null) {
+				if (tmpAvSsi.esSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE && childThreadDemux == null) {
 					childThreadDemux = new ThreadDataProvDemux(
 							logMsgInterface,
 							tmpAvSsi.inputUri()

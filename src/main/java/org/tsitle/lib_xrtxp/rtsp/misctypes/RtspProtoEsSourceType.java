@@ -1,6 +1,6 @@
-package org.tsitle.rtsp_server.config;
+package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
-public enum RtspConfigEsSourceType {
+public enum RtspProtoEsSourceType {
 
 	/** Elementary-Stream from a file */
 	ST_ES_FILE,
