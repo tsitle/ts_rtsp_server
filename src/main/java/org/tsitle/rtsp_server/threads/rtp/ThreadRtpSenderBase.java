@@ -46,6 +46,8 @@ public abstract class ThreadRtpSenderBase<
 			TDP extends ThreadDataProvBase<I, FGAV>
 		> extends ThreadPausableBase {
 
+	private record Sf_sfasf_Result(boolean resB, boolean isLastPktOfFrame) { }
+
 	/** Interval for sending Sender Reports (in milliseconds) */
 	private static final int SEND_SR_INTERVAL_MS = 500;
 
@@ -650,75 +652,110 @@ public abstract class ThreadRtpSenderBase<
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFrame()";
 
 		// acquire the next frame from the video stream
-		long tmpTsNs = System.nanoTime();
-		final FrameData frameData = cbFrameDataSupplier();
-		if (frameData.haveErrorEos) {
-			logDebug(FNC_NAME, "haveErrorEos: " + frameData.errorMsg);
-			throw new InputStreamEosException();
-		}
-		if (frameData.haveErrorOther) {
-			throw new RtpFrameDataAcquException(frameData.errorMsg);
-		}
-		if (frameData.rtpPayloadDataViewPtr == null) {
-			throw new IllegalStateException(FNC_NAME + ": frameData.rtpPayloadDataViewPtr == null");
-		}
-		//
-		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
-			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
-			if (tmpDeltaFdsNs > 5_000_000L) {
-				logWarn(FNC_NAME, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
-			}
-		}
+		final FrameData frameData = sendFrame_acquireFd(FNC_NAME);
 
 		// only sleep if this is the first packet of the frame/AU
 		boolean tmpStoreIs1stPktOfFrame = isFirstPktOfFrame;
 		if (isFirstPktOfFrame) {
-			/*
-			 * E.g., for E-AC-3, the frame duration is not constant, so we need to adjust the sleep time
-			 * and the [rtpTicksPerFrame]. The latter is done directly in e.g., [ThreadRtpSenderEac3].
-			 */
-			if (nextFpsForAdaptiveScheduler > 0.0) {
-				adaptiveScheduler.setFps(nextFpsForAdaptiveScheduler);
-				nextFpsForAdaptiveScheduler = -1.0;
-			}
-			//
-			adaptiveScheduler.waitForNextFrame();
-			//
-			TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-			if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
-				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
-			} else if (frameData.stTimestamp.isEmpty()) {
-				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));
-			} else {
-				rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(frameData.stTimestamp, true));
-			}
-			// update SenderInfo NTP and RTP timestamp
-			siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(tmpCurTsNow));
-			siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
-			//
-			isFirstPktOfFrame = false;
+			sendFrame_actionBeforeFirstPktOfFrame(frameData);
 		}
 
 		//
 		debugStreamOffset += frameData.totalFrameSize;
 
 		//
-		if (frameData.totalFrameSize > largestFrame) {
-			largestFrame = frameData.totalFrameSize;
-			if (largestFrame > 250_000) {
-				logWarn(FNC_NAME, (rtpPacketType.isVideo() ? "image" : "audio") +
-						" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
-			}
+		sendFrame_updateStatsLargestFrame(FNC_NAME, frameData);
+
+		//
+		Sf_sfasf_Result tmpRes = sendFrame_splitFrameAndSendFragments(frameData, tmpStoreIs1stPktOfFrame);
+		if (! tmpRes.resB) {
+			return false;
 		}
 
 		//
+		if (tmpRes.isLastPktOfFrame || rtpPacketType.isAudio()) {
+			sendFrame_actionAfterLastPktOfFrame(FNC_NAME);
+		}
+
+		return true;
+	}
+
+	private @NonNull FrameData sendFrame_acquireFd(@NonNull String fncName)
+			throws RtpFrameDataAcquException, InputStreamEosException {
+		long tmpTsNs = System.nanoTime();
+		final FrameData frameData = cbFrameDataSupplier();
+		if (frameData.haveErrorEos) {
+			logDebug(fncName, "haveErrorEos: " + frameData.errorMsg);
+			throw new InputStreamEosException();
+		}
+		if (frameData.haveErrorOther) {
+			throw new RtpFrameDataAcquException(frameData.errorMsg);
+		}
+		if (frameData.rtpPayloadDataViewPtr == null) {
+			throw new IllegalStateException(fncName + ": frameData.rtpPayloadDataViewPtr == null");
+		}
+		//
+		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
+			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
+			if (tmpDeltaFdsNs > 5_000_000L) {
+				logWarn(fncName, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));
+			}
+		}
+		return frameData;
+	}
+
+	private void sendFrame_actionBeforeFirstPktOfFrame(final @NonNull FrameData frameData) {
+		/*
+		 * E.g., for E-AC-3, the frame duration is not constant, so we need to adjust the sleep time
+		 * and the [rtpTicksPerFrame]. The latter is done directly in e.g., [ThreadRtpSenderEac3].
+		 */
+		if (nextFpsForAdaptiveScheduler > 0.0) {
+			adaptiveScheduler.setFps(nextFpsForAdaptiveScheduler);
+			nextFpsForAdaptiveScheduler = -1.0;
+		}
+		//
+		adaptiveScheduler.waitForNextFrame();
+		//
+		TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
+		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
+			rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
+		} else if (frameData.stTimestamp.isEmpty()) {
+			rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));
+		} else {
+			rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(frameData.stTimestamp, true));
+		}
+		// update SenderInfo NTP and RTP timestamp
+		siStats.timestampNtpWallclock.copyFrom(getNtpTimestamp(tmpCurTsNow));
+		siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
+		//
+		isFirstPktOfFrame = false;
+	}
+
+	private void sendFrame_updateStatsLargestFrame(@NonNull String fncName, final @NonNull FrameData frameData) {
+		if (frameData.totalFrameSize <= largestFrame) {
+			return;
+		}
+		largestFrame = frameData.totalFrameSize;
+		if (largestFrame > 250_000) {
+			logWarn(fncName, (rtpPacketType.isVideo() ? "image" : "audio") +
+					" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
+		}
+	}
+
+	private @NonNull Sf_sfasf_Result sendFrame_splitFrameAndSendFragments(final @NonNull FrameData frameData, boolean tmpStoreIs1stPktOfFrame)
+			throws TcpSocketIoException, UdpSocketIoException {
+		if (frameData.rtpPayloadDataViewPtr == null) {
+			throw new IllegalStateException(getClass().getSimpleName() + ".sendFrame_splitFrameAndSendFragments(): " +
+					"frameData.rtpPayloadDataViewPtr == null");
+		}
+
 		int sentTotalPktSize = 0;
 		int curPktIndex = 0;
 		int estTotalPktCnt = Math.max(1, 1 + (int)(frameData.totalAuRtpPayloadSz / (UDP_PACKET_LEN - udpMaxPacketLenDelta)));
 		boolean isLastPktOfFrame = false;
 		while (! doStop.get() && sentTotalPktSize < frameData.rtpPayloadDataViewPtr.getLength()) {
 			final int curPktSize = Math.min(
-					UDP_PACKET_LEN - udpMaxPacketLenDelta,
+					cbFragmentSizeAdjust(UDP_PACKET_LEN - udpMaxPacketLenDelta),
 					frameData.rtpPayloadDataViewPtr.getLength() - sentTotalPktSize
 				);
 			final boolean isLastPktOfPayload = (sentTotalPktSize + curPktSize == frameData.rtpPayloadDataViewPtr.getLength());
@@ -736,7 +773,7 @@ public abstract class ThreadRtpSenderBase<
 					isLastPktOfFrame
 				);
 			if (! tmpResB) {
-				return false;
+				return new Sf_sfasf_Result(false, false);
 			}
 
 			sentTotalPktSize += curPktSize;
@@ -747,19 +784,18 @@ public abstract class ThreadRtpSenderBase<
 			incrRtpSequNr();
 		}
 
-		//
-		if (isLastPktOfFrame || rtpPacketType.isAudio()) {
-			isFirstPktOfFrame = true;
-			isMainLoopStateA = false;
-			//
-			long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(getNtpTimestamp());
-			if (adaptiveScheduler.getIsWaitForNextFrameEnabled() &&
-					tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
-				logWarn(FNC_NAME, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
-			}
-		}
+		return new Sf_sfasf_Result(true, isLastPktOfFrame);
+	}
 
-		return true;
+	private void sendFrame_actionAfterLastPktOfFrame(@NonNull String fncName) {
+		isFirstPktOfFrame = true;
+		isMainLoopStateA = false;
+		//
+		long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(getNtpTimestamp());
+		if (adaptiveScheduler.getIsWaitForNextFrameEnabled() &&
+				tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
+			logWarn(fncName, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+		}
 	}
 
 	private boolean sendSinglePacket(
