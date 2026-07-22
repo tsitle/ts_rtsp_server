@@ -117,6 +117,11 @@ public final class ThreadRtpSenderAac<
 	}
 
 	@Override
+	protected int cbFragmentSizeAdjust(int fragmentSize) {
+		return defaultFragmentSizeAdjust(fragmentSize);
+	}
+
+	@Override
 	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		/*
 		 * Only set the marker bit to 1 if this is the last fragment of the AAC frame.

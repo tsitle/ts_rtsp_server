@@ -176,6 +176,11 @@ public abstract class ThreadRtpSenderH26xBase<
 	}
 
 	@Override
+	protected int cbFragmentSizeAdjust(int fragmentSize) {
+		return defaultFragmentSizeAdjust(fragmentSize);
+	}
+
+	@Override
 	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		return (globalAuLastOutputNudWasEndOfAu && isLastFragment);
 	}

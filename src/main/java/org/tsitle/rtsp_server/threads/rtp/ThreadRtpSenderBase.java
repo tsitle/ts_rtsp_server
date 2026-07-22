@@ -428,6 +428,12 @@ public abstract class ThreadRtpSenderBase<
 		return cacheFrameData;
 	}
 
+	protected abstract int cbFragmentSizeAdjust(int fragmentSize);
+
+	protected int defaultFragmentSizeAdjust(int fragmentSize) {
+		return fragmentSize;
+	}
+
 	protected abstract @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment);
 
 	protected void prepareRtpPacketDataForFragment(@NonNull FrameFragmentData curFragmentData) {

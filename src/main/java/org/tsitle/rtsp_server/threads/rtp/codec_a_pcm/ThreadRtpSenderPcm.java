@@ -140,6 +140,32 @@ public final class ThreadRtpSenderPcm<
 	}
 
 	@Override
+	protected int cbFragmentSizeAdjust(int fragmentSize) {
+		if (curFramePcmInfo.samplesPerChannelInAudioData < 1) {
+			return fragmentSize;
+		}
+		int headerSz = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + RtpPacketPcm.INNER_HEADER_SIZE;
+		int fragSzForSamples = fragmentSize - headerSz;
+		if (fragSzForSamples < 1) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".cbFragmentSizeAdjust(): " +
+					"fragmentSize <= headerSz");
+		}
+
+		/*
+		 * We need to ensure that all fragmented RTP packets always contain a complete set of samples per channel.
+		 */
+		int bytesPerSampleAndChannels = (curFramePcmInfo.bitsPerSample / 8) * curFramePcmInfo.channels;
+		if (fragSzForSamples < bytesPerSampleAndChannels) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".cbFragmentSizeAdjust(): " +
+					"fragmentSize < headerSz+samplesForAllChannels");
+		}
+		int remainder = (fragSzForSamples % bytesPerSampleAndChannels);
+
+		// cut off any incomplete samples
+		return fragmentSize - remainder;
+	}
+
+	@Override
 	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
 		/*
 		 * For audio (without noise suppression) the marker bit is always set to 0.
