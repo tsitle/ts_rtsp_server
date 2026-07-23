@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.logging;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 
@@ -9,7 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Queue;
@@ -20,8 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class RtxpLogger extends ThreadBase {
 
 	private record LogEntry(
-			Instant timestampInstant,
-			long timestampNanos,
+			@NonNull TimestampEpochNs timestamp,
 			@NonNull RtxpLogLevel level,
 			@NonNull String threadId,
 			@NonNull String msg
@@ -188,8 +187,7 @@ public final class RtxpLogger extends ThreadBase {
 
 	private @NonNull LogEntry createLogEntry(@NonNull RtxpLogLevel level, @NonNull String threadId, @NonNull String msg) {
 		return new LogEntry(
-				Instant.now(),
-				System.nanoTime(),
+				TimestampEpochNs.ofNow(),
 				level,
 				threadId,
 				msg
@@ -207,10 +205,10 @@ public final class RtxpLogger extends ThreadBase {
 				case ERROR -> "ERROR";
 			};
 		final String outpStr = String.format(
-				"%s: |%-30s|%14d| <%s> %s%n",
+				"%s: |%-24s|%14d| <%s> %s%n",
 				prefix,
-				entry.timestampInstant,  // 2026-03-27T19:54:50.975917801Z
-				entry.timestampNanos,    // 45032236077403
+				entry.timestamp.toIso8601StyleString(),  // 2026-03-27T19:54:50.975Z
+				entry.timestamp.getEpochNsUnsigned64bit().orElseThrow(),  // 45032236077403
 				entry.threadId,
 				entry.msg
 			);
