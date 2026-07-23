@@ -7,10 +7,7 @@ import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.*;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
@@ -794,7 +791,8 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_pause() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+	void structuredRequest_pause()
+			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException, RtspProtoInvalidPbRangeException {
 		RtspProtoMessageType msgTp = RtspProtoMessageType.PAUSE;
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.INIT, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.READY, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
@@ -804,7 +802,8 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_play() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+	void structuredRequest_play()
+			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException, RtspProtoInvalidPbRangeException {
 		RtspProtoMessageType msgTp = RtspProtoMessageType.PLAY;
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.INIT, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.READY, RtspProtoStatusCode.OK);
@@ -938,7 +937,8 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Test
-	void structuredRequest_teardown() throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+	void structuredRequest_teardown()
+			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException, RtspProtoInvalidPbRangeException {
 		RtspProtoMessageType msgTp = RtspProtoMessageType.TEARDOWN;
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.INIT, RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE);
 		test_pause_play_teardown(msgTp, RtspProtoSessionState.READY, RtspProtoStatusCode.OK);
@@ -1009,7 +1009,7 @@ class RtspProtoHighRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	void test_pause_play_teardown(RtspProtoMessageType msgTp, RtspProtoSessionState sessionState, RtspProtoStatusCode expStatCode)
-			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException {
+			throws RtspProtoNumberRangeException, RtspProtoSessionInfoException, RtspProtoInvalidPbRangeException {
 		final String expRequUrl = "rtsp://some.com/existing_stream";
 		final RtspProtocolVersion expProtoVer = RtspProtocolVersion.RTSP_V1;
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
@@ -1035,7 +1035,7 @@ class RtspProtoHighRequestConsumerTest {
 		}
 		if (msgTp == RtspProtoMessageType.PLAY) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.RANGE);
-			hdEntry.hdValRange.rangeStr = expPlayRange;
+			hdEntry.hdValRange.range.copyFrom(RtspProtoPlaybackRange.parseString(expPlayRange));
 			msgStructured.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 
@@ -1059,7 +1059,7 @@ class RtspProtoHighRequestConsumerTest {
 			assertEquals("existing_stream", requBasics.rscUrl.idInputSource.getIdStr().orElse("-unset-"));
 
 			if (msgTp == RtspProtoMessageType.PLAY) {
-				assertEquals(expPlayRange, outputDataRequ.getPlaybackRangeValue());
+				assertEquals(expPlayRange, outputDataRequ.getPlaybackRangeValue().toNptString_secs());
 			}
 		}
 	}

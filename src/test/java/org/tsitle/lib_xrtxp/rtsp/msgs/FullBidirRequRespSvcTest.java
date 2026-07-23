@@ -1511,7 +1511,7 @@ public class FullBidirRequRespSvcTest {
 		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
-		assertEquals("npt=0.000-", srvPtrSessionInfo.ptr().getClientPlaybackRangeValue().orElseThrow());
+		assertEquals("npt=0-", srvPtrSessionInfo.ptr().getClientPlaybackRangeValue().orElseThrow().toNptString_secs());
 
 		// ----------------------------------------------------
 
@@ -1524,7 +1524,7 @@ public class FullBidirRequRespSvcTest {
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
-		assertEquals("npt=0.000-", cliPtrSiForCt.ptr().getServerPlaybackRangeValue().orElseThrow());
+		assertEquals("npt=0-", cliPtrSiForCt.ptr().getServerPlaybackRangeValue().orElseThrow().toNptString_secs());
 
 		assertEquals(2, cliPtrSiForCt.ptr().getDescrSetupInfoSubStreamIds().size());
 
