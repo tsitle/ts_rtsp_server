@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -47,6 +48,8 @@ public final class BuilderThreadRtcp {
 		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
 		public Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
 		public Builder cryptoKmdOutboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
+
+		public Builder rtcpReceivedByeInterface(@NonNull RtcpReceivedByeInterface v) { this.threadParams.setRtcpReceivedByeInterface(v); return this; }
 
 		//
 		public ThreadRtcpSendRecv build() {

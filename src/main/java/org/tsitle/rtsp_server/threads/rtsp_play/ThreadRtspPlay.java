@@ -15,6 +15,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
+import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class ThreadRtspPlay extends RunnableBase
 		implements RtspChildThreadsCbNotifyThreadReadyInterface, RtspChildThreadsCbRtcpFromRtpInterface,
-				RtspChildThreadsGetRunning {
+				RtspChildThreadsGetRunning, RtcpReceivedByeInterface {
 
 	private final @NonNull String threadName;
 
@@ -90,6 +91,7 @@ public final class ThreadRtspPlay extends RunnableBase
 				setupInfoPerSsMap,
 				this,
 				rctcbRtpTcp,
+				this,
 				this,
 				availableStreamsInterface,
 				globalSessionInfoInterface
@@ -154,36 +156,38 @@ public final class ThreadRtspPlay extends RunnableBase
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public synchronized void cbSendRtcpPacketsFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
-		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpPackets()";
+	public synchronized void cbSendRtcpSrPacketFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
+		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpSrPacketFromRtp()";
 
-		ChildThreadsForOneStream ctfosToUse = null;
-		if (cacheChildThreadsPerSsrcMap.containsKey(ssrcId)) {
-			ctfosToUse = cacheChildThreadsPerSsrcMap.get(ssrcId);
-		} else {
-			for (RtspProtoRscUrl tmpRscUrl : sessionInfoPtr.ptr().getDescrSetupInfoRscUrls()) {
-				if (! ctfosMapContainsKey(tmpRscUrl.idSubStream)) {
-					continue;
-				}
-				try {
-					if (! sessionInfoPtr.ptr().getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
-						continue;
-					}
-				} catch (RtspProtoSessionInfoException e) {
-					continue;
-				}
-				ctfosToUse = getCtfosMapValue(tmpRscUrl.idSubStream);
-				cacheChildThreadsPerSsrcMap.put(ssrcId.clone(), ctfosToUse);
-				break;
-			}
-		}
-		if (ctfosToUse == null) {
-			throw new IllegalStateException(FNC_NAME + ": No stream found for ssrcId: " + ssrcId);
-		}
+		ChildThreadsForOneStream ctfosToUse = findCtfosBySsrc(FNC_NAME, ssrcId);
 		if (ctfosToUse.rtcpThreadSendRecv != null &&
 				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
 				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
 			ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
+		}
+	}
+
+	@Override
+	public synchronized void cbSendRtcpByePacketFromRtp(@NonNull RtspProtoIdXsrc ssrcId) {
+		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpByePacketFromRtp()";
+
+		ChildThreadsForOneStream ctfosToUse = findCtfosBySsrc(FNC_NAME, ssrcId);
+		if (ctfosToUse.rtcpThreadSendRecv != null &&
+				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
+				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
+			ctfosToUse.rtcpThreadSendRecv.appendByePacketToSendQueue();
+		}
+	}
+
+	@Override
+	public synchronized void cbRtcpReceivedBye(@NonNull RtspProtoIdXsrc ssrcId) {
+		final String FNC_NAME = getClass().getSimpleName() + ".cbRtcpReceivedBye()";
+
+		ChildThreadsForOneStream ctfosToUse = findCtfosBySsrc(FNC_NAME, ssrcId);
+		if (ctfosToUse.rtpThreadSender != null &&
+				! ctfosToUse.rtpThreadSender.hasBeenRequestedToStop() &&
+				ctfosToUse.rtpThreadSender.isRunning()) {
+			ctfosToUse.rtpThreadSender.stopAsap();
 		}
 	}
 
@@ -245,12 +249,40 @@ public final class ThreadRtspPlay extends RunnableBase
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean ctfosMapContainsKey(@NonNull RtspProtoIdSubStream idSubStream) {
 		return rtspChildThreadMng.ctfosMapContainsKey(idSubStream);
 	}
 
 	private @NonNull ChildThreadsForOneStream getCtfosMapValue(@NonNull RtspProtoIdSubStream idSubStream) {
 		return rtspChildThreadMng.getCtfosMapValue(idSubStream);
+	}
+
+	private @NonNull ChildThreadsForOneStream findCtfosBySsrc(@NonNull String fncName, @NonNull RtspProtoIdXsrc ssrcId) {
+		ChildThreadsForOneStream ctfosToUse = null;
+		if (cacheChildThreadsPerSsrcMap.containsKey(ssrcId)) {
+			ctfosToUse = cacheChildThreadsPerSsrcMap.get(ssrcId);
+		} else {
+			for (RtspProtoRscUrl tmpRscUrl : sessionInfoPtr.ptr().getDescrSetupInfoRscUrls()) {
+				if (! ctfosMapContainsKey(tmpRscUrl.idSubStream)) {
+					continue;
+				}
+				try {
+					if (! sessionInfoPtr.ptr().getDescrSetupInfoSsrcOutboundBySubStreamsId(tmpRscUrl.idSubStream).equals(ssrcId)) {
+						continue;
+					}
+				} catch (RtspProtoSessionInfoException e) {
+					continue;
+				}
+				ctfosToUse = getCtfosMapValue(tmpRscUrl.idSubStream);
+				cacheChildThreadsPerSsrcMap.put(ssrcId.clone(), ctfosToUse);
+				break;
+			}
+		}
+		if (ctfosToUse == null) {
+			throw new IllegalStateException(fncName + ": No stream found for ssrcId: " + ssrcId);
+		}
+		return ctfosToUse;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

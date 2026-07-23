@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -53,6 +54,9 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	private final AtomicLong packetCntInbound = new AtomicLong(0L);
 	private final AtomicLong packetCntOutbound = new AtomicLong(0L);
+
+	private final AtomicBoolean byePacketHasBeenSent = new AtomicBoolean(false);
+	private final AtomicBoolean byePacketHasBeenRcvd = new AtomicBoolean(false);
 
 	/**
 	 * Constructor.
@@ -117,6 +121,10 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 	public synchronized void appendByePacketToSendQueue() {
 		final String FNC_NAME = getClass().getSimpleName() + ".appendByePacketToSendQueue()";
 
+		if (byePacketHasBeenSent.getAndSet(true) || byePacketHasBeenRcvd.get()) {
+			return;
+		}
+		//
 		logDebug(FNC_NAME, String.format("Sending BYE packet (esSrc=%s, SSRC=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
 				params.getSsrcId().toHexString(true)));
@@ -208,7 +216,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				}
 			}
 			// send outstanding packets
-			if (! queueSend.isEmpty()) {
+			if (! (byePacketHasBeenRcvd.get() || queueSend.isEmpty())) {
 				logDebug(FNC_NAME, "Sending outstanding RTCP packets");
 				while (! queueSend.isEmpty()) {
 					try {
@@ -586,6 +594,12 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		logDebug(FNC_NAME, String.format("received BYE (esSrc=%s, SSRC=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
 				params.getSsrcId().toHexString(true)));
+		//
+		byePacketHasBeenRcvd.set(true);
+		//
+		if (! byePacketHasBeenSent.get()) {
+			params.getRtcpReceivedByeInterface().orElseThrow().cbRtcpReceivedBye(params.getSsrcId());
+		}
 	}
 
 }

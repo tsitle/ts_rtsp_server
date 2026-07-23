@@ -17,6 +17,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.ThreadDataProvDemux;
+import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -45,6 +46,7 @@ public final class RtspChildThreadMng {
 	private final @NonNull RtspChildThreadsCbNotifyThreadReadyInterface rctcbNtr;
 	private final @NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp;
 	private final @NonNull RtspChildThreadsCbRtcpFromRtpInterface rctcbRtcpFromRtp;
+	private final @NonNull RtcpReceivedByeInterface rtcpReceivedByeInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
@@ -66,9 +68,10 @@ public final class RtspChildThreadMng {
 	 * @param idSession Session ID
 	 * @param clientIpAddr Client IP address
 	 * @param setupInfoPerSsMap Setup info per Sub-Stream
-	 * @param rctcbNtr Callback interface for RTSP child threads
-	 * @param rctcbRtpTcp Callback interface for RTSP child threads
-	 * @param rctcbRtcpFromRtp Callback interface for RTSP child threads
+	 * @param rctcbNtr 'Notify Thread is Ready' interface for RTP threads
+	 * @param rctcbRtpTcp 'RTxP TCP' instance for RTP threads
+	 * @param rctcbRtcpFromRtp 'Send RTCP packets from RTP' interface for RTP threads
+	 * @param rtcpReceivedByeInterface 'Received BYE packet' interface for RTCP threads
 	 * @param availableStreamsInterface Available streams instance (only required for requests from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for requests from the server)
 	 */
@@ -82,6 +85,7 @@ public final class RtspChildThreadMng {
 				@NonNull RtspChildThreadsCbNotifyThreadReadyInterface rctcbNtr,
 				@NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp,
 				@NonNull RtspChildThreadsCbRtcpFromRtpInterface rctcbRtcpFromRtp,
+				@NonNull RtcpReceivedByeInterface rtcpReceivedByeInterface,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
@@ -105,6 +109,7 @@ public final class RtspChildThreadMng {
 		this.rctcbNtr = rctcbNtr;
 		this.rctcbRtpTcp = rctcbRtpTcp;
 		this.rctcbRtcpFromRtp = rctcbRtcpFromRtp;
+		this.rtcpReceivedByeInterface = rtcpReceivedByeInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
@@ -337,6 +342,7 @@ public final class RtspChildThreadMng {
 				.idEsSource(ctfos.idEsSource)
 				.idSubStream(ctfos.idSubStream)
 				.idSsrc(tmpSiSs.getSsrcOutboundPtr())
+				.rtcpReceivedByeInterface(rtcpReceivedByeInterface)
 				.tpClientIpAddr(clientIpAddr);
 		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
 			tmpBuilder
@@ -403,7 +409,8 @@ public final class RtspChildThreadMng {
 							)
 					)
 				.comXsrcBlockEntry(xsrcBlock)
-				.comCbRtcpAppendToOutgoingQueue(rctcbRtcpFromRtp::cbSendRtcpPacketsFromRtp)
+				.comCbRtcpAppendSrToOutgoingQueue(rctcbRtcpFromRtp::cbSendRtcpSrPacketFromRtp)
+				.comCbRtcpAppendByeToOutgoingQueue(rctcbRtcpFromRtp::cbSendRtcpByePacketFromRtp)
 				.comCbNotifyThreadReady(rctcbNtr::cbNotifyThreadReady)
 				.comCbThreadMayStartPlayback(rctcbNtr::cbThreadMayStartPlayback)
 				.comAvStreamIncomingUri(avSsi.inputUri());

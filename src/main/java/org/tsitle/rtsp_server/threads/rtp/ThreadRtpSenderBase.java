@@ -302,9 +302,20 @@ public abstract class ThreadRtpSenderBase<
 			//e.printStackTrace();
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
+			// send a BYE packet to let the client know that this stream has ended
+			try {
+				paramsCommon.getCbRtcpAppendByeToOutgoingQueue().orElseThrow().accept(paramsCommon.getSsrcId());
+			} catch (Exception e) {
+				// ignore
+			}
+			//
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
+	}
+
+	public void stopAsap() {
+		doStop.set(true);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -937,7 +948,7 @@ public abstract class ThreadRtpSenderBase<
 		sendSenderReport_buildRtcpCompound(packetCompoundBuf);
 
 		//
-		paramsCommon.getCbRtcpAppendToOutgoingQueue().orElseThrow()
+		paramsCommon.getCbRtcpAppendSrToOutgoingQueue().orElseThrow()
 				.accept(paramsCommon.getSsrcId(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();

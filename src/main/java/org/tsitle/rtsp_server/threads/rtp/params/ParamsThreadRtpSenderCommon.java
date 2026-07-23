@@ -97,9 +97,12 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	/** XSRC block for SDES RTCP packets (for communicating which streams belong to the same session) */
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
 	private boolean isSetXsrcBlockEntry;
-	/** Callback for appending RTCP packets to the outgoing queue */
-	private @Nullable BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue = null;
-	private boolean isSetCbRtcpAppendToOutgoingQueue;
+	/** Callback for appending RTCP SR (Sender Report) compound packets to the outgoing queue */
+	private @Nullable BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendSrToOutgoingQueue = null;
+	private boolean isSetCbRtcpAppendSrToOutgoingQueue;
+	/** Callback for appending RTCP BYE packets to the outgoing queue */
+	private @Nullable Consumer<@NonNull RtspProtoIdXsrc> cbRtcpAppendByeToOutgoingQueue = null;
+	private boolean isSetCbRtcpAppendByeToOutgoingQueue;
 
 	/** Callback for notifying the parent thread that the child thread is ready to start */
 	private @Nullable Consumer<@NonNull RtspProtoIdSubStream> cbNotifyThreadReady = null;
@@ -169,12 +172,24 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetXsrcBlockEntry = true;
 	}
 
-	public Optional<BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt>> getCbRtcpAppendToOutgoingQueue() {
-		return Optional.ofNullable(cbRtcpAppendToOutgoingQueue);
+	public Optional<BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt>> getCbRtcpAppendSrToOutgoingQueue() {
+		return Optional.ofNullable(cbRtcpAppendSrToOutgoingQueue);
 	}
-	public void setCbRtcpAppendToOutgoingQueue(@NonNull BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendToOutgoingQueue) {
-		this.cbRtcpAppendToOutgoingQueue = cbRtcpAppendToOutgoingQueue;
-		this.isSetCbRtcpAppendToOutgoingQueue = true;
+	public void setCbRtcpAppendSrToOutgoingQueue(
+				@NonNull BiConsumer<@NonNull RtspProtoIdXsrc, @NonNull BufferExt> cbRtcpAppendSrToOutgoingQueue
+			) {
+		this.cbRtcpAppendSrToOutgoingQueue = cbRtcpAppendSrToOutgoingQueue;
+		this.isSetCbRtcpAppendSrToOutgoingQueue = true;
+	}
+
+	public Optional<Consumer<@NonNull RtspProtoIdXsrc>> getCbRtcpAppendByeToOutgoingQueue() {
+		return Optional.ofNullable(cbRtcpAppendByeToOutgoingQueue);
+	}
+	public void setCbRtcpAppendByeToOutgoingQueue(
+				@NonNull Consumer<@NonNull RtspProtoIdXsrc> cbRtcpAppendByeToOutgoingQueue
+			) {
+		this.cbRtcpAppendByeToOutgoingQueue = cbRtcpAppendByeToOutgoingQueue;
+		this.isSetCbRtcpAppendByeToOutgoingQueue = true;
 	}
 
 	public Optional<Consumer<@NonNull RtspProtoIdSubStream>> getCbNotifyThreadReady() { return Optional.ofNullable(cbNotifyThreadReady); }
@@ -242,7 +257,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetRtpTimestampT0WithEpoch, "rtpTimestampT0WithEpoch");
 
 		requireIsSet(isSetXsrcBlockEntry, "xsrcBlockEntries");
-		requireIsSet(isSetCbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");
+		requireIsSet(isSetCbRtcpAppendSrToOutgoingQueue, "cbRtcpAppendSrToOutgoingQueue");
+		requireIsSet(isSetCbRtcpAppendByeToOutgoingQueue, "cbRtcpAppendByeToOutgoingQueue");
 
 		requireIsSet(isSetCbNotifyThreadReady, "cbNotifyThreadReady");
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
@@ -268,7 +284,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		}
 
 		requireNonNull(xsrcBlockEntry, "xsrcBlockEntry");
-		requireNonNull(cbRtcpAppendToOutgoingQueue, "cbRtcpAppendToOutgoingQueue");
+		requireNonNull(cbRtcpAppendSrToOutgoingQueue, "cbRtcpAppendSrToOutgoingQueue");
+		requireNonNull(cbRtcpAppendByeToOutgoingQueue, "cbRtcpAppendByeToOutgoingQueue");
 
 		requireNonNull(cbNotifyThreadReady, "cbNotifyThreadReady");
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");

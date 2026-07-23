@@ -49,7 +49,7 @@ public abstract class ThreadBase extends Thread {
 		}
 	}
 
-	@SuppressWarnings("unused")
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public synchronized boolean hasBeenRequestedToStop() {
 		return doStop.get();
 	}

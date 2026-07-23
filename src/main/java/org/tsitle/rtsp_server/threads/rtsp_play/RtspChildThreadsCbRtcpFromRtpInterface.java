@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
  */
 public interface RtspChildThreadsCbRtcpFromRtpInterface {
 
-	void cbSendRtcpPacketsFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf);
+	void cbSendRtcpSrPacketFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf);
+	void cbSendRtcpByePacketFromRtp(@NonNull RtspProtoIdXsrc ssrcId);
 
 }
