@@ -58,6 +58,7 @@ public interface RtspProtoAvailableStreamsInterface {
 			@NonNull RtpPacketType codec,
 			@NonNull RtspProtoEsSourceType esSourceType,
 			@NonNull URI inputUri,
+			double durationSecs,
 			byte audioChannelCount,
 			@NonNull SampleRateEnum audioSampleRate,
 			int audioSamplesPerFrame,

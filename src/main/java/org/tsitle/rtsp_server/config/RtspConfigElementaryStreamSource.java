@@ -80,6 +80,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** Internal use: Codec used for the stream */
 	@GsonAnnoExclude
 	private @NonNull RtpPacketType internalCodec;
+	/** Internal use: Duration in seconds */
+	@GsonAnnoExclude
+	private double internalDurationSecs;
 	/** Internal use: Video frames per second */
 	@GsonAnnoExclude
 	private @NonNull FrameRateEnum internalVideoFps;
@@ -139,6 +142,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		this.internalHasBeenPostProcessed = false;
 		this.internalCodec = RtpPacketType.UNKNOWN;
+		this.internalDurationSecs = -1.0;
 		this.internalVideoFps = FrameRateEnum.UNKNOWN;
 		this.internalAudioSampleRate = SampleRateEnum.UNKNOWN;
 		this.internalAudioChannelCount = -1;
@@ -176,6 +180,7 @@ public final class RtspConfigElementaryStreamSource {
 		resObj.internalHasBeenPostProcessed = true;
 
 		resObj.internalCodec = convertFfmpegVideoCodecToRtpPacketType(streamInfo.ffmpegCodec);
+		resObj.internalDurationSecs = streamInfo.durationSecs;
 
 		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
 		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
@@ -206,6 +211,7 @@ public final class RtspConfigElementaryStreamSource {
 				streamInfo.sampleRate,
 				(byte)streamInfo.channelCount
 			);
+		resObj.internalDurationSecs = streamInfo.durationSecs;
 
 		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
 		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
@@ -304,6 +310,14 @@ public final class RtspConfigElementaryStreamSource {
 		}
 		//noinspection ConstantValue
 		return (internalCodec == null ? RtpPacketType.UNKNOWN : internalCodec);
+	}
+
+	public synchronized double getDurationSecs() {
+		checkPostProcessed();
+		if (getSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
+			return -1.0;
+		}
+		return internalDurationSecs;
 	}
 
 	public synchronized @NonNull FrameRateEnum getVideoFps() {

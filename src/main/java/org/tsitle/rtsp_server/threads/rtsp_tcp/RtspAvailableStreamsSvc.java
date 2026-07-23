@@ -115,6 +115,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getCodec(),
 					tmpCfgSs.getSourceType(),
 					tmpCfgSs.getInputUri(),
+					tmpCfgSs.getDurationSecs(),
 					tmpCfgSs.getAudioChannelCount(),
 					tmpCfgSs.getAudioSamplerate(),
 					tmpCfgSs.getAudioSamplesPerFrame(),
