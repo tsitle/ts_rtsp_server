@@ -64,7 +64,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private @Nullable ThreadRtspPlay threadRtspPlay = null;
 	private @Nullable SrtxpRekeySvc srtxpRekeySvc = null;
 
-	private final RtspProtoDataCntGetSetParamKvs cachedSetParamValues = new RtspProtoDataCntGetSetParamKvs();
+	private final @NonNull RtspProtoDataCntGetSetParamKvs cachedSetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
 	/** Has the client requested PAUSE? */
 	private boolean isPlaybackPaused = false;
@@ -490,7 +490,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private MainLoopResult mainLoop(final int loopCounter)
+	private @NonNull MainLoopResult mainLoop(final int loopCounter)
 			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
 					UdpSocketIoException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
