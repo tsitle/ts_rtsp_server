@@ -293,14 +293,48 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		if (availableStreamsInterface == null) {
 			throw new IllegalStateException("availableStreamsInterface must be set");
 		}
-		Optional<RtspProtoElementaryStreamSource> optSsObjVideo =
+		Optional<RtspProtoElementaryStreamSource> optEsObjVideo =
 				availableStreamsInterface.getFirstVideoEsSourceObj(inputSourceObj.getIdInputSource());
-		Optional<RtspProtoElementaryStreamSource> optSsObjAudio =
+		Optional<RtspProtoElementaryStreamSource> optEsObjAudio =
 				availableStreamsInterface.getFirstAudioEsSourceObj(inputSourceObj.getIdInputSource());
-		return (optSsObjVideo.isPresent() || optSsObjAudio.isPresent());
+		return (optEsObjVideo.isPresent() || optEsObjAudio.isPresent());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private double getStreamDurationFromEsObj(@NonNull RtspProtoElementaryStreamSource esObj) {
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException("availableStreamsInterface must be set");
+		}
+		try {
+			final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo esInfo =
+					availableStreamsInterface.getElementaryStreamSourceInfo(esObj.getIdEsSource());
+			if (esInfo.esSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
+				return esInfo.durationSecs();
+			}
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			// ignore
+		}
+		return -1.0;
+	}
+
+	private double getStreamDurationAsDbl(@NonNull RtspProtoInputSource inputSourceObj) {
+		if (availableStreamsInterface == null) {
+			throw new IllegalStateException("availableStreamsInterface must be set");
+		}
+		double durationSecs = -1.0;
+		Optional<RtspProtoElementaryStreamSource> optEsObjVideo =
+				availableStreamsInterface.getFirstVideoEsSourceObj(inputSourceObj.getIdInputSource());
+		if (optEsObjVideo.isPresent()) {
+			durationSecs = getStreamDurationFromEsObj(optEsObjVideo.get());
+		}
+		Optional<RtspProtoElementaryStreamSource> optEsObjAudio =
+				availableStreamsInterface.getFirstAudioEsSourceObj(inputSourceObj.getIdInputSource());
+		if (durationSecs < 0.1 && optEsObjAudio.isPresent()) {
+			durationSecs = getStreamDurationFromEsObj(optEsObjAudio.get());
+		}
+		return (durationSecs < 0.1 ? -1.0 : durationSecs);
+	}
 
 	private @NonNull List<@NonNull String> buildSdpLines(
 				@NonNull InternalArgs args,
@@ -347,7 +381,12 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		resL.add("a=control:*");
 		// a: Session Attribute: Range of presentation (RFC-7826 Section D.1.6)
-		resL.add("a=range:npt=0-");
+		double tmpStreamDur = getStreamDurationAsDbl(inputSourceObj);
+		RtspProtoPlaybackRange tmpPbRange = (tmpStreamDur < 0.1 ?
+				RtspProtoPlaybackRange.ofNowToInfinity()
+				: RtspProtoPlaybackRange.ofRelative(0.0, tmpStreamDur)
+			);
+		resL.add("a=range:" + tmpPbRange.toNptString_secs());
 
 		// -------------------------------------
 		try {
