@@ -6,8 +6,7 @@ import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
@@ -26,8 +25,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 
 import java.net.URI;
 import java.util.*;
@@ -35,7 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public final class RtspChildThreadMng {
+final class RtspChildThreadMng {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspConfig rtspConfig;
@@ -117,7 +114,7 @@ public final class RtspChildThreadMng {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesAll() {
+	@NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesAll() {
 		theReadLockCtfos.lock();
 		try {
 			return new ArrayList<>(childThreadsForOneStreamMap.values());
@@ -126,7 +123,7 @@ public final class RtspChildThreadMng {
 		}
 	}
 
-	public @NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesOnlyRunning() {
+	@NonNull Collection<@NonNull ChildThreadsForOneStream> getCtfosMapValuesOnlyRunning() {
 		theReadLockCtfos.lock();
 		try {
 			final Collection<@NonNull ChildThreadsForOneStream> resC = new ArrayList<>();
@@ -146,7 +143,7 @@ public final class RtspChildThreadMng {
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean ctfosMapContainsKey(@NonNull RtspProtoIdSubStream idSubStream) {
+	boolean ctfosMapContainsKey(@NonNull RtspProtoIdSubStream idSubStream) {
 		theReadLockCtfos.lock();
 		try {
 			return childThreadsForOneStreamMap.containsKey(idSubStream);
@@ -155,7 +152,7 @@ public final class RtspChildThreadMng {
 		}
 	}
 
-	public @NonNull ChildThreadsForOneStream getCtfosMapValue(@NonNull RtspProtoIdSubStream idSubStream) {
+	@NonNull ChildThreadsForOneStream getCtfosMapValue(@NonNull RtspProtoIdSubStream idSubStream) {
 		theReadLockCtfos.lock();
 		try {
 			if (! childThreadsForOneStreamMap.containsKey(idSubStream)) {
@@ -302,6 +299,23 @@ public final class RtspChildThreadMng {
 					ctfos.rtpThreadSender.unpauseThread();
 				}
 			}
+		} finally {
+			theReadLockCtfos.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	boolean seekStream(@NonNull RtspProtoPlaybackRange pbRange) {
+		if (usedIdInputSource.isEmpty()) {  // sanity check
+			return false;
+		}
+		theReadLockCtfos.lock();
+		try {
+			if (childThreadDemux == null) {
+				return false;
+			}
+			return childThreadDemux.seekStream(pbRange);
 		} finally {
 			theReadLockCtfos.unlock();
 		}

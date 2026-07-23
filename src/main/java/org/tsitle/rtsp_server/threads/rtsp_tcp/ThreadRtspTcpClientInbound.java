@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendResponseFailedException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.rtsp_server.threads.CancelToken;
@@ -298,6 +299,19 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 			//
 			try {
+				if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.PLAY &&
+						sessionInfoPtr.ptr().getClientPlaybackRangeValue().isPresent() &&
+						threadRtspPlay != null) {
+					RtspProtoPlaybackRange tmpPbRange = sessionInfoPtr.ptr().getClientPlaybackRangeValue().get();
+					if (tmpPbRange.isAbsoluteTime()) {
+						resObj.statusCode = RtspProtoStatusCode.NOT_ACCEPTABLE;
+					} else if (! tmpPbRange.isEmpty()) {
+						if (! threadRtspPlay.seekStream(tmpPbRange)) {
+							resObj.statusCode = RtspProtoStatusCode.NOT_ACCEPTABLE;
+						}
+					}
+				}
+				//
 				rtspProtoResponseOutputSvc.sendResponse(resObj);
 			} catch (RtspProtoSendResponseFailedException e) {
 				logError(FNC_NAME, "RtspProtoSendResponseFailedException caught: " + e.getMessage());

@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
@@ -165,6 +166,13 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	public void readNextPacketAudio(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
 			throws InputStreamEosException, InputStreamThreadEndedException {
 		internalPollNextPacketFromCache(cacheAud, buf, stTimestamp);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean seekStream(@NonNull RtspProtoPlaybackRange pbRange) {
+		// @TODO implement actual seeking
+		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
