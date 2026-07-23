@@ -22,7 +22,7 @@ import java.util.concurrent.locks.*;
 public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxReadNextAvPacketInterface {
 
 	private static final int CACHE_SIZE_DEFAULT = 10;
-	private static final int CACHE_SIZE_MAX = 1_000;
+	private static final int CACHE_SIZE_MAX = 500;
 
 	private static class FfPktCacheEntry {
 		final @NonNull FfmpegAvPktBasics ffPktObj = new FfmpegAvPktBasics();
@@ -121,7 +121,6 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 				}
 				//
 				if (! haveInputSi || readNextPkt) {
-					//logDebug(FNC_NAME, "read next cv=" + cacheVid.count + ", ca=" + cacheAud.count);  // @TODO check for long running stream
 					internalReadNextAvPacket(ffmpegDemuxer);
 				} else {
 					boolean tmpDoSignV;
