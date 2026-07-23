@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoAdSettingsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoCseqNr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
 public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 
@@ -57,7 +58,7 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.rrStreamTpMain.copyFrom(other.rrStreamTpMain);
 		this.rrClientUa = other.rrClientUa;
 		this.rrClientIpAddr.copyFrom(other.rrClientIpAddr);
-		this.rrPlaybackRangeValue = other.rrPlaybackRangeValue;
+		this.rrPlaybackRangeValue.copyFrom(other.rrPlaybackRangeValue);
 
 		this.requAuthClient.copyFrom(other.requAuthClient);
 		this.requSetParamValues.copyFrom(other.requSetParamValues);
@@ -92,11 +93,11 @@ public final class RtspProtoDataRequest extends RtspProtoDataRrBase {
 		this.requCseqNrToSend.increment();
 	}
 
-	public void setPlaybackRangeValue(@NonNull String value) {
+	public void setPlaybackRangeValue(@NonNull RtspProtoPlaybackRange value) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
-		this.rrPlaybackRangeValue = value;
+		this.rrPlaybackRangeValue.copyFrom(value);
 	}
 
 	public @NonNull RtspConnectionPolicy getConnectionPolicy() {

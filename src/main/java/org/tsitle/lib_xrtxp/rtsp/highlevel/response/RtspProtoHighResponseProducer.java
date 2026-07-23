@@ -405,9 +405,9 @@ public final class RtspProtoHighResponseProducer {
 		 */
 
 		// Range
-		{
+		if (! inputDataResp.getPlaybackRangeValue().isEmpty()) {
 			RtspProtoHeaderEntryResponse hdEntry = new RtspProtoHeaderEntryResponse(RtspHeaderKey.RANGE);
-			hdEntry.hdValRange.rangeStr = inputDataResp.getPlaybackRangeValue();
+			hdEntry.hdValRange.range.copyFrom(inputDataResp.getPlaybackRangeValue());
 			output.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// RTP-Info

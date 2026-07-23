@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.data_rr;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
 public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 
@@ -34,8 +35,8 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void setPlaybackRangeValue(@NonNull String value) {
-		rrPlaybackRangeValue = value;
+	public void setPlaybackRangeValue(@NonNull RtspProtoPlaybackRange value) {
+		rrPlaybackRangeValue.copyFrom(value);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ public final class RtspProtoDataResponse extends RtspProtoDataRrBase {
 		rrStreamTpMain.copyFrom(inputDataRequ.rrStreamTpMain);
 		rrClientUa = inputDataRequ.getClientUa();
 		rrClientIpAddr.copyFrom(inputDataRequ.rrClientIpAddr);
-		rrPlaybackRangeValue = inputDataRequ.getPlaybackRangeValue();
+		rrPlaybackRangeValue.copyFrom(inputDataRequ.getPlaybackRangeValue());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

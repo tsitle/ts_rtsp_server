@@ -79,9 +79,9 @@ public final class RtspProtoSessionInfo {
 	private boolean rhSetParamValuesIsSet = false;
 
 	/** Playback range request value from the client */
-	private @NonNull String clientPlaybackRangeValue = "";
+	private final @NonNull RtspProtoPlaybackRange clientPlaybackRangeValue = RtspProtoPlaybackRange.ofEmpty();
 	/** Playback range response value from the server */
-	private @NonNull String serverPlaybackRangeValue = "";
+	private final @NonNull RtspProtoPlaybackRange serverPlaybackRangeValue = RtspProtoPlaybackRange.ofEmpty();
 
 	/** Client's User-Agent */
 	private @NonNull String clientUserAgent = "";
@@ -365,25 +365,25 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------
 
-	public Optional<String> getClientPlaybackRangeValue() {
+	public Optional<RtspProtoPlaybackRange> getClientPlaybackRangeValue() {
 		theReadLockFields.lock();
 		try {
-			if (clientPlaybackRangeValue.isBlank()) {
+			if (clientPlaybackRangeValue.isEmpty()) {
 				return Optional.empty();
 			}
-			return Optional.of(clientPlaybackRangeValue);
+			return Optional.of(clientPlaybackRangeValue.clone());
 		} finally {
 			theReadLockFields.unlock();
 		}
 	}
 
-	public Optional<String> getServerPlaybackRangeValue() {
+	public Optional<RtspProtoPlaybackRange> getServerPlaybackRangeValue() {
 		theReadLockFields.lock();
 		try {
-			if (serverPlaybackRangeValue.isBlank()) {
+			if (serverPlaybackRangeValue.isEmpty()) {
 				return Optional.empty();
 			}
-			return Optional.of(serverPlaybackRangeValue);
+			return Optional.of(serverPlaybackRangeValue.clone());
 		} finally {
 			theReadLockFields.unlock();
 		}
@@ -925,19 +925,19 @@ public final class RtspProtoSessionInfo {
 
 	// ----------------------------------------------------
 
-	void setClientPlaybackRangeValue(@NonNull String value) {
+	void setClientPlaybackRangeValue(@NonNull RtspProtoPlaybackRange value) {
 		theWriteLockFields.lock();
 		try {
-			clientPlaybackRangeValue = value;
+			clientPlaybackRangeValue.copyFrom(value);
 		} finally {
 			theWriteLockFields.unlock();
 		}
 	}
 
-	void setServerPlaybackRangeValue(@NonNull String value) {
+	void setServerPlaybackRangeValue(@NonNull RtspProtoPlaybackRange value) {
 		theWriteLockFields.lock();
 		try {
-			serverPlaybackRangeValue = value;
+			serverPlaybackRangeValue.copyFrom(value);
 		} finally {
 			theWriteLockFields.unlock();
 		}

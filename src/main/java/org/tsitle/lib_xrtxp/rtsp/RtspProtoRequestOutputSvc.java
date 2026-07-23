@@ -436,7 +436,35 @@ public final class RtspProtoRequestOutputSvc {
 			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
-		return sendRequest_play(resourceUrl, dummyClientCredentials);
+		return sendRequest_play(
+				resourceUrl,
+				dummyClientCredentials,
+				RtspProtoPlaybackRange.ofEmpty()
+			);
+	}
+
+	/**
+	 * PLAY request is used to start the playback of a presentation or stream.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param playbackRange Playback range (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
+	 */
+	@SuppressWarnings("unused")
+	public @NonNull RtspProtoMessageType sendRequest_play(
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoPlaybackRange playbackRange
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
+
+		return sendRequest_play(
+				resourceUrl,
+				dummyClientCredentials,
+				playbackRange
+			);
 	}
 
 	/**
@@ -449,9 +477,33 @@ public final class RtspProtoRequestOutputSvc {
 	 * @throws TcpSocketIoException If an I/O error occurs
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
+	@SuppressWarnings("unused")
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+		return sendRequest_play(
+				resourceUrl,
+				clientCredentials,
+				RtspProtoPlaybackRange.ofEmpty()
+			);
+	}
+
+	/**
+	 * PLAY request is used to start the playback of a presentation or stream.<br />
+	 * <b>Note:</b> This is only allowed for Client->Server requests.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client Credentials for authentication (can be empty)
+	 * @param playbackRange Playback range (can be empty)
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_play(
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoClientCredentials clientCredentials,
+				@NonNull RtspProtoPlaybackRange playbackRange
 			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
@@ -461,7 +513,10 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
-		inputDataRequ.setPlaybackRangeValue("npt=0.000-");
+		inputDataRequ.setPlaybackRangeValue(playbackRange.isEmpty() ?
+				RtspProtoPlaybackRange.ofNowToInfinity()
+				: playbackRange
+			);
 
 		InternRequArgs internRequArgs = new InternRequArgs(inputDataRequ);
 

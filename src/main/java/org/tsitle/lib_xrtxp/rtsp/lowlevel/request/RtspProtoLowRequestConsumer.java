@@ -462,7 +462,7 @@ public final class RtspProtoLowRequestConsumer {
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryRequest entry
-			) throws RtspProtoSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		if (messageType != RtspProtoMessageType.PLAY) {
 			throw new RtspProtoSkippedHeaderException("Range header only allowed in PLAY requests");
 		}

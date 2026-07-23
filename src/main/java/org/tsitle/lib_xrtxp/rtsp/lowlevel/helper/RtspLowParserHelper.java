@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidPbRangeException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.*;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
@@ -12,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspContentEncoding;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -180,7 +182,7 @@ public final class RtspLowParserHelper {
 	public static void helperParseHeaderValue_range(
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderTypeRange outputHd
-			) {
+			) throws RtspLowInvalidRrException {
 		/*
 		 * Example:
 		 *   "Range: clock=19960213T143205Z-;time=19970123T143720Z"
@@ -196,7 +198,11 @@ public final class RtspLowParserHelper {
 		 * Absolute Time:
 		 *    "Range: clock=19961108T143720.25Z-"  (November 8, 1996 at 14h37 and 20 and a quarter seconds UTC)
 		 */
-		outputHd.rangeStr = hdValue;
+		try {
+			outputHd.range.copyFrom(RtspProtoPlaybackRange.parseString(hdValue));
+		} catch (RtspProtoInvalidPbRangeException e) {
+			throw new RtspLowInvalidRrException("Invalid Range format: '" + hdValue + "'");
+		}
 	}
 
 	public static void helperParseHeaderValue_session(

@@ -682,7 +682,7 @@ public final class RtspProtoHighRequestConsumer {
 			logWarn(FNC_NAME, "Received Range header in non-PLAY request");
 			return;
 		}
-		outputDataRequ.setPlaybackRangeValue(headerEntry.hdValRange.rangeStr);
+		outputDataRequ.setPlaybackRangeValue(headerEntry.hdValRange.range);
 	}
 
 	private void processHeader_com_require(

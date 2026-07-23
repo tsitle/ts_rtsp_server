@@ -354,7 +354,7 @@ public final class RtspProtoHighRequestProducer {
 
 		{
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.RANGE);
-			hdEntry.hdValRange.rangeStr = inputDataRequ.getPlaybackRangeValue();
+			hdEntry.hdValRange.range.copyFrom(inputDataRequ.getPlaybackRangeValue());
 			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 	}

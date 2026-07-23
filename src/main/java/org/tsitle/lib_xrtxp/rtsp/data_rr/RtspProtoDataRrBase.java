@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspProtocolVersion;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoCseqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
 public class RtspProtoDataRrBase {
@@ -46,7 +47,7 @@ public class RtspProtoDataRrBase {
 	public final @NonNull RtspProtoIpAddr rrClientIpAddr = new RtspProtoIpAddr();
 
 	/** Playback range value */
-	protected @NonNull String rrPlaybackRangeValue = "";
+	protected final @NonNull RtspProtoPlaybackRange rrPlaybackRangeValue = RtspProtoPlaybackRange.ofEmpty();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -90,8 +91,8 @@ public class RtspProtoDataRrBase {
 		this.rrServerSoftware = value;
 	}
 
-	public @NonNull String getPlaybackRangeValue() {
-		return rrPlaybackRangeValue;
+	public @NonNull RtspProtoPlaybackRange getPlaybackRangeValue() {
+		return rrPlaybackRangeValue.clone();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -112,7 +113,7 @@ public class RtspProtoDataRrBase {
 		rrClientUa = other.rrClientUa;
 		rrServerSoftware = other.rrServerSoftware;
 		rrClientIpAddr.copyFrom(other.rrClientIpAddr);
-		rrPlaybackRangeValue = other.rrPlaybackRangeValue;
+		rrPlaybackRangeValue.copyFrom(other.rrPlaybackRangeValue);
 	}
 
 	protected void clear() {
@@ -131,7 +132,7 @@ public class RtspProtoDataRrBase {
 		rrClientUa = "";
 		rrServerSoftware = "";
 		rrClientIpAddr.clear();
-		rrPlaybackRangeValue = "";
+		rrPlaybackRangeValue.clear();
 	}
 
 	protected void writeProtect() {
@@ -145,6 +146,7 @@ public class RtspProtoDataRrBase {
 		rrCseqNrLastRcvd.writeProtect();
 		rrStreamTpMain.writeProtect();
 		rrClientIpAddr.writeProtect();
+		rrPlaybackRangeValue.writeProtect();
 	}
 
 }

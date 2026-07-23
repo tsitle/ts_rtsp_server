@@ -138,10 +138,14 @@ public final class RtspLowBuilderHelper {
 		 * Absolute Time:
 		 *    "Range: clock=19961108T143720.25Z-"  (November 8, 1996 at 14h37 and 20 and a quarter seconds UTC)
 		 */
-		if (hdValue.rangeStr.isBlank()) {
-			throw new RtspLowInvalidRrException("rangeStr cannot be blank");
+		if (hdValue.range.isEmpty()) {
+			throw new RtspLowInvalidRrException("range must be set");
 		}
-		return hdValue.rangeStr;
+		if (hdValue.range.isAbsoluteTime()) {
+			return hdValue.range.toAbsClockString().orElseThrow();
+		}
+		// 'toNptString_secs()' works with VLC and FFmpeg, 'toNptString_hoursMinutesSecsMs()' only works with FFmpeg
+		return hdValue.range.toNptString_secs();
 	}
 
 	public static @NonNull String helperBuildHeaderValue_session(

@@ -300,7 +300,7 @@ public final class RtspProtoLowResponseConsumer {
 				@NonNull RtspProtoMessageType messageType,
 				@NonNull String hdValue,
 				@NonNull RtspProtoHeaderEntryResponse entry
-			) throws RtspProtoSkippedHeaderException {
+			) throws RtspLowInvalidRrException, RtspProtoSkippedHeaderException {
 		if (messageType != RtspProtoMessageType.PLAY) {
 			throw new RtspProtoSkippedHeaderException("Range header only allowed in PLAY responses");
 		}

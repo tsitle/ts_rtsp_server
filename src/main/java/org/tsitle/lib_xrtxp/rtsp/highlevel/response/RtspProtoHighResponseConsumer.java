@@ -320,7 +320,7 @@ public final class RtspProtoHighResponseConsumer {
 			logWarn(FNC_NAME, "Received Range header in non-PLAY response");
 			return;
 		}
-		outputDataResp.setPlaybackRangeValue(headerEntry.hdValRange.rangeStr);
+		outputDataResp.setPlaybackRangeValue(headerEntry.hdValRange.range);
 	}
 
 	private void processHeader_play_rtpinfo(
