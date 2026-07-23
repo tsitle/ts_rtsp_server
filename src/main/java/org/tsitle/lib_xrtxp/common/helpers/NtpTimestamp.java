@@ -27,11 +27,11 @@ public final class NtpTimestamp implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static NtpTimestamp ofEmpty() {
+	public static @NonNull NtpTimestamp ofEmpty() {
 		return new NtpTimestamp();
 	}
 
-	public static NtpTimestamp of(long ntpSeconds32bit, long ntpFraction32bit) throws RtspProtoNumberRangeException {
+	public static @NonNull NtpTimestamp of(long ntpSeconds32bit, long ntpFraction32bit) throws RtspProtoNumberRangeException {
 		validateNonNeg32bit("ntpSeconds32bit", ntpSeconds32bit);
 		validateNonNeg32bit("ntpFraction32bit", ntpFraction32bit);
 		NtpTimestamp resObj = new NtpTimestamp();
@@ -64,7 +64,7 @@ public final class NtpTimestamp implements Cloneable {
 		return NtpTimestamp.withOverflow(secondsSince1900, fraction);
 	}
 
-	public static NtpTimestamp withOverflow(long ntpSeconds32bit, long ntpFraction32bit) {
+	public static @NonNull NtpTimestamp withOverflow(long ntpSeconds32bit, long ntpFraction32bit) {
 		NtpTimestamp resObj = new NtpTimestamp();
 		int tmpSecInt = (int)ntpSeconds32bit;
 		resObj.ntpSecondsSince1900_32bit = Integer.toUnsignedLong(tmpSecInt);
@@ -233,7 +233,7 @@ public final class NtpTimestamp implements Cloneable {
 	}
 
 	@Override
-	public NtpTimestamp clone() {
+	public @NonNull NtpTimestamp clone() {
 		try {
 			return (NtpTimestamp)super.clone();
 		} catch (CloneNotSupportedException e) {

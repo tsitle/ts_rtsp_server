@@ -19,26 +19,26 @@ public final class TimestampEpochNs implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static TimestampEpochNs ofEmpty() {
+	public static @NonNull TimestampEpochNs ofEmpty() {
 		return new TimestampEpochNs();
 	}
 
-	public static TimestampEpochNs ofNow() {
+	public static @NonNull TimestampEpochNs ofNow() {
 		return ofInstant(Instant.now());
 	}
 
-	public static TimestampEpochNs ofInstant(@NonNull Instant value) {
+	public static @NonNull TimestampEpochNs ofInstant(@NonNull Instant value) {
 		TimestampEpochNs resObj = new TimestampEpochNs();
 		resObj.epochNs = value.getEpochSecond() * 1_000_000_000L + value.getNano();
 		resObj.isSet = true;
 		return resObj;
 	}
 
-	public static TimestampEpochNs ofEpochMsUnsigned64bit(long value64bit) {
+	public static @NonNull TimestampEpochNs ofEpochMsUnsigned64bit(long value64bit) {
 		return ofEpochNsUnsigned64bit(value64bit * 1_000_000L);
 	}
 
-	public static TimestampEpochNs ofEpochNsUnsigned64bit(long value64bit) {
+	public static @NonNull TimestampEpochNs ofEpochNsUnsigned64bit(long value64bit) {
 		TimestampEpochNs resObj = new TimestampEpochNs();
 		resObj.epochNs = value64bit;
 		resObj.isSet = true;
@@ -121,7 +121,7 @@ public final class TimestampEpochNs implements Cloneable {
 	}
 
 	@Override
-	public TimestampEpochNs clone() {
+	public @NonNull TimestampEpochNs clone() {
 		try {
 			return (TimestampEpochNs)super.clone();
 		} catch (CloneNotSupportedException e) {

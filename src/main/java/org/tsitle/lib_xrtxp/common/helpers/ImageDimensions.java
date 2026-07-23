@@ -4,15 +4,15 @@ import org.jspecify.annotations.NonNull;
 
 public record ImageDimensions(int imgWidth, int imgHeight) {
 
-	public static ImageDimensions ofEmpty() {
+	public static @NonNull ImageDimensions ofEmpty() {
 		return new ImageDimensions(-1, -1);
 	}
 
-	public static ImageDimensions of(int imgWidth, int imgHeight) {
+	public static @NonNull ImageDimensions of(int imgWidth, int imgHeight) {
 		return new ImageDimensions(imgWidth, imgHeight);
 	}
 
-	public static ImageDimensions of(@NonNull ImageDimensions imgDims) {
+	public static @NonNull ImageDimensions of(@NonNull ImageDimensions imgDims) {
 		return new ImageDimensions(imgDims.imgWidth, imgDims.imgHeight);
 	}
 
@@ -20,6 +20,7 @@ public record ImageDimensions(int imgWidth, int imgHeight) {
 		return (imgWidth < 2 || imgHeight < 2);
 	}
 
+	@SuppressWarnings("unused")
 	public @NonNull ImageDimensions scale(int settingMaxDimension) {
 		if (isEmpty()) {
 			return ImageDimensions.ofEmpty();

@@ -1,5 +1,6 @@
 package org.tsitle.lib_xrtxp.common.helpers;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 
@@ -27,7 +28,7 @@ public final class HostnameHelper {
 	 * @param allowLoopback Whether to include loopback addresses in the search
 	 * @return IP address
 	 */
-	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(String hostname, boolean allowLoopback)
+	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(@NonNull String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
 		if (resolved.length == 0) {
@@ -48,7 +49,7 @@ public final class HostnameHelper {
 	 * @return IP addresses
 	 */
 	@SuppressWarnings("unused")
-	public static Set<InetAddress> allLocalIpv4AddressesForHostname(String hostname, boolean allowLoopback)
+	public static @NonNull Set<@NonNull InetAddress> allLocalIpv4AddressesForHostname(@NonNull String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
 		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses(allowLoopback);
@@ -67,7 +68,7 @@ public final class HostnameHelper {
 	 * @return URI object
 	 * @throws HostnameHelperInvalidUriException If the URL is invalid
 	 */
-	public static URI convertRtspUrlIntoURI(String url) throws HostnameHelperInvalidUriException {
+	public static @NonNull URI convertRtspUrlIntoURI(@NonNull String url) throws HostnameHelperInvalidUriException {
 		try {
 			if (! (url.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://") ||
 						url.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://"))) {
@@ -94,7 +95,7 @@ public final class HostnameHelper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static Set<InetAddress> getAllLocalIpv4InterfaceAddresses(boolean allowLoopback) throws SocketException {
+	private static @NonNull Set<@NonNull InetAddress> getAllLocalIpv4InterfaceAddresses(boolean allowLoopback) throws SocketException {
 		Set<InetAddress> resSet = new HashSet<>();
 		Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
 		while (ifaces.hasMoreElements()) {

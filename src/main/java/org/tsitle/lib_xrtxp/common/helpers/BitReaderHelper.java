@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
  */
 public final class BitReaderHelper {
 
-	private final BufferView bufView;
+	private final @NonNull BufferView bufView;
 	private int currentByte;
 	private int bytePos;
 	private int bitPos = 8;
