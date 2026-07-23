@@ -9,7 +9,7 @@ import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
-import org.tsitle.rtsp_server.threads.dataprovider.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
