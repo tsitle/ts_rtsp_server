@@ -217,7 +217,6 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return Optional.ofNullable(inputAvFmtCtx);
 	}
 
-	@SuppressWarnings("unused")
 	public Optional<Integer> getFfAvStreamIxVideo() {
 		if (inputStreamInfoVid.streamIx < 0) {
 			return Optional.empty();
@@ -225,12 +224,21 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return Optional.of(inputStreamInfoVid.streamIx);
 	}
 
-	@SuppressWarnings("unused")
 	public Optional<Integer> getFfAvStreamIxAudio() {
 		if (inputStreamInfoAud.streamIx < 0) {
 			return Optional.empty();
 		}
 		return Optional.of(inputStreamInfoAud.streamIx);
+	}
+
+	@SuppressWarnings("unused")
+	public Optional<Double> getDurationSecs() {
+		double resD = (inputStreamInfoVid.streamIx >= 0 ? inputStreamInfoVid.durationSecs : -1.0);
+		resD = (resD < 0.001 && inputStreamInfoAud.streamIx >= 0 ? inputStreamInfoAud.durationSecs : resD);
+		if (resD < 0.001) {
+			return Optional.empty();
+		}
+		return Optional.of(resD);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
