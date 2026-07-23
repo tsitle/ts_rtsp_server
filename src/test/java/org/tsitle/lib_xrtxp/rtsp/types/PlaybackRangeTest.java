@@ -21,6 +21,8 @@ class PlaybackRangeTest {
 		String result = range.toAbsClockString().orElseThrow();
 		assertEquals("clock=19961108T143720.25Z-", result);
 
+		assertTrue(range.isAbsoluteTime());
+
 		assertEquals(startAbsSecs, range.getAbsoluteTimeStartSecsAsDouble().orElseThrow());
 		assertEquals(epochStart, range.getAbsoluteTimeStartAsTimestamp().orElseThrow());
 		assertTrue(range.getAbsoluteTimeEndSecsAsDouble().isEmpty());
@@ -60,6 +62,11 @@ class PlaybackRangeTest {
 		range = RtspProtoPlaybackRange.ofAbsolute(epochStart, epochEnd);
 		result = range.toAbsClockString().orElseThrow();
 		assertEquals("clock=19961108T143720.25Z-19961108T143820.25Z", result);
+
+		//
+		range = RtspProtoPlaybackRange.ofAbsolute(epochStart);
+		result = range.toAbsClockString().orElseThrow();
+		assertEquals("clock=19961108T143720.25Z-", result);
 	}
 
 	// -------------------------------------------------------
@@ -78,8 +85,17 @@ class PlaybackRangeTest {
 		String result = range.toNptString_secs();
 		assertEquals("npt=10.123-", result);
 
+		assertFalse(range.isAbsoluteTime());
+
 		//
-		range = RtspProtoPlaybackRange.ofRelative(10.123, -1.0);
+		range = RtspProtoPlaybackRange.ofNowToInfinity();
+		result = range.toNptString_secs();
+		assertEquals("npt=0-", result);
+
+		assertFalse(range.isAbsoluteTime());
+
+		//
+		range = RtspProtoPlaybackRange.ofRelative(10.123);
 		result = range.toNptString_secs();
 		assertEquals("npt=10.123-", result);
 
@@ -136,7 +152,7 @@ class PlaybackRangeTest {
 	void testParseAbsTime() throws Exception {
 		RtspProtoPlaybackRange range = RtspProtoPlaybackRange.parseString("clock=19960213T143205Z-;time=19970123T143720Z");
 		double tmpStartDbl = range.getAbsoluteTimeStartSecsAsDouble().orElseThrow();
-		TimestampEpochNs epochStart = TimestampEpochNs.ofEpochMsUnsigned64bit((long) (tmpStartDbl * 1_000.0));
+		TimestampEpochNs epochStart = TimestampEpochNs.ofEpochMsUnsigned64bit((long)(tmpStartDbl * 1_000.0));
 
 		assertEquals("1996-02-13T14:32:05.000Z", epochStart.toIso8601StyleString());
 		assertTrue(range.getAbsoluteTimeEndSecsAsDouble().isEmpty());
