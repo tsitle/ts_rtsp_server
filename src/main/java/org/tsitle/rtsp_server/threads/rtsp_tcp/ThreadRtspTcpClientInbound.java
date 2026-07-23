@@ -391,10 +391,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				//
 				if (isPlaybackPaused) {
 					isPlaybackPaused = false;
-					if (threadRtspPlay == null) {
-						throw new IllegalStateException(FNC_NAME + ": threadRtspPlay is null");
+					if (threadRtspPlay != null) {
+						threadRtspPlay.unpauseChildThreads();
 					}
-					threadRtspPlay.unpauseChildThreads();
 				} else {
 					if (threadRtspPlay == null) {
 						startOrGetThreadRtspPlay();
