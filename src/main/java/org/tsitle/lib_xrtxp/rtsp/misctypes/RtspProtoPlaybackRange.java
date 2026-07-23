@@ -196,7 +196,7 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 	// -------------------------------------------------------
 
 	/**
-	 * Output the range in 'Normal Play Time' format with hours, minutes, seconds, and milliseconds.
+	 * Output the range in 'Normal Play Time' format with seconds and fraction of a second.
 	 * @return Range in 'Normal Play Time' format
 	 */
 	public @NonNull String toNptString_secs() {
