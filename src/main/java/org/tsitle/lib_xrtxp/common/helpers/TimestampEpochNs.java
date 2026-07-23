@@ -3,6 +3,8 @@ package org.tsitle.lib_xrtxp.common.helpers;
 import org.jspecify.annotations.NonNull;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -111,6 +113,25 @@ public final class TimestampEpochNs implements Cloneable {
 	@Override
 	public int hashCode() {
 		return Objects.hash(epochNs, isSet);
+	}
+
+	public @NonNull String toIso8601StyleString() {
+		if (! isSet) {
+			return "unset";
+		}
+		//
+		Instant tmpInst = toInstant().orElseThrow();
+		ZonedDateTime tmpZdt = tmpInst.atZone(ZoneOffset.UTC);
+		int fldYear = tmpZdt.getYear();
+		int fldMonth = tmpZdt.getMonthValue();
+		int fldDay = tmpZdt.getDayOfMonth();
+		int fldHour = tmpZdt.getHour();
+		int fldMinute = tmpZdt.getMinute();
+		int fldSecond = tmpZdt.getSecond();
+		int fldNano = tmpZdt.getNano();
+		// 2026-03-27T19:54:50.975Z
+		return String.format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+				fldYear, fldMonth, fldDay, fldHour, fldMinute, fldSecond, fldNano / 1_000_000);
 	}
 
 	@Override
