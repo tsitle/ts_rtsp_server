@@ -7,25 +7,36 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidPbRangeException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Represents a playback range in the RTSP protocol (and SDP).
  */
-public final class RtspProtoPlaybackRange {
+public final class RtspProtoPlaybackRange implements Cloneable {
 
 	private static final String PREFIX_CLOCK = "clock=";
 	private static final String PREFIX_SMPTE = "smpte=";
 	private static final String PREFIX_NPT = "npt=";
 
-	private double absoluteSecsStart = 0.0;
-	private double rangeSecsStart = 0.0;
+	private boolean isWriteProtected = false;
+
+	private double absoluteSecsStart = -1.0;
+	private double rangeSecsStart = -1.0;
 	private double rangeSecsEnd = -1.0;
 
 	private RtspProtoPlaybackRange() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull RtspProtoPlaybackRange ofEmpty() {
+		return new RtspProtoPlaybackRange();
+	}
+
+	public static @NonNull RtspProtoPlaybackRange ofAbsolute(@NonNull TimestampEpochNs absoluteTimeStart) {
+		return ofAbsolute(absoluteTimeStart, TimestampEpochNs.ofEmpty());
+	}
 
 	public static @NonNull RtspProtoPlaybackRange ofAbsolute(
 				@NonNull TimestampEpochNs absoluteTimeStart,
@@ -68,6 +79,10 @@ public final class RtspProtoPlaybackRange {
 			throw new IllegalArgumentException(RtspProtoPlaybackRange.class.getSimpleName() + ".ofAbsolute(): " +
 					"absoluteTimeBaseSecs must be >= 0.001");
 		}
+		if (relStartSecs < 0.0) {
+			throw new IllegalArgumentException(RtspProtoPlaybackRange.class.getSimpleName() + ".ofAbsolute(): " +
+					"relStartSecs must be >= 0.0");
+		}
 		RtspProtoPlaybackRange res = new RtspProtoPlaybackRange();
 		res.absoluteSecsStart = absoluteTimeBaseSecs;
 		res.rangeSecsStart = relStartSecs;
@@ -75,11 +90,23 @@ public final class RtspProtoPlaybackRange {
 		return res;
 	}
 
+	public static @NonNull RtspProtoPlaybackRange ofRelative(double startSecs) {
+		return ofRelative(startSecs, -1.0);
+	}
+
 	public static @NonNull RtspProtoPlaybackRange ofRelative(double startSecs, double endSecs) {
+		if (startSecs < 0.0) {
+			throw new IllegalArgumentException(RtspProtoPlaybackRange.class.getSimpleName() + ".ofRelative(): " +
+					"startSecs must be >= 0.0");
+		}
 		RtspProtoPlaybackRange res = new RtspProtoPlaybackRange();
 		res.rangeSecsStart = startSecs;
 		res.rangeSecsEnd = (endSecs < startSecs ? -1.0 : endSecs);
 		return res;
+	}
+
+	public static @NonNull RtspProtoPlaybackRange ofNowToInfinity() {
+		return RtspProtoPlaybackRange.ofRelative(0.0, -1.0);
 	}
 
 	/**
@@ -249,6 +276,69 @@ public final class RtspProtoPlaybackRange {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean isAbsoluteTime() {
+		return (absoluteSecsStart >= 0.0);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void clear() {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		absoluteSecsStart = -1.0;
+		rangeSecsStart = -1.0;
+		rangeSecsEnd = -1.0;
+	}
+
+	public boolean isEmpty() {
+		return (rangeSecsStart < 0.0);
+	}
+
+	public void copyFrom(@NonNull RtspProtoPlaybackRange other) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		if (other == this) {
+			return;
+		}
+		absoluteSecsStart = other.absoluteSecsStart;
+		rangeSecsStart = other.rangeSecsStart;
+		rangeSecsEnd = other.rangeSecsEnd;
+	}
+
+	public void writeProtect() {
+		isWriteProtected = true;
+	}
+
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	public @NonNull RtspProtoPlaybackRange clone() {
+		RtspProtoPlaybackRange cloned = new RtspProtoPlaybackRange();
+		cloned.copyFrom(this);
+		if (isWriteProtected) {
+			cloned.writeProtect();
+		}
+		return cloned;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof RtspProtoPlaybackRange that)) {
+			return false;
+		}
+		return (Double.compare(absoluteSecsStart, that.absoluteSecsStart) == 0 &&
+				Double.compare(rangeSecsStart, that.rangeSecsStart) == 0 &&
+				Double.compare(rangeSecsEnd, that.rangeSecsEnd) == 0);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(absoluteSecsStart, rangeSecsStart, rangeSecsEnd);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String doubleToAbsClock(boolean isStart, double absoluteSecsStart, double relSecs) {
@@ -319,6 +409,7 @@ public final class RtspProtoPlaybackRange {
 
 		RtspProtoPlaybackRange res = new RtspProtoPlaybackRange();
 		res.absoluteSecsStart = parseAbsClockSingleString(FNC_NAME, tmpSplit[0].strip());
+		res.rangeSecsStart = 0.0;
 		if (tmpSplit.length == 2) {
 			double tmpEndAbs = parseAbsClockSingleString(FNC_NAME, tmpSplit[1].strip());
 			if (tmpEndAbs > 0.001) {
