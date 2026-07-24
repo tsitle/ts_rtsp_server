@@ -101,6 +101,8 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 				throw new IllegalStateException("this should not happen #1");
 			}
 			infoObj.copyOf(tmpInfoObj);
+		} catch (AvInvalidCodecDataException e) {
+			throw e;
 		} catch (Exception e) {
 			logErrorMsgInterface.logErrorMsg("caught on parsing the entire packet: " + e);
 			throw new InputStreamEosException();
