@@ -38,7 +38,7 @@ public final class BuilderThreadRtpSenderAac {
 							threadParamsAudio,
 							threadParamsAac
 						);
-					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderAac<>(
+					case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> new ThreadRtpSenderAac<>(
 							AvStreamIncomingFromDemuxMs.class,
 							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,

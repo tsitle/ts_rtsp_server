@@ -38,7 +38,7 @@ public final class BuilderThreadRtpSenderH265 {
 							threadParamsVideo,
 							threadParamsH265
 						);
-					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderH265<>(
+					case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> new ThreadRtpSenderH265<>(
 							AvStreamIncomingFromDemuxMs.class,
 							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,

@@ -73,7 +73,16 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		super(logMsgInterface);
 
 		//
+		if (inputSourceDemuxMsUri.toString().isBlank()) {
+			throw new IllegalArgumentException("Input URI must not be blank");
+		}
 		this.inputSourceDemuxMsUri = URI.create(inputSourceDemuxMsUri.toString());
+		if (this.inputSourceDemuxMsUri.getScheme() == null) {
+			throw new IllegalArgumentException("Input URI must have a protocol");
+		}
+		if (this.inputSourceDemuxMsUri.getPath() == null) {
+			throw new IllegalArgumentException("Input URI must have a path");
+		}
 
 		//
 		this.isFromFile = "file".equals(inputSourceDemuxMsUri.getScheme());
@@ -100,7 +109,9 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		logDebug(FNC_NAME, "Thread started");
 
 		//
-		String inputFilePath = (inputSourceDemuxMsUri.getPath() == null ? "" : inputSourceDemuxMsUri.getPath());
+		String inputFilePath = inputSourceDemuxMsUri.toString()
+				.replace("http://", "rtsp://")
+				.replace("https://", "rtsps://");
 
 		//
 		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();

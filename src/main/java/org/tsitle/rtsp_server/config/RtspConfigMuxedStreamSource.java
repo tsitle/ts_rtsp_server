@@ -27,6 +27,9 @@ public final class RtspConfigMuxedStreamSource {
 	/** Path to the media file */
 	@Expose
 	private @NonNull String filePath;
+	/** URL to the RTSP stream */
+	@Expose
+	private @NonNull String rtspUrl;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -40,6 +43,7 @@ public final class RtspConfigMuxedStreamSource {
 		this.id = -1;
 		this.enabled = true;
 		this.filePath = "";
+		this.rtspUrl = "";
 
 		this.internalHasBeenPostProcessed = false;
 	}
@@ -67,13 +71,18 @@ public final class RtspConfigMuxedStreamSource {
 	public @NonNull URI getInputUri() {
 		checkPostProcessed();
 		//noinspection ConstantValue
-		if (filePath == null) {
-			throw new IllegalStateException("filePath is null");
+		if (filePath != null && ! filePath.isBlank()) {
+			return URI.create("file:" + filePath);
 		}
-		if (filePath.isBlank()) {
-			throw new IllegalStateException("filePath is blank");
+		//noinspection ConstantValue
+		if (rtspUrl != null && rtspUrl.startsWith("rtsp://")) {
+			return URI.create(rtspUrl.replace("rtsp://", "http://"));
 		}
-		return URI.create("file:" + filePath);
+		//noinspection ConstantValue
+		if (rtspUrl != null && rtspUrl.startsWith("rtsps://")) {
+			return URI.create(rtspUrl.replace("rtsps://", "https://"));
+		}
+		throw new IllegalStateException("filePath and rtspUrl are blank");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -96,12 +105,17 @@ public final class RtspConfigMuxedStreamSource {
 		if (enabled == null) {
 			enabled = true;
 		}
- 		//
+		//
 		//noinspection ConstantValue
 		if (filePath != null && ! filePath.isBlank()) {
 			filePath = dataFilenameToAbsolutePath(dataDir, filePath);
 		} else {
 			filePath = "";
+		}
+		//
+		//noinspection ConstantValue
+		if (rtspUrl == null || rtspUrl.isBlank()) {
+			rtspUrl = "";
 		}
 	}
 
@@ -125,13 +139,21 @@ public final class RtspConfigMuxedStreamSource {
 		}
 
 		//
-		if (filePath.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path found for Muxed-Stream Source ID '" +
-					tmpExtSsId + "'");
+		final String errMsgSuffix = "for Muxed-Stream Source ID '" + tmpExtSsId + "'";
+		if (filePath.isBlank() && rtspUrl.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No File Path nor RTSP URL found " + errMsgSuffix);
+		}
+		if (! (filePath.isBlank() || rtspUrl.isBlank())) {
+			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and RTSP URL " + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
-					"' for Muxed-Stream Source ID '" + tmpExtSsId + "' - file not found");
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath + "' " + errMsgSuffix +
+					" - file not found");
+		}
+		if (! rtspUrl.isBlank() &&
+				! (rtspUrl.startsWith("rtsp://") || rtspUrl.startsWith("rtsps://"))) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP URL '" + rtspUrl + "' " + errMsgSuffix +
+					" - unsupported protocol");
 		}
 
 		//
@@ -168,19 +190,23 @@ public final class RtspConfigMuxedStreamSource {
 
 		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extMsId + "'";
 
+		final String realUri = getInputUri().toString()
+				.replace("http://", "rtsp://")
+				.replace("https://", "rtsps://");
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
-					getInputUri().getPath(),
+					realUri,
 					dmxSettingsRsi,
 					ffStreamInfoVideo,
 					ffStreamInfoAudio
 				);
 		} catch (FfmpegGenericException e) {
-			throw new ConfigInvalidException("Failed to read sub-stream infos " + errMsgSuffix + ": " + e.getMessage());
+			throw new ConfigInvalidException("Failed to read sub-stream infos " + errMsgSuffix + " " +
+					"(src='" + realUri + "'): " + e.getMessage());
 		}
 
-		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec == FfmpegCodec.UNKNOWN) {
 			throw new ConfigInvalidException("No A/V sub-streams found " + errMsgSuffix);
 		}
 

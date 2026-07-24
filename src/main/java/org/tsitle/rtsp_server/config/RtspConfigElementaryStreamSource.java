@@ -184,7 +184,8 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
 		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps);
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps + " " +
+					"for MS Source '" + msSourceUri + "'");
 		}
 
 		return resObj;
@@ -258,7 +259,7 @@ public final class RtspConfigElementaryStreamSource {
 		return switch (getSourceType()) {
 				case ST_ES_FILE -> URI.create("file:" + filePath);
 				case ST_ES_MQ -> Objects.requireNonNull(mq).getInputUri();
-				case ST_DEMUX_MS_FILE -> Objects.requireNonNull(msSourceUri);
+				case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> Objects.requireNonNull(msSourceUri);
 			};
 	}
 
@@ -297,7 +298,7 @@ public final class RtspConfigElementaryStreamSource {
 			return RtspProtoEsSourceType.ST_ES_MQ;
 		}
 		if (msSourceId != null && msSourceFfmpegStreamIx != null) {
-			return RtspProtoEsSourceType.ST_DEMUX_MS_FILE;
+			return (! filePath.isBlank() ? RtspProtoEsSourceType.ST_DEMUX_MS_FILE : RtspProtoEsSourceType.ST_DEMUX_MS_RTSP);
 		}
 		throw new IllegalStateException(FNC_NAME + ": could not identify Source Type");
 	}
@@ -519,10 +520,13 @@ public final class RtspConfigElementaryStreamSource {
 
 		//
 		if (filePath.isBlank() && mq == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": No file path / MQ found " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": No File Path / MQ found " + errMsgSuffix);
+		}
+		if (! filePath.isBlank() && mq != null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and MQ " + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid file path '" + filePath +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath +
 					"' " + errMsgSuffix + " - file not found");
 		}
 		if (mq != null) {

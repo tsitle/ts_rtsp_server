@@ -41,7 +41,7 @@ public final class BuilderThreadRtpSenderMjpeg {
 							threadParamsVideo,
 							threadParamsMjpeg
 						);
-					case ST_DEMUX_MS_FILE -> new ThreadRtpSenderMjpeg<>(
+					case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> new ThreadRtpSenderMjpeg<>(
 							AvStreamIncomingFromDemuxMs.class,
 							FrameGrabberAvFromDemuxMs.class,
 							threadParamsCommon,

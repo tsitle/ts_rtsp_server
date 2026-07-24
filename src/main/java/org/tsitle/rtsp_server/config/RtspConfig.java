@@ -696,7 +696,7 @@ public final class RtspConfig {
 		if (filename == null || filename.isBlank()) {
 			throw new ConfigInvalidException("Empty value for '" + desc + "'");
 		}
-		getAbsoluteFilePath("Invalid file path for '" + desc + "'", filename).orElseThrow();
+		getAbsoluteFilePath("Invalid File Path for '" + desc + "'", filename).orElseThrow();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
