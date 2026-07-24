@@ -98,6 +98,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param outStreamInfoAud Output for the audio stream info
 	 * @throws FfmpegGenericException If any FFmpeg error occurs
 	 */
+	@SuppressWarnings("unused")
 	public static void readStreamInfos(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
@@ -127,6 +128,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param inputFilePath Path to the input file
 	 * @param dmxSettings Settings for demuxing
 	 */
+	@SuppressWarnings("unused")
 	public static FfmpegDemuxer createForDemuxingOnly(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputFilePath,
@@ -170,7 +172,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @return Read result
 	 * @throws FfmpegGenericException If any FFmpeg error occurs
 	 */
-	public @NonNull ReadResult readNextAvPacket(@NonNull FfmpegAvPktBasics outputData) throws FfmpegGenericException {
+	@SuppressWarnings("unused")
+	public synchronized @NonNull ReadResult readNextAvPacket(@NonNull FfmpegAvPktBasics outputData) throws FfmpegGenericException {
 		outputData.clear();
 
 		//
@@ -205,6 +208,61 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return resEn;
 	}
 
+	/**
+	 * Seek to a position in the input timeline.
+	 * @param targetTimestamp Target position in seconds (fractional is allowed)
+	 * @throws FfmpegGenericException If any FFmpeg error occurs
+	 */
+	public synchronized void seekToTimestamp(double targetTimestamp) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".seekToTimestamp()";
+
+		if (inputAvFmtCtx == null) {
+			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
+		}
+
+		if (! Double.isFinite(targetTimestamp) || targetTimestamp < 0.0) {
+			throw new IllegalArgumentException(FNC_NAME + ": seconds must be finite and >= 0.0");
+		}
+		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+			throw new IllegalStateException(FNC_NAME + ": need to read the stream info first");
+		}
+		if (! isInputOpen) {
+			throw new IllegalStateException(FNC_NAME + ": input file needs to be open");
+		}
+
+		long targetTs = Math.max(0L, Math.round(targetTimestamp * (double)avutil.AV_TIME_BASE));
+
+		int r = avformat.avformat_seek_file(
+				inputAvFmtCtx,
+				-1,
+				Long.MIN_VALUE,
+				targetTs,
+				Long.MAX_VALUE,
+				avformat.AVSEEK_FLAG_BACKWARD
+			);
+		// fallback for formats that are picky with avformat_seek_file()
+		if (r < 0) {
+			// this does seem coarser, though
+			r = avformat.av_seek_frame(inputAvFmtCtx, -1, targetTs, avformat.AVSEEK_FLAG_BACKWARD);
+		}
+		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_seek_file/frame", r);
+
+		avformat.avformat_flush(inputAvFmtCtx);
+
+		if (cacheAvPkt != null) {
+			avcodec.av_packet_unref(cacheAvPkt);
+		}
+
+		// reset filter state to avoid stale buffered packets after seek
+		if (bsfH26xAnnexB != null) {
+			bsfH26xAnnexB.close();
+			bsfH26xAnnexB = null;
+		}
+
+		haveReachedMaxSecs = false;
+		stats.currentMaxPtsSecs = -1.0;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("unused")
@@ -217,6 +275,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return Optional.ofNullable(inputAvFmtCtx);
 	}
 
+	@SuppressWarnings("unused")
 	public Optional<Integer> getFfAvStreamIxVideo() {
 		if (inputStreamInfoVid.streamIx < 0) {
 			return Optional.empty();
@@ -224,6 +283,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return Optional.of(inputStreamInfoVid.streamIx);
 	}
 
+	@SuppressWarnings("unused")
 	public Optional<Integer> getFfAvStreamIxAudio() {
 		if (inputStreamInfoAud.streamIx < 0) {
 			return Optional.empty();
