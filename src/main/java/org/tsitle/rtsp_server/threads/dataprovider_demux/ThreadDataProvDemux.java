@@ -230,8 +230,8 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 			readNextPkt = (
 					! eosReached.get() &&
 					(
-						(! haveInputVideo || cacheVid.count < CACHE_SIZE_DEFAULT) ||
-						(! haveInputAudio || cacheAud.count < CACHE_SIZE_DEFAULT)
+						(haveInputVideo && cacheVid.count < CACHE_SIZE_DEFAULT) ||
+						(haveInputAudio && cacheAud.count < CACHE_SIZE_DEFAULT)
 					)
 				);
 		} finally {
