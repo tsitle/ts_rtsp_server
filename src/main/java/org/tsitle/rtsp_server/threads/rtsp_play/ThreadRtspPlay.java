@@ -10,7 +10,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
 import org.tsitle.rtsp_server.config.RtspConfig;
@@ -220,8 +219,8 @@ public final class ThreadRtspPlay extends RunnableBase
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean seekStream(@NonNull RtspProtoPlaybackRange pbRange) {
-		return rtspChildThreadMng.seekStream(pbRange);
+	public boolean seekStream(double targetTimestamp) {
+		return rtspChildThreadMng.seekStream(targetTimestamp);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

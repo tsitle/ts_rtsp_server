@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.dataprovider_demux;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDemuxer;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
@@ -9,7 +10,6 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
@@ -38,10 +38,18 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		final ReentrantLock lock = new ReentrantLock();
 		/** Condition to signal that the queue is not empty */
 		final Condition cacheNotEmpty = lock.newCondition();
+
+		void clearCache() {
+			count = 0;
+			ixRead = 0;
+			ixWrite = 0;
+		}
 	}
 
 	private final @NonNull URI inputSourceDemuxMsUri;
+	private final boolean isFromFile;
 
+	private @Nullable FfmpegDemuxer ffDemuxerPtr = null;
 	private final ReadWriteLock demuxerLock = new ReentrantReadWriteLock();
 	private final Lock demuxerReadLock = demuxerLock.readLock();
 	private final Lock demuxerWriteLock = demuxerLock.writeLock();
@@ -54,6 +62,8 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	private final FfPktCacheCont cacheVid = new FfPktCacheCont();
 	private final FfPktCacheCont cacheAud = new FfPktCacheCont();
 
+	private double durationSecs = -1.0;
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
@@ -63,11 +73,14 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		super(logMsgInterface);
 
 		//
-		if (! ("file".equals(inputSourceDemuxMsUri.getScheme()) ||
+		this.inputSourceDemuxMsUri = URI.create(inputSourceDemuxMsUri.toString());
+
+		//
+		this.isFromFile = "file".equals(inputSourceDemuxMsUri.getScheme());
+		if (! (isFromFile ||
 				"http".equals(inputSourceDemuxMsUri.getScheme()) || "https".equals(inputSourceDemuxMsUri.getScheme()))) {
 			throw new IllegalArgumentException("Input URI scheme must be 'file|http|https'");
 		}
-		this.inputSourceDemuxMsUri = URI.create(inputSourceDemuxMsUri.toString());
 
 		//
 		for (int i = 0; i < CACHE_SIZE_MAX; i++) {
@@ -98,44 +111,17 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		dmxSettingsDemux.cfgAllowOnlySpecificCodecsAudio = true;
 		dmxSettingsDemux.cfgAllowedCodecsAudio.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO);
 
-		try (FfmpegDemuxer ffmpegDemuxer = FfmpegDemuxer.createForDemuxingOnly(
+		try (FfmpegDemuxer ffDemuxer = FfmpegDemuxer.createForDemuxingOnly(
 					logMsgInterface,
 					inputFilePath,
 					dmxSettingsDemux
 				)) {
-			boolean readNextPkt;
+			demuxerWriteLock.lock();
+			try { ffDemuxerPtr = ffDemuxer; } finally { demuxerWriteLock.unlock(); }
+			//
 			while (! doStop.get()) {
-				demuxerReadLock.lock();
-				try {
-					if (eosReached.get() && cacheVid.count == 0 && cacheAud.count == 0) {
-						break;
-					}
-					readNextPkt = (
-							! eosReached.get() &&
-							(
-								(! haveInputVideo || cacheVid.count < CACHE_SIZE_DEFAULT) ||
-								(! haveInputAudio || cacheAud.count < CACHE_SIZE_DEFAULT)
-							)
-						);
-				} finally {
-					demuxerReadLock.unlock();
-				}
-				//
-				if (! haveInputSi || readNextPkt) {
-					internalReadNextAvPacket(ffmpegDemuxer);
-				} else {
-					boolean tmpDoSignV;
-					demuxerReadLock.lock(); try { tmpDoSignV = (cacheVid.count > 0); } finally { demuxerReadLock.unlock(); }
-					if (tmpDoSignV) {
-						signalCacheNotEmpty(cacheVid);
-					}
-					boolean tmpDoSignA;
-					demuxerReadLock.lock(); try { tmpDoSignA = (cacheAud.count > 0); } finally { demuxerReadLock.unlock(); }
-					if (tmpDoSignA) {
-						signalCacheNotEmpty(cacheAud);
-					}
-					//noinspection BusyWait
-					Thread.sleep(1);
+				if (! mainLoop()) {
+					break;
 				}
 			}
 		} catch (InterruptedException e) {
@@ -146,6 +132,9 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
+			demuxerWriteLock.lock();
+			try { ffDemuxerPtr = null; } finally { demuxerWriteLock.unlock(); }
+			//
 			signalCacheNotEmpty(cacheVid);
 			signalCacheNotEmpty(cacheAud);
 
@@ -170,8 +159,40 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean seekStream(@NonNull RtspProtoPlaybackRange pbRange) {
-		// @TODO implement actual seeking
+	public boolean seekStream(double targetTimestamp) {
+		final String FNC_NAME = getClass().getSimpleName() + ".seekStream()";
+
+		if (! isFromFile || targetTimestamp < 0.0 || eosReached.get() ||
+				durationSecs < 0.001 || targetTimestamp > durationSecs + 0.1) {
+			return false;
+		}
+		demuxerWriteLock.lock();
+		try {
+			if (ffDemuxerPtr == null) {
+				return false;
+			}
+			cacheVid.lock.lock();
+			try {
+				cacheAud.lock.lock();
+				try {
+					cacheVid.clearCache();
+					cacheAud.clearCache();
+					//
+					try {
+						ffDemuxerPtr.seekToTimestamp(targetTimestamp);
+					} catch (FfmpegGenericException e) {
+						logError(FNC_NAME, "seeking failed: " + e.getMessage());
+						return false;
+					}
+				} finally {
+					cacheAud.lock.unlock();
+				}
+			} finally {
+				cacheVid.lock.unlock();
+			}
+		} finally {
+			demuxerWriteLock.unlock();
+		}
 		return true;
 	}
 
@@ -185,6 +206,46 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean mainLoop() throws InterruptedException, InputStreamEosException {
+		boolean readNextPkt;
+
+		demuxerReadLock.lock();
+		try {
+			if (eosReached.get() && cacheVid.count == 0 && cacheAud.count == 0) {
+				return false;
+			}
+			readNextPkt = (
+					! eosReached.get() &&
+					(
+						(! haveInputVideo || cacheVid.count < CACHE_SIZE_DEFAULT) ||
+						(! haveInputAudio || cacheAud.count < CACHE_SIZE_DEFAULT)
+					)
+				);
+		} finally {
+			demuxerReadLock.unlock();
+		}
+		//
+		if (! haveInputSi || readNextPkt) {
+			internalReadNextAvPacket();
+		} else {
+			boolean tmpDoSignV;
+			demuxerReadLock.lock(); try { tmpDoSignV = (cacheVid.count > 0); } finally { demuxerReadLock.unlock(); }
+			if (tmpDoSignV) {
+				signalCacheNotEmpty(cacheVid);
+			}
+			boolean tmpDoSignA;
+			demuxerReadLock.lock(); try { tmpDoSignA = (cacheAud.count > 0); } finally { demuxerReadLock.unlock(); }
+			if (tmpDoSignA) {
+				signalCacheNotEmpty(cacheAud);
+			}
+			Thread.sleep(1);
+		}
+
+		return true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void signalCacheNotEmpty(@NonNull FfPktCacheCont cacheCont) {
@@ -254,11 +315,15 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 		}
 	}
 
-	private void internalReadNextAvPacket(@NonNull FfmpegDemuxer ffDemuxer) throws InputStreamEosException {
+	private void internalReadNextAvPacket() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadNextAvPacket()";
 
 		demuxerWriteLock.lock();
 		try {
+			if (ffDemuxerPtr == null) {
+				logError(FNC_NAME, "ffDemuxerPtr is null");
+				throw new InputStreamEosException();
+			}
 			if ((haveInputVideo && cacheVid.count == CACHE_SIZE_MAX) ||
 					(haveInputAudio && cacheAud.count == CACHE_SIZE_MAX)) {
 				logError(FNC_NAME, "cache is full");
@@ -272,7 +337,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 			FfPktCacheEntry tmpCacheEntry = new FfPktCacheEntry();
 
-			FfmpegDemuxer.ReadResult tmpRr = ffDemuxer.readNextAvPacket(tmpCacheEntry.ffPktObj);
+			FfmpegDemuxer.ReadResult tmpRr = ffDemuxerPtr.readNextAvPacket(tmpCacheEntry.ffPktObj);
 			if (tmpRr == FfmpegDemuxer.ReadResult.RR_EOF) {
 				eosReached.set(true);
 				return;
@@ -280,9 +345,11 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 			//
 			if (! haveInputSi) {
-				haveInputVideo = ffDemuxer.getFfAvStreamIxVideo().isPresent();
-				haveInputAudio = ffDemuxer.getFfAvStreamIxAudio().isPresent();
+				haveInputVideo = ffDemuxerPtr.getFfAvStreamIxVideo().isPresent();
+				haveInputAudio = ffDemuxerPtr.getFfAvStreamIxAudio().isPresent();
 				haveInputSi = true;
+				//
+				durationSecs = ffDemuxerPtr.getDurationSecs().orElse(-1.0);
 			}
 
 			//

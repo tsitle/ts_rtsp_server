@@ -304,10 +304,10 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 						threadRtspPlay != null) {
 					RtspProtoPlaybackRange tmpPbRange = sessionInfoPtr.ptr().getClientPlaybackRangeValue().get();
 					if (tmpPbRange.isAbsoluteTime()) {
-						resObj.statusCode = RtspProtoStatusCode.NOT_ACCEPTABLE;
+						resObj.statusCode = RtspProtoStatusCode.INVALID_RANGE;
 					} else if (! tmpPbRange.isEmpty()) {
-						if (! threadRtspPlay.seekStream(tmpPbRange)) {
-							resObj.statusCode = RtspProtoStatusCode.NOT_ACCEPTABLE;
+						if (! threadRtspPlay.seekStream(tmpPbRange.getRelativeTimeStartSecs())) {
+							resObj.statusCode = RtspProtoStatusCode.INVALID_RANGE;
 						}
 					}
 				}

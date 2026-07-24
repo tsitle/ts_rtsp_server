@@ -306,7 +306,7 @@ final class RtspChildThreadMng {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean seekStream(@NonNull RtspProtoPlaybackRange pbRange) {
+	boolean seekStream(double targetTimestamp) {
 		if (usedIdInputSource.isEmpty()) {  // sanity check
 			return false;
 		}
@@ -315,7 +315,7 @@ final class RtspChildThreadMng {
 			if (childThreadDemux == null) {
 				return false;
 			}
-			return childThreadDemux.seekStream(pbRange);
+			return childThreadDemux.seekStream(targetTimestamp);
 		} finally {
 			theReadLockCtfos.unlock();
 		}

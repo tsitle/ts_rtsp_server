@@ -15,6 +15,7 @@ public enum RtspProtoStatusCode {
 	INVALID_PARAMETER(451),
 	SESSION_NOT_FOUND(454),
 	METHOD_NOT_VALID_IN_THIS_STATE(455),
+	INVALID_RANGE(457),
 	UNSUPPORTED_TRANSPORT(461),
 	INTERNAL_SERVER_ERROR(500),
 	NOT_IMPLEMENTED(501),
@@ -43,6 +44,7 @@ public enum RtspProtoStatusCode {
 				case INVALID_PARAMETER -> "Invalid Parameter";
 				case SESSION_NOT_FOUND -> "Session Not Found";
 				case METHOD_NOT_VALID_IN_THIS_STATE -> "Method Not Valid In This State";
+				case INVALID_RANGE -> "Invalid Range";
 				case UNSUPPORTED_TRANSPORT -> "Unsupported Transport";
 				case INTERNAL_SERVER_ERROR -> "Internal Server Error";
 				case NOT_IMPLEMENTED -> "Not Implemented";
