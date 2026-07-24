@@ -171,7 +171,7 @@ class PlaybackRangeTest {
 	// -------------------------------------------------------
 
 	@Test
-	void testParseNpt() throws Exception {
+	void testParseNpt_secs() throws Exception {
 		RtspProtoPlaybackRange range = RtspProtoPlaybackRange.parseString("npt=10.123-");
 		assertEquals(10.123, range.getRelativeTimeStartSecs());
 		assertTrue(range.getRelativeTimeEndSecs().isEmpty());
@@ -195,6 +195,32 @@ class PlaybackRangeTest {
 		range = RtspProtoPlaybackRange.parseString("npt=555.543-");
 		assertEquals(555.543, range.getRelativeTimeStartSecs());
 		assertTrue(range.getRelativeTimeEndSecs().isEmpty());
+	}
+
+	@Test
+	void testParseNpt_hoursMinutesSecsMs() throws Exception {
+		RtspProtoPlaybackRange range = RtspProtoPlaybackRange.parseString("npt=0:00:10.123-");
+		assertEquals(10.123, range.getRelativeTimeStartSecs());
+		assertTrue(range.getRelativeTimeEndSecs().isEmpty());
+
+		//
+		range = RtspProtoPlaybackRange.parseString("npt=now-");
+		assertEquals(0.0, range.getRelativeTimeStartSecs());
+		assertTrue(range.getRelativeTimeEndSecs().isEmpty());
+
+		//
+		range = RtspProtoPlaybackRange.parseString("npt=now-0:00:01");
+		assertEquals(0.0, range.getRelativeTimeStartSecs());
+		assertEquals(1.0, range.getRelativeTimeEndSecs().orElseThrow());
+
+		//
+		range = RtspProtoPlaybackRange.parseString("npt=1:23:45.678-2:34:56.789");
+		assertEquals(5025.678, range.getRelativeTimeStartSecs());
+		assertEquals(9296.789, range.getRelativeTimeEndSecs().orElseThrow());
+		String str = range.toNptString_hoursMinutesSecsMs();
+		assertEquals("npt=1:23:45.677-2:34:56.789", str);
+		str = range.toNptString_secs();
+		assertEquals("npt=5025.678-9296.789", str);
 	}
 
 }
