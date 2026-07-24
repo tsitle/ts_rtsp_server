@@ -5,6 +5,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.demux.*;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
+import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
@@ -215,6 +217,9 @@ public final class RtspConfigMuxedStreamSource {
 				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
+			if (FrameRateEnum.of(ffStreamInfoVideo.fps.toDouble()) == FrameRateEnum.UNKNOWN) {
+				approximateFps();
+			}
 		}
 		if (ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
 			if (ffStreamInfoAudio.channelCount < 1) {
@@ -228,6 +233,22 @@ public final class RtspConfigMuxedStreamSource {
 				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
+		}
+	}
+
+	private void approximateFps() {
+		final double orgFps = ffStreamInfoVideo.fps.toDouble();
+		FrameRateEnum closestEn = FrameRateEnum.UNKNOWN;
+		double closestDiff = Double.MAX_VALUE;
+		for (FrameRateEnum tmpEn : FrameRateEnum.values()) {
+			double curDiff = Math.abs(tmpEn.getFrDbl() - orgFps);
+			if (curDiff < closestDiff) {
+				closestDiff = curDiff;
+				closestEn = tmpEn;
+			}
+		}
+		if (closestEn != FrameRateEnum.UNKNOWN) {
+			ffStreamInfoVideo.fps = RationalNumber.ofFps(closestEn.getFrDbl());
 		}
 	}
 
