@@ -3,6 +3,8 @@ package org.tsitle.lib_xrtxp.avdata;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
+import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 
 public final class VideoH265Parser {
 
@@ -28,6 +30,7 @@ public final class VideoH265Parser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseH265Data()";
 
 		VideoH265Info resObj = new VideoH265Info();
+		resObj.isValid = true;
 
 		resObj.nalUnitOffset = startCodeLen;
 		if (inputBv.getLength() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
@@ -49,32 +52,50 @@ public final class VideoH265Parser {
 		 *  +-------------+-----------------+
 		 */
 
-		/*debugLog(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X%02X",
-				inputBv.getByte(0), inputBv.getByte(1)));*/
+		/*System.out.format("scl=%d: 0x%02X%02X%02X%02X%n",
+				startCodeLen,
+				inputBv.getByte(0), inputBv.getByte(1),
+				inputBv.getByte(2), inputBv.getByte(3));*/
 		int offs = resObj.nalUnitOffset;
-		if ((byte)(inputBv.getByte(offs) & 0x80) != 0) {
-			throw new AvInvalidCodecDataException(
-					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((inputBv.getByte(offs) & 0x80) >> 7))
-				);
-		}
-		resObj.nalUnitTypeBy = (byte)( ((inputBv.getByte(offs) & 0x7E) >>> 1) & 0x3F);
-		resObj.nalUnitTypeEn = VideoH265Info.NalUnitType.of(resObj.nalUnitTypeBy);
-		resObj.nuhLayerId = (byte)( ( ((inputBv.getByte(offs++) & 0x01) << 5) |
-				((inputBv.getByte(offs) & 0xF8) >> 3) ) & 0x3F);
-		resObj.nuhTemporalIdPlus1 = (byte)(inputBv.getByte(offs++) & 0x07);
+		BufferView tmpHeaderBv = inputBv.clone();
+		tmpHeaderBv.increaseOffset(resObj.nalUnitOffset);
+		tmpHeaderBv.setLength(2);
+		BitReaderHelper tmpBr = new BitReaderHelper(tmpHeaderBv);
+		try {
+			int tmpFbit = tmpBr.readBit();
+			resObj.nalUnitTypeBy = (byte)tmpBr.readBits(6);
+			resObj.nalUnitTypeEn = VideoH265Info.NalUnitType.of(resObj.nalUnitTypeBy);
+			resObj.nuhLayerId = (byte)tmpBr.readBits(6);
+			resObj.nuhTemporalIdPlus1 = (byte)tmpBr.readBits(3);
 
-		if (resObj.nuhLayerId != 0) {
-			throw new AvInvalidCodecDataException(
-					String.format("NAL unit layer ID must be zero (is=0x%02X)", resObj.nuhLayerId)
-				);
-		}
-		if (resObj.nuhTemporalIdPlus1 == 0) {
-			throw new AvInvalidCodecDataException(
-					String.format("NAL unit temporal ID must be non-zero (is=0x%02X)", resObj.nuhTemporalIdPlus1)
-				);
+			if (tmpFbit != 0) {
+				/*System.out.format("scl=%d: 0x%02X%02X%02X%02X %02X%02X%n",
+						startCodeLen,
+						inputBv.getByte(0), inputBv.getByte(1),
+						inputBv.getByte(2), inputBv.getByte(3),
+						inputBv.getByte(4), inputBv.getByte(5));*/
+				/*throw new AvInvalidCodecDataException(
+						String.format("NAL unit F bit must be zero (is=0x%02X) - Type=%s(%d//0x%02x)",
+								tmpFbit, resObj.nalUnitTypeEn, resObj.nalUnitTypeBy, resObj.nalUnitTypeBy)
+					);*/
+				resObj.isValid = false;
+			}
+		} catch (BitReaderEosException e) {
+			throw new AvInvalidCodecDataException("could not read NAL unit header");
 		}
 
-		if (VideoH265Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
+		if (resObj.isValid && resObj.nuhLayerId != 0) {
+			resObj.isValid = false;
+			resObj.validationErrorMsg = String.format("NAL unit layer ID must be zero (is=0x%02X) - Type=%s",
+					resObj.nuhLayerId, resObj.nalUnitTypeEn);
+		}
+		if (resObj.isValid && resObj.nuhTemporalIdPlus1 == 0) {
+			resObj.isValid = false;
+			resObj.validationErrorMsg = String.format("NAL unit temporal ID must be non-zero (is=0x%02X) - Type=%s",
+					resObj.nuhTemporalIdPlus1, resObj.nalUnitTypeEn);
+		}
+
+		if (resObj.isValid && VideoH265Info.NalUnitType.isVclNalUnitType(resObj.nalUnitTypeBy)) {
 			/*
 			 * We don't do 'EBSP' to 'RBSP' (Emulation prevention three bytes) conversion here
 			 * since the TemporalIdPlus1 must be non-zero and therefore the first two bytes
