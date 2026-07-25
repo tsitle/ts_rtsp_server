@@ -19,4 +19,9 @@ public enum RtspProtoEsSourceType {
 		return (this == ST_DEMUX_MS_FILE || this == ST_DEMUX_MS_RTSP);
 	}
 
+	@SuppressWarnings("unused")
+	public boolean isMq() {
+		return (this == ST_ES_MQ);
+	}
+
 }
