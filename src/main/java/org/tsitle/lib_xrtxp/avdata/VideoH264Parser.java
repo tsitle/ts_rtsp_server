@@ -52,6 +52,7 @@ public final class VideoH264Parser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseH264Data()";
 
 		VideoH264Info resObj = new VideoH264Info();
+		resObj.isValid = true;
 
 		resObj.nalUnitOffset = startCodeLen;
 		if (inputBv.getLength() < resObj.nalUnitOffset + NAL_UNIT_HEADER_SIZE) {
