@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
 public class ParamsThreadRtpSenderAudioCommon implements Cloneable {
 

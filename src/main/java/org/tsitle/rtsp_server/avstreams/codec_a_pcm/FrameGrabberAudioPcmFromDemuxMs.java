@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;

@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.common.helpers;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 
 public final class UuidHelper {
 

@@ -1,8 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;

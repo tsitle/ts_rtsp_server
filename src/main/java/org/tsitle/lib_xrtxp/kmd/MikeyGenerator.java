@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.constants.*;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 

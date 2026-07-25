@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 
 /**
  * Stores the current frame data (e.g., one entire JPEG frame or one entire H264/5 NAL Unit)

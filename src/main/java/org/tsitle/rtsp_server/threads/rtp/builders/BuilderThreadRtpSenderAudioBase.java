@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
 
 public abstract class BuilderThreadRtpSenderAudioBase<

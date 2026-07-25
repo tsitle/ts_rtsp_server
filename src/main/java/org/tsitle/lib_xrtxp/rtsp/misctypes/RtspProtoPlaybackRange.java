@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidPbRangeException;
 
 import java.time.Instant;

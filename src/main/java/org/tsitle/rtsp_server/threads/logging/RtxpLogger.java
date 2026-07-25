@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.logging;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 

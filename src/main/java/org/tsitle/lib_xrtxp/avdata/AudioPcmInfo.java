@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
 import java.io.ByteArrayOutputStream;
 

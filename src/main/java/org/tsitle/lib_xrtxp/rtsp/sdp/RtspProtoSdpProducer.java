@@ -2,8 +2,8 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;

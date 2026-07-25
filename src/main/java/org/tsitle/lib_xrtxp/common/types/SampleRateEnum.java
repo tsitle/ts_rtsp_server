@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.common.helpers;
+package org.tsitle.lib_xrtxp.common.types;
 
 import org.jspecify.annotations.NonNull;
 

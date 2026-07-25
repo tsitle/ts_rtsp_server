@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;

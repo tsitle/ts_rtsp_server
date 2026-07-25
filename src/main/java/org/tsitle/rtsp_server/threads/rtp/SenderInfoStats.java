@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 
 import java.time.Instant;

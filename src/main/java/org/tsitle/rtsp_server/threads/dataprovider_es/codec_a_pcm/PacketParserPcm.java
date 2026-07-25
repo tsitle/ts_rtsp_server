@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioPcmParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
 final class PacketParserPcm {
 

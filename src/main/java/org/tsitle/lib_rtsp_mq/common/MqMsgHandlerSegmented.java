@@ -6,9 +6,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.zeromq.ZMQ;
 
 import java.nio.ByteBuffer;

@@ -8,7 +8,7 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;

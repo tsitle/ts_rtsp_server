@@ -2,9 +2,9 @@ package org.tsitle.lib_rtsp_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.helpers.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
 /**
  * Audio/video packet.

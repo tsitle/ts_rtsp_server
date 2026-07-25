@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.packets.rtcp.*;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextOutbound;

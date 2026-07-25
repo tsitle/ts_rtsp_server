@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;

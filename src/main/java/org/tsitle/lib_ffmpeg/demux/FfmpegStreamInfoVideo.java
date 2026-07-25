@@ -1,7 +1,7 @@
 package org.tsitle.lib_ffmpeg.demux;
 
-import org.tsitle.lib_xrtxp.common.helpers.ImageDimensions;
-import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
+import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
+import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.jspecify.annotations.NonNull;
 
 public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {

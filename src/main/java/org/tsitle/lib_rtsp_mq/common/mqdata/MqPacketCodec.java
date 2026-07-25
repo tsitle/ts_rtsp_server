@@ -1,7 +1,7 @@
 package org.tsitle.lib_rtsp_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 /**

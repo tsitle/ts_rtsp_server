@@ -1,6 +1,6 @@
 package org.tsitle.lib_ffmpeg.demux;
 
-import org.tsitle.lib_xrtxp.common.helpers.RationalNumber;
+import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.jspecify.annotations.NonNull;
 
