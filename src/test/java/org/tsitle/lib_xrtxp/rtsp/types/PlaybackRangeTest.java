@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.types;
 
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.helpers.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
 import java.time.Instant;

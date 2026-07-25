@@ -1,6 +1,7 @@
-package org.tsitle.lib_xrtxp.common.helpers;
+package org.tsitle.lib_xrtxp.common.types;
 
 import org.junit.jupiter.api.Test;
+import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 
 import java.util.ArrayList;
 import java.util.List;
