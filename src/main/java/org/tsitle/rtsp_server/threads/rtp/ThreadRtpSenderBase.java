@@ -728,7 +728,8 @@ public abstract class ThreadRtpSenderBase<
 		adaptiveScheduler.waitForNextFrame();
 		//
 		TimestampEpochNs tmpCurTsNow = TimestampEpochNs.ofNow();
-		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
+		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile() ||
+				paramsCommon.getEsSourceType().orElseThrow().isDemuxed()) {
 			rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 		} else if (frameData.stTimestamp.isEmpty()) {
 			rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forNow(tmpCurTsNow, false));
