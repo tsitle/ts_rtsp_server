@@ -119,22 +119,23 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 		}
 
 		if (packetSplitter == null) {
-			if (frameGrabber == null) {
-				throw new InputStreamEosException();
-			}
-			packetSplitter = new PacketSplitter<>(
-					(@NonNull String cbErrorMsg) -> logError(FNC_NAME, cbErrorMsg),
-					frameGrabber,
-					needMagicBytes,
-					needConvertData,
-					needConvertData ? this::parseAndConvertData : null,
-					needConvertData ? null : this::parseData,
-					this::findNextMagicBytes,
-					canReadFrameLenFromAvInfo ? this::readFrameLenFromAvInfo : null
-				);
+			createPacketSplitter(FNC_NAME);
 		}
-		packetSplitter.getNextSplitPacket(buf, stTimestamp, infoObj);
-		debugStreamOffset = packetSplitter.getDebugStreamOffset();
+		//
+		int errorCount = 0;
+		while (! (doStop.get() || haveEos())) {
+			packetSplitter.getNextSplitPacket(buf, stTimestamp, infoObj);
+			debugStreamOffset = packetSplitter.getDebugStreamOffset();
+			if (infoObj.isValid()) {
+				break;
+			}
+			String tmpValErrMsg = infoObj.getValidationErrorMsg();
+			if (++errorCount >= 60) {  // arbitrary limit
+				throw new AvInvalidCodecDataException(tmpValErrMsg.isBlank() ? "unknown error" : tmpValErrMsg);
+			}
+			logDebug(FNC_NAME, "skipping frame with invalid codec data" +
+					(tmpValErrMsg.isBlank() ? "" : " (" + tmpValErrMsg + ")"));
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -152,5 +153,27 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	protected abstract int findNextMagicBytes(final @NonNull BufferView inputBv);
 
 	protected abstract int readFrameLenFromAvInfo(final @NonNull I avInfo);
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void createPacketSplitter(@NonNull String fncName) throws InputStreamEosException {
+		if (packetSplitter != null) {
+			return;
+		}
+		if (frameGrabber == null) {
+			throw new InputStreamEosException();
+		}
+		packetSplitter = new PacketSplitter<>(
+				(@NonNull String cbErrorMsg) -> logError(fncName, cbErrorMsg),
+				frameGrabber,
+				needMagicBytes,
+				needConvertData,
+				needConvertData ? this::parseAndConvertData : null,
+				needConvertData ? null : this::parseData,
+				this::findNextMagicBytes,
+				canReadFrameLenFromAvInfo ? this::readFrameLenFromAvInfo : null
+			);
+	}
 
 }

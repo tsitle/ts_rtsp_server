@@ -36,6 +36,8 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	private final ArrayList<@NonNull DataQueueEntry> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
 
+	private @NonNull String lastValidationErrMsg = "";
+
 	private final AtomicBoolean eosReached = new AtomicBoolean(false);
 	private long frameCountInp = 0;
 
@@ -232,7 +234,28 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		}
 		lock.lock();
 		try {
-			acquireData_sub(FNC_NAME);
+			int errorCount = 0;
+			while (! (doStop.get() || haveEos())) {
+				boolean wasValid;
+				try {
+					wasValid = acquireData_sub(FNC_NAME);
+				} catch (AvInvalidCodecDataException e) {
+					logError(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
+					eosReached.set(true);
+					break;
+				}
+				if (wasValid || doStop.get() || haveEos()) {
+					break;
+				}
+				if (++errorCount >= 60) {  // arbitrary limit
+					logError(FNC_NAME, "read frame with invalid codec data" +
+							(lastValidationErrMsg.isBlank() ? "" : " (" + lastValidationErrMsg + ")"));
+					eosReached.set(true);
+					break;
+				}
+				logDebug(FNC_NAME, "skipping frame with invalid codec data" +
+						(lastValidationErrMsg.isBlank() ? "" : " (" + lastValidationErrMsg + ")"));
+			}
 		} finally {
 			queueBlockedState.set(false);
 			queueBlockedChanged.signalAll();
@@ -240,9 +263,9 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		}
 	}
 
-	private void acquireData_sub(@NonNull String fncName) {
+	private boolean acquireData_sub(@NonNull String fncName) throws AvInvalidCodecDataException {
 		if (frameGrabber == null) {
-			return;
+			return false;
 		}
 
 		// get the next frame from the input, as well as its size
@@ -251,7 +274,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 		try {
 			frameGrabber.getNextFrame(tmpFrameBufPtr, tmpStTimestampPtr);
 			if (doStop.get()) {
-				return;
+				return false;
 			}
 			if (tmpFrameBufPtr.getUsed() < frameGrabber.getMinimumMagicBytesLengthBits() / 8) {
 				// we have reached the end of the input
@@ -261,7 +284,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 			}
 		} catch (InputStreamIoException | InputStreamEosException | InputStreamThreadEndedException e) {
 			if (doStop.get()) {
-				return;
+				return false;
 			}
 			if (e instanceof InputStreamIoException) {
 				logError(fncName, "InputStreamIoException caught while reading next frame: " + e.getMessage());
@@ -275,39 +298,40 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- InputStreamEosException");
 				// try to rewind in the next iteration
 			}
-			return;
+			return false;
 		} catch (AvInvalidCodecDataException e) {
 			logError(fncName, "AvInvalidCodecDataException caught: " + e.getMessage());
 			// we have reached the end of the input
 			eosReached.set(true);
-			return;
+			return false;
 		}
 		if (tmpFrameBufPtr.getUsed() == 0) {  // sanity check
 			// we have reached the end of the input
 			logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- empty frame buf");
 			eosReached.set(true);
-			return;
+			return false;
 		}
 
 		//
-		try {
-			I tmpInfoObj = (needConvertData ?
-					parseAndConvertData(tmpFrameBufPtr)
-					: parseData(new BufferView(tmpFrameBufPtr))
-				);
-			infoQueue.set(queueIxWrite.get(), tmpInfoObj);
-		} catch (Exception e) {
-			logError(fncName, "caught: " + e);
-			eosReached.set(true);
-			return;
+		I tmpInfoObj = (needConvertData ?
+				parseAndConvertData(tmpFrameBufPtr)
+				: parseData(new BufferView(tmpFrameBufPtr))
+			);
+		infoQueue.set(queueIxWrite.get(), tmpInfoObj);
+		if (! tmpInfoObj.isValid()) {
+			lastValidationErrMsg = tmpInfoObj.getValidationErrorMsg();
+			return false;
 		}
 
+		//
 		if (queueIxWrite.incrementAndGet() >= dataQueue.size()) {
 			queueIxWrite.set(0);
 		}
 		queueAvail.incrementAndGet();
 		debugStreamOffset += tmpFrameBufPtr.getUsed();
 		++frameCountInp;
+
+		return true;
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
