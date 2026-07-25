@@ -74,11 +74,9 @@ public final class VideoH265Parser {
 						inputBv.getByte(0), inputBv.getByte(1),
 						inputBv.getByte(2), inputBv.getByte(3),
 						inputBv.getByte(4), inputBv.getByte(5));*/
-				/*throw new AvInvalidCodecDataException(
-						String.format("NAL unit F bit must be zero (is=0x%02X) - Type=%s(%d//0x%02x)",
-								tmpFbit, resObj.nalUnitTypeEn, resObj.nalUnitTypeBy, resObj.nalUnitTypeBy)
-					);*/
 				resObj.isValid = false;
+				resObj.validationErrorMsg = String.format("NAL unit F bit must be zero (is=0x%02X) - Type=%s(%d//0x%02x)",
+						tmpFbit, resObj.nalUnitTypeEn, resObj.nalUnitTypeBy, resObj.nalUnitTypeBy);
 			}
 		} catch (BitReaderEosException e) {
 			throw new AvInvalidCodecDataException("could not read NAL unit header");
