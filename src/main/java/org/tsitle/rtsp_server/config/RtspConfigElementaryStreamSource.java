@@ -171,6 +171,8 @@ public final class RtspConfigElementaryStreamSource {
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamVideo()";
 
+		final String errMsgUri = getMsSourceUriForErrorMsgs(msSourceUri);
+
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
 		resObj.msSourceId = msSourceId;
@@ -185,7 +187,7 @@ public final class RtspConfigElementaryStreamSource {
 		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
 		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps + " " +
-					"for MS Source '" + msSourceUri + "'");
+					"for MS Source '" + errMsgUri + "'");
 		}
 
 		return resObj;
@@ -198,6 +200,8 @@ public final class RtspConfigElementaryStreamSource {
 				@NonNull FfmpegStreamInfoAudio streamInfo
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamAudio()";
+
+		final String errMsgUri = getMsSourceUriForErrorMsgs(msSourceUri);
 
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
@@ -216,14 +220,14 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
 		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SR value " + streamInfo.sampleRate + " " +
-					"for MS Source '" + msSourceUri + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SampleRate value " + streamInfo.sampleRate + " " +
+					"for MS Source '" + errMsgUri + "'");
 		}
 		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
 		if (resObj.internalAudioChannelCount < 1 ||
 				resObj.internalAudioChannelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {  // just in case
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount + " " +
-					"for MS Source '" + msSourceUri + "'");
+					"for MS Source '" + errMsgUri + "'");
 		}
 		resObj.internalIsPcmAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
 		resObj.internalAudioSamplesPerFrame = streamInfo.samplesPerFrame;
@@ -594,6 +598,22 @@ public final class RtspConfigElementaryStreamSource {
 		} else if (enabled && internalCodec == RtpPacketType.A_AC3) {
 			readAc3Header(getIdAsProtoId(), tmpExtSsId);
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	static @NonNull String getMsSourceUriForErrorMsgs(@NonNull URI msSourceUri) {
+		if (! ("http".equals(msSourceUri.getScheme()) || "https".equals(msSourceUri.getScheme()))) {
+			return msSourceUri.toString();
+		}
+		String tmpProto = msSourceUri.getScheme();
+		String tmpHost = msSourceUri.getHost();
+		String tmpPath = msSourceUri.getPath();
+		String tmpQuery = msSourceUri.getQuery();
+		URI cleanedUp = URI.create(tmpProto + "://" + tmpHost + tmpPath + (tmpQuery != null ? "?" + tmpQuery : ""));
+		return cleanedUp.toString()
+				.replace("http://", "rtsp://")
+				.replace("https://", "rtsps://");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

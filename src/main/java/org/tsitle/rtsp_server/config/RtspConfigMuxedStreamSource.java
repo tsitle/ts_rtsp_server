@@ -195,6 +195,8 @@ public final class RtspConfigMuxedStreamSource {
 		final String realUri = getInputUri().toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
+		final String errMsgUri = RtspConfigElementaryStreamSource.getMsSourceUriForErrorMsgs(getInputUri());
+
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
@@ -205,7 +207,7 @@ public final class RtspConfigMuxedStreamSource {
 				);
 		} catch (FfmpegGenericException e) {
 			throw new ConfigInvalidException("Failed to read sub-stream infos " + errMsgSuffix + " " +
-					"(src='" + realUri + "'): " + e.getMessage());
+					"(src='" + errMsgUri + "'): " + e.getMessage());
 		}
 
 		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec == FfmpegCodec.UNKNOWN) {
