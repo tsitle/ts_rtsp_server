@@ -42,7 +42,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private static final int AUDIO_SAMPLES_PER_FRAME_AC3 = 1536;
 
 	private final @Nullable LogMsgInterface logMsgInterface;
-	private final @NonNull String inputFilePath;
+	private final @NonNull String inputPathOrUri;
 	private final @NonNull FfmpegDmxSettingsInternal dmxSettings;
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
@@ -60,22 +60,22 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface 'Log message' instance (can be null)
-	 * @param inputFilePath Path to the input file
+	 * @param inputPathOrUri Path to the input file or URI of the input stream
 	 * @param dmxSettings Settings for demuxing
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	private FfmpegDemuxer(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull String inputFilePath,
+				@NonNull String inputPathOrUri,
 				@NonNull FfmpegDmxSettingsInternal dmxSettings,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.inputFilePath = inputFilePath;
+		this.inputPathOrUri = inputPathOrUri;
 		this.dmxSettings = dmxSettings;
 		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
-		if (inputFilePath.isBlank()) {
+		if (inputPathOrUri.isBlank()) {
 			throw new IllegalArgumentException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): inputFilePath is blank");
 		}
 
@@ -92,7 +92,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	/**
 	 * Read the stream info from the input file.
 	 * @param logMsgInterface 'Log message' instance (can be null)
-	 * @param inputFilePath Path to the input file
+	 * @param inputPathOrUri Path to the input file or URI of the input stream
 	 * @param dmxSettings Settings for demuxing (only for reading the sub-stream infos)
 	 * @param outStreamInfoVid Output for the video stream info
 	 * @param outStreamInfoAud Output for the audio stream info
@@ -101,7 +101,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	@SuppressWarnings("unused")
 	public static void readStreamInfos(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull String inputFilePath,
+				@NonNull String inputPathOrUri,
 				@NonNull FfmpegDmxSettingsRsi dmxSettings,
 				@NonNull FfmpegStreamInfoVideo outStreamInfoVid,
 				@NonNull FfmpegStreamInfoAudio outStreamInfoAud
@@ -111,7 +111,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					logMsgInterface,
-					inputFilePath,
+					inputPathOrUri,
 					FfmpegDmxSettingsInternal.of(dmxSettings),
 					null
 				)) {
@@ -125,18 +125,18 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	/**
 	 * Create a Demuxer for demuxing only.
 	 * @param logMsgInterface 'Log message' instance (can be null)
-	 * @param inputFilePath Path to the input file
+	 * @param inputPathOrUri Path to the input file or URI of the input stream
 	 * @param dmxSettings Settings for demuxing
 	 */
 	@SuppressWarnings("unused")
 	public static FfmpegDemuxer createForDemuxingOnly(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull String inputFilePath,
+				@NonNull String inputPathOrUri,
 				@NonNull FfmpegDmxSettingsDemux dmxSettings
 			) {
 		return new FfmpegDemuxer(
 				logMsgInterface,
-				inputFilePath,
+				inputPathOrUri,
 				FfmpegDmxSettingsInternal.of(dmxSettings),
 				null
 			);
@@ -145,20 +145,20 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	/**
 	 * Create a Demuxer for transcoding.
 	 * @param logMsgInterface 'Log message' instance (can be null)
-	 * @param inputFilePath Path to the input file
+	 * @param inputPathOrUri Path to the input file or URI of the input stream
 	 * @param dmxSettings Settings for demuxing
 	 * @param recvDemuxerStatsInterface 'Receive Demuxer Stats' instance (can be null)
 	 */
 	@SuppressWarnings("unused")
 	public static FfmpegDemuxer createForTranscoding(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull String inputFilePath,
+				@NonNull String inputPathOrUri,
 				@NonNull FfmpegDmxSettingsTc dmxSettings,
 				@Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface
 			) {
 		return new FfmpegDemuxer(
 				logMsgInterface,
-				inputFilePath,
+				inputPathOrUri,
 				FfmpegDmxSettingsInternal.of(dmxSettings),
 				recvDemuxerStatsInterface
 			);
@@ -213,6 +213,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param targetTimestamp Target position in seconds (fractional is allowed)
 	 * @throws FfmpegGenericException If any FFmpeg error occurs
 	 */
+	@SuppressWarnings("unused")
 	public synchronized void seekToTimestamp(double targetTimestamp) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".seekToTimestamp()";
 
@@ -320,9 +321,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
 		}
 
-		logDebug(FNC_NAME, "Read file: '" + inputFilePath + "'");
+		logDebug(FNC_NAME, "Read input stream");
 
-		int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
+		int r = avformat.avformat_open_input(inputAvFmtCtx, inputPathOrUri, null, null);
 		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
 
 		r = avformat.avformat_find_stream_info(inputAvFmtCtx, (AVDictionary)null);
@@ -542,7 +543,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		if (! isInputOpen) {
-			int r = avformat.avformat_open_input(inputAvFmtCtx, inputFilePath, null, null);
+			int r = avformat.avformat_open_input(inputAvFmtCtx, inputPathOrUri, null, null);
 			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
 			isInputOpen = true;
 			stats.startTime = Instant.now();
