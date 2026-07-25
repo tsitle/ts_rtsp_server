@@ -301,8 +301,10 @@ public final class RtspConfigElementaryStreamSource {
 		if (mq != null) {
 			return RtspProtoEsSourceType.ST_ES_MQ;
 		}
-		if (msSourceId != null && msSourceFfmpegStreamIx != null) {
-			return (! filePath.isBlank() ? RtspProtoEsSourceType.ST_DEMUX_MS_FILE : RtspProtoEsSourceType.ST_DEMUX_MS_RTSP);
+		if (msSourceId != null && msSourceFfmpegStreamIx != null && msSourceUri != null) {
+			return ("file".equals(msSourceUri.getScheme()) ?
+					RtspProtoEsSourceType.ST_DEMUX_MS_FILE : RtspProtoEsSourceType.ST_DEMUX_MS_RTSP
+				);
 		}
 		throw new IllegalStateException(FNC_NAME + ": could not identify Source Type");
 	}
