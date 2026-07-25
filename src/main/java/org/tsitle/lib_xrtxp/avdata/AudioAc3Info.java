@@ -150,6 +150,16 @@ public final class AudioAc3Info implements CodecInfoInterface<AudioAc3Info>, Clo
 	}
 
 	@Override
+	public boolean isValid() {
+		return true;
+	}
+
+	@Override
+	public @NonNull String getValidationErrorMsg() {
+		return "";
+	}
+
+	@Override
 	public int getPayloadOffset() {
 		// the RTP payload starts with the Syncword
 		return samplesOffset;

@@ -192,6 +192,16 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	 */
 
 	@Override
+	public boolean isValid() {
+		return true;
+	}
+
+	@Override
+	public @NonNull String getValidationErrorMsg() {
+		return "";
+	}
+
+	@Override
 	public int getPayloadOffset() {
 		// we skip the ADTS header for the RTP payload
 		return samplesOffset;

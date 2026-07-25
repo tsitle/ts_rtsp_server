@@ -4,6 +4,9 @@ import org.jspecify.annotations.NonNull;
 
 public interface CodecInfoInterface<I extends CodecInfoInterface<I>> {
 
+	boolean isValid();
+	@NonNull String getValidationErrorMsg();
+
 	int getPayloadOffset();
 
 	int getPayloadLength();

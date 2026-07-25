@@ -98,6 +98,16 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	}
 
 	@Override
+	public boolean isValid() {
+		return true;
+	}
+
+	@Override
+	public @NonNull String getValidationErrorMsg() {
+		return "";
+	}
+
+	@Override
 	public int getPayloadOffset() {
 		return sos_scanDataOffs;
 	}

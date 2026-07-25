@@ -4,9 +4,14 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implements CodecInfoInterface<I> {
 
+	/** Is this a valid NAL Unit? */
+	public boolean isValid;
+	/** Validation error message */
+	public @NonNull String validationErrorMsg;
 	/** Offset of the NAL Unit data */
 	public int nalUnitOffset;
 	/** Length of the NAL Unit data */
@@ -20,6 +25,16 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 
 	protected CodecInfoH26xBase() {
 		internalReset();
+	}
+
+	@Override
+	public boolean isValid() {
+		return isValid;
+	}
+
+	@Override
+	public @NonNull String getValidationErrorMsg() {
+		return validationErrorMsg;
 	}
 
 	@Override
@@ -42,6 +57,8 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 		reset();
 
 		CodecInfoH26xBase<I> tmpSrc = (CodecInfoH26xBase<I>)src;
+		isValid = tmpSrc.isValid;
+		validationErrorMsg = tmpSrc.validationErrorMsg;
 		nalUnitOffset = tmpSrc.nalUnitOffset;
 		nalUnitLength = tmpSrc.nalUnitLength;
 		nalUnitTypeBy = tmpSrc.nalUnitTypeBy;
@@ -53,6 +70,12 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
+		baos.write(isValid ? 1 : 0);
+		try {
+			baos.write(validationErrorMsg.getBytes());
+		} catch (IOException e) {
+			// ignore
+		}
 		baos.write(nalUnitOffset);
 		baos.write(nalUnitLength);
 		baos.write(nalUnitTypeBy);
@@ -66,7 +89,9 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected @NonNull String getToStringFields() {
-		return "offset=" + Integer.toUnsignedString(nalUnitOffset) +
+		return "isValid=" + (isValid ? "T" : "F") +
+				", validationErrorMsg='" + validationErrorMsg + "'" +
+				", offset=" + Integer.toUnsignedString(nalUnitOffset) +
 				", length=" + Integer.toUnsignedString(nalUnitLength) +
 				String.format(", TypeBy=0x%02X", nalUnitTypeBy) +
 				", isVclNalUnit=" + (isVclNalUnit ? "T" : "F") +
@@ -81,6 +106,8 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void internalReset() {
+		isValid = false;
+		validationErrorMsg = "";
 		nalUnitOffset = 0;
 		nalUnitLength = 0;
 		nalUnitTypeBy = 0;
