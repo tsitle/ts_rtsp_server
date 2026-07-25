@@ -242,7 +242,7 @@ public final class RtspConfigMuxedStreamSource {
 		double closestDiff = Double.MAX_VALUE;
 		for (FrameRateEnum tmpEn : FrameRateEnum.values()) {
 			double curDiff = Math.abs(tmpEn.getFrDbl() - orgFps);
-			if (curDiff < closestDiff) {
+			if (Double.compare(curDiff, closestDiff) < 0) {
 				closestDiff = curDiff;
 				closestEn = tmpEn;
 			}
