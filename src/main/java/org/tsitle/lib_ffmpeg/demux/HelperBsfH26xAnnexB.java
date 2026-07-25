@@ -14,13 +14,13 @@ import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 /**
  * Bitstream filter for H.264/5 AnnexB.
  */
-final class BsfH26xAnnexB implements AutoCloseable {
+final class HelperBsfH26xAnnexB implements AutoCloseable {
 
 	private final boolean isH264;
 
 	private @Nullable AVBSFContext bsfCtx;
 
-	BsfH26xAnnexB(boolean isH264, @NonNull AVStream inVideoStream) throws FfmpegGenericException {
+	HelperBsfH26xAnnexB(boolean isH264, @NonNull AVStream inVideoStream) throws FfmpegGenericException {
 		this.isH264 = isH264;
 
 		initForStream(inVideoStream);

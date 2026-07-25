@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 
 import java.util.HexFormat;
 
-public final class AacAdtsPacketizer {
+public final class HelperAacAdtsPacketizer {
 
 	/** ADTS profile: 0=Main,1=LC,2=SSR,3=reserved */
 	private final int profile;
@@ -15,7 +15,7 @@ public final class AacAdtsPacketizer {
 	/** 1..7 typically */
 	private final int channelConfig;
 
-	private AacAdtsPacketizer(int profile, int samplingFreqIndex, int channelConfig) {
+	private HelperAacAdtsPacketizer(int profile, int samplingFreqIndex, int channelConfig) {
 		this.profile = profile;
 		this.samplingFreqIndex = samplingFreqIndex;
 		this.channelConfig = channelConfig;
@@ -24,7 +24,7 @@ public final class AacAdtsPacketizer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull AacAdtsPacketizer fromAsc(@NonNull String audioSpecificConfigHex) {
+	public static @NonNull HelperAacAdtsPacketizer fromAsc(@NonNull String audioSpecificConfigHex) {
 		byte[] asc = HexFormat.of().parseHex(audioSpecificConfigHex);
 		if (asc == null || asc.length < 2) {
 			throw new IllegalArgumentException("ASC must contain at least 2 bytes");
@@ -52,7 +52,7 @@ public final class AacAdtsPacketizer {
 		}
 
 		int adtsProfile = audioObjectType - 1; // ADTS stores profile = AOT - 1
-		return new AacAdtsPacketizer(adtsProfile, samplingFreqIndex, channelConfig);
+		return new HelperAacAdtsPacketizer(adtsProfile, samplingFreqIndex, channelConfig);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

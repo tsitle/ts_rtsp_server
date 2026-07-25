@@ -54,8 +54,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private @Nullable AVPacket cacheAvPkt = null;
 	private boolean haveReachedMaxSecs = false;
 
-	private @Nullable BsfH26xAnnexB bsfH26xAnnexB = null;
-	private @Nullable AacAdtsPacketizer aacAdtsPacketizer = null;
+	private @Nullable HelperBsfH26xAnnexB bsfH26xAnnexB = null;
+	private @Nullable HelperAacAdtsPacketizer aacAdtsPacketizer = null;
 
 	/**
 	 * Constructor.
@@ -661,7 +661,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
 				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
-			bsfH26xAnnexB = new BsfH26xAnnexB(
+			bsfH26xAnnexB = new HelperBsfH26xAnnexB(
 					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
 					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
 				);
@@ -705,7 +705,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			if (aacAdtsPacketizer == null) {
-				aacAdtsPacketizer = AacAdtsPacketizer.fromAsc(inputStreamInfoAud.aacAudioSpecificConfigHex);
+				aacAdtsPacketizer = HelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.aacAudioSpecificConfigHex);
 			}
 			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
 		} else {
