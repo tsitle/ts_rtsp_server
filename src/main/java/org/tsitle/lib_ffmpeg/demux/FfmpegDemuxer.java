@@ -459,7 +459,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioStreamInfoVideo.bitRate = st.codecpar().bit_rate();
 		if (st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
 			/*
-			 * Extract st.codecpar().extradata(), e.g. for SPS/PPS of H26x
+			 * Extract st.codecpar().extradata(), e.g. SPS/PPS for H264 or VPS/SPS/PPS for H265
 			 */
 			try (BytePointer tmpBp = st.codecpar().extradata()) {
 				int extradataSize = st.codecpar().extradata_size();
