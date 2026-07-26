@@ -20,6 +20,21 @@ public final class FrameGrabberVideoH26xFromEsFile extends FrameGrabberAvFromEsF
 
 	/**
 	 * Constructor.
+	 * @param avStreamIncoming Incoming A/V stream
+	 */
+	public FrameGrabberVideoH26xFromEsFile(
+				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+			) {
+		super(
+				null,
+				avStreamIncoming,
+				new byte[0],
+				0
+			);
+	}
+
+	/**
+	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */

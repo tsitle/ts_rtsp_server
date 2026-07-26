@@ -1,15 +1,18 @@
-package org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_h26x;
+package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
 
-final class MagicBytesH26xHelper {
+public final class MagicBytesH26xHelper {
 
 	private MagicBytesH26xHelper() { }
 
-	static int findH26xMagicBytesLength(final @NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static int findH26xMagicBytesLength(final @NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		final int MB_3_LEN = FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_3.length;
 		final int MB_4_LEN = FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_4.length;
 
@@ -47,7 +50,7 @@ final class MagicBytesH26xHelper {
 	 * @param inputBv Input Buffer View
 	 * @return Offset of the next H26x NAL Unit start within the Buffer View, or -1 if not found
 	 */
-	static int findH26xNextNalUnit(final @NonNull BufferView inputBv) {
+	public static int findH26xNextNalUnit(final @NonNull BufferView inputBv) {
 		int resI = findH26xMagicBytesOffset(
 				FrameGrabberVideoH26xFromEsFile.H26X_FRAME_START_MAGICBYTES_3,
 				inputBv,
