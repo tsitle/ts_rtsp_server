@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 
 public interface RtspProtoAvailableStreamsInterface {
@@ -64,7 +65,8 @@ public interface RtspProtoAvailableStreamsInterface {
 			int audioSamplesPerFrame,
 			boolean isAudioPcmBigEndian,
 			@NonNull String audioAacHexCfg,
-			@NonNull FrameRateEnum videoFps
+			@NonNull FrameRateEnum videoFps,
+			@NonNull List<@NonNull String> videoExtraB64Cfg
 		) { }
 
 	/**

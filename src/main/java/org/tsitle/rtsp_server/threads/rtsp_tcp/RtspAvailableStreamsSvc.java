@@ -121,7 +121,8 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getAudioSamplesPerFrame(),
 					tmpCfgSs.getIsPcmAudioBigEndian(),
 					tmpCfgSs.getAacAudioSpecificConfigHexStr(),
-					tmpCfgSs.getVideoFps()
+					tmpCfgSs.getVideoFps(),
+					tmpCfgSs.getVideoExtraB64Cfg()
 				);
 		} catch (IllegalStateException e) {
 			throw new RtspProtoIdEsSourceNotFoundException(getEsSourceIdForExcMsg(idEsSource) +

@@ -29,10 +29,7 @@ import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpTransport;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Producer for Session Description Protocol (SDP) messages (according to RFC-2327 Section 6).<br />
@@ -370,6 +367,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				tmpO_AddressType, tmpO_UnicastAddress));
 		// s: Session Name
 		resL.add(String.format("s=%s", RtspProtoSdpPrivateConstants.SESSION_NAME));
+		// c: Connection Info
+		resL.add(String.format("c=IN IP4 %s", args.serverIpOrName.getIpAddrStr().orElseThrow()));
 		// i: Session Information
 		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr().orElseThrow()));
 		// t: Time Active
@@ -613,43 +612,108 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				(useVideo || ! esInfo.codec().isPcmAudio() ? "" : "/" + esInfo.audioChannelCount());
 		outputList.add(String.format("a=rtpmap:%d %s", esInfo.codec().getValue(), tmpA_Map));
 		//
-		switch (esInfo.codec()) {
-			case RtpPacketType.A_AAC:
-				outputList.add(
-						String.format(
-								"a=fmtp:%d " +
-								"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
-								"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
-								"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
-								"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
-								"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
-								"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
-								"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
-								"constantDuration=%d",  // optional: 512/960/1024 samples per frame
-								esInfo.codec().getValue(),
-								RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
-								RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
-								esInfo.audioAacHexCfg(),
-								RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
-								RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
-								RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
-								esInfo.audioSamplesPerFrame()
-					));
-				break;
-			case RtpPacketType.V_H264:
-				outputList.add(
-						String.format(
-								"a=fmtp:%d " +
-								"packetization-mode=%d",
-								esInfo.codec().getValue(),
-								RtspProtoSdpPrivateConstants.H26xPacketizationMode.NON_INTERLEAVED.value
-					));
-				break;
-		}
+		addAvFmtpLine(esInfo, outputList);
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
 		outputList.add(
 				String.format("a=control:%s", sdpControlIdForSubStream)
 			);
+	}
+
+	private void addAvFmtpLine(
+				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull List<@NonNull String> outputList
+			) {
+		switch (esInfo.codec()) {
+			case RtpPacketType.A_AAC:
+				addAvFmtpLine_aac(esInfo, outputList);
+				break;
+			case RtpPacketType.V_H264:
+				addAvFmtpLine_h264(esInfo, outputList);
+				break;
+			case RtpPacketType.V_H265:
+				addAvFmtpLine_h265(esInfo, outputList);
+				break;
+		}
+	}
+
+	private void addAvFmtpLine_aac(
+				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull List<@NonNull String> outputList
+			) {
+		String s = String.format(
+				"a=fmtp:%d " +
+				"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
+				"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
+				"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
+				"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
+				"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
+				"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
+				"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
+				"constantDuration=%d",  // optional: 512/960/1024 samples per frame
+				esInfo.codec().getValue(),
+				RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
+				RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
+				esInfo.audioAacHexCfg(),
+				RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
+				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
+				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
+				esInfo.audioSamplesPerFrame()
+			);
+		outputList.add(s);
+	}
+
+	private void addAvFmtpLine_h264(
+				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull List<@NonNull String> outputList
+			) {
+		final List<@NonNull String> tmpH264ExtraSplit = esInfo.videoExtraB64Cfg();
+		String tmpH264Sps = "";
+		String tmpH264Pps = "";
+		String tmpH264Pli = "";
+		if (tmpH264ExtraSplit.size() == 2) {
+			tmpH264Sps = tmpH264ExtraSplit.get(0);  // '<H264_SPS1>,<H264_SPSx>'
+			tmpH264Pps = tmpH264ExtraSplit.get(1);  // '<H264_PPS1>,<H264_PPSx>#<H264_PLI>'
+			final String[] tmpSplitPli = tmpH264Pps.split("#");
+			if (tmpSplitPli.length == 2) {
+				tmpH264Pps = tmpSplitPli[0];
+				tmpH264Pli = tmpSplitPli[1];
+				if (! tmpH264Pli.isBlank()) {
+					tmpH264Pli = "; profile-level-id=" + tmpH264Pli;
+				}
+			}
+		}
+		final String tmpH264Sprops = (tmpH264ExtraSplit.size() != 2 ?
+				"" : "; sprop-parameter-sets=" + tmpH264Sps + (tmpH264Pps.isBlank() ? "" : "," + tmpH264Pps)
+			);
+
+		String s = String.format(
+				"a=fmtp:%d " +
+				"packetization-mode=%d%s%s",
+				esInfo.codec().getValue(),
+				RtspProtoSdpPrivateConstants.H26xPacketizationMode.NON_INTERLEAVED.value,
+				tmpH264Pli,
+				tmpH264Sprops
+			);
+		outputList.add(s);
+	}
+
+	private void addAvFmtpLine_h265(
+				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull List<@NonNull String> outputList
+			) {
+		final List<String> tmpH265ExtraSplit = esInfo.videoExtraB64Cfg();
+		if (tmpH265ExtraSplit.size() != 3) {
+			return;
+		}
+		final String tmpH265Sprops = "sprop-sps=" + tmpH265ExtraSplit.get(0) + "; " +
+				"sprop-pps=" + tmpH265ExtraSplit.get(1) + "; sprop-vps=" + tmpH265ExtraSplit.get(2);
+
+		String s = String.format(
+				"a=fmtp:%d %s",
+				esInfo.codec().getValue(),
+				tmpH265Sprops
+			);
+		outputList.add(s);
 	}
 
 	private void addCryptoParams(

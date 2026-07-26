@@ -11,6 +11,8 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataParserH264;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataParserH265;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
@@ -31,9 +33,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Elementary-Stream Source within an Input Source for RTSP streams.
@@ -71,9 +71,6 @@ public final class RtspConfigElementaryStreamSource {
 	/** Only for AAC: Audio samples per frame -- only when {@code filePath} is set. */
 	@Expose
 	private @NonNull Integer aacSamplesPerFrame;
-	/** Only for AAC: AudioSpecificConfig as hex string */
-	@GsonAnnoExclude
-	private @NonNull String aacAudioSpecificConfigHex;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -86,6 +83,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** Internal use: Video frames per second */
 	@GsonAnnoExclude
 	private @NonNull FrameRateEnum internalVideoFps;
+	/** Internal use: Video extradata as Base64 string */
+	@GsonAnnoExclude
+	private @NonNull String internalVideoExtradataB64;
 	/** Internal use: Audio samplerate */
 	@GsonAnnoExclude
 	private @NonNull SampleRateEnum internalAudioSampleRate;
@@ -98,6 +98,9 @@ public final class RtspConfigElementaryStreamSource {
 	/** Internal use: Audio Samples per Frame */
 	@GsonAnnoExclude
 	private int internalAudioSamplesPerFrame;
+	/** Internal use: only for AAC: AudioSpecificConfig as hex string */
+	@GsonAnnoExclude
+	private @NonNull String internalAacAudioSpecificConfigHex;
 
 	/** for MQs: Codec */
 	@GsonAnnoExclude
@@ -138,12 +141,13 @@ public final class RtspConfigElementaryStreamSource {
 		this.isPcmAudioBigEndian = false;
 
 		this.aacSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
-		this.aacAudioSpecificConfigHex = "";
+		this.internalAacAudioSpecificConfigHex = "";
 
 		this.internalHasBeenPostProcessed = false;
 		this.internalCodec = RtpPacketType.UNKNOWN;
 		this.internalDurationSecs = -1.0;
 		this.internalVideoFps = FrameRateEnum.UNKNOWN;
+		this.internalVideoExtradataB64 = "";
 		this.internalAudioSampleRate = SampleRateEnum.UNKNOWN;
 		this.internalAudioChannelCount = -1;
 		this.internalIsPcmAudioBigEndian = false;
@@ -189,6 +193,7 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
+		resObj.internalVideoExtradataB64 = parseVideoExtradataHex(resObj.internalCodec, streamInfo.extradataHex);
 
 		return resObj;
 	}
@@ -233,7 +238,7 @@ public final class RtspConfigElementaryStreamSource {
 		resObj.internalAudioSamplesPerFrame = streamInfo.samplesPerFrame;
 
 		resObj.aacSamplesPerFrame = streamInfo.samplesPerFrame;
-		resObj.aacAudioSpecificConfigHex = streamInfo.aacAudioSpecificConfigHex;
+		resObj.internalAacAudioSpecificConfigHex = streamInfo.aacAudioSpecificConfigHex;
 
 		return resObj;
 	}
@@ -336,6 +341,12 @@ public final class RtspConfigElementaryStreamSource {
 		return internalVideoFps;
 	}
 
+	public synchronized @NonNull List<@NonNull String> getVideoExtraB64Cfg() {
+		checkPostProcessed();
+		return (internalVideoExtradataB64.isBlank() ?
+				new ArrayList<>() : Arrays.asList(internalVideoExtradataB64.split(":")));
+	}
+
 	public synchronized @NonNull SampleRateEnum getAudioSamplerate() {
 		checkPostProcessed();
 		if (getSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
@@ -414,7 +425,7 @@ public final class RtspConfigElementaryStreamSource {
 	 */
 	public @NonNull String getAacAudioSpecificConfigHexStr() {
 		checkPostProcessed();
-		return aacAudioSpecificConfigHex;
+		return internalAacAudioSpecificConfigHex;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -596,9 +607,9 @@ public final class RtspConfigElementaryStreamSource {
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
 			}
 			//
-			readAacHeader(getIdAsProtoId(), tmpExtSsId);
+			readEsFile_aacHeader(getIdAsProtoId(), tmpExtSsId);
 		} else if (enabled && internalCodec == RtpPacketType.A_AC3) {
-			readAc3Header(getIdAsProtoId(), tmpExtSsId);
+			readEsFile_ac3Header(getIdAsProtoId(), tmpExtSsId);
 		}
 	}
 
@@ -629,7 +640,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readAacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
+	private void readEsFile_aacHeader(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
@@ -658,7 +669,7 @@ public final class RtspConfigElementaryStreamSource {
 			}
 			internalAudioChannelCount = (byte)aacInfo.channelConfiguration;
 
-			aacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
+			internalAacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
@@ -668,7 +679,7 @@ public final class RtspConfigElementaryStreamSource {
 		}
 	}
 
-	private void readAc3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
+	private void readEsFile_ac3Header(@NonNull RtspProtoIdEsSource internalIdEsSource, @NonNull String extEsId)
 			throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(internalIdEsSource, getInputUri())) {
 			BufferExt tmpBuf = new BufferExt();
@@ -702,6 +713,19 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException("Could not parse AC-3 header for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static @NonNull String parseVideoExtradataHex(
+				@NonNull RtpPacketType codec,
+				@NonNull String extradataHex
+			) {
+		return switch (codec) {
+				case V_H264 -> ExtradataParserH264.parse(extradataHex);
+				case V_H265 -> ExtradataParserH265.parse(extradataHex);
+				default -> "";
+			};
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
