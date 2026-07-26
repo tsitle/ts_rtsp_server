@@ -110,7 +110,8 @@ public class FullBidirRequRespSvcTest {
 						-1,
 						false,
 						"",
-						FrameRateEnum.FPS_15_0
+						FrameRateEnum.FPS_15_0,
+						new ArrayList<>()
 					);
 			}
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
@@ -124,7 +125,8 @@ public class FullBidirRequRespSvcTest {
 						-1,
 						false,
 						"",
-						FrameRateEnum.UNKNOWN
+						FrameRateEnum.UNKNOWN,
+						new ArrayList<>()
 					);
 			}
 			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") + "'");
