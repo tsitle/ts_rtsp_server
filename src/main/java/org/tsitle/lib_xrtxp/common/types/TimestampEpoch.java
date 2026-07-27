@@ -8,7 +8,7 @@ import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class TimestampEpochNs implements Cloneable {
+public final class TimestampEpoch implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
@@ -16,38 +16,49 @@ public final class TimestampEpochNs implements Cloneable {
 	private long epochNs = 0L;
 	private boolean isSet = false;
 
-	private TimestampEpochNs() { }
+	private TimestampEpoch() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull TimestampEpochNs ofEmpty() {
-		return new TimestampEpochNs();
+	public static @NonNull TimestampEpoch ofEmpty() {
+		return new TimestampEpoch();
 	}
 
-	public static @NonNull TimestampEpochNs ofNow() {
+	public static @NonNull TimestampEpoch ofNow() {
 		return ofInstant(Instant.now());
 	}
 
-	public static @NonNull TimestampEpochNs ofInstant(@NonNull Instant value) {
-		TimestampEpochNs resObj = new TimestampEpochNs();
-		resObj.epochNs = value.getEpochSecond() * 1_000_000_000L + value.getNano();
-		resObj.isSet = true;
+	public static @NonNull TimestampEpoch ofInstant(@NonNull Instant value) {
+		TimestampEpoch resObj = new TimestampEpoch();
+		resObj.setToInstant(value);
 		return resObj;
 	}
 
-	public static @NonNull TimestampEpochNs ofEpochMsUnsigned64bit(long value64bit) {
+	public static @NonNull TimestampEpoch ofEpochMsUnsigned64bit(long value64bit) {
 		return ofEpochNsUnsigned64bit(value64bit * 1_000_000L);
 	}
 
-	public static @NonNull TimestampEpochNs ofEpochNsUnsigned64bit(long value64bit) {
-		TimestampEpochNs resObj = new TimestampEpochNs();
-		resObj.epochNs = value64bit;
-		resObj.isSet = true;
+	public static @NonNull TimestampEpoch ofEpochNsUnsigned64bit(long value64bit) {
+		TimestampEpoch resObj = new TimestampEpoch();
+		resObj.setEpochNsUnsigned64bit(value64bit);
 		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public void setToNow() {
+		setToInstant(Instant.now());
+	}
+
+	public void setToInstant(@NonNull Instant value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		epochNs = value.getEpochSecond() * 1_000_000_000L + value.getNano();
+		isSet = true;
+	}
 
 	public Optional<Long> getEpochNsUnsigned64bit() {
 		return (isSet ? Optional.of(epochNs) : Optional.empty());
@@ -85,7 +96,7 @@ public final class TimestampEpochNs implements Cloneable {
 		isSet = false;
 	}
 
-	public void copyFrom(@NonNull TimestampEpochNs other) {
+	public void copyFrom(@NonNull TimestampEpoch other) {
 		if (isWriteProtected) {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
@@ -104,7 +115,7 @@ public final class TimestampEpochNs implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof TimestampEpochNs that)) {
+		if (! (o instanceof TimestampEpoch that)) {
 			return false;
 		}
 		return (epochNs == that.epochNs && isSet == that.isSet);
@@ -137,14 +148,14 @@ public final class TimestampEpochNs implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"epochNs=" + (isSet ? Long.toUnsignedString(epochNs) : "unset") +
+				"epochNs=" + (isSet ? Long.toUnsignedString(epochNs) + " (" + toIso8601StyleString() + ")" : "unset") +
 				"]";
 	}
 
 	@Override
-	public @NonNull TimestampEpochNs clone() {
+	public @NonNull TimestampEpoch clone() {
 		try {
-			return (TimestampEpochNs)super.clone();
+			return (TimestampEpoch)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
