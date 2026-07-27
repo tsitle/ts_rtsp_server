@@ -14,6 +14,7 @@ import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
+import java.util.Optional;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -62,6 +63,17 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 	 * @param congestionLevel Congestion level (range 0..4)
 	 */
 	public abstract void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel);
+
+	/**
+	 * Returns the video frames per second if available
+	 * @return Video frames per second
+	 */
+	public Optional<Double> getVideoFps() {
+		if (frameGrabber == null) {
+			return Optional.empty();
+		}
+		return frameGrabber.getVideoFps();
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
