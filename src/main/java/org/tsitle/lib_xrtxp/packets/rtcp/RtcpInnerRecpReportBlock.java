@@ -2,9 +2,9 @@ package org.tsitle.lib_xrtxp.packets.rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -15,7 +15,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 
 	/** Size of the RTCP packet payload */
 	public static final int PAYLOAD_SIZE = 24;
-	private static final float DLSR_IN_SECONDS_FACTOR = 65536.0f;
+	private static final double DLSR_IN_SECONDS_FACTOR = 65536.0;
 
 	/** Item number - only informative */
 	private final int itemNr;
@@ -35,7 +35,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	/** Last SR (middle 32 bits of the last SR's NTP timestamp that the server (aka Sender) has sent to the client (aka Receiver), 32 bits) */
 	private final int bdLsr;
 	/** Delay since last SR in seconds*65536 (32 bits) */
-	private final int bdDlsr;
+	private int bdDlsr;
 
 	/**
 	 * Constructor.
@@ -58,7 +58,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 				short highSeqNrSequNr,
 				int jitter,
 				int lsr,
-				float dlsrInSeconds
+				double dlsrInSeconds
 			) {
 		this.itemNr = itemNr;
 		this.bdSsrcSource = ssrcSource;
@@ -87,7 +87,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	 * Returns the fraction of RTP data packets from sender lost since the previous RR packet was sent
 	 * @return Fraction lost (range 0.0 .. 1.0)
 	 */
-	public float getFractionLostPercent() { return ((float)(bdFractionLostBy & 0xFF) / 256.0f); }
+	public double getFractionLostPercent() { return ((double)(bdFractionLostBy & 0xFF) / 256.0f); }
 	@SuppressWarnings("unused")
 	public int getCumLost() { return bdCumLost; }
 	@SuppressWarnings("unused")
@@ -100,7 +100,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	public int getLsr() { return bdLsr; }
 	/** Returns the delay since last SR in seconds */
 	@SuppressWarnings("unused")
-	public float getDlsrInSeconds() { return ((float)bdDlsr / DLSR_IN_SECONDS_FACTOR); }
+	public double getDlsrInSeconds() { return ((double)bdDlsr / DLSR_IN_SECONDS_FACTOR); }
 
 	/**
 	 * Get the round-trip time in milliseconds.
@@ -108,7 +108,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	 * @return Round-trip time in milliseconds
 	 */
 	@SuppressWarnings("unused")
-	public Optional<Long> getRoundTripTimeMillis(@NonNull Instant receivedAt) {
+	public Optional<Long> getRoundTripTimeMillis(@NonNull TimestampEpoch receivedAt) {
 		if (bdLsr == 0L) {
 			return Optional.empty();
 		}
@@ -119,13 +119,13 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		 *
 		 * RTT = A − LSR − DLSR
 		 */
-		long rcvdAtNtp32b = instantTo32bitNtpTimestamp(receivedAt);
+		int rcvdAtNtp32b = instantTo32bitNtpTimestamp(receivedAt);
 
-		long lsrLong = Integer.toUnsignedLong(bdLsr);
-		long dlsrLong = Integer.toUnsignedLong(bdDlsr);
+		long lsrLong = (long)bdLsr & 0xFFFF_FFFFL;
+		long dlsrLong = (long)bdDlsr & 0xFFFF_FFFFL;
 
 		// all values are modulo 2^32 (wrap-around is valid)
-		long rtt32b = ((rcvdAtNtp32b - lsrLong - dlsrLong) & 0xFFFF_FFFFL);
+		int rtt32b = (rcvdAtNtp32b - bdLsr - bdDlsr);
 
 		// Convert 16.16 fixed-point seconds to milliseconds
 		long rttMillis = Math.round(((double)rtt32b * 1000.0) / DLSR_IN_SECONDS_FACTOR);
@@ -147,20 +147,30 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	}
 
 	public static @NonNull RtcpInnerRecpReportBlock decodeFromBuffer(int itemNr, @NonNull ByteBuffer bb) {
+		int ssrc = bb.getInt();
+		byte fractionLost = bb.get();
+		int cumLost = ((bb.get() << 16) & 0xFF0000) | ((bb.get() << 8) & 0xFF00) | (bb.get() & 0xFF);
+		short ro = bb.getShort();
+		short sn = bb.getShort();
+		int jitter = bb.getInt();
+		int lsr = bb.getInt();
+		int dlsrRaw = bb.getInt();
+
 		RtcpInnerRecpReportBlock tmpBlock = new RtcpInnerRecpReportBlock(
 				itemNr,
-				bb.getInt(),  // ssrc
-				bb.get(),  // fraction lost
-				((bb.get() << 16) & 0xFF0000) | ((bb.get() << 8) & 0xFF00) | (bb.get() & 0xFF),  // cumulative lost
-				bb.getShort(),  // highest seq nr rollover counter
-				bb.getShort(),  // highest seq nr
-				bb.getInt(),  // jitter
-				bb.getInt(),  // last SR
-				(float)bb.getInt() / DLSR_IN_SECONDS_FACTOR  // delay since last SR
+				ssrc,
+				fractionLost,
+				cumLost,
+				ro,
+				sn,
+				jitter,
+				lsr,
+				0.0
 			);
 		// sign-extend the 24-bit value back to 32 bits
 		tmpBlock.bdCumLost = ((tmpBlock.bdCumLost << 8) >> 8);
-		//
+		// keep raw DLSR exactly (avoid int->double->int precision loss)
+		tmpBlock.bdDlsr = dlsrRaw;
 		return tmpBlock;
 	}
 
@@ -174,7 +184,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 				", Highest Seq Num: ro=" + Integer.toUnsignedString((int)bdExtHighestSeqNr_rolloverCounter & 0xFFFF) +
 					"/sn=" + Integer.toUnsignedString((int)bdExtHighestSeqNr_sequNr & 0xFFFF) +
 				", Jitter: " + Integer.toUnsignedString(bdJitter) +
-				", LSR: " + Integer.toUnsignedString(bdLsr) +
+				", LSR: " + String.format("0x%08X", bdLsr) +
 				", DLsr: " + String.format("%.3fs", getDlsrInSeconds()) +
 				"]";
 	}
@@ -193,23 +203,23 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 
 	/**
 	 * This is only for use in RTCP packets, where the 32-bit timestamp is used.
-	 * @param javaTs Instant
+	 * @param epochNs Timestamp to convert
 	 * @return 32-bit NTP timestamp (top 16 bits: integer seconds, bottom 16 bits: fractional seconds)
 	 */
-	private static long instantTo32bitNtpTimestamp(@NonNull Instant javaTs) {
-		long unixSeconds = javaTs.getEpochSecond();
+	private static int instantTo32bitNtpTimestamp(@NonNull TimestampEpoch epochNs) {
+		long unixSeconds = epochNs.getEpochNsUnsigned64bit().orElseThrow() / 1_000_000_000L;
 		long ntpSeconds = unixSeconds + NtpTimestamp.NTP_EPOCH_OFFSET_SECONDS;
 
 		// NTP fractional part: 32-bit fraction of a second
-		long nanos = javaTs.getNano();
-		long ntpFraction32 = (nanos * 0x1_0000_0000L) / 1_000_000_000L;
+		long nanosOfSeconds = epochNs.getEpochNsUnsigned64bit().orElseThrow() % 1_000_000_000L;
+		long ntpFraction32 = (nanosOfSeconds * 0x1_0000_0000L) / 1_000_000_000L;
 
 		// Middle 32 bits = (low 16 bits of the seconds) << 16 | (high 16 bits of the fraction)
 		long middle32 =
-				((ntpSeconds & 0xFFFFL) << 16) |
+				(((ntpSeconds & 0xFFFFL) << 16) & 0xFFFF_0000L) |
 						((ntpFraction32 >>> 16) & 0xFFFFL);
 
-		return middle32 & 0xFFFF_FFFFL;
+		return (int)(middle32 & 0xFFFF_FFFFL);
 	}
 
 }
