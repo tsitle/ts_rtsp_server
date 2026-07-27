@@ -305,7 +305,7 @@ class RtspProtoHighRequestConsumerTest {
 		assertEquals("", mediaEntry.connectionInfo().nwType());
 		assertEquals("", mediaEntry.connectionInfo().addrType());
 		assertEquals("", mediaEntry.connectionInfo().addrVal());
-		assertEquals("AS:128000", mediaEntry.bandwidth());
+		assertEquals("AS:128", mediaEntry.bandwidth());
 		assertEquals(3, mediaEntry.attributes().size());
 		assertEquals("rtpmap:101 L16/8000/1", mediaEntry.attributes().get(0));
 		assertEquals("control:substreamidf528764d_081eb523", mediaEntry.attributes().get(1));
@@ -376,7 +376,7 @@ class RtspProtoHighRequestConsumerTest {
 		mediaEntry = outputDataRequ.requAnnouncedSdpStc
 				.findMediaEntryForControlId(RtspProtoIdSubStream.of("substreamidf528764d_081eb523"))
 				.orElseThrow();
-		assertEquals("AS:128000", mediaEntry.bandwidth());
+		assertEquals("AS:128", mediaEntry.bandwidth());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

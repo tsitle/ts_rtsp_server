@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.types;
 
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
 import java.time.Instant;
@@ -13,7 +13,7 @@ class PlaybackRangeTest {
 	@Test
 	void testToAbsTimeString() {
 		Instant tmpInstStart = Instant.parse("1996-11-08T14:37:20.25Z");
-		TimestampEpochNs epochStart = TimestampEpochNs.ofInstant(tmpInstStart);
+		TimestampEpoch epochStart = TimestampEpoch.ofInstant(tmpInstStart);
 		final double startAbsSecs = (double) epochStart.getEpochNsUnsigned64bit().orElseThrow() / 1_000_000_000.0;
 
 		//
@@ -34,7 +34,7 @@ class PlaybackRangeTest {
 		assertEquals("clock=19961108T143731.59Z-", result);
 
 		assertEquals(startAbsSecs + 11.34, range.getAbsoluteTimeStartSecsAsDouble().orElseThrow());
-		TimestampEpochNs tmpEpochStartPlus = TimestampEpochNs.ofEpochNsUnsigned64bit(epochStart.getEpochNsUnsigned64bit().orElseThrow() + (long) (11.34 * 1_000_000_000.0));
+		TimestampEpoch tmpEpochStartPlus = TimestampEpoch.ofEpochNsUnsigned64bit(epochStart.getEpochNsUnsigned64bit().orElseThrow() + (long) (11.34 * 1_000_000_000.0));
 		assertEquals(tmpEpochStartPlus, range.getAbsoluteTimeStartAsTimestamp().orElseThrow());
 		assertTrue(range.getAbsoluteTimeEndSecsAsDouble().isEmpty());
 		assertTrue(range.getAbsoluteTimeEndAsTimestamp().isEmpty());
@@ -45,7 +45,7 @@ class PlaybackRangeTest {
 		assertEquals("clock=19961108T143731.59Z-19961108T143820.25Z", result);
 
 		assertEquals(startAbsSecs + 60.0, range.getAbsoluteTimeEndSecsAsDouble().orElseThrow());
-		TimestampEpochNs tmpEpochEndPlus = TimestampEpochNs.ofEpochNsUnsigned64bit(epochStart.getEpochNsUnsigned64bit().orElseThrow() + (long) (60.0 * 1_000_000_000.0));
+		TimestampEpoch tmpEpochEndPlus = TimestampEpoch.ofEpochNsUnsigned64bit(epochStart.getEpochNsUnsigned64bit().orElseThrow() + (long) (60.0 * 1_000_000_000.0));
 		assertEquals(tmpEpochEndPlus, range.getAbsoluteTimeEndAsTimestamp().orElseThrow());
 
 		//
@@ -56,7 +56,7 @@ class PlaybackRangeTest {
 		// -----------------------------------------
 
 		Instant tmpInstEnd = Instant.parse("1996-11-08T14:38:20.25Z");
-		TimestampEpochNs epochEnd = TimestampEpochNs.ofInstant(tmpInstEnd);
+		TimestampEpoch epochEnd = TimestampEpoch.ofInstant(tmpInstEnd);
 
 		//
 		range = RtspProtoPlaybackRange.ofAbsolute(epochStart, epochEnd);
@@ -152,7 +152,7 @@ class PlaybackRangeTest {
 	void testParseAbsTime() throws Exception {
 		RtspProtoPlaybackRange range = RtspProtoPlaybackRange.parseString("clock=19960213T143205Z-;time=19970123T143720Z");
 		double tmpStartDbl = range.getAbsoluteTimeStartSecsAsDouble().orElseThrow();
-		TimestampEpochNs epochStart = TimestampEpochNs.ofEpochMsUnsigned64bit((long)(tmpStartDbl * 1_000.0));
+		TimestampEpoch epochStart = TimestampEpoch.ofEpochMsUnsigned64bit((long)(tmpStartDbl * 1_000.0));
 
 		assertEquals("1996-02-13T14:32:05.000Z", epochStart.toIso8601StyleString());
 		assertTrue(range.getAbsoluteTimeEndSecsAsDouble().isEmpty());
@@ -160,9 +160,9 @@ class PlaybackRangeTest {
 		//
 		range = RtspProtoPlaybackRange.parseString("clock=19961108T143731.59Z-19961108T143820.25Z");
 		tmpStartDbl = range.getAbsoluteTimeStartSecsAsDouble().orElseThrow();
-		epochStart = TimestampEpochNs.ofEpochMsUnsigned64bit((long) (tmpStartDbl * 1_000.0));
+		epochStart = TimestampEpoch.ofEpochMsUnsigned64bit((long) (tmpStartDbl * 1_000.0));
 		double tmpEndDbl = range.getAbsoluteTimeEndSecsAsDouble().orElseThrow();
-		TimestampEpochNs epochEnd = TimestampEpochNs.ofEpochMsUnsigned64bit((long) (tmpEndDbl * 1_000.0));
+		TimestampEpoch epochEnd = TimestampEpoch.ofEpochMsUnsigned64bit((long) (tmpEndDbl * 1_000.0));
 
 		assertEquals("1996-11-08T14:37:31.590Z", epochStart.toIso8601StyleString());
 		assertEquals("1996-11-08T14:38:20.250Z", epochEnd.toIso8601StyleString());

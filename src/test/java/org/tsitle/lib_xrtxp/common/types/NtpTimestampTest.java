@@ -1,8 +1,6 @@
 package org.tsitle.lib_xrtxp.common.types;
 
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Duration;
@@ -105,7 +103,7 @@ class NtpTimestampTest {
 
 		// ---------------------------------------------------
 
-		TimestampEpochNs tsEpochActual = TimestampEpochNs.ofInstant(javaTsActual);
+		TimestampEpoch tsEpochActual = TimestampEpoch.ofInstant(javaTsActual);
 		assertEquals(1774507580134876998L, tsEpochActual.getEpochNsUnsigned64bit().orElseThrow());
 
 		Instant reconvertedJavaTs = tsEpochActual.toInstant().orElseThrow();
