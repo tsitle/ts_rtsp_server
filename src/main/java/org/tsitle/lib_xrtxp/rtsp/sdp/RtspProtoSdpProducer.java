@@ -578,10 +578,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		//outputList.add("c=IN IP4 0.0.0.0");
 		//
 		if (esInfo.codec().isPcmAudio() && esInfo.codec().getPcmAudioBitsPerSample().isPresent()) {
-			int tmpBw = (esInfo.audioChannelCount() * esInfo.audioSampleRate().getSrHz() *
+			int tmpBwInBitsPerSec = (esInfo.audioChannelCount() * esInfo.audioSampleRate().getSrHz() *
 					esInfo.codec().getPcmAudioBitsPerSample().get());
-			// b: Bandwidth Information
-			outputList.add(String.format("b=AS:%d", tmpBw));
+			// b: Bandwidth Information in kilobits per second
+			outputList.add(String.format("b=AS:%d", tmpBwInBitsPerSec / 1000));
 		}
 		if (esInfo.codec().isAudio() && esInfo.audioSamplesPerFrame() > 0) {
 			/*
