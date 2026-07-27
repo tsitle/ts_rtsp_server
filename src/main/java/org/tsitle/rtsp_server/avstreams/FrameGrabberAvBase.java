@@ -57,6 +57,14 @@ public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
 		avStreamIncoming.rewind();
 	}
 
+	/**
+	 * Returns the video frames per second if available
+	 * @return Video frames per second
+	 */
+	public Optional<Double> getVideoFps() {
+		return avStreamIncoming.getVideoFps();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
