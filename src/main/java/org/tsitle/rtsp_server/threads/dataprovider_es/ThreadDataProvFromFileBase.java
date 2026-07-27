@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -25,7 +25,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 	private static class DataQueueEntry {
 		final @NonNull BufferExt buf = new BufferExt();
-		final @NonNull TimestampEpochNs stTimestamp = TimestampEpochNs.ofEmpty();
+		final @NonNull TimestampMonotonic stTimestamp = TimestampMonotonic.ofEmpty();
 	}
 
 	private final boolean doDebugRewindMediaFiles;
@@ -132,7 +132,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	}
 
 	@Override
-	public void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+	public void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException {
 		if (eosReached.get()) {
 			throw new InputStreamEosException();
@@ -270,7 +270,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 
 		// get the next frame from the input, as well as its size
 		BufferExt tmpFrameBufPtr = dataQueue.get(queueIxWrite.get()).buf;
-		TimestampEpochNs tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;
+		TimestampMonotonic tmpStTimestampPtr = dataQueue.get(queueIxWrite.get()).stTimestamp;
 		try {
 			frameGrabber.getNextFrame(tmpFrameBufPtr, tmpStTimestampPtr);
 			if (doStop.get()) {

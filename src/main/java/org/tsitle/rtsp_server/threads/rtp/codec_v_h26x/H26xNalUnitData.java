@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 
 public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 
@@ -14,7 +14,7 @@ public final class H26xNalUnitData<I extends CodecInfoInterface<I>> {
 	public @NonNull BufferExt rawPayloadData = new BufferExt();
 	public @NonNull BufferView rtpPayloadDataView = new BufferView(rawPayloadData);
 	public long rtpFrameNr = -1L;
-	public @NonNull TimestampEpochNs stTimestamp = TimestampEpochNs.ofEmpty();
+	public @NonNull TimestampMonotonic stTimestamp = TimestampMonotonic.ofEmpty();
 	public boolean isEndOfAu = false;
 
 	public void reset() {

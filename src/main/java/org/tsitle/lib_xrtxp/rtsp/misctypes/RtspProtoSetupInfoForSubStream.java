@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntSubStreamTp;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidTpSettingsException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
@@ -31,7 +31,7 @@ public final class RtspProtoSetupInfoForSubStream {
 	/** Initial RTP Timestamp within the session (random number) */
 	private final @NonNull RtspProtoRtpTimestamp rtpTimestampT0 = RtspProtoRtpTimestamp.ofEmpty();
 	/** System.nanoTime when the RTP TS T0 was generated (in nanoseconds) */
-	private final @NonNull TimestampEpochNs rtpGenTsT0EpochNs = TimestampEpochNs.ofEmpty();
+	private final @NonNull TimestampMonotonic rtpGenTsT0Mono = TimestampMonotonic.ofEmpty();
 
 	/** Transport settings */
 	private final @NonNull RtspProtoDataCntSubStreamTp subStreamTp = new RtspProtoDataCntSubStreamTp();
@@ -59,7 +59,7 @@ public final class RtspProtoSetupInfoForSubStream {
 				@NonNull RtspProtoIdXsrc ssrcOutbound,
 				@NonNull RtspProtoRtpSeqNr rtpSeqNrT0,
 				@NonNull RtspProtoRtpTimestamp rtpTimestampT0,
-				@NonNull TimestampEpochNs rtpGenTsT0EpochNs
+				@NonNull TimestampMonotonic rtpGenTsT0Mono
 			) {
 		this.rscUrlSubStream.copyFrom(rscUrlSubStream);
 		this.rscUrlSubStream.writeProtect();
@@ -76,8 +76,8 @@ public final class RtspProtoSetupInfoForSubStream {
 		this.rtpSeqNrT0.writeProtect();
 		this.rtpTimestampT0.copyFrom(rtpTimestampT0);
 		this.rtpTimestampT0.writeProtect();
-		this.rtpGenTsT0EpochNs.copyFrom(rtpGenTsT0EpochNs);
-		this.rtpGenTsT0EpochNs.writeProtect();
+		this.rtpGenTsT0Mono.copyFrom(rtpGenTsT0Mono);
+		this.rtpGenTsT0Mono.writeProtect();
 	}
 
 	public RtspProtoSetupInfoForSubStream(@NonNull RtspProtoSetupInfoForSubStream other) {
@@ -93,8 +93,8 @@ public final class RtspProtoSetupInfoForSubStream {
 
 		this.rtpSeqNrT0.copyFrom(other.rtpSeqNrT0);
 		this.rtpTimestampT0.copyFrom(other.rtpTimestampT0);
-		this.rtpGenTsT0EpochNs.copyFrom(other.rtpGenTsT0EpochNs);
-		this.rtpGenTsT0EpochNs.writeProtect();
+		this.rtpGenTsT0Mono.copyFrom(other.rtpGenTsT0Mono);
+		this.rtpGenTsT0Mono.writeProtect();
 
 		this.subStreamTp.copyFrom(other.subStreamTp);
 
@@ -141,8 +141,8 @@ public final class RtspProtoSetupInfoForSubStream {
 		return rtpTimestampT0;
 	}
 
-	public @NonNull TimestampEpochNs getRtpGenTsT0EpochNsPtr() {
-		return rtpGenTsT0EpochNs;
+	public @NonNull TimestampMonotonic getRtpGenTsT0MonoNsPtr() {
+		return rtpGenTsT0Mono;
 	}
 
 	public @NonNull RtspProtoDataCntSubStreamTp getSubStreamTpPtr() {
@@ -218,7 +218,7 @@ public final class RtspProtoSetupInfoForSubStream {
 		ssrcOutbound.writeProtect();
 		rtpSeqNrT0.writeProtect();
 		rtpTimestampT0.writeProtect();
-		rtpGenTsT0EpochNs.writeProtect();
+		rtpGenTsT0Mono.writeProtect();
 
 		subStreamTp.writeProtect();
 		kmdInboundCur.writeProtect();

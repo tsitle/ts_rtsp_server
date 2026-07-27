@@ -417,9 +417,9 @@ final class RtspChildThreadMng {
 				.comAvFps(avFpsAsDbl)
 				.comRtpSeqNrT0(streamInfo.getRtpSeqNrT0Ptr())
 				.comRtpTimestampT0(
-						new ParamsThreadRtpSenderCommon.RtpTsT0WithEpoch(
+						new ParamsThreadRtpSenderCommon.RtpTsT0WithMonoRef(
 								streamInfo.getRtpTimestampT0Ptr(),
-								streamInfo.getRtpGenTsT0EpochNsPtr()
+								streamInfo.getRtpGenTsT0MonoNsPtr()
 							)
 					)
 				.comXsrcBlockEntry(xsrcBlock)

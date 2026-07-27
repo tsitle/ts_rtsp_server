@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
@@ -39,7 +39,7 @@ public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void readFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
+	public void readFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamEosException, InputStreamThreadEndedException {
 		stTimestamp.clear();
 		buf.clear();

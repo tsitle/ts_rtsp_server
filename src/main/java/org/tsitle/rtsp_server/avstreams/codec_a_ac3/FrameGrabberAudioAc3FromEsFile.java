@@ -5,7 +5,7 @@ import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
@@ -56,7 +56,7 @@ public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFi
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 

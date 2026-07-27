@@ -3,7 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp.misctypes;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.helpers.RandomHelper;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
@@ -37,7 +37,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				ssrcOutbound,
 				RtspProtoRtpSeqNr.withOverflow(RandomHelper.getRandomUint16()),
 				RtspProtoRtpTimestamp.withOverflow(RandomHelper.getRandomUint32(true)),
-				TimestampEpochNs.ofNow(),
+				TimestampMonotonic.ofNow(),
 				null,
 				kmdOutbound
 			);
@@ -60,7 +60,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				ssrcOutbound,
 				RtspProtoRtpSeqNr.ofEmpty(),
 				RtspProtoRtpTimestamp.ofEmpty(),
-				TimestampEpochNs.ofEmpty(),
+				TimestampMonotonic.ofEmpty(),
 				kmdInbound,
 				null
 			);
@@ -245,7 +245,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				@NonNull RtspProtoIdXsrc ssrcOutbound,
 				@NonNull RtspProtoRtpSeqNr rtpSeqNr,
 				@NonNull RtspProtoRtpTimestamp rtpTimestamp,
-				@NonNull TimestampEpochNs rtpTimestampGenEpochNs,
+				@NonNull TimestampMonotonic rtpTimestampGenMono,
 				@Nullable RtspProtoKmdForSubStream kmdInbound,
 				@Nullable RtspProtoKmdForSubStream kmdOutbound
 			) {
@@ -287,7 +287,7 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				ssrcOutbound,
 				rtpSeqNr,
 				rtpTimestamp,
-				rtpTimestampGenEpochNs
+				rtpTimestampGenMono
 			);
 		if (tmpKmd != null) {
 			if (kmdInbound != null) {

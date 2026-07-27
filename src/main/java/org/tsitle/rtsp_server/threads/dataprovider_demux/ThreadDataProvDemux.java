@@ -8,7 +8,7 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.ThreadBase;
@@ -27,7 +27,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 	private static class FfPktCacheEntry {
 		final @NonNull FfmpegAvPktBasics ffPktObj = new FfmpegAvPktBasics();
-		final @NonNull TimestampEpochNs ffPktTimestamp = TimestampEpochNs.ofEmpty();
+		final @NonNull TimestampMonotonic ffPktTimestamp = TimestampMonotonic.ofEmpty();
 	}
 
 	private static class FfPktCacheCont {
@@ -163,13 +163,13 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public void readNextPacketVideo(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
+	public void readNextPacketVideo(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamEosException, InputStreamThreadEndedException {
 		internalPollNextPacketFromCache(cacheVid, buf, stTimestamp);
 	}
 
 	@Override
-	public void readNextPacketAudio(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
+	public void readNextPacketAudio(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamEosException, InputStreamThreadEndedException {
 		internalPollNextPacketFromCache(cacheAud, buf, stTimestamp);
 	}
@@ -295,7 +295,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	private void copyFromCache(
 				@NonNull FfPktCacheCont cacheCont,
 				@NonNull BufferExt buf,
-				@NonNull TimestampEpochNs stTimestamp
+				@NonNull TimestampMonotonic stTimestamp
 			) throws InputStreamEosException, InputStreamThreadEndedException {
 		if (! isRunning.get()) {
 			throw new InputStreamThreadEndedException();
@@ -314,7 +314,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 	private void internalPollNextPacketFromCache(
 				@NonNull FfPktCacheCont cacheCont,
 				@NonNull BufferExt buf,
-				@NonNull TimestampEpochNs stTimestamp
+				@NonNull TimestampMonotonic stTimestamp
 			) throws InputStreamEosException, InputStreamThreadEndedException {
 		if (doStop.get() || ! isRunning.get()) {
 			throw new InputStreamThreadEndedException();
@@ -403,7 +403,7 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 			}
 
 			//
-			TimestampEpochNs tmpTs = TimestampEpochNs.ofEpochNsUnsigned64bit(
+			TimestampMonotonic tmpTs = TimestampMonotonic.ofNsUnsigned64bit(
 					(long)(tmpCacheEntry.ffPktObj.ptsUnitsToSeconds() * 1_000_000_000.0)
 				);
 			tmpCacheEntry.ffPktTimestamp.copyFrom(tmpTs);

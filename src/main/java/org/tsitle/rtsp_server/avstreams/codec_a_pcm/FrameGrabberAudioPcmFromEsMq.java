@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsMqBase;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
@@ -64,7 +64,7 @@ public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBa
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
 		frameBuf.clear();
 		stTimestamp.clear();

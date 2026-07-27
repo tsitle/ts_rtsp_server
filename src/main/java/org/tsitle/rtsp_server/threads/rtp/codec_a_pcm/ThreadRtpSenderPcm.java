@@ -190,7 +190,7 @@ public final class ThreadRtpSenderPcm<
 			final double tmpFrameDurSecs = ((double)lastSpciad / (double)curFramePcmInfo.samplerate.getSrHz());
 			nextFpsForAdaptiveScheduler = (1.0 / tmpFrameDurSecs);
 
-			rtpTicksPerFrame = lastSpciad;
+			nextRtpTicksPerFrame = lastSpciad;
 		}
 		//
 		if (cachePlainPacket == null) {

@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsMqBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -110,7 +110,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	}
 
 	@Override
-	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException, InputStreamThreadEndedException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 

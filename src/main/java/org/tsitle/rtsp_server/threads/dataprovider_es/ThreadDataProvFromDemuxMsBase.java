@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
@@ -113,7 +113,7 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 	}
 
 	@Override
-	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+	public synchronized void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException, InputStreamThreadEndedException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 

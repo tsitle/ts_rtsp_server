@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
@@ -40,7 +40,7 @@ public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase<AvSt
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
 		avStreamIncoming.readFrame(frameBuf, stTimestamp);
 	}

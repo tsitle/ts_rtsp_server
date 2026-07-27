@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidPbRangeException;
 
 import java.time.Instant;
@@ -34,13 +34,13 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 		return new RtspProtoPlaybackRange();
 	}
 
-	public static @NonNull RtspProtoPlaybackRange ofAbsolute(@NonNull TimestampEpochNs absoluteTimeStart) {
-		return ofAbsolute(absoluteTimeStart, TimestampEpochNs.ofEmpty());
+	public static @NonNull RtspProtoPlaybackRange ofAbsolute(@NonNull TimestampEpoch absoluteTimeStart) {
+		return ofAbsolute(absoluteTimeStart, TimestampEpoch.ofEmpty());
 	}
 
 	public static @NonNull RtspProtoPlaybackRange ofAbsolute(
-				@NonNull TimestampEpochNs absoluteTimeStart,
-				@NonNull TimestampEpochNs absoluteTimeEnd
+				@NonNull TimestampEpoch absoluteTimeStart,
+				@NonNull TimestampEpoch absoluteTimeEnd
 			) {
 		if (absoluteTimeStart.isEmpty()) {
 			throw new IllegalArgumentException(RtspProtoPlaybackRange.class.getSimpleName() + ".ofAbsolute(): " +
@@ -58,7 +58,7 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 	}
 
 	public static @NonNull RtspProtoPlaybackRange ofAbsolute(
-				@NonNull TimestampEpochNs absoluteTimeBase,
+				@NonNull TimestampEpoch absoluteTimeBase,
 				double relStartSecs,
 				double relEndSecs
 			) {
@@ -239,11 +239,11 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 		return Optional.of(absoluteSecsStart + rangeSecsStart);
 	}
 
-	public Optional<TimestampEpochNs> getAbsoluteTimeStartAsTimestamp() {
+	public Optional<TimestampEpoch> getAbsoluteTimeStartAsTimestamp() {
 		if (absoluteSecsStart < 0.001) {
 			return Optional.empty();
 		}
-		TimestampEpochNs epoch = TimestampEpochNs.ofEpochMsUnsigned64bit((long)((absoluteSecsStart + rangeSecsStart) * 1_000.0));
+		TimestampEpoch epoch = TimestampEpoch.ofEpochMsUnsigned64bit((long)((absoluteSecsStart + rangeSecsStart) * 1_000.0));
 		return Optional.of(epoch);
 	}
 
@@ -254,11 +254,11 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 		return Optional.of(absoluteSecsStart + rangeSecsEnd);
 	}
 
-	public Optional<TimestampEpochNs> getAbsoluteTimeEndAsTimestamp() {
+	public Optional<TimestampEpoch> getAbsoluteTimeEndAsTimestamp() {
 		if (absoluteSecsStart < 0.001 || rangeSecsEnd < 0.001) {
 			return Optional.empty();
 		}
-		TimestampEpochNs epoch = TimestampEpochNs.ofEpochMsUnsigned64bit((long)((absoluteSecsStart + rangeSecsEnd) * 1_000.0));
+		TimestampEpoch epoch = TimestampEpoch.ofEpochMsUnsigned64bit((long)((absoluteSecsStart + rangeSecsEnd) * 1_000.0));
 		return Optional.of(epoch);
 	}
 
@@ -349,11 +349,11 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 			relSecs = 0.0;
 		}
 		double absSecs = absoluteSecsStart + relSecs;
-		TimestampEpochNs epoch = TimestampEpochNs.ofEpochMsUnsigned64bit((long)(absSecs * 1_000.0));
+		TimestampEpoch epoch = TimestampEpoch.ofEpochMsUnsigned64bit((long)(absSecs * 1_000.0));
 		return epochToAbsClockString(epoch);
 	}
 
-	private static @NonNull String epochToAbsClockString(@NonNull TimestampEpochNs epoch) {
+	private static @NonNull String epochToAbsClockString(@NonNull TimestampEpoch epoch) {
 		if (epoch.isEmpty()) {
 			return "";
 		}
@@ -450,7 +450,7 @@ public final class RtspProtoPlaybackRange implements Cloneable {
 		String tmpIso = tmpFldYear + "-" + tmpFldMonth + "-" + tmpFldDay +
 				"T" + tmpFldHour + ":" + tmpFldMinute + ":" + tmpFldSecond + "." + tmpFldFraction + "Z";
 		Instant tmpInst = Instant.parse(tmpIso);
-		TimestampEpochNs tmpTimestamp = TimestampEpochNs.ofInstant(tmpInst);
+		TimestampEpoch tmpTimestamp = TimestampEpoch.ofInstant(tmpInst);
 		return (double)tmpTimestamp.getEpochNsUnsigned64bit().orElseThrow() / 1_000_000_000.0;
 	}
 

@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
@@ -55,7 +55,7 @@ final class ReadEsFileMeta {
 				)) {
 			BufferExt tmpBuf = new BufferExt();
 			FrameGrabberAudioAacFromEsFile asoAac = new FrameGrabberAudioAacFromEsFile(avStreamIncoming);
-			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 			asoAac.getNextFrame(tmpBuf, tmpStTimestamp);
 
 			AudioAacInfo aacInfo = AudioAacParser.parseAdtsHeader(tmpBuf);
@@ -99,7 +99,7 @@ final class ReadEsFileMeta {
 				)) {
 			BufferExt tmpBuf = new BufferExt();
 			FrameGrabberAudioAc3FromEsFile asoAc3 = new FrameGrabberAudioAc3FromEsFile(avStreamIncoming);
-			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 			asoAc3.getNextFrame(tmpBuf, tmpStTimestamp);
 
 			AudioAc3Info ac3Info = AudioAc3Parser.parseAc3Header(tmpBuf);
@@ -144,7 +144,7 @@ final class ReadEsFileMeta {
 
 			BufferExt tmpBuf = new BufferExt();
 			FrameGrabberVideoH26xFromEsFile asoH26x = new FrameGrabberVideoH26xFromEsFile(avStreamIncoming);
-			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 
 			int tmpPktCounter = 0;
 			boolean tmpHaveSps = false;
@@ -196,7 +196,7 @@ final class ReadEsFileMeta {
 
 			BufferExt tmpBuf = new BufferExt();
 			FrameGrabberVideoH26xFromEsFile asoH26x = new FrameGrabberVideoH26xFromEsFile(avStreamIncoming);
-			TimestampEpochNs tmpStTimestamp = TimestampEpochNs.ofEmpty();
+			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 
 			int tmpPktCounter = 0;
 			boolean tmpHaveSps = false;

@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
@@ -45,7 +46,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 	private final BufferExt cacheRecvBuf2 = new BufferExt();
 	private final BufferExt cacheRecvBuf3 = new BufferExt();
 	@SuppressWarnings("FieldCanBeLocal")
-	private @Nullable Instant lastRtcpPacketReceived = null;
+	private @Nullable TimestampEpoch lastRtcpPacketReceived = null;
 
 	private final Queue<@NonNull BufferExt> queueSend = new ConcurrentLinkedQueue<>();
 
@@ -273,7 +274,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 					return false;
 				}
 			}
-			lastRtcpPacketReceived = Instant.now();
+			lastRtcpPacketReceived = TimestampEpoch.ofNow();
 		} catch (SocketTimeoutException ex1) {
 			return true;
 		} catch (IOException e) {
@@ -533,14 +534,16 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		for (int itemNr = 1; itemNr <= rtcpPktHd.getItemsCount(); itemNr++) {
 			RtcpInnerRecpReportBlock innerRb = rtcpPktInner.getRecpReportBlock(itemNr).orElseThrow();
-			/*logDebug(FNC_NAME, String.format("RTT: %dms, FLost: %.3f%%",
-					innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L),
-					innerRb.getFractionLostPercent() * 100.0f));*/
+			/*if (lastRtcpPacketReceived != null) {
+				logDebug(FNC_NAME, String.format("RTT: %dms, FLost: %.3f%%",
+						innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L),
+						innerRb.getFractionLostPercent() * 100.0f));
+			}*/
 			if (itemNr != 1) {
 				continue;
 			}
 			// set congestion level
-			final float fractionLost = innerRb.getFractionLostPercent();
+			final double fractionLost = innerRb.getFractionLostPercent();
 			if (fractionLost >= 0 && fractionLost <= 0.01) {
 				targetCongestionLevel.set(0);  // less than 0.01 assume negligible
 			} else if (fractionLost > 0.01 && fractionLost <= 0.25) {

@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
@@ -25,7 +25,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 
 	private final BufferExt remainingInputBuf = new BufferExt();
 	private final BufferView remainingInputBv = new BufferView(remainingInputBuf);
-	private final TimestampEpochNs stTimestampCurFrame = TimestampEpochNs.ofEmpty();
+	private final TimestampMonotonic stTimestampCurFrame = TimestampMonotonic.ofEmpty();
 	private long debugStreamOffset = 0L;
 
 	PacketSplitter(
@@ -76,7 +76,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, FGAV extends FrameGr
 		return debugStreamOffset;
 	}
 
-	void getNextSplitPacket(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp, @NonNull I infoObj)
+	void getNextSplitPacket(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException, AvInvalidCodecDataException, InputStreamThreadEndedException {
 		BufferExt readIntoBufPtr = (useSplitBuf ? remainingInputBuf : buf);
 		if (! useSplitBuf || remainingInputBv.getLength() == 0) {

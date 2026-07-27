@@ -3,13 +3,13 @@ package org.tsitle.rtsp_server.threads.rtp.params;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
 
 import java.net.URI;
@@ -21,11 +21,11 @@ import java.util.function.Supplier;
 
 public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implements Cloneable {
 
-	public static final class RtpTsT0WithEpoch implements Cloneable {
+	public static final class RtpTsT0WithMonoRef implements Cloneable {
 		private @NonNull RtspProtoRtpTimestamp rtpTsT0;
-		private @NonNull TimestampEpochNs rtpGenTsT0Ns;
+		private @NonNull TimestampMonotonic rtpGenTsT0Ns;
 
-		public RtpTsT0WithEpoch(@NonNull RtspProtoRtpTimestamp rtpTsT0, @NonNull TimestampEpochNs rtpGenTsT0Ns) {
+		public RtpTsT0WithMonoRef(@NonNull RtspProtoRtpTimestamp rtpTsT0, @NonNull TimestampMonotonic rtpGenTsT0Ns) {
 			this.rtpTsT0 = rtpTsT0.clone();
 			this.rtpGenTsT0Ns = rtpGenTsT0Ns.clone();
 		}
@@ -35,9 +35,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		}
 
 		@Override
-		public @NonNull RtpTsT0WithEpoch clone() {
+		public @NonNull RtpTsT0WithMonoRef clone() {
 			try {
-				RtpTsT0WithEpoch cloned = (RtpTsT0WithEpoch) super.clone();
+				RtpTsT0WithMonoRef cloned = (RtpTsT0WithMonoRef) super.clone();
 				cloned.rtpTsT0 = rtpTsT0.clone();
 				cloned.rtpGenTsT0Ns = rtpGenTsT0Ns.clone();
 				return cloned;
@@ -48,7 +48,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 
 		public @NonNull RtspProtoRtpTimestamp rtpTsT0() { return rtpTsT0.clone(); }
 
-		public @NonNull TimestampEpochNs rtpGenTsT0Ns() { return rtpGenTsT0Ns.clone(); }
+		@SuppressWarnings("unused")
+		public @NonNull TimestampMonotonic rtpGenTsT0Ns() { return rtpGenTsT0Ns.clone(); }
 
 		@Override
 		public boolean equals(Object obj) {
@@ -58,7 +59,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 			if (obj == null || obj.getClass() != this.getClass()) {
 				return false;
 			}
-			var that = (RtpTsT0WithEpoch)obj;
+			var that = (RtpTsT0WithMonoRef)obj;
 			return Objects.equals(this.rtpTsT0, that.rtpTsT0) && Objects.equals(this.rtpGenTsT0Ns, that.rtpGenTsT0Ns);
 		}
 
@@ -91,8 +92,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private @Nullable RtspProtoRtpSeqNr rtpSeqNrT0 = null;
 	private boolean isSetRtpSeqNrT0;
 	/** Initial RTP Timestamp within the session */
-	private @Nullable RtpTsT0WithEpoch rtpTimestampT0WithEpoch = null;
-	private boolean isSetRtpTimestampT0WithEpoch;
+	private @Nullable RtpTsT0WithMonoRef rtpTimestampT0WithMonoRef = null;
+	private boolean isSetRtpTimestampT0WithMonoRef;
 
 	/** XSRC block for SDES RTCP packets (for communicating which streams belong to the same session) */
 	private @Nullable RtcpInnerXsrcBlock xsrcBlockEntry = null;
@@ -155,10 +156,10 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetRtpSeqNrT0 = true;
 	}
 
-	public Optional<RtpTsT0WithEpoch> getRtpTimestampT0WithEpoch() { return Optional.ofNullable(rtpTimestampT0WithEpoch); }
-	public void setRtpTimestampT0WithEpoch(@NonNull RtpTsT0WithEpoch value) {
-		this.rtpTimestampT0WithEpoch = value.clone();
-		this.isSetRtpTimestampT0WithEpoch = true;
+	public Optional<RtpTsT0WithMonoRef> getRtpTimestampT0WithMonoRef() { return Optional.ofNullable(rtpTimestampT0WithMonoRef); }
+	public void setRtpTimestampT0WithMonoRef(@NonNull RtpTsT0WithMonoRef value) {
+		this.rtpTimestampT0WithMonoRef = value.clone();
+		this.isSetRtpTimestampT0WithMonoRef = true;
 	}
 
 	public Optional<RtcpInnerXsrcBlock> getXsrcBlockEntry() {
@@ -231,8 +232,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 			clone.rtpSeqNrT0 = rtpSeqNrT0.clone();
 		}
 		//
-		if (rtpTimestampT0WithEpoch != null) {
-			clone.rtpTimestampT0WithEpoch = rtpTimestampT0WithEpoch.clone();
+		if (rtpTimestampT0WithMonoRef != null) {
+			clone.rtpTimestampT0WithMonoRef = rtpTimestampT0WithMonoRef.clone();
 		}
 		//
 		if (xsrcBlockEntry != null) {
@@ -254,7 +255,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetAvFramesPerSecond, "avFramesPerSecond");
 
 		requireIsSet(isSetRtpSeqNrT0, "rtpSeqNrT0");
-		requireIsSet(isSetRtpTimestampT0WithEpoch, "rtpTimestampT0WithEpoch");
+		requireIsSet(isSetRtpTimestampT0WithMonoRef, "rtpTimestampT0WithMonoRef");
 
 		requireIsSet(isSetXsrcBlockEntry, "xsrcBlockEntries");
 		requireIsSet(isSetCbRtcpAppendSrToOutgoingQueue, "cbRtcpAppendSrToOutgoingQueue");
@@ -278,9 +279,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		if (rtpSeqNrT0.isEmpty()) {
 			throw new IllegalArgumentException(errPrefix + "rtpSeqNrT0 must not be empty");
 		}
-		requireNonNull(rtpTimestampT0WithEpoch, "rtpTimestampT0WithEpoch");
-		if (rtpTimestampT0WithEpoch.isEmpty()) {
-			throw new IllegalArgumentException(errPrefix + "rtpTimestampT0WithEpoch must not be empty");
+		requireNonNull(rtpTimestampT0WithMonoRef, "rtpTimestampT0WithMonoRef");
+		if (rtpTimestampT0WithMonoRef.isEmpty()) {
+			throw new IllegalArgumentException(errPrefix + "rtpTimestampT0WithMonoRef must not be empty");
 		}
 
 		requireNonNull(xsrcBlockEntry, "xsrcBlockEntry");

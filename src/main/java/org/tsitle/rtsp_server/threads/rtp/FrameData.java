@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 
 /**
  * Stores the current frame data (e.g., one entire JPEG frame or one entire H264/5 NAL Unit)
@@ -17,7 +17,7 @@ public final class FrameData {
 	public @Nullable BufferView rtpPayloadDataViewPtr;
 	public @NonNull BufferExt rtpPayloadDataForDefFdSupplier = new BufferExt();
 	/** Sample-time timestamp of the payload */
-	public @NonNull TimestampEpochNs stTimestamp = TimestampEpochNs.ofEmpty();
+	public @NonNull TimestampMonotonic stTimestamp = TimestampMonotonic.ofEmpty();
 	/** Number of the RTP frame */
 	public long rtpFrameNr;
 	/** Total size of the Access Unit's RTP frames payloads */

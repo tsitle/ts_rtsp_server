@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
@@ -19,6 +19,11 @@ import java.util.Optional;
 public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 
 	private final @NonNull MqInternalSub mqInternalSub;
+
+	private @Nullable Long prevTimestampEpochMs = null;
+	private @Nullable TimestampMonotonic prevTimestampMono = null;
+
+	private @Nullable Double videoFps = null;
 
 	/**
 	 * Constructor.
@@ -49,7 +54,7 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void readFrame(@NonNull BufferExt buf, @NonNull TimestampEpochNs stTimestamp)
+	public void readFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readFrame()";
 
@@ -62,11 +67,18 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 			while (true) {
 				Optional<MqPacketAv> optPacket = mqInternalSub.receiveMessageAv(buf);
 				if (optPacket.isPresent()) {
-					if (optPacket.get().mdTimestampMs() != 0L) {
-						TimestampEpochNs tmpTs = TimestampEpochNs.ofEpochMsUnsigned64bit(
-								optPacket.get().mdTimestampMs()
-							);
-						stTimestamp.copyFrom(tmpTs);
+					if (! optPacket.get().mdTimestampEpochMs().isEmpty()) {
+						long curTsMs = optPacket.get().mdTimestampEpochMs().getEpochNsUnsigned64bit().orElseThrow() / 1_000_000L;
+						if (prevTimestampEpochMs == null || prevTimestampMono == null) {
+							prevTimestampMono = TimestampMonotonic.ofNow();
+						} else {
+							long deltaMs = curTsMs - prevTimestampEpochMs;
+							prevTimestampMono = TimestampMonotonic.ofMsUnsigned64bit(
+									(prevTimestampMono.getNsUnsigned64bit().orElseThrow() / 1_000_000L) + deltaMs
+								);
+						}
+						stTimestamp.copyFrom(prevTimestampMono);
+						prevTimestampEpochMs = curTsMs;
 					} else {
 						stTimestamp.clear();
 					}

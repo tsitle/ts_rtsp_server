@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.avstreams.codec_v_mjpeg;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpochNs;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
@@ -39,7 +39,7 @@ public final class FrameGrabberVideoMjpegFromEsFile extends FrameGrabberAvFromEs
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
 	@Override
-	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampEpochNs stTimestamp)
+	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
