@@ -18,8 +18,6 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
 
-import java.util.Objects;
-
 public final class ThreadRtpSenderMjpeg<
 			AVSTRIC extends AvStreamIncomingBase,
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
@@ -27,6 +25,8 @@ public final class ThreadRtpSenderMjpeg<
 
 	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
 	private @Nullable RtpPacketMjpeg cachePlainPacket = null;
+
+	private double lastFps;
 
 	/**
 	 * Constructor.
@@ -52,8 +52,8 @@ public final class ThreadRtpSenderMjpeg<
 			);
 
 		//
-		this.rtpTicksPerFrame = (long)((double)RtpPacketType.V_MJPEG.getVideoCodecRtpClockrate() /
-				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
+		this.lastFps = paramsCommon.getAvFramesPerSecond();
+		this.rtpTicksPerFrame = computeRtpTicksPerFrame(this.lastFps);
 
 		//
 		paramsVideoCommon.validate();
@@ -131,6 +131,13 @@ public final class ThreadRtpSenderMjpeg<
 		if (cacheRtpInnerPayloadBufView == null) {
 			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
 		}
+		//
+		double curFps = (threadDataProv == null ? -1.0 : threadDataProv.getVideoFps().orElse(-1.0));
+		if (curFps > 0.001 && Double.compare(lastFps, curFps) != 0) {
+			nextRtpTicksPerFrame = computeRtpTicksPerFrame(curFps);
+			lastFps = curFps;
+		}
+		//
 		if (cachePlainPacket == null) {
 			cachePlainPacket = new RtpPacketMjpeg(
 					cacheParamsBase,
@@ -150,6 +157,13 @@ public final class ThreadRtpSenderMjpeg<
 			return cachePlainPacket;
 		}
 		return encryptRtpPacketPayload(cachePlainPacket);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private long computeRtpTicksPerFrame(double fps) {
+		return (long)((double)rtpPacketType.getVideoCodecRtpClockrate() / fps);
 	}
 
 }

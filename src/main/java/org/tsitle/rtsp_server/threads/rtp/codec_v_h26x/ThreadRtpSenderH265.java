@@ -97,6 +97,13 @@ public final class ThreadRtpSenderH265<
 		if (cacheRtpInnerPayloadBufView == null) {
 			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
 		}
+		//
+		double curFps = (threadDataProv == null ? -1.0 : threadDataProv.getVideoFps().orElse(-1.0));
+		if (curFps > 0.001 && Double.compare(lastFps, curFps) != 0) {
+			nextRtpTicksPerFrame = computeRtpTicksPerFrame(curFps);
+			lastFps = curFps;
+		}
+		//
 		/*System.out.println("frame " + curFragmentData.frameData().rtpFrameNr +
 				", isLastFragment=" + curFragmentData.isLastFragment() +
 				", isLastOfAU=" + cacheParamsBase.doSetMarker);*/

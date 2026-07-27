@@ -56,6 +56,8 @@ public abstract class ThreadRtpSenderH26xBase<
 
 	private long globalTotalNudCount = 0L;
 
+	protected double lastFps;
+
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
@@ -85,8 +87,8 @@ public abstract class ThreadRtpSenderH26xBase<
 		}
 
 		//
-		this.rtpTicksPerFrame = (long)((double)rtpPacketType.getVideoCodecRtpClockrate() /
-				Objects.requireNonNull(paramsCommon).getAvFramesPerSecond());
+		this.lastFps = paramsCommon.getAvFramesPerSecond();
+		this.rtpTicksPerFrame = computeRtpTicksPerFrame(this.lastFps);
 
 		//
 		paramsVideoCommon.validate();
@@ -114,6 +116,12 @@ public abstract class ThreadRtpSenderH26xBase<
 	@Override
 	protected void beforeRunHook() throws InterruptedException, InputStreamEosException {
 		super.beforeRunHook();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected long computeRtpTicksPerFrame(double fps) {
+		return (long)((double)rtpPacketType.getVideoCodecRtpClockrate() / fps);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
