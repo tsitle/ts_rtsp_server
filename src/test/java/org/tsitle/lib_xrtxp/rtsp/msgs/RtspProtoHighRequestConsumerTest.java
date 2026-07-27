@@ -148,7 +148,7 @@ class RtspProtoHighRequestConsumerTest {
 						"QBDgUBAAcBAQgBAQoBAQsBCgAAACcAIQAepnM1qcQLCtXMUZ8imXhhE4K37b1PTMal3WhDgdssBAAAAAEA",
 				//
 				"m=audio 0 RTP/SAVP 101",
-				"b=AS:128000",
+				"b=AS:128",
 				"a=rtpmap:101 L16/8000/1",
 				"a=control:substreamidf528764d_081eb523",
 				"a=crypto:707 AES_CM_128_HMAC_SHA1_80 inline:tGU6L4vui7vFvia/bPo6uXiXDpB/D9hY30fs4+U7",
