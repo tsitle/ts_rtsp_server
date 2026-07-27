@@ -82,6 +82,9 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 					} else {
 						stTimestamp.clear();
 					}
+					//
+					videoFps = optPacket.get().mdVideoFps().getFrDbl();
+					//
 					break;
 				}
 				try {
@@ -108,6 +111,11 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 	@Override
 	public void rewind() throws AvCannotOpenInputException {
 		throw new AvCannotOpenInputException("Cannot rewind a MQ stream");
+	}
+
+	@Override
+	public Optional<Double> getVideoFps() {
+		return Optional.ofNullable(videoFps);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

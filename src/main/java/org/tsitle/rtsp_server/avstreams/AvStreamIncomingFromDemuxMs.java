@@ -11,6 +11,8 @@ import org.tsitle.rtsp_server.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
 import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
 
+import java.util.Optional;
+
 public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
 
 	private final boolean isVideo;
@@ -67,6 +69,11 @@ public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
 	@Override
 	public void rewind() throws AvCannotOpenInputException {
 		throw new AvCannotOpenInputException("Cannot rewind a Demuxed sub-stream");
+	}
+
+	@Override
+	public Optional<Double> getVideoFps() {
+		return Optional.empty();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

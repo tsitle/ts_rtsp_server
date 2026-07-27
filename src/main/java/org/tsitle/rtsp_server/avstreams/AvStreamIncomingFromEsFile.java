@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Optional;
 
 public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
 
@@ -112,6 +113,11 @@ public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
 		openInput();
 		//
 		haveEos = false;
+	}
+
+	@Override
+	public Optional<Double> getVideoFps() {
+		return Optional.empty();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

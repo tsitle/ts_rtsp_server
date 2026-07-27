@@ -7,6 +7,8 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
+import java.util.Optional;
+
 public abstract class AvStreamIncomingBase implements AutoCloseable {
 
 	protected final @Nullable LogMsgInterface logMsgInterface;
@@ -44,6 +46,12 @@ public abstract class AvStreamIncomingBase implements AutoCloseable {
 	public boolean haveEos() {
 		return haveEos;
 	}
+
+	/**
+	 * Returns the video frames per second if available
+	 * @return Video frames per second
+	 */
+	public abstract Optional<Double> getVideoFps();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
