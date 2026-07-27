@@ -59,6 +59,7 @@ public final class RtspProtoSdpConsumer implements RtspProtoSdpConsumerInterface
 		 *   "o=- 1781786525327 1 IN IP4 192.168.1.1"
 		 *   "s=Just A Session"
 		 *   "i=demo.stream"
+		 *   "c=IN IP4 0.0.0.0"
 		 *   "t=0 0"
 		 *   "a=tool:TS RTSP Server/1.0"
 		 *   "a=type:broadcast"
@@ -70,7 +71,7 @@ public final class RtspProtoSdpConsumer implements RtspProtoSdpConsumerInterface
 		 *   "a=control:substreamidf528764d_dbbd5deb"
 		 *   "a=key-mgmt:mikey AQAFAElq4S...AAAEA"
 		 *   "m=audio 0 RTP/SAVP 101"  <-- second sub-stream
-		 *   "b=AS:128000"
+		 *   "b=AS:128"
 		 *   "a=rtpmap:101 L16/8000/1"
 		 *   "a=control:substreamidf528764d_081eb523"
 		 *   "a=key-mgmt:mikey AQAFABdQ828BA...8YBAAAAAEA"
@@ -430,8 +431,15 @@ public final class RtspProtoSdpConsumer implements RtspProtoSdpConsumerInterface
 		 *
 		 * This specifies the proposed bandwidth to be used by the session or media, and is optional.
 		 *
-		 * <bandwidth-value> is in kilobits per second.
 		 * <modifier> is a single alphanumeric word giving the meaning of the bandwidth figure.
+		 * <bandwidth-value> is in kilobits per second.
+		 *
+		 * Two modifiers are initially defined:
+		 *   'CT': Conference Total: An implicit maximum bandwidth is associated [...]
+		 *   'AS': Application-Specific Maximum: The bandwidth is interpreted to be
+		 *         application-specific, i.e., will be the application's concept of
+		 *         maximum bandwidth.  Normally this will coincide with what is set on
+		 *         the application's "maximum bandwidth" control if applicable.
 		 */
 
 		if (entryVal.isBlank()) {
