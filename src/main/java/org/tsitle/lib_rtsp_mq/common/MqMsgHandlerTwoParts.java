@@ -9,6 +9,7 @@ import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.zeromq.ZMQ;
 
 import java.nio.BufferUnderflowException;
@@ -150,7 +151,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		if (packet.codec().isVideo()) {
 			tempBb.put(packet.isCodecGuessed() ? (byte)1 : (byte)0);
 		}
-		tempBb.putLong(packet.mdTimestampMs());
+		long tmpTsMs = packet.mdTimestampEpochMs().getEpochNsUnsigned64bit().orElse(0L) / 1_000_000L;
+		tempBb.putLong(tmpTsMs);
 		tempBb.putInt(packet.mdCounter());
 		if (packet.codec().isVideo()) {
 			tempBb.put(packet.mdVideoIsKeyframe() ? (byte)1 : (byte)0);
@@ -258,7 +260,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 					tmpMsgNr,
 					tmpCodecEn,
 					tmpIsCodecGuessed,
-					tmpMdTimestamp,
+					tmpMdTimestamp == 0L ? TimestampEpoch.ofEmpty() : TimestampEpoch.ofEpochMsUnsigned64bit(tmpMdTimestamp),
 					tmpMdCounter,
 					tmpMdVideoIsKeyframe,
 					ImageDimensions.of(tmpMdVideoResoWidth, tmpMdVideoResoHeight),

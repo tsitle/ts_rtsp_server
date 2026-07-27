@@ -7,6 +7,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class MqReceiverSubBase implements AutoCloseable {
 
 	private static class Stats {
-		@Nullable Long lastTimestampMs = null;
+		@Nullable TimestampEpoch lastTimestampMs = null;
 		long lastRecvTimeNs = 0L;
 
 		@Nullable Long lastMsgNr = null;
@@ -141,9 +142,9 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 
 		//
 		if (doPrintDebugStats) {
-			printDebugStats(FNC_NAME, packet.mdTimestampMs());
+			printDebugStats(FNC_NAME, packet.mdTimestampEpochMs());
 		}
-		stats.lastTimestampMs = packet.mdTimestampMs();
+		stats.lastTimestampMs = packet.mdTimestampEpochMs();
 		stats.lastRecvTimeNs = System.nanoTime();
 
 		//
@@ -212,10 +213,11 @@ public abstract class MqReceiverSubBase implements AutoCloseable {
 		return false;
 	}
 
-	private void printDebugStats(@NonNull String fncName, long curMdTimestampMs) {
+	private void printDebugStats(@NonNull String fncName, @NonNull TimestampEpoch curMdTimestamp) {
 		if (stats.lastTimestampMs != null) {
-			final long tmpTimestampDeltaMs = curMdTimestampMs - stats.lastTimestampMs;
-			final long tmpRecvDeltaMs = (System.nanoTime() - stats.lastRecvTimeNs) / 1_000_000L;
+			final long tmpTimestampDeltaMs = ((curMdTimestamp.getEpochNsUnsigned64bit().orElseThrow() -
+					stats.lastTimestampMs.getEpochNsUnsigned64bit().orElseThrow()) / 1_000_000L);
+			final long tmpRecvDeltaMs = ((System.nanoTime() - stats.lastRecvTimeNs) / 1_000_000L);
 
 			stats.avgTsDeltaSum += tmpTimestampDeltaMs;
 			++stats.avgTsDeltaCnt;

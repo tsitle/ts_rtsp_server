@@ -9,6 +9,7 @@ import org.tsitle.lib_rtsp_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.zeromq.ZMQ;
 
 import java.nio.ByteBuffer;
@@ -104,7 +105,8 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(FNC_NAME, packet.isCodecGuessed(), ZMQ.SNDMORE);
 		}
-		writeFieldToMqUint64(FNC_NAME, packet.mdTimestampMs(), ZMQ.SNDMORE);
+		long tmpTsMs = packet.mdTimestampEpochMs().getEpochNsUnsigned64bit().orElse(0L) / 1_000_000L;
+		writeFieldToMqUint64(FNC_NAME, tmpTsMs, ZMQ.SNDMORE);
 		writeFieldToMqUint32(FNC_NAME, packet.mdCounter(), ZMQ.SNDMORE);
 		if (packet.codec().isVideo()) {
 			writeFieldToMqBool(FNC_NAME, packet.mdVideoIsKeyframe(), ZMQ.SNDMORE);
@@ -201,7 +203,7 @@ public final class MqMsgHandlerSegmented extends MqMsgHandlerBase {
 				tmpMsgNr,
 				tmpCodecEn,
 				tmpIsCodecGuessed,
-				tmpMdTimestamp,
+				tmpMdTimestamp == 0L ? TimestampEpoch.ofEmpty() : TimestampEpoch.ofEpochMsUnsigned64bit(tmpMdTimestamp),
 				tmpMdCounter,
 				tmpMdVideoIsKeyframe,
 				ImageDimensions.of(tmpMdVideoResoWidth, tmpMdVideoResoHeight),

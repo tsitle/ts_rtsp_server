@@ -5,13 +5,14 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 
 /**
  * Audio/video packet.
  * @param msgNr Message number
  * @param codec The codec used for the payload
  * @param isCodecGuessed Whether the codec was guessed or explicitly set
- * @param mdTimestampMs Metadata: sample time timestamp of the payload in milliseconds
+ * @param mdTimestampEpochMs Metadata: sample time timestamp of the payload as 'Epoch timestamp' in milliseconds
  * @param mdCounter Metadata: packet counter
  * @param mdVideoIsKeyframe Metadata: is this a keyframe? (video only)
  * @param mdVideoReso Metadata: resolution width and height (video only)
@@ -27,7 +28,7 @@ public record MqPacketAv(
 			long msgNr,
 			@NonNull MqPacketCodec codec,
 			boolean isCodecGuessed,
-			long mdTimestampMs,
+			@NonNull TimestampEpoch mdTimestampEpochMs,
 			int mdCounter,
 			boolean mdVideoIsKeyframe,
 			@NonNull ImageDimensions mdVideoReso,
@@ -49,7 +50,7 @@ public record MqPacketAv(
 				"msgNr=" + Long.toUnsignedString(msgNr) +
 				", codec=" + codec +
 				(codec.isVideo() ? ", isCodecGuessed=" + (isCodecGuessed ? "T" : "F") : "") +
-				", mdTimestampMs=" + Long.toUnsignedString(mdTimestampMs) +
+				", mdTimestampEpochMs=" + mdTimestampEpochMs +
 				", mdCounter=" + Integer.toUnsignedString(mdCounter) +
 				(codec.isVideo() ? ", mdVideoIsKeyframe=" + (mdVideoIsKeyframe ? "T" : "F") : "") +
 				(codec.isVideo() ? ", mdVideoReso=" + tmpResoStr : "") +
