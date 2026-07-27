@@ -40,10 +40,10 @@ public final class MqCodecSettings {
 				"NULL" : String.format("%.3f", videoFps.getFrDbl()).replace(",", "."));
 		return getClass().getSimpleName() + " [" +
 				"codec=" + (codec == null ? "NULL" : codec) +
-				", videoFps=" + tmpFpsStr +
-				", audioSamplerate=" + (audioSamplerate == null ? "NULL" : audioSamplerate) +
-				", audioChannels=" + (audioChannels == null ? "NULL" : audioChannels) +
-				", audioSamplesPerFrame=" + (audioSamplesPerFrame == null ? "NULL" : audioSamplesPerFrame) +
+				(codec != null && codec.isVideo() ? ", videoFps=" + tmpFpsStr : "") +
+				(codec != null && codec.isAudio() ? ", audioSamplerate=" + (audioSamplerate == null ? "NULL" : audioSamplerate) : "") +
+				(codec != null && codec.isAudio() ? ", audioChannels=" + (audioChannels == null ? "NULL" : audioChannels) : "") +
+				(codec != null && codec.isAudio() ? ", audioSamplesPerFrame=" + (audioSamplesPerFrame == null ? "NULL" : audioSamplesPerFrame) : "") +
 				"]";
 	}
 
