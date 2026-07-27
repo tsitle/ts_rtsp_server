@@ -17,6 +17,7 @@ import org.tsitle.lib_rtsp_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
+import org.tsitle.rtsp_server.threads.mq_e2i.CodecSettingsChangedFromMqInterface;
 import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.ThreadRtspTcpClientInbound;
@@ -55,6 +56,9 @@ public final class RtspServerApp {
 		);
 	private static @Nullable ExecutorService poolMqE2I = null;
 	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
+
+	private static final @NonNull CodecSettingsChangedFromMqHandler codecSettingsChangedFromMqHandler =
+			new CodecSettingsChangedFromMqHandler();
 
 	private RtspServerApp() { }
 
@@ -227,33 +231,45 @@ public final class RtspServerApp {
 			ThreadMqE2I thread = new ThreadMqE2I(
 					RtspServerApp::addMsgForLogThread,
 					cancelToken,
-					(@NonNull RtspProtoIdEsSource cbArgIdEsSource, @NonNull MqCodecSettings cbArgCodecSettings) -> {
-							RtspConfigElementaryStreamSource tmpCbEsSrcObj =
-									rtspConfig.getElementaryStreamSourceObj(cbArgIdEsSource).orElseThrow();
-							if (cbArgCodecSettings.codec != null) {
-								tmpCbEsSrcObj.setMqDynamicCodec(cbArgCodecSettings.getAsRtpPacketType());
-							}
-							if (cbArgCodecSettings.videoFps != null &&
-									cbArgCodecSettings.videoFps != FrameRateEnum.UNKNOWN) {
-								tmpCbEsSrcObj.setMqDynamicVideoFps(cbArgCodecSettings.videoFps);
-							}
-							if (cbArgCodecSettings.audioSamplerate != null &&
-									cbArgCodecSettings.audioSamplerate != SampleRateEnum.UNKNOWN) {
-								tmpCbEsSrcObj.setMqDynamicAudioSamplerateHz(cbArgCodecSettings.audioSamplerate);
-							}
-							if (cbArgCodecSettings.audioChannels != null) {
-								tmpCbEsSrcObj.setMqDynamicAudioChannelCount(cbArgCodecSettings.audioChannels);
-							}
-							if (cbArgCodecSettings.audioSamplesPerFrame != null) {
-								tmpCbEsSrcObj.setMqDynamicAudioSamplesPerFrame(cbArgCodecSettings.audioSamplesPerFrame);
-							}
-						},
+					codecSettingsChangedFromMqHandler,
 					tmpEsSrcObj.getIdAsProtoId(),
 					mqSetts,
 					tmpSslCertPath.orElse("")
 				);
 
 			poolMqE2I.submit(thread);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static class CodecSettingsChangedFromMqHandler implements CodecSettingsChangedFromMqInterface {
+		@Override
+		public void onCodecSettingsChangedFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+			RtspConfigElementaryStreamSource tmpCbEsSrcObj =
+					rtspConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
+			if (codecSettings.codec != null) {
+				tmpCbEsSrcObj.setMqDynamicCodec(codecSettings.getAsRtpPacketType());
+			}
+			if (codecSettings.videoFps != null && codecSettings.videoFps != FrameRateEnum.UNKNOWN) {
+				tmpCbEsSrcObj.setMqDynamicVideoFps(codecSettings.videoFps);
+			}
+			if (codecSettings.audioSamplerate != null && codecSettings.audioSamplerate != SampleRateEnum.UNKNOWN) {
+				tmpCbEsSrcObj.setMqDynamicAudioSamplerateHz(codecSettings.audioSamplerate);
+			}
+			if (codecSettings.audioChannels != null) {
+				tmpCbEsSrcObj.setMqDynamicAudioChannelCount(codecSettings.audioChannels);
+			}
+			if (codecSettings.audioSamplesPerFrame != null) {
+				tmpCbEsSrcObj.setMqDynamicAudioSamplesPerFrame(codecSettings.audioSamplesPerFrame);
+			}
+		}
+
+		@Override
+		public void onCodecMetadataFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+			RtspConfigElementaryStreamSource tmpCbEsSrcObj =
+					rtspConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
+			tmpCbEsSrcObj.setMqDynamicExtradata(metadataHex);
 		}
 	}
 

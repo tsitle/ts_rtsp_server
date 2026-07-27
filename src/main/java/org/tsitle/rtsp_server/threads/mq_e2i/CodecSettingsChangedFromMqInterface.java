@@ -8,4 +8,6 @@ public interface CodecSettingsChangedFromMqInterface {
 
 	void onCodecSettingsChangedFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings);
 
+	void onCodecMetadataFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex);
+
 }

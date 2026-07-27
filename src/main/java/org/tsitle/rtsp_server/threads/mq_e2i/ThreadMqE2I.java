@@ -7,16 +7,58 @@ import org.tsitle.lib_rtsp_mq.client.MqExternalSub;
 import org.tsitle.lib_rtsp_mq.common.MqInternalPub;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
+import org.tsitle.lib_xrtxp.avdata.*;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
+import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_rtsp_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public final class ThreadMqE2I extends RunnableBase {
+
+	private static class MetadataVars {
+		boolean haveAllMetadataPackets = false;
+		int metadataPktCount = 0;
+		final @NonNull BufferExt metadataPktH26xSps = new BufferExt();
+		final @NonNull BufferExt metadataPktH26xPps = new BufferExt();
+		final @NonNull BufferExt metadataPktH265Vps = new BufferExt();
+		@Nullable Map<@NonNull Integer, @NonNull H264SpsContext> mapH264SpsContext = null;
+		@Nullable Map<@NonNull Integer, @NonNull H264PpsContext> mapH264PpsContext = null;
+		@Nullable VideoH264Parser codecParserH264 = null;
+		@Nullable VideoH265Parser codecParserH265 = null;
+		@NonNull String metadataHex = "";
+
+		void reset(@NonNull MqPacketCodec mqCodec) {
+			switch (mqCodec) {
+				case H264, H265 -> haveAllMetadataPackets = false;
+				default -> haveAllMetadataPackets = true;
+			}
+
+			metadataPktCount = 0;
+
+			metadataPktH26xSps.clear();
+			metadataPktH26xPps.clear();
+			metadataPktH265Vps.clear();
+
+			mapH264SpsContext = null;
+			mapH264PpsContext = null;
+			codecParserH264 = null;
+
+			codecParserH265 = null;
+
+			metadataHex = "";
+		}
+	}
 
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
 	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
@@ -26,10 +68,12 @@ public final class ThreadMqE2I extends RunnableBase {
 	private final String threadName;
 
 	private @Nullable MqExternalSub mqExternalSub = null;
-	private final @NonNull MqInternalPub mqInternalPub;
+	private @Nullable MqInternalPub mqInternalPub = null;
 
 	private final @NonNull BufferExt cachePayloadData = new BufferExt();
 	private final @NonNull MqCodecSettings cacheCodecSettings = new MqCodecSettings();
+
+	private final @NonNull MetadataVars metadataVars = new MetadataVars();
 
 	/**
 	 * Constructor.
@@ -59,9 +103,6 @@ public final class ThreadMqE2I extends RunnableBase {
 		this.threadName = String.format("MQE2I#es%s#%s:%s:%s",
 				idEsSource.getIdStr().orElse("-unset-"), mqSettings.getHostname(),
 				mqSettings.getRscGroup(), mqSettings.getRscChannel());
-
-		//
-		mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -72,6 +113,9 @@ public final class ThreadMqE2I extends RunnableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
 		Thread.currentThread().setName(threadName);
+
+		//
+		mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
 
 		//
 		isRunning.set(true);
@@ -128,6 +172,7 @@ public final class ThreadMqE2I extends RunnableBase {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
 			mqInternalPub.close();
+			mqInternalPub = null;
 			//
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
@@ -146,7 +191,42 @@ public final class ThreadMqE2I extends RunnableBase {
 			return;
 		}
 		MqPacketAv packet = optPacket.get();
+
 		//
+		checkForCodecChanges(packet);
+		if (! metadataVars.haveAllMetadataPackets && ++metadataVars.metadataPktCount <= 100) {
+			switch (packet.codec()) {
+				case H264 -> checkForCodecMetadata_h264(packet);
+				case H265 -> checkForCodecMetadata_h265(packet);
+			}
+			if (metadataVars.haveAllMetadataPackets) {
+				codecSettingsChangedFromMqInterface.onCodecMetadataFromMq(idEsSource, metadataVars.metadataHex);
+			}
+		}
+
+		//
+		if (mqInternalPub == null) {
+			throw new IllegalStateException("mqInternalPub is null");
+		}
+		mqInternalPub.sendMessageAv(packet);
+	}
+
+	private void sleepLongAndProsper(int secs) {
+		try {
+			int ms = secs * 1000;
+			while (ms > 0 && ! hasBeenRequestedToStop()) {
+				//noinspection BusyWait
+				Thread.sleep(100L);
+				ms -= 100;
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+		}
+	}
+
+	private void checkForCodecChanges(@NonNull MqPacketAv packet) {
+		final String FNC_NAME = getClass().getSimpleName() + ".checkForCodecChanges()";
+
 		boolean haveChanges = false;
 		if (cacheCodecSettings.codec == null || cacheCodecSettings.codec.ordinal() != packet.codec().ordinal()) {
 			// the codec should never actually change during a session - but we need to read it once
@@ -159,6 +239,7 @@ public final class ThreadMqE2I extends RunnableBase {
 				cacheCodecSettings.audioSamplerate = packet.mdAudioSamplerate();
 				cacheCodecSettings.audioChannels = packet.mdAudioChannelCount();
 			}
+			//
 			haveChanges = true;
 		}
 		if (packet.codec().isVideo() &&
@@ -173,22 +254,115 @@ public final class ThreadMqE2I extends RunnableBase {
 			haveChanges = true;
 		}
 		if (haveChanges) {
+			metadataVars.reset(cacheCodecSettings.codec);
+			//
+			logDebug(FNC_NAME, "have new MQ codec settings: " + cacheCodecSettings);
 			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(idEsSource, cacheCodecSettings);
 		}
-		//
-		mqInternalPub.sendMessageAv(packet);
 	}
 
-	private void sleepLongAndProsper(int secs) {
+	private void checkForCodecMetadata_h264(@NonNull MqPacketAv packet) {
+		final String FNC_NAME = getClass().getSimpleName() + ".checkForCodecMetadata_h264()";
+
+		if (metadataVars.mapH264SpsContext == null) {
+			metadataVars.mapH264SpsContext = new HashMap<>();
+		}
+		if (metadataVars.mapH264PpsContext == null) {
+			metadataVars.mapH264PpsContext = new HashMap<>();
+		}
+		if (metadataVars.codecParserH264 == null) {
+			metadataVars.codecParserH264 = new VideoH264Parser(metadataVars.mapH264SpsContext, metadataVars.mapH264PpsContext);
+		}
+
+		BufferView payloadBv = new BufferView(packet.payloadDataPtr());
 		try {
-			int ms = secs * 1000;
-			while (ms > 0 && ! hasBeenRequestedToStop()) {
-				//noinspection BusyWait
-				Thread.sleep(100L);
-				ms -= 100;
+			while (true) {
+				int tmpMagicBytesLen = MagicBytesH26xHelper.findH26xMagicBytesLength(payloadBv);
+				int tmpNextOffs = MagicBytesH26xHelper.findH26xNextNalUnit(payloadBv);
+				BufferView tmpNuBv = new BufferView(packet.payloadDataPtr());
+				tmpNuBv.setOffset(payloadBv.getOffset());
+				tmpNuBv.setLength(tmpNextOffs > 0 ? tmpNextOffs : payloadBv.getLength());
+
+				VideoH264Info codecInfo = metadataVars.codecParserH264.parseH264Data(
+						0L,
+						tmpMagicBytesLen,
+						tmpNuBv,
+						null
+					);
+
+				if (codecInfo.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_SPS) {
+					tmpNuBv.copyViewIntoBe(metadataVars.metadataPktH26xSps);
+				} else if (codecInfo.nalUnitTypeEn == VideoH264Info.NalUnitType.NVCL_PPS) {
+					tmpNuBv.copyViewIntoBe(metadataVars.metadataPktH26xPps);
+				}
+
+				if (tmpNextOffs < 1) {
+					break;
+				}
+				payloadBv.increaseOffset(tmpNextOffs);
+				payloadBv.increaseLength(-1 * tmpNextOffs);
 			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
+
+			metadataVars.haveAllMetadataPackets = (! (metadataVars.metadataPktH26xSps.isEmpty() ||
+					metadataVars.metadataPktH26xPps.isEmpty()));
+			if (metadataVars.haveAllMetadataPackets) {
+				logDebug(FNC_NAME, "have all metadata packets");
+				metadataVars.metadataHex = metadataVars.metadataPktH26xSps.toHexString() +
+						metadataVars.metadataPktH26xPps.toHexString();
+			}
+		} catch (AvInvalidCodecDataException e) {
+			logWarn(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
+		}
+	}
+
+	private void checkForCodecMetadata_h265(@NonNull MqPacketAv packet) {
+		final String FNC_NAME = getClass().getSimpleName() + ".checkForCodecMetadata_h265()";
+
+		if (metadataVars.codecParserH265 == null) {
+			metadataVars.codecParserH265 = new VideoH265Parser();
+		}
+
+		BufferView payloadBv = new BufferView(packet.payloadDataPtr());
+		try {
+			while (true) {
+				int tmpMagicBytesLen = MagicBytesH26xHelper.findH26xMagicBytesLength(payloadBv);
+				int tmpNextOffs = MagicBytesH26xHelper.findH26xNextNalUnit(payloadBv);
+				BufferView tmpNuBv = new BufferView(packet.payloadDataPtr());
+				tmpNuBv.setOffset(payloadBv.getOffset());
+				tmpNuBv.setLength(tmpNextOffs > 0 ? tmpNextOffs : payloadBv.getLength());
+
+				VideoH265Info codecInfo = metadataVars.codecParserH265.parseH265Data(
+						0L,
+						tmpMagicBytesLen,
+						tmpNuBv
+					);
+
+				if (codecInfo.nalUnitTypeEn == VideoH265Info.NalUnitType.NVCL_SPS) {
+					tmpNuBv.copyViewIntoBe(metadataVars.metadataPktH26xSps);
+				} else if (codecInfo.nalUnitTypeEn == VideoH265Info.NalUnitType.NVCL_PPS) {
+					tmpNuBv.copyViewIntoBe(metadataVars.metadataPktH26xPps);
+				} else if (codecInfo.nalUnitTypeEn == VideoH265Info.NalUnitType.NVCL_VPS) {
+					tmpNuBv.copyViewIntoBe(metadataVars.metadataPktH265Vps);
+				}
+
+				if (tmpNextOffs < 1) {
+					break;
+				}
+				payloadBv.increaseOffset(tmpNextOffs);
+				payloadBv.increaseLength(-1 * tmpNextOffs);
+			}
+
+			metadataVars.haveAllMetadataPackets = (! (metadataVars.metadataPktH26xSps.isEmpty() ||
+					metadataVars.metadataPktH26xPps.isEmpty() ||
+					metadataVars.metadataPktH265Vps.isEmpty()));
+			if (metadataVars.haveAllMetadataPackets) {
+				logDebug(FNC_NAME, "have all metadata packets");
+				metadataVars.metadataHex = metadataVars.metadataPktH26xSps.toHexString() +
+						metadataVars.metadataPktH26xPps.toHexString() +
+						metadataVars.metadataPktH265Vps.toHexString();
+			}
+		} catch (AvInvalidCodecDataException e) {
+			logWarn(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
 		}
 	}
 

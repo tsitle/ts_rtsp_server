@@ -428,6 +428,10 @@ public final class RtspConfigElementaryStreamSource {
 
 	public synchronized void setMqDynamicAudioSamplesPerFrame(int value) { this.mqDynamicAudioSamplesPerFrame = value; }
 
+	public synchronized void setMqDynamicExtradata(@NonNull String value) {
+		internalVideoExtradataB64 = ExtradataParserHelper.parseVideoExtradataHex(getCodec(), value);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
