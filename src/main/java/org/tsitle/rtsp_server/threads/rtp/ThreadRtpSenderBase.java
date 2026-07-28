@@ -688,6 +688,9 @@ public abstract class ThreadRtpSenderBase<
 			return;
 		}
 		largestFrame = frameData.totalFrameSize;
+		if (largestFrame > 32L * 1024L) {  // purely informational
+			logDebug(fncName, "largest frame: " + (largestFrame / 1024L) + " kB");
+		}
 		if (largestFrame > 250_000) {
 			logWarn(fncName, (rtpPacketType.isVideo() ? "image" : "audio") +
 					" quality/size might be too high (frame sz=" + largestFrame + " bytes)");
