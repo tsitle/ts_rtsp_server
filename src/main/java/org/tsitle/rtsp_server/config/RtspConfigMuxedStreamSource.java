@@ -219,6 +219,13 @@ public final class RtspConfigMuxedStreamSource {
 				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
+			if (ffStreamInfoVideo.fps.toDouble() > 120.0) {
+				/*
+				 * FFmpeg sometimes reports the Time Base as the Frame Rate for RTSP streams.
+				 * Then the FPS is 90000. So we set it to a safe 30.
+				 */
+				ffStreamInfoVideo.fps.copyFrom(RationalNumber.ofFps(30.0));
+			}
 			if (FrameRateEnum.of(ffStreamInfoVideo.fps.toDouble()) == FrameRateEnum.UNKNOWN) {
 				approximateFps();
 			}
