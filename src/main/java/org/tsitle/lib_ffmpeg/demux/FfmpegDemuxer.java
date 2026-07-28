@@ -719,6 +719,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		outputData.timeBase.copyFrom(
 				isVideo ? inputStreamInfoVid.timeBasePts : inputStreamInfoAud.timeBasePts
 			);
+		outputData.isVideo = isVideo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
