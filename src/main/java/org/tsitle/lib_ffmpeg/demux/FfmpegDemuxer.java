@@ -106,8 +106,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				@NonNull FfmpegStreamInfoVideo outStreamInfoVid,
 				@NonNull FfmpegStreamInfoAudio outStreamInfoAud
 			) throws FfmpegGenericException {
-		outStreamInfoVid.reset();
-		outStreamInfoAud.reset();
+		outStreamInfoVid.clear();
+		outStreamInfoAud.clear();
 
 		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					logMsgInterface,
@@ -457,17 +457,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioStreamInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
 		ioStreamInfoVideo.durationSecs = durationSecs;
 		ioStreamInfoVideo.bitRate = st.codecpar().bit_rate();
-		if (st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
-			/*
-			 * Extract st.codecpar().extradata(), e.g. SPS/PPS for H264 or VPS/SPS/PPS for H265
-			 */
-			try (BytePointer tmpBp = st.codecpar().extradata()) {
-				int extradataSize = st.codecpar().extradata_size();
-				byte[] ascBytes = new byte[extradataSize];
-				tmpBp.position(0).get(ascBytes, 0, extradataSize);
-				ioStreamInfoVideo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
-			}
-		}
+		copyStreamInfoExtradata(st, ioStreamInfoVideo);
 
 		//
 		int tmpFpsNum = 0;
@@ -514,14 +504,21 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (ioStreamInfoAudio.samplesPerFrame < 1) {
 			ioStreamInfoAudio.samplesPerFrame = -1;
 		}
-		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AAC &&
-				st.codecpar().extradata() != null && st.codecpar().extradata_size() > 0) {
-			try (BytePointer tmpBp = st.codecpar().extradata()) {
-				int extradataSize = st.codecpar().extradata_size();
-				byte[] ascBytes = new byte[extradataSize];
-				tmpBp.position(0).get(ascBytes, 0, extradataSize);
-				ioStreamInfoAudio.aacAudioSpecificConfigHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
-			}
+		copyStreamInfoExtradata(st, ioStreamInfoAudio);
+	}
+
+	private static void copyStreamInfoExtradata(@NonNull AVStream st, @NonNull FfmpegStreamInfoBase ioStreamInfo) {
+		if (st.codecpar().extradata() == null || st.codecpar().extradata_size() < 1) {
+			return;
+		}
+		/*
+		 * Extract st.codecpar().extradata(), e.g. SPS/PPS for H264 or VPS/SPS/PPS for H265 or AudioSpecificConfig for AAC
+		 */
+		try (BytePointer tmpBp = st.codecpar().extradata()) {
+			int extradataSize = st.codecpar().extradata_size();
+			byte[] ascBytes = new byte[extradataSize];
+			tmpBp.position(0).get(ascBytes, 0, extradataSize);
+			ioStreamInfo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
 		}
 	}
 
@@ -705,7 +702,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			if (aacAdtsPacketizer == null) {
-				aacAdtsPacketizer = HelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.aacAudioSpecificConfigHex);
+				aacAdtsPacketizer = HelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.extradataHex);
 			}
 			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
 		} else {
