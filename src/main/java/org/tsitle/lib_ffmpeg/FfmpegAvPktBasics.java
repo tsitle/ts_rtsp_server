@@ -11,12 +11,14 @@ public final class FfmpegAvPktBasics {
 	public @Nullable Long ptsUnits = null;
 	public @Nullable Long dtsUnits = null;
 	public final @NonNull RationalNumber timeBase = RationalNumber.ofEmpty();
+	public boolean isVideo = false;
 
 	public void clear() {
 		pktBe.clear();
 		ptsUnits = null;
 		dtsUnits = null;
 		timeBase.copyFrom(RationalNumber.ofEmpty());
+		isVideo = false;
 	}
 
 	public double ptsUnitsToSeconds() {
@@ -24,6 +26,28 @@ public final class FfmpegAvPktBasics {
 			return -1.0;
 		}
 		return ((double)ptsUnits * (double)timeBase.getNumerator()) / (double)timeBase.getDenominator();
+	}
+
+	public void copyFrom(@NonNull FfmpegAvPktBasics other) {
+		if (this == other) {
+			return;
+		}
+		pktBe.copyOf(other.pktBe);
+		ptsUnits = (other.ptsUnits == null ? null : other.ptsUnits);
+		dtsUnits = (other.dtsUnits == null ? null : other.dtsUnits);
+		timeBase.copyFrom(other.timeBase);
+		isVideo = other.isVideo;
+	}
+
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				"pktBe.sz=" + pktBe.getUsed() +
+				", ptsUnits=" + ptsUnits +
+				", dtsUnits=" + dtsUnits +
+				", timeBase=" + timeBase +
+				", isVideo=" + (isVideo ? "T" : "F") +
+				"]";
 	}
 
 }
