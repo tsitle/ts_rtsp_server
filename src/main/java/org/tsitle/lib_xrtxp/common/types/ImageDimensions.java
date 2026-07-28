@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.common.types;
 
 import org.jspecify.annotations.NonNull;
 
-public record ImageDimensions(int imgWidth, int imgHeight) {
+public record ImageDimensions(int imgWidth, int imgHeight) implements Cloneable {
 
 	public static @NonNull ImageDimensions ofEmpty() {
 		return new ImageDimensions(-1, -1);
@@ -68,6 +68,12 @@ public record ImageDimensions(int imgWidth, int imgHeight) {
 			return String.format("%s [empty]", getClass().getSimpleName());
 		}
 		return String.format("%s [%d x %d]", getClass().getSimpleName(), imgWidth, imgHeight);
+	}
+
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	public @NonNull ImageDimensions clone() {
+		return new ImageDimensions(imgWidth, imgHeight);
 	}
 
 }
