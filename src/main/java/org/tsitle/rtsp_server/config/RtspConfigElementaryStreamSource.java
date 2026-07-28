@@ -226,7 +226,9 @@ public final class RtspConfigElementaryStreamSource {
 		resObj.internalAudioSamplesPerFrame = streamInfo.samplesPerFrame;
 
 		resObj.aacSamplesPerFrame = streamInfo.samplesPerFrame;
-		resObj.internalAacAudioSpecificConfigHex = streamInfo.aacAudioSpecificConfigHex;
+		if (streamInfo.ffmpegCodec == FfmpegCodec.A_AAC) {
+			resObj.internalAacAudioSpecificConfigHex = streamInfo.extradataHex;
+		}
 
 		return resObj;
 	}
