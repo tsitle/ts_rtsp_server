@@ -12,21 +12,19 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 	public int bitsPerCodedSample;
 	/** works for PCM and AC3, doesn't work for E-AC-3 or Opus */
 	public int samplesPerFrame;
-	public @NonNull String aacAudioSpecificConfigHex;
 
 	public FfmpegStreamInfoAudio() {
-		reset();
+		clear();
 	}
 
-	public void reset() {
-		baseReset();
+	public void clear() {
+		baseClear();
 
 		streamNumberAudio = -1;
 		sampleRate = SampleRateEnum.UNKNOWN;
 		channelCount = -1;
 		bitsPerCodedSample = -1;
 		samplesPerFrame = -1;
-		aacAudioSpecificConfigHex = "";
 	}
 
 	public void copyFrom(@NonNull FfmpegStreamInfoAudio other) {
@@ -40,7 +38,6 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 		channelCount = other.channelCount;
 		bitsPerCodedSample = other.bitsPerCodedSample;
 		samplesPerFrame = other.samplesPerFrame;
-		aacAudioSpecificConfigHex = other.aacAudioSpecificConfigHex;
 	}
 
 }

@@ -15,17 +15,19 @@ public class FfmpegStreamInfoBase {
 	 * Video: works sometimes for H26x
 	 */
 	public long bitRate;
+	public @NonNull String extradataHex;
 
 	protected FfmpegStreamInfoBase() {
-		baseReset();
+		baseClear();
 	}
 
-	protected void baseReset() {
+	protected void baseClear() {
 		streamIx = -1;
 		ffmpegCodec = FfmpegCodec.UNKNOWN;
 		timeBasePts = RationalNumber.ofEmpty();
 		durationSecs = -1.0;
 		bitRate = -1L;
+		extradataHex = "";
 	}
 
 	protected void baseCopyFrom(@NonNull FfmpegStreamInfoBase other) {
@@ -37,6 +39,7 @@ public class FfmpegStreamInfoBase {
 		timeBasePts = RationalNumber.of(other.timeBasePts);
 		durationSecs = other.durationSecs;
 		bitRate = other.bitRate;
+		extradataHex = other.extradataHex;
 	}
 
 }
