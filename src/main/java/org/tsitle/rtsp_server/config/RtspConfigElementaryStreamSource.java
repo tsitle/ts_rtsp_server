@@ -612,9 +612,11 @@ public final class RtspConfigElementaryStreamSource {
 		}
 		String tmpProto = msSourceUri.getScheme();
 		String tmpHost = msSourceUri.getHost();
+		int tmpPort = msSourceUri.getPort();
 		String tmpPath = msSourceUri.getPath();
 		String tmpQuery = msSourceUri.getQuery();
-		URI cleanedUp = URI.create(tmpProto + "://" + tmpHost + tmpPath + (tmpQuery != null ? "?" + tmpQuery : ""));
+		URI cleanedUp = URI.create(tmpProto + "://" + tmpHost + (tmpPort > 0 ? ":" + tmpPort : "") +
+				tmpPath + (tmpQuery != null ? "?" + tmpQuery : ""));
 		return cleanedUp.toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
