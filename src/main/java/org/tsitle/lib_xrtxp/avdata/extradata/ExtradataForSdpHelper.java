@@ -10,6 +10,9 @@ public final class ExtradataForSdpHelper {
 
 	private ExtradataForSdpHelper() { }
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Build video 'extradata' in a codec-specific format.<br />
 	 * The output can be used directly in the SDP output.
