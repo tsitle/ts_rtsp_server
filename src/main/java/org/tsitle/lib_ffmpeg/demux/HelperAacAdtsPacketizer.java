@@ -6,6 +6,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 
 import java.util.HexFormat;
 
+/**
+ * Helper for adding ADTS headers to AAC packets.
+ */
 public final class HelperAacAdtsPacketizer {
 
 	/** ADTS profile: 0=Main,1=LC,2=SSR,3=reserved */
