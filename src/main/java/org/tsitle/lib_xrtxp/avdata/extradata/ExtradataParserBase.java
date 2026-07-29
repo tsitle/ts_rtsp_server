@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.*;
 
-public abstract class ExtradataParserBase {
+abstract class ExtradataParserBase {
 
 	protected ExtradataParserBase() { }
 

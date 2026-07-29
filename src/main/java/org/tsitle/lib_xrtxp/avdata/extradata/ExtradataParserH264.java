@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
 
 import java.util.*;
 
-public final class ExtradataParserH264 extends ExtradataParserBase {
+final class ExtradataParserH264 extends ExtradataParserBase {
 
 	private static final class InternalResultH264 {
 		final List<byte[]> sps = new ArrayList<>();
@@ -32,7 +32,7 @@ public final class ExtradataParserH264 extends ExtradataParserBase {
 	 * @return Colon-separated list of Base64-encoded NAL Units grouped by type plus the Profile Level Indication
 	 *         (e.g., '&lt;Base64_SPS_1&gt;,&lt;Base64_SPS_2&gt;:&lt;Base64_PPS_1&gt;,&lt;Base64_PPS_2&gt;#&lt;PLI&gt;')
 	 */
-	public static @NonNull String parse(@NonNull String extradataHex) {
+	static @NonNull String parse(@NonNull String extradataHex) {
 		ExtradataParserH264 edParser = new ExtradataParserH264();
 
 		byte[] extradata = edParser.parseHexStringToBytes(extradataHex);
