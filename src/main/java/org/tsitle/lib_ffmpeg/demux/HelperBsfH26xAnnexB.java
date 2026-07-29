@@ -12,7 +12,7 @@ import org.tsitle.lib_ffmpeg.FfmpegErrorHelper;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
 /**
- * Bitstream filter for H.264/5 AnnexB.
+ * Bitstream filter for converting H.264 avcC / H.265 hvcC to AnnexB.
  */
 final class HelperBsfH26xAnnexB implements AutoCloseable {
 
@@ -30,7 +30,7 @@ final class HelperBsfH26xAnnexB implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Send one demuxed packet.
+	 * Set demuxed avcC/hvcC packet.
 	 */
 	void setInputPacket(@NonNull AVPacket inputPkt) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".setInputPacket()";
@@ -46,7 +46,7 @@ final class HelperBsfH26xAnnexB implements AutoCloseable {
 	/**
 	 * Receive 0..N converted AnnexB packets - one per call.
 	 */
-	boolean receiveOnePacket(@NonNull AVPacket outputPkt) throws FfmpegGenericException {
+	boolean receiveOneAnnexBPacket(@NonNull AVPacket outputPkt) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveOnePacket()";
 
 		if (bsfCtx == null) {

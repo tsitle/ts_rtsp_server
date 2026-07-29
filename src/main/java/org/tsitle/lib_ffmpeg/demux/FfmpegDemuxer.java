@@ -657,14 +657,15 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
-				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 || inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
+				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
+						inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
 			bsfH26xAnnexB = new HelperBsfH26xAnnexB(
 					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
 					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
 				);
 		}
 
-		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOnePacket(cacheAvPkt)) {
+		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOneAnnexBPacket(cacheAvPkt)) {
 			return Optional.of(ReadResult.RR_OK_VID);
 		}
 		return Optional.empty();
