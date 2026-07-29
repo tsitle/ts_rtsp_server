@@ -3,7 +3,7 @@ package org.tsitle.rtsp_server.config;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.*;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataParserHelper;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -173,7 +173,7 @@ final class ReadEsFileMeta {
 
 			if (tmpHaveSps && tmpHavePps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString();
-				ioEsSource.internalVideoExtradataB64 = ExtradataParserHelper.parseVideoExtradataHex(RtpPacketType.V_H264, extradataHex);
+				ioEsSource.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(RtpPacketType.V_H264, extradataHex);
 			}
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from H264 file for Elementary-Stream Source ID '" + extEsId + "': " +
@@ -229,7 +229,7 @@ final class ReadEsFileMeta {
 
 			if (tmpHaveSps && tmpHavePps && tmpHaveVps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString() + tmpStoreVps.toHexString();
-				ioEsSource.internalVideoExtradataB64 = ExtradataParserHelper.parseVideoExtradataHex(RtpPacketType.V_H265, extradataHex);
+				ioEsSource.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(RtpPacketType.V_H265, extradataHex);
 			}
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from H265 file for Elementary-Stream Source ID '" + extEsId + "': " +

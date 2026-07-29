@@ -4,9 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
-final class ExtradataParserH264 extends ExtradataParserBase {
+final class ExtradataForSdpConverterH264 extends ExtradataForSdpConverterBase {
 
 	private static final class InternalResultH264 {
 		final List<byte[]> sps = new ArrayList<>();
@@ -18,13 +20,13 @@ final class ExtradataParserH264 extends ExtradataParserBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private ExtradataParserH264() { }
+	private ExtradataForSdpConverterH264() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Parse H264 extradata into a colon-separated list of Base64-encoded NAL Units grouped by type.<br />
+	 * Build H264 'extradata' as a colon-separated list of Base64-encoded NAL Units grouped by type.<br />
 	 * The NAL Units within a group are separated by commas.<br />
 	 * The start codes have been removed from the NAL Units.<br />
 	 * The output can be used directly in the SDP output.
@@ -32,21 +34,21 @@ final class ExtradataParserH264 extends ExtradataParserBase {
 	 * @return Colon-separated list of Base64-encoded NAL Units grouped by type plus the Profile Level Indication
 	 *         (e.g., '&lt;Base64_SPS_1&gt;,&lt;Base64_SPS_2&gt;:&lt;Base64_PPS_1&gt;,&lt;Base64_PPS_2&gt;#&lt;PLI&gt;')
 	 */
-	static @NonNull String parse(@NonNull String extradataHex) {
-		ExtradataParserH264 edParser = new ExtradataParserH264();
+	static @NonNull String buildForSdp(@NonNull String extradataHex) {
+		ExtradataForSdpConverterH264 edParser = new ExtradataForSdpConverterH264();
 
 		byte[] extradata = edParser.parseHexStringToBytes(extradataHex);
 		if (extradata == null || extradata.length == 0) {
 			return "";
 		}
 
-		return edParser.parseExtradataBytes(extradata);
+		return edParser.buildExtradataFromBytes(extradata);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected @NonNull String parseExtradataBytes(byte[] extradata) {
+	protected @NonNull String buildExtradataFromBytes(byte[] extradata) {
 		InternalResultH264 tmpRes;
 		if (looksLikeAvcc(extradata)) {
 			tmpRes = parseAvcc(extradata);

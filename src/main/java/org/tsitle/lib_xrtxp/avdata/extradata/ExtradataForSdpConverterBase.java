@@ -2,11 +2,13 @@ package org.tsitle.lib_xrtxp.avdata.extradata;
 
 import org.jspecify.annotations.NonNull;
 
-import java.util.*;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.List;
 
-abstract class ExtradataParserBase {
+abstract class ExtradataForSdpConverterBase {
 
-	protected ExtradataParserBase() { }
+	protected ExtradataForSdpConverterBase() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -28,7 +30,7 @@ abstract class ExtradataParserBase {
 		return extradataBa;
 	}
 
-	protected abstract @NonNull String parseExtradataBytes(byte[] extradata);
+	protected abstract @NonNull String buildExtradataFromBytes(byte[] extradata);
 
 	// -----------------------------------------------------------------------------------------------------------------
 

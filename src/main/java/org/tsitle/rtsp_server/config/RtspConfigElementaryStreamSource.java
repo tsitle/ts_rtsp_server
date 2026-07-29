@@ -8,7 +8,7 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
 import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataParserHelper;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -181,7 +181,10 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
-		resObj.internalVideoExtradataB64 = ExtradataParserHelper.parseVideoExtradataHex(resObj.internalCodec, streamInfo.extradataHex);
+		resObj.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(
+				resObj.internalCodec,
+				streamInfo.extradataHex
+			);
 
 		return resObj;
 	}
@@ -431,7 +434,7 @@ public final class RtspConfigElementaryStreamSource {
 	public synchronized void setMqDynamicAudioSamplesPerFrame(int value) { this.mqDynamicAudioSamplesPerFrame = value; }
 
 	public synchronized void setMqDynamicExtradata(@NonNull String value) {
-		internalVideoExtradataB64 = ExtradataParserHelper.parseVideoExtradataHex(getCodec(), value);
+		internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(getCodec(), value);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

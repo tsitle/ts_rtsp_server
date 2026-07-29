@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
 import java.util.ArrayList;
 import java.util.List;
 
-final class ExtradataParserH265 extends ExtradataParserBase {
+final class ExtradataForSdpConverterH265 extends ExtradataForSdpConverterBase {
 
 	private static final class InternalResultH265 {
 		final List<byte[]> sps = new ArrayList<>();
@@ -17,13 +17,13 @@ final class ExtradataParserH265 extends ExtradataParserBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private ExtradataParserH265() { }
+	private ExtradataForSdpConverterH265() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Parse H265 extradata into a colon-separated list of Base64-encoded NAL Units grouped by type.<br />
+	 * Build H265 'extradata' as a colon-separated list of Base64-encoded NAL Units grouped by type.<br />
 	 * The NAL Units within a group are separated by commas.<br />
 	 * The start codes have been removed from the NAL Units.<br />
 	 * The output can be used directly in the SDP output.
@@ -31,21 +31,21 @@ final class ExtradataParserH265 extends ExtradataParserBase {
 	 * @return Colon-separated list of Base64-encoded NAL Units grouped by type
 	 *         (e.g., '&lt;Base64_SPS_1&gt;,&lt;Base64_SPS_2&gt;:&lt;Base64_PPS_1&gt;,&lt;Base64_PPS_2&gt;:&lt;Base64_VPS_1&gt;,&lt;Base64_VPS_2&gt;')
 	 */
-	static @NonNull String parse(@NonNull String extradataHex) {
-		ExtradataParserH265 edParser = new ExtradataParserH265();
+	static @NonNull String buildForSdp(@NonNull String extradataHex) {
+		ExtradataForSdpConverterH265 edParser = new ExtradataForSdpConverterH265();
 
 		byte[] extradata = edParser.parseHexStringToBytes(extradataHex);
 		if (extradata == null || extradata.length == 0) {
 			return "";
 		}
 
-		return edParser.parseExtradataBytes(extradata);
+		return edParser.buildExtradataFromBytes(extradata);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected @NonNull String parseExtradataBytes(byte[] extradata) {
+	protected @NonNull String buildExtradataFromBytes(byte[] extradata) {
 		// Heuristic: hvcC usually starts with configurationVersion = 1 and has enough header bytes
 		InternalResultH265 tmpRes;
 		if (looksLikeHvcc(extradata)) {
