@@ -5,7 +5,6 @@ import org.jspecify.annotations.NonNull;
 /**
  * Helper class for converting A/V codec 'extradata' from SDP data to hex-encoded strings suitable for A/V encoders.
  */
-@SuppressWarnings("unused")
 public final class ExtradataFromSdpHelper {
 
 	private ExtradataFromSdpHelper() { }
@@ -21,6 +20,7 @@ public final class ExtradataFromSdpHelper {
 	 * @param sdpData Codec-specific SDP data
 	 * @return Hex-encoded 'extradata'
 	 */
+	@SuppressWarnings("unused")
 	public static @NonNull String buildH264EncoderExtradataFromSdp(boolean outputAsAnnexB, @NonNull String sdpData) {
 		final String FNC_NAME = ExtradataFromSdpHelper.class.getSimpleName() + ".convertH264FromSdpExtradataToHex()";
 
@@ -57,6 +57,7 @@ public final class ExtradataFromSdpHelper {
 	 * @param sdpData Codec-specific SDP data
 	 * @return Hex-encoded 'extradata'
 	 */
+	@SuppressWarnings("unused")
 	public static @NonNull String buildH265EncoderExtradataFromSdp(boolean outputAsAnnexB, @NonNull String sdpData) {
 		final String FNC_NAME = ExtradataFromSdpHelper.class.getSimpleName() + ".convertH265FromSdpExtradataToHex()";
 
