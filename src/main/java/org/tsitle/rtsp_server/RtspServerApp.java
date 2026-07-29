@@ -395,7 +395,7 @@ public final class RtspServerApp {
 					try {
 						poolRtspTcm.submit(thread);
 					} catch (RejectedExecutionException e) {
-						logWarn(FNC_NAME, "RejectedExecutionException caught: " + e.getMessage());
+						logError(FNC_NAME, "RejectedExecutionException caught: task queue is most likely full");
 						try { socketRtspTcp.close(); } catch (IOException ignored) { }
 					}
 
@@ -480,9 +480,6 @@ public final class RtspServerApp {
 	}
 	private static void logInfo(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.INFO, fncName, msg);
-	}
-	private static void logWarn(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.WARN, fncName, msg);
 	}
 	private static void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);

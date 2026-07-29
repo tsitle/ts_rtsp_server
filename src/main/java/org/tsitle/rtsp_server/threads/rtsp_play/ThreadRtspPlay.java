@@ -189,6 +189,7 @@ public final class ThreadRtspPlay extends RunnableBase
 				ctfosToUse.rtpThreadSender.isRunning()) {
 			ctfosToUse.rtpThreadSender.stopAsap();
 		}
+		stopThread();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -211,6 +212,9 @@ public final class ThreadRtspPlay extends RunnableBase
 
 	public void pauseOrStopChildThreads(boolean doPause) {
 		rtspChildThreadMng.pauseOrStopChildThreads(doPause);
+		if (! doPause) {
+			stopThread();
+		}
 	}
 
 	public void unpauseChildThreads() {
@@ -244,6 +248,7 @@ public final class ThreadRtspPlay extends RunnableBase
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public boolean getIsTransportUdp() {
 		return sessionInfoPtr.ptr().getIsTransportUdp();
 	}

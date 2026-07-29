@@ -153,7 +153,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				rtspPlayThreadMap.put(varsForNewThread.rtspSessionInfo().getIdSession(), threadRtspPlay);
 			}
 		} catch (RejectedExecutionException e) {
-			logError(FNC_NAME, "RejectedExecutionException caught: " + e.getMessage());
+			logError(FNC_NAME, "RejectedExecutionException caught: task queue is most likely full");
 		}
 	}
 
@@ -167,9 +167,9 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				shutdownThreadBySessionId(entry.getKey());
 				continue;
 			}
-			if (! threadRtspPlay.getIsTransportUdp()) {
+			/*if (! threadRtspPlay.getIsTransportUdp()) {
 				continue;
-			}
+			}*/
 			long tmpTimeDiff = threadRtspPlay.getLastIncomingRtspRequestTimeDeltaSeconds();
 			if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT +
 					RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS) {
@@ -193,6 +193,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
+	@SuppressWarnings("SameParameterValue")
 	private void logError(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
