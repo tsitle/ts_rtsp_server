@@ -12,6 +12,9 @@ import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
 import org.tsitle.lib_ffmpeg.*;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
+import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfError;
+import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperAacAdtsPacketizer;
+import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperBsfH26xAnnexB;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -54,8 +57,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private @Nullable AVPacket cacheAvPkt = null;
 	private boolean haveReachedMaxSecs = false;
 
-	private @Nullable HelperBsfH26xAnnexB bsfH26xAnnexB = null;
-	private @Nullable HelperAacAdtsPacketizer aacAdtsPacketizer = null;
+	private @Nullable FfmpegHelperBsfH26xAnnexB bsfH26xAnnexB = null;
+	private @Nullable FfmpegHelperAacAdtsPacketizer aacAdtsPacketizer = null;
 
 	/**
 	 * Constructor.
@@ -246,7 +249,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			// this does seem coarser, though
 			r = avformat.av_seek_frame(inputAvFmtCtx, -1, targetTs, avformat.AVSEEK_FLAG_BACKWARD);
 		}
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_seek_file/frame", r);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avformat_seek_file/frame", r);
 
 		avformat.avformat_flush(inputAvFmtCtx);
 
@@ -324,10 +327,10 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		logDebug(FNC_NAME, "Read input stream");
 
 		int r = avformat.avformat_open_input(inputAvFmtCtx, inputPathOrUri, null, null);
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
 
 		r = avformat.avformat_find_stream_info(inputAvFmtCtx, (AVDictionary)null);
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_find_stream_info", r);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avformat_find_stream_info", r);
 
 		findStreamIndices();
 
@@ -541,7 +544,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (! isInputOpen) {
 			int r = avformat.avformat_open_input(inputAvFmtCtx, inputPathOrUri, null, null);
-			FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
+			FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avformat_open_input", r);
 			isInputOpen = true;
 			stats.startTime = Instant.now();
 		}
@@ -567,7 +570,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			statsUpdateOverall();
 			return Optional.of(ReadResult.RR_EOF);
 		}
-		FfmpegErrorHelper.checkFfmpegResult(FNC_NAME, "av_read_frame", r);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_read_frame", r);
 
 		ReadResult resEn;
 		if (cacheAvPkt.stream_index() == inputStreamInfoVid.streamIx) {
@@ -659,7 +662,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
 				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
 						inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
-			bsfH26xAnnexB = new HelperBsfH26xAnnexB(
+			bsfH26xAnnexB = new FfmpegHelperBsfH26xAnnexB(
 					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
 					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
 				);
@@ -703,7 +706,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			if (aacAdtsPacketizer == null) {
-				aacAdtsPacketizer = HelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.extradataHex);
+				aacAdtsPacketizer = FfmpegHelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.extradataHex);
 			}
 			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
 		} else {

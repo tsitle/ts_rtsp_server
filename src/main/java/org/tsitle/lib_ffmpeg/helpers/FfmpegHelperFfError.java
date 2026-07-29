@@ -1,4 +1,4 @@
-package org.tsitle.lib_ffmpeg;
+package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
@@ -8,9 +8,9 @@ import org.jspecify.annotations.NonNull;
 /**
  * Helper class for handling FFmpeg errors.
  */
-public final class FfmpegErrorHelper {
+public final class FfmpegHelperFfError {
 
-	private FfmpegErrorHelper() { }
+	private FfmpegHelperFfError() { }
 
 	public static @NonNull String ffmpegErrorText(int errCode) {
 		try (BytePointer errBuf = new BytePointer(256)) {

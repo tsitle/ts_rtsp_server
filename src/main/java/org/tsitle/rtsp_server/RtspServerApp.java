@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_ffmpeg.FfmpegLogLevelHelper;
+import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -107,7 +107,7 @@ public final class RtspServerApp {
 				});*/
 
 		// set the log level for FFmpeg
-		FfmpegLogLevelHelper.muteLogMsgs();
+		FfmpegHelperFfLogLevel.muteLogMsgs();
 
 		// read the configuration
 		try {
