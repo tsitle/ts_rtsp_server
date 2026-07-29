@@ -665,7 +665,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				);
 		}
 
-		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOneAnnexBPacket(cacheAvPkt)) {
+		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOneConvertedPacket(cacheAvPkt)) {
 			return Optional.of(ReadResult.RR_OK_VID);
 		}
 		return Optional.empty();

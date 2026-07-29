@@ -12,7 +12,7 @@ import org.tsitle.lib_ffmpeg.FfmpegErrorHelper;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
 /**
- * Bitstream filter for converting length-prefixed H.264/H.265 to AnnexB.
+ * Bitstream filter for converting length-prefixed H.264/H.265 packets to AnnexB.
  */
 final class HelperBsfH26xAnnexB implements AutoCloseable {
 
@@ -46,8 +46,8 @@ final class HelperBsfH26xAnnexB implements AutoCloseable {
 	/**
 	 * Receive 0..N converted AnnexB packets - one per call.
 	 */
-	boolean receiveOneAnnexBPacket(@NonNull AVPacket outputPkt) throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".receiveOnePacket()";
+	boolean receiveOneConvertedPacket(@NonNull AVPacket outputPkt) throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".receiveOneConvertedPacket()";
 
 		if (bsfCtx == null) {
 			throw new IllegalStateException(FNC_NAME + ": bsfCtx not initialized");
