@@ -4,9 +4,9 @@ import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.jspecify.annotations.NonNull;
 
-public class FfmpegStreamInfoBase {
+public class FfmpegDmxSubStreamInfoBase {
 
-	public int streamIx;
+	public int subStreamIx;
 	public @NonNull FfmpegCodec ffmpegCodec;
 	public @NonNull RationalNumber timeBasePts;
 	public double durationSecs;
@@ -17,12 +17,12 @@ public class FfmpegStreamInfoBase {
 	public long bitRate;
 	public @NonNull String extradataHex;
 
-	protected FfmpegStreamInfoBase() {
+	protected FfmpegDmxSubStreamInfoBase() {
 		baseClear();
 	}
 
 	protected void baseClear() {
-		streamIx = -1;
+		subStreamIx = -1;
 		ffmpegCodec = FfmpegCodec.UNKNOWN;
 		timeBasePts = RationalNumber.ofEmpty();
 		durationSecs = -1.0;
@@ -30,11 +30,11 @@ public class FfmpegStreamInfoBase {
 		extradataHex = "";
 	}
 
-	protected void baseCopyFrom(@NonNull FfmpegStreamInfoBase other) {
+	protected void baseCopyFrom(@NonNull FfmpegDmxSubStreamInfoBase other) {
 		if (this == other) {
 			return;
 		}
-		streamIx = other.streamIx;
+		subStreamIx = other.subStreamIx;
 		ffmpegCodec = other.ffmpegCodec;
 		timeBasePts = RationalNumber.of(other.timeBasePts);
 		durationSecs = other.durationSecs;

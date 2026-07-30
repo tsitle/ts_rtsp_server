@@ -4,13 +4,13 @@ import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.jspecify.annotations.NonNull;
 
-public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
+public final class FfmpegDmxSubStreamInfoVideo extends FfmpegDmxSubStreamInfoBase {
 
 	public int streamNumberVideo;
 	public @NonNull RationalNumber fps;
 	public @NonNull ImageDimensions imgDims;
 
-	public FfmpegStreamInfoVideo() {
+	public FfmpegDmxSubStreamInfoVideo() {
 		clear();
 	}
 
@@ -22,7 +22,7 @@ public final class FfmpegStreamInfoVideo extends FfmpegStreamInfoBase {
 		imgDims = ImageDimensions.ofEmpty();
 	}
 
-	public void copyFrom(@NonNull FfmpegStreamInfoVideo other) {
+	public void copyFrom(@NonNull FfmpegDmxSubStreamInfoVideo other) {
 		if (this == other) {
 			return;
 		}

@@ -50,8 +50,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
 	private @Nullable AVFormatContext inputAvFmtCtx;
-	private final @NonNull FfmpegStreamInfoVideo inputStreamInfoVid = new FfmpegStreamInfoVideo();
-	private final @NonNull FfmpegStreamInfoAudio inputStreamInfoAud = new FfmpegStreamInfoAudio();
+	private final @NonNull FfmpegDmxSubStreamInfoVideo inputSsInfoVid = new FfmpegDmxSubStreamInfoVideo();
+	private final @NonNull FfmpegDmxSubStreamInfoAudio inputSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
 	private final @NonNull FfmpegDmxStats stats = new FfmpegDmxStats();
 	private boolean isInputOpen = false;
 	private @Nullable AVPacket cacheAvPkt = null;
@@ -97,8 +97,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	 * @param logMsgInterface 'Log message' instance (can be null)
 	 * @param inputPathOrUri Path to the input file or URI of the input stream
 	 * @param dmxSettings Settings for demuxing (only for reading the sub-stream infos)
-	 * @param outStreamInfoVid Output for the video stream info
-	 * @param outStreamInfoAud Output for the audio stream info
+	 * @param outSubStreamInfoVid Output for the video sub-stream info
+	 * @param outSubStreamInfoAud Output for the audio sub-stream info
 	 * @throws FfmpegGenericException If any FFmpeg error occurs
 	 */
 	@SuppressWarnings("unused")
@@ -106,11 +106,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull String inputPathOrUri,
 				@NonNull FfmpegDmxSettingsRsi dmxSettings,
-				@NonNull FfmpegStreamInfoVideo outStreamInfoVid,
-				@NonNull FfmpegStreamInfoAudio outStreamInfoAud
+				@NonNull FfmpegDmxSubStreamInfoVideo outSubStreamInfoVid,
+				@NonNull FfmpegDmxSubStreamInfoAudio outSubStreamInfoAud
 			) throws FfmpegGenericException {
-		outStreamInfoVid.clear();
-		outStreamInfoAud.clear();
+		outSubStreamInfoVid.clear();
+		outSubStreamInfoAud.clear();
 
 		try (FfmpegDemuxer ffmpegDemuxer = new FfmpegDemuxer(
 					logMsgInterface,
@@ -120,8 +120,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				)) {
 			ffmpegDemuxer.internalReadStreamInfos();
 
-			outStreamInfoVid.copyFrom(ffmpegDemuxer.inputStreamInfoVid);
-			outStreamInfoAud.copyFrom(ffmpegDemuxer.inputStreamInfoAud);
+			outSubStreamInfoVid.copyFrom(ffmpegDemuxer.inputSsInfoVid);
+			outSubStreamInfoAud.copyFrom(ffmpegDemuxer.inputSsInfoAud);
 		}
 	}
 
@@ -180,7 +180,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		outputData.clear();
 
 		//
-		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+		if (inputSsInfoVid.subStreamIx < 0 && inputSsInfoAud.subStreamIx < 0) {
 			internalReadStreamInfos();
 		}
 
@@ -227,7 +227,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (! Double.isFinite(targetTimestamp) || targetTimestamp < 0.0) {
 			throw new IllegalArgumentException(FNC_NAME + ": seconds must be finite and >= 0.0");
 		}
-		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+		if (inputSsInfoVid.subStreamIx < 0 && inputSsInfoAud.subStreamIx < 0) {
 			throw new IllegalStateException(FNC_NAME + ": need to read the stream info first");
 		}
 		if (! isInputOpen) {
@@ -280,25 +280,25 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	}
 
 	@SuppressWarnings("unused")
-	public Optional<Integer> getFfAvStreamIxVideo() {
-		if (inputStreamInfoVid.streamIx < 0) {
+	public Optional<Integer> getFfAvSubStreamIxVideo() {
+		if (inputSsInfoVid.subStreamIx < 0) {
 			return Optional.empty();
 		}
-		return Optional.of(inputStreamInfoVid.streamIx);
+		return Optional.of(inputSsInfoVid.subStreamIx);
 	}
 
 	@SuppressWarnings("unused")
-	public Optional<Integer> getFfAvStreamIxAudio() {
-		if (inputStreamInfoAud.streamIx < 0) {
+	public Optional<Integer> getFfAvSubStreamIxAudio() {
+		if (inputSsInfoAud.subStreamIx < 0) {
 			return Optional.empty();
 		}
-		return Optional.of(inputStreamInfoAud.streamIx);
+		return Optional.of(inputSsInfoAud.subStreamIx);
 	}
 
 	@SuppressWarnings("unused")
 	public Optional<Double> getDurationSecs() {
-		double resD = (inputStreamInfoVid.streamIx >= 0 ? inputStreamInfoVid.durationSecs : -1.0);
-		resD = (resD < 0.001 && inputStreamInfoAud.streamIx >= 0 ? inputStreamInfoAud.durationSecs : resD);
+		double resD = (inputSsInfoVid.subStreamIx >= 0 ? inputSsInfoVid.durationSecs : -1.0);
+		resD = (resD < 0.001 && inputSsInfoAud.subStreamIx >= 0 ? inputSsInfoAud.durationSecs : resD);
 		if (resD < 0.001) {
 			return Optional.empty();
 		}
@@ -332,9 +332,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		r = avformat.avformat_find_stream_info(inputAvFmtCtx, (AVDictionary)null);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avformat_find_stream_info", r);
 
-		findStreamIndices();
+		findSubStreamIndices();
 
-		if (inputStreamInfoVid.streamIx == -1 && inputStreamInfoAud.streamIx == -1) {
+		if (inputSsInfoVid.subStreamIx == -1 && inputSsInfoAud.subStreamIx == -1) {
 			avformat.avformat_close_input(inputAvFmtCtx);
 			throw new FfmpegGenericException(FNC_NAME + ": No supported video or audio stream found");
 		}
@@ -346,24 +346,24 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ------------------------------------------------
 
-		if (inputStreamInfoVid.streamIx != -1) {
-			getStreamInfoVideo(inputAvFmtCtx, durationSecs, inputStreamInfoVid);
+		if (inputSsInfoVid.subStreamIx != -1) {
+			getSubStreamInfoVideo(inputAvFmtCtx, durationSecs, inputSsInfoVid);
 		}
-		if (inputStreamInfoAud.streamIx != -1) {
-			getStreamInfoAudio(inputAvFmtCtx, durationSecs, inputStreamInfoAud);
+		if (inputSsInfoAud.subStreamIx != -1) {
+			getSubStreamInfoAudio(inputAvFmtCtx, durationSecs, inputSsInfoAud);
 		}
 		avformat.avformat_close_input(inputAvFmtCtx);
 	}
 
-	private void findStreamIndices() {
-		final String FNC_NAME = getClass().getSimpleName() + ".findStreamIndices()";
+	private void findSubStreamIndices() {
+		final String FNC_NAME = getClass().getSimpleName() + ".findSubStreamIndices()";
 
 		if (inputAvFmtCtx == null) {
 			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
 		}
 
-		inputStreamInfoVid.streamIx = -1;
-		inputStreamInfoAud.streamIx = -1;
+		inputSsInfoVid.subStreamIx = -1;
+		inputSsInfoAud.subStreamIx = -1;
 
 		int curStreamNumberVid = 0;
 		int curStreamNumberAud = 0;
@@ -389,13 +389,13 @@ public final class FfmpegDemuxer implements AutoCloseable {
 							);
 						continue;
 					}
-					if (inputStreamInfoVid.streamIx < 0 &&
+					if (inputSsInfoVid.subStreamIx < 0 &&
 							(dmxSettings.cfgSelectStreamNumberVideo < 1 ||
 									curStreamNumberVid == dmxSettings.cfgSelectStreamNumberVideo) &&
 							(! dmxSettings.cfgAllowOnlySpecificCodecsVideo || dmxSettings.cfgAllowedCodecsVideo.contains(tmpFfmpegCodec))) {
 						logDebug(FNC_NAME, String.format("found video track #v:%d [%s]", curStreamNumberVid, tmpCodecName));
-						inputStreamInfoVid.streamIx = i;
-						inputStreamInfoVid.streamNumberVideo = curStreamNumberVid;
+						inputSsInfoVid.subStreamIx = i;
+						inputSsInfoVid.streamNumberVideo = curStreamNumberVid;
 					} else {
 						logDebug(FNC_NAME,
 								String.format("(ignoring other video track #v:%d [%s])",
@@ -412,13 +412,13 @@ public final class FfmpegDemuxer implements AutoCloseable {
 							);
 						continue;
 					}
-					if (inputStreamInfoAud.streamIx < 0 &&
+					if (inputSsInfoAud.subStreamIx < 0 &&
 							(dmxSettings.cfgSelectStreamNumberAudio < 1 ||
 									curStreamNumberAud == dmxSettings.cfgSelectStreamNumberAudio) &&
 							(! dmxSettings.cfgAllowOnlySpecificCodecsAudio || dmxSettings.cfgAllowedCodecsAudio.contains(tmpFfmpegCodec))) {
 						logDebug(FNC_NAME, String.format("found audio track #a:%d [%s]", curStreamNumberAud, tmpCodecName));
-						inputStreamInfoAud.streamIx = i;
-						inputStreamInfoAud.streamNumberAudio = curStreamNumberAud;
+						inputSsInfoAud.subStreamIx = i;
+						inputSsInfoAud.streamNumberAudio = curStreamNumberAud;
 					} else {
 						logDebug(FNC_NAME,
 								String.format("(ignoring other audio track #a:%d [%s])",
@@ -433,7 +433,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 	}
 
-	private static @NonNull RationalNumber getStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int streamIx) {
+	private static @NonNull RationalNumber getSubStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int streamIx) {
 		int tmpResNum = 0;
 		int tmpResDen = 1;
 		if (streamIx >= 0) {
@@ -444,23 +444,23 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		return RationalNumber.of(tmpResNum, tmpResDen);
 	}
 
-	private static void getStreamInfoVideo(
+	private static void getSubStreamInfoVideo(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				double durationSecs,
-				@NonNull FfmpegStreamInfoVideo ioStreamInfoVideo
+				@NonNull FfmpegDmxSubStreamInfoVideo ioSsInfoVideo
 			) {
-		ioStreamInfoVideo.timeBasePts = getStreamTimeBase(inputAvFmtCtx, ioStreamInfoVideo.streamIx);
+		ioSsInfoVideo.timeBasePts = getSubStreamTimeBase(inputAvFmtCtx, ioSsInfoVideo.subStreamIx);
 
 		//
-		if (ioStreamInfoVideo.streamIx < 0) {
+		if (ioSsInfoVideo.subStreamIx < 0) {
 			return;
 		}
-		AVStream st = inputAvFmtCtx.streams(ioStreamInfoVideo.streamIx);
-		ioStreamInfoVideo.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
-		ioStreamInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
-		ioStreamInfoVideo.durationSecs = durationSecs;
-		ioStreamInfoVideo.bitRate = st.codecpar().bit_rate();
-		copyStreamInfoExtradata(st, ioStreamInfoVideo);
+		AVStream st = inputAvFmtCtx.streams(ioSsInfoVideo.subStreamIx);
+		ioSsInfoVideo.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
+		ioSsInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
+		ioSsInfoVideo.durationSecs = durationSecs;
+		ioSsInfoVideo.bitRate = st.codecpar().bit_rate();
+		copySubStreamInfoExtradata(st, ioSsInfoVideo);
 
 		//
 		int tmpFpsNum = 0;
@@ -478,39 +478,39 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			tmpFpsNum = tmpAvFps.num();
 			tmpFpsDen = tmpAvFps.den();
 		}
-		ioStreamInfoVideo.fps = RationalNumber.of(tmpFpsNum, tmpFpsDen);
+		ioSsInfoVideo.fps = RationalNumber.of(tmpFpsNum, tmpFpsDen);
 	}
 
-	private static void getStreamInfoAudio(
+	private static void getSubStreamInfoAudio(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				double durationSecs,
-				@NonNull FfmpegStreamInfoAudio ioStreamInfoAudio
+				@NonNull FfmpegDmxSubStreamInfoAudio ioSsInfoAudio
 			) {
-		ioStreamInfoAudio.timeBasePts = getStreamTimeBase(inputAvFmtCtx, ioStreamInfoAudio.streamIx);
+		ioSsInfoAudio.timeBasePts = getSubStreamTimeBase(inputAvFmtCtx, ioSsInfoAudio.subStreamIx);
 
 		//
-		if (ioStreamInfoAudio.streamIx < 0) {
+		if (ioSsInfoAudio.subStreamIx < 0) {
 			return;
 		}
-		AVStream st = inputAvFmtCtx.streams(ioStreamInfoAudio.streamIx);
-		ioStreamInfoAudio.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
-		ioStreamInfoAudio.sampleRate = SampleRateEnum.of(st.codecpar().sample_rate());
-		ioStreamInfoAudio.channelCount = st.codecpar().ch_layout().nb_channels();
-		ioStreamInfoAudio.durationSecs = durationSecs;
-		ioStreamInfoAudio.bitRate = st.codecpar().bit_rate();
-		ioStreamInfoAudio.bitsPerCodedSample = st.codecpar().bits_per_coded_sample();
-		if (ioStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_AC3) {
-			ioStreamInfoAudio.samplesPerFrame = AUDIO_SAMPLES_PER_FRAME_AC3;
+		AVStream st = inputAvFmtCtx.streams(ioSsInfoAudio.subStreamIx);
+		ioSsInfoAudio.ffmpegCodec = FfmpegCodec.of(st.codecpar().codec_id());
+		ioSsInfoAudio.sampleRate = SampleRateEnum.of(st.codecpar().sample_rate());
+		ioSsInfoAudio.channelCount = st.codecpar().ch_layout().nb_channels();
+		ioSsInfoAudio.durationSecs = durationSecs;
+		ioSsInfoAudio.bitRate = st.codecpar().bit_rate();
+		ioSsInfoAudio.bitsPerCodedSample = st.codecpar().bits_per_coded_sample();
+		if (ioSsInfoAudio.ffmpegCodec == FfmpegCodec.A_AC3) {
+			ioSsInfoAudio.samplesPerFrame = AUDIO_SAMPLES_PER_FRAME_AC3;
 		} else {
-			ioStreamInfoAudio.samplesPerFrame = st.codecpar().frame_size();
+			ioSsInfoAudio.samplesPerFrame = st.codecpar().frame_size();
 		}
-		if (ioStreamInfoAudio.samplesPerFrame < 1) {
-			ioStreamInfoAudio.samplesPerFrame = -1;
+		if (ioSsInfoAudio.samplesPerFrame < 1) {
+			ioSsInfoAudio.samplesPerFrame = -1;
 		}
-		copyStreamInfoExtradata(st, ioStreamInfoAudio);
+		copySubStreamInfoExtradata(st, ioSsInfoAudio);
 	}
 
-	private static void copyStreamInfoExtradata(@NonNull AVStream st, @NonNull FfmpegStreamInfoBase ioStreamInfo) {
+	private static void copySubStreamInfoExtradata(@NonNull AVStream st, @NonNull FfmpegDmxSubStreamInfoBase ioSsInfo) {
 		if (st.codecpar().extradata() == null || st.codecpar().extradata_size() < 1) {
 			return;
 		}
@@ -521,7 +521,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			int extradataSize = st.codecpar().extradata_size();
 			byte[] ascBytes = new byte[extradataSize];
 			tmpBp.position(0).get(ascBytes, 0, extradataSize);
-			ioStreamInfo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
+			ioSsInfo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
 		}
 	}
 
@@ -533,7 +533,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (inputAvFmtCtx == null) {
 			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
 		}
-		if (inputStreamInfoVid.streamIx < 0 && inputStreamInfoAud.streamIx < 0) {
+		if (inputSsInfoVid.subStreamIx < 0 && inputSsInfoAud.subStreamIx < 0) {
 			throw new IllegalStateException(FNC_NAME + ": need at least one input stream");
 		}
 
@@ -573,10 +573,10 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_read_frame", r);
 
 		ReadResult resEn;
-		if (cacheAvPkt.stream_index() == inputStreamInfoVid.streamIx) {
+		if (cacheAvPkt.stream_index() == inputSsInfoVid.subStreamIx) {
 			demuxHandlePktVideo();
 			resEn = ReadResult.RR_OK_VID;
-		} else if (cacheAvPkt.stream_index() == inputStreamInfoAud.streamIx) {
+		} else if (cacheAvPkt.stream_index() == inputSsInfoAud.subStreamIx) {
 			demuxHandlePktAudio();
 			resEn = ReadResult.RR_OK_AUD;
 		} else {
@@ -612,7 +612,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		stats.pktsAndDataVid.countData += cacheAvPkt.size();
 
 		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
-		tmpFfAvPktBas.timeBase.copyFrom(inputStreamInfoVid.timeBasePts);
+		tmpFfAvPktBas.timeBase.copyFrom(inputSsInfoVid.timeBasePts);
 		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
 		stats.pktsAndDataVid.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
 		/*
@@ -634,7 +634,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		stats.pktsAndDataAud.countData += cacheAvPkt.size();
 
 		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
-		tmpFfAvPktBas.timeBase.copyFrom(inputStreamInfoAud.timeBasePts);
+		tmpFfAvPktBas.timeBase.copyFrom(inputSsInfoAud.timeBasePts);
 		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
 		stats.pktsAndDataAud.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
 		/*
@@ -660,11 +660,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
-				(inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
-						inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
+				(inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
+						inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
 			bsfH26xAnnexB = new FfmpegHelperBsfH26xAnnexB(
-					inputStreamInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
-					inputAvFmtCtx.streams(inputStreamInfoVid.streamIx)
+					inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
+					inputAvFmtCtx.streams(inputSsInfoVid.subStreamIx)
 				);
 		}
 
@@ -704,9 +704,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputStreamInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
+		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			if (aacAdtsPacketizer == null) {
-				aacAdtsPacketizer = FfmpegHelperAacAdtsPacketizer.fromAsc(inputStreamInfoAud.extradataHex);
+				aacAdtsPacketizer = FfmpegHelperAacAdtsPacketizer.fromAsc(inputSsInfoAud.extradataHex);
 			}
 			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
 		} else {
@@ -718,7 +718,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
 		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
 		outputData.timeBase.copyFrom(
-				isVideo ? inputStreamInfoVid.timeBasePts : inputStreamInfoAud.timeBasePts
+				isVideo ? inputSsInfoVid.timeBasePts : inputSsInfoAud.timeBasePts
 			);
 		outputData.isVideo = isVideo;
 	}

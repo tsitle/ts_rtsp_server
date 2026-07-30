@@ -3,7 +3,7 @@ package org.tsitle.lib_ffmpeg.demux;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
-public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
+public final class FfmpegDmxSubStreamInfoAudio extends FfmpegDmxSubStreamInfoBase {
 
 	public int streamNumberAudio;
 	public @NonNull SampleRateEnum sampleRate;
@@ -13,7 +13,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 	/** works for PCM and AC3, doesn't work for E-AC-3 or Opus */
 	public int samplesPerFrame;
 
-	public FfmpegStreamInfoAudio() {
+	public FfmpegDmxSubStreamInfoAudio() {
 		clear();
 	}
 
@@ -27,7 +27,7 @@ public final class FfmpegStreamInfoAudio extends FfmpegStreamInfoBase {
 		samplesPerFrame = -1;
 	}
 
-	public void copyFrom(@NonNull FfmpegStreamInfoAudio other) {
+	public void copyFrom(@NonNull FfmpegDmxSubStreamInfoAudio other) {
 		if (this == other) {
 			return;
 		}
