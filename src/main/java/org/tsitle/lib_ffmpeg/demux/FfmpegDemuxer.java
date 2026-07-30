@@ -13,6 +13,8 @@ import org.bytedeco.javacpp.BytePointer;
 import org.tsitle.lib_ffmpeg.FfmpegPktConvModeAac;
 import org.tsitle.lib_ffmpeg.FfmpegPktConvModeH26x;
 import org.tsitle.lib_ffmpeg.helpers.*;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataConvHexToHexHelper;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -350,7 +352,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		// ------------------------------------------------
 
 		if (inputSsInfoVid.subStreamIx != -1) {
-			getSubStreamInfoVideo(inputAvFmtCtx, durationSecs, inputSsInfoVid);
+			getSubStreamInfoVideo(inputAvFmtCtx, durationSecs, dmxSettings.cfgOutputModeH26x, inputSsInfoVid);
 		}
 		if (inputSsInfoAud.subStreamIx != -1) {
 			getSubStreamInfoAudio(inputAvFmtCtx, durationSecs, inputSsInfoAud);
@@ -450,6 +452,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private static void getSubStreamInfoVideo(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				double durationSecs,
+				@NonNull FfmpegPktConvModeH26x pktConvModeH26x,
 				@NonNull FfmpegDmxSubStreamInfoVideo ioSsInfoVideo
 			) {
 		ioSsInfoVideo.timeBasePts = getSubStreamTimeBase(inputAvFmtCtx, ioSsInfoVideo.subStreamIx);
@@ -463,7 +466,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioSsInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
 		ioSsInfoVideo.durationSecs = durationSecs;
 		ioSsInfoVideo.bitRate = st.codecpar().bit_rate();
-		copySubStreamInfoExtradata(st, ioSsInfoVideo);
+		copySubStreamInfoExtradata(st, pktConvModeH26x, ioSsInfoVideo);
 
 		//
 		int tmpFpsNum = 0;
@@ -510,21 +513,37 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (ioSsInfoAudio.samplesPerFrame < 1) {
 			ioSsInfoAudio.samplesPerFrame = -1;
 		}
-		copySubStreamInfoExtradata(st, ioSsInfoAudio);
+		copySubStreamInfoExtradata(st, FfmpegPktConvModeH26x.PASSTHROUGH, ioSsInfoAudio);
 	}
 
-	private static void copySubStreamInfoExtradata(@NonNull AVStream st, @NonNull FfmpegDmxSubStreamInfoBase ioSsInfo) {
+	private static void copySubStreamInfoExtradata(
+				@NonNull AVStream st,
+				@NonNull FfmpegPktConvModeH26x pktConvModeH26x,
+				@NonNull FfmpegDmxSubStreamInfoBase ioSsInfo
+			) {
 		if (st.codecpar().extradata() == null || st.codecpar().extradata_size() < 1) {
 			return;
 		}
 		/*
 		 * Extract st.codecpar().extradata(), e.g. SPS/PPS for H264 or VPS/SPS/PPS for H265 or AudioSpecificConfig for AAC
 		 */
+		String tmpEdStr;
 		try (BytePointer tmpBp = st.codecpar().extradata()) {
 			int extradataSize = st.codecpar().extradata_size();
 			byte[] ascBytes = new byte[extradataSize];
 			tmpBp.position(0).get(ascBytes, 0, extradataSize);
-			ioSsInfo.extradataHex = HexFormat.of().withUpperCase().formatHex(ascBytes);
+			tmpEdStr = HexFormat.of().withUpperCase().formatHex(ascBytes);
+		}
+		//
+		boolean tmpOutputH26xAsAnnexB = (pktConvModeH26x == FfmpegPktConvModeH26x.ANNEXB);
+		ExtradataContainerHex tmpEch = switch (ioSsInfo.ffmpegCodec) {
+				case A_AAC -> ExtradataContainerHex.createAac(tmpEdStr);
+				case V_H264 -> ExtradataConvHexToHexHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
+				case V_H265 -> ExtradataConvHexToHexHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
+				default -> null;
+			};
+		if (tmpEch != null) {
+			ioSsInfo.extradataHex.copyFrom(tmpEch);
 		}
 	}
 
