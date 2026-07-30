@@ -1,8 +1,9 @@
 package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
-import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.jspecify.annotations.NonNull;
 
 import java.util.HexFormat;
 
@@ -27,10 +28,18 @@ public final class FfmpegHelperBsfAacWithAdts implements FfmpegHelperBsfAacInter
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull FfmpegHelperBsfAacWithAdts fromAsc(@NonNull String audioSpecificConfigHex) {
-		byte[] asc = HexFormat.of().parseHex(audioSpecificConfigHex);
+	public static @NonNull FfmpegHelperBsfAacWithAdts fromAsc(@NonNull ExtradataContainerHex audioSpecificConfigHex) {
+		final String FNC_NAME = FfmpegHelperBsfAacWithAdts.class.getSimpleName() + ".fromAsc()";
+
+		if (audioSpecificConfigHex.isEmpty()) {
+			throw new IllegalArgumentException(FNC_NAME + ": ASC must be set");
+		}
+		if (! audioSpecificConfigHex.isCodecAac()) {
+			throw new IllegalArgumentException(FNC_NAME + ": ASC must be for AAC codec");
+		}
+		byte[] asc = HexFormat.of().parseHex(audioSpecificConfigHex.getEd());
 		if (asc == null || asc.length < 2) {
-			throw new IllegalArgumentException("ASC must contain at least 2 bytes");
+			throw new IllegalArgumentException(FNC_NAME + ": ASC must contain at least 2 bytes");
 		}
 
 		int b0 = asc[0] & 0xFF;
@@ -45,13 +54,13 @@ public final class FfmpegHelperBsfAacWithAdts implements FfmpegHelperBsfAacInter
 			 * ADTS header supports profile field of 2 bits (Main/LC/SSR/LTP-ish handling in practice).
 			 * For most common AAC-LC, audioObjectType=2.
 			 */
-			throw new IllegalArgumentException("Unsupported audioObjectType for simple ADTS writer: " + audioObjectType);
+			throw new IllegalArgumentException(FNC_NAME + ": Unsupported audioObjectType for simple ADTS writer: " + audioObjectType);
 		}
 		if (samplingFreqIndex > 12) {
-			throw new IllegalArgumentException("Invalid samplingFreqIndex: " + samplingFreqIndex);
+			throw new IllegalArgumentException(FNC_NAME + ": Invalid samplingFreqIndex: " + samplingFreqIndex);
 		}
 		if (channelConfig > 7) {
-			throw new IllegalArgumentException("Invalid channelConfig: " + channelConfig);
+			throw new IllegalArgumentException(FNC_NAME + ": Invalid channelConfig: " + channelConfig);
 		}
 
 		int adtsProfile = audioObjectType - 1; // ADTS stores profile = AOT - 1
@@ -66,14 +75,16 @@ public final class FfmpegHelperBsfAacWithAdts implements FfmpegHelperBsfAacInter
 	 * @param outputAu Output packet
 	 */
 	public void processPkt(@NonNull AVPacket inputAu, @NonNull BufferExt outputAu) {
+		final String FNC_NAME = getClass().getSimpleName() + ".processPkt()";
+
 		if (inputAu.size() < 1) {
-			throw new IllegalArgumentException("AAC AU is empty");
+			throw new IllegalArgumentException(FNC_NAME + ": AAC AU is empty");
 		}
 
 		int adtsHeaderLen = 7;  // no CRC
 		int fullFrameLen = adtsHeaderLen + inputAu.size();
 		if (fullFrameLen > 0x1FFF) { // 13-bit frame length
-			throw new IllegalArgumentException("AAC frame too large for ADTS: " + fullFrameLen);
+			throw new IllegalArgumentException(FNC_NAME + ": AAC frame too large for ADTS: " + fullFrameLen);
 		}
 
 		outputAu.clear();
