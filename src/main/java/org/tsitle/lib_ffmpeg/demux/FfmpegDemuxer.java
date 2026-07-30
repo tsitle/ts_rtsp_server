@@ -14,7 +14,7 @@ import org.tsitle.lib_ffmpeg.FfmpegPktConvModeAac;
 import org.tsitle.lib_ffmpeg.FfmpegPktConvModeH26x;
 import org.tsitle.lib_ffmpeg.helpers.*;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataConvHexToHexHelper;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataConvHexFmtHelper;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -538,8 +538,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		boolean tmpOutputH26xAsAnnexB = (pktConvModeH26x == FfmpegPktConvModeH26x.ANNEXB);
 		ExtradataContainerHex tmpEch = switch (ioSsInfo.ffmpegCodec) {
 				case A_AAC -> ExtradataContainerHex.createAac(tmpEdStr);
-				case V_H264 -> ExtradataConvHexToHexHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
-				case V_H265 -> ExtradataConvHexToHexHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
+				case V_H264 -> ExtradataConvHexFmtHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
+				case V_H265 -> ExtradataConvHexFmtHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				default -> null;
 			};
 		if (tmpEch != null) {

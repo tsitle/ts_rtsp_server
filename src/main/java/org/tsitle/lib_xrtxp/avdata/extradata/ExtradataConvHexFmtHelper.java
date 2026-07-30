@@ -5,9 +5,9 @@ import org.jspecify.annotations.NonNull;
 /**
  * Helper class for converting A/V codec 'extradata' from one format to another.
  */
-public final class ExtradataConvHexToHexHelper {
+public final class ExtradataConvHexFmtHelper {
 
-	private ExtradataConvHexToHexHelper() { }
+	private ExtradataConvHexFmtHelper() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
