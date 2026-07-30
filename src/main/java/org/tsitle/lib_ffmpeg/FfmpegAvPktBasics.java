@@ -1,9 +1,9 @@
 package org.tsitle.lib_ffmpeg;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public final class FfmpegAvPktBasics {
 
@@ -33,6 +33,13 @@ public final class FfmpegAvPktBasics {
 			return;
 		}
 		pktBe.copyOf(other.pktBe);
+		copyOnlyMetadata(other);
+	}
+
+	public void copyOnlyMetadata(@NonNull FfmpegAvPktBasics other) {
+		if (this == other) {
+			return;
+		}
 		ptsUnits = (other.ptsUnits == null ? null : other.ptsUnits);
 		dtsUnits = (other.dtsUnits == null ? null : other.dtsUnits);
 		timeBase.copyFrom(other.timeBase);
