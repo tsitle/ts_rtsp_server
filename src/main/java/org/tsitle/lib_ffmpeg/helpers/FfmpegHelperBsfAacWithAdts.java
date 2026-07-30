@@ -9,7 +9,7 @@ import java.util.HexFormat;
 /**
  * Helper for adding ADTS headers to AAC packets.
  */
-public final class FfmpegHelperAacAdtsPacketizer {
+public final class FfmpegHelperBsfAacWithAdts implements FfmpegHelperBsfAacInterface {
 
 	/** ADTS profile: 0=Main,1=LC,2=SSR,3=reserved */
 	private final int profile;
@@ -18,7 +18,7 @@ public final class FfmpegHelperAacAdtsPacketizer {
 	/** 1..7 typically */
 	private final int channelConfig;
 
-	private FfmpegHelperAacAdtsPacketizer(int profile, int samplingFreqIndex, int channelConfig) {
+	private FfmpegHelperBsfAacWithAdts(int profile, int samplingFreqIndex, int channelConfig) {
 		this.profile = profile;
 		this.samplingFreqIndex = samplingFreqIndex;
 		this.channelConfig = channelConfig;
@@ -27,7 +27,7 @@ public final class FfmpegHelperAacAdtsPacketizer {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull FfmpegHelperAacAdtsPacketizer fromAsc(@NonNull String audioSpecificConfigHex) {
+	public static @NonNull FfmpegHelperBsfAacWithAdts fromAsc(@NonNull String audioSpecificConfigHex) {
 		byte[] asc = HexFormat.of().parseHex(audioSpecificConfigHex);
 		if (asc == null || asc.length < 2) {
 			throw new IllegalArgumentException("ASC must contain at least 2 bytes");
@@ -55,44 +55,49 @@ public final class FfmpegHelperAacAdtsPacketizer {
 		}
 
 		int adtsProfile = audioObjectType - 1; // ADTS stores profile = AOT - 1
-		return new FfmpegHelperAacAdtsPacketizer(adtsProfile, samplingFreqIndex, channelConfig);
+		return new FfmpegHelperBsfAacWithAdts(adtsProfile, samplingFreqIndex, channelConfig);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void wrapAuWithAdts(@NonNull AVPacket inputAacAu, @NonNull BufferExt outputAdtsAu) {
-		if (inputAacAu.size() < 1) {
+	/**
+	 * Prepend the AAC Access Unit (AU) with an ADTS header.
+	 * @param inputAu Input packet
+	 * @param outputAu Output packet
+	 */
+	public void processPkt(@NonNull AVPacket inputAu, @NonNull BufferExt outputAu) {
+		if (inputAu.size() < 1) {
 			throw new IllegalArgumentException("AAC AU is empty");
 		}
 
 		int adtsHeaderLen = 7;  // no CRC
-		int fullFrameLen = adtsHeaderLen + inputAacAu.size();
+		int fullFrameLen = adtsHeaderLen + inputAu.size();
 		if (fullFrameLen > 0x1FFF) { // 13-bit frame length
 			throw new IllegalArgumentException("AAC frame too large for ADTS: " + fullFrameLen);
 		}
 
-		outputAdtsAu.clear();
-		outputAdtsAu.increaseSize(fullFrameLen);
-		outputAdtsAu.setUsed(adtsHeaderLen);
+		outputAu.clear();
+		outputAu.increaseSize(fullFrameLen);
+		outputAu.setUsed(adtsHeaderLen);
 
 		// ADTS fixed + variable header
-		outputAdtsAu.set(0, (byte)0xFF);  // syncword 0xFFF (12 bits)
-		outputAdtsAu.set(1, (byte)0xF1);  // 1111 0001: MPEG-4, layer=00, protection_absent=1
-		outputAdtsAu.set(2, (byte)(
+		outputAu.set(0, (byte)0xFF);  // syncword 0xFFF (12 bits)
+		outputAu.set(1, (byte)0xF1);  // 1111 0001: MPEG-4, layer=00, protection_absent=1
+		outputAu.set(2, (byte)(
 				((profile & 0x03) << 6)
 				| ((samplingFreqIndex & 0x0F) << 2)
 				| ((channelConfig >> 2) & 0x01)
 			));
-		outputAdtsAu.set(3, (byte)(
+		outputAu.set(3, (byte)(
 				((channelConfig & 0x03) << 6)
 				| ((fullFrameLen >> 11) & 0x03)
 			));
-		outputAdtsAu.set(4, (byte)((fullFrameLen >> 3) & 0xFF));
-		outputAdtsAu.set(5, (byte)(((fullFrameLen & 0x07) << 5) | 0x1F));
-		outputAdtsAu.set(6, (byte)0xFC);  // buffer fullness 0x7FF, num_raw_data_blocks=0
+		outputAu.set(4, (byte)((fullFrameLen >> 3) & 0xFF));
+		outputAu.set(5, (byte)(((fullFrameLen & 0x07) << 5) | 0x1F));
+		outputAu.set(6, (byte)0xFC);  // buffer fullness 0x7FF, num_raw_data_blocks=0
 
-		inputAacAu.data().get(outputAdtsAu.getBaPtr(), adtsHeaderLen, inputAacAu.size());
-		outputAdtsAu.setUsed(fullFrameLen);
+		inputAu.data().get(outputAu.getBaPtr(), adtsHeaderLen, inputAu.size());
+		outputAu.setUsed(fullFrameLen);
 	}
 
 }

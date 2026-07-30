@@ -10,14 +10,15 @@ import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
 import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
-import org.tsitle.lib_ffmpeg.*;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
-import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfError;
-import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperAacAdtsPacketizer;
-import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperBsfH26xAnnexB;
+import org.tsitle.lib_ffmpeg.FfmpegPktConvModeAac;
+import org.tsitle.lib_ffmpeg.FfmpegPktConvModeH26x;
+import org.tsitle.lib_ffmpeg.helpers.*;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
+import org.tsitle.lib_ffmpeg.FfmpegCodec;
+import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.jspecify.annotations.NonNull;
@@ -57,8 +58,10 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private @Nullable AVPacket cacheAvPkt = null;
 	private boolean haveReachedMaxSecs = false;
 
-	private @Nullable FfmpegHelperBsfH26xAnnexB bsfH26xAnnexB = null;
-	private @Nullable FfmpegHelperAacAdtsPacketizer aacAdtsPacketizer = null;
+	private boolean haveCheckedFrameForH26xAnnexB = false;
+	private @Nullable FfmpegHelperBsfH26xInterface bsfH26x = null;
+	private boolean haveCheckedFrameForAacAdts = false;
+	private @Nullable FfmpegHelperBsfAacInterface bsfAac = null;
 
 	/**
 	 * Constructor.
@@ -258,9 +261,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		// reset filter state to avoid stale buffered packets after seek
-		if (bsfH26xAnnexB != null) {
-			bsfH26xAnnexB.close();
-			bsfH26xAnnexB = null;
+		if (bsfH26x != null) {
+			bsfH26x.close();
+			bsfH26x = null;
 		}
 
 		haveReachedMaxSecs = false;
@@ -311,7 +314,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	public void close() {
 		if (inputAvFmtCtx != null) { avformat.avformat_free_context(inputAvFmtCtx); inputAvFmtCtx = null; }
 		if (cacheAvPkt != null) { avcodec.av_packet_free(cacheAvPkt); cacheAvPkt = null; }
-		if (bsfH26xAnnexB != null) { bsfH26xAnnexB.close(); bsfH26xAnnexB = null; }
+		if (bsfH26x != null) { bsfH26x.close(); bsfH26x = null; }
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -652,23 +655,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private Optional<ReadResult> fetchAvPacketFromFilter() throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".fetchAvPacketFromFilter()";
 
-		if (inputAvFmtCtx == null) {
-			throw new IllegalStateException(FNC_NAME + ": inputAvFmtCtx is null");
-		}
 		if (cacheAvPkt == null) {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (bsfH26xAnnexB == null && dmxSettings.cfgOutputH26xAsAnnexB &&
-				(inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
-						inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H265)) {
-			bsfH26xAnnexB = new FfmpegHelperBsfH26xAnnexB(
-					inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
-					inputAvFmtCtx.streams(inputSsInfoVid.subStreamIx)
-				);
-		}
-
-		if (bsfH26xAnnexB != null && bsfH26xAnnexB.receiveOneConvertedPacket(cacheAvPkt)) {
+		if (bsfH26x != null && bsfH26x.receiveOneConvertedPacket(cacheAvPkt)) {
 			return Optional.of(ReadResult.RR_OK_VID);
 		}
 		return Optional.empty();
@@ -684,8 +675,27 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (isVideo && bsfH26xAnnexB != null) {
-			bsfH26xAnnexB.setInputPacket(cacheAvPkt);
+		if (! haveCheckedFrameForH26xAnnexB &&
+				isVideo &&
+				(inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264 ||
+						inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H265) &&
+				dmxSettings.cfgOutputModeH26x != FfmpegPktConvModeH26x.PASSTHROUGH) {
+			boolean tmpIsAnnexB = FfmpegHelperBsfH26xToLengthPrefixed.isAnnexB(cacheAvPkt);
+			boolean needBsfAnnexB = (! tmpIsAnnexB && dmxSettings.cfgOutputModeH26x == FfmpegPktConvModeH26x.ANNEXB);
+			boolean needBsfLp = (tmpIsAnnexB && dmxSettings.cfgOutputModeH26x == FfmpegPktConvModeH26x.LENGTH_PREFIXED);
+			if (needBsfAnnexB) {
+				bsfH26x = new FfmpegHelperBsfH26xToAnnexB(
+						inputSsInfoVid.ffmpegCodec == FfmpegCodec.V_H264,
+						inputAvFmtCtx.streams(inputSsInfoVid.subStreamIx)
+					);
+			} else if (needBsfLp) {
+				bsfH26x = new FfmpegHelperBsfH26xToLengthPrefixed();
+			}
+			haveCheckedFrameForH26xAnnexB = true;
+		}
+
+		if (isVideo && bsfH26x != null) {
+			bsfH26x.setInputPacket(cacheAvPkt);
 			return true;
 		}
 
@@ -704,11 +714,23 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
 		}
 
-		if (! isVideo && dmxSettings.cfgOutputAacWithAdts && inputSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
-			if (aacAdtsPacketizer == null) {
-				aacAdtsPacketizer = FfmpegHelperAacAdtsPacketizer.fromAsc(inputSsInfoAud.extradataHex);
+		if (! haveCheckedFrameForAacAdts &&
+				! isVideo &&
+				inputSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC &&
+				dmxSettings.cfgOutputModeAac != FfmpegPktConvModeAac.PASSTHROUGH) {
+			boolean hasAdtsHeader = FfmpegHelperBsfAacNoAdts.hasAdtsHeader(cacheAvPkt);
+			boolean needAacAddAdts = (! hasAdtsHeader && dmxSettings.cfgOutputModeAac == FfmpegPktConvModeAac.WITH_ADTS);
+			boolean needAacRemoveAdts = (hasAdtsHeader && dmxSettings.cfgOutputModeAac == FfmpegPktConvModeAac.NO_ADTS);
+			if (needAacAddAdts) {
+				bsfAac = FfmpegHelperBsfAacWithAdts.fromAsc(inputSsInfoAud.extradataHex);
+			} else if (needAacRemoveAdts) {
+				bsfAac = new FfmpegHelperBsfAacNoAdts();
 			}
-			aacAdtsPacketizer.wrapAuWithAdts(cacheAvPkt, outputData.pktBe);
+			//
+			haveCheckedFrameForAacAdts = true;
+		}
+		if (! isVideo && bsfAac != null) {
+			bsfAac.processPkt(cacheAvPkt, outputData.pktBe);
 		} else {
 			outputData.pktBe.increaseSize(cacheAvPkt.size());
 			cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
