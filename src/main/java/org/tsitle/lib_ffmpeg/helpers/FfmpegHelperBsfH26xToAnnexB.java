@@ -2,13 +2,15 @@ package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVBSFContext;
 import org.bytedeco.ffmpeg.avcodec.AVBitStreamFilter;
+import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVStream;
+import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avutil;
+import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
 /**
  * Bitstream filter for converting length-prefixed H.264/H.265 packets to AnnexB.
@@ -22,7 +24,15 @@ public final class FfmpegHelperBsfH26xToAnnexB implements FfmpegHelperBsfH26xInt
 	public FfmpegHelperBsfH26xToAnnexB(boolean isH264, @NonNull AVStream inVideoStream) throws FfmpegGenericException {
 		this.isH264 = isH264;
 
-		initForStream(inVideoStream);
+		initForStream(inVideoStream.codecpar(), inVideoStream.time_base());
+	}
+
+	@SuppressWarnings("unused")
+	public FfmpegHelperBsfH26xToAnnexB(boolean isH264, @NonNull AVCodecParameters codecParams, @NonNull AVRational timeBase)
+			throws FfmpegGenericException {
+		this.isH264 = isH264;
+
+		initForStream(codecParams, timeBase);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -68,7 +78,8 @@ public final class FfmpegHelperBsfH26xToAnnexB implements FfmpegHelperBsfH26xInt
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void initForStream(@NonNull AVStream inVideoStream) throws FfmpegGenericException {
+	private void initForStream(@NonNull AVCodecParameters codecParams, @NonNull AVRational timeBase)
+			throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".initForStream()";
 
 		//
@@ -82,13 +93,13 @@ public final class FfmpegHelperBsfH26xToAnnexB implements FfmpegHelperBsfH26xInt
 		int r = avcodec.av_bsf_alloc(bsf, ctx);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_bsf_alloc()", r);
 
-		r = avcodec.avcodec_parameters_copy(ctx.par_in(), inVideoStream.codecpar());
+		r = avcodec.avcodec_parameters_copy(ctx.par_in(), codecParams);
 		if (r < 0) {
 			avcodec.av_bsf_free(ctx);
 			FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_parameters_copy()", r);
 		}
 
-		ctx.time_base_in(inVideoStream.time_base());
+		ctx.time_base_in(timeBase);
 
 		r = avcodec.av_bsf_init(ctx);
 		if (r < 0) {
