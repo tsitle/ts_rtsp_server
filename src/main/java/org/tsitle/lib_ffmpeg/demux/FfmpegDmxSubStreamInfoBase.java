@@ -1,5 +1,6 @@
 package org.tsitle.lib_ffmpeg.demux;
 
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.jspecify.annotations.NonNull;
@@ -15,7 +16,7 @@ public class FfmpegDmxSubStreamInfoBase {
 	 * Video: works sometimes for H26x
 	 */
 	public long bitRate;
-	public @NonNull String extradataHex;
+	public final @NonNull ExtradataContainerHex extradataHex = ExtradataContainerHex.ofEmpty();
 
 	protected FfmpegDmxSubStreamInfoBase() {
 		baseClear();
@@ -27,7 +28,7 @@ public class FfmpegDmxSubStreamInfoBase {
 		timeBasePts = RationalNumber.ofEmpty();
 		durationSecs = -1.0;
 		bitRate = -1L;
-		extradataHex = "";
+		extradataHex.clear();
 	}
 
 	protected void baseCopyFrom(@NonNull FfmpegDmxSubStreamInfoBase other) {
@@ -39,7 +40,7 @@ public class FfmpegDmxSubStreamInfoBase {
 		timeBasePts = RationalNumber.of(other.timeBasePts);
 		durationSecs = other.durationSecs;
 		bitRate = other.bitRate;
-		extradataHex = other.extradataHex;
+		extradataHex.copyFrom(other.extradataHex);
 	}
 
 }
