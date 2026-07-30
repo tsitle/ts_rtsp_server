@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
@@ -653,7 +654,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				esInfo.codec().getValue(),
 				RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
 				RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
-				esInfo.audioAacHexCfg(),
+				esInfo.audioAacHexCfg().isEmpty() || ! esInfo.audioAacHexCfg().isCodecAac() ?
+						"" : esInfo.audioAacHexCfg().getEd(),
 				RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
@@ -666,7 +668,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
-		final List<@NonNull String> tmpH264ExtraSplit = esInfo.videoExtraB64Cfg();
+		ExtradataContainerSdp tmpEcs = esInfo.videoExtraB64Cfg();
+		final List<@NonNull String> tmpH264ExtraSplit = (tmpEcs.isEmpty() || ! tmpEcs.isCodecH264() ?
+				new ArrayList<>() : Arrays.asList(tmpEcs.getEd().split(":")));
+
 		String tmpH264Sps = "";
 		String tmpH264Pps = "";
 		String tmpH264Pli = "";
@@ -701,7 +706,10 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
-		final List<String> tmpH265ExtraSplit = esInfo.videoExtraB64Cfg();
+		ExtradataContainerSdp tmpEcs = esInfo.videoExtraB64Cfg();
+		final List<@NonNull String> tmpH265ExtraSplit = (tmpEcs.isEmpty() || ! tmpEcs.isCodecH265() ?
+				new ArrayList<>() : Arrays.asList(tmpEcs.getEd().split(":")));
+
 		if (tmpH265ExtraSplit.size() != 3) {
 			return;
 		}

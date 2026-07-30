@@ -8,6 +8,8 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoAudio;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoVideo;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -73,7 +75,7 @@ public final class RtspConfigElementaryStreamSource {
 	private @NonNull FrameRateEnum internalVideoFps;
 	/** Internal use: Video extradata as Base64 string */
 	@GsonAnnoExclude
-	@NonNull String internalVideoExtradataB64;
+	@NonNull ExtradataContainerSdp internalVideoExtradataB64;
 	/** Internal use: Audio samplerate */
 	@GsonAnnoExclude
 	@NonNull SampleRateEnum internalAudioSampleRate;
@@ -88,7 +90,7 @@ public final class RtspConfigElementaryStreamSource {
 	private int internalAudioSamplesPerFrame;
 	/** Internal use: only for AAC: AudioSpecificConfig as hex string */
 	@GsonAnnoExclude
-	@NonNull String internalAacAudioSpecificConfigHex;
+	@NonNull ExtradataContainerHex internalAacAudioSpecificConfigHex;
 
 	/** for MQs: Codec */
 	@GsonAnnoExclude
@@ -129,13 +131,13 @@ public final class RtspConfigElementaryStreamSource {
 		this.isPcmAudioBigEndian = false;
 
 		this.aacSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
-		this.internalAacAudioSpecificConfigHex = "";
+		this.internalAacAudioSpecificConfigHex = ExtradataContainerHex.ofEmpty();
 
 		this.internalHasBeenPostProcessed = false;
 		this.internalCodec = RtpPacketType.UNKNOWN;
 		this.internalDurationSecs = -1.0;
 		this.internalVideoFps = FrameRateEnum.UNKNOWN;
-		this.internalVideoExtradataB64 = "";
+		this.internalVideoExtradataB64 = ExtradataContainerSdp.ofEmpty();
 		this.internalAudioSampleRate = SampleRateEnum.UNKNOWN;
 		this.internalAudioChannelCount = -1;
 		this.internalIsPcmAudioBigEndian = false;
@@ -181,9 +183,8 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + subStreamInfo.fps + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
-		resObj.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(
-				resObj.internalCodec,
-				subStreamInfo.extradataHex
+		resObj.internalVideoExtradataB64.copyFrom(
+				ExtradataForSdpHelper.buildExtradataForSdp(resObj.internalCodec, subStreamInfo.extradataHex)
 			);
 
 		return resObj;
@@ -230,7 +231,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		resObj.aacSamplesPerFrame = subStreamInfo.samplesPerFrame;
 		if (subStreamInfo.ffmpegCodec == FfmpegCodec.A_AAC) {
-			resObj.internalAacAudioSpecificConfigHex = subStreamInfo.extradataHex;
+			resObj.internalAacAudioSpecificConfigHex.copyFrom(subStreamInfo.extradataHex);
 		}
 
 		return resObj;
@@ -334,10 +335,11 @@ public final class RtspConfigElementaryStreamSource {
 		return internalVideoFps;
 	}
 
-	public synchronized @NonNull List<@NonNull String> getVideoExtraB64Cfg() {
+	public synchronized @NonNull ExtradataContainerSdp getVideoExtraB64Cfg() {
 		checkPostProcessed();
-		return (internalVideoExtradataB64.isBlank() ?
-				new ArrayList<>() : Arrays.asList(internalVideoExtradataB64.split(":")));
+		ExtradataContainerSdp resObj = ExtradataContainerSdp.ofEmpty();
+		resObj.copyFrom(internalVideoExtradataB64);
+		return resObj;
 	}
 
 	public synchronized @NonNull SampleRateEnum getAudioSamplerate() {
@@ -414,11 +416,13 @@ public final class RtspConfigElementaryStreamSource {
 
 	/**
 	 * Only for AAC: Get AudioSpecificConfig as a hex string for SDP.
-	 * @return AudioSpecificConfig as hex string
+	 * @return AudioSpecificConfig
 	 */
-	public @NonNull String getAacAudioSpecificConfigHexStr() {
+	public @NonNull ExtradataContainerHex getAacAudioSpecificConfigHex() {
 		checkPostProcessed();
-		return internalAacAudioSpecificConfigHex;
+		ExtradataContainerHex resObj = ExtradataContainerHex.ofEmpty();
+		resObj.copyFrom(internalAacAudioSpecificConfigHex);
+		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -434,7 +438,9 @@ public final class RtspConfigElementaryStreamSource {
 	public synchronized void setMqDynamicAudioSamplesPerFrame(int value) { this.mqDynamicAudioSamplesPerFrame = value; }
 
 	public synchronized void setMqDynamicExtradata(@NonNull String value) {
-		internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(getCodec(), value);
+		internalVideoExtradataB64.copyFrom(
+				ExtradataForSdpHelper.buildExtradataForSdp(getCodec(), value)
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

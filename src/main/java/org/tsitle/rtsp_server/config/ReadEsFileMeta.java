@@ -79,7 +79,7 @@ final class ReadEsFileMeta {
 			}
 			ioEsSource.internalAudioChannelCount = (byte)aacInfo.channelConfiguration;
 
-			ioEsSource.internalAacAudioSpecificConfigHex = aacInfo.sdpFmtpConfigHex;
+			ioEsSource.internalAacAudioSpecificConfigHex.copyFrom(aacInfo.sdpFmtpConfigHex);
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from AAC file for Elementary-Stream Source ID '" + extEsId + "': " +
 					e.getMessage());
@@ -173,7 +173,9 @@ final class ReadEsFileMeta {
 
 			if (tmpHaveSps && tmpHavePps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString();
-				ioEsSource.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(RtpPacketType.V_H264, extradataHex);
+				ioEsSource.internalVideoExtradataB64.copyFrom(
+						ExtradataForSdpHelper.buildExtradataForSdp(RtpPacketType.V_H264, extradataHex)
+					);
 			}
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from H264 file for Elementary-Stream Source ID '" + extEsId + "': " +
@@ -229,7 +231,9 @@ final class ReadEsFileMeta {
 
 			if (tmpHaveSps && tmpHavePps && tmpHaveVps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString() + tmpStoreVps.toHexString();
-				ioEsSource.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(RtpPacketType.V_H265, extradataHex);
+				ioEsSource.internalVideoExtradataB64.copyFrom(
+						ExtradataForSdpHelper.buildExtradataForSdp(RtpPacketType.V_H265, extradataHex)
+					);
 			}
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
 			throw new ConfigInvalidException("Could not read from H265 file for Elementary-Stream Source ID '" + extEsId + "': " +

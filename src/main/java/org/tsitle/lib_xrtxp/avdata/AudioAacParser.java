@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
@@ -188,10 +189,11 @@ public final class AudioAacParser {
 
 		// --------------------------------------------------------------------
 
-		resObj.sdpFmtpConfigHex = buildAacAudioSpecificConfig(
+		buildAacAudioSpecificConfig(
 				resObj.audioObjectType,
 				resObj.samplerate,
-				resObj.channelConfiguration
+				resObj.channelConfiguration,
+				resObj.sdpFmtpConfigHex
 			);
 
 		return resObj;
@@ -205,12 +207,13 @@ public final class AudioAacParser {
 	 * @param audioObjectType AudioObjectType
 	 * @param samplingFrequency Samplerate
 	 * @param channelConfig ChannelConfiguration
-	 * @return AudioSpecificConfig as hex string
+	 * @param outAacAudioSpecificConfig Output for the AudioSpecificConfig
 	 */
-	private static @NonNull String buildAacAudioSpecificConfig(
+	private static void buildAacAudioSpecificConfig(
 				AudioAacInfo.@NonNull AudioObjectType audioObjectType,
 				AudioAacInfo.@NonNull Samplerate samplingFrequency,
-				int channelConfig
+				int channelConfig,
+				@NonNull ExtradataContainerHex outAacAudioSpecificConfig
 			) {
 		BitWriterHelper bitWriter = new BitWriterHelper();
 
@@ -221,7 +224,10 @@ public final class AudioAacParser {
 
 		bitWriter.flush();
 
-		return bytesToHexString(bitWriter.toByteArray());
+		ExtradataContainerHex tmpEd = ExtradataContainerHex.createAac(
+				bytesToHexString(bitWriter.toByteArray())
+			);
+		outAacAudioSpecificConfig.copyFrom(tmpEd);
 	}
 
 	private static @NonNull String bytesToHexString(byte[] bytes) {

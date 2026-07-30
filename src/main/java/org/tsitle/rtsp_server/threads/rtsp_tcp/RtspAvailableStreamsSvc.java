@@ -120,7 +120,7 @@ final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterfac
 					tmpCfgSs.getAudioSamplerate(),
 					tmpCfgSs.getAudioSamplesPerFrame(),
 					tmpCfgSs.getIsPcmAudioBigEndian(),
-					tmpCfgSs.getAacAudioSpecificConfigHexStr(),
+					tmpCfgSs.getAacAudioSpecificConfigHex(),
 					tmpCfgSs.getVideoFps(),
 					tmpCfgSs.getVideoExtraB64Cfg()
 				);

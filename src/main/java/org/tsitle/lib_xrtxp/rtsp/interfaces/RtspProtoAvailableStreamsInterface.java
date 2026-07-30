@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -13,7 +15,6 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 
 public interface RtspProtoAvailableStreamsInterface {
@@ -64,9 +65,9 @@ public interface RtspProtoAvailableStreamsInterface {
 			@NonNull SampleRateEnum audioSampleRate,
 			int audioSamplesPerFrame,
 			boolean isAudioPcmBigEndian,
-			@NonNull String audioAacHexCfg,
+			@NonNull ExtradataContainerHex audioAacHexCfg,
 			@NonNull FrameRateEnum videoFps,
-			@NonNull List<@NonNull String> videoExtraB64Cfg
+			@NonNull ExtradataContainerSdp videoExtraB64Cfg
 		) { }
 
 	/**

@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.avdata;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
@@ -171,7 +172,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	/** Channel configuration (3 bits) */
 	public int channelConfiguration;
 	/** AudioSpecificConfig for SDP 'fmtp config' as hex string */
-	public @NonNull String sdpFmtpConfigHex;
+	public @NonNull ExtradataContainerHex sdpFmtpConfigHex = ExtradataContainerHex.ofEmpty();
 
 	public @NonNull InternalInfo internalInfo = new InternalInfo();
 
@@ -221,7 +222,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		samplerate = Samplerate.UNKNOWN;
 		audioObjectType = AudioObjectType.UNKNOWN;
 		channelConfiguration = 0;
-		sdpFmtpConfigHex = "";
+		sdpFmtpConfigHex.clear();
 
 		internalInfo.reset();
 	}
@@ -237,8 +238,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		samplerate = tmpSrc.samplerate;
 		audioObjectType = tmpSrc.audioObjectType;
 		channelConfiguration = tmpSrc.channelConfiguration;
-		//noinspection StringOperationCanBeSimplified
-		sdpFmtpConfigHex = new String(tmpSrc.sdpFmtpConfigHex);
+		sdpFmtpConfigHex.copyFrom(tmpSrc.sdpFmtpConfigHex);
 
 		internalInfo.copyOf(tmpSrc.internalInfo);
 	}
@@ -247,8 +247,8 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 	public @NonNull AudioAacInfo clone() {
 		try {
 			AudioAacInfo clone = (AudioAacInfo)super.clone();
-			//noinspection StringOperationCanBeSimplified
-			clone.sdpFmtpConfigHex = new String(sdpFmtpConfigHex);
+			clone.sdpFmtpConfigHex = ExtradataContainerHex.ofEmpty();
+			clone.sdpFmtpConfigHex.copyFrom(sdpFmtpConfigHex);
 			clone.internalInfo = internalInfo.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -284,7 +284,7 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		baos.write(audioObjectType.ordinal());
 		baos.write(channelConfiguration);
 		try {
-			baos.write(sdpFmtpConfigHex.getBytes(StandardCharsets.UTF_8));
+			baos.write(sdpFmtpConfigHex.getEd().getBytes(StandardCharsets.UTF_8));
 			baos.write(internalInfo.hashSum().getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new RuntimeException(e);

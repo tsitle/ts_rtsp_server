@@ -3,6 +3,8 @@ package org.tsitle.rtsp_server.threads.dataprovider_demux;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
+import org.tsitle.lib_ffmpeg.FfmpegPktConvModeAac;
+import org.tsitle.lib_ffmpeg.FfmpegPktConvModeH26x;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDemuxer;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
@@ -120,8 +122,8 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 		//
 		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
-		dmxSettingsDemux.cfgOutputH26xAsAnnexB = true;
-		dmxSettingsDemux.cfgOutputAacWithAdts = true;
+		dmxSettingsDemux.cfgOutputModeH26x = FfmpegPktConvModeH26x.ANNEXB;
+		dmxSettingsDemux.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
 		dmxSettingsDemux.cfgAllowOnlySpecificCodecsVideo = true;
 		dmxSettingsDemux.cfgAllowedCodecsVideo.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO);
 		dmxSettingsDemux.cfgAllowOnlySpecificCodecsAudio = true;
