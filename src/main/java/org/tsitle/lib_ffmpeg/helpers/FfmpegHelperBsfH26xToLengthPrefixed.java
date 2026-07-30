@@ -2,8 +2,9 @@ package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.global.avcodec;
-import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
+import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayDeque;
@@ -54,12 +55,22 @@ public final class FfmpegHelperBsfH26xToLengthPrefixed implements FfmpegHelperBs
 		return isAnnexB(HexFormat.of().parseHex(hex.substring(0, 8)));
 	}
 
-	public static boolean isAnnexB(@NonNull AVPacket pkt) {
-		if (pkt.size() < 4) {
+	public static boolean isAnnexB(@NonNull AVPacket pktAv) {
+		if (pktAv.size() < 4) {
 			return false;
 		}
 		byte[] inBa = new byte[4];
-		pkt.data().get(inBa, 0, inBa.length);
+		pktAv.data().get(inBa, 0, inBa.length);
+		return isAnnexB(inBa);
+	}
+
+	@SuppressWarnings("unused")
+	public static boolean isAnnexB(@NonNull BufferExt pktBe) {
+		if (pktBe.getUsed() < 4) {
+			return false;
+		}
+		byte[] inBa = new byte[4];
+		System.arraycopy(pktBe.getBaPtr(), 0, inBa, 0, inBa.length);
 		return isAnnexB(inBa);
 	}
 
