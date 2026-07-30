@@ -1,9 +1,9 @@
 package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
-import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Helper for removing ADTS headers from AAC packets.
@@ -15,11 +15,19 @@ public final class FfmpegHelperBsfAacNoAdts implements FfmpegHelperBsfAacInterfa
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static boolean hasAdtsHeader(@NonNull AVPacket pkt) {
-		if (pkt.size() < 3) {
+	public static boolean hasAdtsHeader(@NonNull AVPacket pktAv) {
+		if (pktAv.size() < 3) {
 			return false;
 		}
-		return (pkt.data().get(0) == (byte)0xFF && (pkt.data().get(1) & (byte)0xF0) == (byte)0xF0);
+		return (pktAv.data().get(0) == (byte)0xFF && (pktAv.data().get(1) & (byte)0xF0) == (byte)0xF0);
+	}
+
+	@SuppressWarnings("unused")
+	public static boolean hasAdtsHeader(@NonNull BufferExt pktBe) {
+		if (pktBe.getUsed() < 3) {
+			return false;
+		}
+		return (pktBe.get(0) == (byte)0xFF && (pktBe.get(1) & (byte)0xF0) == (byte)0xF0);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
