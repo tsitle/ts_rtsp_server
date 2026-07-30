@@ -26,22 +26,24 @@ final class ExtradataFromSdpConverterH26x {
 		return sb.toString();
 	}
 
-	static @NonNull String encodeH264NalUnitsBase64ToHex_avcc(
+	static @NonNull ExtradataContainerHex encodeH264NalUnitsBase64ToHex_avcc(
 				@NonNull String sps,
 				@NonNull String pps
 			) {
+		final String FNC_NAME = ExtradataFromSdpConverterH26x.class.getSimpleName() + ".encodeH264NalUnitsBase64ToHex_avcc()";
+
 		List<byte[]> spsList = decodeNalUnitListBase64(sps);
 		List<byte[]> ppsList = decodeNalUnitListBase64(pps);
 
 		byte[] firstSps = spsList.getFirst();
 		if (firstSps.length < 4) {
-			throw new IllegalArgumentException("Invalid H.264 SPS: too short");
+			throw new IllegalArgumentException(FNC_NAME + ": Invalid H.264 SPS: too short");
 		}
 		if (spsList.size() > 31) {
-			throw new IllegalArgumentException("Too many H.264 SPS NAL units (max 31)");
+			throw new IllegalArgumentException(FNC_NAME + ": Too many H.264 SPS NAL units (max 31)");
 		}
 		if (ppsList.size() > 255) {
-			throw new IllegalArgumentException("Too many H.264 PPS NAL units (max 255)");
+			throw new IllegalArgumentException(FNC_NAME + ": Too many H.264 PPS NAL units (max 255)");
 		}
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -65,10 +67,12 @@ final class ExtradataFromSdpConverterH26x {
 			out.write(onePps, 0, onePps.length);
 		}
 
-		return HexFormat.of().formatHex(out.toByteArray());
+		return ExtradataContainerHex.createH264_avcC(
+				HexFormat.of().formatHex(out.toByteArray())
+			);
 	}
 
-	static @NonNull String encodeH265NalUnitsBase64ToHex_hvcc(
+	static @NonNull ExtradataContainerHex encodeH265NalUnitsBase64ToHex_hvcc(
 				@NonNull String sps,
 				@NonNull String pps,
 				@NonNull String vps
@@ -78,9 +82,9 @@ final class ExtradataFromSdpConverterH26x {
 		List<byte[]> vpsList = decodeNalUnitListBase64(vps);
 
 		int numArrays = 0;
-		if (!vpsList.isEmpty()) { numArrays++; }
-		if (!spsList.isEmpty()) { numArrays++; }
-		if (!ppsList.isEmpty()) { numArrays++; }
+		if (! vpsList.isEmpty()) { numArrays++; }
+		if (! spsList.isEmpty()) { numArrays++; }
+		if (! ppsList.isEmpty()) { numArrays++; }
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -139,13 +143,17 @@ final class ExtradataFromSdpConverterH26x {
 			}
 		}
 
-		return HexFormat.of().formatHex(out.toByteArray());
+		return ExtradataContainerHex.createH265_hvcC(
+				HexFormat.of().formatHex(out.toByteArray())
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull List<byte[]> decodeNalUnitListBase64(@NonNull String inputNu) {
+		final String FNC_NAME = ExtradataFromSdpConverterH26x.class.getSimpleName() + ".decodeNalUnitListBase64()";
+
 		List<byte[]> out = new ArrayList<>();
 		for (String tmp : inputNu.split(",")) {
 			String t = tmp.trim();
@@ -155,14 +163,16 @@ final class ExtradataFromSdpConverterH26x {
 			out.add(Base64.getDecoder().decode(t));
 		}
 		if (out.isEmpty()) {
-			throw new IllegalArgumentException("No NAL units provided");
+			throw new IllegalArgumentException(FNC_NAME + ": No NAL units provided");
 		}
 		return out;
 	}
 
 	private static void writeU16(@NonNull ByteArrayOutputStream out, int value) {
+		final String FNC_NAME = ExtradataFromSdpConverterH26x.class.getSimpleName() + ".writeU16()";
+
 		if (value < 0 || value > 0xFFFF) {
-			throw new IllegalArgumentException("Value out of range for uint16: " + value);
+			throw new IllegalArgumentException(FNC_NAME + ": Value out of range for uint16: " + value);
 		}
 		out.write((value >>> 8) & 0xFF);
 		out.write(value & 0xFF);

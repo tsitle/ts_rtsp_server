@@ -30,32 +30,53 @@ final class ExtradataForSdpConverterH264 extends ExtradataForSdpConverterBase {
 	 * The NAL Units within a group are separated by commas.<br />
 	 * The start codes have been removed from the NAL Units.<br />
 	 * The output can be used directly in the SDP output.
+	 * @param noExpectations If true, no expectations are made about the 'extradata' format
 	 * @param extradataHex Hex-encoded NAL Units or AVCC data
 	 * @return Colon-separated list of Base64-encoded NAL Units grouped by type plus the Profile Level Indication
 	 *         (e.g., '&lt;Base64_SPS_1&gt;,&lt;Base64_SPS_2&gt;:&lt;Base64_PPS_1&gt;,&lt;Base64_PPS_2&gt;#&lt;PLI&gt;')
 	 */
-	static @NonNull String buildForSdp(@NonNull String extradataHex) {
-		ExtradataForSdpConverterH264 edParser = new ExtradataForSdpConverterH264();
+	static @NonNull ExtradataContainerSdp buildForSdp(boolean noExpectations, @NonNull ExtradataContainerHex extradataHex) {
+		final String FNC_NAME = ExtradataForSdpConverterH264.class.getSimpleName()+ ".buildForSdp()";
 
-		byte[] extradata = edParser.parseHexStringToBytes(extradataHex);
-		if (extradata == null || extradata.length == 0) {
-			return "";
+		if (! extradataHex.isCodecH264()) {
+			throw new IllegalArgumentException(FNC_NAME + ": Extradata is not for H264");
 		}
 
-		return edParser.buildExtradataFromBytes(extradata);
+		ExtradataForSdpConverterH264 edParser = new ExtradataForSdpConverterH264();
+
+		byte[] tmpEdBa = edParser.parseHexStringToBytes(extradataHex.getEd());
+		if (tmpEdBa == null || tmpEdBa.length == 0) {
+			return ExtradataContainerSdp.ofEmpty();
+		}
+
+		return ExtradataContainerSdp.createH264(
+				edParser.buildExtradataFromBytes(noExpectations, extradataHex.isFmtH26xAnnexB(), tmpEdBa)
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	protected @NonNull String buildExtradataFromBytes(byte[] extradata) {
+	protected @NonNull String buildExtradataFromBytes(
+				boolean noExpectations,
+				boolean expectH26xAnnexB,
+				byte[] extradata
+			) {
+		final String FNC_NAME = getClass().getSimpleName()+ ".buildExtradataFromBytes()";
+
 		InternalResultH264 tmpRes;
 		if (looksLikeAvcc(extradata)) {
+			if (! noExpectations && expectH26xAnnexB) {
+				throw new IllegalArgumentException(FNC_NAME + ": Expected Extradata H264 AnnexB but found avcC");
+			}
 			tmpRes = parseAvcc(extradata);
 			if (! tmpRes.sps.isEmpty() || ! tmpRes.pps.isEmpty()) {
 				fillProfileLevelId(tmpRes, extradata, true);
 			}
 		} else {
+			if (! noExpectations && ! expectH26xAnnexB) {
+				throw new IllegalArgumentException(FNC_NAME + ": Expected Extradata H264 avcC but found AnnexB");
+			}
 			tmpRes = parseAnnexB(extradata);
 			fillProfileLevelId(tmpRes, extradata, false);
 		}

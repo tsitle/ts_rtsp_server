@@ -30,7 +30,11 @@ abstract class ExtradataForSdpConverterBase {
 		return extradataBa;
 	}
 
-	protected abstract @NonNull String buildExtradataFromBytes(byte[] extradata);
+	protected abstract @NonNull String buildExtradataFromBytes(
+				boolean noExpectations,
+				boolean expectH26xAnnexB,
+				byte[] extradata
+			);
 
 	// -----------------------------------------------------------------------------------------------------------------
 
