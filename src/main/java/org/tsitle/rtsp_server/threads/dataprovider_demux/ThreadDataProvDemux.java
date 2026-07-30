@@ -395,8 +395,8 @@ public final class ThreadDataProvDemux extends ThreadBase implements TdpDemuxRea
 
 			//
 			if (! haveInputSi.get()) {
-				haveInputVideo.set(ffDemuxerPtr.getFfAvStreamIxVideo().isPresent());
-				haveInputAudio.set(ffDemuxerPtr.getFfAvStreamIxAudio().isPresent());
+				haveInputVideo.set(ffDemuxerPtr.getFfAvSubStreamIxVideo().isPresent());
+				haveInputAudio.set(ffDemuxerPtr.getFfAvSubStreamIxAudio().isPresent());
 				haveInputSi.set(true);  // set this only after [haveInputVideo] and [haveInputAudio]
 				//
 				durationSecs = ffDemuxerPtr.getDurationSecs().orElse(-1.0);

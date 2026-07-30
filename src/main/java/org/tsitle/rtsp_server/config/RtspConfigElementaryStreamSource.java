@@ -4,8 +4,8 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
+import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoAudio;
+import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoVideo;
 import org.tsitle.lib_rtsp_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
@@ -159,31 +159,31 @@ public final class RtspConfigElementaryStreamSource {
 				int esSourceId,
 				int msSourceId,
 				@NonNull URI msSourceUri,
-				@NonNull FfmpegStreamInfoVideo streamInfo
+				@NonNull FfmpegDmxSubStreamInfoVideo subStreamInfo
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamVideo()";
 
-		final String errMsgUri = getMsSourceUriForErrorMsgs(msSourceUri);
+		final String errMsgUri = buildMsSourceUriForErrorMsgs(msSourceUri);
 
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
 		resObj.msSourceId = msSourceId;
 		resObj.msSourceUri = msSourceUri;
-		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
+		resObj.msSourceFfmpegStreamIx = subStreamInfo.subStreamIx;
 
 		resObj.internalHasBeenPostProcessed = true;
 
-		resObj.internalCodec = convertFfmpegVideoCodecToRtpPacketType(streamInfo.ffmpegCodec);
-		resObj.internalDurationSecs = streamInfo.durationSecs;
+		resObj.internalCodec = convertFfmpegVideoCodecToRtpPacketType(subStreamInfo.ffmpegCodec);
+		resObj.internalDurationSecs = subStreamInfo.durationSecs;
 
-		resObj.internalVideoFps = FrameRateEnum.of(streamInfo.fps.toDouble());
+		resObj.internalVideoFps = FrameRateEnum.of(subStreamInfo.fps.toDouble());
 		if (resObj.internalVideoFps == FrameRateEnum.UNKNOWN) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + streamInfo.fps + " " +
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + subStreamInfo.fps + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
 		resObj.internalVideoExtradataB64 = ExtradataForSdpHelper.buildVideoExtradataForSdp(
 				resObj.internalCodec,
-				streamInfo.extradataHex
+				subStreamInfo.extradataHex
 			);
 
 		return resObj;
@@ -193,44 +193,44 @@ public final class RtspConfigElementaryStreamSource {
 				int esSourceId,
 				int msSourceId,
 				@NonNull URI msSourceUri,
-				@NonNull FfmpegStreamInfoAudio streamInfo
+				@NonNull FfmpegDmxSubStreamInfoAudio subStreamInfo
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspConfigElementaryStreamSource.class.getSimpleName() + ".createFromDemuxedSubStreamAudio()";
 
-		final String errMsgUri = getMsSourceUriForErrorMsgs(msSourceUri);
+		final String errMsgUri = buildMsSourceUriForErrorMsgs(msSourceUri);
 
 		RtspConfigElementaryStreamSource resObj = new RtspConfigElementaryStreamSource();
 		resObj.id = esSourceId;
 		resObj.msSourceId = msSourceId;
 		resObj.msSourceUri = msSourceUri;
-		resObj.msSourceFfmpegStreamIx = streamInfo.streamIx;
+		resObj.msSourceFfmpegStreamIx = subStreamInfo.subStreamIx;
 
 		resObj.internalHasBeenPostProcessed = true;
 
 		resObj.internalCodec = convertFfmpegAudioCodecToRtpPacketType(
-				streamInfo.ffmpegCodec,
-				streamInfo.sampleRate,
-				(byte)streamInfo.channelCount
+				subStreamInfo.ffmpegCodec,
+				subStreamInfo.sampleRate,
+				(byte)subStreamInfo.channelCount
 			);
-		resObj.internalDurationSecs = streamInfo.durationSecs;
+		resObj.internalDurationSecs = subStreamInfo.durationSecs;
 
-		resObj.internalAudioSampleRate = SampleRateEnum.of(streamInfo.sampleRate.getSrHz());
+		resObj.internalAudioSampleRate = SampleRateEnum.of(subStreamInfo.sampleRate.getSrHz());
 		if (resObj.internalAudioSampleRate == SampleRateEnum.UNKNOWN) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SampleRate value " + streamInfo.sampleRate + " " +
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle SampleRate value " + subStreamInfo.sampleRate + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
-		resObj.internalAudioChannelCount = (byte)streamInfo.channelCount;
+		resObj.internalAudioChannelCount = (byte)subStreamInfo.channelCount;
 		if (resObj.internalAudioChannelCount < 1 ||
 				resObj.internalAudioChannelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + streamInfo.channelCount + " " +
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + subStreamInfo.channelCount + " " +
 					"for MS Source '" + errMsgUri + "'");
 		}
-		resObj.internalIsPcmAudioBigEndian = (streamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
-		resObj.internalAudioSamplesPerFrame = streamInfo.samplesPerFrame;
+		resObj.internalIsPcmAudioBigEndian = (subStreamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
+		resObj.internalAudioSamplesPerFrame = subStreamInfo.samplesPerFrame;
 
-		resObj.aacSamplesPerFrame = streamInfo.samplesPerFrame;
-		if (streamInfo.ffmpegCodec == FfmpegCodec.A_AAC) {
-			resObj.internalAacAudioSpecificConfigHex = streamInfo.extradataHex;
+		resObj.aacSamplesPerFrame = subStreamInfo.samplesPerFrame;
+		if (subStreamInfo.ffmpegCodec == FfmpegCodec.A_AAC) {
+			resObj.internalAacAudioSpecificConfigHex = subStreamInfo.extradataHex;
 		}
 
 		return resObj;
@@ -442,9 +442,13 @@ public final class RtspConfigElementaryStreamSource {
 
 	void setIdAsInt(int id) { this.id = id; }
 
+	// -----------------------------------------------------------------------------------------------------------------
+
 	static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
 		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Post-process the Elementary-Stream Source.
@@ -611,7 +615,7 @@ public final class RtspConfigElementaryStreamSource {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull String getMsSourceUriForErrorMsgs(@NonNull URI msSourceUri) {
+	static @NonNull String buildMsSourceUriForErrorMsgs(@NonNull URI msSourceUri) {
 		if (! ("http".equals(msSourceUri.getScheme()) || "https".equals(msSourceUri.getScheme()))) {
 			return msSourceUri.toString();
 		}

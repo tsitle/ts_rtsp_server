@@ -3,8 +3,8 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoAudio;
-import org.tsitle.lib_ffmpeg.demux.FfmpegStreamInfoVideo;
+import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoAudio;
+import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoVideo;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
@@ -953,25 +953,25 @@ public final class RtspConfig {
 			}
 			RtspConfigMuxedStreamSource tmpMsSrcObj = getMuxedStreamSourceObj(tmpMsIdAsInt).orElseThrow();
 
-			FfmpegStreamInfoVideo tmpFfSiVid = tmpMsSrcObj.getFfStreamInfoVideoPtr();
-			if (tmpFfSiVid.ffmpegCodec.isVideo()) {
+			FfmpegDmxSubStreamInfoVideo tmpFfSsInfoVid = tmpMsSrcObj.getFfSubStreamInfoVideo();
+			if (tmpFfSsInfoVid.ffmpegCodec.isVideo()) {
 				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamVideo(
 						idCounter,
 						tmpMsIdAsInt,
 						tmpMsSrcObj.getInputUri(),
-						tmpFfSiVid
+						tmpFfSsInfoVid
 					);
 				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
 				++idCounter;
 			}
 
-			FfmpegStreamInfoAudio tmpFfSiAud = tmpMsSrcObj.getFfStreamInfoAudioPtr();
-			if (tmpFfSiAud.ffmpegCodec.isAudio()) {
+			FfmpegDmxSubStreamInfoAudio tmpFfSsInfoAud = tmpMsSrcObj.getFfSubStreamInfoAudio();
+			if (tmpFfSsInfoAud.ffmpegCodec.isAudio()) {
 				RtspConfigElementaryStreamSource tmpEsSrcObj = RtspConfigElementaryStreamSource.createFromDemuxedSubStreamAudio(
 						idCounter,
 						tmpMsIdAsInt,
 						tmpMsSrcObj.getInputUri(),
-						tmpFfSiAud
+						tmpFfSsInfoAud
 					);
 				addVirtualEsToIsSources(tmpIsObj, tmpMsIdAsInt, tmpEsSrcObj);
 				++idCounter;

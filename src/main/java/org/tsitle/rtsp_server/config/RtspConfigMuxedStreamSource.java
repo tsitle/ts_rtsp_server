@@ -37,9 +37,9 @@ public final class RtspConfigMuxedStreamSource {
 	private boolean internalHasBeenPostProcessed;
 
 	@GsonAnnoExclude
-	private final FfmpegStreamInfoVideo ffStreamInfoVideo = new FfmpegStreamInfoVideo();
+	private final FfmpegDmxSubStreamInfoVideo ffSubStreamInfoVideo = new FfmpegDmxSubStreamInfoVideo();
 	@GsonAnnoExclude
-	private final FfmpegStreamInfoAudio ffStreamInfoAudio = new FfmpegStreamInfoAudio();
+	private final FfmpegDmxSubStreamInfoAudio ffSubStreamInfoAudio = new FfmpegDmxSubStreamInfoAudio();
 
 	public RtspConfigMuxedStreamSource() {
 		this.id = -1;
@@ -92,9 +92,25 @@ public final class RtspConfigMuxedStreamSource {
 
 	void setIdAsInt(int id) { this.id = id; }
 
+	@NonNull FfmpegDmxSubStreamInfoVideo getFfSubStreamInfoVideo() {
+		FfmpegDmxSubStreamInfoVideo resObj = new FfmpegDmxSubStreamInfoVideo();
+		resObj.copyFrom(ffSubStreamInfoVideo);
+		return resObj;
+	}
+
+	@NonNull FfmpegDmxSubStreamInfoAudio getFfSubStreamInfoAudio() {
+		FfmpegDmxSubStreamInfoAudio resObj = new FfmpegDmxSubStreamInfoAudio();
+		resObj.copyFrom(ffSubStreamInfoAudio);
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	static @NonNull String dataFilenameToAbsolutePath(@NonNull Path dataDir, @NonNull String dataFn) {
 		return Path.of(dataDir.toAbsolutePath().toString(), dataFn.strip()).toString();
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Post-process the Muxed-Stream Source.
@@ -164,14 +180,6 @@ public final class RtspConfigMuxedStreamSource {
 		}
 	}
 
-	@NonNull FfmpegStreamInfoVideo getFfStreamInfoVideoPtr() {
-		return ffStreamInfoVideo;
-	}
-
-	@NonNull FfmpegStreamInfoAudio getFfStreamInfoAudioPtr() {
-		return ffStreamInfoAudio;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -195,58 +203,58 @@ public final class RtspConfigMuxedStreamSource {
 		final String realUri = getInputUri().toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
-		final String errMsgUri = RtspConfigElementaryStreamSource.getMsSourceUriForErrorMsgs(getInputUri());
+		final String errMsgUri = RtspConfigElementaryStreamSource.buildMsSourceUriForErrorMsgs(getInputUri());
 
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
 					realUri,
 					dmxSettingsRsi,
-					ffStreamInfoVideo,
-					ffStreamInfoAudio
+					ffSubStreamInfoVideo,
+					ffSubStreamInfoAudio
 				);
 		} catch (FfmpegGenericException e) {
 			throw new ConfigInvalidException("Failed to read sub-stream infos " + errMsgSuffix + " " +
 					"(src='" + errMsgUri + "'): " + e.getMessage());
 		}
 
-		if (ffStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffStreamInfoAudio.ffmpegCodec == FfmpegCodec.UNKNOWN) {
+		if (ffSubStreamInfoVideo.ffmpegCodec == FfmpegCodec.UNKNOWN && ffSubStreamInfoAudio.ffmpegCodec == FfmpegCodec.UNKNOWN) {
 			throw new ConfigInvalidException("No A/V sub-streams found " + errMsgSuffix);
 		}
 
-		if (ffStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffStreamInfoVideo.ffmpegCodec)) {
-				throw new ConfigInvalidException("Video sub-stream codec " + ffStreamInfoVideo.ffmpegCodec + " is not supported " +
+		if (ffSubStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffSubStreamInfoVideo.ffmpegCodec)) {
+				throw new ConfigInvalidException("Video sub-stream codec " + ffSubStreamInfoVideo.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
-			if (ffStreamInfoVideo.fps.toDouble() > 120.0) {
+			if (ffSubStreamInfoVideo.fps.toDouble() > 120.0) {
 				/*
 				 * FFmpeg sometimes reports the Time Base as the Frame Rate for RTSP streams.
 				 * Then the FPS is 90000. So we set it to a safe 30.
 				 */
-				ffStreamInfoVideo.fps.copyFrom(RationalNumber.ofFps(30.0));
+				ffSubStreamInfoVideo.fps.copyFrom(RationalNumber.ofFps(30.0));
 			}
-			if (FrameRateEnum.of(ffStreamInfoVideo.fps.toDouble()) == FrameRateEnum.UNKNOWN) {
+			if (FrameRateEnum.of(ffSubStreamInfoVideo.fps.toDouble()) == FrameRateEnum.UNKNOWN) {
 				approximateFps();
 			}
 		}
-		if (ffStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (ffStreamInfoAudio.channelCount < 1) {
+		if (ffSubStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+			if (ffSubStreamInfoAudio.channelCount < 1) {
 				throw new ConfigInvalidException("Audio sub-stream has no channels " + errMsgSuffix);
 			}
-			if (ffStreamInfoAudio.channelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
+			if (ffSubStreamInfoAudio.channelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
 				throw new ConfigInvalidException("Audio sub-stream with more than " + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
 						" channels " + errMsgSuffix);
 			}
-			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffStreamInfoAudio.ffmpegCodec)) {
-				throw new ConfigInvalidException("Audio sub-stream codec " + ffStreamInfoAudio.ffmpegCodec + " is not supported " +
+			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffSubStreamInfoAudio.ffmpegCodec)) {
+				throw new ConfigInvalidException("Audio sub-stream codec " + ffSubStreamInfoAudio.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
 		}
 	}
 
 	private void approximateFps() {
-		final double orgFps = ffStreamInfoVideo.fps.toDouble();
+		final double orgFps = ffSubStreamInfoVideo.fps.toDouble();
 		FrameRateEnum closestEn = FrameRateEnum.UNKNOWN;
 		double closestDiff = Double.MAX_VALUE;
 		for (FrameRateEnum tmpEn : FrameRateEnum.values()) {
@@ -257,7 +265,7 @@ public final class RtspConfigMuxedStreamSource {
 			}
 		}
 		if (closestEn != FrameRateEnum.UNKNOWN) {
-			ffStreamInfoVideo.fps = RationalNumber.ofFps(closestEn.getFrDbl());
+			ffSubStreamInfoVideo.fps = RationalNumber.ofFps(closestEn.getFrDbl());
 		}
 	}
 
