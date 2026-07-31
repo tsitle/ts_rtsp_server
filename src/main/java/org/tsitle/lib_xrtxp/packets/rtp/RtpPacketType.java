@@ -22,22 +22,26 @@ public enum RtpPacketType {
 	A_AAC((byte)(96 + 2)),  // dynamic
 	/** Audio: AC-3 (clock rate and samplerate variable; channels variable) */
 	A_AC3((byte)(96 + 3)),  // dynamic
+	/** Audio: E-AC-3 (clock rate and samplerate variable; channels variable) */
+	A_EAC3_UNSUPPORTED((byte)(96 + 4)),  // dynamic
+	/** Audio: Opus (clock rate and samplerate variable; channels variable) */
+	A_OPUS_UNSUPPORTED((byte)(96 + 5)),  // dynamic
 	/** Audio: PCMA (8 kHz clock rate / samplerate; mono; 8 bits per sample; G.711; a-law scaling) */
 	A_PCMA_8KHZ_MONO((byte)8),  // fixed
 	/** Audio: PCMA (clock rate and samplerate variable; channels variable; 8 bits per sample; G.711; a-law scaling) */
-	A_PCMA_VAR((byte)(96 + 4)),  // dynamic
+	A_PCMA_VAR((byte)(96 + 6)),  // dynamic
 	/** Audio: PCMU (8 kHz clock rate / samplerate; mono; 8 bits per sample; G.711; mu-law scaling) */
 	A_PCMU_8KHZ_MONO((byte)0),  // fixed
 	/** Audio: PCMU (clock rate and samplerate variable; channels variable; 8 bits per sample; G.711; mu-law scaling) */
-	A_PCMU_VAR((byte)(96 + 5)),  // dynamic
+	A_PCMU_VAR((byte)(96 + 7)),  // dynamic
 	/** Audio: Linear PCM (clock rate and samplerate variable; channels variable; unsigned 8 bits per sample only) */
-	A_LINEAR_PCM_U08_VAR((byte)(96 + 6)),  // dynamic, RFC-3551 Section 4.5.10 + 6
+	A_LINEAR_PCM_U08_VAR((byte)(96 + 8)),  // dynamic, RFC-3551 Section 4.5.10 + 6
 	/** Audio: Linear PCM (44.1 kHz clock rate / samplerate; 1 channel; signed 16 bits per sample; Big-Endian) */
 	A_LINEAR_PCM_S16_441K_MONO((byte)10),  // fixed, RFC-3551 Section 4.5.11 + 6
 	/** Audio: Linear PCM (44.1 kHz clock rate / samplerate; 2 channels; signed 16 bits per sample; Big-Endian) */
 	A_LINEAR_PCM_S16_441K_STEREO((byte)11),  // fixed, RFC-3551 Section 4.5.11 + 6
 	/** Audio: Linear PCM (clock rate and samplerate variable; channels variable; signed 16 bits per sample; Big-Endian) */
-	A_LINEAR_PCM_S16_VAR((byte)(96 + 7)),  // dynamic, RFC-3551 Section 4.5.11
+	A_LINEAR_PCM_S16_VAR((byte)(96 + 9)),  // dynamic, RFC-3551 Section 4.5.11
 	/** Video: MJPEG or JPEG (clock rate 90000 Hz) */
 	V_MJPEG((byte)26),  // fixed, RFC-3551 Section 5.2 + 6
 	/** Video: H261 (clock rate 90000 Hz) */
@@ -106,14 +110,19 @@ public enum RtpPacketType {
 	}
 
 	public boolean isAudio() {
-		return (isPcmAudio() || this == A_AAC || this == A_AC3);
+		return (isPcmAudio() ||
+				this == A_AAC ||
+				this == A_AC3 ||
+				this == A_EAC3_UNSUPPORTED ||
+				this == A_OPUS_UNSUPPORTED
+			);
 	}
 
 	/**
 	 * Check if this codec needs to have a single channel.
 	 * @return True if mono, false otherwise
 	 */
-	public boolean isMonoAudio() {
+	public boolean isPcmMonoAudio() {
 		return switch(this) {
 				case
 						A_PCMA_8KHZ_MONO,
@@ -128,7 +137,7 @@ public enum RtpPacketType {
 	 * Check if this codec needs to have two channels.
 	 * @return True if stereo, false otherwise
 	 */
-	public boolean isStereoAudio() {
+	public boolean isPcmStereoAudio() {
 		return (this == A_LINEAR_PCM_S16_441K_STEREO);
 	}
 
@@ -155,6 +164,8 @@ public enum RtpPacketType {
 		return switch (this) {
 				case A_AAC -> "MPEG4-GENERIC";
 				case A_AC3 -> "AC3";
+				case A_EAC3_UNSUPPORTED -> "EAC3";
+				case A_OPUS_UNSUPPORTED -> "OPUS";
 				case A_PCMA_8KHZ_MONO, A_PCMA_VAR -> "PCMA";
 				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
 				case A_LINEAR_PCM_U08_VAR -> "L8";
