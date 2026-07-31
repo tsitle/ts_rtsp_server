@@ -167,14 +167,23 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				shutdownThreadBySessionId(entry.getKey());
 				continue;
 			}
-			/*if (! threadRtspPlay.getIsTransportUdp()) {
-				continue;
-			}*/
-			long tmpTimeDiff = threadRtspPlay.getLastIncomingRtspRequestTimeDeltaSeconds();
-			if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT +
-					RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS) {
-				logDebug(FNC_NAME, "RTSP session sid=" + entry.getKey().getIdStr().orElse("-unset-") +
-						" timeout after " + tmpTimeDiff + " seconds");
+			boolean doShutdown = false;
+			if (! threadRtspPlay.getIsTransportUdp()) {
+				doShutdown = (! threadRtspPlay.getIsTcpConnectionAlive());
+				if (doShutdown) {
+					logDebug(FNC_NAME, "RTSP session sid=" + entry.getKey().getIdStr().orElse("-unset-") +
+						" lost TCP connection");
+				}
+			} else {
+				long tmpTimeDiff = threadRtspPlay.getLastIncomingRtspRequestTimeDeltaSeconds();
+				if (tmpTimeDiff > RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT +
+						RtspProtoHighConstants.SESSION_TIMEOUT_TOLERANCE_SEC + ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS) {
+					logDebug(FNC_NAME, "RTSP session sid=" + entry.getKey().getIdStr().orElse("-unset-") +
+							" timeout after " + tmpTimeDiff + " seconds");
+					doShutdown = true;
+				}
+			}
+			if (doShutdown) {
 				shutdownThreadBySessionId(entry.getKey());
 			}
 		}

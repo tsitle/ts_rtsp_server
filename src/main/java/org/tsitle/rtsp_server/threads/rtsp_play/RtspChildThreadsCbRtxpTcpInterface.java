@@ -15,6 +15,10 @@ import java.time.Instant;
  */
 public interface RtspChildThreadsCbRtxpTcpInterface {
 
+	boolean isTcpConnectionAlive();
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	void cbSendRtpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException;
 

@@ -234,6 +234,11 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
+	public boolean isTcpConnectionAlive() {
+		return (! rtxpTcpReadWrite.isSocketClosed());
+	}
+
+	@Override
 	public void cbSendRtpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {

@@ -248,9 +248,12 @@ public final class ThreadRtspPlay extends RunnableBase
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
 	public boolean getIsTransportUdp() {
 		return sessionInfoPtr.ptr().getIsTransportUdp();
+	}
+
+	public boolean getIsTcpConnectionAlive() {
+		return rtspChildThreadMng.isTcpConnectionAlive();
 	}
 
 	public long getLastIncomingRtspRequestTimeDeltaSeconds() {
