@@ -580,7 +580,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 		// ---------------------------------------------------
 
-		Optional<ReadResult> tmpOptRrEn = fetchAvPacketFromFilter();
+		Optional<ReadResult> tmpOptRrEn = fetchAvPacketFromFilter(cacheAvPkt);
 		if (tmpOptRrEn.isPresent()) {
 			return tmpOptRrEn;
 		}
@@ -671,14 +671,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	// ---------------------------------------------------
 
-	private Optional<ReadResult> fetchAvPacketFromFilter() throws FfmpegGenericException {
-		final String FNC_NAME = getClass().getSimpleName() + ".fetchAvPacketFromFilter()";
-
-		if (cacheAvPkt == null) {
-			throw new IllegalStateException(FNC_NAME + ": cacheAvPkt is null");
-		}
-
-		if (bsfH26x != null && bsfH26x.receiveOneConvertedPacket(cacheAvPkt)) {
+	private Optional<ReadResult> fetchAvPacketFromFilter(@NonNull AVPacket outAvPkt) throws FfmpegGenericException {
+		if (bsfH26x != null && bsfH26x.receiveOneConvertedPacket(outAvPkt)) {
 			return Optional.of(ReadResult.RR_OK_VID);
 		}
 		return Optional.empty();
@@ -723,6 +717,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	// ---------------------------------------------------
 
+	/*private boolean havePrintedAacInfo = false;*/
+
 	private void copyCachedAvPacketToOutput(
 				boolean isVideo,
 				@NonNull FfmpegAvPktBasics outputData
@@ -755,6 +751,13 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
 			outputData.pktBe.setUsed(cacheAvPkt.size());
 		}
+
+		/*if (! havePrintedAacInfo && ! isVideo && inputSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
+			logDebug(FNC_NAME,
+					"**************************** output AAC=" +
+					outputData.pktBe.slice(0, 2).toHexString(true));
+			havePrintedAacInfo = true;
+		}*/
 
 		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
 		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
