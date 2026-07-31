@@ -438,11 +438,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 	}
 
-	private static @NonNull RationalNumber getSubStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int streamIx) {
+	private static @NonNull RationalNumber getSubStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int subStreamIx) {
 		int tmpResNum = 0;
 		int tmpResDen = 1;
-		if (streamIx >= 0) {
-			AVStream st = inputAvFmtCtx.streams(streamIx);
+		if (subStreamIx >= 0) {
+			AVStream st = inputAvFmtCtx.streams(subStreamIx);
 			tmpResNum = st.time_base().num();
 			tmpResDen = st.time_base().den();
 		}
