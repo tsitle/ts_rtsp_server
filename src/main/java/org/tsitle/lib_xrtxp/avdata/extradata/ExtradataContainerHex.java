@@ -9,6 +9,7 @@ public final class ExtradataContainerHex {
 	private boolean isCodecAac;
 	private boolean isCodecH264;
 	private boolean isCodecH265;
+	private boolean isCodecOpus;
 
 	private boolean isFmtH26xAnnexB;
 
@@ -58,6 +59,12 @@ public final class ExtradataContainerHex {
 		return resObj;
 	}
 
+	public static @NonNull ExtradataContainerHex ofOpus(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecOpus = true;
+		return resObj;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
@@ -81,6 +88,11 @@ public final class ExtradataContainerHex {
 		return isCodecH265;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean isCodecOpus() {
+		return isCodecOpus;
+	}
+
 	/**
 	 * Is the 'extradata' in H26x AnnexB format? If not, it is in H264 avcC or H265 hvcC format or something else.
 	 * @return True if the 'extradata' is in H26x AnnexB format
@@ -95,6 +107,7 @@ public final class ExtradataContainerHex {
 		isCodecAac = false;
 		isCodecH264 = false;
 		isCodecH265 = false;
+		isCodecOpus = false;
 
 		isFmtH26xAnnexB = false;
 	}
@@ -105,6 +118,7 @@ public final class ExtradataContainerHex {
 		isCodecAac = other.isCodecAac;
 		isCodecH264 = other.isCodecH264;
 		isCodecH265 = other.isCodecH265;
+		isCodecOpus = other.isCodecOpus;
 
 		isFmtH26xAnnexB = other.isFmtH26xAnnexB;
 	}

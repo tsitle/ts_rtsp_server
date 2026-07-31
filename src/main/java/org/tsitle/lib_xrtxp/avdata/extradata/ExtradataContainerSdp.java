@@ -9,6 +9,7 @@ public final class ExtradataContainerSdp {
 	private boolean isCodecAac;
 	private boolean isCodecH264;
 	private boolean isCodecH265;
+	private boolean isCodecOpus;
 
 	private ExtradataContainerSdp(@NonNull String sdp) {
 		clear();
@@ -40,6 +41,12 @@ public final class ExtradataContainerSdp {
 		return resObj;
 	}
 
+	public static @NonNull ExtradataContainerSdp ofOpus(@NonNull String sdp) {
+		ExtradataContainerSdp resObj = new ExtradataContainerSdp(sdp);
+		resObj.isCodecOpus = true;
+		return resObj;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
@@ -64,12 +71,17 @@ public final class ExtradataContainerSdp {
 		return isCodecH265;
 	}
 
+	public boolean isCodecOpus() {
+		return isCodecOpus;
+	}
+
 	public void clear() {
 		sdp = "";
 
 		isCodecAac = false;
 		isCodecH264 = false;
 		isCodecH265 = false;
+		isCodecOpus = false;
 	}
 
 	public void copyFrom(@NonNull ExtradataContainerSdp other) {
@@ -78,6 +90,7 @@ public final class ExtradataContainerSdp {
 		isCodecAac = other.isCodecAac;
 		isCodecH264 = other.isCodecH264;
 		isCodecH265 = other.isCodecH265;
+		isCodecOpus = other.isCodecOpus;
 	}
 
 }
