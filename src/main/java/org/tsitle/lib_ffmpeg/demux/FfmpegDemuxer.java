@@ -84,13 +84,15 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		this.recvDemuxerStatsInterface = recvDemuxerStatsInterface;
 
 		if (inputPathOrUri.isBlank()) {
-			throw new IllegalArgumentException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): inputFilePath is blank");
+			throw new IllegalArgumentException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): " +
+					"inputFilePath is blank");
 		}
 
 		//
 		inputAvFmtCtx = avformat.avformat_alloc_context();
 		if (inputAvFmtCtx == null) {
-			throw new IllegalStateException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): could not allocate inputAvFmtCtx");
+			throw new IllegalStateException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): " +
+					"could not allocate inputAvFmtCtx");
 		}
 	}
 

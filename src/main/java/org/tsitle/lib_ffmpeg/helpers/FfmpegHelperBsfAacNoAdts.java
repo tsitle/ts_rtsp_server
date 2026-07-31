@@ -39,7 +39,8 @@ public final class FfmpegHelperBsfAacNoAdts implements FfmpegHelperBsfAacInterfa
 	 */
 	public void processPkt(@NonNull AVPacket inputAu, @NonNull BufferExt outputAu) {
 		if (inputAu.size() < 3) {
-			throw new IllegalArgumentException("AAC AU is empty");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".processPkt(): " +
+					"AAC AU is empty");
 		}
 
 		outputAu.clear();
@@ -72,7 +73,8 @@ public final class FfmpegHelperBsfAacNoAdts implements FfmpegHelperBsfAacInterfa
 	@SuppressWarnings("unused")
 	public static void removeAdts(@NonNull BufferView ioPkt) {
 		if (ioPkt.getLength() < 3) {
-			throw new IllegalArgumentException("AAC AU is empty");
+			throw new IllegalArgumentException(FfmpegHelperBsfAacNoAdts.class.getSimpleName() + ".removeAdts(): " +
+					"AAC AU is empty");
 		}
 		if (ioPkt.getByte(0) != (byte)0xFF || (ioPkt.getByte(1) & (byte)0xF0) != (byte)0xF0) {
 			return;

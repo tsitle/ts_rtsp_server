@@ -36,7 +36,8 @@ public enum MqPacketCodec {
 				return codec;
 			}
 		}
-		throw new IllegalArgumentException("Unknown codec name: '" + codecName + "'");
+		throw new IllegalArgumentException(MqPacketCodec.class.getSimpleName() + ".of(): " +
+				"Unknown codec name: '" + codecName + "'");
 	}
 
 	public boolean isVideo() { return (this == MJPEG || this == H264 || this == H265); }

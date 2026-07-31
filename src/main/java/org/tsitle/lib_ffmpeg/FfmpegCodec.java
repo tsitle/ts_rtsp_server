@@ -48,7 +48,8 @@ public enum FfmpegCodec {
 
 	public int getFfmpegId() {
 		if (this == UNKNOWN) {
-			throw new IllegalStateException("Invalid codec UNKNOWN");
+			throw new IllegalStateException(FfmpegCodec.class.getSimpleName() + ".getFfmpegId(): " +
+					"Invalid codec UNKNOWN");
 		}
 		return ffmpegId;
 	}

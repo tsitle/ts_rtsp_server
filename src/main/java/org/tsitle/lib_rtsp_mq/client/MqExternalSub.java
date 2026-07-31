@@ -90,6 +90,8 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void requestMqInfo() throws MqException {
+		final String FNC_NAME = getClass().getSimpleName() + ".requestMqInfo()";
+
 		final String mqHttpUrl = mqSettingsExtended.settsBasic.getInputUri().toString();
 		HttpResponseOpenMq responseOpenMq;
 		try {
@@ -108,11 +110,11 @@ public final class MqExternalSub extends MqReceiverSubBase {
 
 			responseOpenMq = client.postJson(mqHttpUrl, payload, HttpResponseOpenMq.class);
 		} catch (java.net.ConnectException e) {
-			throw new MqException("Connecting to MQ HTTP server failed");
+			throw new MqException(FNC_NAME + ": Connecting to MQ HTTP server failed");
 		} catch (IOException | InterruptedException e) {
-			throw new MqException("Connecting to MQ HTTP server failed (IOE/IE): " + e.getMessage());
+			throw new MqException(FNC_NAME + ": Connecting to MQ HTTP server failed (IOE/IE): " + e.getMessage());
 		} catch (Exception e) {
-			throw new MqException("Exception caught while connecting to " +
+			throw new MqException(FNC_NAME + ": Exception caught while connecting to " +
 					"MQ HTTP server '" + mqHttpUrl + "': " + e.getMessage());
 		}
 
@@ -125,8 +127,10 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	}
 
 	private void internalConnectToMq() {
+		final String FNC_NAME = getClass().getSimpleName() + ".internalConnectToMq()";
+
 		if (! mqSettingsExtended.haveSettings) {
-			throw new IllegalStateException("MQ settings have not been requested yet");
+			throw new IllegalStateException(FNC_NAME + ": MQ settings have not been requested yet");
 		}
 		zmqSocket = zmqContext.createSocket(SocketType.SUB);
 		zmqSocket.setReceiveTimeOut(100);  // milliseconds
@@ -143,7 +147,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 		//
 		if (mqSettingsExtended.isEncrypted) {
 			if (mqSettingsExtended.serverPublicKeyZ85.isBlank()) {
-				throw new IllegalStateException("MQ encryption is enabled, but ServerPublicKey is not set");
+				throw new IllegalStateException(FNC_NAME + ": MQ encryption is enabled, but ServerPublicKey is not set");
 			}
 			zmqSocket.setCurveServerKey(mqSettingsExtended.serverPublicKeyZ85.getBytes(ZMQ.CHARSET));
 
@@ -153,7 +157,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 
 		// connect to publisher
 		if (mqSettingsExtended.serverEndpoint.isBlank()) {
-			throw new IllegalStateException("ServerEndpoint is not set");
+			throw new IllegalStateException(FNC_NAME + ": ServerEndpoint is not set");
 		}
 		zmqSocket.connect(mqSettingsExtended.serverEndpoint);
 
@@ -170,7 +174,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 				hex = hex.substring(2);
 			}
 			if (hex.length() % 2 != 0) {
-				throw new IllegalArgumentException("Hex string must have even length");
+				throw new IllegalArgumentException(FNC_NAME + ": Hex string must have even length");
 			}
 			byte[] bytes = HexFormat.of().parseHex(hex);  // throws IllegalArgumentException or NumberFormatException
 			return new String(bytes, ZMQ.CHARSET);

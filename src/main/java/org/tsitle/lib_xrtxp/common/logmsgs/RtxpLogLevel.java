@@ -17,7 +17,8 @@ public enum RtxpLogLevel {
 				case "INFO" -> INFO;
 				case "WARN" -> WARN;
 				case "ERROR" -> ERROR;
-				default -> throw new IllegalArgumentException("Invalid log level: '" + level + "'");
+				default -> throw new IllegalArgumentException(RtxpLogLevel.class.getSimpleName() + ".of(): " +
+						"Invalid log level: '" + level + "'");
 			};
 	}
 

@@ -34,7 +34,8 @@ public final class MqChannelBus {
 				@NonNull RtspProtoIdEsSource idEsSource
 			) {
 		if (idEsSource.isEmpty()) {
-			throw new IllegalArgumentException("idEsSource cannot be empty");
+			throw new IllegalArgumentException(MqChannelBus.class.getSimpleName() + ".buildChannelNameForEsSourceId(): " +
+					"idEsSource cannot be empty");
 		}
 		return MqChannelBusChannelName.of(String.format("internal#%s#", idEsSource.getIdStr().orElseThrow()));
 	}
@@ -46,7 +47,8 @@ public final class MqChannelBus {
 	 */
 	public synchronized static @NonNull MqChannelBusChannelId registerChannel(@NonNull MqChannelBusChannelName name) {
 		if (name.isEmpty()) {
-			throw new IllegalArgumentException("Channel name cannot be empty");
+			throw new IllegalArgumentException(MqChannelBus.class.getSimpleName() + ".registerChannel(): " +
+					"Channel name cannot be empty");
 		}
 		if (mapNameToId.containsKey(name)) {
 			return mapNameToId.get(name);
@@ -87,7 +89,8 @@ public final class MqChannelBus {
 	 */
 	public synchronized static @NonNull MqChannelBusChannelId getChannelId(@NonNull MqChannelBusChannelName name) {
 		if (! mapNameToId.containsKey(name)) {
-			throw new IllegalArgumentException("Channel not found: '" + name + "'");
+			throw new IllegalArgumentException(MqChannelBus.class.getSimpleName() + ".getChannelId(): " +
+					"Channel not found: '" + name + "'");
 		}
 		return mapNameToId.get(name);
 	}
@@ -156,7 +159,8 @@ public final class MqChannelBus {
 
 	private static void check(@NonNull MqChannelBusChannelId id) {
 		if (! mapIdToEndpoint.containsKey(id)) {
-			throw new IllegalArgumentException("invalid channel id");
+			throw new IllegalArgumentException(MqChannelBus.class.getSimpleName() + ".check(): " +
+					"invalid channel id");
 		}
 	}
 

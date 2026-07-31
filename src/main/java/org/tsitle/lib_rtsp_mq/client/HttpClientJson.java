@@ -140,12 +140,14 @@ public final class HttpClientJson {
 				);
 		} catch (IOException e) {
 			if (e.getMessage() != null && e.getMessage().contains("sun.security.provider.certpath.SunCertPathBuilderException")) {
-				throw new IOException("Remote SSL certificate does not match the trusted local certificate");
+				throw new IOException(getClass().getSimpleName() + ".postJson(): " +
+						"Remote SSL certificate does not match the trusted local certificate");
 			}
 			throw e;
 		}
 		if (response.statusCode() < 200 || response.statusCode() >= 300) {
-			throw new IOException("HTTP " + response.statusCode() + " returned: " + response.body());
+			throw new IOException(getClass().getSimpleName() + ".postJson(): " +
+					"HTTP " + response.statusCode() + " returned: " + response.body());
 		}
 
 		return gson.fromJson(JsonParser.parseString(response.body()), T);

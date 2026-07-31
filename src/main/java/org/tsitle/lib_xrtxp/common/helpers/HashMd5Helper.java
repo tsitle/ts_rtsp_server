@@ -18,7 +18,8 @@ public final class HashMd5Helper {
 		try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException("MD5 algorithm not available");
+			throw new IllegalStateException(HashMd5Helper.class.getSimpleName() + ".hashOfBytes(): " +
+					"MD5 algorithm not available");
 		}
 		md.update(bytes);
 		byte[] digest = md.digest();

@@ -134,7 +134,7 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeMsgAvToMq()";
 
 		if (zmqSocket == null) {
-			throw new IllegalStateException("MQ socket not initialized");
+			throw new IllegalStateException(FNC_NAME + ": MQ socket not initialized");
 		}
 
 		ByteBuffer tempBb = ByteBuffer
@@ -178,14 +178,14 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 			return;
 		}
 		if (! zmqSocket.send(cacheBufferDataS.getBaPtr(), 0, tempBb.limit(), ZMQ.SNDMORE)) {
-			throw new MqException("Failed to send data to MQ (header)");
+			throw new MqException(FNC_NAME + ": Failed to send data to MQ (header)");
 		}
 		// write the payload data to the Message Queue
 		if (! waitForSocketReadyToWrite(FNC_NAME)) {
 			return;
 		}
 		if (! zmqSocket.send(packet.payloadDataPtr().getBaPtr(), 0, packet.payloadDataPtr().getUsed(), ZMQ.DONTWAIT)) {
-			throw new MqException("Failed to send data to MQ (payload)");
+			throw new MqException(FNC_NAME + ": Failed to send data to MQ (payload)");
 		}
 	}
 
@@ -297,7 +297,8 @@ public final class MqMsgHandlerTwoParts extends MqMsgHandlerBase {
 
 	private void writeString127ToMqBuf(@NonNull String str, @NonNull ByteBuffer outpBb) {
 		if (str.length() > Byte.MAX_VALUE) {
-			throw new IllegalArgumentException("String too long");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".writeString127ToMqBuf(): " +
+					"String too long");
 		}
 		byte[] tmpStrBytes = str.getBytes(ZMQ.CHARSET);
 		outpBb.put((byte)tmpStrBytes.length);

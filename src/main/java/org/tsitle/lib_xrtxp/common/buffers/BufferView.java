@@ -25,10 +25,12 @@ public final class BufferView implements Cloneable {
 
 	public BufferView(@NonNull BufferExt bufPtr, int offset, int length) {
 		if (offset < 0 || offset > bufPtr.getUsed()) {
-			throw new IllegalArgumentException("Invalid offset");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+					"Invalid offset " + offset);
 		}
 		if (length < 0 || offset + length > bufPtr.getUsed()) {
-			throw new IllegalArgumentException("Invalid length");
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+					"Invalid length " + length);
 		}
 		this.bufPtr = bufPtr;
 		setOffset(offset);
@@ -157,7 +159,8 @@ public final class BufferView implements Cloneable {
 	 */
 	public int getIntFromBigEndian(boolean advanceOffset) {
 		if (offset + 4 > length) {
-			throw new IndexOutOfBoundsException("Invalid offset");
+			throw new IndexOutOfBoundsException(getClass().getSimpleName() + ".getIntFromBigEndian(): " +
+					"Invalid offset");
 		}
 		byte[] tmpBa = new byte[4];
 		for (int i = 0; i < tmpBa.length; i++) {

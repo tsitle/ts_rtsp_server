@@ -173,7 +173,8 @@ public enum RtpPacketType {
 				case V_MJPEG -> "JPEG";
 				case V_H264 -> "H264";
 				case V_H265 -> "H265";
-				default -> throw new IllegalStateException("Unsupported codec: " + this);
+				default -> throw new IllegalStateException(getClass().getSimpleName() + ".getSdpCodecName(): " +
+						"Unsupported codec: " + this);
 			};
 	}
 
@@ -181,7 +182,8 @@ public enum RtpPacketType {
 	public int getVideoCodecRtpClockrate() {
 		return switch(this) {
 				case V_MJPEG, V_H264, V_H265 -> 90000;
-				default -> throw new IllegalStateException("Unsupported video codec: " + this);
+				default -> throw new IllegalStateException(getClass().getSimpleName() + ".getVideoCodecRtpClockrate(): " +
+						"Unsupported video codec: " + this);
 			};
 	}
 

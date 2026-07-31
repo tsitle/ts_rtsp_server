@@ -167,7 +167,7 @@ public final class MqInternalInputStream extends InputStream {
 				logDebug(FNC_NAME, "Received int MQ Packet " + (optPacket.get().codec().isVideo() ? "VID" : "AUD"));
 			}*/
 		} catch (MqException e) {
-			throw new IOException("MqException caught: " + e.getMessage());
+			throw new IOException(FNC_NAME + ": MqException caught: " + e.getMessage());
 		}
 	}
 
