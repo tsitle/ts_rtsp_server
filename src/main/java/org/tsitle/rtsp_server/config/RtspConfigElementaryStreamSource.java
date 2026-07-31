@@ -586,12 +586,12 @@ public final class RtspConfigElementaryStreamSource {
 					" (PCM: min=1, max=" + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
 					", is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
-		if (internalCodec.isMonoAudio() && getAudioChannelCount() != 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+		if (internalCodec.isPcmMonoAudio() && getAudioChannelCount() != 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count " + errMsgSuffix +
 					" (should be mono)");
 		}
-		if (internalCodec.isStereoAudio() && getAudioChannelCount() != 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+		if (internalCodec.isPcmStereoAudio() && getAudioChannelCount() != 2) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count " + errMsgSuffix +
 					" (should be stereo)");
 		}
 		if (internalCodec.isAudio() && getAudioSamplesPerFrame() < 1) {
