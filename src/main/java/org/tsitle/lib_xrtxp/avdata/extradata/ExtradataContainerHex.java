@@ -7,6 +7,7 @@ public final class ExtradataContainerHex {
 	private @NonNull String hex;
 
 	private boolean isCodecAac;
+	private boolean isCodecAv1;
 	private boolean isCodecH264;
 	private boolean isCodecH265;
 	private boolean isCodecOpus;
@@ -28,6 +29,12 @@ public final class ExtradataContainerHex {
 	public static @NonNull ExtradataContainerHex ofAac(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecAac = true;
+		return resObj;
+	}
+
+	public static @NonNull ExtradataContainerHex ofAv1(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecAv1 = true;
 		return resObj;
 	}
 
@@ -80,6 +87,11 @@ public final class ExtradataContainerHex {
 		return isCodecAac;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean isCodecAv1() {
+		return isCodecAv1;
+	}
+
 	public boolean isCodecH264() {
 		return isCodecH264;
 	}
@@ -105,6 +117,7 @@ public final class ExtradataContainerHex {
 		hex = "";
 
 		isCodecAac = false;
+		isCodecAv1 = false;
 		isCodecH264 = false;
 		isCodecH265 = false;
 		isCodecOpus = false;
@@ -116,6 +129,7 @@ public final class ExtradataContainerHex {
 		hex = other.hex;
 
 		isCodecAac = other.isCodecAac;
+		isCodecAv1 = other.isCodecAv1;
 		isCodecH264 = other.isCodecH264;
 		isCodecH265 = other.isCodecH265;
 		isCodecOpus = other.isCodecOpus;
