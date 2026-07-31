@@ -138,7 +138,7 @@ public final class ExtradataForSdpHelper {
 		}
 
 		// output == input for AAC
-		return ExtradataContainerSdp.createAac(extradataHex.getEd());
+		return ExtradataContainerSdp.ofAac(extradataHex.getEd());
 	}
 
 	/**

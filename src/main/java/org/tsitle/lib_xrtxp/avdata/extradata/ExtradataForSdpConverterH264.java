@@ -49,7 +49,7 @@ final class ExtradataForSdpConverterH264 extends ExtradataForSdpConverterBase {
 			return ExtradataContainerSdp.ofEmpty();
 		}
 
-		return ExtradataContainerSdp.createH264(
+		return ExtradataContainerSdp.ofH264(
 				edParser.buildExtradataFromBytes(noExpectations, extradataHex.isFmtH26xAnnexB(), tmpEdBa)
 			);
 	}

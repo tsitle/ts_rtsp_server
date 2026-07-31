@@ -22,19 +22,19 @@ public final class ExtradataContainerSdp {
 		return new ExtradataContainerSdp("");
 	}
 
-	public static @NonNull ExtradataContainerSdp createAac(@NonNull String sdp) {
+	public static @NonNull ExtradataContainerSdp ofAac(@NonNull String sdp) {
 		ExtradataContainerSdp resObj = new ExtradataContainerSdp(sdp);
 		resObj.isCodecAac = true;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerSdp createH264(@NonNull String sdp) {
+	public static @NonNull ExtradataContainerSdp ofH264(@NonNull String sdp) {
 		ExtradataContainerSdp resObj = new ExtradataContainerSdp(sdp);
 		resObj.isCodecH264 = true;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerSdp createH265(@NonNull String sdp) {
+	public static @NonNull ExtradataContainerSdp ofH265(@NonNull String sdp) {
 		ExtradataContainerSdp resObj = new ExtradataContainerSdp(sdp);
 		resObj.isCodecH265 = true;
 		return resObj;
@@ -54,10 +54,12 @@ public final class ExtradataContainerSdp {
 		return isCodecAac;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecH264() {
 		return isCodecH264;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecH265() {
 		return isCodecH265;
 	}
