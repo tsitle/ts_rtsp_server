@@ -16,7 +16,9 @@ public final class FfmpegHelperFfError {
 		try (BytePointer errBuf = new BytePointer(256)) {
 			avutil.av_strerror(errCode, errBuf, 256);
 			long slen = avutil.av_strnlen(errBuf, 256);
-			return errBuf.getString().substring(0, (int)slen) + " (" + errCode + ")";
+			return filterNonPrintableCharacters(
+					errBuf.getString().substring(0, (int)slen) + " (" + errCode + ")"
+				);
 		}
 	}
 
@@ -25,6 +27,10 @@ public final class FfmpegHelperFfError {
 		if (r < 0) {
 			throw new FfmpegGenericException(fncName + ": " + desc + " failed: " + ffmpegErrorText(r));
 		}
+	}
+
+	private static @NonNull String filterNonPrintableCharacters(@NonNull String str) {
+		return str.replaceAll("[^\\x20-\\x7E]", "");
 	}
 
 }
