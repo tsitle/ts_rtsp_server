@@ -8,17 +8,29 @@ import org.jspecify.annotations.Nullable;
 public final class FfmpegAvPktBasics {
 
 	public final @NonNull BufferExt pktBe = new BufferExt();
-	public @Nullable Long ptsUnits = null;
-	public @Nullable Long dtsUnits = null;
+	public @Nullable Long ptsUnits;
+	public @Nullable Long dtsUnits;
 	public final @NonNull RationalNumber timeBase = RationalNumber.ofEmpty();
-	public boolean isVideo = false;
+	public int flags;
+	public boolean isVideo;
+	public int subStreamIndex;
+	public long duration;
+	public long pos;
+
+	public FfmpegAvPktBasics() {
+		clear();
+	}
 
 	public void clear() {
 		pktBe.clear();
 		ptsUnits = null;
 		dtsUnits = null;
 		timeBase.copyFrom(RationalNumber.ofEmpty());
+		flags = 0;
 		isVideo = false;
+		subStreamIndex = -1;
+		duration = 0;
+		pos = -1L;
 	}
 
 	public double ptsUnitsToSeconds() {
@@ -43,7 +55,11 @@ public final class FfmpegAvPktBasics {
 		ptsUnits = (other.ptsUnits == null ? null : other.ptsUnits);
 		dtsUnits = (other.dtsUnits == null ? null : other.dtsUnits);
 		timeBase.copyFrom(other.timeBase);
+		flags = other.flags;
 		isVideo = other.isVideo;
+		subStreamIndex = other.subStreamIndex;
+		duration = other.duration;
+		pos = other.pos;
 	}
 
 	@Override
@@ -53,7 +69,11 @@ public final class FfmpegAvPktBasics {
 				", ptsUnits=" + ptsUnits +
 				", dtsUnits=" + dtsUnits +
 				", timeBase=" + timeBase +
+				", flags=" + flags +
 				", isVideo=" + (isVideo ? "T" : "F") +
+				", subStreamIndex=" + subStreamIndex +
+				", duration=" + duration +
+				", pos=" + pos +
 				"]";
 	}
 
