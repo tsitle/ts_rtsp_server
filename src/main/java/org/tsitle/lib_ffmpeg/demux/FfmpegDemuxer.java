@@ -10,16 +10,13 @@ import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
 import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
-import org.tsitle.lib_ffmpeg.FfmpegPktConvModeAac;
-import org.tsitle.lib_ffmpeg.FfmpegPktConvModeH26x;
+import org.tsitle.lib_ffmpeg.*;
 import org.tsitle.lib_ffmpeg.helpers.*;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataConvHexFmtHelper;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
-import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -540,9 +537,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		boolean tmpOutputH26xAsAnnexB = (pktConvModeH26x == FfmpegPktConvModeH26x.ANNEXB);
 		ExtradataContainerHex tmpEch = switch (ioSsInfo.ffmpegCodec) {
 				case A_AAC -> ExtradataContainerHex.ofAac(tmpEdStr);
+				case A_OPUS -> ExtradataContainerHex.ofOpus(tmpEdStr);
 				case V_H264 -> ExtradataConvHexFmtHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				case V_H265 -> ExtradataConvHexFmtHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
-				case A_OPUS -> ExtradataContainerHex.ofOpus(tmpEdStr);
 				default -> null;
 			};
 		if (tmpEch != null) {
@@ -724,7 +721,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 	private void copyCachedAvPacketToOutput(
 				boolean isVideo,
-				@NonNull FfmpegAvPktBasics outputData
+				@NonNull FfmpegAvPktBasics outputPktBasics
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".copyCachedAvPacketToOutput()";
 
@@ -747,27 +744,31 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			//
 			haveCheckedFrameForAacAdts = true;
 		}
+
+		//
+		FfmpegHelperPktConverter.convertFfToBasics(
+				false,  // output packet buffer will be cleared
+				isVideo,
+				cacheAvPkt,
+				isVideo ? inputSsInfoVid.timeBasePts : inputSsInfoAud.timeBasePts,
+				outputPktBasics
+			);
+
+		//
 		if (! isVideo && bsfAac != null) {
-			bsfAac.processPkt(cacheAvPkt, outputData.pktBe);
+			bsfAac.processPkt(cacheAvPkt, outputPktBasics.pktBe);
 		} else {
-			outputData.pktBe.increaseSize(cacheAvPkt.size());
-			cacheAvPkt.data().get(outputData.pktBe.getBaPtr(), 0, cacheAvPkt.size());
-			outputData.pktBe.setUsed(cacheAvPkt.size());
+			outputPktBasics.pktBe.increaseSize(cacheAvPkt.size());
+			cacheAvPkt.data().get(outputPktBasics.pktBe.getBaPtr(), 0, cacheAvPkt.size());
+			outputPktBasics.pktBe.setUsed(cacheAvPkt.size());
 		}
 
 		/*if (! havePrintedAacInfo && ! isVideo && inputSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 			logDebug(FNC_NAME,
 					"**************************** output AAC=" +
-					outputData.pktBe.slice(0, 2).toHexString(true));
+					outputPktBasics.pktBe.slice(0, 2).toHexString(true));
 			havePrintedAacInfo = true;
 		}*/
-
-		outputData.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
-		outputData.dtsUnits = (cacheAvPkt.dts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.dts());
-		outputData.timeBase.copyFrom(
-				isVideo ? inputSsInfoVid.timeBasePts : inputSsInfoAud.timeBasePts
-			);
-		outputData.isVideo = isVideo;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
