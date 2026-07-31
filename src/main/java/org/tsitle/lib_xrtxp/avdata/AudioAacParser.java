@@ -224,7 +224,7 @@ public final class AudioAacParser {
 
 		bitWriter.flush();
 
-		ExtradataContainerHex tmpEd = ExtradataContainerHex.createAac(
+		ExtradataContainerHex tmpEd = ExtradataContainerHex.ofAac(
 				bytesToHexString(bitWriter.toByteArray())
 			);
 		outAacAudioSpecificConfig.copyFrom(tmpEd);

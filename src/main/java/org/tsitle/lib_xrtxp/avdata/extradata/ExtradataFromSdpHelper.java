@@ -56,7 +56,7 @@ public final class ExtradataFromSdpHelper {
 			throw new IllegalArgumentException(FNC_NAME + ": sdpData is not for AAC");
 		}
 
-		return ExtradataContainerHex.createAac(sdpData.getEd());
+		return ExtradataContainerHex.ofAac(sdpData.getEd());
 	}
 
 	/**
@@ -100,7 +100,7 @@ public final class ExtradataFromSdpHelper {
 			String resS = "";
 			resS += ExtradataFromSdpConverterH26x.encodeH26xNalUnitListBase64ToHex_annexB(nuSps);  // first SPS
 			resS += ExtradataFromSdpConverterH26x.encodeH26xNalUnitListBase64ToHex_annexB(nuPps);  // then PPS
-			return ExtradataContainerHex.createH264_annexB(resS);
+			return ExtradataContainerHex.ofH264_annexB(resS);
 		}
 		return ExtradataFromSdpConverterH26x.encodeH264NalUnitsBase64ToHex_avcc(nuSps, nuPps);
 	}
@@ -144,7 +144,7 @@ public final class ExtradataFromSdpHelper {
 			resS += ExtradataFromSdpConverterH26x.encodeH26xNalUnitListBase64ToHex_annexB(nuVps);  // VPS comes first
 			resS += ExtradataFromSdpConverterH26x.encodeH26xNalUnitListBase64ToHex_annexB(nuSps);  // then SPS
 			resS += ExtradataFromSdpConverterH26x.encodeH26xNalUnitListBase64ToHex_annexB(nuPps);  // then PPS
-			return ExtradataContainerHex.createH265_annexB(resS);
+			return ExtradataContainerHex.ofH265_annexB(resS);
 		}
 		return ExtradataFromSdpConverterH26x.encodeH265NalUnitsBase64ToHex_hvcc(nuSps, nuPps, nuVps);
 	}

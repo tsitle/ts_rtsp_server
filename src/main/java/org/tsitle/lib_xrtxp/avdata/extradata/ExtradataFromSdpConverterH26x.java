@@ -67,7 +67,7 @@ final class ExtradataFromSdpConverterH26x {
 			out.write(onePps, 0, onePps.length);
 		}
 
-		return ExtradataContainerHex.createH264_avcC(
+		return ExtradataContainerHex.ofH264_avcC(
 				HexFormat.of().formatHex(out.toByteArray())
 			);
 	}
@@ -143,7 +143,7 @@ final class ExtradataFromSdpConverterH26x {
 			}
 		}
 
-		return ExtradataContainerHex.createH265_hvcC(
+		return ExtradataContainerHex.ofH265_hvcC(
 				HexFormat.of().formatHex(out.toByteArray())
 			);
 	}

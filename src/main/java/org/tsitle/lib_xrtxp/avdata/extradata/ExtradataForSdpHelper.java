@@ -26,14 +26,14 @@ public final class ExtradataForSdpHelper {
 				@NonNull String extradataHexStr
 			) {
 		return switch (codec) {
-				case A_AAC -> internalBuildAacExtradataForSdp(ExtradataContainerHex.createAac(extradataHexStr));
+				case A_AAC -> internalBuildAacExtradataForSdp(ExtradataContainerHex.ofAac(extradataHexStr));
 				case V_H264 -> internalBuildH264ExtradataForSdp(
 						true,
-						ExtradataContainerHex.createH264_annexB(extradataHexStr)
+						ExtradataContainerHex.ofH264_annexB(extradataHexStr)
 					);
 				case V_H265 -> internalBuildH265ExtradataForSdp(
 						true,
-						ExtradataContainerHex.createH265_annexB(extradataHexStr)
+						ExtradataContainerHex.ofH265_annexB(extradataHexStr)
 					);
 				default -> ExtradataContainerSdp.ofEmpty();
 			};
@@ -73,7 +73,7 @@ public final class ExtradataForSdpHelper {
 			) {
 		return internalBuildH264ExtradataForSdp(
 				true,
-				ExtradataContainerHex.createH264_annexB(extradataHexStr)
+				ExtradataContainerHex.ofH264_annexB(extradataHexStr)
 			);
 	}
 
@@ -102,7 +102,7 @@ public final class ExtradataForSdpHelper {
 			) {
 		return internalBuildH265ExtradataForSdp(
 				true,
-				ExtradataContainerHex.createH265_annexB(extradataHexStr)
+				ExtradataContainerHex.ofH265_annexB(extradataHexStr)
 			);
 	}
 

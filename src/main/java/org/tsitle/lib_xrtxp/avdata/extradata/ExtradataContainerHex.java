@@ -24,34 +24,34 @@ public final class ExtradataContainerHex {
 		return new ExtradataContainerHex("");
 	}
 
-	public static @NonNull ExtradataContainerHex createAac(@NonNull String hex) {
+	public static @NonNull ExtradataContainerHex ofAac(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecAac = true;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerHex createH264_avcC(@NonNull String hex) {
+	public static @NonNull ExtradataContainerHex ofH264_avcC(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecH264 = true;
 		resObj.isFmtH26xAnnexB = false;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerHex createH264_annexB(@NonNull String hex) {
+	public static @NonNull ExtradataContainerHex ofH264_annexB(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecH264 = true;
 		resObj.isFmtH26xAnnexB = true;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerHex createH265_hvcC(@NonNull String hex) {
+	public static @NonNull ExtradataContainerHex ofH265_hvcC(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecH265 = true;
 		resObj.isFmtH26xAnnexB = false;
 		return resObj;
 	}
 
-	public static @NonNull ExtradataContainerHex createH265_annexB(@NonNull String hex) {
+	public static @NonNull ExtradataContainerHex ofH265_annexB(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecH265 = true;
 		resObj.isFmtH26xAnnexB = true;
@@ -68,6 +68,7 @@ public final class ExtradataContainerHex {
 		return hex;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecAac() {
 		return isCodecAac;
 	}

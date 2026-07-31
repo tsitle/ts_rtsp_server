@@ -537,7 +537,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		//
 		boolean tmpOutputH26xAsAnnexB = (pktConvModeH26x == FfmpegPktConvModeH26x.ANNEXB);
 		ExtradataContainerHex tmpEch = switch (ioSsInfo.ffmpegCodec) {
-				case A_AAC -> ExtradataContainerHex.createAac(tmpEdStr);
+				case A_AAC -> ExtradataContainerHex.ofAac(tmpEdStr);
 				case V_H264 -> ExtradataConvHexFmtHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				case V_H265 -> ExtradataConvHexFmtHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				default -> null;
