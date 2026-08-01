@@ -2,6 +2,8 @@ package org.tsitle.lib_xrtxp.avdata.extradata;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.Objects;
+
 public final class ExtradataContainerHex {
 
 	private @NonNull String hex;
@@ -16,7 +18,7 @@ public final class ExtradataContainerHex {
 
 	private ExtradataContainerHex(@NonNull String hex) {
 		clear();
-		this.hex = hex;
+		this.hex = hex.toUpperCase();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -87,15 +89,17 @@ public final class ExtradataContainerHex {
 		return isCodecAac;
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecAv1() {
 		return isCodecAv1;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecH264() {
 		return isCodecH264;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecH265() {
 		return isCodecH265;
 	}
@@ -112,6 +116,8 @@ public final class ExtradataContainerHex {
 	public boolean isFmtH26xAnnexB() {
 		return isFmtH26xAnnexB;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	public void clear() {
 		hex = "";
@@ -135,6 +141,66 @@ public final class ExtradataContainerHex {
 		isCodecOpus = other.isCodecOpus;
 
 		isFmtH26xAnnexB = other.isFmtH26xAnnexB;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof ExtradataContainerHex that)) {
+			return false;
+		}
+		if (isEmpty() && that.isEmpty()) {
+			return true;
+		}
+		if (isEmpty() != that.isEmpty()) {
+			return false;
+		}
+		return (isCodecAac == that.isCodecAac &&
+				isCodecAv1 == that.isCodecAv1 &&
+				isCodecH264 == that.isCodecH264 &&
+				isCodecH265 == that.isCodecH265 &&
+				isCodecOpus == that.isCodecOpus &&
+				isFmtH26xAnnexB == that.isFmtH26xAnnexB &&
+				Objects.equals(hex, that.hex));
+	}
+
+	@Override
+	public int hashCode() {
+		if (isEmpty()) {
+			return 0;
+		}
+		return Objects.hash(
+				hex,
+				isCodecAac,
+				isCodecAv1,
+				isCodecH264,
+				isCodecH265,
+				isCodecOpus,
+				isFmtH26xAnnexB
+			);
+	}
+
+	@Override
+	public @NonNull String toString() {
+		String resS = getClass().getSimpleName() + " [";
+		if (isEmpty()) {
+			resS += "empty";
+		} else {
+			resS += "codec=";
+			if (isCodecAac) { resS += "AAC"; }
+			else if (isCodecAv1) { resS += "AV1"; }
+			else if (isCodecH264) { resS += "H264"; }
+			else if (isCodecH265) { resS += "H265"; }
+			else if (isCodecOpus) { resS += "Opus"; }
+			else { throw new IllegalStateException(getClass().getSimpleName() + ".toString(): " + "Unknown codec"); }
+
+			if (isCodecH264 || isCodecH265) {
+				resS += ", fmt=" + (isFmtH26xAnnexB ? "AnnexB" : "LP");
+			}
+			resS += String.format(", hex='%s'", hex);
+		}
+		return resS + "]";
 	}
 
 }
