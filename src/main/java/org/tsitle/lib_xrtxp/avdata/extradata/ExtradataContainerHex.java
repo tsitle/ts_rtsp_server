@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.Objects;
 
-public final class ExtradataContainerHex {
+public final class ExtradataContainerHex {  // @CODEC
 
 	private @NonNull String hex;
 
@@ -123,7 +123,7 @@ public final class ExtradataContainerHex {
 		return isCodecH265;
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecMpeg4() {
 		return isCodecMpeg4;
 	}
