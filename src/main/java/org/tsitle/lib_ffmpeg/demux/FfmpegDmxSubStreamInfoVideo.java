@@ -1,5 +1,6 @@
 package org.tsitle.lib_ffmpeg.demux;
 
+import org.tsitle.lib_ffmpeg.FfmpegPixelFmt;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.jspecify.annotations.NonNull;
@@ -9,6 +10,7 @@ public final class FfmpegDmxSubStreamInfoVideo extends FfmpegDmxSubStreamInfoBas
 	public int streamNumberVideo;
 	public @NonNull RationalNumber fps;
 	public @NonNull ImageDimensions imgDims;
+	public @NonNull FfmpegPixelFmt pixelFmt;
 
 	public FfmpegDmxSubStreamInfoVideo() {
 		clear();
@@ -20,6 +22,7 @@ public final class FfmpegDmxSubStreamInfoVideo extends FfmpegDmxSubStreamInfoBas
 		streamNumberVideo = -1;
 		fps = RationalNumber.ofEmpty();
 		imgDims = ImageDimensions.ofEmpty();
+		pixelFmt = FfmpegPixelFmt.UNKNOWN;
 	}
 
 	public void copyFrom(@NonNull FfmpegDmxSubStreamInfoVideo other) {
@@ -31,6 +34,7 @@ public final class FfmpegDmxSubStreamInfoVideo extends FfmpegDmxSubStreamInfoBas
 		streamNumberVideo = other.streamNumberVideo;
 		fps = RationalNumber.of(other.fps);
 		imgDims = ImageDimensions.of(other.imgDims);
+		pixelFmt = other.pixelFmt;
 	}
 
 }

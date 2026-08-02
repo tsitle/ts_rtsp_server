@@ -465,6 +465,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioSsInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
 		ioSsInfoVideo.durationSecs = durationSecs;
 		ioSsInfoVideo.bitRate = st.codecpar().bit_rate();
+		ioSsInfoVideo.pixelFmt = switch (st.codecpar().format()) {
+				case avutil.AV_PIX_FMT_YUV420P, avutil.AV_PIX_FMT_YUVJ420P -> FfmpegPixelFmt.YUV420P;
+				case avutil.AV_PIX_FMT_YUV422P, avutil.AV_PIX_FMT_YUVJ422P -> FfmpegPixelFmt.YUV422P;
+				default -> FfmpegPixelFmt.UNKNOWN;
+			};
 		copySubStreamInfoExtradata(st, pktConvModeH26x, ioSsInfoVideo);
 
 		//
@@ -521,6 +526,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				@NonNull FfmpegDmxSubStreamInfoBase ioSsInfo
 			) {
 		if (st.codecpar().extradata() == null || st.codecpar().extradata_size() < 1) {
+			//System.out.println("Demuxer: no extradata, codec=" + ioSsInfo.ffmpegCodec);
 			return;
 		}
 		/*
@@ -533,6 +539,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			tmpBp.position(0).get(ascBytes, 0, extradataSize);
 			tmpEdStr = HexFormat.of().withUpperCase().formatHex(ascBytes);
 		}
+		//System.out.println("Demuxer: extradata='" + tmpEdStr + "', codec=" + ioSsInfo.ffmpegCodec);
 		//
 		boolean tmpOutputH26xAsAnnexB = (pktConvModeH26x == FfmpegPktConvModeH26x.ANNEXB);
 		ExtradataContainerHex tmpEch = switch (ioSsInfo.ffmpegCodec) {  // @CODEC
