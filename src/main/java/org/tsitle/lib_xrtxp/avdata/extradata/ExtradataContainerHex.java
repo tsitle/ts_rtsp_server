@@ -9,10 +9,12 @@ public final class ExtradataContainerHex {  // @CODEC
 	private @NonNull String hex;
 
 	private boolean isCodecAac;
+	private boolean isCodecAlac;
 	private boolean isCodecAv1;
 	private boolean isCodecFlac;
 	private boolean isCodecH264;
 	private boolean isCodecH265;
+	private boolean isCodecMpeg2;
 	private boolean isCodecMpeg4;
 	private boolean isCodecOpus;
 
@@ -33,6 +35,12 @@ public final class ExtradataContainerHex {  // @CODEC
 	public static @NonNull ExtradataContainerHex ofAac(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecAac = true;
+		return resObj;
+	}
+
+	public static @NonNull ExtradataContainerHex ofAlac(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecAlac = true;
 		return resObj;
 	}
 
@@ -76,6 +84,12 @@ public final class ExtradataContainerHex {  // @CODEC
 		return resObj;
 	}
 
+	public static @NonNull ExtradataContainerHex ofMpeg2(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecMpeg2 = true;
+		return resObj;
+	}
+
 	public static @NonNull ExtradataContainerHex ofMpeg4(@NonNull String hex) {
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecMpeg4 = true;
@@ -103,6 +117,11 @@ public final class ExtradataContainerHex {  // @CODEC
 		return isCodecAac;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean isCodecAlac() {
+		return isCodecAac;
+	}
+
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecAv1() {
 		return isCodecAv1;
@@ -121,6 +140,11 @@ public final class ExtradataContainerHex {  // @CODEC
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecH265() {
 		return isCodecH265;
+	}
+
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
+	public boolean isCodecMpeg2() {
+		return isCodecMpeg2;
 	}
 
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
@@ -147,10 +171,12 @@ public final class ExtradataContainerHex {  // @CODEC
 		hex = "";
 
 		isCodecAac = false;
+		isCodecAlac = false;
 		isCodecAv1 = false;
 		isCodecFlac = false;
 		isCodecH264 = false;
 		isCodecH265 = false;
+		isCodecMpeg2 = false;
 		isCodecMpeg4 = false;
 		isCodecOpus = false;
 
@@ -161,10 +187,12 @@ public final class ExtradataContainerHex {  // @CODEC
 		hex = other.hex;
 
 		isCodecAac = other.isCodecAac;
+		isCodecAlac = other.isCodecAlac;
 		isCodecAv1 = other.isCodecAv1;
 		isCodecFlac = other.isCodecFlac;
 		isCodecH264 = other.isCodecH264;
 		isCodecH265 = other.isCodecH265;
+		isCodecMpeg2 = other.isCodecMpeg2;
 		isCodecMpeg4 = other.isCodecMpeg4;
 		isCodecOpus = other.isCodecOpus;
 
@@ -185,10 +213,12 @@ public final class ExtradataContainerHex {  // @CODEC
 			return false;
 		}
 		return (isCodecAac == that.isCodecAac &&
+				isCodecAlac == that.isCodecAlac &&
 				isCodecAv1 == that.isCodecAv1 &&
 				isCodecFlac == that.isCodecFlac &&
 				isCodecH264 == that.isCodecH264 &&
 				isCodecH265 == that.isCodecH265 &&
+				isCodecMpeg2 == that.isCodecMpeg2 &&
 				isCodecMpeg4 == that.isCodecMpeg4 &&
 				isCodecOpus == that.isCodecOpus &&
 				isFmtH26xAnnexB == that.isFmtH26xAnnexB &&
@@ -203,10 +233,12 @@ public final class ExtradataContainerHex {  // @CODEC
 		return Objects.hash(
 				hex,
 				isCodecAac,
+				isCodecAlac,
 				isCodecAv1,
 				isCodecFlac,
 				isCodecH264,
 				isCodecH265,
+				isCodecMpeg2,
 				isCodecMpeg4,
 				isCodecOpus,
 				isFmtH26xAnnexB
@@ -221,10 +253,12 @@ public final class ExtradataContainerHex {  // @CODEC
 		} else {
 			resS += "codec=";
 			if (isCodecAac) { resS += "AAC"; }
+			else if (isCodecAlac) { resS += "ALAC"; }
 			else if (isCodecAv1) { resS += "AV1"; }
 			else if (isCodecFlac) { resS += "FLAC"; }
 			else if (isCodecH264) { resS += "H264"; }
 			else if (isCodecH265) { resS += "H265"; }
+			else if (isCodecMpeg2) { resS += "MPEG2"; }
 			else if (isCodecMpeg4) { resS += "MPEG4"; }
 			else if (isCodecOpus) { resS += "Opus"; }
 			else { throw new IllegalStateException(getClass().getSimpleName() + ".toString(): " + "Unknown codec"); }
