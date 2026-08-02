@@ -17,6 +17,8 @@ public final class ExtradataContainerHex {  // @CODEC
 	private boolean isCodecMpeg2;
 	private boolean isCodecMpeg4;
 	private boolean isCodecOpus;
+	private boolean isCodecTheora;
+	private boolean isCodecVorbis;
 
 	private boolean isFmtH26xAnnexB;
 
@@ -102,6 +104,18 @@ public final class ExtradataContainerHex {  // @CODEC
 		return resObj;
 	}
 
+	public static @NonNull ExtradataContainerHex ofTheora(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecTheora = true;
+		return resObj;
+	}
+
+	public static @NonNull ExtradataContainerHex ofVorbis(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecVorbis = true;
+		return resObj;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean isEmpty() {
@@ -152,6 +166,21 @@ public final class ExtradataContainerHex {  // @CODEC
 		return isCodecMpeg4;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean isCodecOpus() {
+		return isCodecOpus;
+	}
+
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
+	public boolean isCodecTheora() {
+		return isCodecTheora;
+	}
+
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
+	public boolean isCodecVorbis() {
+		return isCodecVorbis;
+	}
+
 	public @NonNull String getCodecStr() {
 		if (isEmpty()) { return "-none-"; }
 		if (isCodecAac) { return "AAC"; }
@@ -163,12 +192,9 @@ public final class ExtradataContainerHex {  // @CODEC
 		if (isCodecMpeg2) { return "MPEG2"; }
 		if (isCodecMpeg4) { return "MPEG4"; }
 		if (isCodecOpus) { return "Opus"; }
+		if (isCodecTheora) { return "Theora"; }
+		if (isCodecVorbis) { return "Vorbis"; }
 		throw new IllegalStateException(getClass().getSimpleName() + ".getCodecStr(): " + "Unknown codec");
-	}
-
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean isCodecOpus() {
-		return isCodecOpus;
 	}
 
 	/**
@@ -193,6 +219,8 @@ public final class ExtradataContainerHex {  // @CODEC
 		isCodecMpeg2 = false;
 		isCodecMpeg4 = false;
 		isCodecOpus = false;
+		isCodecTheora = false;
+		isCodecVorbis = false;
 
 		isFmtH26xAnnexB = false;
 	}
@@ -209,6 +237,8 @@ public final class ExtradataContainerHex {  // @CODEC
 		isCodecMpeg2 = other.isCodecMpeg2;
 		isCodecMpeg4 = other.isCodecMpeg4;
 		isCodecOpus = other.isCodecOpus;
+		isCodecTheora = other.isCodecTheora;
+		isCodecVorbis = other.isCodecVorbis;
 
 		isFmtH26xAnnexB = other.isFmtH26xAnnexB;
 	}
@@ -235,6 +265,8 @@ public final class ExtradataContainerHex {  // @CODEC
 				isCodecMpeg2 == that.isCodecMpeg2 &&
 				isCodecMpeg4 == that.isCodecMpeg4 &&
 				isCodecOpus == that.isCodecOpus &&
+				isCodecTheora == that.isCodecTheora &&
+				isCodecVorbis == that.isCodecVorbis &&
 				isFmtH26xAnnexB == that.isFmtH26xAnnexB &&
 				Objects.equals(hex, that.hex));
 	}
@@ -255,6 +287,8 @@ public final class ExtradataContainerHex {  // @CODEC
 				isCodecMpeg2,
 				isCodecMpeg4,
 				isCodecOpus,
+				isCodecTheora,
+				isCodecVorbis,
 				isFmtH26xAnnexB
 			);
 	}
