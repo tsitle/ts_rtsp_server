@@ -209,6 +209,8 @@ public final class VideoJpegParser {
 		return curOffs;
 	}
 
+	/*private int dbgPktNum = 0;*/
+
 	/**
 	 * Parses the SOF0 (Start of Frame - Baseline DCT: 0xFFC0) block.
 	 * @param inputBv JPEG data
@@ -244,11 +246,17 @@ public final class VideoJpegParser {
 		// channel encoding (e.g. 'YCbCr 4:2:0')
 		byte paramNf = inputBv.getByte(innerOffs++);
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ Nf %d", paramNf));
+		if (paramNf < 1) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid number of components");
+		}
 		if (blockLen < 6 + (paramNf * 3)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
-		byte tmpMaxH = 0;
-		byte tmpMaxV = 0;
+
+		byte yH = 0, yV = 0;
+		byte cbH = 0, cbV = 0;
+		byte crH = 0, crV = 0;
+
 		for (byte componentIx = 0; componentIx < paramNf; ++componentIx) {
 			byte componentId = inputBv.getByte(innerOffs++);
 			if (componentId < 0 || componentId > 3) {
@@ -259,16 +267,27 @@ public final class VideoJpegParser {
 			 */
 			byte componentTmpHiVi = inputBv.getByte(innerOffs++);
 			byte componentHi = (byte)((componentTmpHiVi >> 4) & 0x0F);
-			tmpMaxH = (byte)(Math.max(tmpMaxH, componentHi));
 			byte componentVi = (byte)(componentTmpHiVi & 0x0F);
-			tmpMaxV = (byte)(Math.max(tmpMaxV, componentVi));
+			if (componentHi < 1 || componentVi < 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sampling factors");
+			}
+
+			switch (componentIx) {
+				case 0 -> { yH = componentHi; yV = componentVi; }
+				case 1 -> { cbH = componentHi; cbV = componentVi; }
+				case 2 -> { crH = componentHi; crV = componentVi; }
+				default -> { }
+			}
+
 			byte componentQuantTableSel = inputBv.getByte(innerOffs++);
-			/*String tmpDebugCompName = switch (componentIx) { case 0 -> "Y"; case 1 -> "Cb"; default -> "Cr"; };
-			logDebug(FNC_NAME, innerOffs - 3,
-					String.format("__ Ci %d (%s), HiVi %d (%d / %d), Tqi %d",
-							componentId, tmpDebugCompName,
-							componentTmpHiVi, componentHi, componentVi,
-							componentQuantTableSel));*/
+			/*if (dbgPktNum == 0) {
+				String tmpDebugCompName = switch (componentIx) { case 0 -> "Y"; case 1 -> "Cb"; default -> "Cr"; };
+				logDebug(FNC_NAME, innerOffs - 3,
+						String.format("__ Ci %d (%s), HiVi %d (%d / %d), Tqi %d",
+								componentId, tmpDebugCompName,
+								componentTmpHiVi, componentHi, componentVi,
+								componentQuantTableSel));
+			}*/
 			if (componentQuantTableSel < 0 || componentQuantTableSel > 3) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid componentQuantTableSel");
 			}
@@ -278,19 +297,28 @@ public final class VideoJpegParser {
 				default -> jpegInfo.sof0_quantTableSelCr = componentQuantTableSel;
 			}
 		}
-		if (tmpMaxH == 4 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR411;
-		} else if (tmpMaxH == 2 && tmpMaxV == 2) {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR420;
-		} else if (tmpMaxH == 2 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR422;
-		} else if (tmpMaxH == 1 && tmpMaxV == 2) {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR440;
-		} else if (tmpMaxH == 1 && tmpMaxV == 1) {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR444;
-		} else {
-			jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.UNKNOWN;
+		/*++dbgPktNum;*/
+
+		jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.UNKNOWN;
+		if (paramNf >= 3 && cbH == crH && cbV == crV && cbH > 0 && cbV > 0) {
+			if ((yH % cbH) == 0 && (yV % cbV) == 0) {
+				int hSub = yH / cbH;
+				int vSub = yV / cbV;
+
+				if (hSub == 4 && vSub == 1) {
+					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR411;
+				} else if (hSub == 2 && vSub == 2) {
+					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR420;
+				} else if (hSub == 2 && vSub == 1) {
+					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR422;
+				} else if (hSub == 1 && vSub == 2) {
+					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR440;
+				} else if (hSub == 1 && vSub == 1) {
+					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR444;
+				}
+			}
 		}
+
 		/*logDebug(FNC_NAME, innerOffs,
 				String.format(
 						"__ CE %s (QT Y=%d, Cb=%d, Cr=%d)",
