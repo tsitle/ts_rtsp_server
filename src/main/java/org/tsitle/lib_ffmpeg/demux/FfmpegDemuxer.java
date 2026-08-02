@@ -453,7 +453,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				double durationSecs,
 				@NonNull FfmpegPktConvModeH26x pktConvModeH26x,
 				@NonNull FfmpegDmxSubStreamInfoVideo ioSsInfoVideo
-			) {
+			) throws FfmpegGenericException {
+		final String FNC_NAME = FfmpegDemuxer.class.getSimpleName() + ".getSubStreamInfoVideo()";
+
 		ioSsInfoVideo.timeBasePts = getSubStreamTimeBase(inputAvFmtCtx, ioSsInfoVideo.subStreamIx);
 
 		//
@@ -465,11 +467,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioSsInfoVideo.imgDims = ImageDimensions.of(st.codecpar().width(), st.codecpar().height());
 		ioSsInfoVideo.durationSecs = durationSecs;
 		ioSsInfoVideo.bitRate = st.codecpar().bit_rate();
-		ioSsInfoVideo.pixelFmt = switch (st.codecpar().format()) {
-				case avutil.AV_PIX_FMT_YUV420P, avutil.AV_PIX_FMT_YUVJ420P -> FfmpegPixelFmt.YUV420P;
-				case avutil.AV_PIX_FMT_YUV422P, avutil.AV_PIX_FMT_YUVJ422P -> FfmpegPixelFmt.YUV422P;
-				default -> FfmpegPixelFmt.UNKNOWN;
-			};
+		ioSsInfoVideo.pixelFmt = FfmpegHelperPixelFmtConv.convertPixelFmtFromInt(FNC_NAME, st.codecpar().format());
 		copySubStreamInfoExtradata(st, pktConvModeH26x, ioSsInfoVideo);
 
 		//
