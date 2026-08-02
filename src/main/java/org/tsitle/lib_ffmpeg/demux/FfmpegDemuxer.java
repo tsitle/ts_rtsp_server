@@ -540,11 +540,13 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				case A_ALAC -> ExtradataContainerHex.ofAlac(tmpEdStr);
 				case A_FLAC -> ExtradataContainerHex.ofFlac(tmpEdStr);
 				case A_OPUS -> ExtradataContainerHex.ofOpus(tmpEdStr);
+				case A_VORBIS -> ExtradataContainerHex.ofVorbis(tmpEdStr);
 				case V_AV1 -> ExtradataContainerHex.ofAv1(tmpEdStr);
 				case V_H264 -> ExtradataConvHexFmtHelper.convertH264EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				case V_H265 -> ExtradataConvHexFmtHelper.convertH265EncoderExtradata(tmpOutputH26xAsAnnexB, tmpEdStr);
 				case V_MPEG2 -> ExtradataContainerHex.ofMpeg2(tmpEdStr);
 				case V_MPEG4 -> ExtradataContainerHex.ofMpeg4(tmpEdStr);
+				case V_THEORA -> ExtradataContainerHex.ofTheora(tmpEdStr);
 				default -> null;
 			};
 		if (tmpEch != null) {
