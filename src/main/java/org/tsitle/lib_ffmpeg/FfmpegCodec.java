@@ -84,15 +84,15 @@ public enum FfmpegCodec {
 		return switch(this) {
 				case
 						A_PCM_ALAW,
-						A_PCM_F32LE,
 						A_PCM_F32BE,
+						A_PCM_F32LE,
 						A_PCM_MULAW,
-						A_PCM_S16LE,
 						A_PCM_S16BE,
-						A_PCM_S24LE,
+						A_PCM_S16LE,
 						A_PCM_S24BE,
-						A_PCM_S32LE,
+						A_PCM_S24LE,
 						A_PCM_S32BE,
+						A_PCM_S32LE,
 						A_PCM_U8
 					-> true;
 				default -> false;
