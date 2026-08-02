@@ -131,7 +131,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		return isCodecAac;
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecAlac() {
 		return isCodecAlac;
 	}
