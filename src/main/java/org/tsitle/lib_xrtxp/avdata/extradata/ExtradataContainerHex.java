@@ -119,7 +119,7 @@ public final class ExtradataContainerHex {  // @CODEC
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isCodecAlac() {
-		return isCodecAac;
+		return isCodecAlac;
 	}
 
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
@@ -150,6 +150,20 @@ public final class ExtradataContainerHex {  // @CODEC
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecMpeg4() {
 		return isCodecMpeg4;
+	}
+
+	public @NonNull String getCodecStr() {
+		if (isEmpty()) { return "-none-"; }
+		if (isCodecAac) { return "AAC"; }
+		if (isCodecAlac) { return "ALAC"; }
+		if (isCodecAv1) { return "AV1"; }
+		if (isCodecFlac) { return "FLAC"; }
+		if (isCodecH264) { return "H264"; }
+		if (isCodecH265) { return "H265"; }
+		if (isCodecMpeg2) { return "MPEG2"; }
+		if (isCodecMpeg4) { return "MPEG4"; }
+		if (isCodecOpus) { return "Opus"; }
+		throw new IllegalStateException(getClass().getSimpleName() + ".getCodecStr(): " + "Unknown codec");
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -251,18 +265,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		if (isEmpty()) {
 			resS += "empty";
 		} else {
-			resS += "codec=";
-			if (isCodecAac) { resS += "AAC"; }
-			else if (isCodecAlac) { resS += "ALAC"; }
-			else if (isCodecAv1) { resS += "AV1"; }
-			else if (isCodecFlac) { resS += "FLAC"; }
-			else if (isCodecH264) { resS += "H264"; }
-			else if (isCodecH265) { resS += "H265"; }
-			else if (isCodecMpeg2) { resS += "MPEG2"; }
-			else if (isCodecMpeg4) { resS += "MPEG4"; }
-			else if (isCodecOpus) { resS += "Opus"; }
-			else { throw new IllegalStateException(getClass().getSimpleName() + ".toString(): " + "Unknown codec"); }
-
+			resS += "codec=" + getCodecStr();
 			if (isCodecH264 || isCodecH265) {
 				resS += ", fmt=" + (isFmtH26xAnnexB ? "AnnexB" : "LP");
 			}
