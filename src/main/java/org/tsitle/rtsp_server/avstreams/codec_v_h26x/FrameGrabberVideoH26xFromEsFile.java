@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.MagicBytesH26xHelper;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
@@ -10,11 +11,6 @@ import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberVideoH26xFromEsFile extends FrameGrabberAvFromEsFileBase {
-
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 3-byte version */
-	public static final byte[] H26X_FRAME_START_MAGICBYTES_3 = {0x00, 0x00, 0x01};
-	/** Magic bytes ('Start Code') for H264/H265 NAL Units - 4-byte version */
-	public static final byte[] H26X_FRAME_START_MAGICBYTES_4 = {0x00, 0x00, 0x00, 0x01};
 
 	private boolean isFirstFrame = true;
 
@@ -73,8 +69,8 @@ public final class FrameGrabberVideoH26xFromEsFile extends FrameGrabberAvFromEsF
 				FNC_NAME,
 				frameBuf,
 				isFirstFrame,
-				H26X_FRAME_START_MAGICBYTES_4,
-				H26X_FRAME_START_MAGICBYTES_3,
+				MagicBytesH26xHelper.H26X_FRAME_START_MAGICBYTES_4,
+				MagicBytesH26xHelper.H26X_FRAME_START_MAGICBYTES_3,
 				-1
 			);
 		isFirstFrame = false;
