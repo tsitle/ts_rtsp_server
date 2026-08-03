@@ -1,9 +1,9 @@
 package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.jspecify.annotations.NonNull;
 
 import java.util.HexFormat;
 

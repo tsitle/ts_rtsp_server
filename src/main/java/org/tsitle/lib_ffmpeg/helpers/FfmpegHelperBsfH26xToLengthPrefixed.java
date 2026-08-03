@@ -2,8 +2,8 @@ package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.global.avcodec;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 
 import java.io.ByteArrayOutputStream;

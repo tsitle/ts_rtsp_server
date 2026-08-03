@@ -2,8 +2,8 @@ package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
 /**
  * Helper class for handling FFmpeg errors.

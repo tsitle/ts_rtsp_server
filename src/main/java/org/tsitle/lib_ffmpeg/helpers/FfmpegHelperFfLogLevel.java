@@ -1,8 +1,8 @@
 package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.global.avutil;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 /**
  * Helper class for setting FFmpeg's log level.

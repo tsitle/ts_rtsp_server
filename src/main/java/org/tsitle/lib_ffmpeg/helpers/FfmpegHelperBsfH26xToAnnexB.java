@@ -8,9 +8,9 @@ import org.bytedeco.ffmpeg.avformat.AVStream;
 import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avutil;
-import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
 /**
  * Bitstream filter for converting length-prefixed H.264/H.265 packets to AnnexB.

@@ -1,9 +1,9 @@
 package org.tsitle.lib_ffmpeg.demux;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegPixelFmt;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
-import org.jspecify.annotations.NonNull;
 
 public final class FfmpegDmxSubStreamInfoVideo extends FfmpegDmxSubStreamInfoBase {
 
