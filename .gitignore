@@ -10,6 +10,7 @@ build/
 x-*.sh
 x-*.cmd
 
+data/**/*.avi
 data/**/*.mkv
 data/**/*.mov
 data/**/*.mp4
