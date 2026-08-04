@@ -45,17 +45,6 @@ public final class BitWriterHelper {
 	}
 
 	/**
-	 * Flush remaining bits (pads with zeros if necessary).
-	 */
-	public void flush() {
-		if (bitPosition > 0) {
-			totalPaddingBitsWritten = (8 - bitPosition);
-			currentByte <<= (8 - bitPosition); // pad with zeros
-			flushCurrentByte();
-		}
-	}
-
-	/**
 	 * Returns the written bytes.
 	 */
 	public byte[] toByteArray() {
@@ -83,6 +72,17 @@ public final class BitWriterHelper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Flush remaining bits (pads with zeros if necessary).
+	 */
+	private void flush() {
+		if (bitPosition > 0) {
+			totalPaddingBitsWritten = (8 - bitPosition);
+			currentByte <<= (8 - bitPosition); // pad with zeros
+			flushCurrentByte();
+		}
+	}
 
 	private void flushCurrentByte() {
 		output.write(currentByte);
