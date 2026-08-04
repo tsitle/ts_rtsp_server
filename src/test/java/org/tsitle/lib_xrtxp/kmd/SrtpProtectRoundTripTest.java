@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.packets.rtp.*;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
