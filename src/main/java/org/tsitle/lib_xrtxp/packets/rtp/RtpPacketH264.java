@@ -107,7 +107,7 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 		this.hdInnPayTypeBy = (byte)(packetData.get(offs) & 0x1F);
 		this.hdInnPayTypeEn = H264PayloadType.of(this.hdInnPayTypeBy);
 
-		// determine the length of the inner header bitstream (main header + optional QT header)
+		// determine the length of the inner header bitstream
 		final int additionalHeaderSize = (hdInnPayTypeEn == H264PayloadType.FU_A ? 1 : 0);
 		this.payloadSpecHeaderSize = INNER_HEADER_SIZE_MIN + additionalHeaderSize;
 

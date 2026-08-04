@@ -106,7 +106,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 				((packetData.get(offs) & 0xF8) >> 3) ) & 0x3F);
 		this.hdInnPayNuhTemporalIdPlus1 = (byte)(packetData.get(offs++) & 0x07);
 
-		// determine the length of the inner header bitstream (main header + optional QT header)
+		// determine the length of the inner header bitstream
 		final int additionalHeaderSize = (hdInnPayTypeEn == H265PayloadType.FU ? 1 : 0);
 		this.payloadSpecHeaderSize = INNER_HEADER_SIZE_MIN + additionalHeaderSize;
 
