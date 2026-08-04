@@ -5,9 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendResponseFailedException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
@@ -20,7 +18,6 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
@@ -284,7 +281,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	private @NonNull RtspRequestBasics receiveClientRequestAndRespond()
 			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
-					InputStreamNotReadyException, UdpSocketIoException {
+					RtspProtoTcpSocketNotReadyException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveClientRequestAndRespond()";
 
 		cachedSetParamValues.clear();
@@ -552,7 +549,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				return MainLoopResult.OK;
 			}
 			return (handleSuccessfulRequest(rtspRequestBasics) ? MainLoopResult.OK : MainLoopResult.ERROR);
-		} catch (InputStreamNotReadyException e1) {
+		} catch (RtspProtoTcpSocketNotReadyException e1) {
 			Thread.sleep(100 - 15);
 			return MainLoopResult.OK;
 		}

@@ -4,11 +4,11 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.rtsp_server.config.RtspConfig;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -90,6 +90,9 @@ final class SrtxpRekeySvc {
 			return;  // we're not ready yet
 		}
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
+			if (ctfos.rtcpThreadSendRecv == null) {
+				continue;
+			}
 			if (ctfos.srtxpInboundRekeyingInProgress) {
 				boolean tmpHasBeenCompleted = ctfos.rtcpThreadSendRecv.hasSrtcpInboundRekeyingBeenCompleted();
 				if (tmpHasBeenCompleted) {
@@ -112,6 +115,9 @@ final class SrtxpRekeySvc {
 		// check sub-streams to see whether any of them need re-keying
 		boolean needRekey = false;
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
+			if (ctfos.rtpThreadSender == null) {
+				continue;
+			}
 			if (ctfos.srtxpOutboundRekeyingInProgress) {
 				boolean tmpHasBeenCompleted;
 				if (ctfos.rtcpThreadSendRecv != null && ctfos.rtcpThreadSendRecv.isRunning()) {
@@ -191,9 +197,11 @@ final class SrtxpRekeySvc {
 		}
 
 		//
-		final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
-		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
-		ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
+		if (ctfos.rtcpThreadSendRecv != null) {
+			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
+			logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
+			ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
+		}
 
 		sessionInfoPtr.ptr().clearDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
 
@@ -349,7 +357,7 @@ final class SrtxpRekeySvc {
 		while (++timeoutCnt < 100) {
 			try {
 				respBasics = rtspProtoResponseInputSvc.receiveResponse();
-			} catch (InputStreamNotReadyException ignored) {
+			} catch (RtspProtoTcpSocketNotReadyException ignored) {
 				// ignore
 			}
 		}

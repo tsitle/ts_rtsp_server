@@ -2,7 +2,6 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamNotReadyException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
@@ -14,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.request.RtspProtoHighRequestConsumer;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -144,10 +144,11 @@ public final class RtspProtoRequestInputSvc {
 	 * @return Basic request information
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
-	 * @throws InputStreamNotReadyException If the input stream is not ready
+	 * @throws RtspProtoTcpSocketNotReadyException If the input stream is not ready
 	 */
 	public @NonNull RtspRequestBasics receiveRequestFromClient()
-			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromClient()";
 
 		if (! isRequestFromClient) {
@@ -165,10 +166,11 @@ public final class RtspProtoRequestInputSvc {
 	 * @return Basic request information
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
-	 * @throws InputStreamNotReadyException If the input stream is not ready
+	 * @throws RtspProtoTcpSocketNotReadyException If the input stream is not ready
 	 */
 	public @NonNull RtspRequestBasics receiveRequestFromServer()
-			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveRequestFromServer()";
 
 		if (isRequestFromClient) {
@@ -186,7 +188,8 @@ public final class RtspProtoRequestInputSvc {
 	private @NonNull RtspRequestBasics internalReceiveRequest(
 				@NonNull String fncName,
 				@NonNull RtspProtoIpAddr clientIpAddr
-			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketNotReadyException {
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}

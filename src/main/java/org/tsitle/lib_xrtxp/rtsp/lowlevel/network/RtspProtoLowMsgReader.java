@@ -6,6 +6,8 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketEosException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspHeaderKey;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
@@ -38,7 +40,8 @@ public final class RtspProtoLowMsgReader {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoLowMsgRaw readMessage()
-			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException, InputStreamNotReadyException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readMessage()";
 
 		RtspProtoLowMsgRaw resObj = new RtspProtoLowMsgRaw();
@@ -74,7 +77,7 @@ public final class RtspProtoLowMsgReader {
 			//
 			resObj.readSuccess = true;
 			return resObj;
-		} catch (InputStreamEosException e) {
+		} catch (RtspProtoTcpSocketEosException e) {
 			logError(FNC_NAME, "EOS reached");
 			return resObj;
 		}
@@ -85,7 +88,7 @@ public final class RtspProtoLowMsgReader {
 
 	private void readMainLine(@NonNull RtspProtoLowMsgRaw outputMsg)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException,
-					InputStreamEosException, InputStreamNotReadyException {
+					RtspProtoTcpSocketEosException, RtspProtoTcpSocketNotReadyException {
 		/*
 		 * Read the main (request/status) line.
 		 * Example:
@@ -98,7 +101,8 @@ public final class RtspProtoLowMsgReader {
 	}
 
 	private void readHeaderLines(@NonNull RtspProtoLowMsgRaw outputMsg)
-			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException, InputStreamEosException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readHeaderLines()";
 
 		/*
@@ -133,7 +137,7 @@ public final class RtspProtoLowMsgReader {
 				} else if (! headerLine.isBlank()) {
 					outputMsg.headerLines.add(headerLine);
 				}
-			} catch (InputStreamNotReadyException | InputStreamEosException e) {
+			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
 				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
 					break;
 				}
@@ -150,7 +154,8 @@ public final class RtspProtoLowMsgReader {
 	}
 
 	private void readBody(@NonNull RtspProtoLowMsgRaw outputMsg)
-			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException, InputStreamEosException {
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException,
+					RtspProtoTcpSocketEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readBody()";
 
 		/*
@@ -179,7 +184,7 @@ public final class RtspProtoLowMsgReader {
 				bodyLine = readOneLine(false);
 				timeoutCnt = 0;
 				bodySb.append(bodyLine).append(RtspProtoLowMsgConstants.CRLF);
-			} catch (InputStreamNotReadyException | InputStreamEosException e) {
+			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
 				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
 					break;
 				}
@@ -229,14 +234,14 @@ public final class RtspProtoLowMsgReader {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private @NonNull String readOneLine(boolean isFirst)
-			throws InputStreamNotReadyException, InputStreamEosException,
+			throws RtspProtoTcpSocketNotReadyException, RtspProtoTcpSocketEosException,
 					TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		if (! rtxpTcpReadWrite.canReadRtsp()) {
-			throw new InputStreamNotReadyException();  // @TODO change exception name
+			throw new RtspProtoTcpSocketNotReadyException();
 		}
 		Optional<String> optLine = rtxpTcpReadWrite.readRtspLine();
 		if (optLine.isEmpty()) {
-			throw new InputStreamEosException();  // @TODO change exception name
+			throw new RtspProtoTcpSocketEosException();
 		}
 		String resS = optLine.get();
 		// remove forbidden characters from the line
