@@ -17,11 +17,13 @@
 - [RFC-4568](https://datatracker.ietf.org/doc/html/rfc4568): Session Description Protocol (SDP) Security Descriptions for Media Streams
 - [RFC-4585](https://datatracker.ietf.org/doc/html/rfc4585): Extended RTP Profile for Real-time Transport Control Protocol (RTCP)-Based Feedback (RTP/AVPF)
 - [RFC-4598](https://datatracker.ietf.org/doc/html/rfc4598): RTP Payload Format for E-AC-3 Audio (support for E-AC-3 has been moved into the Git branch `audio_eac3`)
-- [RFC-7798](https://datatracker.ietf.org/doc/html/rfc7798): RTP Payload Format for High Efficiency Video Coding (HEVC)
+- [RFC-7741](https://datatracker.ietf.org/doc/html/rfc7741): RTP Payload Format for VP8 Video
+- [RFC-7798](https://datatracker.ietf.org/doc/html/rfc7798): RTP Payload Format for High Efficiency Video Coding (HEVC/H265)
 
 ## RFCs Used as References
 
 - [RFC-2030](https://datatracker.ietf.org/doc/html/rfc2030): Simple Network Time Protocol (SNTP) Version 4 for IPv4, IPv6 and OSI
 - [RFC-2068](https://datatracker.ietf.org/doc/html/rfc2068): Hypertext Transfer Protocol - HTTP/1.1
 - [RFC-4317](https://datatracker.ietf.org/doc/html/rfc4317): Session Description Protocol (SDP) Offer/Answer Examples
+- [RFC-6386](https://datatracker.ietf.org/doc/html/rfc6386): VP8 Data Format and Decoding Guide
 - [RFC-7826](https://datatracker.ietf.org/doc/html/rfc7826): Real Time Streaming Protocol 2.0
