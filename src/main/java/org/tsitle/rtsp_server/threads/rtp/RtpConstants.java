@@ -36,6 +36,7 @@ public final class RtpConstants {
 			add(FfmpegCodec.V_H264);
 			add(FfmpegCodec.V_H265);
 			add(FfmpegCodec.V_MJPEG);
+			add(FfmpegCodec.V_VP8);
 		}};
 	/** Allowed FFmpeg audio codecs for RTP */
 	public static final @NonNull Set<@NonNull FfmpegCodec> RTP_FFMPEG_ALLOWED_CODECS_AUDIO = new HashSet<>() {{

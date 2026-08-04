@@ -656,6 +656,7 @@ public final class RtspConfigElementaryStreamSource {
 				case V_H264 -> RtpPacketType.V_H264;
 				case V_H265 -> RtpPacketType.V_H265;
 				case V_MJPEG -> RtpPacketType.V_MJPEG;
+				case V_VP8 -> RtpPacketType.V_VP8;
 				default -> throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
 			};
 	}

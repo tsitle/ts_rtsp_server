@@ -53,7 +53,9 @@ public enum RtpPacketType {
 	/** Video: H264 (clock rate 90000 Hz) */
 	V_H264((byte)(96 + 16)),  // dynamic, custom payload type
 	/** Video: H265 (clock rate 90000 Hz) */
-	V_H265((byte)(96 + 17));  // dynamic, custom payload type
+	V_H265((byte)(96 + 17)),  // dynamic, custom payload type
+	/** Video: H265 (clock rate 90000 Hz) */
+	V_VP8((byte)(96 + 18));  // dynamic, custom payload type
 
 	@SuppressWarnings("unused")
 	public static final byte RTP_PAYLOAD_TYPE_CUSTOM_BOUNDARY_LOWER = 96;
@@ -87,7 +89,8 @@ public enum RtpPacketType {
 						V_H263_1998_UNSUPPORTED,
 						V_H264,
 						V_H265,
-						V_MJPEG
+						V_MJPEG,
+						V_VP8
 					-> true;
 				default -> false;
 			};
@@ -170,9 +173,10 @@ public enum RtpPacketType {
 				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
 				case A_LINEAR_PCM_U08_VAR -> "L8";
 				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> "L16";
-				case V_MJPEG -> "JPEG";
 				case V_H264 -> "H264";
 				case V_H265 -> "H265";
+				case V_MJPEG -> "JPEG";
+				case V_VP8 -> "VP8";
 				default -> throw new IllegalStateException(getClass().getSimpleName() + ".getSdpCodecName(): " +
 						"Unsupported codec: " + this);
 			};
@@ -181,7 +185,7 @@ public enum RtpPacketType {
 	/** Get RTP Clock rate for the packet type (or codec) */
 	public int getVideoCodecRtpClockrate() {
 		return switch(this) {
-				case V_MJPEG, V_H264, V_H265 -> 90000;
+				case V_H264, V_H265, V_MJPEG, V_VP8 -> 90000;
 				default -> throw new IllegalStateException(getClass().getSimpleName() + ".getVideoCodecRtpClockrate(): " +
 						"Unsupported video codec: " + this);
 			};

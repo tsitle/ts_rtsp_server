@@ -523,17 +523,6 @@ final class RtspChildThreadMng {
 					);
 				ctfos.rtpThreadSender = builderAc3.build();
 				break;
-			case V_MJPEG:
-				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
-						BuilderThreadRtpSenderMjpeg.builder(),
-						tmpSiSs,
-						tmpAvSsi,
-						ctfos.idEsSource,
-						tmpAvSsi.videoFps(),
-						xsrcBlock
-					);
-				ctfos.rtpThreadSender = builderMjpeg.build();
-				break;
 			case V_H264:
 				BuilderThreadRtpSenderH264.Builder builderH264 = buildThreadVideo(
 						BuilderThreadRtpSenderH264.builder(),
@@ -555,6 +544,28 @@ final class RtspChildThreadMng {
 						xsrcBlock
 					);
 				ctfos.rtpThreadSender = builderH265.build();
+				break;
+			case V_MJPEG:
+				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
+						BuilderThreadRtpSenderMjpeg.builder(),
+						tmpSiSs,
+						tmpAvSsi,
+						ctfos.idEsSource,
+						tmpAvSsi.videoFps(),
+						xsrcBlock
+					);
+				ctfos.rtpThreadSender = builderMjpeg.build();
+				break;
+			case V_VP8:
+				BuilderThreadRtpSenderVp8.Builder builderVp8 = buildThreadVideo(
+						BuilderThreadRtpSenderVp8.builder(),
+						tmpSiSs,
+						tmpAvSsi,
+						ctfos.idEsSource,
+						tmpAvSsi.videoFps(),
+						xsrcBlock
+					);
+				ctfos.rtpThreadSender = builderVp8.build();
 				break;
 			default:
 				if (! tmpAvSsi.codec().isPcmAudio()) {

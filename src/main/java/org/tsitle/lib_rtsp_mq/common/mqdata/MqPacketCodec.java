@@ -20,9 +20,10 @@ public enum MqPacketCodec {
 	LPCM08U("LPCM08U"),
 	LPCM16S("LPCM16S"),
 
-	MJPEG("MJPEG"),
 	H264("H264"),
-	H265("H265");
+	H265("H265"),
+	MJPEG("MJPEG"),
+	VP8("VP8");
 
 	private final @NonNull String codecName;
 
@@ -40,7 +41,7 @@ public enum MqPacketCodec {
 				"Unknown codec name: '" + codecName + "'");
 	}
 
-	public boolean isVideo() { return (this == MJPEG || this == H264 || this == H265); }
+	public boolean isVideo() { return (this == H264 || this == H265 || this == MJPEG || this == VP8); }
 
 	public boolean isAudio() { return (isPcmAudio() || this == AACLC || this == AC3); }
 
@@ -75,9 +76,10 @@ public enum MqPacketCodec {
 						}
 						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
 					}
-				case MJPEG -> RtpPacketType.V_MJPEG;
 				case H264 -> RtpPacketType.V_H264;
 				case H265 -> RtpPacketType.V_H265;
+				case MJPEG -> RtpPacketType.V_MJPEG;
+				case VP8 -> RtpPacketType.V_VP8;
 			};
 	}
 

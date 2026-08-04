@@ -175,6 +175,8 @@ public abstract class ThreadRtpSenderBase<
 					RtpPacketMjpeg.INNER_HEADER_QT_PRE_SIZE + 128 * 2;
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
+		} else if (rtpPacketType == RtpPacketType.V_VP8) {
+			udpMaxPacketLenDelta += RtpPacketVp8.INNER_HEADER_SIZE_MAX;
 		}
 		if (paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
 			if (this.srtpVarsOutbound.ctxObj == null) {
