@@ -42,6 +42,7 @@ public final class RtpConstants {
 	public static final @NonNull Set<@NonNull FfmpegCodec> RTP_FFMPEG_ALLOWED_CODECS_AUDIO = new HashSet<>() {{
 			add(FfmpegCodec.A_AAC);
 			add(FfmpegCodec.A_AC3);
+			add(FfmpegCodec.A_OPUS);
 			add(FfmpegCodec.A_PCM_ALAW);
 			add(FfmpegCodec.A_PCM_MULAW);
 			add(FfmpegCodec.A_PCM_S16BE);

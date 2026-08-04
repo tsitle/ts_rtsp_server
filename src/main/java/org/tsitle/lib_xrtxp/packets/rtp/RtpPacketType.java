@@ -25,7 +25,7 @@ public enum RtpPacketType {
 	/** Audio: E-AC-3 (clock rate and samplerate variable; channels variable) */
 	A_EAC3_UNSUPPORTED((byte)(96 + 4)),  // dynamic
 	/** Audio: Opus (clock rate and samplerate variable; channels variable) */
-	A_OPUS_UNSUPPORTED((byte)(96 + 5)),  // dynamic
+	A_OPUS((byte)(96 + 5)),  // dynamic
 	/** Audio: PCMA (8 kHz clock rate / samplerate; mono; 8 bits per sample; G.711; a-law scaling) */
 	A_PCMA_8KHZ_MONO((byte)8),  // fixed
 	/** Audio: PCMA (clock rate and samplerate variable; channels variable; 8 bits per sample; G.711; a-law scaling) */
@@ -117,7 +117,7 @@ public enum RtpPacketType {
 				this == A_AAC ||
 				this == A_AC3 ||
 				this == A_EAC3_UNSUPPORTED ||
-				this == A_OPUS_UNSUPPORTED
+				this == A_OPUS
 			);
 	}
 
@@ -168,7 +168,7 @@ public enum RtpPacketType {
 				case A_AAC -> "MPEG4-GENERIC";
 				case A_AC3 -> "AC3";
 				case A_EAC3_UNSUPPORTED -> "EAC3";
-				case A_OPUS_UNSUPPORTED -> "OPUS";
+				case A_OPUS -> "OPUS";
 				case A_PCMA_8KHZ_MONO, A_PCMA_VAR -> "PCMA";
 				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
 				case A_LINEAR_PCM_U08_VAR -> "L8";

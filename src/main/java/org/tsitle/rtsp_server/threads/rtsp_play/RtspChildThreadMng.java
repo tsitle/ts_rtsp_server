@@ -523,6 +523,18 @@ final class RtspChildThreadMng {
 					);
 				ctfos.rtpThreadSender = builderAc3.build();
 				break;
+			case A_OPUS:
+				BuilderThreadRtpSenderOpus.Builder builderOpus = buildThreadAudio(
+						BuilderThreadRtpSenderOpus.builder(),
+						tmpSiSs,
+						tmpAvSsi,
+						ctfos.idEsSource,
+						availableStreamsInterface.computeElementaryStreamSource_virtualFps(ctfos.idEsSource),
+						xsrcBlock,
+						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
+					);
+				ctfos.rtpThreadSender = builderOpus.build();
+				break;
 			case V_H264:
 				BuilderThreadRtpSenderH264.Builder builderH264 = buildThreadVideo(
 						BuilderThreadRtpSenderH264.builder(),

@@ -1,0 +1,179 @@
+package org.tsitle.rtsp_server.threads.rtp.codec_a_opus;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
+import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketOpus;
+import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
+import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
+import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
+import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
+import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromDemuxMs;
+import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromFile;
+import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromMq;
+import org.tsitle.rtsp_server.threads.rtp.FrameData;
+import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
+import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderOpus;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
+import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+
+import java.util.Objects;
+
+public final class ThreadRtpSenderOpus<
+			AVSTRIC extends AvStreamIncomingBase,
+			FGAV extends FrameGrabberAvBase<AVSTRIC>
+		> extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioOpusInfo, FGAV>> {
+
+	private final ParamsThreadRtpSenderOpus paramsOpus;
+
+	private final AudioOpusInfo curFrameOpusInfo = new AudioOpusInfo();
+	private @Nullable RtpPacketOpus cachePlainPacket = null;
+
+	private int lastSpciad = -1;
+
+	/**
+	 * Constructor.
+	 * @param avStreamIncomingType Class of the AvStreamIncoming object
+	 * @param frameGrabberAvType Class of the FrameGrabberAv object
+	 * @param paramsCommon Common thread parameters
+	 * @param paramsAudioCommon Common Audio thread parameters
+	 * @param paramsOpus Thread-specific parameters
+	 */
+	public ThreadRtpSenderOpus(
+				Class<AVSTRIC> avStreamIncomingType,
+				Class<FGAV> frameGrabberAvType,
+				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
+				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
+				@NonNull ParamsThreadRtpSenderOpus paramsOpus
+			) {
+		super(
+				avStreamIncomingType,
+				frameGrabberAvType,
+				paramsCommon,
+				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerate().getSrHz(),
+				RtpPacketType.A_OPUS
+			);
+
+		//
+		this.rtpTicksPerFrame = paramsAudioCommon.getRtpAudioSpf();
+		if (this.rtpTicksPerFrame < 1L) {
+			this.rtpTicksPerFrame = 1L;  // it is necessary to determine this for each PCM frame (or at least once)
+		}
+
+		//
+		paramsAudioCommon.validate();
+		paramsOpus.validate();
+		this.paramsOpus = paramsOpus.clone();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public synchronized void notifyCongestionLevelChange(int congestionLevel) {
+		if (threadDataProv != null) {
+			threadDataProv.notifyCongestionLevelChange(congestionLevel);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected @NonNull ThreadDataProvBase<AudioOpusInfo, FGAV> newThreadDataProv() {
+		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsFile.class) {
+			ThreadDataProvOpusFromFile resObj = new ThreadDataProvOpusFromFile(
+					paramsCommon,
+					paramsOpus,
+					10,
+					paramsCommon.getDebugRewindMediaFiles()
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsMq.class) {
+			ThreadDataProvOpusFromMq resObj = new ThreadDataProvOpusFromMq(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
+			ThreadDataProvOpusFromDemuxMs resObj = new ThreadDataProvOpusFromDemuxMs(
+					paramsCommon
+				);
+			@SuppressWarnings("unchecked")
+			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			return typedProvider;
+		}
+		throw new RuntimeException("invalid frameGrabberAvType");
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected @NonNull FrameData cbFrameDataSupplier() {
+		return defaultFrameDataSupplier(curFrameOpusInfo);
+	}
+
+	@Override
+	protected int cbFragmentSizeAdjust(int fragmentSize) {
+		return defaultFragmentSizeAdjust(fragmentSize);
+	}
+
+	@Override
+	protected @NonNull Boolean cbRtpPacketMarkerBitSupplier(int fragmentOffset, boolean isLastFragment) {
+		/*
+		 * Only set the marker bit to 1 if this is the last fragment of the Opus frame.
+		 * See https://datatracker.ietf.org/doc/html/rfc7587#section-4.1
+		 */
+		return isLastFragment;
+	}
+
+	@Override
+	protected @NonNull RtpPacketContainerBase cbRtpPacketPayloadSupplier(@NonNull FrameFragmentData curFragmentData) {
+		prepareRtpPacketDataForFragment(curFragmentData);
+		if (cacheRtpInnerPayloadBufView == null) {
+			throw new IllegalStateException("cacheRtpInnerPayloadBufView == null");
+		}
+		//
+		if (lastSpciad != curFrameOpusInfo.samplesPerChannelInAudioData) {
+			/*
+			 * For Opus, the frame duration can vary from frame to frame, but we need to adjust the sleep time
+			 * and the [rtpTicksPerFrame] at least once
+			 */
+			lastSpciad = curFrameOpusInfo.samplesPerChannelInAudioData;
+			final double tmpFrameDurSecs = ((double)lastSpciad / (double) SampleRateEnum.SR_048000.getSrHz());
+			nextFpsForAdaptiveScheduler = (1.0 / tmpFrameDurSecs);
+
+			nextRtpTicksPerFrame = lastSpciad;
+		}
+		//
+		if (cachePlainPacket == null) {
+			cachePlainPacket = new RtpPacketOpus(
+					cacheParamsBase,
+					curFrameOpusInfo,
+					cacheRtpInnerPayloadBufView
+				);
+		} else {
+			cachePlainPacket.updatePacket(
+					cacheParamsBase,
+					curFrameOpusInfo,
+					cacheRtpInnerPayloadBufView
+				);
+		}
+		if (! paramsCommon.getCryptoIsRtxpEncryptionEnabled()) {
+			return cachePlainPacket;
+		}
+		return encryptRtpPacketPayload(cachePlainPacket);
+	}
+
+}

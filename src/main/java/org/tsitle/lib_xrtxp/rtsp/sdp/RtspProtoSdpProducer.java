@@ -610,7 +610,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		final String tmpA_Map = esInfo.codec().getSdpCodecName() +
 				"/" +
 				(useVideo ? ssVideoRtpClockRate : esInfo.audioSampleRate().getSrHz()) +
-				(useVideo || ! esInfo.codec().isPcmAudio() ? "" : "/" + esInfo.audioChannelCount());
+				(useVideo || (! esInfo.codec().isPcmAudio() && esInfo.codec() != RtpPacketType.A_OPUS) ?
+						"" : "/" + esInfo.audioChannelCount());
 		outputList.add(String.format("a=rtpmap:%d %s", esInfo.codec().getValue(), tmpA_Map));
 		//
 		addAvFmtpLine(esInfo, outputList);

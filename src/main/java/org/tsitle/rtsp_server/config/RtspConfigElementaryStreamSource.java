@@ -544,14 +544,14 @@ public final class RtspConfigElementaryStreamSource {
 
 		//
 		if (filePath.isBlank() && mq == null) {
-			throw new ConfigInvalidException(FNC_NAME + ": No File Path / MQ found " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": No File Path / MQ found" + errMsgSuffix);
 		}
 		if (! filePath.isBlank() && mq != null) {
-			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and MQ " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and MQ" + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath +
-					"' " + errMsgSuffix + " - file not found");
+					"'" + errMsgSuffix + " - file not found");
 		}
 		if (mq != null) {
 			mq.validate(tmpExtSsId);
@@ -564,38 +564,38 @@ public final class RtspConfigElementaryStreamSource {
 		}
 		//noinspection ConstantValue
 		if (internalCodec == null || internalCodec == RtpPacketType.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": No (valid) Codec defined" + errMsgSuffix);
 		}
 		if (! (internalCodec.isAudio() || internalCodec.isVideo())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec" + errMsgSuffix);
 		}
 		if (internalCodec.isVideo() && getVideoFps() == FrameRateEnum.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Video FPS" + errMsgSuffix);
 		}
 		if (internalCodec.isPcmAudio() && getAudioSamplerate() == SampleRateEnum.UNKNOWN) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Sample Rate " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Sample Rate" + errMsgSuffix +
 					" (PCM needs a valid Sample Rate)");
-		}
-		if (internalCodec.isPcmAudio() && getAudioChannelCount() < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
-					" (PCM: min=1, is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
 		if (internalCodec.isPcmAudio() &&
 				(getAudioChannelCount() < 1 || getAudioChannelCount() > RtpConstants.RTP_AUDIO_CHANNELS_MAX)) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Channel Count " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count" + errMsgSuffix +
 					" (PCM: min=1, max=" + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
 					", is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
 		if (internalCodec.isPcmMonoAudio() && getAudioChannelCount() != 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count" + errMsgSuffix +
 					" (should be mono)");
 		}
 		if (internalCodec.isPcmStereoAudio() && getAudioChannelCount() != 2) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count" + errMsgSuffix +
 					" (should be stereo)");
 		}
-		if (internalCodec.isAudio() && getAudioSamplesPerFrame() < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid Audio Samples Per Frame " + errMsgSuffix +
+		if (internalCodec == RtpPacketType.A_OPUS && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid Opus Audio Channel Count" + errMsgSuffix +
+					" (must be mono or stereo)");
+		}
+		if (internalCodec.isPcmAudio() && getAudioSamplesPerFrame() < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Samples Per Frame" + errMsgSuffix +
 					" (needs to be positive)");
 		}
 
@@ -607,7 +607,7 @@ public final class RtspConfigElementaryStreamSource {
 				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
 					break;
 				default:
-					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame " +
+					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame" +
 							errMsgSuffix + " (allowed values: " +
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
 							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
@@ -671,6 +671,7 @@ public final class RtspConfigElementaryStreamSource {
 		return switch (ffmpegCodec) {
 				case A_AAC -> RtpPacketType.A_AAC;
 				case A_AC3 -> RtpPacketType.A_AC3;
+				case A_OPUS -> RtpPacketType.A_OPUS;
 				case A_PCM_ALAW -> {
 						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;

@@ -157,20 +157,20 @@ public final class RtspConfigMuxedStreamSource {
 		}
 
 		//
-		final String errMsgSuffix = "for Muxed-Stream Source ID '" + tmpExtSsId + "'";
+		final String errMsgSuffix = " for Muxed-Stream Source ID '" + tmpExtSsId + "'";
 		if (filePath.isBlank() && rtspUrl.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No File Path nor RTSP URL found " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": No File Path nor RTSP URL found" + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || rtspUrl.isBlank())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and RTSP URL " + errMsgSuffix);
+			throw new ConfigInvalidException(FNC_NAME + ": Cannot have both File Path and RTSP URL" + errMsgSuffix);
 		}
 		if (! (filePath.isBlank() || Path.of(filePath).toFile().exists())) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath + "' " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath + "'" + errMsgSuffix +
 					" - file not found");
 		}
 		if (! rtspUrl.isBlank() &&
 				! (rtspUrl.startsWith("rtsp://") || rtspUrl.startsWith("rtsps://"))) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP URL '" + rtspUrl + "' " + errMsgSuffix +
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP URL '" + rtspUrl + "'" + errMsgSuffix +
 					" - unsupported protocol");
 		}
 
@@ -239,6 +239,10 @@ public final class RtspConfigMuxedStreamSource {
 			}
 		}
 		if (ffSubStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
+			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffSubStreamInfoAudio.ffmpegCodec)) {
+				throw new ConfigInvalidException("Audio sub-stream codec " + ffSubStreamInfoAudio.ffmpegCodec + " is not supported " +
+						errMsgSuffix);
+			}
 			if (ffSubStreamInfoAudio.channelCount < 1) {
 				throw new ConfigInvalidException("Audio sub-stream has no channels " + errMsgSuffix);
 			}
@@ -246,9 +250,8 @@ public final class RtspConfigMuxedStreamSource {
 				throw new ConfigInvalidException("Audio sub-stream with more than " + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
 						" channels " + errMsgSuffix);
 			}
-			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffSubStreamInfoAudio.ffmpegCodec)) {
-				throw new ConfigInvalidException("Audio sub-stream codec " + ffSubStreamInfoAudio.ffmpegCodec + " is not supported " +
-						errMsgSuffix);
+			if (ffSubStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_OPUS && ffSubStreamInfoAudio.channelCount > 2) {
+				throw new ConfigInvalidException("Opus Audio sub-stream with more than 2 channels " + errMsgSuffix);
 			}
 		}
 	}

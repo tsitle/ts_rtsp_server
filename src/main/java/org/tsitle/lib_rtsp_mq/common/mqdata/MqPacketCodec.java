@@ -15,6 +15,7 @@ public enum MqPacketCodec {
 
 	AACLC("AACLC"),
 	AC3("AC3"),
+	OPUS("OPUS"),
 	PCMA("PCMA"),
 	PCMU("PCMU"),
 	LPCM08U("LPCM08U"),
@@ -43,7 +44,7 @@ public enum MqPacketCodec {
 
 	public boolean isVideo() { return (this == H264 || this == H265 || this == MJPEG || this == VP8); }
 
-	public boolean isAudio() { return (isPcmAudio() || this == AACLC || this == AC3); }
+	public boolean isAudio() { return (isPcmAudio() || this == AACLC || this == AC3 || this == OPUS); }
 
 	public boolean isPcmAudio() { return (this == PCMA || this == PCMU || this == LPCM08U || this == LPCM16S); }
 
@@ -54,6 +55,7 @@ public enum MqPacketCodec {
 		return switch (this) {
 				case AACLC -> RtpPacketType.A_AAC;
 				case AC3 -> RtpPacketType.A_AC3;
+				case OPUS -> RtpPacketType.A_OPUS;
 				case PCMA -> {
 						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;
