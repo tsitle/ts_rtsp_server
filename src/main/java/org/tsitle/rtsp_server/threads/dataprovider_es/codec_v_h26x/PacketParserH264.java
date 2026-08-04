@@ -2,13 +2,13 @@ package org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
-import org.tsitle.lib_xrtxp.avdata.VideoH264Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.avdata.subinfo.H264PictureBoundaryInfo;
-import org.tsitle.lib_xrtxp.avdata.subinfo.H264PpsContext;
-import org.tsitle.lib_xrtxp.avdata.subinfo.H264SpsContext;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PictureBoundaryInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PpsContext;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264SpsContext;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 import java.util.HashMap;

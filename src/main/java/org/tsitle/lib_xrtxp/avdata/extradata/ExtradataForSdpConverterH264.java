@@ -2,7 +2,7 @@ package org.tsitle.lib_xrtxp.avdata.extradata;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
 
 import java.util.ArrayList;
 import java.util.List;

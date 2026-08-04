@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.CodecInfoH26xBase;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.CodecInfoH26xBase;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;

@@ -2,10 +2,10 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketPcm;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketPcm;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;

@@ -1,8 +1,8 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;

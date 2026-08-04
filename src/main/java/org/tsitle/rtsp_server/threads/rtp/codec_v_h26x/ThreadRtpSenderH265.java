@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketH265;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketH265;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;
@@ -16,7 +16,7 @@ import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderH265;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 
 public final class ThreadRtpSenderH265<
 			AVSTRIC extends AvStreamIncomingBase,

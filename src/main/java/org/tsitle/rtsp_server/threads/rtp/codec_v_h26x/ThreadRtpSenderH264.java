@@ -2,10 +2,10 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.VideoH264Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketH264;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketH264;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;

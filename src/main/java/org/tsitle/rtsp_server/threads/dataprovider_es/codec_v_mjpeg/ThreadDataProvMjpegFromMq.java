@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;

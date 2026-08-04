@@ -2,9 +2,9 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.VideoVp8Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketVp8;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
 import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;

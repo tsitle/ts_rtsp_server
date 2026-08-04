@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_a_ac3;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.AudioAc3Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;

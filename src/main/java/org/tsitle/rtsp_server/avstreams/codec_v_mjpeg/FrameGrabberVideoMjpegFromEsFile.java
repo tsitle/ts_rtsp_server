@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;

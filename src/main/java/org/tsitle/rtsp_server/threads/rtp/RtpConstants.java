@@ -2,8 +2,8 @@ package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
-import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 
 import java.util.HashSet;
 import java.util.Set;

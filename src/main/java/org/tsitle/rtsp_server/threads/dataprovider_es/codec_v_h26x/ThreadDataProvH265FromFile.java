@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;

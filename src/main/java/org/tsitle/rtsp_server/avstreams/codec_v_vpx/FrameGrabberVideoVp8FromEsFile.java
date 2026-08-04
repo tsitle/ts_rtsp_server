@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.VideoVp8Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Parser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.AudioPcmInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;

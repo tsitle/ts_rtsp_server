@@ -2,8 +2,8 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_ac3;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketAc3;
+import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAc3;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.*;

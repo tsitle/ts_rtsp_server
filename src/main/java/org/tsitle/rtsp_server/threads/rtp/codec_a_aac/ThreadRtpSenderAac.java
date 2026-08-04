@@ -2,10 +2,10 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketAac;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAac;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;

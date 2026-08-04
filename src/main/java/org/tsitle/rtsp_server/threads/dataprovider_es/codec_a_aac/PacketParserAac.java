@@ -1,8 +1,8 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.AudioAacParser;
-import org.tsitle.lib_xrtxp.avdata.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacParser;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 

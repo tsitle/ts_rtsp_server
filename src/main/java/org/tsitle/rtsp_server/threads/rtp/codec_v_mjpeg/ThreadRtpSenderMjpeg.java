@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketMjpeg;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
@@ -16,7 +16,7 @@ import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
-import org.tsitle.lib_xrtxp.avdata.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 
 public final class ThreadRtpSenderMjpeg<
 			AVSTRIC extends AvStreamIncomingBase,

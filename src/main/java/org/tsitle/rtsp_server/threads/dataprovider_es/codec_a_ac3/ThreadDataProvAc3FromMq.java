@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_ac3;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.AudioAc3Info;
+import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
