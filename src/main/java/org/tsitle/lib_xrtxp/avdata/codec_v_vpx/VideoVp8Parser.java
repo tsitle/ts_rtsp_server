@@ -2,12 +2,15 @@ package org.tsitle.lib_xrtxp.avdata.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 public final class VideoVp8Parser {
 
 	public static final byte[] VP8_CUSTOM_FRAME_START_MAGICBYTES = {
-			(byte)'V', (byte)'P', (byte)'8', (byte)'_', (byte)'C', (byte)'U', (byte)'S', (byte)'T', (byte)'O', (byte)'M'};
+			(byte)'V', (byte)'P', (byte)'8', (byte)'_', (byte)'C', (byte)'U', (byte)'S', (byte)'T', (byte)'O', (byte)'M'
+		};
+	public static final int VP8_CUSTOM_HEADER_SIZE = VP8_CUSTOM_FRAME_START_MAGICBYTES.length + 4;
 
 	public static final int VP8_HEADER_SIZE = 3;
 
@@ -24,6 +27,28 @@ public final class VideoVp8Parser {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
+	 * Parses the VP8 payload length from the given VP8 frame and calculates the remaining payload length to read.
+	 * @param vp8Frame VP8 frame
+	 * @return Remaining number of bytes to read
+	 * @throws IllegalArgumentException If VP8 data size is invalid
+	 */
+	public static int getRemainingVp8PayloadLengthToRead(@NonNull BufferExt vp8Frame) throws AvInvalidCodecDataException {
+		if (vp8Frame.getUsed() < VP8_CUSTOM_HEADER_SIZE) {
+			throw new IllegalArgumentException("Invalid VP8 data size");
+		}
+
+		VideoVp8Parser vp8Parser = new VideoVp8Parser();
+		VideoVp8Info vp8Info = vp8Parser.parseVp8Data(0L, new BufferView(vp8Frame));
+		if (! vp8Parser.isCustomFileFmt) {
+			throw new IllegalArgumentException("Invalid VP8 data - must be custom file format");
+		}
+
+		return vp8Info.payloadLength;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
 	 * Parses the VP8 data and returns an vp8Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the VP8 data in the VP8 stream (used for error messages)
 	 * @param inputBv VP8 data
@@ -35,17 +60,18 @@ public final class VideoVp8Parser {
 			) throws AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".parseVp8Data()";
 
+		if (inputBv.getLength() < VP8_HEADER_SIZE) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid VP8 data size");
+		}
+
 		VideoVp8Info resObj = new VideoVp8Info();
 
 		resObj.payloadOffs = 0;
-		if (inputBv.getLength() < resObj.payloadOffs + VP8_HEADER_SIZE) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid VP8 data size");
-		}
 		resObj.payloadLength = inputBv.getLength() - resObj.payloadOffs;
 
 		// -------------------------------------------------
 
-		if (inputBv.getLength() > VP8_CUSTOM_FRAME_START_MAGICBYTES.length + 4 + VP8_HEADER_SIZE) {
+		if (inputBv.getLength() > VP8_CUSTOM_HEADER_SIZE + VP8_HEADER_SIZE) {
 			if (isFirstFrame) {
 				isCustomFileFmt = true;
 				for (int x = 0; x < VP8_CUSTOM_FRAME_START_MAGICBYTES.length; x++) {
@@ -61,9 +87,9 @@ public final class VideoVp8Parser {
 						((inputBv.getByte(tmpOffs + 1) << 8) & 0xFF00) |
 						((inputBv.getByte(tmpOffs + 2) << 16) & 0xFF0000) |
 						((inputBv.getByte(tmpOffs + 3) << 24) & 0xFF000000);
-				resObj.payloadOffs = tmpOffs + 4;
+				resObj.payloadOffs += tmpOffs + 4;
 				if (inputBv.getLength() < resObj.payloadOffs + resObj.payloadLength) {
-					throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid VP8 data size in custom fileFmt");
+					throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid VP8 data size in custom file format");
 				}
 			}
 		}

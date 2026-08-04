@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.avstreams.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Parser;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -39,7 +40,7 @@ public final class FrameGrabberVideoVp8FromEsFile extends FrameGrabberAvFromEsFi
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
-			throws InputStreamIoException, InputStreamEosException {
+			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		stTimestamp.clear();
@@ -50,8 +51,12 @@ public final class FrameGrabberVideoVp8FromEsFile extends FrameGrabberAvFromEsFi
 				false,
 				null,
 				null,
-				-1
+				VideoVp8Parser.VP8_CUSTOM_HEADER_SIZE
 			);
+		//
+		int remainingPayloadLength = VideoVp8Parser.getRemainingVp8PayloadLengthToRead(frameBuf);
+		//
+		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}
 
 }
