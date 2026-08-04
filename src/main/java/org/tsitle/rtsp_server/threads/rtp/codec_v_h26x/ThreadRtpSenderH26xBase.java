@@ -4,16 +4,16 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.CodecInfoH26xBase;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.exceptions.InputStreamThreadEndedException;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 
 import java.util.*;
 
@@ -36,7 +36,7 @@ public abstract class ThreadRtpSenderH26xBase<
 
 	private static final int AU_QUEUE_SIZE = 32;
 
-	protected final ParamsThreadRtpSenderVideoCommon paramsVideoCommon;
+	protected final ParamsThreadDpVideoCommon paramsVideoCommon;
 
 	private AuState globalCurAuState = AuState.SEEKING_AU_START;
 	private final ArrayList<H26xNalUnitData<I>> globalAuQueue = new ArrayList<>();
@@ -70,7 +70,7 @@ public abstract class ThreadRtpSenderH26xBase<
 				Class<AVSTRIC> avStreamIncomingType,
 				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadDpVideoCommon paramsVideoCommon,
 				@NonNull RtpPacketType rtpPacketType
 			) {
 		super(

@@ -1,11 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderPcm;
+import org.tsitle.lib_dataprov.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsMq;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
 public final class BuilderThreadRtpSenderPcm {
@@ -15,7 +18,7 @@ public final class BuilderThreadRtpSenderPcm {
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderPcm<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderPcm threadParamsPcm = new ParamsThreadRtpSenderPcm();
+		private final ParamsThreadDpPcm threadParamsPcm = new ParamsThreadDpPcm();
 
 		// Fluent setters
 		public Builder audPcmChannelCount(int v) { this.threadParamsPcm.setAudioChannelCount(v); return self(); }

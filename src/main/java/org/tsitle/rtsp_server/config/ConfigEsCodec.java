@@ -4,13 +4,15 @@ public enum ConfigEsCodec {
 
 	AACLC,
 	AC3,
+	OPUS,
 	PCMA,
 	PCMU,
 	LPCM08U,
 	LPCM16S,
 
-	MJPEG,
 	H264,
-	H265
+	H265,
+	MJPEG,
+	VP8
 
 }

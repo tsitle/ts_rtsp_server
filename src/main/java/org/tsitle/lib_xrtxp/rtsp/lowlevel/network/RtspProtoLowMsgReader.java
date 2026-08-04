@@ -232,11 +232,11 @@ public final class RtspProtoLowMsgReader {
 			throws InputStreamNotReadyException, InputStreamEosException,
 					TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		if (! rtxpTcpReadWrite.canReadRtsp()) {
-			throw new InputStreamNotReadyException();
+			throw new InputStreamNotReadyException();  // @TODO change exception name
 		}
 		Optional<String> optLine = rtxpTcpReadWrite.readRtspLine();
 		if (optLine.isEmpty()) {
-			throw new InputStreamEosException();
+			throw new InputStreamEosException();  // @TODO change exception name
 		}
 		String resS = optLine.get();
 		// remove forbidden characters from the line

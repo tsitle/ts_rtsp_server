@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
@@ -17,8 +18,8 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.exceptions.*;
@@ -26,7 +27,7 @@ import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
@@ -655,7 +656,7 @@ public abstract class ThreadRtpSenderBase<
 			throw new IllegalStateException(fncName + ": frameData.rtpPayloadDataViewPtr == null");
 		}
 		//
-		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile()) {
+		if (paramsCommon.getEsSourceType().orElseThrow().isFromFile() && rtpTsFrameNr.get() > 2) {
 			long tmpDeltaFdsNs = (System.nanoTime() - tmpTsNs);
 			if (tmpDeltaFdsNs > 5_000_000L) {
 				logWarn(fncName, String.format("cbFrameDataSupplier took %.3f us", tmpDeltaFdsNs / 1000.0));

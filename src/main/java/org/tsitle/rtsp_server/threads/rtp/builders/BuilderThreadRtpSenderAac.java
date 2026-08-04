@@ -1,11 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.*;
-import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_aac.ThreadRtpSenderAac;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
 
 public final class BuilderThreadRtpSenderAac {
 
@@ -14,7 +17,7 @@ public final class BuilderThreadRtpSenderAac {
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAac<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderAac threadParamsAac = new ParamsThreadRtpSenderAac();
+		private final ParamsThreadDpAac threadParamsAac = new ParamsThreadDpAac();
 
 		// Fluent setters
 		/*

@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
 
 public abstract class BuilderThreadRtpSenderAudioBase<
 			B extends BuilderThreadRtpSenderAudioBase<B, T>,
@@ -11,10 +11,10 @@ public abstract class BuilderThreadRtpSenderAudioBase<
 		extends BuilderThreadRtpSenderBase<B, T> {
 
 	// Common Audio thread fields
-	protected final ParamsThreadRtpSenderAudioCommon threadParamsAudio = new ParamsThreadRtpSenderAudioCommon();
+	protected final ParamsThreadDpAudioCommon threadParamsAudio = new ParamsThreadDpAudioCommon();
 
 	// Fluent setters
-	public B audComRtpAudioSpf(int v) { this.threadParamsAudio.setRtpAudioSpf(v); return self(); }
+	public B audComRtpAudioSpf(int v) { this.threadParamsAudio.setAudioSpf(v); return self(); }
 	public B audComSamplerate(@NonNull SampleRateEnum v) { this.threadParamsAudio.setAudioSamplerate(v); return self(); }
 
 	//

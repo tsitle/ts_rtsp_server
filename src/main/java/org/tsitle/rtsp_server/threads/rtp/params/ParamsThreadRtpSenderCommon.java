@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.params;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
@@ -10,7 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
-import org.tsitle.rtsp_server.threads.dataprovider_demux.TdpDemuxReadNextAvPacketInterface;
+import org.tsitle.lib_dataprov.threads_demux.TdpDemuxReadNextAvPacketInterface;
 
 import java.net.URI;
 import java.util.Objects;
@@ -118,6 +119,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
 	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
+	private boolean isSetDemuxReadNextAvPacketInterface;
 
 	public ParamsThreadRtpSenderCommon() {
 		super(false, true);
@@ -214,6 +216,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
 	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
 		this.demuxReadNextAvPacketInterface = value;
+		this.isSetDemuxReadNextAvPacketInterface = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -243,6 +246,18 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull ParamsThreadDpCommon copyToThreadDpCommon() {
+		ParamsThreadDpCommon resObj = new ParamsThreadDpCommon();
+		resObj.setLogMsgInterface(getLogMsgInterface().orElseThrow());
+		resObj.setIsVideoThread(getIsVideoThread());
+		resObj.setIdEsSource(getIdEsSource());
+		resObj.setAvStreamIncomingUri(getAvStreamIncomingUri().orElseThrow());
+		resObj.setDemuxReadNextAvPacketInterface(getDemuxReadNextAvPacketInterface().orElseThrow());
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
@@ -265,6 +280,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
+
+		requireIsSet(isSetDemuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private void validateParamValues() {
@@ -292,6 +309,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
+
+		requireNonNull(demuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

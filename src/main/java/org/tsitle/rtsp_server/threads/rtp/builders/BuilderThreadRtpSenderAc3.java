@@ -1,14 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_ac3.ThreadRtpSenderAc3;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAc3;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAc3;
 
 public final class BuilderThreadRtpSenderAc3 {
 
@@ -17,7 +17,7 @@ public final class BuilderThreadRtpSenderAc3 {
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAc3<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderAc3 threadParamsAc3 = new ParamsThreadRtpSenderAc3();
+		private final ParamsThreadDpAc3 threadParamsAc3 = new ParamsThreadDpAc3();
 
 		// Fluent setters
 		/*

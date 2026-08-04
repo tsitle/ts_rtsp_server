@@ -6,21 +6,21 @@ import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_vpx.ThreadDataProvVp8FromDemuxMs;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_vpx.ThreadDataProvVp8FromFile;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_vpx.ThreadDataProvVp8FromMq;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvVp8FromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvVp8FromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvVp8FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVp8;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVp8;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 
 public final class ThreadRtpSenderVp8<
 			AVSTRIC extends AvStreamIncomingBase,
@@ -44,8 +44,8 @@ public final class ThreadRtpSenderVp8<
 				Class<AVSTRIC> avStreamIncomingType,
 				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				@NonNull ParamsThreadRtpSenderVp8 paramsVp8
+				@NonNull ParamsThreadDpVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadDpVp8 paramsVp8
 			) {
 		super(
 				avStreamIncomingType,
@@ -85,7 +85,7 @@ public final class ThreadRtpSenderVp8<
 	protected @NonNull ThreadDataProvBase<VideoVp8Info, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberVideoVp8FromEsFile.class) {
 			ThreadDataProvVp8FromFile resObj = new ThreadDataProvVp8FromFile(
-					paramsCommon,
+					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -95,7 +95,7 @@ public final class ThreadRtpSenderVp8<
 		}
 		if (frameGrabberAvType == FrameGrabberVideoVp8FromEsMq.class) {
 			ThreadDataProvVp8FromMq resObj = new ThreadDataProvVp8FromMq(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoVp8Info, FGAV> typedProvider = (ThreadDataProvBase<VideoVp8Info, FGAV>)resObj;
@@ -103,7 +103,7 @@ public final class ThreadRtpSenderVp8<
 		}
 		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
 			ThreadDataProvVp8FromDemuxMs resObj = new ThreadDataProvVp8FromDemuxMs(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoVp8Info, FGAV> typedProvider = (ThreadDataProvBase<VideoVp8Info, FGAV>)resObj;

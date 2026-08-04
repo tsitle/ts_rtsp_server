@@ -1,0 +1,12 @@
+package org.tsitle.lib_dataprov.threads_es;
+
+import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+
+interface PsParseAndConvertDataInterface<I extends CodecInfoInterface<I>> {
+
+	@NonNull I parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException;
+
+}

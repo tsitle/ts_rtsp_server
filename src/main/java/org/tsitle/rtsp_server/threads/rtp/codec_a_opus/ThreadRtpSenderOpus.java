@@ -7,20 +7,20 @@ import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketOpus;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvBase;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromDemuxMs;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromFile;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_opus.ThreadDataProvOpusFromMq;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderOpus;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.Objects;
@@ -30,7 +30,7 @@ public final class ThreadRtpSenderOpus<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioOpusInfo, FGAV>> {
 
-	private final ParamsThreadRtpSenderOpus paramsOpus;
+	private final ParamsThreadDpOpus paramsOpus;
 
 	private final AudioOpusInfo curFrameOpusInfo = new AudioOpusInfo();
 	private @Nullable RtpPacketOpus cachePlainPacket = null;
@@ -49,8 +49,8 @@ public final class ThreadRtpSenderOpus<
 				Class<AVSTRIC> avStreamIncomingType,
 				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
-				@NonNull ParamsThreadRtpSenderOpus paramsOpus
+				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
+				@NonNull ParamsThreadDpOpus paramsOpus
 			) {
 		super(
 				avStreamIncomingType,
@@ -61,7 +61,7 @@ public final class ThreadRtpSenderOpus<
 			);
 
 		//
-		this.rtpTicksPerFrame = paramsAudioCommon.getRtpAudioSpf();
+		this.rtpTicksPerFrame = paramsAudioCommon.getAudioSpf();
 		if (this.rtpTicksPerFrame < 1L) {
 			this.rtpTicksPerFrame = 1L;  // it is necessary to determine this for each PCM frame (or at least once)
 		}
@@ -89,7 +89,7 @@ public final class ThreadRtpSenderOpus<
 	protected @NonNull ThreadDataProvBase<AudioOpusInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsFile.class) {
 			ThreadDataProvOpusFromFile resObj = new ThreadDataProvOpusFromFile(
-					paramsCommon,
+					paramsCommon.copyToThreadDpCommon(),
 					paramsOpus,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
@@ -100,7 +100,7 @@ public final class ThreadRtpSenderOpus<
 		}
 		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsMq.class) {
 			ThreadDataProvOpusFromMq resObj = new ThreadDataProvOpusFromMq(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
@@ -108,7 +108,7 @@ public final class ThreadRtpSenderOpus<
 		}
 		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
 			ThreadDataProvOpusFromDemuxMs resObj = new ThreadDataProvOpusFromDemuxMs(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;

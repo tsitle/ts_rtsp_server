@@ -1,11 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.*;
-import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderH264;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH264;
 
 public final class BuilderThreadRtpSenderH264 {
 
@@ -14,7 +17,7 @@ public final class BuilderThreadRtpSenderH264 {
 	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderH264<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderH264 threadParamsH264 = new ParamsThreadRtpSenderH264();
+		private final ParamsThreadDpH264 threadParamsH264 = new ParamsThreadDpH264();
 
 		// Fluent setters
 		/*

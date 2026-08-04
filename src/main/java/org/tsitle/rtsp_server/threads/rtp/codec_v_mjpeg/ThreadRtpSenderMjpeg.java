@@ -2,20 +2,22 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.rtsp_server.avstreams.*;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_mjpeg.ThreadDataProvMjpegFromDemuxMs;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_mjpeg.ThreadDataProvMjpegFromFile;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_v_mjpeg.ThreadDataProvMjpegFromMq;
+import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvMjpegFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvMjpegFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvMjpegFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderMjpeg;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMjpeg;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 
 public final class ThreadRtpSenderMjpeg<
@@ -40,8 +42,8 @@ public final class ThreadRtpSenderMjpeg<
 				Class<AVSTRIC> avStreamIncomingType,
 				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				@NonNull ParamsThreadRtpSenderVideoCommon paramsVideoCommon,
-				@NonNull ParamsThreadRtpSenderMjpeg paramsMjpeg
+				@NonNull ParamsThreadDpVideoCommon paramsVideoCommon,
+				@NonNull ParamsThreadDpMjpeg paramsMjpeg
 			) {
 		super(
 				avStreamIncomingType,
@@ -81,7 +83,7 @@ public final class ThreadRtpSenderMjpeg<
 	protected @NonNull ThreadDataProvBase<VideoJpegInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberVideoMjpegFromEsFile.class) {
 			ThreadDataProvMjpegFromFile resObj = new ThreadDataProvMjpegFromFile(
-					paramsCommon,
+					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
@@ -91,7 +93,7 @@ public final class ThreadRtpSenderMjpeg<
 		}
 		if (frameGrabberAvType == FrameGrabberVideoMjpegFromEsMq.class) {
 			ThreadDataProvMjpegFromMq resObj = new ThreadDataProvMjpegFromMq(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;
@@ -99,7 +101,7 @@ public final class ThreadRtpSenderMjpeg<
 		}
 		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
 			ThreadDataProvMjpegFromDemuxMs resObj = new ThreadDataProvMjpegFromDemuxMs(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<VideoJpegInfo, FGAV> typedProvider = (ThreadDataProvBase<VideoJpegInfo, FGAV>)resObj;

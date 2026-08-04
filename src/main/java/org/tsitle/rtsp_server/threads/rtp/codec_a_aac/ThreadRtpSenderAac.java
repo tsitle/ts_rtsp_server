@@ -2,23 +2,25 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
-import org.tsitle.rtsp_server.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAac;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_aac.ThreadDataProvAacFromDemuxMs;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_aac.ThreadDataProvAacFromFile;
-import org.tsitle.rtsp_server.threads.dataprovider_es.codec_a_aac.ThreadDataProvAacFromMq;
-import org.tsitle.rtsp_server.threads.dataprovider_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;
+import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvAacFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvAacFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvAacFromMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAudioCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderAac;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
 
 import java.util.Objects;
 
@@ -27,7 +29,7 @@ public final class ThreadRtpSenderAac<
 			FGAV extends FrameGrabberAvBase<AVSTRIC>
 		> extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioAacInfo, FGAV>> {
 
-	private final ParamsThreadRtpSenderAac paramsAac;
+	private final ParamsThreadDpAac paramsAac;
 
 	private final AudioAacInfo curFrameAacInfo = new AudioAacInfo();
 	private @Nullable RtpPacketAac cachePlainPacket = null;
@@ -44,8 +46,8 @@ public final class ThreadRtpSenderAac<
 				Class<AVSTRIC> avStreamIncomingType,
 				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
-				@NonNull ParamsThreadRtpSenderAudioCommon paramsAudioCommon,
-				@NonNull ParamsThreadRtpSenderAac paramsAac
+				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
+				@NonNull ParamsThreadDpAac paramsAac
 			) {
 		super(
 				avStreamIncomingType,
@@ -56,7 +58,7 @@ public final class ThreadRtpSenderAac<
 			);
 
 		//
-		this.rtpTicksPerFrame = paramsAudioCommon.getRtpAudioSpf();
+		this.rtpTicksPerFrame = paramsAudioCommon.getAudioSpf();
 
 		//
 		paramsAudioCommon.validate();
@@ -81,7 +83,7 @@ public final class ThreadRtpSenderAac<
 	protected @NonNull ThreadDataProvBase<AudioAacInfo, FGAV> newThreadDataProv() {
 		if (frameGrabberAvType == FrameGrabberAudioAacFromEsFile.class) {
 			ThreadDataProvAacFromFile resObj = new ThreadDataProvAacFromFile(
-					paramsCommon,
+					paramsCommon.copyToThreadDpCommon(),
 					paramsAac,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
@@ -92,7 +94,7 @@ public final class ThreadRtpSenderAac<
 		}
 		if (frameGrabberAvType == FrameGrabberAudioAacFromEsMq.class) {
 			ThreadDataProvAacFromMq resObj = new ThreadDataProvAacFromMq(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;
@@ -100,7 +102,7 @@ public final class ThreadRtpSenderAac<
 		}
 		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
 			ThreadDataProvAacFromDemuxMs resObj = new ThreadDataProvAacFromDemuxMs(
-					paramsCommon
+					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
 			ThreadDataProvBase<AudioAacInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioAacInfo, FGAV>)resObj;

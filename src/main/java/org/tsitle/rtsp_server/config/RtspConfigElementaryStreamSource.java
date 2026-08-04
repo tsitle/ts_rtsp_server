@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_dataprov.DpConstants;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoAudio;
 import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoVideo;
@@ -130,7 +131,7 @@ public final class RtspConfigElementaryStreamSource {
 		this.audioChannelCount = -1;
 		this.isPcmAudioBigEndian = false;
 
-		this.aacSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
+		this.aacSamplesPerFrame = DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
 		this.internalAacAudioSpecificConfigHex = ExtradataContainerHex.ofEmpty();
 
 		this.internalHasBeenPostProcessed = false;
@@ -221,10 +222,17 @@ public final class RtspConfigElementaryStreamSource {
 					"for MS Source '" + errMsgUri + "'");
 		}
 		resObj.internalAudioChannelCount = (byte)subStreamInfo.channelCount;
-		if (resObj.internalAudioChannelCount < 1 ||
-				resObj.internalAudioChannelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {  // just in case
-			throw new ConfigInvalidException(FNC_NAME + ": cannot handle ChannelCount value " + subStreamInfo.channelCount + " " +
-					"for MS Source '" + errMsgUri + "'");
+		if (resObj.internalCodec.isPcmAudio() &&
+				(resObj.internalAudioChannelCount < 1 ||
+						resObj.internalAudioChannelCount > DpConstants.DP_PCM_AUDIO_CHANNELS_MAX)) {  // just in case
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle PCM Audio ChannelCount value " +
+					subStreamInfo.channelCount + " " + "for MS Source '" + errMsgUri + "'");
+		}
+		if (resObj.internalCodec == RtpPacketType.A_OPUS &&
+				(resObj.internalAudioChannelCount < 1 ||
+						resObj.internalAudioChannelCount > DpConstants.DP_OPUS_AUDIO_CHANNELS_MAX)) {  // just in case
+			throw new ConfigInvalidException(FNC_NAME + ": cannot handle Opus Audio ChannelCount value " +
+					subStreamInfo.channelCount + " " + "for MS Source '" + errMsgUri + "'");
 		}
 		resObj.internalIsPcmAudioBigEndian = (subStreamInfo.ffmpegCodec == FfmpegCodec.A_PCM_S16BE);
 		resObj.internalAudioSamplesPerFrame = subStreamInfo.samplesPerFrame;
@@ -488,14 +496,16 @@ public final class RtspConfigElementaryStreamSource {
 		MqPacketCodec tmpMqPktCodec = switch (codec) {
 				case AACLC -> MqPacketCodec.AACLC;
 				case AC3 -> MqPacketCodec.AC3;
+				case OPUS -> MqPacketCodec.OPUS;
 				case PCMA -> MqPacketCodec.PCMA;
 				case PCMU -> MqPacketCodec.PCMU;
 				case LPCM08U -> MqPacketCodec.LPCM08U;
 				case LPCM16S -> MqPacketCodec.LPCM16S;
 				//
-				case MJPEG -> MqPacketCodec.MJPEG;
 				case H264 -> MqPacketCodec.H264;
 				case H265 -> MqPacketCodec.H265;
+				case MJPEG -> MqPacketCodec.MJPEG;
+				case VP8 -> MqPacketCodec.VP8;
 			};
 
 		internalCodec = tmpMqPktCodec.convertToRtpPacketType(getAudioSamplerate(), getAudioChannelCount());
@@ -513,7 +523,7 @@ public final class RtspConfigElementaryStreamSource {
 			if (internalCodec == RtpPacketType.A_AAC) {
 				internalAudioSamplesPerFrame = aacSamplesPerFrame;
 			} else if (internalCodec == RtpPacketType.A_AC3) {
-				internalAudioSamplesPerFrame = RtpConstants.RTP_SAMPLES_PER_FRAME_AC3_AUDIO;
+				internalAudioSamplesPerFrame = DpConstants.DP_SAMPLES_PER_FRAME_AC3_AUDIO;
 			} else if (internalCodec.isPcmAudio()) {
 				double tmpSampleIntvMs = 1000.0 / (double)internalAudioSampleRate.getSrHz();
 				double tmpSpF = (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS / tmpSampleIntvMs;
@@ -577,9 +587,9 @@ public final class RtspConfigElementaryStreamSource {
 					" (PCM needs a valid Sample Rate)");
 		}
 		if (internalCodec.isPcmAudio() &&
-				(getAudioChannelCount() < 1 || getAudioChannelCount() > RtpConstants.RTP_AUDIO_CHANNELS_MAX)) {
+				(getAudioChannelCount() < 1 || getAudioChannelCount() > DpConstants.DP_PCM_AUDIO_CHANNELS_MAX)) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count" + errMsgSuffix +
-					" (PCM: min=1, max=" + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
+					" (PCM: min=1, max=" + DpConstants.DP_PCM_AUDIO_CHANNELS_MAX +
 					", is=" + Integer.toUnsignedString(getAudioChannelCount()) + ")");
 		}
 		if (internalCodec.isPcmMonoAudio() && getAudioChannelCount() != 1) {
@@ -590,7 +600,8 @@ public final class RtspConfigElementaryStreamSource {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid PCM Audio Channel Count" + errMsgSuffix +
 					" (should be stereo)");
 		}
-		if (internalCodec == RtpPacketType.A_OPUS && (getAudioChannelCount() < 1 || getAudioChannelCount() > 2)) {
+		if (internalCodec == RtpPacketType.A_OPUS &&
+				(getAudioChannelCount() < 1 || getAudioChannelCount() > DpConstants.DP_OPUS_AUDIO_CHANNELS_MAX)) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid Opus Audio Channel Count" + errMsgSuffix +
 					" (must be mono or stereo)");
 		}
@@ -602,16 +613,16 @@ public final class RtspConfigElementaryStreamSource {
 		//
 		if (enabled && internalCodec == RtpPacketType.A_AAC) {
 			switch (aacSamplesPerFrame) {
-				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
-				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
-				case RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
+				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
+				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
+				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
 					break;
 				default:
 					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame" +
 							errMsgSuffix + " (allowed values: " +
-							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
-							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
-							RtpConstants.RTP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
+							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
+							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
+							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
 			}
 		}
 

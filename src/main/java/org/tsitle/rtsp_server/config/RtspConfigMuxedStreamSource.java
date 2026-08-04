@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_dataprov.DpConstants;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.lib_ffmpeg.demux.*;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
@@ -9,7 +10,6 @@ import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdMsSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
-import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -194,9 +194,9 @@ public final class RtspConfigMuxedStreamSource {
 	private void readSubStreamInfos(@NonNull String extMsId) throws ConfigInvalidException {
 		FfmpegDmxSettingsRsi dmxSettingsRsi = new FfmpegDmxSettingsRsi();
 		dmxSettingsRsi.cfgAllowOnlySpecificCodecsVideo = true;
-		dmxSettingsRsi.cfgAllowedCodecsVideo.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO);
+		dmxSettingsRsi.cfgAllowedCodecsVideo.addAll(DpConstants.DP_FFMPEG_ALLOWED_CODECS_VIDEO);
 		dmxSettingsRsi.cfgAllowOnlySpecificCodecsAudio = true;
-		dmxSettingsRsi.cfgAllowedCodecsAudio.addAll(RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO);
+		dmxSettingsRsi.cfgAllowedCodecsAudio.addAll(DpConstants.DP_FFMPEG_ALLOWED_CODECS_AUDIO);
 
 		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extMsId + "'";
 
@@ -223,7 +223,7 @@ public final class RtspConfigMuxedStreamSource {
 		}
 
 		if (ffSubStreamInfoVideo.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffSubStreamInfoVideo.ffmpegCodec)) {
+			if (! DpConstants.DP_FFMPEG_ALLOWED_CODECS_VIDEO.contains(ffSubStreamInfoVideo.ffmpegCodec)) {
 				throw new ConfigInvalidException("Video sub-stream codec " + ffSubStreamInfoVideo.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
@@ -239,19 +239,22 @@ public final class RtspConfigMuxedStreamSource {
 			}
 		}
 		if (ffSubStreamInfoAudio.ffmpegCodec != FfmpegCodec.UNKNOWN) {
-			if (! RtpConstants.RTP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffSubStreamInfoAudio.ffmpegCodec)) {
+			if (! DpConstants.DP_FFMPEG_ALLOWED_CODECS_AUDIO.contains(ffSubStreamInfoAudio.ffmpegCodec)) {
 				throw new ConfigInvalidException("Audio sub-stream codec " + ffSubStreamInfoAudio.ffmpegCodec + " is not supported " +
 						errMsgSuffix);
 			}
 			if (ffSubStreamInfoAudio.channelCount < 1) {
 				throw new ConfigInvalidException("Audio sub-stream has no channels " + errMsgSuffix);
 			}
-			if (ffSubStreamInfoAudio.channelCount > RtpConstants.RTP_AUDIO_CHANNELS_MAX) {
-				throw new ConfigInvalidException("Audio sub-stream with more than " + RtpConstants.RTP_AUDIO_CHANNELS_MAX +
-						" channels " + errMsgSuffix);
+			if (ffSubStreamInfoAudio.ffmpegCodec.isPcmAudio() &&
+					ffSubStreamInfoAudio.channelCount > DpConstants.DP_PCM_AUDIO_CHANNELS_MAX) {
+				throw new ConfigInvalidException("PCM Audio sub-stream with more than " +
+						DpConstants.DP_PCM_AUDIO_CHANNELS_MAX + " channels " + errMsgSuffix);
 			}
-			if (ffSubStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_OPUS && ffSubStreamInfoAudio.channelCount > 2) {
-				throw new ConfigInvalidException("Opus Audio sub-stream with more than 2 channels " + errMsgSuffix);
+			if (ffSubStreamInfoAudio.ffmpegCodec == FfmpegCodec.A_OPUS &&
+					ffSubStreamInfoAudio.channelCount > DpConstants.DP_OPUS_AUDIO_CHANNELS_MAX) {
+				throw new ConfigInvalidException("Opus Audio sub-stream with more than " +
+						DpConstants.DP_OPUS_AUDIO_CHANNELS_MAX + " channels " + errMsgSuffix);
 			}
 		}
 	}

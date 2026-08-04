@@ -15,7 +15,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.rtsp_server.threads.dataprovider_demux.ThreadDataProvDemux;
+import org.tsitle.lib_dataprov.threads_demux.ThreadDataProvDemux;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;

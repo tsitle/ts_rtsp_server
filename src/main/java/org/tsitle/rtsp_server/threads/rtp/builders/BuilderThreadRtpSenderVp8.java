@@ -1,14 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_vpx.ThreadRtpSenderVp8;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVp8;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVp8;
 
 public final class BuilderThreadRtpSenderVp8 {
 
@@ -17,7 +17,7 @@ public final class BuilderThreadRtpSenderVp8 {
 	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderVp8<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderVp8 threadParamsVp8 = new ParamsThreadRtpSenderVp8();
+		private final ParamsThreadDpVp8 threadParamsVp8 = new ParamsThreadDpVp8();
 
 		// Fluent setters
 		/*

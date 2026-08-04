@@ -1,14 +1,14 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.rtsp_server.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.rtsp_server.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
-import org.tsitle.rtsp_server.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_opus.ThreadRtpSenderOpus;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderOpus;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
 
 public final class BuilderThreadRtpSenderOpus {
 
@@ -17,7 +17,7 @@ public final class BuilderThreadRtpSenderOpus {
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderOpus<?, ?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadRtpSenderOpus threadParamsOpus = new ParamsThreadRtpSenderOpus();
+		private final ParamsThreadDpOpus threadParamsOpus = new ParamsThreadDpOpus();
 
 		// Fluent setters
 		/*

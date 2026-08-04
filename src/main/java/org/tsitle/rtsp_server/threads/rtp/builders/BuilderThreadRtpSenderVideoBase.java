@@ -1,6 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderVideoCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 
 public abstract class BuilderThreadRtpSenderVideoBase<
 			B extends BuilderThreadRtpSenderVideoBase<B, T>,
@@ -9,7 +9,7 @@ public abstract class BuilderThreadRtpSenderVideoBase<
 		extends BuilderThreadRtpSenderBase<B, T> {
 
 	// Common Video thread fields
-	protected final ParamsThreadRtpSenderVideoCommon threadParamsVideo = new ParamsThreadRtpSenderVideoCommon();
+	protected final ParamsThreadDpVideoCommon threadParamsVideo = new ParamsThreadDpVideoCommon();
 
 	// Fluent setters
 	/*
