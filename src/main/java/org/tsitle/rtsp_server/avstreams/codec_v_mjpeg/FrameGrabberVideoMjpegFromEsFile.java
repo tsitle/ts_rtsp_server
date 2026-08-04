@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.avstreams.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.VideoJpegParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
@@ -10,8 +11,6 @@ import org.tsitle.rtsp_server.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberVideoMjpegFromEsFile extends FrameGrabberAvFromEsFileBase {
-
-	private static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
 
 	/**
 	 * Constructor.
@@ -25,8 +24,8 @@ public final class FrameGrabberVideoMjpegFromEsFile extends FrameGrabberAvFromEs
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				MJPEG_FRAME_START_MAGICBYTES,
-				MJPEG_FRAME_START_MAGICBYTES.length * 8
+				VideoJpegParser.MJPEG_FRAME_START_MAGICBYTES,
+				VideoJpegParser.MJPEG_FRAME_START_MAGICBYTES.length * 8
 			);
 	}
 

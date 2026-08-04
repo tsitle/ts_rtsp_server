@@ -11,6 +11,9 @@ import org.tsitle.lib_xrtxp.common.helpers.BitWriterHelper;
 
 public final class AudioAacParser {
 
+	/** AAC Magic Bytes (12 bits long) */
+	public static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};
+
 	public static final int AAC_HEADER_SIZE_MIN = 7;
 	public static final int AAC_HEADER_SIZE_MAX = 9;
 	/** Maximum sampling frequency in Hz for AAC Level 4 (48 kHz) */
@@ -221,8 +224,6 @@ public final class AudioAacParser {
 		bitWriter.writeBits(samplingFrequency.index, 4);
 		// if (samplingFrequencyIndex==0xf) then the next 24 bits would be the actual sampling frequency
 		bitWriter.writeBits(channelConfig, 4);
-
-		bitWriter.flush();
 
 		ExtradataContainerHex tmpEd = ExtradataContainerHex.ofAac(
 				bytesToHexString(bitWriter.toByteArray())

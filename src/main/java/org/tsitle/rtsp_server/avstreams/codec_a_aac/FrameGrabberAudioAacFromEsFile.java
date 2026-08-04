@@ -13,9 +13,6 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFileBase {
 
-	/** AAC Magic Bytes (12 bits long) */
-	public static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};
-
 	/**
 	 * Constructor.
 	 * @param avStreamIncoming Incoming A/V stream
@@ -26,7 +23,7 @@ public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFi
 		super(
 				null,
 				avStreamIncoming,
-				AAC_FRAME_START_MAGICBYTES,
+				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
 				12
 			);
 	}
@@ -43,7 +40,7 @@ public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFi
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				AAC_FRAME_START_MAGICBYTES,
+				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
 				12
 			);
 	}

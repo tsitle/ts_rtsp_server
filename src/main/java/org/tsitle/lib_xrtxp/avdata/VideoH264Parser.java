@@ -35,6 +35,9 @@ public final class VideoH264Parser {
 		this.mapPpsContext = mapPpsContext;
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Parses the H264 data and returns an H264Info object with the parsed information.
 	 * @param debugStreamOffset Offset of the H264 data in the H264 stream (used for error messages)
@@ -139,7 +142,6 @@ public final class VideoH264Parser {
 		return resObj;
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public boolean haveAllRequiredMetadataPackets() {

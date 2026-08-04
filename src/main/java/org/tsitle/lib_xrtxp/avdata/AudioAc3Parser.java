@@ -9,6 +9,7 @@ import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 
 public final class AudioAc3Parser {
 
+	public static final byte[] AC3_FRAME_START_MAGICBYTES = {(byte)0x0B, (byte)0x77};
 	public static final int AC3_HEADER_SIZE_MIN = 7;
 
 	/**

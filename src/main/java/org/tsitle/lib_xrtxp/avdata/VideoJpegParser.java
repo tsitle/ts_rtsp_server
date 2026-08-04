@@ -11,6 +11,8 @@ import java.util.Objects;
 
 public final class VideoJpegParser {
 
+	public static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
+
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String logThreadId;
 	private long debugStreamOffset = 0;
