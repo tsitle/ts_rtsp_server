@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_rtsp_mq.common.constants.MqConstants;
+import org.tsitle.lib_mq.common.constants.MqConstants;
 import org.tsitle.rtsp_server.exceptions.*;
 
 import java.net.URI;

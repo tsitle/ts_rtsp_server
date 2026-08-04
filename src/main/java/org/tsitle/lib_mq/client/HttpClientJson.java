@@ -1,4 +1,4 @@
-package org.tsitle.lib_rtsp_mq.client;
+package org.tsitle.lib_mq.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;

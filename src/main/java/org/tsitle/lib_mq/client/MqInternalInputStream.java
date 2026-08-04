@@ -1,13 +1,13 @@
-package org.tsitle.lib_rtsp_mq.client;
+package org.tsitle.lib_mq.client;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_rtsp_mq.common.MqInternalSub;
-import org.tsitle.lib_rtsp_mq.common.mqdata.MqPacketAv;
+import org.tsitle.lib_mq.common.MqInternalSub;
+import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_rtsp_mq.exceptions.MqException;
+import org.tsitle.lib_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.IOException;

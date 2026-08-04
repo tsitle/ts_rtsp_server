@@ -1,8 +1,8 @@
-package org.tsitle.lib_rtsp_mq.common;
+package org.tsitle.lib_mq.common;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelId;
-import org.tsitle.lib_rtsp_mq.common.cbtypes.MqChannelBusChannelName;
+import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelId;
+import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelName;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.SocketType;

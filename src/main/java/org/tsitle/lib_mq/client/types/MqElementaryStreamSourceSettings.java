@@ -1,7 +1,7 @@
-package org.tsitle.lib_rtsp_mq.client.types;
+package org.tsitle.lib_mq.client.types;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_rtsp_mq.common.constants.MqConstants;
+import org.tsitle.lib_mq.common.constants.MqConstants;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 
 import java.net.URI;

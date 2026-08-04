@@ -1,4 +1,4 @@
-package org.tsitle.lib_rtsp_mq.common.cbtypes;
+package org.tsitle.lib_mq.common.cbtypes;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;

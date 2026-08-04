@@ -1,4 +1,4 @@
-package org.tsitle.lib_rtsp_mq.common.mqdata;
+package org.tsitle.lib_mq.common.mqdata;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;

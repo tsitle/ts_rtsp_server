@@ -1,4 +1,4 @@
-package org.tsitle.lib_rtsp_mq.common;
+package org.tsitle.lib_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.zeromq.ZContext;

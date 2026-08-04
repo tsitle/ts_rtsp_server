@@ -1,4 +1,4 @@
-package org.tsitle.lib_rtsp_mq.common.constants;
+package org.tsitle.lib_mq.common.constants;
 
 public final class MqConstants {
 
