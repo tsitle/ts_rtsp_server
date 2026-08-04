@@ -30,7 +30,6 @@ public final class ExtradataFromSdpHelper {
 			) {
 		return switch (codec) {
 				case A_AAC -> buildAacEncoderExtradataFromSdp(sdpData);
-				case A_OPUS_UNSUPPORTED -> buildOpusEncoderExtradataFromSdp(sdpData);
 				case V_H264 -> buildH264EncoderExtradataFromSdp(outputH26xAsAnnexB, sdpData);
 				case V_H265 -> buildH265EncoderExtradataFromSdp(outputH26xAsAnnexB, sdpData);
 				default -> ExtradataContainerHex.ofEmpty();
@@ -148,27 +147,6 @@ public final class ExtradataFromSdpHelper {
 			return ExtradataContainerHex.ofH265_annexB(resS);
 		}
 		return ExtradataFromSdpConverterH26x.encodeH265NalUnitsBase64ToHex_hvcc(nuSps, nuPps, nuVps);
-	}
-
-	/**
-	 * Convert SDP data to an output that is suitable for use as the
-	 * 'extradata' for an Opus audio stream with FFmpeg.
-	 * @param sdpData Codec-specific SDP data
-	 * @return Hex-encoded 'extradata'
-	 */
-	public static @NonNull ExtradataContainerHex buildOpusEncoderExtradataFromSdp(
-				@NonNull ExtradataContainerSdp sdpData
-			) {
-		final String FNC_NAME = ExtradataFromSdpHelper.class.getSimpleName() + ".buildOpusEncoderExtradataFromSdp()";
-
-		if (sdpData.isEmpty()) {
-			throw new IllegalArgumentException(FNC_NAME + ": sdpData is empty");
-		}
-		if (! sdpData.isCodecOpus()) {
-			throw new IllegalArgumentException(FNC_NAME + ": sdpData is not for Opus");
-		}
-
-		return ExtradataContainerHex.ofOpus(sdpData.getEd());
 	}
 
 }

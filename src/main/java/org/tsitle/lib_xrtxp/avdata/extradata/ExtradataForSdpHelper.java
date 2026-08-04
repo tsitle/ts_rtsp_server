@@ -27,7 +27,6 @@ public final class ExtradataForSdpHelper {
 			) {
 		return switch (codec) {
 				case A_AAC -> internalBuildAacExtradataForSdp(ExtradataContainerHex.ofAac(extradataHexStr));
-				case A_OPUS_UNSUPPORTED -> internalBuildOpusExtradataForSdp(ExtradataContainerHex.ofOpus(extradataHexStr));
 				case V_H264 -> internalBuildH264ExtradataForSdp(
 						true,
 						ExtradataContainerHex.ofH264_annexB(extradataHexStr)
@@ -54,7 +53,6 @@ public final class ExtradataForSdpHelper {
 			) {
 		return switch (codec) {
 				case A_AAC -> internalBuildAacExtradataForSdp(extradataHex);
-				case A_OPUS_UNSUPPORTED -> internalBuildOpusExtradataForSdp(extradataHex);
 				case V_H264 -> internalBuildH264ExtradataForSdp(false, extradataHex);
 				case V_H265 -> internalBuildH265ExtradataForSdp(false, extradataHex);
 				default -> ExtradataContainerSdp.ofEmpty();
@@ -169,25 +167,6 @@ public final class ExtradataForSdpHelper {
 				@NonNull ExtradataContainerHex extradataHex
 			) {
 		return ExtradataForSdpConverterH265.buildForSdp(noExpectations, extradataHex);
-	}
-
-	/**
-	 * Build Opus audio 'extradata' in a codec-specific format.<br />
-	 * The output can be used directly in the SDP output.
-	 * @param extradataHex Hex-encoded 'extradata'
-	 * @return Codec-specific 'extradata'
-	 */
-	private static @NonNull ExtradataContainerSdp internalBuildOpusExtradataForSdp(
-				@NonNull ExtradataContainerHex extradataHex
-			) {
-		final String FNC_NAME = ExtradataForSdpHelper.class.getSimpleName()+ ".internalBuildOpusExtradataForSdp()";
-
-		if (! extradataHex.isCodecOpus()) {
-			throw new IllegalArgumentException(FNC_NAME + ": Extradata is not for Opus");
-		}
-
-		// output == input for Opus
-		return ExtradataContainerSdp.ofOpus(extradataHex.getEd());
 	}
 
 }
