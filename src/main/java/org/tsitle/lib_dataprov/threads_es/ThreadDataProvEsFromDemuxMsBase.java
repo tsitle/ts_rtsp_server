@@ -10,13 +10,13 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromDemuxMs> {
+public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterface<I>>
+		extends ThreadDataProvEsBase<I, AvStreamIncomingFromDemuxMs> {
 
-	private @Nullable PacketSplitter<I, FrameGrabberAvFromDemuxMs> packetSplitter = null;
+	private @Nullable PacketSplitter<I, AvStreamIncomingFromDemuxMs> packetSplitter = null;
 	private final boolean needMagicBytes;
 	private final boolean needConvertData;
 	private final boolean canReadFrameLenFromAvInfo;
@@ -30,7 +30,7 @@ public abstract class ThreadDataProvFromDemuxMsBase<I extends CodecInfoInterface
 	 * @param needConvertData Do we need the 'Parse and Convert' callback? (if false, then we need 'Parse Only' callback)
 	 * @param canReadFrameLenFromAvInfo Can we read the frame length from the A/V info?
 	 */
-	protected ThreadDataProvFromDemuxMsBase(
+	protected ThreadDataProvEsFromDemuxMsBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				boolean needMagicBytes,
 				boolean needConvertData,

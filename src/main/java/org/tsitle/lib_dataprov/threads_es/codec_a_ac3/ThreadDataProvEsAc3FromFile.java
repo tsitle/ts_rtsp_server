@@ -6,23 +6,44 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsMq;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromMqBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
 
-public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<AudioAc3Info> {
+public final class ThreadDataProvEsAc3FromFile extends ThreadDataProvEsFromFileBase<AudioAc3Info> {
 
 	private final @NonNull PacketParserAc3 packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
+	 * @param queueSize Size of the input queue
+	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvAc3FromMq(
-				@NonNull ParamsThreadDpCommon paramsCommon
+	public ThreadDataProvEsAc3FromFile(
+				@NonNull ParamsThreadDpCommon paramsCommon,
+				int queueSize,
+				boolean debugRewindMediaFiles
 			) {
-		super(paramsCommon, false, false, true);
+		super(
+				paramsCommon,
+				queueSize,
+				debugRewindMediaFiles,
+				false
+			);
 
 		this.packetParser = new PacketParserAc3();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Receives a notification about the current congestion level.
+	 * @param congestionLevel Congestion level (range 0..4)
+	 */
+	@Override
+	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
+		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,7 +54,7 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAc3FromEsMq(
+		this.frameGrabber = new FrameGrabberAudioAc3FromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
@@ -47,16 +68,6 @@ public final class ThreadDataProvAc3FromMq extends ThreadDataProvFromMqBase<Audi
 	@Override
 	protected @NonNull AudioAc3Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
-	}
-
-	@Override
-	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
-		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
-	}
-
-	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull AudioAc3Info avInfo) {
-		return avInfo.frameLength;
 	}
 
 }

@@ -6,44 +6,23 @@ import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsFile;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromMqBase;
 
-public final class ThreadDataProvVp8FromFile extends ThreadDataProvFromFileBase<VideoVp8Info> {
+public final class ThreadDataProvEsVp8FromMq extends ThreadDataProvEsFromMqBase<VideoVp8Info> {
 
 	private final @NonNull PacketParserVp8 packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
-	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvVp8FromFile(
-				@NonNull ParamsThreadDpCommon paramsCommon,
-				int queueSize,
-				boolean debugRewindMediaFiles
+	public ThreadDataProvEsVp8FromMq(
+				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
-		super(
-				paramsCommon,
-				queueSize,
-				debugRewindMediaFiles,
-				false
-			);
+		super(paramsCommon, true, false, false);
 
 		this.packetParser = new PacketParserVp8();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Receives a notification about the current congestion level.
-	 * @param congestionLevel Congestion level (range 0..4)
-	 */
-	@Override
-	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
-		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -54,7 +33,7 @@ public final class ThreadDataProvVp8FromFile extends ThreadDataProvFromFileBase<
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoVp8FromEsFile(
+		this.frameGrabber = new FrameGrabberVideoVp8FromEsMq(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
@@ -68,6 +47,16 @@ public final class ThreadDataProvVp8FromFile extends ThreadDataProvFromFileBase<
 	@Override
 	protected @NonNull VideoVp8Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(debugStreamOffset, inputBv);
+	}
+
+	@Override
+	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
+	}
+
+	@Override
+	protected int readFrameLenFromAvInfo(final @NonNull VideoVp8Info avInfo) {
+		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
 	}
 
 }

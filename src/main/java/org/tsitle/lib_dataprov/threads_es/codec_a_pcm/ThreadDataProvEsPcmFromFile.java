@@ -1,29 +1,35 @@
-package org.tsitle.lib_dataprov.threads_es.codec_a_aac;
+package org.tsitle.lib_dataprov.threads_es.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
 
-public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<AudioAacInfo> {
+public final class ThreadDataProvEsPcmFromFile extends ThreadDataProvEsFromFileBase<AudioPcmInfo> {
 
-	private final @NonNull PacketParserAac packetParser;
+	private final @NonNull ParamsThreadDpAudioCommon paramsAudioCommon;
+	private final @NonNull ParamsThreadDpPcm paramsPcm;
+
+	private final @NonNull PacketParserPcm packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
-	 * @param paramsAac Thread-specific parameters
+	 * @param paramsAudioCommon Common Audio thread parameters
+	 * @param paramsPcm Thread-specific parameters
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvAacFromFile(
+	public ThreadDataProvEsPcmFromFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
-				@NonNull ParamsThreadDpAac paramsAac,
+				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
+				@NonNull ParamsThreadDpPcm paramsPcm,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -35,9 +41,16 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 			);
 
 		//
-		paramsAac.validate();
+		paramsAudioCommon.validate();
+		this.paramsAudioCommon = paramsAudioCommon.clone();
+		paramsPcm.validate();
+		this.paramsPcm = paramsPcm.clone();
 		//
-		this.packetParser = new PacketParserAac();
+		this.packetParser = new PacketParserPcm(
+				paramsPcm.getAudioChannelCount(),
+				paramsPcm.getAudioBitsPerSample(),
+				paramsAudioCommon.getAudioSamplerate()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,19 +73,23 @@ public final class ThreadDataProvAacFromFile extends ThreadDataProvFromFileBase<
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAacFromEsFile(
+		this.frameGrabber = new FrameGrabberAudioPcmFromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
-				avStreamIncoming
+				avStreamIncoming,
+				paramsPcm.getAudioChannelCount(),
+				paramsPcm.getAudioBitsPerSample(),
+				paramsAudioCommon.getAudioSpf(),
+				paramsPcm.getIsAudioInputBigEndian()
 			);
 	}
 
 	@Override
-	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull AudioPcmInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull AudioPcmInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
 	}
 

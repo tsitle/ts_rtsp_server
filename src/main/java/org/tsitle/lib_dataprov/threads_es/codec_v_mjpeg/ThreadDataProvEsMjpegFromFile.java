@@ -7,9 +7,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
 
-public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBase<VideoJpegInfo> {
+public final class ThreadDataProvEsMjpegFromFile extends ThreadDataProvEsFromFileBase<VideoJpegInfo> {
 
 	private final @NonNull PacketPacMjpeg packetPac;
 
@@ -19,7 +19,7 @@ public final class ThreadDataProvMjpegFromFile extends ThreadDataProvFromFileBas
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvMjpegFromFile(
+	public ThreadDataProvEsMjpegFromFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles

@@ -19,7 +19,6 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.exceptions.*;
@@ -27,7 +26,7 @@ import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
@@ -45,8 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ThreadRtpSenderBase<
 			I extends CodecInfoInterface<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			FGAV extends FrameGrabberAvBase<AVSTRIC>,
-			TDP extends ThreadDataProvBase<I, FGAV>
+			TDP extends ThreadDataProvEsBase<I, AVSTRIC>
 		> extends ThreadPausableBase {
 
 	private record Sf_sfasf_Result(boolean resB, boolean isLastPktOfFrame) { }
@@ -59,7 +57,6 @@ public abstract class ThreadRtpSenderBase<
 
 	protected final Class<AVSTRIC> avStreamIncomingType;
 	protected @Nullable TDP threadDataProv;
-	protected final Class<FGAV> frameGrabberAvType;
 
 	/** Buffer view for reading the RTP/XXX payload */
 	protected @Nullable BufferView cacheRtpInnerPayloadBufView = null;
@@ -105,14 +102,12 @@ public abstract class ThreadRtpSenderBase<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Thread parameters
 	 * @param rtpClockrate RTP Clock Rate
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderBase(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				int rtpClockrate,
 				@NonNull RtpPacketType rtpPacketType
@@ -134,7 +129,6 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		this.avStreamIncomingType = avStreamIncomingType;
-		this.frameGrabberAvType = frameGrabberAvType;
 		//
 		this.paramsCommon = paramsCommon.clone();
 		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);

@@ -36,6 +36,12 @@ public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
+	 * Gets the minimum length of the Magic Bytes for frame start detection.
+	 * @return Length of the Magic Bytes array in bits
+	 */
+	public abstract int getMinimumMagicBytesLengthBits();
+
+	/**
 	 * Checks if we can still read data from the stream.
 	 * @return True if the end of the stream has been reached, false otherwise
 	 */

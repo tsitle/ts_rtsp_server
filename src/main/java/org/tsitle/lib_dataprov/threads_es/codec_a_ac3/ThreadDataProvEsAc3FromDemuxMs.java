@@ -7,9 +7,9 @@ import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromDemuxMsBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
 
-public final class ThreadDataProvAc3FromDemuxMs extends ThreadDataProvFromDemuxMsBase<AudioAc3Info> {
+public final class ThreadDataProvEsAc3FromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<AudioAc3Info> {
 
 	private final @NonNull PacketParserAc3 packetParser;
 
@@ -17,7 +17,7 @@ public final class ThreadDataProvAc3FromDemuxMs extends ThreadDataProvFromDemuxM
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvAc3FromDemuxMs(
+	public ThreadDataProvEsAc3FromDemuxMs(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
 		super(paramsCommon, false, false, true);

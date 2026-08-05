@@ -388,7 +388,7 @@ final class RtspChildThreadMng {
 		ctfos.rtcpThreadSendRecv.start();
 	}
 
-	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
+	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
 			B buildThreadRtpSender(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
@@ -436,7 +436,7 @@ final class RtspChildThreadMng {
 				.comAvStreamIncomingUri(avSsi.inputUri());
 	}
 
-	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
+	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
 			B buildThreadVideo(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
@@ -449,7 +449,7 @@ final class RtspChildThreadMng {
 				.comIsVideoThread(true);
 	}
 
-	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?, ?>>
+	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
 			B buildThreadAudio(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,

@@ -14,7 +14,7 @@ public final class ChildThreadsForOneStream {
 	public final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
 	public final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 
-	public @Nullable ThreadRtpSenderBase<?, ?, ?, ?> rtpThreadSender = null;
+	public @Nullable ThreadRtpSenderBase<?, ?, ?> rtpThreadSender = null;
 
 	public @Nullable ThreadRtcpSendRecv rtcpThreadSendRecv = null;
 	public int rtcpLastTargetCongestionLevel = -1;

@@ -3,6 +3,7 @@ package org.tsitle.lib_dataprov.threads_es;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.ThreadDpBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
@@ -18,13 +19,13 @@ import java.util.Optional;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV extends FrameGrabberAvBase<?>> extends ThreadDpBase {
+public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>, AVSTRIC extends AvStreamIncomingBase> extends ThreadDpBase {
 
 	protected final @NonNull ParamsThreadDpCommon paramsCommon;
 
 	protected long debugStreamOffset = 0;
 
-	protected @Nullable FGAV frameGrabber;
+	protected @Nullable FrameGrabberAvBase<AVSTRIC> frameGrabber;
 
 	protected final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a frame has been removed from the queue or the thread has been requested to stop */
@@ -34,7 +35,7 @@ public abstract class ThreadDataProvBase<I extends CodecInfoInterface<I>, FGAV e
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	protected ThreadDataProvBase(@NonNull ParamsThreadDpCommon paramsCommon) {
+	protected ThreadDataProvEsBase(@NonNull ParamsThreadDpCommon paramsCommon) {
 		super(paramsCommon.getLogMsgInterface().orElseThrow());
 
 		//

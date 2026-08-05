@@ -7,7 +7,6 @@ import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -20,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
-public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>>
-		extends ThreadDataProvBase<I, FrameGrabberAvFromEsFileBase> {
+public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<I>>
+		extends ThreadDataProvEsBase<I, AvStreamIncomingFromEsFile> {
 
 	private static class DataQueueEntry {
 		final @NonNull BufferExt buf = new BufferExt();
@@ -55,7 +54,7 @@ public abstract class ThreadDataProvFromFileBase<I extends CodecInfoInterface<I>
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 * @param needConvertData If true, the data will be converted before being outputted
 	 */
-	protected ThreadDataProvFromFileBase(
+	protected ThreadDataProvEsFromFileBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles,

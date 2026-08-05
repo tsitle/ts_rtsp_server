@@ -2,20 +2,16 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_opus;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_dataprov.avstreams.*;
 import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketOpus;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
-import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromFile;
-import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvOpusFromMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
@@ -25,10 +21,8 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderOpus<
-			AVSTRIC extends AvStreamIncomingBase,
-			FGAV extends FrameGrabberAvBase<AVSTRIC>
-		> extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, FGAV, ThreadDataProvBase<AudioOpusInfo, FGAV>> {
+public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
+		extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>> {
 
 	private final ParamsThreadDpOpus paramsOpus;
 
@@ -40,21 +34,18 @@ public final class ThreadRtpSenderOpus<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsOpus Thread-specific parameters
 	 */
 	public ThreadRtpSenderOpus(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadDpOpus paramsOpus
 			) {
 		super(
 				avStreamIncomingType,
-				frameGrabberAvType,
 				paramsCommon,
 				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerate().getSrHz(),
 				RtpPacketType.A_OPUS
@@ -86,35 +77,35 @@ public final class ThreadRtpSenderOpus<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvBase<AudioOpusInfo, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsFile.class) {
-			ThreadDataProvOpusFromFile resObj = new ThreadDataProvOpusFromFile(
+	protected @NonNull ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> newThreadDataProv() {
+		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
+			ThreadDataProvEsOpusFromFile resObj = new ThreadDataProvEsOpusFromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsOpus,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAudioOpusFromEsMq.class) {
-			ThreadDataProvOpusFromMq resObj = new ThreadDataProvOpusFromMq(
+		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
+			ThreadDataProvEsOpusFromMq resObj = new ThreadDataProvEsOpusFromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
-			ThreadDataProvOpusFromDemuxMs resObj = new ThreadDataProvOpusFromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
+			ThreadDataProvEsOpusFromDemuxMs resObj = new ThreadDataProvEsOpusFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<AudioOpusInfo, FGAV> typedProvider = (ThreadDataProvBase<AudioOpusInfo, FGAV>)resObj;
+			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		throw new RuntimeException("invalid frameGrabberAvType");
+		throw new RuntimeException("invalid avStreamIncomingType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

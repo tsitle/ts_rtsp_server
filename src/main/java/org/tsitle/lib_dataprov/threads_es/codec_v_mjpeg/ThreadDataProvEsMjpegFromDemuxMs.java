@@ -6,10 +6,10 @@ import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsMq;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromMqBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
 
-public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<VideoJpegInfo> {
+public final class ThreadDataProvEsMjpegFromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<VideoJpegInfo> {
 
 	private final @NonNull PacketPacMjpeg packetPac;
 
@@ -17,7 +17,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvMjpegFromMq(
+	public ThreadDataProvEsMjpegFromDemuxMs(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
 		super(paramsCommon, false, true, false);
@@ -35,7 +35,7 @@ public final class ThreadDataProvMjpegFromMq extends ThreadDataProvFromMqBase<Vi
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoMjpegFromEsMq(
+		this.frameGrabber = new FrameGrabberAvFromDemuxMs(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);

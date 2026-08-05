@@ -7,9 +7,9 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
 
-public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase<VideoH265Info> {
+public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFileBase<VideoH265Info> {
 
 	private final @NonNull PacketParserH265 packetParser;
 
@@ -19,7 +19,7 @@ public final class ThreadDataProvH265FromFile extends ThreadDataProvFromFileBase
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvH265FromFile(
+	public ThreadDataProvEsH265FromFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles

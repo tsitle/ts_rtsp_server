@@ -25,20 +25,16 @@ public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase<AvSt
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/**
-	 * Checks if we can still read data from the stream.
-	 * @return True if the end of the stream has been reached, false otherwise
-	 */
+	@Override
+	public int getMinimumMagicBytesLengthBits() {
+		throw new RuntimeException(getClass().getSimpleName() + ".getMinimumMagicBytesLengthBits(): not implemented");
+	}
+
 	@Override
 	public boolean haveEos() {
 		return avStreamIncoming.haveEos();
 	}
 
-	/**
-	 * Reads the next video frame from the stream.
-	 * @param frameBuf Output buffer to store the frame in
-	 * @param stTimestamp Output for sample-time timestamp
-	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {

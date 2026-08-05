@@ -1,26 +1,29 @@
-package org.tsitle.lib_dataprov.threads_es.codec_a_ac3;
+package org.tsitle.lib_dataprov.threads_es.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
 
-public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<AudioAc3Info> {
+public final class ThreadDataProvEsAacFromFile extends ThreadDataProvEsFromFileBase<AudioAacInfo> {
 
-	private final @NonNull PacketParserAc3 packetParser;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
+	 * @param paramsAac Thread-specific parameters
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvAc3FromFile(
+	public ThreadDataProvEsAacFromFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
+				@NonNull ParamsThreadDpAac paramsAac,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -31,7 +34,10 @@ public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<
 				false
 			);
 
-		this.packetParser = new PacketParserAc3();
+		//
+		paramsAac.validate();
+		//
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -54,19 +60,19 @@ public final class ThreadDataProvAc3FromFile extends ThreadDataProvFromFileBase<
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAc3FromEsFile(
+		this.frameGrabber = new FrameGrabberAudioAacFromEsFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull AudioAc3Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull AudioAc3Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
 	}
 

@@ -5,11 +5,10 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.CodecInfoH26xBase;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -20,9 +19,8 @@ import java.util.*;
 public abstract class ThreadRtpSenderH26xBase<
 			I extends CodecInfoH26xBase<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			FGAV extends FrameGrabberAvBase<AVSTRIC>,
-			TDP extends ThreadDataProvBase<I, FGAV>
-		> extends ThreadRtpSenderBase<I, AVSTRIC, FGAV, TDP> {
+			TDP extends ThreadDataProvEsBase<I, AVSTRIC>
+		> extends ThreadRtpSenderBase<I, AVSTRIC, TDP> {
 
 	private enum AuState {
 		SEEKING_AU_START,  // Looking for the start of a new AU
@@ -61,21 +59,18 @@ public abstract class ThreadRtpSenderH26xBase<
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param rtpPacketType RTP packet type
 	 */
 	protected ThreadRtpSenderH26xBase(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadDpVideoCommon paramsVideoCommon,
 				@NonNull RtpPacketType rtpPacketType
 			) {
 		super(
 				avStreamIncomingType,
-				frameGrabberAvType,
 				paramsCommon,
 				rtpPacketType.getVideoCodecRtpClockrate(),
 				rtpPacketType

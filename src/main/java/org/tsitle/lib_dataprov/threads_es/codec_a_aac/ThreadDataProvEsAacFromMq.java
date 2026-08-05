@@ -1,28 +1,28 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_vpx;
+package org.tsitle.lib_dataprov.threads_es.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsMq;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromMqBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromMqBase;
 
-public final class ThreadDataProvVp8FromMq extends ThreadDataProvFromMqBase<VideoVp8Info> {
+public final class ThreadDataProvEsAacFromMq extends ThreadDataProvEsFromMqBase<AudioAacInfo> {
 
-	private final @NonNull PacketParserVp8 packetParser;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvVp8FromMq(
+	public ThreadDataProvEsAacFromMq(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
-		super(paramsCommon, true, false, false);
+		super(paramsCommon, false, false, true);
 
-		this.packetParser = new PacketParserVp8();
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,30 +33,30 @@ public final class ThreadDataProvVp8FromMq extends ThreadDataProvFromMqBase<Vide
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoVp8FromEsMq(
+		this.frameGrabber = new FrameGrabberAudioAacFromEsMq(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoVp8Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoVp8Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
-		return packetParser.parseData(debugStreamOffset, inputBv);
+	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(inputBv);
 	}
 
 	@Override
-	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
+	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
 		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoVp8Info avInfo) {
-		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
+	protected int readFrameLenFromAvInfo(final @NonNull AudioAacInfo avInfo) {
+		return avInfo.frameLength;
 	}
 
 }

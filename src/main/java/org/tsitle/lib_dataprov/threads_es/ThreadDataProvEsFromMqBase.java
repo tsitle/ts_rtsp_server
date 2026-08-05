@@ -7,16 +7,16 @@ import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsMqBase;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 
-public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> extends ThreadDataProvBase<I, FrameGrabberAvFromEsMqBase> {
+public abstract class ThreadDataProvEsFromMqBase<I extends CodecInfoInterface<I>>
+		extends ThreadDataProvEsBase<I, AvStreamIncomingFromEsMq> {
 
-	private @Nullable PacketSplitter<I, FrameGrabberAvFromEsMqBase> packetSplitter = null;
+	private @Nullable PacketSplitter<I, AvStreamIncomingFromEsMq> packetSplitter = null;
 	private final boolean needMagicBytes;
 	private final boolean needConvertData;
 	private final boolean canReadFrameLenFromAvInfo;
@@ -30,7 +30,7 @@ public abstract class ThreadDataProvFromMqBase<I extends CodecInfoInterface<I>> 
 	 * @param needConvertData Do we need the 'Parse and Convert' callback? (if false, then we need 'Parse Only' callback)
 	 * @param canReadFrameLenFromAvInfo Can we read the frame length from the A/V info?
 	 */
-	protected ThreadDataProvFromMqBase(
+	protected ThreadDataProvEsFromMqBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				boolean needMagicBytes,
 				boolean needConvertData,

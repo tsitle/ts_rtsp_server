@@ -3,27 +3,27 @@ package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromDemuxMsBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
 
-public final class ThreadDataProvH264FromDemuxMs extends ThreadDataProvFromDemuxMsBase<VideoH264Info> {
+public final class ThreadDataProvEsH265FromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<VideoH265Info> {
 
-	private final @NonNull PacketParserH264 packetParser;
+	private final @NonNull PacketParserH265 packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvH264FromDemuxMs(
+	public ThreadDataProvEsH265FromDemuxMs(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
 		super(paramsCommon, true, false, false);
 
-		this.packetParser = new PacketParserH264();
+		this.packetParser = new PacketParserH265();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -41,12 +41,12 @@ public final class ThreadDataProvH264FromDemuxMs extends ThreadDataProvFromDemux
 	}
 
 	@Override
-	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoH264Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull VideoH265Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(debugStreamOffset, inputBv);
 	}
 
@@ -56,7 +56,7 @@ public final class ThreadDataProvH264FromDemuxMs extends ThreadDataProvFromDemux
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoH264Info avInfo) {
+	protected int readFrameLenFromAvInfo(final @NonNull VideoH265Info avInfo) {
 		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
 	}
 

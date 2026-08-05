@@ -2,49 +2,40 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.*;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketH265;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvBase;
-import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvH265FromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvH265FromFile;
-import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvH265FromMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
+import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH265;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 
-public final class ThreadRtpSenderH265<
-			AVSTRIC extends AvStreamIncomingBase,
-			FGAV extends FrameGrabberAvBase<AVSTRIC>
-		> extends ThreadRtpSenderH26xBase<VideoH265Info, AVSTRIC, FGAV, ThreadDataProvBase<VideoH265Info, FGAV>> {
+public final class ThreadRtpSenderH265<AVSTRIC extends AvStreamIncomingBase>
+		extends ThreadRtpSenderH26xBase<VideoH265Info, AVSTRIC, ThreadDataProvEsBase<VideoH265Info, AVSTRIC>> {
 
 	private @Nullable RtpPacketH265 cachePlainPacket = null;
 
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
-	 * @param frameGrabberAvType Class of the FrameGrabberAv object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsVideoCommon Common Video thread parameters
 	 * @param paramsH265 Thread-specific parameters
 	 */
 	public ThreadRtpSenderH265(
 				Class<AVSTRIC> avStreamIncomingType,
-				Class<FGAV> frameGrabberAvType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadDpVideoCommon paramsVideoCommon,
 				@NonNull ParamsThreadDpH265 paramsH265
 			) {
 		super(
 				avStreamIncomingType,
-				frameGrabberAvType,
 				paramsCommon,
 				paramsVideoCommon,
 				RtpPacketType.V_H265
@@ -58,34 +49,34 @@ public final class ThreadRtpSenderH265<
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvBase<VideoH265Info, FGAV> newThreadDataProv() {
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsFile.class) {
-			ThreadDataProvH265FromFile resObj = new ThreadDataProvH265FromFile(
+	protected @NonNull ThreadDataProvEsBase<VideoH265Info, AVSTRIC> newThreadDataProv() {
+		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
+			ThreadDataProvEsH265FromFile resObj = new ThreadDataProvEsH265FromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
+			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberVideoH26xFromEsMq.class) {
-			ThreadDataProvH265FromMq resObj = new ThreadDataProvH265FromMq(
+		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
+			ThreadDataProvEsH265FromMq resObj = new ThreadDataProvEsH265FromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
+			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		if (frameGrabberAvType == FrameGrabberAvFromDemuxMs.class) {
-			ThreadDataProvH265FromDemuxMs resObj = new ThreadDataProvH265FromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
+			ThreadDataProvEsH265FromDemuxMs resObj = new ThreadDataProvEsH265FromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
 			@SuppressWarnings("unchecked")
-			ThreadDataProvBase<VideoH265Info, FGAV> typedProvider = (ThreadDataProvBase<VideoH265Info, FGAV>)resObj;
+			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
 			return typedProvider;
 		}
-		throw new RuntimeException("invalid frameGrabberAvType");
+		throw new RuntimeException("invalid avStreamIncomingType");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

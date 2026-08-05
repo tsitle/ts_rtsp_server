@@ -6,50 +6,23 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsFile;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromFileBase;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
+import org.tsitle.lib_dataprov.avstreams.codec_a_opus.FrameGrabberAudioOpusFromEsMq;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromMqBase;
 
-public final class ThreadDataProvOpusFromFile extends ThreadDataProvFromFileBase<AudioOpusInfo> {
+public final class ThreadDataProvEsOpusFromMq extends ThreadDataProvEsFromMqBase<AudioOpusInfo> {
 
 	private final @NonNull PacketParserOpus packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
-	 * @param paramsOpus Thread-specific parameters
-	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvOpusFromFile(
-				@NonNull ParamsThreadDpCommon paramsCommon,
-				@NonNull ParamsThreadDpOpus paramsOpus,
-				int queueSize,
-				boolean debugRewindMediaFiles
+	public ThreadDataProvEsOpusFromMq(
+				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
-		super(
-				paramsCommon,
-				queueSize,
-				debugRewindMediaFiles,
-				false
-			);
+		super(paramsCommon, false, false, true);
 
-		//
-		paramsOpus.validate();
-		//
 		this.packetParser = new PacketParserOpus();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Receives a notification about the current congestion level.
-	 * @param congestionLevel Congestion level (range 0..4)
-	 */
-	@Override
-	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
-		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,7 +33,7 @@ public final class ThreadDataProvOpusFromFile extends ThreadDataProvFromFileBase
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioOpusFromEsFile(
+		this.frameGrabber = new FrameGrabberAudioOpusFromEsMq(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
@@ -74,6 +47,16 @@ public final class ThreadDataProvOpusFromFile extends ThreadDataProvFromFileBase
 	@Override
 	protected @NonNull AudioOpusInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
+	}
+
+	@Override
+	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
+		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
+	}
+
+	@Override
+	protected int readFrameLenFromAvInfo(final @NonNull AudioOpusInfo avInfo) {
+		return avInfo.frameLength;
 	}
 
 }

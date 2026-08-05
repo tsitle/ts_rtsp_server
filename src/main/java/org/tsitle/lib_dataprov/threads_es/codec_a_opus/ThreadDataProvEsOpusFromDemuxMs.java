@@ -1,30 +1,28 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg;
+package org.tsitle.lib_dataprov.threads_es.codec_a_opus;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvFromDemuxMsBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
 
-public final class ThreadDataProvMjpegFromDemuxMs extends ThreadDataProvFromDemuxMsBase<VideoJpegInfo> {
+public final class ThreadDataProvEsOpusFromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<AudioOpusInfo> {
 
-	private final @NonNull PacketPacMjpeg packetPac;
+	private final @NonNull PacketParserOpus packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvMjpegFromDemuxMs(
+	public ThreadDataProvEsOpusFromDemuxMs(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
-		super(paramsCommon, false, true, false);
+		super(paramsCommon, false, false, true);
 
-		this.packetPac = new PacketPacMjpeg(
-				paramsCommon.getLogMsgInterface().orElseThrow()
-			);
+		this.packetParser = new PacketParserOpus();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -42,23 +40,23 @@ public final class ThreadDataProvMjpegFromDemuxMs extends ThreadDataProvFromDemu
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
-		return packetPac.parseAndConvertData(debugStreamOffset, ioBuf);
+	protected @NonNull AudioOpusInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
-		throw new RuntimeException(getClass().getSimpleName() + ".parseData(): not implemented");
+	protected @NonNull AudioOpusInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(inputBv);
 	}
 
 	@Override
-	protected int findNextMagicBytes(@NonNull BufferView inputBv) {
+	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
 		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoJpegInfo avInfo) {
-		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
+	protected int readFrameLenFromAvInfo(final @NonNull AudioOpusInfo avInfo) {
+		return avInfo.frameLength;
 	}
 
 }
