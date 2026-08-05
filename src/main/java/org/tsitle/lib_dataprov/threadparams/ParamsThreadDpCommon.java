@@ -29,7 +29,6 @@ public final class ParamsThreadDpCommon implements Cloneable {
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
 	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
-	private boolean isSetDemuxReadNextAvPacketInterface;
 
 	public ParamsThreadDpCommon() { }
 
@@ -64,7 +63,7 @@ public final class ParamsThreadDpCommon implements Cloneable {
 	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
 	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
 		this.demuxReadNextAvPacketInterface = value;
-		this.isSetDemuxReadNextAvPacketInterface = true;
+		// only required when actually demuxing
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -93,7 +92,6 @@ public final class ParamsThreadDpCommon implements Cloneable {
 		requireIsSet(isSetIsVideoThread, "isVideoThread");
 		requireIsSet(isSetIdEsSource, "idEsSource");
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
-		requireIsSet(isSetDemuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private void validateParamValues() {
@@ -106,8 +104,6 @@ public final class ParamsThreadDpCommon implements Cloneable {
 		}
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
-
-		requireNonNull(demuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private static void requireIsSet(boolean v, String name) {

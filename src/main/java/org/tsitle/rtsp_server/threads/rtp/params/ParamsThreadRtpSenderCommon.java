@@ -119,7 +119,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
 	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
-	private boolean isSetDemuxReadNextAvPacketInterface;
 
 	public ParamsThreadRtpSenderCommon() {
 		super(false, true);
@@ -216,7 +215,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
 	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
 		this.demuxReadNextAvPacketInterface = value;
-		this.isSetDemuxReadNextAvPacketInterface = true;
+		// only required when actually demuxing
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -253,7 +252,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		resObj.setIsVideoThread(getIsVideoThread());
 		resObj.setIdEsSource(getIdEsSource());
 		resObj.setAvStreamIncomingUri(getAvStreamIncomingUri().orElseThrow());
-		resObj.setDemuxReadNextAvPacketInterface(getDemuxReadNextAvPacketInterface().orElseThrow());
+		if (getDemuxReadNextAvPacketInterface().isPresent()) {
+			resObj.setDemuxReadNextAvPacketInterface(getDemuxReadNextAvPacketInterface().orElseThrow());
+		}
 		return resObj;
 	}
 
@@ -280,8 +281,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireIsSet(isSetCbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireIsSet(isSetAvStreamIncomingUri, "avStreamIncomingUri");
-
-		requireIsSet(isSetDemuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private void validateParamValues() {
@@ -309,8 +308,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		requireNonNull(cbThreadMayStartPlayback, "cbThreadMayStartPlayback");
 
 		requireNonNull(avStreamIncomingUri, "avStreamIncomingUri");
-
-		requireNonNull(demuxReadNextAvPacketInterface, "demuxReadNextAvPacketInterface");
 	}
 
 	private static void requireIsSet(boolean v, String name) {
