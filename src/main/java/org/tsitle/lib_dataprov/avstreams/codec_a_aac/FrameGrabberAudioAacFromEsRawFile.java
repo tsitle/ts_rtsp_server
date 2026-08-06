@@ -1,32 +1,47 @@
-package org.tsitle.lib_dataprov.avstreams.codec_a_opus;
+package org.tsitle.lib_dataprov.avstreams.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberAudioOpusFromEsFile extends FrameGrabberAvFromEsFileBase {
+public final class FrameGrabberAudioAacFromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
+
+	/**
+	 * Constructor.
+	 * @param avStreamIncoming Incoming A/V stream
+	 */
+	public FrameGrabberAudioAacFromEsRawFile(
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
+			) {
+		super(
+				null,
+				avStreamIncoming,
+				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
+				12
+			);
+	}
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioOpusFromEsFile(
+	public FrameGrabberAudioAacFromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				AudioOpusParser.OPUS_CUSTOM_FRAME_START_MAGICBYTES,
-				AudioOpusParser.OPUS_CUSTOM_FRAME_START_MAGICBYTES.length * 8
+				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
+				12
 			);
 	}
 
@@ -51,10 +66,10 @@ public final class FrameGrabberAudioOpusFromEsFile extends FrameGrabberAvFromEsF
 				false,
 				null,
 				null,
-				AudioOpusParser.OPUS_CUSTOM_HEADER_SIZE
+				AudioAacParser.AAC_HEADER_SIZE_MAX
 			);
 		//
-		int remainingPayloadLength = AudioOpusParser.getRemainingOpusPayloadLengthToRead(frameBuf);
+		int remainingPayloadLength = AudioAacParser.getRemainingAacPayloadLengthToRead(frameBuf);
 		//
 		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}

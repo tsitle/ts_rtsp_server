@@ -6,7 +6,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
-public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<I>>
+public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterface<I>>
 		extends ThreadDataProvEsBase<I> {
 
 	private static class DataQueueEntry {
@@ -30,7 +30,7 @@ public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<
 	private final boolean doDebugRewindMediaFiles;
 	private final boolean needConvertData;
 
-	protected @Nullable AvStreamIncomingFromEsFile avStreamIncoming = null;
+	protected @Nullable AvStreamIncomingFromEsRawFile avStreamIncoming = null;
 
 	private final ArrayList<@NonNull DataQueueEntry> dataQueue = new ArrayList<>();
 	protected final ArrayList<@Nullable I> infoQueue = new ArrayList<>();
@@ -54,7 +54,7 @@ public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 * @param needConvertData If true, the data will be converted before being outputted
 	 */
-	protected ThreadDataProvEsFromFileBase(
+	protected ThreadDataProvEsFromRawFileBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles,
@@ -172,7 +172,7 @@ public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<
 
 	@Override
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
-		this.avStreamIncoming = new AvStreamIncomingFromEsFile(
+		this.avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 				logMsgInterface,
 				paramsCommon.getIdEsSource(),
 				paramsCommon.getAvStreamIncomingUri().orElseThrow()

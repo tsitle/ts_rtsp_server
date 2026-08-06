@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAac;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvEsAacFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvEsAacFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvEsAacFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_aac.ThreadDataProvEsAacFromMq;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
@@ -72,8 +72,8 @@ public final class ThreadRtpSenderAac<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<AudioAacInfo> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsAacFromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsAacFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAac,
 					10,

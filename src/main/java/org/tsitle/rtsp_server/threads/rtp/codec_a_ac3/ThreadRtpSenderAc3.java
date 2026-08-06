@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAc3;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromMq;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
@@ -69,8 +69,8 @@ public final class ThreadRtpSenderAc3<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<AudioAc3Info> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsAc3FromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsAc3FromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()

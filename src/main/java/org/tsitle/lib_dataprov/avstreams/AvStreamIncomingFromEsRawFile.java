@@ -12,7 +12,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.Optional;
 
-public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
+public final class AvStreamIncomingFromEsRawFile extends AvStreamIncomingBase {
 
 	private final @NonNull String inputUriPath;
 
@@ -24,7 +24,7 @@ public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromEsFile(
+	public AvStreamIncomingFromEsRawFile(
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri
 			) throws AvCannotOpenInputException {
@@ -38,7 +38,7 @@ public final class AvStreamIncomingFromEsFile extends AvStreamIncomingBase {
 	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromEsFile(
+	public AvStreamIncomingFromEsRawFile(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull URI inputUri

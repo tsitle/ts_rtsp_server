@@ -6,12 +6,12 @@ import org.tsitle.lib_dataprov.DpConstants;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFileBase {
+public final class FrameGrabberAudioPcmFromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 
 	private final int channels;
 	private final int bitsPerSample;
@@ -30,9 +30,9 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public FrameGrabberAudioPcmFromEsFile(
+	public FrameGrabberAudioPcmFromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming,
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming,
 				int channels,
 				int bitsPerSample,
 				int rtpSamplesPerFrame,
@@ -72,7 +72,7 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 	 */
 	@Override
 	public boolean haveEos() {
-		return avstricFromEsFile.haveEos();
+		return avstricFromEsRawFile.haveEos();
 	}
 
 	/**
@@ -92,7 +92,7 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 		cachedDataFromAsi.increaseSize(pcmFrameHandler.getFrameSizeBytes());
 
 		//
-		int tmpRead = avstricFromEsFile.readBytes(cachedDataFromAsi.getBaPtr(), pcmFrameHandler.getFrameSizeBytes());
+		int tmpRead = avstricFromEsRawFile.readBytes(cachedDataFromAsi.getBaPtr(), pcmFrameHandler.getFrameSizeBytes());
 		cachedDataFromAsi.setUsed(tmpRead);
 
 		//

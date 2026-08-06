@@ -1,26 +1,29 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg;
+package org.tsitle.lib_dataprov.threads_es.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsRawFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
 
-public final class ThreadDataProvEsMjpegFromFile extends ThreadDataProvEsFromFileBase<VideoJpegInfo> {
+public final class ThreadDataProvEsAacFromRawFile extends ThreadDataProvEsFromRawFileBase<AudioAacInfo> {
 
-	private final @NonNull PacketPacMjpeg packetPac;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
+	 * @param paramsAac Thread-specific parameters
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvEsMjpegFromFile(
+	public ThreadDataProvEsAacFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
+				@NonNull ParamsThreadDpAac paramsAac,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -28,12 +31,13 @@ public final class ThreadDataProvEsMjpegFromFile extends ThreadDataProvEsFromFil
 				paramsCommon,
 				queueSize,
 				debugRewindMediaFiles,
-				true
+				false
 			);
 
-		this.packetPac = new PacketPacMjpeg(
-				paramsCommon.getLogMsgInterface().orElseThrow()
-			);
+		//
+		paramsAac.validate();
+		//
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -44,18 +48,8 @@ public final class ThreadDataProvEsMjpegFromFile extends ThreadDataProvEsFromFil
 	 * @param congestionLevel Congestion level (range 0..4)
 	 */
 	@Override
-	public synchronized void notifyCongestionLevelChange(int congestionLevel) {
-		if (congestionLevel < 0 || congestionLevel > 4) {
-			throw new IllegalArgumentException("congestionLevel must be in range 0..4");
-		}
-		/*
-		 * CL 0 --> CQ 100%
-		 * CL 1 --> CQ  85%
-		 * CL 2 --> CQ  70%
-		 * CL 3 --> CQ  55%
-		 * CL 4 --> CQ  40%
-		 */
-		packetPac.setCompressionQuality(1.0f - (0.15f * (float)congestionLevel));
+	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
+		// nothing to do
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -66,20 +60,20 @@ public final class ThreadDataProvEsMjpegFromFile extends ThreadDataProvEsFromFil
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoMjpegFromEsFile(
+		this.frameGrabber = new FrameGrabberAudioAacFromEsRawFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
-		return packetPac.parseAndConvertData(debugStreamOffset, ioBuf);
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
-		throw new RuntimeException(getClass().getSimpleName() + ".parseData(): not implemented");
+	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+		return packetParser.parseData(inputBv);
 	}
 
 }

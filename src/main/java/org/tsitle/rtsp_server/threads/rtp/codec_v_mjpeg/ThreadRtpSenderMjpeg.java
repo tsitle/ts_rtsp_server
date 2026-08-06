@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -72,8 +72,8 @@ public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<VideoJpegInfo> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsMjpegFromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsMjpegFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()

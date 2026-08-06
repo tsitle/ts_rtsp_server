@@ -268,7 +268,7 @@ public final class RtspConfigElementaryStreamSource {
 	public @NonNull URI getInputUri() {
 		checkPostProcessed();
 		return switch (getSourceType()) {
-				case ST_ES_FILE -> URI.create("file:" + filePath);
+				case ST_ES_RAW_FILE -> URI.create("file:" + filePath);
 				case ST_ES_MQ -> Objects.requireNonNull(mq).getInputUri();
 				case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> Objects.requireNonNull(msSourceUri);
 			};
@@ -303,7 +303,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
-			return RtspProtoEsSourceType.ST_ES_FILE;
+			return RtspProtoEsSourceType.ST_ES_RAW_FILE;
 		}
 		if (mq != null) {
 			return RtspProtoEsSourceType.ST_ES_MQ;
@@ -519,7 +519,7 @@ public final class RtspConfigElementaryStreamSource {
 		internalAudioChannelCount = (byte)(audioChannelCount == null ? -1 : audioChannelCount);
 		//noinspection ConstantValue
 		internalIsPcmAudioBigEndian = (isPcmAudioBigEndian != null && isPcmAudioBigEndian);
-		if (getSourceType() == RtspProtoEsSourceType.ST_ES_FILE) {
+		if (getSourceType() == RtspProtoEsSourceType.ST_ES_RAW_FILE) {
 			if (internalCodec == RtpPacketType.A_AAC) {
 				internalAudioSamplesPerFrame = aacSamplesPerFrame;
 			} else if (internalCodec == RtpPacketType.A_AC3) {
@@ -569,7 +569,7 @@ public final class RtspConfigElementaryStreamSource {
 
 		// ----------------------------------------------------
 
-		if (getSourceType() != RtspProtoEsSourceType.ST_ES_FILE) {
+		if (getSourceType() != RtspProtoEsSourceType.ST_ES_RAW_FILE) {
 			return;
 		}
 		//noinspection ConstantValue
@@ -627,7 +627,7 @@ public final class RtspConfigElementaryStreamSource {
 		}
 
 		//
-		ReadEsFileMeta.readEsFileMeta(tmpExtSsId, this);
+		ReadEsRawFileMeta.readMeta(tmpExtSsId, this);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

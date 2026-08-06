@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
@@ -74,8 +74,8 @@ public final class ThreadRtpSenderVp8<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<VideoVp8Info> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsVp8FromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsVp8FromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()

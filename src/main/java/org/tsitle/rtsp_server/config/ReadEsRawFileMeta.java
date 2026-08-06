@@ -16,10 +16,10 @@ import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
-import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26XFromEsRawFile;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
@@ -27,11 +27,11 @@ import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import java.util.HashMap;
 import java.util.Map;
 
-final class ReadEsFileMeta {
+final class ReadEsRawFileMeta {
 
-	private ReadEsFileMeta() { }
+	private ReadEsRawFileMeta() { }
 
-	static void readEsFileMeta(
+	static void readMeta(
 				@NonNull String extEsId,
 				@NonNull RtspConfigElementaryStreamSource ioEsSource
 			) throws ConfigInvalidException {
@@ -39,26 +39,26 @@ final class ReadEsFileMeta {
 			return;
 		}
 		switch (ioEsSource.getCodec()) {
-			case RtpPacketType.A_AAC -> ReadEsFileMeta.readEsFileMeta_aac(extEsId, ioEsSource);
-			case RtpPacketType.A_AC3 -> ReadEsFileMeta.readEsFileMeta_ac3(extEsId, ioEsSource);
-			case RtpPacketType.V_H264 -> ReadEsFileMeta.readEsFileMeta_h264Header(extEsId, ioEsSource);
-			case RtpPacketType.V_H265 -> ReadEsFileMeta.readEsFileMeta_h265Header(extEsId, ioEsSource);
+			case RtpPacketType.A_AAC -> ReadEsRawFileMeta.readMeta_aac(extEsId, ioEsSource);
+			case RtpPacketType.A_AC3 -> ReadEsRawFileMeta.readMeta_ac3(extEsId, ioEsSource);
+			case RtpPacketType.V_H264 -> ReadEsRawFileMeta.readMeta_h264Header(extEsId, ioEsSource);
+			case RtpPacketType.V_H265 -> ReadEsRawFileMeta.readMeta_h265Header(extEsId, ioEsSource);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void readEsFileMeta_aac(
+	private static void readMeta_aac(
 				@NonNull String extEsId,
 				@NonNull RtspConfigElementaryStreamSource ioEsSource
 			) throws ConfigInvalidException {
-		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(
+		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					ioEsSource.getIdAsProtoId(),
 					ioEsSource.getInputUri()
 				)) {
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberAudioAacFromEsFile asoAac = new FrameGrabberAudioAacFromEsFile(avStreamIncoming);
+			FrameGrabberAudioAacFromEsRawFile asoAac = new FrameGrabberAudioAacFromEsRawFile(avStreamIncoming);
 			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 			asoAac.getNextFrame(tmpBuf, tmpStTimestamp);
 
@@ -93,16 +93,16 @@ final class ReadEsFileMeta {
 		}
 	}
 
-	private static void readEsFileMeta_ac3(
+	private static void readMeta_ac3(
 				@NonNull String extEsId,
 				@NonNull RtspConfigElementaryStreamSource ioEsSource
 			) throws ConfigInvalidException {
-		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(
+		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					ioEsSource.getIdAsProtoId(),
 					ioEsSource.getInputUri()
 				)) {
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberAudioAc3FromEsFile asoAc3 = new FrameGrabberAudioAc3FromEsFile(avStreamIncoming);
+			FrameGrabberAudioAc3FromEsRawFile asoAc3 = new FrameGrabberAudioAc3FromEsRawFile(avStreamIncoming);
 			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 			asoAc3.getNextFrame(tmpBuf, tmpStTimestamp);
 
@@ -134,11 +134,11 @@ final class ReadEsFileMeta {
 		}
 	}
 
-	private static void readEsFileMeta_h264Header(
+	private static void readMeta_h264Header(
 				@NonNull String extEsId,
 				@NonNull RtspConfigElementaryStreamSource ioEsSource
 			) throws ConfigInvalidException {
-		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(
+		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					ioEsSource.getIdAsProtoId(),
 					ioEsSource.getInputUri()
 				)) {
@@ -147,7 +147,7 @@ final class ReadEsFileMeta {
 			VideoH264Parser codecParser = new VideoH264Parser(mapSpsContext, mapPpsContext);
 
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberVideoH26xFromEsFile asoH26x = new FrameGrabberVideoH26xFromEsFile(avStreamIncoming);
+			FrameGrabberVideoH26XFromEsRawFile asoH26x = new FrameGrabberVideoH26XFromEsRawFile(avStreamIncoming);
 			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 
 			int tmpPktCounter = 0;
@@ -190,18 +190,18 @@ final class ReadEsFileMeta {
 		}
 	}
 
-	private static void readEsFileMeta_h265Header(
+	private static void readMeta_h265Header(
 				@NonNull String extEsId,
 				@NonNull RtspConfigElementaryStreamSource ioEsSource
 			) throws ConfigInvalidException {
-		try (AvStreamIncomingFromEsFile avStreamIncoming = new AvStreamIncomingFromEsFile(
+		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					ioEsSource.getIdAsProtoId(),
 					ioEsSource.getInputUri()
 				)) {
 			VideoH265Parser codecParser = new VideoH265Parser();
 
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberVideoH26xFromEsFile asoH26x = new FrameGrabberVideoH26xFromEsFile(avStreamIncoming);
+			FrameGrabberVideoH26XFromEsRawFile asoH26x = new FrameGrabberVideoH26XFromEsRawFile(avStreamIncoming);
 			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
 
 			int tmpPktCounter = 0;

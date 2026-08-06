@@ -9,9 +9,9 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 import java.util.Arrays;
 
-public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase {
+public abstract class FrameGrabberAvFromEsRawFileBase extends FrameGrabberAvBase {
 
-	protected @NonNull AvStreamIncomingFromEsFile avstricFromEsFile;
+	protected @NonNull AvStreamIncomingFromEsRawFile avstricFromEsRawFile;
 
 	private final byte[] frameStartMagicBytesPtr_fixed;
 	private final int magicBytesLengthInBits_fixed;
@@ -24,19 +24,19 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param avstricFromEsFile Incoming A/V stream
+	 * @param avstricFromEsRawFile Incoming A/V stream
 	 * @param frameStartMagicBytes Magic Bytes for frame start detection
 	 * @param magicBytesLengthInBits Length of the Magic Bytes array in bits
 	 */
-	protected FrameGrabberAvFromEsFileBase(
+	protected FrameGrabberAvFromEsRawFileBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avstricFromEsFile,
+				@NonNull AvStreamIncomingFromEsRawFile avstricFromEsRawFile,
 				byte[] frameStartMagicBytes,
 				int magicBytesLengthInBits
 			) {
-		super(logMsgInterface, avstricFromEsFile);
+		super(logMsgInterface, avstricFromEsRawFile);
 
-		this.avstricFromEsFile = avstricFromEsFile;
+		this.avstricFromEsRawFile = avstricFromEsRawFile;
 
 		//
 		if (magicBytesLengthInBits % 4 != 0) {
@@ -63,7 +63,7 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase {
 
 	@Override
 	public boolean haveEos() {
-		return (getCachedDataLengthForFramesWithStartCode() == 0 && avstricFromEsFile.haveEos());
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avstricFromEsRawFile.haveEos());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase {
 		if (cachedDataLength == cachedDataBuf.length) {
 			cachedDataBuf = Arrays.copyOf(cachedDataBuf, cachedDataBuf.length * 2);
 		}
-		int tmpDidRead = avstricFromEsFile.readBytes(
+		int tmpDidRead = avstricFromEsRawFile.readBytes(
 				cachedDataBuf,
 				cachedDataLength,
 				cachedDataBuf.length - cachedDataLength

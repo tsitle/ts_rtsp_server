@@ -104,7 +104,7 @@ public class FullBidirRequRespSvcTest {
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
 				return new ElementaryStreamSourceInfo(
 						RtpPacketType.V_H264,
-						RtspProtoEsSourceType.ST_ES_FILE,
+						RtspProtoEsSourceType.ST_ES_RAW_FILE,
 						URI.create("file:///dummy-file-video"),
 						-1.0,
 						(byte)-1,
@@ -119,7 +119,7 @@ public class FullBidirRequRespSvcTest {
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
 				return new ElementaryStreamSourceInfo(
 						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
-						RtspProtoEsSourceType.ST_ES_FILE,
+						RtspProtoEsSourceType.ST_ES_RAW_FILE,
 						URI.create("file:///dummy-file-audio"),
 						-1.0,
 						(byte)2,

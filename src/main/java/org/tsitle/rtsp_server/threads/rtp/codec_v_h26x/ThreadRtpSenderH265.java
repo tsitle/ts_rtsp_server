@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketH265;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
@@ -50,8 +50,8 @@ public final class ThreadRtpSenderH265<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<VideoH265Info> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsH265FromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsH265FromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()

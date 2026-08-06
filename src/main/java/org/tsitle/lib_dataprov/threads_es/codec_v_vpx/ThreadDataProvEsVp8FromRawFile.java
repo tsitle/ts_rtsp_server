@@ -1,17 +1,17 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
+package org.tsitle.lib_dataprov.threads_es.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_dataprov.avstreams.codec_v_vpx.FrameGrabberVideoVp8FromEsRawFile;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
 
-public final class ThreadDataProvEsH264FromFile extends ThreadDataProvEsFromFileBase<VideoH264Info> {
+public final class ThreadDataProvEsVp8FromRawFile extends ThreadDataProvEsFromRawFileBase<VideoVp8Info> {
 
-	private final @NonNull PacketParserH264 packetParser;
+	private final @NonNull PacketParserVp8 packetParser;
 
 	/**
 	 * Constructor.
@@ -19,7 +19,7 @@ public final class ThreadDataProvEsH264FromFile extends ThreadDataProvEsFromFile
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvEsH264FromFile(
+	public ThreadDataProvEsVp8FromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles
@@ -31,7 +31,7 @@ public final class ThreadDataProvEsH264FromFile extends ThreadDataProvEsFromFile
 				false
 			);
 
-		this.packetParser = new PacketParserH264();
+		this.packetParser = new PacketParserVp8();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -54,19 +54,19 @@ public final class ThreadDataProvEsH264FromFile extends ThreadDataProvEsFromFile
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoH26xFromEsFile(
+		this.frameGrabber = new FrameGrabberVideoVp8FromEsRawFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull VideoVp8Info parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoH264Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull VideoVp8Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(debugStreamOffset, inputBv);
 	}
 

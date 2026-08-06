@@ -1,30 +1,30 @@
-package org.tsitle.lib_dataprov.avstreams.codec_a_aac;
+package org.tsitle.lib_dataprov.avstreams.codec_a_ac3;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacParser;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
-import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
+import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 
-public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFileBase {
+public final class FrameGrabberAudioAc3FromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 
 	/**
 	 * Constructor.
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioAacFromEsFile(
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+	public FrameGrabberAudioAc3FromEsRawFile(
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				null,
 				avStreamIncoming,
-				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
-				12
+				AudioAc3Parser.AC3_FRAME_START_MAGICBYTES,
+				16
 			);
 	}
 
@@ -33,15 +33,15 @@ public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFi
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioAacFromEsFile(
+	public FrameGrabberAudioAc3FromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
-				12
+				AudioAc3Parser.AC3_FRAME_START_MAGICBYTES,
+				16
 			);
 	}
 
@@ -66,10 +66,10 @@ public final class FrameGrabberAudioAacFromEsFile extends FrameGrabberAvFromEsFi
 				false,
 				null,
 				null,
-				AudioAacParser.AAC_HEADER_SIZE_MAX
+				AudioAc3Parser.AC3_HEADER_SIZE_MIN
 			);
 		//
-		int remainingPayloadLength = AudioAacParser.getRemainingAacPayloadLengthToRead(frameBuf);
+		int remainingPayloadLength = AudioAc3Parser.getRemainingAc3PayloadLengthToRead(frameBuf);
 		//
 		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}

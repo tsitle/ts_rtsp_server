@@ -1,17 +1,17 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
+package org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsFile;
+import org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg.FrameGrabberVideoMjpegFromEsRawFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
 
-public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFileBase<VideoH265Info> {
+public final class ThreadDataProvEsMjpegFromRawFile extends ThreadDataProvEsFromRawFileBase<VideoJpegInfo> {
 
-	private final @NonNull PacketParserH265 packetParser;
+	private final @NonNull PacketPacMjpeg packetPac;
 
 	/**
 	 * Constructor.
@@ -19,7 +19,7 @@ public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFile
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvEsH265FromFile(
+	public ThreadDataProvEsMjpegFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles
@@ -28,10 +28,12 @@ public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFile
 				paramsCommon,
 				queueSize,
 				debugRewindMediaFiles,
-				false
+				true
 			);
 
-		this.packetParser = new PacketParserH265();
+		this.packetPac = new PacketPacMjpeg(
+				paramsCommon.getLogMsgInterface().orElseThrow()
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -42,8 +44,18 @@ public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFile
 	 * @param congestionLevel Congestion level (range 0..4)
 	 */
 	@Override
-	public synchronized void notifyCongestionLevelChange(@SuppressWarnings("unused") int congestionLevel) {
-		// nothing to do
+	public synchronized void notifyCongestionLevelChange(int congestionLevel) {
+		if (congestionLevel < 0 || congestionLevel > 4) {
+			throw new IllegalArgumentException("congestionLevel must be in range 0..4");
+		}
+		/*
+		 * CL 0 --> CQ 100%
+		 * CL 1 --> CQ  85%
+		 * CL 2 --> CQ  70%
+		 * CL 3 --> CQ  55%
+		 * CL 4 --> CQ  40%
+		 */
+		packetPac.setCompressionQuality(1.0f - (0.15f * (float)congestionLevel));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -54,20 +66,20 @@ public final class ThreadDataProvEsH265FromFile extends ThreadDataProvEsFromFile
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberVideoH26xFromEsFile(
+		this.frameGrabber = new FrameGrabberVideoMjpegFromEsRawFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoH265Info parseAndConvertData(@NonNull BufferExt ioBuf) {
-		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
+	protected @NonNull VideoJpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException {
+		return packetPac.parseAndConvertData(debugStreamOffset, ioBuf);
 	}
 
 	@Override
-	protected @NonNull VideoH265Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
-		return packetParser.parseData(debugStreamOffset, inputBv);
+	protected @NonNull VideoJpegInfo parseData(@NonNull BufferView inputBv) {
+		throw new RuntimeException(getClass().getSimpleName() + ".parseData(): not implemented");
 	}
 
 }

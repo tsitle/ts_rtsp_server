@@ -1,32 +1,31 @@
-package org.tsitle.lib_dataprov.avstreams.codec_v_vpx;
+package org.tsitle.lib_dataprov.avstreams.codec_v_mjpeg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Parser;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
+import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public final class FrameGrabberVideoVp8FromEsFile extends FrameGrabberAvFromEsFileBase {
+public final class FrameGrabberVideoMjpegFromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberVideoVp8FromEsFile(
+	public FrameGrabberVideoMjpegFromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				VideoVp8Parser.VP8_CUSTOM_FRAME_START_MAGICBYTES,
-				VideoVp8Parser.VP8_CUSTOM_FRAME_START_MAGICBYTES.length * 8
+				VideoJpegParser.MJPEG_FRAME_START_MAGICBYTES,
+				VideoJpegParser.MJPEG_FRAME_START_MAGICBYTES.length * 8
 			);
 	}
 
@@ -40,7 +39,7 @@ public final class FrameGrabberVideoVp8FromEsFile extends FrameGrabberAvFromEsFi
 	 */
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
-			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException {
+			throws InputStreamIoException, InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".getNextFrame()";
 
 		stTimestamp.clear();
@@ -51,12 +50,8 @@ public final class FrameGrabberVideoVp8FromEsFile extends FrameGrabberAvFromEsFi
 				false,
 				null,
 				null,
-				VideoVp8Parser.VP8_CUSTOM_HEADER_SIZE
+				-1
 			);
-		//
-		int remainingPayloadLength = VideoVp8Parser.getRemainingVp8PayloadLengthToRead(frameBuf);
-		//
-		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}
 
 }

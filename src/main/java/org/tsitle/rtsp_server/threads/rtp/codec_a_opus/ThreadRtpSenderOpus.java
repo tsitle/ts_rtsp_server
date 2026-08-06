@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketOpus;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromFile;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
@@ -78,8 +78,8 @@ public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull ThreadDataProvEsBase<AudioOpusInfo> newThreadDataProv() {
-		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			return new ThreadDataProvEsOpusFromFile(
+		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
+			return new ThreadDataProvEsOpusFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsOpus,
 					10,

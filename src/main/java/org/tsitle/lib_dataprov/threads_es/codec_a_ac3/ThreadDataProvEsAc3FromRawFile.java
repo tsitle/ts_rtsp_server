@@ -6,10 +6,10 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsFile;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromFileBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsRawFile;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
 
-public final class ThreadDataProvEsAc3FromFile extends ThreadDataProvEsFromFileBase<AudioAc3Info> {
+public final class ThreadDataProvEsAc3FromRawFile extends ThreadDataProvEsFromRawFileBase<AudioAc3Info> {
 
 	private final @NonNull PacketParserAc3 packetParser;
 
@@ -19,7 +19,7 @@ public final class ThreadDataProvEsAc3FromFile extends ThreadDataProvEsFromFileB
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvEsAc3FromFile(
+	public ThreadDataProvEsAc3FromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
 				boolean debugRewindMediaFiles
@@ -54,7 +54,7 @@ public final class ThreadDataProvEsAc3FromFile extends ThreadDataProvEsFromFileB
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioAc3FromEsFile(
+		this.frameGrabber = new FrameGrabberAudioAc3FromEsRawFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);

@@ -1,47 +1,32 @@
-package org.tsitle.lib_dataprov.avstreams.codec_a_ac3;
+package org.tsitle.lib_dataprov.avstreams.codec_v_vpx;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Parser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsFile;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsFileBase;
+import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 
-public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFileBase {
-
-	/**
-	 * Constructor.
-	 * @param avStreamIncoming Incoming A/V stream
-	 */
-	public FrameGrabberAudioAc3FromEsFile(
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
-			) {
-		super(
-				null,
-				avStreamIncoming,
-				AudioAc3Parser.AC3_FRAME_START_MAGICBYTES,
-				16
-			);
-	}
+public final class FrameGrabberVideoVp8FromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioAc3FromEsFile(
+	public FrameGrabberVideoVp8FromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming
+				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				AudioAc3Parser.AC3_FRAME_START_MAGICBYTES,
-				16
+				VideoVp8Parser.VP8_CUSTOM_FRAME_START_MAGICBYTES,
+				VideoVp8Parser.VP8_CUSTOM_FRAME_START_MAGICBYTES.length * 8
 			);
 	}
 
@@ -49,7 +34,7 @@ public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFi
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Reads the next audio frame from the stream.
+	 * Reads the next video frame from the stream.
 	 * @param frameBuf Output buffer to store the frame in
 	 * @param stTimestamp Output for sample-time timestamp
 	 */
@@ -66,10 +51,10 @@ public final class FrameGrabberAudioAc3FromEsFile extends FrameGrabberAvFromEsFi
 				false,
 				null,
 				null,
-				AudioAc3Parser.AC3_HEADER_SIZE_MIN
+				VideoVp8Parser.VP8_CUSTOM_HEADER_SIZE
 			);
 		//
-		int remainingPayloadLength = AudioAc3Parser.getRemainingAc3PayloadLengthToRead(frameBuf);
+		int remainingPayloadLength = VideoVp8Parser.getRemainingVp8PayloadLengthToRead(frameBuf);
 		//
 		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}
