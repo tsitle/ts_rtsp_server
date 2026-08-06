@@ -1,12 +1,11 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_opus.ThreadRtpSenderOpus;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
 
 public final class BuilderThreadRtpSenderOpus {
-
-	public static Builder builder() { return new Builder(); }
 
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderOpus<?>> {
 
@@ -16,12 +15,12 @@ public final class BuilderThreadRtpSenderOpus {
 		// Fluent setters
 		/*
 		 * Future Opus-only fields go here, e.g.,
-		 * public Builder opsQuality(int q) { ...; return self(); }
+		 * public @NonNull Builder opsQuality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public ThreadRtpSenderOpus<?> build() {
+		public @NonNull ThreadRtpSenderOpus<?> build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsOpus.validate();
@@ -36,5 +35,10 @@ public final class BuilderThreadRtpSenderOpus {
 		}
 
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull Builder builder() { return new Builder(); }
 
 }

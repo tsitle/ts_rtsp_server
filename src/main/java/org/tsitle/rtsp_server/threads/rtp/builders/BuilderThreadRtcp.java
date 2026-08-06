@@ -20,43 +20,46 @@ import java.net.DatagramSocket;
 
 public final class BuilderThreadRtcp {
 
-	public static Builder builder() { return new Builder(); }
-
 	public static final class Builder {
 		// Thread-specific fields
 		private final ParamsThreadRtcp threadParams = new ParamsThreadRtcp();
 
 		// Fluent setters
-		public Builder logMsgInterface(@NonNull LogMsgInterface v) { this.threadParams.setLogMsgInterface(v); return this; }
+		public @NonNull Builder logMsgInterface(@NonNull LogMsgInterface v) { this.threadParams.setLogMsgInterface(v); return this; }
 
-		public Builder debugIdSession(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
+		public @NonNull Builder debugIdSession(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
 
-		public Builder idEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParams.setIdEsSource(v); return this; }
+		public @NonNull Builder idEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParams.setIdEsSource(v); return this; }
 
-		public Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }
+		public @NonNull Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }
 
-		public Builder idSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
+		public @NonNull Builder idSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
 
-		public Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
-		public Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }
+		public @NonNull Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
+		public @NonNull Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
-		public Builder tpSocketUdpRtcp(@NonNull DatagramSocket v) { this.threadParams.setTpSocketUdp(v); return this; }
-		public Builder tpClientDestTcpIf(@NonNull RtspChildThreadsCbRtxpTcpInterface v) { this.threadParams.setTpClientDestTcpIf(v); return this; }
+		public @NonNull Builder tpSocketUdpRtcp(@NonNull DatagramSocket v) { this.threadParams.setTpSocketUdp(v); return this; }
+		public @NonNull Builder tpClientDestTcpIf(@NonNull RtspChildThreadsCbRtxpTcpInterface v) { this.threadParams.setTpClientDestTcpIf(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
-		public Builder tpClientDestTcpChannRtcp(@NonNull RtspProtoTcpChannelNr v) { this.threadParams.setTpClientDestTcpChann(v); return this; }
+		public @NonNull Builder tpClientDestTcpChannRtcp(@NonNull RtspProtoTcpChannelNr v) { this.threadParams.setTpClientDestTcpChann(v); return this; }
 
-		public Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
-		public Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
-		public Builder cryptoKmdOutboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
+		public @NonNull Builder cryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParams.setCryptoIsRtxpEncryptionEnabled(v); return this; }
+		public @NonNull Builder cryptoKmdInboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdInbound(v); return this; }
+		public @NonNull Builder cryptoKmdOutboundRtcp(@Nullable SrtxpKmd v) { this.threadParams.setCryptoKmdOutbound(v); return this; }
 
-		public Builder rtcpReceivedByeInterface(@NonNull RtcpReceivedByeInterface v) { this.threadParams.setRtcpReceivedByeInterface(v); return this; }
+		public @NonNull Builder rtcpReceivedByeInterface(@NonNull RtcpReceivedByeInterface v) { this.threadParams.setRtcpReceivedByeInterface(v); return this; }
 
 		//
-		public ThreadRtcpSendRecv build() {
+		public @NonNull ThreadRtcpSendRecv build() {
 			threadParams.validate();
 
 			return new ThreadRtcpSendRecv(threadParams);
 		}
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull Builder builder() { return new Builder(); }
 
 }

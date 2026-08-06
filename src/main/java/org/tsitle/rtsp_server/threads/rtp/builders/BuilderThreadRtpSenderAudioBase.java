@@ -14,8 +14,14 @@ public abstract class BuilderThreadRtpSenderAudioBase<
 	protected final ParamsThreadDpAudioCommon threadParamsAudio = new ParamsThreadDpAudioCommon();
 
 	// Fluent setters
-	public B audComRtpAudioSpf(int v) { this.threadParamsAudio.setAudioSpf(v); return self(); }
-	public B audComSamplerate(@NonNull SampleRateEnum v) { this.threadParamsAudio.setAudioSamplerate(v); return self(); }
+	public @NonNull BuilderThreadRtpSenderAudioBase<B, T> audComRtpAudioSpf(int v) {
+		this.threadParamsAudio.setAudioSpf(v);
+		return this;
+	}
+	public @NonNull BuilderThreadRtpSenderAudioBase<B, T> audComSamplerate(@NonNull SampleRateEnum v) {
+		this.threadParamsAudio.setAudioSamplerate(v);
+		return this;
+	}
 
 	//
 	protected void validateAudioCommon() {

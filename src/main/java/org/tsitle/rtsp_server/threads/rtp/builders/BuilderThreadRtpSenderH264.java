@@ -1,12 +1,11 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH264;
 
 public final class BuilderThreadRtpSenderH264 {
-
-	public static Builder builder() { return new Builder(); }
 
 	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderH264<?>> {
 
@@ -16,12 +15,12 @@ public final class BuilderThreadRtpSenderH264 {
 		// Fluent setters
 		/*
 		 * Future H264-only fields go here, e.g.,
-		 * public Builder h264Quality(int q) { ...; return self(); }
+		 * public @NonNull Builder h264Quality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public ThreadRtpSenderH264<?> build() {
+		public @NonNull ThreadRtpSenderH264<?> build() {
 			validateCommon();
 			validateVideoCommon();
 			threadParamsH264.validate();
@@ -36,5 +35,10 @@ public final class BuilderThreadRtpSenderH264 {
 		}
 
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull Builder builder() { return new Builder(); }
 
 }

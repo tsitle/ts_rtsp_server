@@ -1,5 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtp.builders;
 
+import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
@@ -7,22 +8,21 @@ import org.tsitle.rtsp_server.threads.rtp.codec_a_pcm.ThreadRtpSenderPcm;
 
 public final class BuilderThreadRtpSenderPcm {
 
-	public static Builder builder() { return new Builder(); }
-
 	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderPcm<?>> {
 
 		// Thread-specific fields
 		private final ParamsThreadDpPcm threadParamsPcm = new ParamsThreadDpPcm();
 
 		// Fluent setters
-		public Builder audPcmChannelCount(int v) { this.threadParamsPcm.setAudioChannelCount(v); return self(); }
-		public Builder audPcmBitsPerSample(int v) { this.threadParamsPcm.setAudioBitsPerSample(v); return self(); }
-		public Builder audPcmInputBigEndian(boolean v) { this.threadParamsPcm.setIsAudioInputBigEndian(v); return self(); }
-		public Builder audPcmCodec(RtpPacketType v) { this.threadParamsPcm.setAudioCodec(v); return self(); }
+		public @NonNull Builder audPcmChannelCount(int v) { this.threadParamsPcm.setAudioChannelCount(v); return this; }
+		public @NonNull Builder audPcmBitsPerSample(int v) { this.threadParamsPcm.setAudioBitsPerSample(v); return this; }
+		public @NonNull Builder audPcmInputBigEndian(boolean v) { this.threadParamsPcm.setIsAudioInputBigEndian(v); return this; }
+		@SuppressWarnings("UnusedReturnValue")
+		public @NonNull Builder audPcmCodec(RtpPacketType v) { this.threadParamsPcm.setAudioCodec(v); return this; }
 
 		//
 		@Override
-		public ThreadRtpSenderPcm<?> build() {
+		public @NonNull ThreadRtpSenderPcm<?> build() {
 			validateCommon();
 			validateAudioCommon();
 			threadParamsPcm.validate();
@@ -37,5 +37,10 @@ public final class BuilderThreadRtpSenderPcm {
 		}
 
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull Builder builder() { return new Builder(); }
 
 }

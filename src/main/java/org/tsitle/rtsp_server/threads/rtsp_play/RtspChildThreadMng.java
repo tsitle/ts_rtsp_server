@@ -389,7 +389,7 @@ final class RtspChildThreadMng {
 	}
 
 	private <B extends BuilderThreadRtpSenderBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
-			B buildThreadRtpSender(
+			BuilderThreadRtpSenderBase<B, T> buildThreadRtpSender(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
@@ -437,7 +437,7 @@ final class RtspChildThreadMng {
 	}
 
 	private <B extends BuilderThreadRtpSenderVideoBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
-			B buildThreadVideo(
+			BuilderThreadRtpSenderVideoBase<B, T> buildThreadVideo(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
@@ -445,12 +445,19 @@ final class RtspChildThreadMng {
 					@NonNull FrameRateEnum avFpsAsEn,
 					@NonNull RtcpInnerXsrcBlock xsrcBlock
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsEn.getFrDbl(), xsrcBlock)
+		return (BuilderThreadRtpSenderVideoBase<B, T>)buildThreadRtpSender(
+						builder,
+						streamInfo,
+						avSsi,
+						idEsSource,
+						avFpsAsEn.getFrDbl(),
+						xsrcBlock
+					)
 				.comIsVideoThread(true);
 	}
 
 	private <B extends BuilderThreadRtpSenderAudioBase<B, T>, T extends ThreadRtpSenderBase<?, ?, ?>>
-			B buildThreadAudio(
+			BuilderThreadRtpSenderBase<B, T> buildThreadAudio(
 					@NonNull B builder,
 					@NonNull RtspProtoSetupInfoForSubStream streamInfo,
 					RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo avSsi,
@@ -459,8 +466,16 @@ final class RtspChildThreadMng {
 					@NonNull RtcpInnerXsrcBlock xsrcBlock,
 					int samplesPerFrame
 				) {
-		return buildThreadRtpSender(builder, streamInfo, avSsi, idEsSource, avFpsAsDbl, xsrcBlock)
-				.comIsVideoThread(false)
+		BuilderThreadRtpSenderAudioBase<B, T> b = (BuilderThreadRtpSenderAudioBase<B, T>)buildThreadRtpSender(
+						builder,
+						streamInfo,
+						avSsi,
+						idEsSource,
+						avFpsAsDbl,
+						xsrcBlock
+					)
+				.comIsVideoThread(false);
+		return b
 				.audComRtpAudioSpf(samplesPerFrame)
 				.audComSamplerate(avSsi.audioSampleRate());
 	}
@@ -500,7 +515,7 @@ final class RtspChildThreadMng {
 		//
 		switch (tmpAvSsi.codec()) {
 			case A_AAC:
-				BuilderThreadRtpSenderAac.Builder builderAac = buildThreadAudio(
+				BuilderThreadRtpSenderBase<?, ?> builderAac = buildThreadAudio(
 						BuilderThreadRtpSenderAac.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -509,10 +524,10 @@ final class RtspChildThreadMng {
 						xsrcBlock,
 						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
-				ctfos.rtpThreadSender = builderAac.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderAac.build();
 				break;
 			case A_AC3:
-				BuilderThreadRtpSenderAc3.Builder builderAc3 = buildThreadAudio(
+				BuilderThreadRtpSenderBase<?, ?> builderAc3 = buildThreadAudio(
 						BuilderThreadRtpSenderAc3.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -521,10 +536,10 @@ final class RtspChildThreadMng {
 						xsrcBlock,
 						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
-				ctfos.rtpThreadSender = builderAc3.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderAc3.build();
 				break;
 			case A_OPUS:
-				BuilderThreadRtpSenderOpus.Builder builderOpus = buildThreadAudio(
+				BuilderThreadRtpSenderBase<?, ?> builderOpus = buildThreadAudio(
 						BuilderThreadRtpSenderOpus.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -533,10 +548,10 @@ final class RtspChildThreadMng {
 						xsrcBlock,
 						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
-				ctfos.rtpThreadSender = builderOpus.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderOpus.build();
 				break;
 			case V_H264:
-				BuilderThreadRtpSenderH264.Builder builderH264 = buildThreadVideo(
+				BuilderThreadRtpSenderBase<?, ?> builderH264 = buildThreadVideo(
 						BuilderThreadRtpSenderH264.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -544,10 +559,10 @@ final class RtspChildThreadMng {
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
-				ctfos.rtpThreadSender = builderH264.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderH264.build();
 				break;
 			case V_H265:
-				BuilderThreadRtpSenderH265.Builder builderH265 = buildThreadVideo(
+				BuilderThreadRtpSenderBase<?, ?> builderH265 = buildThreadVideo(
 						BuilderThreadRtpSenderH265.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -555,10 +570,10 @@ final class RtspChildThreadMng {
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
-				ctfos.rtpThreadSender = builderH265.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderH265.build();
 				break;
 			case V_MJPEG:
-				BuilderThreadRtpSenderMjpeg.Builder builderMjpeg = buildThreadVideo(
+				BuilderThreadRtpSenderBase<?, ?> builderMjpeg = buildThreadVideo(
 						BuilderThreadRtpSenderMjpeg.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -566,10 +581,10 @@ final class RtspChildThreadMng {
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
-				ctfos.rtpThreadSender = builderMjpeg.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderMjpeg.build();
 				break;
 			case V_VP8:
-				BuilderThreadRtpSenderVp8.Builder builderVp8 = buildThreadVideo(
+				BuilderThreadRtpSenderBase<?, ?> builderVp8 = buildThreadVideo(
 						BuilderThreadRtpSenderVp8.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -577,14 +592,14 @@ final class RtspChildThreadMng {
 						tmpAvSsi.videoFps(),
 						xsrcBlock
 					);
-				ctfos.rtpThreadSender = builderVp8.build();
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderVp8.build();
 				break;
 			default:
 				if (! tmpAvSsi.codec().isPcmAudio()) {
 					throw new IllegalStateException(FNC_NAME + ": Unsupported codec: " + tmpAvSsi.codec());
 				}
 				//
-				BuilderThreadRtpSenderPcm.Builder builderPcm = buildThreadAudio(
+				BuilderThreadRtpSenderBase<?, ?> builderPcm = buildThreadAudio(
 						BuilderThreadRtpSenderPcm.builder(),
 						tmpSiSs,
 						tmpAvSsi,
@@ -593,12 +608,14 @@ final class RtspChildThreadMng {
 						xsrcBlock,
 						availableStreamsInterface.getElementaryStreamSource_samplesPerFrame(ctfos.idEsSource)
 					);
-				ctfos.rtpThreadSender = builderPcm
+				//
+				((BuilderThreadRtpSenderPcm.Builder)builderPcm)
 						.audPcmChannelCount(tmpAvSsi.audioChannelCount())
 						.audPcmBitsPerSample(tmpAvSsi.codec().getPcmAudioBitsPerSample().orElseThrow())
 						.audPcmInputBigEndian(tmpAvSsi.isAudioPcmBigEndian())
-						.audPcmCodec(tmpAvSsi.codec())
-						.build();
+						.audPcmCodec(tmpAvSsi.codec());
+				//
+				ctfos.rtpThreadSender = (ThreadRtpSenderBase<?, ?, ?>)builderPcm.build();
 		}
 		ctfos.rtpThreadSender.setName(
 				"RTP_" +
