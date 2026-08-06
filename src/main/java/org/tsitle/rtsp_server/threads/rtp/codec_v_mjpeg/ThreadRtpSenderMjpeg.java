@@ -17,7 +17,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 
 public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC>> {
+		extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, ThreadDataProvEsBase<VideoJpegInfo>> {
 
 	private final VideoJpegInfo curFrameJpegInfo = new VideoJpegInfo();
 	private @Nullable RtpPacketMjpeg cachePlainPacket = null;
@@ -71,32 +71,23 @@ public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<VideoJpegInfo> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsMjpegFromFile resObj = new ThreadDataProvEsMjpegFromFile(
+			return new ThreadDataProvEsMjpegFromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsMjpegFromMq resObj = new ThreadDataProvEsMjpegFromMq(
+			return new ThreadDataProvEsMjpegFromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsMjpegFromDemuxMs resObj = new ThreadDataProvEsMjpegFromDemuxMs(
+			return new ThreadDataProvEsMjpegFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoJpegInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

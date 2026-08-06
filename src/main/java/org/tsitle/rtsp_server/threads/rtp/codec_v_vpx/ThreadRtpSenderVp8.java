@@ -19,7 +19,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVp8;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 
 public final class ThreadRtpSenderVp8<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<VideoVp8Info, AVSTRIC, ThreadDataProvEsBase<VideoVp8Info, AVSTRIC>> {
+		extends ThreadRtpSenderBase<VideoVp8Info, AVSTRIC, ThreadDataProvEsBase<VideoVp8Info>> {
 
 	private final VideoVp8Info curFrameVp8Info = new VideoVp8Info();
 	private @Nullable RtpPacketVp8 cachePlainPacket = null;
@@ -73,32 +73,23 @@ public final class ThreadRtpSenderVp8<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<VideoVp8Info, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<VideoVp8Info> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsVp8FromFile resObj = new ThreadDataProvEsVp8FromFile(
+			return new ThreadDataProvEsVp8FromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoVp8Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoVp8Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsVp8FromMq resObj = new ThreadDataProvEsVp8FromMq(
+			return new ThreadDataProvEsVp8FromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoVp8Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoVp8Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsVp8FromDemuxMs resObj = new ThreadDataProvEsVp8FromDemuxMs(
+			return new ThreadDataProvEsVp8FromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoVp8Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoVp8Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

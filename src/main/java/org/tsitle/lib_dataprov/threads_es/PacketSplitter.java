@@ -2,7 +2,6 @@ package org.tsitle.lib_dataprov.threads_es;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -13,10 +12,10 @@ import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-final class PacketSplitter<I extends CodecInfoInterface<I>, AVSTRIC extends AvStreamIncomingBase> {
+final class PacketSplitter<I extends CodecInfoInterface<I>> {
 
 	private final @NonNull PsLogErrorInterface logErrorMsgInterface;
-	private final @NonNull FrameGrabberAvBase<AVSTRIC> frameGrabberPtr;
+	private final @NonNull FrameGrabberAvBase frameGrabberPtr;
 	private final @Nullable PsParseAndConvertDataInterface<I> packetParseAndConvertData;
 	private final @Nullable PsParseOnlyDataInterface<I> packetParseOnlyData;
 	private final @NonNull PsFindNextMagicBytesInterface packetFindNextMagicBytes;
@@ -31,7 +30,7 @@ final class PacketSplitter<I extends CodecInfoInterface<I>, AVSTRIC extends AvSt
 
 	PacketSplitter(
 				@NonNull PsLogErrorInterface logErrorMsgInterface,
-				@NonNull FrameGrabberAvBase<AVSTRIC> frameGrabberPtr,
+				@NonNull FrameGrabberAvBase frameGrabberPtr,
 				boolean needMagicBytes,
 				boolean needConvertData,
 				@Nullable PsParseAndConvertDataInterface<I> packetParseAndConvertData,

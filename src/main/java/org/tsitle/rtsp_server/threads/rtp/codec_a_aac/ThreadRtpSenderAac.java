@@ -21,7 +21,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAac;
 import java.util.Objects;
 
 public final class ThreadRtpSenderAac<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, ThreadDataProvEsBase<AudioAacInfo, AVSTRIC>> {
+		extends ThreadRtpSenderBase<AudioAacInfo, AVSTRIC, ThreadDataProvEsBase<AudioAacInfo>> {
 
 	private final ParamsThreadDpAac paramsAac;
 
@@ -71,33 +71,24 @@ public final class ThreadRtpSenderAac<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<AudioAacInfo, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<AudioAacInfo> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsAacFromFile resObj = new ThreadDataProvEsAacFromFile(
+			return new ThreadDataProvEsAacFromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAac,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAacInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAacInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsAacFromMq resObj = new ThreadDataProvEsAacFromMq(
+			return new ThreadDataProvEsAacFromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAacInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAacInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsAacFromDemuxMs resObj = new ThreadDataProvEsAacFromDemuxMs(
+			return new ThreadDataProvEsAacFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAacInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAacInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

@@ -22,7 +22,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import java.util.Objects;
 
 public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>> {
+		extends ThreadRtpSenderBase<AudioOpusInfo, AVSTRIC, ThreadDataProvEsBase<AudioOpusInfo>> {
 
 	private final ParamsThreadDpOpus paramsOpus;
 
@@ -77,33 +77,24 @@ public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<AudioOpusInfo> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsOpusFromFile resObj = new ThreadDataProvEsOpusFromFile(
+			return new ThreadDataProvEsOpusFromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsOpus,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsOpusFromMq resObj = new ThreadDataProvEsOpusFromMq(
+			return new ThreadDataProvEsOpusFromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsOpusFromDemuxMs resObj = new ThreadDataProvEsOpusFromDemuxMs(
+			return new ThreadDataProvEsOpusFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioOpusInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

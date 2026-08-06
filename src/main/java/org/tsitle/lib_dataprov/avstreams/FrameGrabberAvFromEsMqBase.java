@@ -8,18 +8,22 @@ import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
-public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase<AvStreamIncomingFromEsMq> {
+public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase {
+
+	protected @NonNull AvStreamIncomingFromEsMq avstricFromEsMq;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param avStreamIncoming Incoming A/V stream
+	 * @param avstricFromEsMq Incoming A/V stream
 	 */
 	protected FrameGrabberAvFromEsMqBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsMq avStreamIncoming
+				@NonNull AvStreamIncomingFromEsMq avstricFromEsMq
 			) {
-		super(logMsgInterface, avStreamIncoming);
+		super(logMsgInterface, avstricFromEsMq);
+
+		this.avstricFromEsMq = avstricFromEsMq;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -32,13 +36,13 @@ public abstract class FrameGrabberAvFromEsMqBase extends FrameGrabberAvBase<AvSt
 
 	@Override
 	public boolean haveEos() {
-		return avStreamIncoming.haveEos();
+		return avstricFromEsMq.haveEos();
 	}
 
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException {
-		avStreamIncoming.readFrame(frameBuf, stTimestamp);
+		avstricFromEsMq.readFrame(frameBuf, stTimestamp);
 	}
 
 }

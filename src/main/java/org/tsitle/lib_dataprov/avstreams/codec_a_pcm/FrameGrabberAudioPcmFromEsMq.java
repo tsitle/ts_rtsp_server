@@ -77,7 +77,7 @@ public final class FrameGrabberAudioPcmFromEsMq extends FrameGrabberAvFromEsMqBa
 		}
 
 		//
-		avStreamIncoming.readFrame(cachedDataFromAsi, stTimestamp);
+		avstricFromEsMq.readFrame(cachedDataFromAsi, stTimestamp);
 		if (rtpSamplesPerFrame < 1) {
 			pcmFrameHandler.updateParamFrameSize(cachedDataFromAsi.getUsed());
 			rtpSamplesPerFrame = pcmFrameHandler.getSamplesPerFrame();

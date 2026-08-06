@@ -78,7 +78,7 @@ public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDem
 		}
 
 		//
-		avStreamIncoming.readFrame(cachedDataFromAsi, stTimestamp);
+		avstricFromDemuxMs.readFrame(cachedDataFromAsi, stTimestamp);
 		if (rtpSamplesPerFrame < 1) {
 			pcmFrameHandler.updateParamFrameSize(cachedDataFromAsi.getUsed());
 			rtpSamplesPerFrame = pcmFrameHandler.getSamplesPerFrame();

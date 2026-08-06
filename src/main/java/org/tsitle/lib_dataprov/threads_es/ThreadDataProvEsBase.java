@@ -3,7 +3,6 @@ package org.tsitle.lib_dataprov.threads_es;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.ThreadDpBase;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvBase;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
@@ -19,13 +18,13 @@ import java.util.Optional;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>, AVSTRIC extends AvStreamIncomingBase> extends ThreadDpBase {
+public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> extends ThreadDpBase {
 
 	protected final @NonNull ParamsThreadDpCommon paramsCommon;
 
 	protected long debugStreamOffset = 0;
 
-	protected @Nullable FrameGrabberAvBase<AVSTRIC> frameGrabber;
+	protected @Nullable FrameGrabberAvBase frameGrabber;
 
 	protected final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a frame has been removed from the queue or the thread has been requested to stop */

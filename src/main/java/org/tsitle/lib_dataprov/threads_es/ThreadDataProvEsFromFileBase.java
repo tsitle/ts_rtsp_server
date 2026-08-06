@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
 public abstract class ThreadDataProvEsFromFileBase<I extends CodecInfoInterface<I>>
-		extends ThreadDataProvEsBase<I, AvStreamIncomingFromEsFile> {
+		extends ThreadDataProvEsBase<I> {
 
 	private static class DataQueueEntry {
 		final @NonNull BufferExt buf = new BufferExt();

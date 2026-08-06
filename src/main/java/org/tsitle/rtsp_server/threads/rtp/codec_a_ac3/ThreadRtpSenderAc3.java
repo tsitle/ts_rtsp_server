@@ -21,7 +21,7 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import java.util.Objects;
 
 public final class ThreadRtpSenderAc3<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<AudioAc3Info, AVSTRIC, ThreadDataProvEsBase<AudioAc3Info, AVSTRIC>> {
+		extends ThreadRtpSenderBase<AudioAc3Info, AVSTRIC, ThreadDataProvEsBase<AudioAc3Info>> {
 
 	private final AudioAc3Info curFrameAc3Info = new AudioAc3Info();
 	private @Nullable RtpPacketAc3 cachePlainPacket = null;
@@ -68,32 +68,23 @@ public final class ThreadRtpSenderAc3<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<AudioAc3Info, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<AudioAc3Info> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsAc3FromFile resObj = new ThreadDataProvEsAc3FromFile(
+			return new ThreadDataProvEsAc3FromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAc3Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAc3Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsAc3FromMq resObj = new ThreadDataProvEsAc3FromMq(
+			return new ThreadDataProvEsAc3FromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAc3Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAc3Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsAc3FromDemuxMs resObj = new ThreadDataProvEsAc3FromDemuxMs(
+			return new ThreadDataProvEsAc3FromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioAc3Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioAc3Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

@@ -17,7 +17,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 
 public final class ThreadRtpSenderH265<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderH26xBase<VideoH265Info, AVSTRIC, ThreadDataProvEsBase<VideoH265Info, AVSTRIC>> {
+		extends ThreadRtpSenderH26xBase<VideoH265Info, AVSTRIC, ThreadDataProvEsBase<VideoH265Info>> {
 
 	private @Nullable RtpPacketH265 cachePlainPacket = null;
 
@@ -49,32 +49,23 @@ public final class ThreadRtpSenderH265<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<VideoH265Info, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<VideoH265Info> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsH265FromFile resObj = new ThreadDataProvEsH265FromFile(
+			return new ThreadDataProvEsH265FromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsH265FromMq resObj = new ThreadDataProvEsH265FromMq(
+			return new ThreadDataProvEsH265FromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsH265FromDemuxMs resObj = new ThreadDataProvEsH265FromDemuxMs(
+			return new ThreadDataProvEsH265FromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<VideoH265Info, AVSTRIC> typedProvider = (ThreadDataProvEsBase<VideoH265Info, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

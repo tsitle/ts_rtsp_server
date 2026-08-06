@@ -19,7 +19,7 @@ import java.util.*;
 public abstract class ThreadRtpSenderH26xBase<
 			I extends CodecInfoH26xBase<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			TDP extends ThreadDataProvEsBase<I, AVSTRIC>
+			TDP extends ThreadDataProvEsBase<I>
 		> extends ThreadRtpSenderBase<I, AVSTRIC, TDP> {
 
 	private enum AuState {

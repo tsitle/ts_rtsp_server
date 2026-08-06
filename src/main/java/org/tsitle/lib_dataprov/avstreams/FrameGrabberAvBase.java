@@ -14,22 +14,22 @@ import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
 import java.util.Optional;
 
-public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
+public abstract class FrameGrabberAvBase {
 
 	private final @Nullable LogMsgInterface logMsgInterface;
-	protected @NonNull T avStreamIncoming;
+	private final @NonNull AvStreamIncomingBase avStreamIncomingBase;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param avStreamIncoming Incoming A/V stream
+	 * @param avStreamIncomingBase Incoming A/V stream
 	 */
 	protected FrameGrabberAvBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull T avStreamIncoming
+				@NonNull AvStreamIncomingBase avStreamIncomingBase
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.avStreamIncoming = avStreamIncoming;
+		this.avStreamIncomingBase = avStreamIncomingBase;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
 	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
 	 */
 	public void rewind() throws AvCannotOpenInputException {
-		avStreamIncoming.rewind();
+		avStreamIncomingBase.rewind();
 	}
 
 	/**
@@ -68,7 +68,7 @@ public abstract class FrameGrabberAvBase<T extends AvStreamIncomingBase> {
 	 * @return Video frames per second
 	 */
 	public Optional<Double> getVideoFps() {
-		return avStreamIncoming.getVideoFps();
+		return avStreamIncomingBase.getVideoFps();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,9 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 import java.util.Arrays;
 
-public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<AvStreamIncomingFromEsFile> {
+public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase {
+
+	protected @NonNull AvStreamIncomingFromEsFile avstricFromEsFile;
 
 	private final byte[] frameStartMagicBytesPtr_fixed;
 	private final int magicBytesLengthInBits_fixed;
@@ -22,18 +24,21 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<Av
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param avStreamIncoming Incoming A/V stream
+	 * @param avstricFromEsFile Incoming A/V stream
 	 * @param frameStartMagicBytes Magic Bytes for frame start detection
 	 * @param magicBytesLengthInBits Length of the Magic Bytes array in bits
 	 */
 	protected FrameGrabberAvFromEsFileBase(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromEsFile avStreamIncoming,
+				@NonNull AvStreamIncomingFromEsFile avstricFromEsFile,
 				byte[] frameStartMagicBytes,
 				int magicBytesLengthInBits
 			) {
-		super(logMsgInterface, avStreamIncoming);
+		super(logMsgInterface, avstricFromEsFile);
 
+		this.avstricFromEsFile = avstricFromEsFile;
+
+		//
 		if (magicBytesLengthInBits % 4 != 0) {
 			throw new IllegalArgumentException("magicBytesLengthInBits must be zero or a multiple of 4");
 		}
@@ -58,7 +63,7 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<Av
 
 	@Override
 	public boolean haveEos() {
-		return (getCachedDataLengthForFramesWithStartCode() == 0 && avStreamIncoming.haveEos());
+		return (getCachedDataLengthForFramesWithStartCode() == 0 && avstricFromEsFile.haveEos());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -194,7 +199,7 @@ public abstract class FrameGrabberAvFromEsFileBase extends FrameGrabberAvBase<Av
 		if (cachedDataLength == cachedDataBuf.length) {
 			cachedDataBuf = Arrays.copyOf(cachedDataBuf, cachedDataBuf.length * 2);
 		}
-		int tmpDidRead = avStreamIncoming.readBytes(
+		int tmpDidRead = avstricFromEsFile.readBytes(
 				cachedDataBuf,
 				cachedDataLength,
 				cachedDataBuf.length - cachedDataLength

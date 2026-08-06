@@ -19,7 +19,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
 import java.util.Objects;
 
 public final class ThreadRtpSenderPcm<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<AudioPcmInfo, AVSTRIC, ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC>> {
+		extends ThreadRtpSenderBase<AudioPcmInfo, AVSTRIC, ThreadDataProvEsBase<AudioPcmInfo>> {
 
 	private final ParamsThreadDpAudioCommon paramsAudioCommon;
 	private final ParamsThreadDpPcm paramsPcm;
@@ -89,38 +89,29 @@ public final class ThreadRtpSenderPcm<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<AudioPcmInfo> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsFile.class) {
-			ThreadDataProvEsPcmFromFile resObj = new ThreadDataProvEsPcmFromFile(
+			return new ThreadDataProvEsPcmFromFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAudioCommon,
 					paramsPcm,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			ThreadDataProvEsPcmFromMq resObj = new ThreadDataProvEsPcmFromMq(
+			return new ThreadDataProvEsPcmFromMq(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAudioCommon,
 					paramsPcm
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			ThreadDataProvEsPcmFromDemuxMs resObj = new ThreadDataProvEsPcmFromDemuxMs(
+			return new ThreadDataProvEsPcmFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAudioCommon,
 					paramsPcm
 				);
-			@SuppressWarnings("unchecked")
-			ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC> typedProvider = (ThreadDataProvEsBase<AudioPcmInfo, AVSTRIC>)resObj;
-			return typedProvider;
 		}
 		throw new RuntimeException("invalid avStreamIncomingType");
 	}

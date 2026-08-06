@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ThreadRtpSenderBase<
 			I extends CodecInfoInterface<I>,
 			AVSTRIC extends AvStreamIncomingBase,
-			TDP extends ThreadDataProvEsBase<I, AVSTRIC>
+			TDP extends ThreadDataProvEsBase<I>
 		> extends ThreadPausableBase {
 
 	private record Sf_sfasf_Result(boolean resB, boolean isLastPktOfFrame) { }

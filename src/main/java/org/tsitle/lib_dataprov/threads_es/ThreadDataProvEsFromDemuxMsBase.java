@@ -14,9 +14,9 @@ import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
 public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterface<I>>
-		extends ThreadDataProvEsBase<I, AvStreamIncomingFromDemuxMs> {
+		extends ThreadDataProvEsBase<I> {
 
-	private @Nullable PacketSplitter<I, AvStreamIncomingFromDemuxMs> packetSplitter = null;
+	private @Nullable PacketSplitter<I> packetSplitter = null;
 	private final boolean needMagicBytes;
 	private final boolean needConvertData;
 	private final boolean canReadFrameLenFromAvInfo;

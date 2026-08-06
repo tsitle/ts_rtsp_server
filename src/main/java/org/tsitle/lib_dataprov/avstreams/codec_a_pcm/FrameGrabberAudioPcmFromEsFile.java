@@ -72,7 +72,7 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 	 */
 	@Override
 	public boolean haveEos() {
-		return avStreamIncoming.haveEos();
+		return avstricFromEsFile.haveEos();
 	}
 
 	/**
@@ -92,7 +92,7 @@ public final class FrameGrabberAudioPcmFromEsFile extends FrameGrabberAvFromEsFi
 		cachedDataFromAsi.increaseSize(pcmFrameHandler.getFrameSizeBytes());
 
 		//
-		int tmpRead = avStreamIncoming.readBytes(cachedDataFromAsi.getBaPtr(), pcmFrameHandler.getFrameSizeBytes());
+		int tmpRead = avstricFromEsFile.readBytes(cachedDataFromAsi.getBaPtr(), pcmFrameHandler.getFrameSizeBytes());
 		cachedDataFromAsi.setUsed(tmpRead);
 
 		//
