@@ -154,7 +154,7 @@ public final class ThreadMqE2I extends RunnableBase {
 						failCount = 120;
 					}
 					logDebug(FNC_NAME, "MqException caught: " + e.getMessage());
-					logError(FNC_NAME, "Connection to MQ lost/disconnected");
+					logWarn(FNC_NAME, "Connection to MQ lost/disconnected");
 				} finally {
 					mqExternalSub.close();
 				}
