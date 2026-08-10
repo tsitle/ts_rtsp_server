@@ -44,8 +44,7 @@ final class StreamsCfgVirtualEsMapper {
 
 	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource(
 				@NonNull RtspSrvConfigStreamsSsNg ssCfgObj,
-				@NonNull String extRealSsId,
-				@NonNull String extRealSsHash
+				@NonNull String extRealSsId
 			) throws ConfigInvalidException {
 		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".createVirtualEsesFromDemuxedSource()";
 
@@ -80,7 +79,7 @@ final class StreamsCfgVirtualEsMapper {
 					ssCfgObj.getEsSourceType(),
 					internalUri
 				);
-			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsHash, true);
+			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, true);
 			RtspProtoIdEsSource tmpInternalId = RtspAvailableStreamsSvc.computeInternalEsId(tmpExternalId);
 			mapVirtExternalEsIdToInternal.put(tmpExternalId, tmpInternalId);
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
@@ -111,7 +110,7 @@ final class StreamsCfgVirtualEsMapper {
 					ssCfgObj.getEsSourceType(),
 					internalUri
 				);
-			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsHash, false);
+			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, false);
 			RtspProtoIdEsSource tmpInternalId = RtspAvailableStreamsSvc.computeInternalEsId(tmpExternalId);
 			mapVirtExternalEsIdToInternal.put(tmpExternalId, tmpInternalId);
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
@@ -302,8 +301,8 @@ final class StreamsCfgVirtualEsMapper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull String generateVirtualDemuxedExternalEsId(@NonNull String extRealSsHash, boolean isVideo) {
-		return String.format("demuxed_from_#%s#-virtual_es_#%s#", extRealSsHash, isVideo ? "v" : "a");
+	private static @NonNull String generateVirtualDemuxedExternalEsId(@NonNull String extRealSsId, boolean isVideo) {
+		return String.format("demuxed_s_#%s#-virtual_es_#%s#", extRealSsId, isVideo ? "v" : "a");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
