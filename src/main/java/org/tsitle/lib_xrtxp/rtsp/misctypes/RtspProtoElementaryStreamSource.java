@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 /**
  * Container for an Elementary-Stream Source within an Input Source for RTSP streams.
  */
-public final class RtspProtoElementaryStreamSource {
+public final class RtspProtoElementaryStreamSource implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
@@ -46,6 +46,17 @@ public final class RtspProtoElementaryStreamSource {
 		isWriteProtected = true;
 
 		id.writeProtect();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	public @NonNull RtspProtoElementaryStreamSource clone() {
+		RtspProtoElementaryStreamSource clone = new RtspProtoElementaryStreamSource();
+		clone.id.copyFrom(id);
+		clone.enabled = enabled;
+		return clone;
 	}
 
 }

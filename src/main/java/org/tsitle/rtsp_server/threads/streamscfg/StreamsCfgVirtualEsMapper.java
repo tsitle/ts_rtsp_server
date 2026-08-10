@@ -18,7 +18,6 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
@@ -80,7 +79,7 @@ final class StreamsCfgVirtualEsMapper {
 					internalUri
 				);
 			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, true);
-			RtspProtoIdEsSource tmpInternalId = RtspAvailableStreamsSvc.computeInternalEsId(tmpExternalId);
+			RtspProtoIdEsSource tmpInternalId = StreamsCfgIdMapperHelper.computeInternalEsId(tmpExternalId);
 			mapVirtExternalEsIdToInternal.put(tmpExternalId, tmpInternalId);
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
 
@@ -111,7 +110,7 @@ final class StreamsCfgVirtualEsMapper {
 					internalUri
 				);
 			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, false);
-			RtspProtoIdEsSource tmpInternalId = RtspAvailableStreamsSvc.computeInternalEsId(tmpExternalId);
+			RtspProtoIdEsSource tmpInternalId = StreamsCfgIdMapperHelper.computeInternalEsId(tmpExternalId);
 			mapVirtExternalEsIdToInternal.put(tmpExternalId, tmpInternalId);
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
 
@@ -302,7 +301,7 @@ final class StreamsCfgVirtualEsMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String generateVirtualDemuxedExternalEsId(@NonNull String extRealSsId, boolean isVideo) {
-		return String.format("demuxed_s_#%s#-virtual_es_#%s#", extRealSsId, isVideo ? "v" : "a");
+		return String.format("demuxed_ss_#%s#-virtual_es_#%s#", extRealSsId, isVideo ? "v" : "a");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

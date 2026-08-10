@@ -1,7 +1,6 @@
 package org.tsitle.rtsp_server.availstreams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
@@ -11,8 +10,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStreamNg;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +19,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface {
-
-	private static final int ES_ID_HASH_LEN = 8;
 
 	private final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
 	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> esSourceMap = new HashMap<>();
@@ -37,21 +32,6 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public static @NonNull RtspProtoIdInputSource computeInternalIsId(@NonNull String externalId) {
-		return RtspProtoIdInputSource.of(externalId);
-	}
-
-	public static @NonNull RtspProtoIdEsSource computeInternalEsId(@NonNull String externalId) {
-		return RtspProtoIdEsSource.of(
-				"e" + HashMd5Helper.hashOfString(
-						"internal_es_#" + externalId + "#",
-						false
-					).substring(0, ES_ID_HASH_LEN)
-			);
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void updateAvailableStreams(@NonNull RtspAsSvcInputData asSvcInputData) {
@@ -183,37 +163,32 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 	private void copyFromAsSvcInputData(@NonNull RtspAsSvcInputData asSvcInputData) {
 		inputSourceMap.clear();
-		for (Map.Entry<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStreamNg> entry
-				: asSvcInputData.mapIsIdToCfgObj.entrySet()) {
-			RtspProtoInputSource protoInputSource = new RtspProtoInputSource();
-			protoInputSource.setIdInputSource(entry.getKey());
-			protoInputSource.setEnabled(entry.getValue().getEnabled());
-			protoInputSource.setNeedsAuthentication(entry.getValue().getNeedsAuthentication());
-			protoInputSource.setAllowedUserAccountGroups(entry.getValue().getAllowedUserAccountGroups());
-			protoInputSource.setNeedsEncryption(entry.getValue().getNeedsEncryption());
-			for (String externalSsId : entry.getValue().getSubStreamIds()) {
-				RtspProtoIdEsSource internalSsId = computeInternalEsId(externalSsId);
-				protoInputSource.putIdEsSource(internalSsId);
-			}
-			inputSourceMap.put(entry.getKey(), protoInputSource);
+		for (Map.Entry<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> entry
+				: asSvcInputData.mapIsIdToIsObj.entrySet()) {
+			inputSourceMap.put(
+					RtspProtoIdInputSource.of(entry.getKey().getIdStr().orElseThrow()),
+					entry.getValue().clone()
+				);
 		}
 
 		//
 		esSourceMap.clear();
-		for (Map.Entry<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> entry
-				: asSvcInputData.mapEsIdToCfgObj.entrySet()) {
-			RtspProtoElementaryStreamSource protoEsSource = new RtspProtoElementaryStreamSource();
-			protoEsSource.setIdEsSource(entry.getKey());
-			protoEsSource.setEnabled(entry.getValue().getEnabled());
-			esSourceMap.put(entry.getKey(), protoEsSource);
+		for (Map.Entry<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> entry
+				: asSvcInputData.mapEsIdToEsObj.entrySet()) {
+			esSourceMap.put(
+					RtspProtoIdEsSource.of(entry.getKey().getIdStr().orElseThrow()),
+					entry.getValue().clone()
+				);
 		}
 
 		//
 		eseiMap.clear();
 		for (Map.Entry<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> entry
-				: asSvcInputData.mapEsIdToEsei.entrySet()) {
-			RtspProtoEsSourceExpandedInfo protoEsei = entry.getValue().clone();
-			eseiMap.put(entry.getKey(), protoEsei);
+				: asSvcInputData.mapEsIdToEseiObj.entrySet()) {
+			eseiMap.put(
+					RtspProtoIdEsSource.of(entry.getKey().getIdStr().orElseThrow()),
+					entry.getValue().clone()
+				);
 		}
 	}
 

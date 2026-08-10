@@ -10,12 +10,12 @@ import java.util.Set;
 /**
  * Container for an Input Source for RTSP streams.
  */
-public final class RtspProtoInputSource {
+public final class RtspProtoInputSource implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
 	/** Input Source ID */
-	private final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
+	private final @NonNull RtspProtoIdInputSource id = RtspProtoIdInputSource.ofEmpty();
 	/** Is this Input Source enabled? (default: true) */
 	private boolean enabled = true;
 	/** Does this Input Source need authentication? (default: true) */
@@ -33,7 +33,7 @@ public final class RtspProtoInputSource {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull RtspProtoIdInputSource getIdInputSource() {
-		RtspProtoIdInputSource resObj = idInputSource.clone();
+		RtspProtoIdInputSource resObj = id.clone();
 		resObj.writeProtect();
 		return resObj;
 	}
@@ -41,7 +41,7 @@ public final class RtspProtoInputSource {
 		if (isWriteProtected) {
 			throw new IllegalStateException("Cannot modify write protected object");
 		}
-		this.idInputSource.copyFrom(id);
+		this.id.copyFrom(id);
 	}
 
 	public boolean getEnabled() {
@@ -109,7 +109,22 @@ public final class RtspProtoInputSource {
 	public void writeProtect() {
 		isWriteProtected = true;
 
-		idInputSource.writeProtect();
+		id.writeProtect();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	public @NonNull RtspProtoInputSource clone() {
+		RtspProtoInputSource res = new RtspProtoInputSource();
+		res.id.copyFrom(id);
+		res.enabled = enabled;
+		res.needsAuthentication = needsAuthentication;
+		res.allowedUserAccountGroups.addAll(allowedUserAccountGroups);
+		res.needsEncryption = needsEncryption;
+		res.elementaryStreamSourceIds.addAll(elementaryStreamSourceIds);
+		return res;
 	}
 
 }

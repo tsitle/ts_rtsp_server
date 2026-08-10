@@ -3,9 +3,9 @@ package org.tsitle.rtsp_server.availstreams;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStreamNg;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,9 +18,9 @@ public final class RtspAsSvcInputData {
 	public final @NonNull Set<@NonNull RtspProtoIdInputSource> isIdsModified = new HashSet<>();
 	public final @NonNull Set<@NonNull RtspProtoIdInputSource> isIdsDeleted = new HashSet<>();
 
-	public final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStreamNg> mapIsIdToCfgObj = new HashMap<>();
-	public final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> mapEsIdToCfgObj = new HashMap<>();
-	public final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapEsIdToEsei = new HashMap<>();
+	public final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> mapIsIdToIsObj = new HashMap<>();
+	public final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> mapEsIdToEsObj = new HashMap<>();
+	public final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapEsIdToEseiObj = new HashMap<>();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -30,9 +30,9 @@ public final class RtspAsSvcInputData {
 		isIdsModified.clear();
 		isIdsDeleted.clear();
 
-		mapIsIdToCfgObj.clear();
-		mapEsIdToCfgObj.clear();
-		mapEsIdToEsei.clear();
+		mapIsIdToIsObj.clear();
+		mapEsIdToEsObj.clear();
+		mapEsIdToEseiObj.clear();
 	}
 
 }
