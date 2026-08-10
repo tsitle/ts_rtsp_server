@@ -265,6 +265,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		if (bsfH26x != null) {
 			bsfH26x.close();
 			bsfH26x = null;
+			haveCheckedFrameForH26xAnnexB = false;
+		}
+		if (bsfAac != null) {
+			bsfAac = null;
+			haveCheckedFrameForAacAdts = false;
 		}
 
 		haveReachedMaxSecs = false;
