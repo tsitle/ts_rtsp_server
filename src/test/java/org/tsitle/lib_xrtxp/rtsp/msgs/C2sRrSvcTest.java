@@ -71,7 +71,7 @@ public class C2sRrSvcTest {
 		}
 
 		@Override
-		public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+		public @NonNull RtspProtoEsSourceExpandedInfo getElementaryStreamSourceExpInfo(@NonNull RtspProtoIdEsSource idEsSource)
 				throws RtspProtoIdEsSourceNotFoundException {
 			throw new RtspProtoIdEsSourceNotFoundException("");
 		}

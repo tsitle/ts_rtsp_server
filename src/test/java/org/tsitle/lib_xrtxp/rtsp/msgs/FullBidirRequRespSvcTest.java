@@ -99,10 +99,11 @@ public class FullBidirRequRespSvcTest {
 		}
 
 		@Override
-		public @NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+		public @NonNull RtspProtoEsSourceExpandedInfo getElementaryStreamSourceExpInfo(@NonNull RtspProtoIdEsSource idEsSource)
 				throws RtspProtoIdEsSourceNotFoundException {
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
-				return new ElementaryStreamSourceInfo(
+				return new RtspProtoEsSourceExpandedInfo(
+						1,
 						RtpPacketType.V_H264,
 						RtspProtoEsSourceType.ST_ES_RAW_FILE,
 						URI.create("file:///dummy-file-video"),
@@ -117,7 +118,8 @@ public class FullBidirRequRespSvcTest {
 					);
 			}
 			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
-				return new ElementaryStreamSourceInfo(
+				return new RtspProtoEsSourceExpandedInfo(
+						2,
 						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
 						RtspProtoEsSourceType.ST_ES_RAW_FILE,
 						URI.create("file:///dummy-file-audio"),
