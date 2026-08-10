@@ -7,10 +7,11 @@ import org.tsitle.lib_xrtxp.common.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
-import org.tsitle.rtsp_server.config.RtspConfig;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -45,16 +46,16 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private final @NonNull RtspProtoIpAddr fromCtorClientIpAddr = new RtspProtoIpAddr();
 	private final boolean fromCtorIsRtspsConnection;
 
-	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
+	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = RtspProtoPtrSessionInfo.ofNewSi();
 	private final @NonNull RtspProtoIdSession lastSessionId = RtspProtoIdSession.ofEmpty();
 
 	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
-	private final @NonNull RtspAvailableStreamsSvc availableStreamsSvc;
 	private final @NonNull RtspProtoRequestInputSvc rtspProtoRequestInputSvc;
 	private final @NonNull RtspProtoResponseOutputSvc rtspProtoResponseOutputSvc;
 	private final @NonNull RtspParamGetterSetterSvc rtspParamGetterSetterSvc;
@@ -71,8 +72,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
-	 * @param rtspConfig RTSP configuration
+	 * @param rtspSrvConfig RTSP server configuration
 	 * @param cfgServerNameAndVersion RTSP server software name and version
+	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
 	 * @param globalSessionInfoInterface Global Session Info service
 	 * @param clientConnectionNr Client connection number
 	 * @param rtspSocketTcp RTSP TCP socket for client communication
@@ -81,8 +83,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	public ThreadRtspTcpClientInbound(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
+				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtspPlayThreadMngInterface playThreadMngInterface,
 				int clientConnectionNr,
@@ -94,9 +97,10 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		//
 		this.threadName = "RTSP_CMNG#c" + clientConnectionNr;
 
-		this.rtspConfig = rtspConfig;
+		this.rtspSrvConfig = rtspSrvConfig;
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
+		this.availableStreamsInterface = availableStreamsInterface;
 		this.playThreadMngInterface = playThreadMngInterface;
 
 		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
@@ -107,9 +111,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		this.fromCtorIsRtspsConnection = isRtspsConnection;
 
 		//
-		this.availableStreamsSvc = new RtspAvailableStreamsSvc(rtspConfig);
-
-		//
 		RtspProtoDataCntMessageTypes cfgSrvSuppIncomingMts = new RtspProtoDataCntMessageTypes();
 		cfgSrvSuppIncomingMts.putAllMts(RtspServerConstants.SERVER_SUPPORTED_INCOMING_MESSAGE_TYPES);
 		cfgSrvSuppIncomingMts.writeProtect();
@@ -117,8 +118,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		//
 		RtspUserAuthSvc userAuthSvc = new RtspUserAuthSvc(
 				logMsgInterface,
-				rtspConfig,
-				this.availableStreamsSvc,
+				rtspSrvConfig,
+				availableStreamsInterface,
 				globalSessionInfoInterface
 			);
 
@@ -129,15 +130,15 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		this.rtspProtoRequestInputSvc = new RtspProtoRequestInputSvc(
 				logMsgInterface,
 				true,
-				rtspConfig.getLogLevel(),
+				rtspSrvConfig.getLogLevel(),
 				cfgSrvSuppIncomingMts,
 				RtspServerConstants.SERVER_SUPPORTED_FEATURES,
 				Set.of(),
-				rtspConfig.getIsDebugPrintRtspRcvd(),
-				rtspConfig.getIsDebugDisableTransportUdp(),
+				rtspSrvConfig.getIsDebugPrintRtspRcvd(),
+				rtspSrvConfig.getIsDebugDisableTransportUdp(),
 				this.sessionInfoPtr,
 				userAuthSvc,
-				this.availableStreamsSvc,
+				availableStreamsInterface,
 				globalSessionInfoInterface,
 				this.rtspParamGetterSetterSvc,
 				this.rtxpTcpReadWrite
@@ -149,11 +150,11 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				RtspParamGetterSetterSvc.CONTENT_LANGUAGE,
 				cfgSrvSuppIncomingMts,
 				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
-				rtspConfig.getIsDebugPrintRtspSdpSent(),
-				rtspConfig.getIsDebugPrintRtspSent(),
-				rtspConfig.getIsDebugDisableTransportUdp(),
+				rtspSrvConfig.getIsDebugPrintRtspSdpSent(),
+				rtspSrvConfig.getIsDebugPrintRtspSent(),
+				rtspSrvConfig.getIsDebugDisableTransportUdp(),
 				this.sessionInfoPtr,
-				this.availableStreamsSvc,
+				availableStreamsInterface,
 				globalSessionInfoInterface,
 				this.rtspParamGetterSetterSvc,
 				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("Lavf"),  // FFplay doesn't support MIKEY
@@ -465,13 +466,13 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		}
 		return new SrtxpRekeySvc(
 				logMsgInterface,
-				rtspConfig,
+				rtspSrvConfig,
 				cfgServerNameAndVersion,
 				RtspParamGetterSetterSvc.CONTENT_LANGUAGE,
 				sessionInfoPtr,
 				threadRtspPlay,
 				rtxpTcpReadWrite,
-				availableStreamsSvc,
+				availableStreamsInterface,
 				globalSessionInfoInterface
 			);
 	}
@@ -484,7 +485,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		}
 		threadRtspPlay = playThreadMngInterface.startOrGetThreadRtspPlay(
 				sessionInfoPtr.ptr(),
-				availableStreamsSvc,
+				availableStreamsInterface,
 				this
 			);
 		if (threadRtspPlay == null) {

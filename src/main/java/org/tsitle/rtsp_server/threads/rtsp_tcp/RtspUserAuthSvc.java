@@ -1,7 +1,6 @@
 package org.tsitle.rtsp_server.threads.rtsp_tcp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.rtsp_server.config.RtspConfig;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoAuthDigest;
@@ -14,9 +13,9 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * RTSP User Authentication and Authorization Service
@@ -24,18 +23,18 @@ import java.util.Set;
 final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtspConfig = rtspConfig;
+		this.rtspSrvConfig = rtspSrvConfig;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
@@ -74,7 +73,7 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			logDebug(FNC_NAME, "Invalid nonce");
 			return false;
 		}
-		final Optional<String> tmpOptUserPw = rtspConfig.getUserPassword(requAuthClient.getAuthUser());
+		final Optional<String> tmpOptUserPw = rtspSrvConfig.getUserPassword(requAuthClient.getAuthUser());
 		if (tmpOptUserPw.isEmpty()) {
 			logDebug(FNC_NAME, "Invalid username");
 			return false;
@@ -125,11 +124,15 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			return true;
 		}
 
-		Set<String> tmpUsers = rtspConfig.getUsersAllowedToAccessInputSource(idInputSource);
+		/*
+		Set<String> tmpUsers = rtspSrvConfig.getUsersAllowedToAccessInputSource(idInputSource);
 		if (tmpUsers.isEmpty()) {
 			return false;
 		}
 		return tmpUsers.contains(requAuthClient.getAuthUser().toLowerCase());
+		@TODO
+		 */
+		return false;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

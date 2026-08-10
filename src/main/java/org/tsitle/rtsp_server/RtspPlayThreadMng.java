@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.rtsp_server.config.RtspConfig;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
@@ -33,7 +33,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull CancelToken cancelToken;
-	private final @NonNull RtspConfig rtspConfig;
+	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final @NonNull Queue<VarsForNewThread> queueForNewThread = new ConcurrentLinkedQueue<>();
@@ -50,12 +50,12 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 	public RtspPlayThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.cancelToken = cancelToken;
-		this.rtspConfig = rtspConfig;
+		this.rtspSrvConfig = rtspSrvConfig;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 	}
 
@@ -128,7 +128,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 		ThreadRtspPlay threadRtspPlay = new ThreadRtspPlay(
 				logMsgInterface,
 				cancelToken,
-				rtspConfig,
+				rtspSrvConfig,
 				varsForNewThread.rtspSessionInfo(),
 				varsForNewThread.childThreadsCbRtpTcpInterface(),
 				varsForNewThread.availableStreamsInterface(),

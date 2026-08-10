@@ -12,7 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
-import org.tsitle.rtsp_server.config.RtspConfig;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
@@ -49,7 +49,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
-	 * @param rtspConfig RTSP configuration
+	 * @param rtspSrvConfig RTSP server configuration
 	 * @param rtspSessionInfo Session info
 	 * @param rctcbRtpTcp Callback interface for RTSP child threads
 	 * @param availableStreamsInterface Available streams instance
@@ -58,7 +58,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	public ThreadRtspPlay(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
@@ -84,7 +84,7 @@ public final class ThreadRtspPlay extends RunnableBase
 		}
 		this.rtspChildThreadMng = new RtspChildThreadMng(
 				logMsgInterface,
-				rtspConfig,
+				rtspSrvConfig,
 				subStreamIds,
 				rtspSessionInfo.getIdSession(),
 				rtspSessionInfo.getClientIpAddr(),

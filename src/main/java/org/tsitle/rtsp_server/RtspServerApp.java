@@ -3,26 +3,23 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
-import org.tsitle.lib_mq.client.types.MqElementaryStreamSourceSettings;
-import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.config.RtspConfigElementaryStreamSource;
+import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
+import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
-import org.tsitle.rtsp_server.config.RtspConfig;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 import org.tsitle.lib_xrtxp.ssl.SslException;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.rtsp_server.threads.logging.RtxpLogger;
+import org.tsitle.rtsp_server.threads.logging.ThreadRtxpLogger;
 import org.tsitle.rtsp_server.threads.mq_e2i.CodecSettingsChangedFromMqInterface;
-import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.ThreadRtspTcpClientInbound;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.rtsp_server.threads.streamscfg.ThreadStreamsConfig;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -40,14 +37,14 @@ public final class RtspServerApp {
 
 	private static final int RTSP_THREADS_TCM = 20;  // one thread per client connection
 
-	private static RtspConfig rtspConfig = null;
+	private static RtspSrvConfigMainNg rtspSrvConfig = null;
 
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);
 	private static final CancelToken cancelToken = new CancelToken();
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
-	private static RtxpLogger rtxpLoggerThread = new RtxpLogger();
+	private static @Nullable ThreadRtxpLogger threadRtxpLogger = null;
 	private static final ExecutorService poolRtspTcm = new ThreadPoolExecutor(
 			RTSP_THREADS_TCM,
 			RTSP_THREADS_TCM,
@@ -57,6 +54,9 @@ public final class RtspServerApp {
 	private static @Nullable ExecutorService poolMqE2I = null;
 	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
 
+	private static final @NonNull RtspAvailableStreamsSvc availableStreamsSvc = new RtspAvailableStreamsSvc();
+	private static @Nullable ThreadStreamsConfig threadStreamsConfig = null;
+
 	private static final @NonNull CodecSettingsChangedFromMqHandler codecSettingsChangedFromMqHandler =
 			new CodecSettingsChangedFromMqHandler();
 
@@ -65,7 +65,7 @@ public final class RtspServerApp {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static void main(String[] argv) {
+	/* pre-Java25: public */ static void main(String[] argv) {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".main()";
 
 		verifyTlsCryptoProviders();
@@ -76,75 +76,23 @@ public final class RtspServerApp {
 			System.exit(1);
 		}
 
-		// without the Signal handler below, the Shutdown Hook works just fine
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				if (doNeedShutdownHandler.get()) {
-					System.out.println();
-					System.out.println(FNC_NAME + ": SDH: Shutting down ...");
-					doStop.set(true);
-					//
-					int loopCnt = 0;
-					while (! isShutdownComplete.get() && loopCnt++ < 60) {
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							System.err.println(FNC_NAME + ": SDH: InterruptedException");
-							Thread.currentThread().interrupt();  // restore flag
-						}
-					}
-					if (isShutdownComplete.get()) {
-						System.out.println(FNC_NAME + ": SDH: Shutdown complete");
-					} else {
-						System.err.println(FNC_NAME + ": SDH: threads still running, forcing shutdown");
-					}
-				}
-			}));
-		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
-		/*sun.misc.Signal.handle(new sun.misc.Signal("INT"),  // SIGINT
-				signal -> {
-					System.out.println("Interrupted by Ctrl+C");
-					System.exit(1);
-				});*/
+		//
+		addShutdownHook(FNC_NAME);
 
 		// set the log level for FFmpeg
 		FfmpegHelperFfLogLevel.muteLogMsgs();
 
-		// read the configuration
-		try {
-			rtspConfig = ConfigReader.readConfigFromFile(argv[0]);
-		} catch (ConfigInvalidException e) {
-			System.err.println(FNC_NAME + ": ConfigInvalidException caught: " + e.getMessage());
-			doNeedShutdownHandler.set(false);
-			System.exit(1);
-		} catch (IOException e) {
-			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
-			doNeedShutdownHandler.set(false);
-			System.exit(1);
-		} catch (IllegalArgumentException e) {
-			System.err.println(FNC_NAME + ": IllegalArgumentException caught: " + e.getMessage());
-			doNeedShutdownHandler.set(false);
-			System.exit(1);
-		}
+		//
+		readMainConfigFile(argv[0]);
+
+		//
+		startLoggerThread();
 
 		// start the ('external to internal') Message Queue threads
-		final List<Integer> mqStreamSources = findMqStreamSources();
-		poolMqE2I = new ThreadPoolExecutor(
-				Math.max(mqStreamSources.size(), 1),
-				Math.max(mqStreamSources.size(), 1),
-				60L, TimeUnit.SECONDS,
-				new SynchronousQueue<>(true)
-			);
-		startMqs(mqStreamSources);
+		startMessageQueueThreadsE2I();
 
-		// start the logger thread
-		rtxpLoggerThread.setEnableOutputConsole(rtspConfig.getLoggingEnabledOutputConsole());
-		rtxpLoggerThread.setEnableOutputFile(
-				rtspConfig.getLoggingEnabledOutputFile(),
-				rtspConfig.getLoggingOutputFilename()
-			);
-		rtxpLoggerThread.setName("RTXPLOGGER");
-		rtxpLoggerThread.setDaemon(false);
-		rtxpLoggerThread.start();
+		//
+		startStreamsConfigThread();
 
 		//
 		boolean resB = runServerLoop();
@@ -182,24 +130,78 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void waitUntilLogQueueIsEmpty() {
-		while (rtxpLoggerThread.havePendingMessages()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break;
-			}
+	private static void addShutdownHook(@NonNull String fncName) {
+		// without the Signal handler below, the Shutdown Hook works just fine
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				if (doNeedShutdownHandler.get()) {
+					System.out.println();
+					System.out.println(fncName + ": SDH: Shutting down ...");
+					doStop.set(true);
+					//
+					int loopCnt = 0;
+					while (! isShutdownComplete.get() && loopCnt++ < 60) {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							System.err.println(fncName + ": SDH: InterruptedException");
+							Thread.currentThread().interrupt();  // restore flag
+						}
+					}
+					if (isShutdownComplete.get()) {
+						System.out.println(fncName + ": SDH: Shutdown complete");
+					} else {
+						System.err.println(fncName + ": SDH: threads still running, forcing shutdown");
+					}
+				}
+			}));
+		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
+		/*sun.misc.Signal.handle(new sun.misc.Signal("INT"),  // SIGINT
+				signal -> {
+					System.out.println(fncName + ": Interrupted by Ctrl+C");
+					System.exit(1);
+				});*/
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void readMainConfigFile(@NonNull String configFilePath) {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".readMainConfigFile()";
+
+		try {
+			rtspSrvConfig = RtspSrvConfigFileReader.readMainConfigFromFile(configFilePath);
+		} catch (ConfigInvalidException e) {
+			System.err.println(FNC_NAME + ": ConfigInvalidException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
+			System.exit(1);
+		} catch (IOException e) {
+			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
+			System.exit(1);
+		} catch (IllegalArgumentException e) {
+			System.err.println(FNC_NAME + ": IllegalArgumentException caught: " + e.getMessage());
+			doNeedShutdownHandler.set(false);
+			System.exit(1);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static void startMessageQueueThreadsE2I() {
+		final List<Integer> mqStreamSources = findMqStreamSources();
+		poolMqE2I = new ThreadPoolExecutor(
+				Math.max(mqStreamSources.size(), 1),
+				Math.max(mqStreamSources.size(), 1),
+				60L, TimeUnit.SECONDS,
+				new SynchronousQueue<>(true)
+			);
+		startE2iMqsForListOfStreamSources(mqStreamSources);
+	}
+
 	private static @NonNull List<@NonNull Integer> findMqStreamSources() {
 		List<Integer> resL = new ArrayList<>();
-		for (Integer esSourceId : rtspConfig.getElementaryStreamSourceIds()) {
-			Optional<RtspConfigElementaryStreamSource> optSs = rtspConfig.getElementaryStreamSourceObj(esSourceId);
+		/*
+		for (Integer esSourceId : rtspSrvConfig.getElementaryStreamSourceIds()) {
+			Optional<RtspConfigElementaryStreamSource> optSs = rtspSrvConfig.getElementaryStreamSourceObj(esSourceId);
 			if (optSs.isEmpty()) {
 				continue;
 			}
@@ -207,19 +209,22 @@ public final class RtspServerApp {
 				resL.add(esSourceId);
 			}
 		}
+		@TODO
+		 */
 		return resL;
 	}
 
-	private static void startMqs(@NonNull List<@NonNull Integer> esSourceIds) {
-		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMqs()";
+	private static void startE2iMqsForListOfStreamSources(@NonNull List<@NonNull Integer> esSourceIds) {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startE2iMqsForListOfStreamSources()";
 
 		assert poolMqE2I != null;
 
+		/*
 		for (Integer tmpEsSourceId : esSourceIds) {
-			RtspConfigElementaryStreamSource tmpEsSrcObj = rtspConfig.getElementaryStreamSourceObj(tmpEsSourceId).orElseThrow();
+			RtspConfigElementaryStreamSource tmpEsSrcObj = rtspSrvConfig.getElementaryStreamSourceObj(tmpEsSourceId).orElseThrow();
 			Optional<String> tmpSslCertPath;
 			try {
-				tmpSslCertPath = rtspConfig.getMqServerSslCertificatePath(tmpEsSrcObj.getInputUri());
+				tmpSslCertPath = rtspSrvConfig.getMqServerSslCertificatePath(tmpEsSrcObj.getInputUri());
 			} catch (ConfigInvalidException e) {
 				// should never happen
 				throw new IllegalStateException(e);
@@ -239,6 +244,47 @@ public final class RtspServerApp {
 
 			poolMqE2I.submit(thread);
 		}
+		@TODO
+		 */
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void startLoggerThread() {
+		threadRtxpLogger = new ThreadRtxpLogger();
+		threadRtxpLogger.setEnableOutputConsole(rtspSrvConfig.getLoggingEnabledOutputConsole());
+		threadRtxpLogger.setEnableOutputFile(
+				rtspSrvConfig.getLoggingEnabledOutputFile(),
+				rtspSrvConfig.getLoggingOutputFilename()
+			);
+		threadRtxpLogger.setDaemon(false);
+		threadRtxpLogger.start();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void startStreamsConfigThread() {
+		threadStreamsConfig = new ThreadStreamsConfig(
+				RtspServerApp::addMsgForLogThread,
+				rtspSrvConfig,
+				availableStreamsSvc
+			);
+		threadStreamsConfig.setDaemon(false);
+		threadStreamsConfig.start();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void waitUntilLogQueueIsEmpty() {
+		while (threadRtxpLogger != null && threadRtxpLogger.havePendingMessages()) {
+			try {
+				//noinspection BusyWait
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;
+			}
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -246,8 +292,9 @@ public final class RtspServerApp {
 	private static class CodecSettingsChangedFromMqHandler implements CodecSettingsChangedFromMqInterface {
 		@Override
 		public void onCodecSettingsChangedFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+			/*
 			RtspConfigElementaryStreamSource tmpCbEsSrcObj =
-					rtspConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
+					rtspSrvConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
 			if (codecSettings.codec != null) {
 				tmpCbEsSrcObj.setMqDynamicCodec(codecSettings.getAsRtpPacketType());
 			}
@@ -263,23 +310,28 @@ public final class RtspServerApp {
 			if (codecSettings.audioSamplesPerFrame != null) {
 				tmpCbEsSrcObj.setMqDynamicAudioSamplesPerFrame(codecSettings.audioSamplesPerFrame);
 			}
+			@TODO
+			 */
 		}
 
 		@Override
 		public void onCodecMetadataFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+			/*
 			RtspConfigElementaryStreamSource tmpCbEsSrcObj =
-					rtspConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
+					rtspSrvConfig.getElementaryStreamSourceObj(idEsSource).orElseThrow();
 			tmpCbEsSrcObj.setMqDynamicExtradata(metadataHex);
+			@TODO
+			 */
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull SSLServerSocketFactory createSslServerSocketFactory() throws Exception {
-		Optional<String> optSslCaPath = rtspConfig.getRtspsSslCaPath();
+		Optional<String> optSslCaPath = rtspSrvConfig.getRtspsSslCaPath();
 		SSLContext sslCtx = SslContextFactory.createServerSocketFactory(
-				Path.of(rtspConfig.getRtspsSslCertPath().orElseThrow()),
-				Path.of(rtspConfig.getRtspsSslKeyPath().orElseThrow()),
+				Path.of(rtspSrvConfig.getRtspsSslCertPath().orElseThrow()),
+				Path.of(rtspSrvConfig.getRtspsSslKeyPath().orElseThrow()),
 				optSslCaPath.isEmpty() || optSslCaPath.get().isEmpty() ? null : Path.of(optSslCaPath.get())
 			);
 		return sslCtx.getServerSocketFactory();
@@ -312,8 +364,8 @@ public final class RtspServerApp {
 	private static boolean runServerLoop() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".runServerLoop()";
 
-		final int rtspsTcpPort = rtspConfig.getServerTcpPortRtsps();
-		final int rtspTcpPort = rtspConfig.getServerTcpPortRtsp();
+		final int rtspsTcpPort = rtspSrvConfig.getServerTcpPortRtsps();
+		final int rtspTcpPort = rtspSrvConfig.getServerTcpPortRtsp();
 
 		final String cfgServerNameAndVersion = getAppNameAndVersion();
 
@@ -322,12 +374,12 @@ public final class RtspServerApp {
 		rtspPlayThreadMng = new RtspPlayThreadMng(
 				RtspServerApp::addMsgForLogThread,
 				cancelToken,
-				rtspConfig,
+				rtspSrvConfig,
 				globalSessionInfoSvc
 			);
 
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
-			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspConfig.getServerTcpPortRtsp()) : null)) {
+			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspSrvConfig.getServerTcpPortRtsp()) : null)) {
 				if (listenSocketRtsps != null) {
 					logInfo(FNC_NAME, "Waiting for RTSPS connections on port " + rtspsTcpPort);
 					listenSocketRtsps.setSoTimeout(25);  // only for accept()
@@ -383,8 +435,9 @@ public final class RtspServerApp {
 					ThreadRtspTcpClientInbound thread = new ThreadRtspTcpClientInbound(
 							RtspServerApp::addMsgForLogThread,
 							cancelToken,
-							rtspConfig,
+							rtspSrvConfig,
 							cfgServerNameAndVersion,
+							availableStreamsSvc,
 							globalSessionInfoSvc,
 							rtspPlayThreadMng,
 							++clientConnectionCount,
@@ -438,15 +491,28 @@ public final class RtspServerApp {
 		}
 
 		//
+		if (threadStreamsConfig != null) {
+			threadStreamsConfig.stopThread();
+			try {
+				threadStreamsConfig.join();
+			} catch (InterruptedException e) {
+				System.err.println(FNC_NAME + ": Interrupted while joining thread StreamsConfig");
+			}
+			threadStreamsConfig = null;
+		}
+
+		//
 		waitUntilLogQueueIsEmpty();
 		//
-		rtxpLoggerThread.stopThread();
-		try {
-			rtxpLoggerThread.join();
-		} catch (InterruptedException e) {
-			System.err.println(FNC_NAME + ": Interrupted while joining thread RtxpLogger");
+		if (threadRtxpLogger != null) {
+			threadRtxpLogger.stopThread();
+			try {
+				threadRtxpLogger.join();
+			} catch (InterruptedException e) {
+				System.err.println(FNC_NAME + ": Interrupted while joining thread RtxpLogger");
+			}
+			threadRtxpLogger = null;
 		}
-		rtxpLoggerThread = null;
 
 		System.err.println(FNC_NAME + ": all threads stopped");
 	}
@@ -492,12 +558,12 @@ public final class RtspServerApp {
 				@NonNull String threadId,
 				@NonNull String msg
 			) {
-		if (rtxpLoggerThread == null) { return; }
-		RtxpLogLevel minLevel = rtspConfig.getLogLevel();
+		if (threadRtxpLogger == null) { return; }
+		RtxpLogLevel minLevel = rtspSrvConfig.getLogLevel();
 		if (logLevel == RtxpLogLevel.DEBUG && minLevel != RtxpLogLevel.DEBUG) { return; }
 		if (logLevel == RtxpLogLevel.INFO && (minLevel == RtxpLogLevel.WARN || minLevel == RtxpLogLevel.ERROR)) { return; }
 		if (logLevel == RtxpLogLevel.WARN && minLevel == RtxpLogLevel.ERROR) { return; }
-		rtxpLoggerThread.log(logLevel, threadId, msg);
+		threadRtxpLogger.log(logLevel, threadId, msg);
 	}
 
 }

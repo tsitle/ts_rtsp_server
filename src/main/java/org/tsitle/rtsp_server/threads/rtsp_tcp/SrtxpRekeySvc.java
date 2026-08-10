@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
-import org.tsitle.rtsp_server.config.RtspConfig;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -46,7 +46,7 @@ final class SrtxpRekeySvc {
 
 	SrtxpRekeySvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspConfig rtspConfig,
+				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
@@ -66,8 +66,8 @@ final class SrtxpRekeySvc {
 				cfgServerNameAndVersion,
 				RtspConnectionPolicy.KEEPALIVE,
 				cfgContentLanguage,
-				rtspConfig.getIsDebugPrintRtspSdpSent(),
-				rtspConfig.getIsDebugPrintRtspSent(),
+				rtspSrvConfig.getIsDebugPrintRtspSdpSent(),
+				rtspSrvConfig.getIsDebugPrintRtspSent(),
 				sessionInfoPtr,
 				rtxpTcpReadWrite,
 				availableStreamsInterface,
@@ -76,7 +76,7 @@ final class SrtxpRekeySvc {
 		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
 				logMsgInterface,
 				true,
-				rtspConfig.getIsDebugPrintRtspRcvd(),
+				rtspSrvConfig.getIsDebugPrintRtspRcvd(),
 				sessionInfoPtr,
 				rtxpTcpReadWrite
 			);

@@ -1,20 +1,14 @@
 package org.tsitle.lib_xrtxp.rtsp.interfaces;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
-import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
-import java.net.URI;
 import java.util.Optional;
 
 public interface RtspProtoAvailableStreamsInterface {
@@ -56,27 +50,13 @@ public interface RtspProtoAvailableStreamsInterface {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	record ElementaryStreamSourceInfo(
-			@NonNull RtpPacketType codec,
-			@NonNull RtspProtoEsSourceType esSourceType,
-			@NonNull URI inputUri,
-			double durationSecs,
-			byte audioChannelCount,
-			@NonNull SampleRateEnum audioSampleRate,
-			int audioSamplesPerFrame,
-			boolean isAudioPcmBigEndian,
-			@NonNull ExtradataContainerHex audioAacHexCfg,
-			@NonNull FrameRateEnum videoFps,
-			@NonNull ExtradataContainerSdp videoExtraB64Cfg
-		) { }
-
 	/**
 	 * Get information about the given Elementary-Stream Source.
 	 * @param idEsSource Elementary-Stream Source ID
 	 * @return Elementary-Stream Source information
 	 * @throws RtspProtoIdEsSourceNotFoundException If the Elementary-Stream Source ID is not found
 	 */
-	@NonNull ElementaryStreamSourceInfo getElementaryStreamSourceInfo(@NonNull RtspProtoIdEsSource idEsSource)
+	@NonNull RtspProtoEsSourceExpandedInfo getElementaryStreamSourceExpInfo(@NonNull RtspProtoIdEsSource idEsSource)
 			throws RtspProtoIdEsSourceNotFoundException;
 
 	/**

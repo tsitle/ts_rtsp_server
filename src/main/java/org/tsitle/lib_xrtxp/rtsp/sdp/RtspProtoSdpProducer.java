@@ -305,8 +305,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			throw new IllegalStateException("availableStreamsInterface must be set");
 		}
 		try {
-			final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo esInfo =
-					availableStreamsInterface.getElementaryStreamSourceInfo(esObj.getIdEsSource());
+			final RtspProtoEsSourceExpandedInfo esInfo =
+					availableStreamsInterface.getElementaryStreamSourceExpInfo(esObj.getIdEsSource());
 			if (esInfo.esSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
 				return esInfo.durationSecs();
 			}
@@ -559,8 +559,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 			throw new IllegalStateException(FNC_NAME + ": availableStreamsInterface must be set");
 		}
 
-		final RtspProtoAvailableStreamsInterface.ElementaryStreamSourceInfo esInfo =
-				availableStreamsInterface.getElementaryStreamSourceInfo(idEsSource);
+		final RtspProtoEsSourceExpandedInfo esInfo =
+				availableStreamsInterface.getElementaryStreamSourceExpInfo(idEsSource);
 		final int ssVideoRtpClockRate;
 		try {
 			ssVideoRtpClockRate = (useVideo ? esInfo.codec().getVideoCodecRtpClockrate() : 0);
@@ -622,7 +622,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	}
 
 	private void addAvFmtpLine(
-				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull RtspProtoEsSourceExpandedInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
 		switch (esInfo.codec()) {
@@ -639,7 +639,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	}
 
 	private void addAvFmtpLine_aac(
-				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull RtspProtoEsSourceExpandedInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
 		String s = String.format(
@@ -666,7 +666,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	}
 
 	private void addAvFmtpLine_h264(
-				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull RtspProtoEsSourceExpandedInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
 		ExtradataContainerSdp tmpEcs = esInfo.videoExtraB64Cfg();
@@ -704,7 +704,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 	}
 
 	private void addAvFmtpLine_h265(
-				RtspProtoAvailableStreamsInterface.@NonNull ElementaryStreamSourceInfo esInfo,
+				@NonNull RtspProtoEsSourceExpandedInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
 		ExtradataContainerSdp tmpEcs = esInfo.videoExtraB64Cfg();

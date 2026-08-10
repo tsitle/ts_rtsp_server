@@ -3,14 +3,17 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.constants.MqConstants;
-import org.tsitle.rtsp_server.exceptions.*;
+import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 
 /**
- * Message Queue settings within an Elementary-Stream Source.
+ * Message Queue Elementary-Stream Source.
  */
-public final class RtspConfigEsMq implements Cloneable {
+public final class RtspSrvConfigStreamInputEsMqNg implements Cloneable {
 
 	/** Username and password for the Message Queue, separated by a colon */
 	@Expose
@@ -23,12 +26,14 @@ public final class RtspConfigEsMq implements Cloneable {
 	private @NonNull String resourceGroupAndChannel;
 
 	@GsonAnnoExclude
-	private boolean internalHasBeenPostProcessed = false;
+	private boolean internalHasBeenPostProcessed;
 
-	public RtspConfigEsMq() {
+	public RtspSrvConfigStreamInputEsMqNg() {
 		this.userAndPassword = "";
 		this.hostAndPort = "";
 		this.resourceGroupAndChannel = "";
+
+		this.internalHasBeenPostProcessed = false;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -84,30 +89,45 @@ public final class RtspConfigEsMq implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspConfigEsMq clone() {
+	public @NonNull RtspSrvConfigStreamInputEsMqNg clone() {
+		checkPostProcessed();
 		try {
-			RtspConfigEsMq clone = (RtspConfigEsMq)super.clone();
-			//
-			//noinspection StringOperationCanBeSimplified
-			clone.userAndPassword = new String(userAndPassword);
-			//noinspection StringOperationCanBeSimplified
-			clone.hostAndPort = new String(hostAndPort);
-			//noinspection StringOperationCanBeSimplified
-			clone.resourceGroupAndChannel = new String(resourceGroupAndChannel);
-			return clone;
+			return (RtspSrvConfigStreamInputEsMqNg)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
+	}
+
+	public @NonNull String hashSum() {
+		checkPostProcessed();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try {
+			baos.write(userAndPassword.getBytes());
+			baos.write(hostAndPort.getBytes());
+			baos.write(resourceGroupAndChannel.getBytes());
+		} catch (IOException e) {
+			// ignore
+		}
+		return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof RtspSrvConfigStreamInputEsMqNg that)) {
+			return false;
+		}
+		return hashSum().equals(that.hashSum());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Post-process the Message Queue settings.
+	 * Post-process the configuration.
 	 */
 	void postProcess() {
 		internalHasBeenPostProcessed = true;
+
 		//
 		//noinspection ConstantValue
 		if (userAndPassword == null) {
@@ -124,15 +144,15 @@ public final class RtspConfigEsMq implements Cloneable {
 	}
 
 	/**
-	 * Validate the Message Queue settings.
-	 * @throws ConfigInvalidException If the settings are invalid
+	 * Validate the configuration.
+	 * @throws ConfigInvalidException If the configuration is invalid
 	 */
-	void validate(@NonNull String extEsSrcId) throws ConfigInvalidException {
+	void validate(@NonNull String extIdStr) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
 
 		checkPostProcessed();
 
-		final String errMsgPrefix = FNC_NAME + ": Invalid MQ settings for Elementary-Stream Source ID '" + extEsSrcId + "' - ";
+		final String errMsgPrefix = FNC_NAME + ": Invalid MQ settings for Sub-Stream Source ID '" + extIdStr + "' - ";
 
 		if (! userAndPassword.contains(":")) {
 			throw new ConfigInvalidException(errMsgPrefix + "'userAndPassword' must contain username and password separated by a colon");
@@ -146,12 +166,14 @@ public final class RtspConfigEsMq implements Cloneable {
 		if (hostAndPort.split(":").length != 2) {
 			throw new ConfigInvalidException(errMsgPrefix + "'hostAndPort' must contain only one colon");
 		}
+		hostAndPort = hostAndPort.toLowerCase();
 		if (! resourceGroupAndChannel.contains(":")) {
 			throw new ConfigInvalidException(errMsgPrefix + "'resourceGroupAndChannel' must contain rsc group and channel separated by a colon");
 		}
 		if (resourceGroupAndChannel.split(":").length != 2) {
 			throw new ConfigInvalidException(errMsgPrefix + "'resourceGroupAndChannel' must contain only one colon");
 		}
+		resourceGroupAndChannel = resourceGroupAndChannel.toLowerCase();
 		//
 		if (getHost().isBlank()) {
 			throw new ConfigInvalidException(errMsgPrefix + "host must not be empty");
@@ -178,7 +200,7 @@ public final class RtspConfigEsMq implements Cloneable {
 
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {
-			throw new IllegalStateException("MQ settings have not been post-processed yet");
+			throw new IllegalStateException(getClass().getSimpleName() + " object has not been post-processed yet");
 		}
 	}
 

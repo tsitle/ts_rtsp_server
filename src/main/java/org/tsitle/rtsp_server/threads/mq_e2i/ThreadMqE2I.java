@@ -100,6 +100,7 @@ public final class ThreadMqE2I extends RunnableBase {
 		this.mqSettings = mqSettings.clone();
 		this.mqSslCertPath = mqSslCertPath;
 
+		//
 		this.threadName = String.format("MQE2I#es%s#%s:%s:%s",
 				idEsSource.getIdStr().orElse("-unset-"), mqSettings.getHostname(),
 				mqSettings.getRscGroup(), mqSettings.getRscChannel());

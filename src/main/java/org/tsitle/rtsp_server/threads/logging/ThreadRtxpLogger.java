@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class RtxpLogger extends ThreadBase {
+public final class ThreadRtxpLogger extends ThreadBase {
 
 	private record LogEntry(
 			@NonNull TimestampEpoch timestamp,
@@ -44,7 +44,7 @@ public final class RtxpLogger extends ThreadBase {
 	private @Nullable FileOutputStream outpFileFos;
 	private @Nullable PrintStream outpFilePs;
 
-	public RtxpLogger() { }
+	public ThreadRtxpLogger() { }
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -88,6 +88,8 @@ public final class RtxpLogger extends ThreadBase {
 	@Override
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
+
+		Thread.currentThread().setName("RTXPLOGGER");
 
 		if (enableOutputFile) {
 			try {
