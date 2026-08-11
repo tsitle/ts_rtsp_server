@@ -749,7 +749,7 @@ public abstract class ThreadRtpSenderBase<
 		long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(NtpTimestamp.ofNow());
 		if (adaptiveScheduler.getIsWaitForNextFrameEnabled() &&
 				tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
-			logWarn(fncName, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
+			logDebug(fncName, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));
 		}
 	}
 
