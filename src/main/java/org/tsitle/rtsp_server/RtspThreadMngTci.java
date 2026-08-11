@@ -67,6 +67,11 @@ final class RtspThreadMngTci extends RtspThreadMngBase {
 			return;
 		}
 
+		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumTcp()) {
+			logWarn(FNC_NAME, "cannot start TCI thread - pool full");
+			return;
+		}
+
 		ThreadRtspTcpClientInbound threadRtspTci = new ThreadRtspTcpClientInbound(
 				logMsgInterface,
 				cancelToken,
@@ -152,6 +157,19 @@ final class RtspThreadMngTci extends RtspThreadMngBase {
 		}
 		//
 		internalShutdownAllThreads(POOL_NAME);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private int countActiveThreads() {
+		int resI = 0;
+		for (ThreadRtspTcpClientInbound entryT : rtspTciThreadMap.values()) {
+			if (entryT.isRunning()) {
+				++resI;
+			}
+		}
+		return resI;
 	}
 
 }

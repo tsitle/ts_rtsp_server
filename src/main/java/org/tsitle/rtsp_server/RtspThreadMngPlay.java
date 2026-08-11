@@ -121,8 +121,19 @@ final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThrea
 			return;
 		}
 
+		// poll and remove the head of the queue - that way we don't run in an infinite loop if the pool is full
 		VarsForNewThread varsForNewThread = queueForNewThread.poll();
+		if (varsForNewThread == null) {
+			return;
+		}
 
+		//
+		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumPlay()) {
+			logWarn(FNC_NAME, "cannot start Play thread - pool full");
+			return;
+		}
+
+		//
 		ThreadRtspPlay threadRtspPlay = new ThreadRtspPlay(
 				logMsgInterface,
 				cancelToken,
@@ -196,6 +207,19 @@ final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThrea
 		}
 		//
 		internalShutdownAllThreads(POOL_NAME);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private int countActiveThreads() {
+		int resI = 0;
+		for (ThreadRtspPlay entryT : rtspPlayThreadMap.values()) {
+			if (entryT.isRunning()) {
+				++resI;
+			}
+		}
+		return resI;
 	}
 
 }

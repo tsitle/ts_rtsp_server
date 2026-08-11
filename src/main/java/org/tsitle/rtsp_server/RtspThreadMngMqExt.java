@@ -57,6 +57,12 @@ final class RtspThreadMngMqExt extends RtspThreadMngBase {
 			return;
 		}
 
+		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumMq()) {
+			logWarn(FNC_NAME, "cannot start MqE2I thread - pool full");
+			return;
+		}
+
+		//
 		RtspProtoEsSourceExpandedInfo esei;
 		try {
 			esei = availableStreamsInterface.getElementaryStreamSourceExpInfo(idEsSource);
@@ -145,6 +151,19 @@ final class RtspThreadMngMqExt extends RtspThreadMngBase {
 		}
 		//
 		internalShutdownAllThreads(POOL_NAME);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private int countActiveThreads() {
+		int resI = 0;
+		for (ThreadMqE2I entryT : mqThreadMap.values()) {
+			if (entryT.isRunning()) {
+				++resI;
+			}
+		}
+		return resI;
 	}
 
 }
