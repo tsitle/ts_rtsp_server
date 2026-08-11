@@ -18,6 +18,7 @@ import java.util.*;
  */
 public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
+	static final int RTSP_THREADS_PLAY_DEFAULT = 20;  // one thread per client session
 	static final int RTSP_THREADS_TCM_DEFAULT = 20;  // one thread per client connection
 	static final int MQ_THREADS_EXT_DEFAULT = 20;  // one thread per external MQ
 
@@ -44,6 +45,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** SSL Certificate Authority -- optional */
 		@Expose
 		private final @NonNull String sslCa;
+		/** Maxmimum number of threads for Playback */
+		@Expose
+		private final int threadsMaximumPlay;
 		/** Maxmimum number of threads for TCP connections */
 		@Expose
 		private final int threadsMaximumTcp;
@@ -58,6 +62,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.sslCertificate = "";
 			this.sslKey = "";
 			this.sslCa = "";
+			this.threadsMaximumPlay = RTSP_THREADS_PLAY_DEFAULT;
 			this.threadsMaximumTcp = RTSP_THREADS_TCM_DEFAULT;
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 		}
@@ -239,6 +244,10 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	 */
 	public Optional<String> getRtspsSslCaPath() throws ConfigInvalidException {
 		return getAbsoluteFilePathInDataDir("Invalid RTSPS Server SSL CA file path", server.sslCa);
+	}
+
+	public int getThreadsMaximumPlay() {
+		return server.threadsMaximumPlay;
 	}
 
 	public int getThreadsMaximumTcp() {
@@ -560,6 +569,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		}
 
 		//
+		if (server.threadsMaximumPlay < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumPlay': " + server.threadsMaximumPlay);
+		}
 		if (server.threadsMaximumTcp < 1) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumTcp': " + server.threadsMaximumTcp);
 		}

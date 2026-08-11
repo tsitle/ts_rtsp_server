@@ -19,15 +19,13 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 
-public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
+final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 
 	private record VarsForNewThread(
 			@NonNull RtspProtoSessionInfo rtspSessionInfo,
 			@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 			@NonNull RtspChildThreadsCbRtxpTcpInterface childThreadsCbRtpTcpInterface
 		) { }
-
-	private static final int RTSP_THREADS_PLAY = 20;  // one thread per client session
 
 	private static final int ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS = 2;
 
@@ -40,14 +38,9 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 
 	private final @NonNull Map<@NonNull RtspProtoIdSession, @NonNull ThreadRtspPlay> rtspPlayThreadMap = new ConcurrentHashMap<>();
 
-	private final ExecutorService poolRtspPlay = new ThreadPoolExecutor(
-			RTSP_THREADS_PLAY,
-			RTSP_THREADS_PLAY,
-			60L, TimeUnit.SECONDS,
-			new SynchronousQueue<>(true)
-		);
+	private final @NonNull ExecutorService poolRtspPlay;
 
-	public RtspPlayThreadMng(
+	public RtspThreadMngPlay(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
@@ -57,6 +50,14 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 		this.cancelToken = cancelToken;
 		this.rtspSrvConfig = rtspSrvConfig;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
+
+		//
+		this.poolRtspPlay = new ThreadPoolExecutor(
+				rtspSrvConfig.getThreadsMaximumPlay(),
+				rtspSrvConfig.getThreadsMaximumPlay(),
+				60L, TimeUnit.SECONDS,
+				new SynchronousQueue<>(true)
+			);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

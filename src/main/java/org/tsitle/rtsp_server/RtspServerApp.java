@@ -47,7 +47,7 @@ public final class RtspServerApp {
 	private static @Nullable ThreadRtxpLogger threadRtxpLogger = null;
 	private static @Nullable ExecutorService poolRtspTcm = null;
 	private static @Nullable ExecutorService poolMqE2I = null;
-	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
+	private static @Nullable RtspThreadMngPlay rtspThreadMngPlay = null;
 
 	private static final @NonNull RtspAvailableStreamsSvc availableStreamsSvc = new RtspAvailableStreamsSvc();
 	private static @Nullable ThreadStreamsConfig threadStreamsConfig = null;
@@ -177,10 +177,10 @@ public final class RtspServerApp {
 			);
 	}
 
-	private static @NonNull RtspPlayThreadMng createRtspPlayThreadMng(
+	private static @NonNull RtspThreadMngPlay createRtspPlayThreadMng(
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
-		return new RtspPlayThreadMng(
+		return new RtspThreadMngPlay(
 				RtspServerApp::addMsgForLogThread,
 				cancelToken,
 				rtspSrvConfig,
@@ -295,7 +295,7 @@ public final class RtspServerApp {
 
 		final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 
-		rtspPlayThreadMng = createRtspPlayThreadMng(globalSessionInfoSvc);
+		rtspThreadMngPlay = createRtspPlayThreadMng(globalSessionInfoSvc);
 
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
 			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspSrvConfig.getServerTcpPortRtsp()) : null)) {
@@ -386,12 +386,12 @@ public final class RtspServerApp {
 			performStreamsUpdate(globalSessionInfoSvc);
 		}
 		// start a queued Play thread
-		if (! isLoopCount50 && rtspPlayThreadMng != null) {
-			rtspPlayThreadMng.startNewPlayThreadFromQueue();
+		if (! isLoopCount50 && rtspThreadMngPlay != null) {
+			rtspThreadMngPlay.startNewPlayThreadFromQueue();
 		}
 		// clean up expired Play threads and Session Info objects
-		if (isLoopCount50 && rtspPlayThreadMng != null) {
-			rtspPlayThreadMng.doHousekeepingForPlayThreads();
+		if (isLoopCount50 && rtspThreadMngPlay != null) {
+			rtspThreadMngPlay.doHousekeepingForPlayThreads();
 			//
 			globalSessionInfoSvc.doHousekeepingForSessionInfos(dbgDeletedSessionIds);
 			for (RtspProtoIdSession tmpId : dbgDeletedSessionIds) {
@@ -407,7 +407,7 @@ public final class RtspServerApp {
 				@NonNull Socket socketRtspTcp,
 				boolean isRtspsConn
 			) throws SocketException {
-		if (rtspPlayThreadMng == null || poolRtspTcm == null) {
+		if (rtspThreadMngPlay == null || poolRtspTcm == null) {
 			return;
 		}
 		socketRtspTcp.setSoTimeout(10);  // only for read()
@@ -420,7 +420,7 @@ public final class RtspServerApp {
 				cfgServerNameAndVersion,
 				availableStreamsSvc,
 				globalSessionInfoSvc,
-				rtspPlayThreadMng,
+				rtspThreadMngPlay,
 				++clientConnectionCount,
 				socketRtspTcp,
 				isRtspsConn
@@ -439,8 +439,8 @@ public final class RtspServerApp {
 	private static void stopThreads() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
 
-		if (rtspPlayThreadMng != null) {
-			rtspPlayThreadMng.shutdownAllThreads();
+		if (rtspThreadMngPlay != null) {
+			rtspThreadMngPlay.shutdownAllThreads();
 		}
 
 		//
@@ -508,8 +508,8 @@ public final class RtspServerApp {
 		// @TODO stop only affected threads
 
 		cancelToken.cancelled = true;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
-		if (rtspPlayThreadMng != null) {
-			rtspPlayThreadMng.shutdownAllThreads();
+		if (rtspThreadMngPlay != null) {
+			rtspThreadMngPlay.shutdownAllThreads();
 		}
 		if (poolRtspTcm != null) {
 			poolRtspTcm.shutdown();
@@ -531,7 +531,7 @@ public final class RtspServerApp {
 		cancelToken.cancelled = false;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
 		poolRtspTcm = createRtspTcmPool();
 		startMessageQueueThreadsE2I();
-		rtspPlayThreadMng = createRtspPlayThreadMng(globalSessionInfoSvc);
+		rtspThreadMngPlay = createRtspPlayThreadMng(globalSessionInfoSvc);
 	}
 
 	private static void startMessageQueueThreadsE2I() {

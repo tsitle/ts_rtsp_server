@@ -1,6 +1,6 @@
 package org.tsitle.rtsp_server;
 
-public final class AppConstants {
+final class AppConstants {
 
 	private AppConstants() { }
 
