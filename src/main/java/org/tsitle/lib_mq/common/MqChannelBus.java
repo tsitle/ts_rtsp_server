@@ -3,11 +3,13 @@ package org.tsitle.lib_mq.common;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelId;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelName;
+import org.tsitle.lib_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -99,59 +101,77 @@ public final class MqChannelBus {
 	 * Create a publisher socket for the given channel ID.
 	 * @param id Channel ID
 	 * @return Publisher socket
+	 * @throws MqException If an error occurs while creating the socket
 	 */
-	public synchronized static ZMQ.@NonNull Socket createPublisher(@NonNull MqChannelBusChannelId id, ZContext zmqContext) {
+	public synchronized static ZMQ.@NonNull Socket createPublisher(@NonNull MqChannelBusChannelId id, ZContext zmqContext)
+			throws MqException {
 		check(id);
 
-		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
-		zmqSocket.setSndHWM(SEND_RECV_HWM);
-		// adjust the OS's send buffer size
-		zmqSocket.setSendBufferSize(2 * 1024 * 1024);
-		zmqSocket.setLinger(0);
-		zmqSocket.setReceiveTimeOut(100);  // milliseconds
-		zmqSocket.setSendTimeOut(100);  // milliseconds
-		// detect dead subscribers
-		zmqSocket.setTCPKeepAlive(1);
-		zmqSocket.setTCPKeepAliveIdle(60);  // seconds
-		zmqSocket.setTCPKeepAliveInterval(60);  // seconds
-		zmqSocket.setTCPKeepAliveCount(3);
-		// prevents messages being queued for connections that are not yet fully established. Helps to avoid message buildup if a subscriber disappears
-		zmqSocket.setImmediate(true);
+		try {
+			ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.PUB);
+			zmqSocket.setSndHWM(SEND_RECV_HWM);
+			// adjust the OS's send buffer size
+			zmqSocket.setSendBufferSize(2 * 1024 * 1024);
+			zmqSocket.setLinger(0);
+			zmqSocket.setReceiveTimeOut(100);  // milliseconds
+			zmqSocket.setSendTimeOut(100);  // milliseconds
+			// detect dead subscribers
+			zmqSocket.setTCPKeepAlive(1);
+			zmqSocket.setTCPKeepAliveIdle(60);  // seconds
+			zmqSocket.setTCPKeepAliveInterval(60);  // seconds
+			zmqSocket.setTCPKeepAliveCount(3);
+			// prevents messages being queued for connections that are not yet fully established. Helps to avoid message buildup if a subscriber disappears
+			zmqSocket.setImmediate(true);
 
-		final String endpoint = mapIdToEndpoint.get(id);
-		zmqSocket.bind(endpoint);
-		zmqSocket.send(new byte[0], ZMQ.DONTWAIT);  // send a warm-up message
+			final String endpoint = mapIdToEndpoint.get(id);
+			zmqSocket.bind(endpoint);
+			zmqSocket.send(new byte[0], ZMQ.DONTWAIT);  // send a warm-up message
 
-		return zmqSocket;
+			return zmqSocket;
+		} catch (ZMQException e) {
+			throw new MqException("Failed to create publisher socket " +
+					"for Channel ID=" + id.getId32bit().orElse(-1L) + ": " +
+					e.toString()  // ^= ErrorNo and ErrorMsg
+				);
+		}
 	}
 
 	/**
 	 * Create a subscriber socket for the given channel ID.
 	 * @param id Channel ID
 	 * @return Subscriber socket
+	 * @throws MqException If an error occurs while creating the socket
 	 */
-	public synchronized static ZMQ.@NonNull Socket createSubscriber(@NonNull MqChannelBusChannelId id, ZContext zmqContext) {
+	public synchronized static ZMQ.@NonNull Socket createSubscriber(@NonNull MqChannelBusChannelId id, ZContext zmqContext)
+			throws MqException {
 		check(id);
 
-		ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
-		zmqSocket.setRcvHWM(SEND_RECV_HWM);
-		zmqSocket.setReceiveTimeOut(100);  // milliseconds
-		zmqSocket.setSendTimeOut(100);  // milliseconds
-		zmqSocket.setLinger(0);
-		// adjust the OS's receive buffer size
-		zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
-		// subscribe to all topics
-		zmqSocket.subscribe("".getBytes());
-
-		final String endpoint = mapIdToEndpoint.get(id);
-		zmqSocket.connect(endpoint);
 		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
-		}
+			ZMQ.Socket zmqSocket = zmqContext.createSocket(SocketType.SUB);
+			zmqSocket.setRcvHWM(SEND_RECV_HWM);
+			zmqSocket.setReceiveTimeOut(100);  // milliseconds
+			zmqSocket.setSendTimeOut(100);  // milliseconds
+			zmqSocket.setLinger(0);
+			// adjust the OS's receive buffer size
+			zmqSocket.setReceiveBufferSize(2 * 1024 * 1024);
+			// subscribe to all topics
+			zmqSocket.subscribe("".getBytes());
 
-		return zmqSocket;
+			final String endpoint = mapIdToEndpoint.get(id);
+			zmqSocket.connect(endpoint);
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();  // restore flag
+			}
+
+			return zmqSocket;
+		} catch (ZMQException e) {
+			throw new MqException("Failed to create subscriber socket " +
+					"for Channel ID=" + id.getId32bit().orElse(-1L) + ": " +
+					e.toString()  // ^= ErrorNo and ErrorMsg
+				);
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -160,7 +180,7 @@ public final class MqChannelBus {
 	private static void check(@NonNull MqChannelBusChannelId id) {
 		if (! mapIdToEndpoint.containsKey(id)) {
 			throw new IllegalArgumentException(MqChannelBus.class.getSimpleName() + ".check(): " +
-					"invalid channel id");
+					"invalid Channel ID");
 		}
 	}
 
