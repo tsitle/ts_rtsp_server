@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
 import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
@@ -474,7 +475,13 @@ public final class RtspServerApp {
 			) {
 		// @TODO figure out affected Session IDs and MQ ES IDs
 		// @TODO stop only affected threads
+		Set<@NonNull RtspProtoIdSession> stopSessionIds = new HashSet<>();
+		Set<@NonNull RtspProtoIdInputSource> stopIsIds = new HashSet<>();
+		Set<@NonNull RtspProtoIdEsSource> stopMqEsIds = new HashSet<>();
 
+		availableStreamsSvc.getIdsForThreadsThatNeedToBeStopped(stopSessionIds, stopIsIds, stopMqEsIds);
+
+		//
 		cancelToken.cancelled = true;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
 		if (rtspThreadMngPlay != null) {
 			rtspThreadMngPlay.shutdownAllThreads();
@@ -512,7 +519,9 @@ public final class RtspServerApp {
 			return;
 		}
 
-		rtspThreadMngMqExt = createRtspThreadMngMqExt();
+		if (rtspThreadMngMqExt == null) {
+			rtspThreadMngMqExt = createRtspThreadMngMqExt();
+		}
 
 		for (RtspProtoIdEsSource tmpEsSourceId : mqStreamSources) {
 			rtspThreadMngMqExt.startNewMqExtThread(tmpEsSourceId);

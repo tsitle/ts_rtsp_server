@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -57,6 +58,10 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	public void updateAvailableStreamsFromConfig(@NonNull RtspAsSvcInputData asSvcInputData) {
 		theWriteLock.lock();
 		try {
+			if (haveStreamsChanged.get()) {
+				return;  // we have pending changes
+			}
+
 			internalUpdateFromAsSvcInputData(asSvcInputData);
 
 			haveStreamsChanged.set(true);
@@ -75,6 +80,24 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public void getIdsForThreadsThatNeedToBeStopped(
+				Set<@NonNull RtspProtoIdSession> stopSessionIds,
+				Set<@NonNull RtspProtoIdInputSource> stopIsIds,
+				Set<@NonNull RtspProtoIdEsSource> stopMqEsIds
+			) {
+		theReadLock.lock();
+		try {
+			stopSessionIds.clear();
+			stopIsIds.clear();
+			stopMqEsIds.clear();
+			if (! haveStreamsChanged.get()) {
+				return;
+			}
+		} finally {
+			theReadLock.unlock();
+		}
+	}
 
 	public void performStreamsUpdate() {
 		theWriteLock.lock();
