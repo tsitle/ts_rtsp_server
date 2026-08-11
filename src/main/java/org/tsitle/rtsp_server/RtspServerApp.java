@@ -3,10 +3,7 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
-import org.tsitle.lib_mq.client.types.MqElementaryStreamSourceSettings;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
 import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
@@ -16,9 +13,7 @@ import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.ThreadRtxpLogger;
-import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.ThreadRtspTcpClientInbound;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.rtsp_server.threads.streamscfg.ThreadStreamsConfig;
@@ -45,9 +40,9 @@ public final class RtspServerApp {
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 	private static @Nullable ThreadRtxpLogger threadRtxpLogger = null;
-	private static @Nullable ExecutorService poolRtspTcm = null;
-	private static @Nullable ExecutorService poolMqE2I = null;
 	private static @Nullable RtspThreadMngPlay rtspThreadMngPlay = null;
+	private static @Nullable RtspThreadMngTci rtspThreadMngTci = null;
+	private static @Nullable RtspThreadMngMqExt rtspThreadMngMqExt = null;
 
 	private static final @NonNull RtspAvailableStreamsSvc availableStreamsSvc = new RtspAvailableStreamsSvc();
 	private static @Nullable ThreadStreamsConfig threadStreamsConfig = null;
@@ -85,9 +80,6 @@ public final class RtspServerApp {
 
 		//
 		startStreamsConfigThread();
-
-		//
-		poolRtspTcm = createRtspTcmPool();
 
 		//
 		boolean resB = runServerLoop();
@@ -159,25 +151,27 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull ThreadPoolExecutor createMqPool() {
-		return new ThreadPoolExecutor(
-				Math.max(rtspSrvConfig.getThreadsMaximumMq(), 1),
-				Math.max(rtspSrvConfig.getThreadsMaximumMq(), 1),
-				60L, TimeUnit.SECONDS,
-				new SynchronousQueue<>(true)
+	private static @NonNull RtspThreadMngTci createRtspThreadMngTci(
+				@NonNull String cfgServerNameAndVersion,
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+			) {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".createRtspThreadMngTci()";
+
+		if (rtspThreadMngPlay == null) {
+			throw new IllegalStateException(FNC_NAME + ": RtspThreadMngPlay not initialized");
+		}
+		return new RtspThreadMngTci(
+				RtspServerApp::addMsgForLogThread,
+				cancelToken,
+				rtspSrvConfig,
+				cfgServerNameAndVersion,
+				availableStreamsSvc,
+				globalSessionInfoSvc,
+				rtspThreadMngPlay
 			);
 	}
 
-	private static @NonNull ThreadPoolExecutor createRtspTcmPool() {
-		return new ThreadPoolExecutor(
-				rtspSrvConfig.getThreadsMaximumTcp(),
-				rtspSrvConfig.getThreadsMaximumTcp(),
-				60L, TimeUnit.SECONDS,
-				new SynchronousQueue<>(true)
-			);
-	}
-
-	private static @NonNull RtspThreadMngPlay createRtspPlayThreadMng(
+	private static @NonNull RtspThreadMngPlay createRtspThreadMngPlay(
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
 		return new RtspThreadMngPlay(
@@ -185,6 +179,16 @@ public final class RtspServerApp {
 				cancelToken,
 				rtspSrvConfig,
 				globalSessionInfoSvc
+			);
+	}
+
+	private static @NonNull RtspThreadMngMqExt createRtspThreadMngMqExt() {
+		return new RtspThreadMngMqExt(
+				RtspServerApp::addMsgForLogThread,
+				cancelToken,
+				rtspSrvConfig,
+				availableStreamsSvc,
+				availableStreamsSvc
 			);
 	}
 
@@ -295,7 +299,8 @@ public final class RtspServerApp {
 
 		final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = new RtspProtoGlobalSessionInfoSvc();
 
-		rtspThreadMngPlay = createRtspPlayThreadMng(globalSessionInfoSvc);
+		rtspThreadMngPlay = createRtspThreadMngPlay(globalSessionInfoSvc);
+		rtspThreadMngTci = createRtspThreadMngTci(cfgServerNameAndVersion, globalSessionInfoSvc);
 
 		try (ServerSocket listenSocketRtsps = (rtspsTcpPort > 0 ? openRtspsSocket(rtspsTcpPort) : null)) {
 			try (ServerSocket listenSocketRtsp = (rtspTcpPort > 0 ? new ServerSocket(rtspSrvConfig.getServerTcpPortRtsp()) : null)) {
@@ -338,19 +343,14 @@ public final class RtspServerApp {
 								FNC_NAME,
 								++loopCount,
 								dbgDeletedSessionIds,
+								cfgServerNameAndVersion,
 								globalSessionInfoSvc
 							);
 						continue;
 					}
 					haveConn = false;
 
-					innerMainLoop_submitNewTcpThread(
-							FNC_NAME,
-							cfgServerNameAndVersion,
-							globalSessionInfoSvc,
-							socketRtspTcp,
-							isRtspsConn
-						);
+					innerMainLoop_submitNewTcpThread(socketRtspTcp, isRtspsConn);
 
 					/*if (clientConnectionCount == 2) {  // for profiling only
 						break;
@@ -377,13 +377,14 @@ public final class RtspServerApp {
 				@NonNull String fncName,
 				int loopCount,
 				@NonNull Set<@NonNull RtspProtoIdSession> dbgDeletedSessionIds,
+				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
 		boolean isLoopCount50 = (loopCount % 50 == 0);
 
 		// check for Streams' Config update
 		if (isLoopCount50 && availableStreamsSvc.haveStreamsChanged()) {
-			performStreamsUpdate(globalSessionInfoSvc);
+			performStreamsUpdate(cfgServerNameAndVersion, globalSessionInfoSvc);
 		}
 		// start a queued Play thread
 		if (! isLoopCount50 && rtspThreadMngPlay != null) {
@@ -391,47 +392,35 @@ public final class RtspServerApp {
 		}
 		// clean up expired Play threads and Session Info objects
 		if (isLoopCount50 && rtspThreadMngPlay != null) {
-			rtspThreadMngPlay.doHousekeepingForPlayThreads();
+			rtspThreadMngPlay.doHousekeeping();
 			//
 			globalSessionInfoSvc.doHousekeepingForSessionInfos(dbgDeletedSessionIds);
 			for (RtspProtoIdSession tmpId : dbgDeletedSessionIds) {
 				logDebug(fncName, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
 			}
 		}
+		// clean up expired TCI and MQext threads
+		if (isLoopCount50 && rtspThreadMngTci != null) {
+			rtspThreadMngTci.doHousekeeping();
+		}
+		if (isLoopCount50 && rtspThreadMngMqExt != null) {
+			rtspThreadMngMqExt.doHousekeeping();
+		}
 	}
 
-	private static void innerMainLoop_submitNewTcpThread(
-				@NonNull String fncName,
-				@NonNull String cfgServerNameAndVersion,
-				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc,
-				@NonNull Socket socketRtspTcp,
-				boolean isRtspsConn
-			) throws SocketException {
-		if (rtspThreadMngPlay == null || poolRtspTcm == null) {
+	private static void innerMainLoop_submitNewTcpThread(@NonNull Socket socketRtspTcp, boolean isRtspsConn)
+			throws SocketException {
+		if (rtspThreadMngPlay == null || rtspThreadMngTci == null) {
 			return;
 		}
 		socketRtspTcp.setSoTimeout(10);  // only for read()
 
 		//
-		ThreadRtspTcpClientInbound thread = new ThreadRtspTcpClientInbound(
-				RtspServerApp::addMsgForLogThread,
-				cancelToken,
-				rtspSrvConfig,
-				cfgServerNameAndVersion,
-				availableStreamsSvc,
-				globalSessionInfoSvc,
-				rtspThreadMngPlay,
+		rtspThreadMngTci.startNewTciThread(
 				++clientConnectionCount,
 				socketRtspTcp,
 				isRtspsConn
 			);
-
-		try {
-			poolRtspTcm.submit(thread);
-		} catch (RejectedExecutionException e) {
-			logError(fncName, "RejectedExecutionException caught: POOLRTSPTCM is most likely full");
-			try { socketRtspTcp.close(); } catch (IOException ignored) { }
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -439,25 +428,15 @@ public final class RtspServerApp {
 	private static void stopThreads() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
 
+		cancelToken.cancelled = true;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
 		if (rtspThreadMngPlay != null) {
 			rtspThreadMngPlay.shutdownAllThreads();
 		}
-
-		//
-		if (poolRtspTcm != null) {
-			poolRtspTcm.shutdown();
+		if (rtspThreadMngTci != null) {
+			rtspThreadMngTci.shutdownAllThreads();
 		}
-		if (poolMqE2I != null) {
-			poolMqE2I.shutdown();
-		}
-		cancelToken.cancelled = true;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
-
-		if (poolRtspTcm != null) {
-			stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
-		}
-
-		if (poolMqE2I != null) {
-			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
+		if (rtspThreadMngMqExt != null) {
+			rtspThreadMngMqExt.shutdownAllThreads();
 		}
 
 		//
@@ -487,104 +466,56 @@ public final class RtspServerApp {
 		System.err.println(FNC_NAME + ": all threads stopped");
 	}
 
-	private static void stopPool(@NonNull String fncName, @NonNull String poolName, @NonNull ExecutorService poolObj) {
-		try {
-			if (! poolObj.awaitTermination(10, TimeUnit.SECONDS)) {
-				System.err.println(fncName + ": timeout, forcing shutdown " + poolName);
-				poolObj.shutdownNow();  // force shutdown
-			}
-		} catch (InterruptedException e) {
-			System.err.println(fncName + ": interrupted, forcing shutdown " + poolName);
-			poolObj.shutdownNow();
-		}
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void performStreamsUpdate(@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc) {
-		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".performStreamsUpdate()";
-
+	private static void performStreamsUpdate(
+				@NonNull String cfgServerNameAndVersion,
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+			) {
 		// @TODO figure out affected Session IDs and MQ ES IDs
 		// @TODO stop only affected threads
 
-		cancelToken.cancelled = true;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
+		cancelToken.cancelled = true;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
 		if (rtspThreadMngPlay != null) {
 			rtspThreadMngPlay.shutdownAllThreads();
+			rtspThreadMngPlay = null;
 		}
-		if (poolRtspTcm != null) {
-			poolRtspTcm.shutdown();
+		if (rtspThreadMngTci != null) {
+			rtspThreadMngTci.shutdownAllThreads();
+			rtspThreadMngTci = null;
 		}
-		if (poolMqE2I != null) {
-			poolMqE2I.shutdown();
-		}
-		if (poolRtspTcm != null) {
-			stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
-		}
-		if (poolMqE2I != null) {
-			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
+		if (rtspThreadMngMqExt != null) {
+			rtspThreadMngMqExt.shutdownAllThreads();
+			rtspThreadMngMqExt = null;
 		}
 
 		//
 		availableStreamsSvc.performStreamsUpdate();
 
 		//
-		cancelToken.cancelled = false;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
-		poolRtspTcm = createRtspTcmPool();
+		cancelToken.cancelled = false;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
+		rtspThreadMngPlay = createRtspThreadMngPlay(globalSessionInfoSvc);
+		rtspThreadMngTci = createRtspThreadMngTci(cfgServerNameAndVersion, globalSessionInfoSvc);
 		startMessageQueueThreadsE2I();
-		rtspThreadMngPlay = createRtspPlayThreadMng(globalSessionInfoSvc);
 	}
 
 	private static void startMessageQueueThreadsE2I() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMessageQueueThreadsE2I()";
 
 		final Set<@NonNull RtspProtoIdEsSource> mqStreamSources = availableStreamsSvc.findMqEsSources();
+		if (mqStreamSources.isEmpty()) {
+			return;
+		}
 		if (mqStreamSources.size() > rtspSrvConfig.getThreadsMaximumMq()) {
 			logError(FNC_NAME, "Too many MQ Sub-Stream sources " +
 					"(have=" + mqStreamSources.size() + ", max=" + rtspSrvConfig.getThreadsMaximumMq() + ")");
 			return;
 		}
-		poolMqE2I = createMqPool();
-		startE2iMqsForListOfStreamSources(mqStreamSources);
-	}
 
-	private static void startE2iMqsForListOfStreamSources(@NonNull Set<@NonNull RtspProtoIdEsSource> esSourceIds) {
-		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startE2iMqsForListOfStreamSources()";
+		rtspThreadMngMqExt = createRtspThreadMngMqExt();
 
-		assert poolMqE2I != null;
-
-		for (RtspProtoIdEsSource tmpEsSourceId : esSourceIds) {
-			RtspProtoEsSourceExpandedInfo esei;
-			try {
-				esei = availableStreamsSvc.getElementaryStreamSourceExpInfo(tmpEsSourceId);
-			} catch (RtspProtoIdEsSourceNotFoundException e) {
-				// should never happen
-				logError(FNC_NAME, "Invalid MQ ES Source ID '" + tmpEsSourceId + "': " + e.getMessage());
-				continue;
-			}
-			Optional<String> tmpSslCertPath;
-			try {
-				tmpSslCertPath = rtspSrvConfig.getMqServerSslCertificatePath(esei.inputUri());
-			} catch (ConfigInvalidException e) {
-				// should never happen
-				throw new IllegalStateException(e);
-			}
-			MqElementaryStreamSourceSettings mqSetts = MqElementaryStreamSourceSettings.of(
-					esei.credentials(),
-					esei.inputUri()
-				);
-			logDebug(FNC_NAME, "Starting MqE2I for '" +
-					mqSetts.getHostname() + ":" + Integer.toUnsignedString(mqSetts.getPort().getPort16bit().orElseThrow()) + ":" +
-					mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
-			ThreadMqE2I thread = new ThreadMqE2I(
-					RtspServerApp::addMsgForLogThread,
-					cancelToken,
-					availableStreamsSvc,
-					tmpEsSourceId,
-					mqSetts,
-					tmpSslCertPath.orElse("")
-				);
-
-			poolMqE2I.submit(thread);
+		for (RtspProtoIdEsSource tmpEsSourceId : mqStreamSources) {
+			rtspThreadMngMqExt.startNewMqExtThread(tmpEsSourceId);
 		}
 	}
 

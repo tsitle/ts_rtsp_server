@@ -19,7 +19,7 @@ import java.util.*;
 public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
 	static final int RTSP_THREADS_PLAY_DEFAULT = 20;  // one thread per client session
-	static final int RTSP_THREADS_TCM_DEFAULT = 20;  // one thread per client connection
+	static final int RTSP_THREADS_TCI_DEFAULT = 20;  // one thread per client connection
 	static final int MQ_THREADS_EXT_DEFAULT = 20;  // one thread per external MQ
 
 	static final int SERVER_USERNAME_LENGTH_MAX = 64;
@@ -63,7 +63,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.sslKey = "";
 			this.sslCa = "";
 			this.threadsMaximumPlay = RTSP_THREADS_PLAY_DEFAULT;
-			this.threadsMaximumTcp = RTSP_THREADS_TCM_DEFAULT;
+			this.threadsMaximumTcp = RTSP_THREADS_TCI_DEFAULT;
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 		}
 	}

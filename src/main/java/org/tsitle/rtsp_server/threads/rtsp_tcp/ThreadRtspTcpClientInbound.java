@@ -68,6 +68,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	/** Has the client requested PAUSE? */
 	private boolean isPlaybackPaused = false;
 
+	private final @NonNull CancelToken localCancelToken = new CancelToken();
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
@@ -190,7 +192,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		try {
 			int loopCounter = 0;
 			MainLoopResult mlr = MainLoopResult.OK;
-			while (! (hasBeenRequestedToStop() || rtxpTcpReadWrite.isSocketClosed())) {
+			while (! (hasBeenRequestedToStop() || rtxpTcpReadWrite.isSocketClosed() || localCancelToken.cancelled)) {
 				if ((mlr = mainLoop(++loopCounter)) != MainLoopResult.OK) {
 					break;
 				}
@@ -227,6 +229,10 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
+	}
+
+	public void stopThread() {
+		localCancelToken.cancelled = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -275,6 +281,12 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	@Override
 	public synchronized void cbNotifyRcvdRtcpRrPacketOverTcp(@NonNull Instant time) {
 		rtxpTcpReadWrite.resetTcpActivityTimeoutTimer();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean usesSessionId(@NonNull RtspProtoIdSession idSession) {
+		return idSession.equals(sessionInfoPtr.ptr().getIdSession());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -3,7 +3,6 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -19,7 +18,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 
-final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
+final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThreadMngInterface {
 
 	private record VarsForNewThread(
 			@NonNull RtspProtoSessionInfo rtspSessionInfo,
@@ -27,18 +26,14 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 			@NonNull RtspChildThreadsCbRtxpTcpInterface childThreadsCbRtpTcpInterface
 		) { }
 
+	private static final String POOL_NAME = "POOLRTSPPLAY";
 	private static final int ADDITIONAL_SESSION_TIMEOUT_TOLERANCE_SECS = 2;
 
-	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull CancelToken cancelToken;
-	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final @NonNull Queue<VarsForNewThread> queueForNewThread = new ConcurrentLinkedQueue<>();
 
 	private final @NonNull Map<@NonNull RtspProtoIdSession, @NonNull ThreadRtspPlay> rtspPlayThreadMap = new ConcurrentHashMap<>();
-
-	private final @NonNull ExecutorService poolRtspPlay;
 
 	public RtspThreadMngPlay(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -46,13 +41,12 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
-		this.logMsgInterface = logMsgInterface;
-		this.cancelToken = cancelToken;
-		this.rtspSrvConfig = rtspSrvConfig;
+		super(logMsgInterface, cancelToken, rtspSrvConfig);
+
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 
 		//
-		this.poolRtspPlay = new ThreadPoolExecutor(
+		this.pool = new ThreadPoolExecutor(
 				rtspSrvConfig.getThreadsMaximumPlay(),
 				rtspSrvConfig.getThreadsMaximumPlay(),
 				60L, TimeUnit.SECONDS,
@@ -120,6 +114,9 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 	public void startNewPlayThreadFromQueue() {
 		final String FNC_NAME = getClass().getSimpleName() + ".startNewThreadFromQueue()";
 
+		if (pool == null) {
+			return;
+		}
 		if (queueForNewThread.isEmpty()) {
 			return;
 		}
@@ -137,7 +134,7 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 			);
 
 		try {
-			poolRtspPlay.submit(threadRtspPlay);
+			pool.submit(threadRtspPlay);
 
 			//
 			final int MAX_TIMEOUT_CNT = 100;
@@ -154,12 +151,13 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 				rtspPlayThreadMap.put(varsForNewThread.rtspSessionInfo().getIdSession(), threadRtspPlay);
 			}
 		} catch (RejectedExecutionException e) {
-			logError(FNC_NAME, "RejectedExecutionException caught: POOLRTSPPLAY is most likely full");
+			logError(FNC_NAME, "RejectedExecutionException caught: " + POOL_NAME + " is most likely full");
 		}
 	}
 
-	public void doHousekeepingForPlayThreads() {
-		final String FNC_NAME = getClass().getSimpleName() + ".doHousekeepingForPlayThreads()";
+	@Override
+	public void doHousekeeping() {
+		final String FNC_NAME = getClass().getSimpleName() + ".doHousekeeping()";
 
 		for (Map.Entry<RtspProtoIdSession, ThreadRtspPlay> entry : rtspPlayThreadMap.entrySet()) {
 			ThreadRtspPlay threadRtspPlay = entry.getValue();
@@ -196,23 +194,8 @@ final class RtspThreadMngPlay implements RtspPlayThreadMngInterface {
 		for (RtspProtoIdSession entryId : rtspPlayThreadMap.keySet()) {
 			shutdownThreadBySessionId(entryId);
 		}
-		poolRtspPlay.shutdown();
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@SuppressWarnings("SameParameterValue")
-	private void logDebug(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
-	}
-	@SuppressWarnings("SameParameterValue")
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
-	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
-		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
-				fncName + ": " + msg);
+		//
+		internalShutdownAllThreads(POOL_NAME);
 	}
 
 }

@@ -75,6 +75,8 @@ public final class ThreadMqE2I extends RunnableBase {
 
 	private final @NonNull MetadataVars metadataVars = new MetadataVars();
 
+	private final @NonNull CancelToken localCancelToken = new CancelToken();
+
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
@@ -127,7 +129,7 @@ public final class ThreadMqE2I extends RunnableBase {
 			mqInternalPub.connectToMq();
 
 			int failCount = 0;
-			while (! hasBeenRequestedToStop()) {
+			while (! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
 				mqExternalSub = new MqExternalSub(
 						logMsgInterface,
 						mqSettings,
@@ -178,6 +180,10 @@ public final class ThreadMqE2I extends RunnableBase {
 			isRunning.set(false);
 			logDebug(FNC_NAME, "Thread ended");
 		}
+	}
+
+	public void stopThread() {
+		localCancelToken.cancelled = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
