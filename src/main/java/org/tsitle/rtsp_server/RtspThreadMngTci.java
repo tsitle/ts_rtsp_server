@@ -46,8 +46,8 @@ final class RtspThreadMngTci extends RtspThreadMngBase {
 
 		//
 		this.pool = new ThreadPoolExecutor(
-				rtspSrvConfig.getThreadsMaximumTcp(),
-				rtspSrvConfig.getThreadsMaximumTcp(),
+				rtspSrvConfig.getThreadsMaximumTci(),
+				rtspSrvConfig.getThreadsMaximumTci(),
 				60L, TimeUnit.SECONDS,
 				new SynchronousQueue<>(true)
 			);
@@ -67,7 +67,7 @@ final class RtspThreadMngTci extends RtspThreadMngBase {
 			return;
 		}
 
-		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumTcp()) {
+		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumTci()) {
 			logWarn(FNC_NAME, "cannot start TCI thread - pool full");
 			return;
 		}

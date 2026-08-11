@@ -48,9 +48,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Maxmimum number of threads for Playback */
 		@Expose
 		private final int threadsMaximumPlay;
-		/** Maxmimum number of threads for TCP connections */
+		/** Maxmimum number of threads for incoming client TCP connections */
 		@Expose
-		private final int threadsMaximumTcp;
+		private final int threadsMaximumTci;
 		/** Maxmimum number of threads for Message Queues */
 		@Expose
 		private final int threadsMaximumMq;
@@ -63,7 +63,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.sslKey = "";
 			this.sslCa = "";
 			this.threadsMaximumPlay = RTSP_THREADS_PLAY_DEFAULT;
-			this.threadsMaximumTcp = RTSP_THREADS_TCI_DEFAULT;
+			this.threadsMaximumTci = RTSP_THREADS_TCI_DEFAULT;
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 		}
 	}
@@ -250,8 +250,8 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		return server.threadsMaximumPlay;
 	}
 
-	public int getThreadsMaximumTcp() {
-		return server.threadsMaximumTcp;
+	public int getThreadsMaximumTci() {
+		return server.threadsMaximumTci;
 	}
 
 	public int getThreadsMaximumMq() {
@@ -572,8 +572,8 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		if (server.threadsMaximumPlay < 1) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumPlay': " + server.threadsMaximumPlay);
 		}
-		if (server.threadsMaximumTcp < 1) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumTcp': " + server.threadsMaximumTcp);
+		if (server.threadsMaximumTci < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumTcp': " + server.threadsMaximumTci);
 		}
 		if (server.threadsMaximumMq < 1) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumMq': " + server.threadsMaximumMq);
