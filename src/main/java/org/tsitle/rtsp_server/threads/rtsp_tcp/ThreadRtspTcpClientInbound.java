@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -46,7 +46,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private final @NonNull RtspProtoIpAddr fromCtorClientIpAddr = new RtspProtoIpAddr();
 	private final boolean fromCtorIsRtspsConnection;
 
-	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
+	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
@@ -83,7 +83,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	public ThreadRtspTcpClientInbound(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,

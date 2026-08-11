@@ -29,7 +29,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 
 	public ThreadStreamsConfig(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspAvailableStreamsSvc availableStreamsSvc
 			) {
 		super(logMsgInterface);
@@ -196,13 +196,13 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		}
 
 		//
-		Optional<Map<@NonNull String, @NonNull RtspSrvConfigFileStreamsNg>> optAllInputFiles =
+		Optional<Map<@NonNull String, @NonNull RtspSrvConfigFileStreams>> optAllInputFiles =
 				streamsCfgReader.readAllInputFiles(allInputFiles);
 		if (optAllInputFiles.isEmpty()) {
 			return;
 		}
-		Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> allSubStreams = new HashMap<>();
-		Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> allStreams = new HashMap<>();
+		Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams = new HashMap<>();
+		Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> allStreams = new HashMap<>();
 		streamsCfgReader.mergeInputConfigs(
 				optAllInputFiles.get(),
 				allSubStreams,

@@ -29,7 +29,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFileNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.net.URI;
@@ -45,7 +45,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	static RtspProtoEsSourceExpandedInfo readMetaInfoOfEsRawFile(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull RtspSrvConfigStreamInputEsRawFileNg esSourceObj
+				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
 		final String FNC_NAME = StreamsCfgReadEsRawFileMeta.class.getSimpleName() + ".readMetaInfoOfEsRawFile()";
 
@@ -87,7 +87,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_aac(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull RtspSrvConfigStreamInputEsRawFileNg esSourceObj
+				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					idEsSource,
@@ -137,7 +137,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_ac3(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull RtspSrvConfigStreamInputEsRawFileNg esSourceObj
+				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					idEsSource,
@@ -186,7 +186,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_h264Header(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull RtspSrvConfigStreamInputEsRawFileNg esSourceObj
+				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					idEsSource,
@@ -248,7 +248,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_h265Header(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull RtspSrvConfigStreamInputEsRawFileNg esSourceObj
+				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
 		try (AvStreamIncomingFromEsRawFile avStreamIncoming = new AvStreamIncomingFromEsRawFile(
 					idEsSource,

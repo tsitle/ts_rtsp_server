@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Input Source for RTSP streams.
  */
-public final class RtspSrvConfigStreamsStreamNg implements Cloneable {
+public final class RtspSrvConfigStreamsStream implements Cloneable {
 
 	/** Is this Stream enabled? (default: true) */
 	@Expose
@@ -34,7 +34,7 @@ public final class RtspSrvConfigStreamsStreamNg implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigStreamsStreamNg() {
+	public RtspSrvConfigStreamsStream() {
 		this.enabled = true;
 		this.needsAuthentication = true;
 		this.allowedUserAccountGroups = new HashSet<>();
@@ -47,11 +47,11 @@ public final class RtspSrvConfigStreamsStreamNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull RtspSrvConfigStreamsStreamNg createVirtual(
-				@NonNull RtspSrvConfigStreamsStreamNg realStreamCfgObj,
+	public static @NonNull RtspSrvConfigStreamsStream createVirtual(
+				@NonNull RtspSrvConfigStreamsStream realStreamCfgObj,
 				Set<@NonNull String> virtExternalEsIds
 			) {
-		RtspSrvConfigStreamsStreamNg resObj = new RtspSrvConfigStreamsStreamNg();
+		RtspSrvConfigStreamsStream resObj = new RtspSrvConfigStreamsStream();
 		resObj.enabled = realStreamCfgObj.enabled;
 		resObj.needsAuthentication = realStreamCfgObj.needsAuthentication;
 		resObj.allowedUserAccountGroups.addAll(realStreamCfgObj.allowedUserAccountGroups);
@@ -91,10 +91,10 @@ public final class RtspSrvConfigStreamsStreamNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamsStreamNg clone() {
+	public @NonNull RtspSrvConfigStreamsStream clone() {
 		checkPostProcessed();
 		try {
-			RtspSrvConfigStreamsStreamNg clone = (RtspSrvConfigStreamsStreamNg)super.clone();
+			RtspSrvConfigStreamsStream clone = (RtspSrvConfigStreamsStream)super.clone();
 			clone.enabled = (boolean)enabled;
 			clone.needsAuthentication = (boolean)needsAuthentication;
 			clone.allowedUserAccountGroups = new HashSet<>();
@@ -131,7 +131,7 @@ public final class RtspSrvConfigStreamsStreamNg implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamsStreamNg that)) {
+		if (! (o instanceof RtspSrvConfigStreamsStream that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());

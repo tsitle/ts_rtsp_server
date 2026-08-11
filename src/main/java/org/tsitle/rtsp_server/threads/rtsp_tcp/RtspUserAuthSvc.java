@@ -13,7 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 
 import java.util.Optional;
 import java.util.Set;
@@ -24,13 +24,13 @@ import java.util.Set;
 final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
+	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	public RtspUserAuthSvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {

@@ -12,19 +12,19 @@ import java.util.Set;
 /**
  * Streams configuration for the RTSP server.
  */
-public final class RtspSrvConfigFileStreamsNg extends RtspSrvConfigFileBase {
+public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
 
 	/** Map of Sub-Streams */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> subStreams;
+	private @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> subStreams;
 	/** Map of Streams */
 	@Expose
-	private @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> streams;
+	private @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> streams;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigFileStreamsNg() {
+	public RtspSrvConfigFileStreams() {
 		this.subStreams = new HashMap<>();
 		this.streams = new HashMap<>();
 
@@ -34,19 +34,19 @@ public final class RtspSrvConfigFileStreamsNg extends RtspSrvConfigFileBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> getSubStreams() {
+	public @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> getSubStreams() {
 		checkPostProcessed();
-		Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> resMap = new HashMap<>();
-		for (Map.Entry<String, RtspSrvConfigStreamsSsNg> entry : subStreams.entrySet()) {
+		Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> resMap = new HashMap<>();
+		for (Map.Entry<String, RtspSrvConfigStreamsSs> entry : subStreams.entrySet()) {
 			resMap.put(entry.getKey(), entry.getValue().clone());
 		}
 		return resMap;
 	}
 
-	public @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> getStreams() {
+	public @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> getStreams() {
 		checkPostProcessed();
-		Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> resMap = new HashMap<>();
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> entry : streams.entrySet()) {
+		Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> resMap = new HashMap<>();
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : streams.entrySet()) {
 			resMap.put(entry.getKey(), entry.getValue().clone());
 		}
 		return resMap;
@@ -61,13 +61,13 @@ public final class RtspSrvConfigFileStreamsNg extends RtspSrvConfigFileBase {
 
 		//
 		subStreams = RewriteMapStringXxxHelper.removeNullAndBlank(subStreams, true);
-		for (Map.Entry<String, RtspSrvConfigStreamsSsNg> entry : subStreams.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsSs> entry : subStreams.entrySet()) {
 			entry.getValue().postProcess();
 		}
 
 		//
 		streams = RewriteMapStringXxxHelper.removeNullAndBlank(streams, true);
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> entry : streams.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : streams.entrySet()) {
 			entry.getValue().postProcess();
 		}
 	}
@@ -83,12 +83,12 @@ public final class RtspSrvConfigFileStreamsNg extends RtspSrvConfigFileBase {
 		checkPostProcessed();
 
 		//
-		for (Map.Entry<String, RtspSrvConfigStreamsSsNg> entry : subStreams.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsSs> entry : subStreams.entrySet()) {
 			entry.getValue().validate(entry.getKey(), dataDirPath);
 		}
 
 		//
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> entry : streams.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : streams.entrySet()) {
 			entry.getValue().validate(entry.getKey(), userAccountGroupIds);
 		}
 	}

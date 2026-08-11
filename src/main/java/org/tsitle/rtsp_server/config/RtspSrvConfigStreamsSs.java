@@ -17,23 +17,23 @@ import java.util.Optional;
 /**
  * Input for an RTSP stream.
  */
-public final class RtspSrvConfigStreamsSsNg implements Cloneable {
+public final class RtspSrvConfigStreamsSs implements Cloneable {
 
 	/** Is this Sub-Stream Source enabled? (default: true) */
 	@Expose
 	private @NonNull Boolean enabled;
 	/** Raw File Elementary-Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputEsRawFileNg rawFile;
+	private @Nullable RtspSrvConfigStreamInputEsRawFile rawFile;
 	/** Message Queue Elementary-Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputEsMqNg mq;
+	private @Nullable RtspSrvConfigStreamInputEsMq mq;
 	/** (Muxed) File Container Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputMuxFcNg fileContainer;
+	private @Nullable RtspSrvConfigStreamInputMuxFc fileContainer;
 	/** (Muxed) RTSP Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputMuxRtspNg rtsp;
+	private @Nullable RtspSrvConfigStreamInputMuxRtsp rtsp;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -42,11 +42,11 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 	@GsonAnnoExclude
 	private final boolean internalIsVirtual;
 
-	public RtspSrvConfigStreamsSsNg() {
+	public RtspSrvConfigStreamsSs() {
 		this(false);
 	}
 
-	public RtspSrvConfigStreamsSsNg(boolean internalIsVirtual) {
+	public RtspSrvConfigStreamsSs(boolean internalIsVirtual) {
 		this.enabled = true;
 		this.rawFile = null;
 		this.mq = null;
@@ -61,19 +61,19 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull RtspSrvConfigStreamsSsNg createVirtualSsFromDemuxedSubStream(
+	public static @NonNull RtspSrvConfigStreamsSs createVirtualSsFromDemuxedSubStream(
 				@NonNull RtspProtoEsSourceType esSourceType,
 				@NonNull URI msSourceUri
 			) throws ConfigInvalidException {
-		final String FNC_NAME = RtspSrvConfigStreamsSsNg.class.getSimpleName() + ".createVirtualSsFromDemuxedSubStream()";
+		final String FNC_NAME = RtspSrvConfigStreamsSs.class.getSimpleName() + ".createVirtualSsFromDemuxedSubStream()";
 
 		final String errMsgUri = buildMsSourceUriForErrorMsgs(msSourceUri);
 
-		RtspSrvConfigStreamsSsNg resObj = new RtspSrvConfigStreamsSsNg(true);
+		RtspSrvConfigStreamsSs resObj = new RtspSrvConfigStreamsSs(true);
 		if (esSourceType == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
-			resObj.fileContainer = RtspSrvConfigStreamInputMuxFcNg.of(msSourceUri.getPath());
+			resObj.fileContainer = RtspSrvConfigStreamInputMuxFc.of(msSourceUri.getPath());
 		} else if (esSourceType == RtspProtoEsSourceType.ST_DEMUX_MS_RTSP) {
-			resObj.rtsp = RtspSrvConfigStreamInputMuxRtspNg.of(msSourceUri.toString());
+			resObj.rtsp = RtspSrvConfigStreamInputMuxRtsp.of(msSourceUri.toString());
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type " + esSourceType + " " +
 					"for MS Source '" + errMsgUri + "'");
@@ -112,7 +112,7 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 		return internalEsSourceType;
 	}
 
-	public Optional<RtspSrvConfigStreamInputEsRawFileNg> getSsSourceEsRawFile() {
+	public Optional<RtspSrvConfigStreamInputEsRawFile> getSsSourceEsRawFile() {
 		checkPostProcessed();
 		if (rawFile == null) {
 			return Optional.empty();
@@ -120,7 +120,7 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 		return Optional.of(rawFile.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputEsMqNg> getSsSourceEsMq() {
+	public Optional<RtspSrvConfigStreamInputEsMq> getSsSourceEsMq() {
 		checkPostProcessed();
 		if (mq == null) {
 			return Optional.empty();
@@ -128,7 +128,7 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 		return Optional.of(mq.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputMuxFcNg> getSsSourceMuxFc() {
+	public Optional<RtspSrvConfigStreamInputMuxFc> getSsSourceMuxFc() {
 		checkPostProcessed();
 		if (fileContainer == null) {
 			return Optional.empty();
@@ -136,7 +136,7 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 		return Optional.of(fileContainer.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputMuxRtspNg> getSsSourceMuxRtsp() {
+	public Optional<RtspSrvConfigStreamInputMuxRtsp> getSsSourceMuxRtsp() {
 		checkPostProcessed();
 		if (rtsp == null) {
 			return Optional.empty();
@@ -152,10 +152,10 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamsSsNg clone() {
+	public @NonNull RtspSrvConfigStreamsSs clone() {
 		checkPostProcessed();
 		try {
-			RtspSrvConfigStreamsSsNg clone = (RtspSrvConfigStreamsSsNg)super.clone();
+			RtspSrvConfigStreamsSs clone = (RtspSrvConfigStreamsSs)super.clone();
 			clone.enabled = (boolean)enabled;
 			if (rawFile != null) {
 				clone.rawFile = rawFile.clone();
@@ -205,7 +205,7 @@ public final class RtspSrvConfigStreamsSsNg implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamsSsNg that)) {
+		if (! (o instanceof RtspSrvConfigStreamsSs that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());

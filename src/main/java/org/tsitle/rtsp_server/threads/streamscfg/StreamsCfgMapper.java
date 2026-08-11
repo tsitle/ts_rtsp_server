@@ -12,8 +12,8 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.rtsp_server.availstreams.RtspAsSvcInputData;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStreamNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStream;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.net.URI;
@@ -61,8 +61,8 @@ final class StreamsCfgMapper {
 		final @NonNull Map<@NonNull String, @NonNull RtspProtoIdInputSource> mapExternalIsIdToInternalVirtIsId = new HashMap<>();
 		final @NonNull Map<@NonNull String, @NonNull RtspProtoIdEsSource> mapVirtExternalEsIdToInternal = new HashMap<>();
 
-		final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStreamNg> mapVirtIsIdToCfgObj = new HashMap<>();
-		final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> mapVirtEsIdToCfgObj = new HashMap<>();
+		final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStream> mapVirtIsIdToCfgObj = new HashMap<>();
+		final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtEsIdToCfgObj = new HashMap<>();
 
 		final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapVirtEsIdToEsei = new HashMap<>();
 	}
@@ -73,8 +73,8 @@ final class StreamsCfgMapper {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 
-	private final Mappings<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStreamNg> mappingsIs = new Mappings<>();
-	private final Mappings<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> mappingsEs = new Mappings<>();
+	private final Mappings<@NonNull RtspProtoIdInputSource, @NonNull RtspSrvConfigStreamsStream> mappingsIs = new Mappings<>();
+	private final Mappings<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mappingsEs = new Mappings<>();
 
 	private final @NonNull DmxVirtualEses dmxVirtualEses = new DmxVirtualEses();
 	private final @NonNull RawFileOrMqEsMetaInfo rawFileEsMetaInfo = new RawFileOrMqEsMetaInfo();
@@ -88,12 +88,12 @@ final class StreamsCfgMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	boolean mapStreamsCfg(
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> currentSubStreams,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> currentStreams,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> currentSubStreams,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> currentStreams,
 				@NonNull RtspAsSvcInputData asSvcInputData
 			) {
-		internalMapXxCfg(RtspProtoIdInputSource.class, RtspSrvConfigStreamsStreamNg.class, currentStreams, mappingsIs);
-		internalMapXxCfg(RtspProtoIdEsSource.class, RtspSrvConfigStreamsSsNg.class, currentSubStreams, mappingsEs);
+		internalMapXxCfg(RtspProtoIdInputSource.class, RtspSrvConfigStreamsStream.class, currentStreams, mappingsIs);
+		internalMapXxCfg(RtspProtoIdEsSource.class, RtspSrvConfigStreamsSs.class, currentSubStreams, mappingsEs);
 
 		// compare previous vs. current configs
 		compareXxCfgs(mappingsIs);
@@ -152,11 +152,11 @@ final class StreamsCfgMapper {
 				mappings.deltaAddedIds.add(entry.getKey());
 			}
 			//
-			if (cfgType == RtspSrvConfigStreamsStreamNg.class) {
-				RtspSrvConfigStreamsStreamNg casted = (RtspSrvConfigStreamsStreamNg)cfgType.cast(entry.getValue());
+			if (cfgType == RtspSrvConfigStreamsStream.class) {
+				RtspSrvConfigStreamsStream casted = (RtspSrvConfigStreamsStream)cfgType.cast(entry.getValue());
 				mappings.mapExternalIdToCfgObjCur.put(entry.getKey(), cfgType.cast(casted.clone()));
-			} else if (cfgType == RtspSrvConfigStreamsSsNg.class) {
-				RtspSrvConfigStreamsSsNg casted = (RtspSrvConfigStreamsSsNg)cfgType.cast(entry.getValue());
+			} else if (cfgType == RtspSrvConfigStreamsSs.class) {
+				RtspSrvConfigStreamsSs casted = (RtspSrvConfigStreamsSs)cfgType.cast(entry.getValue());
 				mappings.mapExternalIdToCfgObjCur.put(entry.getKey(), cfgType.cast(casted.clone()));
 			} else {
 				throw new RuntimeException(StreamsCfgMapper.class.getSimpleName() + ": Unsupported CFG type: " + cfgType);
@@ -189,7 +189,7 @@ final class StreamsCfgMapper {
 	}
 
 	private void compareSubStreamsPerStream() {
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> entryStream : mappingsIs.mapExternalIdToCfgObjCur.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> entryStream : mappingsIs.mapExternalIdToCfgObjCur.entrySet()) {
 			if (mappingsIs.deltaAddedIds.contains(entryStream.getKey()) ||
 					mappingsIs.deltaModifiedIds.contains(entryStream.getKey())) {
 				continue;
@@ -245,7 +245,7 @@ final class StreamsCfgMapper {
 			if (virtIsId == null) {
 				continue;
 			}
-			RtspSrvConfigStreamsStreamNg virtIsObj = dmxVirtualEses.mapVirtIsIdToCfgObj.get(virtIsId);
+			RtspSrvConfigStreamsStream virtIsObj = dmxVirtualEses.mapVirtIsIdToCfgObj.get(virtIsId);
 			if (virtIsObj == null) {
 				continue;
 			}
@@ -265,7 +265,7 @@ final class StreamsCfgMapper {
 		addedAndModifiedStreamIds.addAll(mappingsIs.deltaAddedIds);
 		addedAndModifiedStreamIds.addAll(mappingsIs.deltaModifiedIds);
 		for (String extStreamId : addedAndModifiedStreamIds) {
-			RtspSrvConfigStreamsStreamNg streamCfgObj = mappingsIs.mapExternalIdToCfgObjCur.get(extStreamId);
+			RtspSrvConfigStreamsStream streamCfgObj = mappingsIs.mapExternalIdToCfgObjCur.get(extStreamId);
 			if (streamCfgObj == null || ! streamCfgObj.getEnabled()) {
 				continue;
 			}
@@ -274,7 +274,7 @@ final class StreamsCfgMapper {
 				continue;
 			}
 			final String extRealSsId = tmpSsIds.iterator().next();
-			RtspSrvConfigStreamsSsNg realSsCfgObj = mappingsEs.mapExternalIdToCfgObjCur.get(extRealSsId);
+			RtspSrvConfigStreamsSs realSsCfgObj = mappingsEs.mapExternalIdToCfgObjCur.get(extRealSsId);
 			if (! realSsCfgObj.getEnabled() || (
 					realSsCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_FILE &&
 							realSsCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_RTSP)) {
@@ -286,8 +286,8 @@ final class StreamsCfgMapper {
 
 	private void createVirtualEsesForOneStream(
 				@NonNull String extStreamId,
-				@NonNull RtspSrvConfigStreamsStreamNg realStreamCfgObj,
-				@NonNull RtspSrvConfigStreamsSsNg realSsCfgObj,
+				@NonNull RtspSrvConfigStreamsStream realStreamCfgObj,
+				@NonNull RtspSrvConfigStreamsSs realSsCfgObj,
 				@NonNull String extRealSsId
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".createVirtualEsesForOneStream()";
@@ -302,7 +302,7 @@ final class StreamsCfgMapper {
 			dmxVirtualEses.mapVirtEsIdToCfgObj.putAll(veo.mapVirtInternalIdEsToEsCfgObj());
 			dmxVirtualEses.mapVirtEsIdToEsei.putAll(veo.mapVirtEsIdToEsei());
 			//
-			RtspSrvConfigStreamsStreamNg virtStreamCfg = RtspSrvConfigStreamsStreamNg.createVirtual(
+			RtspSrvConfigStreamsStream virtStreamCfg = RtspSrvConfigStreamsStream.createVirtual(
 					realStreamCfgObj,
 					veo.mapVirtExternalEsIdToInternal().keySet()
 				);
@@ -343,7 +343,7 @@ final class StreamsCfgMapper {
 
 		//
 		for (String extSubStreamId : addedAndModifiedSsIds) {
-			RtspSrvConfigStreamsSsNg subStreamCfgObj = mappingsEs.mapExternalIdToCfgObjCur.get(extSubStreamId);
+			RtspSrvConfigStreamsSs subStreamCfgObj = mappingsEs.mapExternalIdToCfgObjCur.get(extSubStreamId);
 			if (subStreamCfgObj == null || ! subStreamCfgObj.getEnabled() ||
 					(
 							(isRawFile && subStreamCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_ES_RAW_FILE) ||
@@ -461,7 +461,7 @@ final class StreamsCfgMapper {
 			if (mappedId == null) {
 				continue;
 			}
-			RtspSrvConfigStreamsStreamNg tmpInputCfg;
+			RtspSrvConfigStreamsStream tmpInputCfg;
 			if (isVirt) {
 				tmpInputCfg = dmxVirtualEses.mapVirtIsIdToCfgObj.get(mappedId);
 			} else {
@@ -479,7 +479,7 @@ final class StreamsCfgMapper {
 
 	private static @NonNull RtspProtoInputSource populate_convertStreamCfg(
 				@NonNull RtspProtoIdInputSource internalId,
-				@NonNull RtspSrvConfigStreamsStreamNg cfgObj
+				@NonNull RtspSrvConfigStreamsStream cfgObj
 			) {
 		RtspProtoInputSource protoInputSource = new RtspProtoInputSource();
 		protoInputSource.setIdInputSource(internalId);
@@ -503,7 +503,7 @@ final class StreamsCfgMapper {
 			if (mappedId == null) {
 				continue;
 			}
-			RtspSrvConfigStreamsSsNg tmpInputCfg = mappingsEs.mapExternalIdToCfgObjCur.get(inputId);
+			RtspSrvConfigStreamsSs tmpInputCfg = mappingsEs.mapExternalIdToCfgObjCur.get(inputId);
 			if (tmpInputCfg == null) {
 				continue;
 			}
@@ -521,7 +521,7 @@ final class StreamsCfgMapper {
 		final String FNC_NAME = getClass().getSimpleName() + ".populate_addClonedEsCfgsToMap_onlyVirtual()";
 
 		for (RtspProtoIdEsSource inputId : inputInternalIds) {
-			RtspSrvConfigStreamsSsNg tmpInputCfg = dmxVirtualEses.mapVirtEsIdToCfgObj.get(inputId);
+			RtspSrvConfigStreamsSs tmpInputCfg = dmxVirtualEses.mapVirtEsIdToCfgObj.get(inputId);
 			if (tmpInputCfg == null) {
 				continue;
 			}
@@ -546,7 +546,7 @@ final class StreamsCfgMapper {
 	private static @NonNull RtspProtoElementaryStreamSource populate_convertSubStreamCfg(
 				@NonNull String externalId,
 				@NonNull RtspProtoIdEsSource internalId,
-				@NonNull RtspSrvConfigStreamsSsNg cfgObj
+				@NonNull RtspSrvConfigStreamsSs cfgObj
 			) {
 		RtspProtoElementaryStreamSource protoEsSource = new RtspProtoElementaryStreamSource();
 		protoEsSource.setExternalId(externalId);

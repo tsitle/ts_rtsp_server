@@ -27,9 +27,9 @@ public final class RtspSrvConfigFileReader {
 	 * @throws ConfigInvalidException If the file contains invalid JSON
 	 * @throws IOException If an I/O error occurs while reading the file
 	 */
-	public static @NonNull RtspSrvConfigMainNg readMainConfigFromFile(@NonNull String filename)
+	public static @NonNull RtspSrvConfigMain readMainConfigFromFile(@NonNull String filename)
 			throws ConfigInvalidException, IOException {
-		RtspSrvConfigMainNg resObj = internalReadGenericConfigFromFile(RtspSrvConfigMainNg.class, filename);
+		RtspSrvConfigMain resObj = internalReadGenericConfigFromFile(RtspSrvConfigMain.class, filename);
 		//
 		Path path = Paths.get(filename).normalize();
 		resObj.validate(path.getParent().toString());
@@ -43,11 +43,11 @@ public final class RtspSrvConfigFileReader {
 	 * @throws ConfigInvalidException If the file contains invalid JSON
 	 * @throws IOException If an I/O error occurs while reading the file
 	 */
-	public static @NonNull RtspSrvConfigFileStreamsNg readStreamsConfigFromFile(
-				@NonNull RtspSrvConfigMainNg rtspConfigMain,
+	public static @NonNull RtspSrvConfigFileStreams readStreamsConfigFromFile(
+				@NonNull RtspSrvConfigMain rtspConfigMain,
 				@NonNull String filename
 			) throws ConfigInvalidException, IOException {
-		RtspSrvConfigFileStreamsNg resObj = internalReadGenericConfigFromFile(RtspSrvConfigFileStreamsNg.class, filename);
+		RtspSrvConfigFileStreams resObj = internalReadGenericConfigFromFile(RtspSrvConfigFileStreams.class, filename);
 		resObj.validate(
 				rtspConfigMain.getUserAccountGroupIds(),
 				rtspConfigMain.getDataDirAsPath()

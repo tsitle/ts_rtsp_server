@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
@@ -33,7 +33,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull CancelToken cancelToken;
-	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
+	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final @NonNull Queue<VarsForNewThread> queueForNewThread = new ConcurrentLinkedQueue<>();
@@ -50,7 +50,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 	public RtspPlayThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
 		this.logMsgInterface = logMsgInterface;

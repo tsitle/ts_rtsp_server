@@ -12,7 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSetupInfoForSubStream;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
@@ -58,7 +58,7 @@ public final class ThreadRtspPlay extends RunnableBase
 	public ThreadRtspPlay(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoSessionInfo rtspSessionInfo,
 				@NonNull RtspChildThreadsCbRtxpTcpInterface rctcbRtpTcp,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,

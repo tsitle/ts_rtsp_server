@@ -19,7 +19,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.net.URI;
@@ -29,7 +29,7 @@ import java.util.Map;
 final class StreamsCfgVirtualEsMapper {
 
 	record VirtualEsObjs(
-			@NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> mapVirtInternalIdEsToEsCfgObj,
+			@NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtInternalIdEsToEsCfgObj,
 			@NonNull Map<@NonNull String, @NonNull RtspProtoIdEsSource> mapVirtExternalEsIdToInternal,
 			@NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapVirtEsIdToEsei
 		) { }
@@ -43,7 +43,7 @@ final class StreamsCfgVirtualEsMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource(
-				@NonNull RtspSrvConfigStreamsSsNg ssCfgObj,
+				@NonNull RtspSrvConfigStreamsSs ssCfgObj,
 				@NonNull String extRealSsId
 			) throws ConfigInvalidException {
 		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".createVirtualEsesFromDemuxedSource()";
@@ -62,20 +62,20 @@ final class StreamsCfgVirtualEsMapper {
 					errMsgSuffix);
 		}
 
-		final String errMsgUri = RtspSrvConfigStreamsSsNg.buildMsSourceUriForErrorMsgs(internalUri);
+		final String errMsgUri = RtspSrvConfigStreamsSs.buildMsSourceUriForErrorMsgs(internalUri);
 
 		//
 		vem.readSubStreamInfos(internalUri, errMsgSuffix);
 
 		//
-		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSsNg> mapVirtualInternalIdToCfgObj = new HashMap<>();
+		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtualInternalIdToCfgObj = new HashMap<>();
 		Map<@NonNull String, @NonNull RtspProtoIdEsSource> mapVirtExternalEsIdToInternal = new HashMap<>();
 		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapVirtEsIdToEsei = new HashMap<>();
 
 		//
 		FfmpegDmxSubStreamInfoVideo tmpFfSsInfoVid = vem.ffSubStreamInfoVideo;
 		if (tmpFfSsInfoVid.ffmpegCodec.isVideo()) {
-			RtspSrvConfigStreamsSsNg tmpEsSrcObj = RtspSrvConfigStreamsSsNg.createVirtualSsFromDemuxedSubStream(
+			RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
 					ssCfgObj.getEsSourceType(),
 					internalUri
 				);
@@ -106,7 +106,7 @@ final class StreamsCfgVirtualEsMapper {
 		//
 		FfmpegDmxSubStreamInfoAudio tmpFfSsInfoAud = vem.ffSubStreamInfoAudio;
 		if (tmpFfSsInfoAud.ffmpegCodec.isAudio()) {
-			RtspSrvConfigStreamsSsNg tmpEsSrcObj = RtspSrvConfigStreamsSsNg.createVirtualSsFromDemuxedSubStream(
+			RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
 					ssCfgObj.getEsSourceType(),
 					internalUri
 				);
@@ -168,7 +168,7 @@ final class StreamsCfgVirtualEsMapper {
 		final String realUri = internalUri.toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
-		final String errMsgUri = RtspSrvConfigStreamsSsNg.buildMsSourceUriForErrorMsgs(internalUri);
+		final String errMsgUri = RtspSrvConfigStreamsSs.buildMsSourceUriForErrorMsgs(internalUri);
 
 		//
 		FfmpegDmxSettingsRsi dmxSettingsRsi = new FfmpegDmxSettingsRsi();

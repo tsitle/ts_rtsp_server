@@ -8,21 +8,22 @@ import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 
 /**
- * (Muxed) RTSP Stream Source.
+ * (Muxed) File Container Stream Source.
  */
-public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
+public final class RtspSrvConfigStreamInputMuxFc implements Cloneable {
 
-	/** URL to the RTSP stream */
+	/** Path to the media file */
 	@Expose
-	private @NonNull String url;
+	private @NonNull String filePath;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigStreamInputMuxRtspNg() {
-		this.url = "";
+	public RtspSrvConfigStreamInputMuxFc() {
+		this.filePath = "";
 
 		this.internalHasBeenPostProcessed = false;
 	}
@@ -30,40 +31,35 @@ public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull RtspSrvConfigStreamInputMuxRtspNg of(@NonNull String url) {
-		RtspSrvConfigStreamInputMuxRtspNg resObj = new RtspSrvConfigStreamInputMuxRtspNg();
-		resObj.url = url.
-				replace("http://", "rtsp://").
-				replace("https://", "rtsps://");
+	static @NonNull RtspSrvConfigStreamInputMuxFc of(@NonNull String filePath) {
+		RtspSrvConfigStreamInputMuxFc resObj = new RtspSrvConfigStreamInputMuxFc();
+		resObj.filePath = filePath;
 		resObj.postProcess();
 		return resObj;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull String getUrl() {
+	public @NonNull String getFilePath() {
 		checkPostProcessed();
-		return url;
+		return filePath;
 	}
 
 	public @NonNull URI getInputUri() {
 		checkPostProcessed();
-		if (url.startsWith("rtsp://")) {
-			return URI.create(url.replace("rtsp://", "http://"));
+		if (! filePath.isBlank()) {
+			return URI.create("file:" + filePath);
 		}
-		if (url.startsWith("rtsps://")) {
-			return URI.create(url.replace("rtsps://", "https://"));
-		}
-		throw new IllegalStateException("url is blank");
+		throw new IllegalStateException("filePath is blank");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamInputMuxRtspNg clone() {
+	public @NonNull RtspSrvConfigStreamInputMuxFc clone() {
 		checkPostProcessed();
 		try {
-			return (RtspSrvConfigStreamInputMuxRtspNg)super.clone();
+			return (RtspSrvConfigStreamInputMuxFc)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -73,7 +69,7 @@ public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
 		checkPostProcessed();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			baos.write(url.getBytes());
+			baos.write(filePath.getBytes());
 		} catch (IOException e) {
 			// ignore
 		}
@@ -82,7 +78,7 @@ public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamInputMuxRtspNg that)) {
+		if (! (o instanceof RtspSrvConfigStreamInputMuxFc that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());
@@ -99,8 +95,8 @@ public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
 
 		//
 		//noinspection ConstantValue
-		if (url == null || url.isBlank()) {
-			url = "";
+		if (filePath == null || filePath.isBlank()) {
+			filePath = "";
 		}
 	}
 
@@ -108,20 +104,21 @@ public final class RtspSrvConfigStreamInputMuxRtspNg implements Cloneable {
 	 * Validate the configuration.
 	 * @throws ConfigInvalidException If the configuration is invalid
 	 */
-	void validate(@NonNull String extIdStr) throws ConfigInvalidException {
+	void validate(@NonNull String extIdStr, @NonNull Path dataDirPath) throws ConfigInvalidException {
 		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
 
 		checkPostProcessed();
 
 		//
 		final String errMsgSuffix = " for Muxed-Stream Source ID '" + extIdStr + "'";
-		if (url.isBlank()) {
-			throw new ConfigInvalidException(FNC_NAME + ": No URL found" + errMsgSuffix);
+		if (filePath.isBlank()) {
+			throw new ConfigInvalidException(FNC_NAME + ": No File Path found" + errMsgSuffix);
 		}
-		if (! (url.startsWith("rtsp://") || url.startsWith("rtsps://"))) {
-			throw new ConfigInvalidException(FNC_NAME + ": Invalid RTSP URL '" + url + "'" + errMsgSuffix +
-					" - unsupported protocol");
+		if (! dataDirPath.resolve(filePath).toFile().exists()) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid File Path '" + filePath + "'" + errMsgSuffix +
+					" - file not found");
 		}
+		filePath = dataDirPath.resolve(filePath).toString();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Main RTSP server configuration.
  */
-public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
+public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
 	final int SERVER_USERNAME_LENGTH_MAX = 64;
 	final int SERVER_USERPASS_LENGTH_MIN = 8;
@@ -170,7 +170,7 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 	/**
 	 * Constructor.
 	 */
-	public RtspSrvConfigMainNg() {
+	public RtspSrvConfigMain() {
 		this.server = new SectionServer();
 		this.logging = new SectionLogging();
 		this.debugging = new SectionDebugging();

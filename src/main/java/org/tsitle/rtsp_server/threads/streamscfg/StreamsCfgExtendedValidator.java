@@ -4,10 +4,10 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsMqNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFileNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStreamNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsMq;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStream;
 
 import java.util.Map;
 
@@ -15,14 +15,14 @@ final class StreamsCfgExtendedValidator {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String caller;
-	private final @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> allSubStreams;
-	private final @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> allStreams;
+	private final @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams;
+	private final @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> allStreams;
 
 	private StreamsCfgExtendedValidator(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull String caller,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> allSubStreams,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> allStreams
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> allStreams
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.caller = caller;
@@ -36,8 +36,8 @@ final class StreamsCfgExtendedValidator {
 	static boolean doExtendedValidation(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull String caller,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> allSubStreams,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> allStreams
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> allStreams
 			) {
 		StreamsCfgExtendedValidator escv = new StreamsCfgExtendedValidator(logMsgInterface, caller, allSubStreams, allStreams);
 
@@ -49,7 +49,7 @@ final class StreamsCfgExtendedValidator {
 
 	private boolean checkAllStreams() {
 		boolean resB = true;
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> streamEntry : allStreams.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> streamEntry : allStreams.entrySet()) {
 			if (! streamEntry.getValue().getEnabled()) {
 				continue;
 			}
@@ -64,7 +64,7 @@ final class StreamsCfgExtendedValidator {
 
 	private boolean checkOneStreamEnabledAndSrcType(
 				@NonNull String streamId,
-				@NonNull RtspSrvConfigStreamsStreamNg streamCfg
+				@NonNull RtspSrvConfigStreamsStream streamCfg
 			) {
 		boolean resB = true;
 		RtspProtoEsSourceType tmpEsSourceType = null;
@@ -109,7 +109,7 @@ final class StreamsCfgExtendedValidator {
 
 	private boolean checkOneStreamSsType(
 				@NonNull String streamId,
-				@NonNull RtspSrvConfigStreamsStreamNg streamCfg
+				@NonNull RtspSrvConfigStreamsStream streamCfg
 			) {
 		boolean resB = true;
 
@@ -120,7 +120,7 @@ final class StreamsCfgExtendedValidator {
 			if (! allSubStreams.containsKey(subStreamId)) {
 				continue;
 			}
-			RtspSrvConfigStreamsSsNg tmpSs = allSubStreams.get(subStreamId);
+			RtspSrvConfigStreamsSs tmpSs = allSubStreams.get(subStreamId);
 			if (! tmpSs.getEnabled()) {
 				continue;
 			}
@@ -129,7 +129,7 @@ final class StreamsCfgExtendedValidator {
 				continue;
 			}
 			if (tmpSs.getSsSourceEsRawFile().isPresent()) {
-				RtspSrvConfigStreamInputEsRawFileNg rfObj = tmpSs.getSsSourceEsRawFile().get();
+				RtspSrvConfigStreamInputEsRawFile rfObj = tmpSs.getSsSourceEsRawFile().get();
 				if (rfObj.getCodec().isEmpty()) {
 					logWarn(caller, "Sub-Stream ID '" + subStreamId + "' has no valid codec");
 					resB = false;
@@ -149,7 +149,7 @@ final class StreamsCfgExtendedValidator {
 					}
 				}
 			} else if (tmpSs.getSsSourceEsMq().isPresent()) {
-				RtspSrvConfigStreamInputEsMqNg mqObj = tmpSs.getSsSourceEsMq().get();
+				RtspSrvConfigStreamInputEsMq mqObj = tmpSs.getSsSourceEsMq().get();
 				String tmpMqComp = "h=" + mqObj.getHost() + "|p=" + mqObj.getPort() +
 						"|g=" + mqObj.getRscGroup() + "|c=" + mqObj.getRscChannel();
 				if (mqCompare == null) {

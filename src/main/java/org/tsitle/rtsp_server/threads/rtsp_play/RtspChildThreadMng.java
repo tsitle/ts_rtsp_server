@@ -12,7 +12,7 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_dataprov.threads_demux.ThreadDataProvDemux;
@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 final class RtspChildThreadMng {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
+	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds = new HashSet<>();
 	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 	private final @NonNull RtspProtoIpAddr clientIpAddr = RtspProtoIpAddr.ofLoopback();
@@ -74,7 +74,7 @@ final class RtspChildThreadMng {
 	 */
 	RtspChildThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds,
 				@NonNull RtspProtoIdSession idSession,
 				@NonNull RtspProtoIpAddr clientIpAddr,

@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -46,7 +46,7 @@ final class SrtxpRekeySvc {
 
 	SrtxpRekeySvc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,

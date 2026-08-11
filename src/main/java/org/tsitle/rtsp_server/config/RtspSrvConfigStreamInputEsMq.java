@@ -13,7 +13,7 @@ import java.net.URI;
 /**
  * Message Queue Elementary-Stream Source.
  */
-public final class RtspSrvConfigStreamInputEsMqNg implements Cloneable {
+public final class RtspSrvConfigStreamInputEsMq implements Cloneable {
 
 	/** Username and password for the Message Queue, separated by a colon */
 	@Expose
@@ -28,7 +28,7 @@ public final class RtspSrvConfigStreamInputEsMqNg implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigStreamInputEsMqNg() {
+	public RtspSrvConfigStreamInputEsMq() {
 		this.userAndPassword = "";
 		this.hostAndPort = "";
 		this.resourceGroupAndChannel = "";
@@ -89,10 +89,10 @@ public final class RtspSrvConfigStreamInputEsMqNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamInputEsMqNg clone() {
+	public @NonNull RtspSrvConfigStreamInputEsMq clone() {
 		checkPostProcessed();
 		try {
-			return (RtspSrvConfigStreamInputEsMqNg)super.clone();
+			return (RtspSrvConfigStreamInputEsMq)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
@@ -113,7 +113,7 @@ public final class RtspSrvConfigStreamInputEsMqNg implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamInputEsMqNg that)) {
+		if (! (o instanceof RtspSrvConfigStreamInputEsMq that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());

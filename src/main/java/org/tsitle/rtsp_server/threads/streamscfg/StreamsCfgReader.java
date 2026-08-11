@@ -17,12 +17,12 @@ import java.util.stream.Stream;
 final class StreamsCfgReader {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSrvConfigMainNg rtspSrvConfig;
+	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull Set<@NonNull String> streamsConfigDirs;
 
 	StreamsCfgReader(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMainNg rtspSrvConfig,
+				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull Set<@NonNull String> streamsConfigDirs
 			) {
 		this.logMsgInterface = logMsgInterface;
@@ -50,13 +50,13 @@ final class StreamsCfgReader {
 		return resSet;
 	}
 
-	Optional<Map<@NonNull String, @NonNull RtspSrvConfigFileStreamsNg>> readAllInputFiles(
+	Optional<Map<@NonNull String, @NonNull RtspSrvConfigFileStreams>> readAllInputFiles(
 				@NonNull Set<@NonNull String> allInputFiles
 			) throws IOException {
 		boolean haveInvalidFile = false;
-		Map<String, RtspSrvConfigFileStreamsNg> resMap = new HashMap<>();
+		Map<String, RtspSrvConfigFileStreams> resMap = new HashMap<>();
 		for (String inputFilename : allInputFiles) {
-			Optional<RtspSrvConfigFileStreamsNg> tmpOptCfs = readOneInputFile(inputFilename);
+			Optional<RtspSrvConfigFileStreams> tmpOptCfs = readOneInputFile(inputFilename);
 			if (tmpOptCfs.isEmpty()) {
 				haveInvalidFile = true;
 				continue;
@@ -70,17 +70,17 @@ final class StreamsCfgReader {
 	}
 
 	void mergeInputConfigs(
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigFileStreamsNg> mapCfs,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSsNg> allSubStreams,
-				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStreamNg> allStreams
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigFileStreams> mapCfs,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams,
+				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> allStreams
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".mergeInputConfigs()";
 
 		Set<String> ignoredIdsSs = new HashSet<>();
 		Set<String> ignoredIdsStreams = new HashSet<>();
-		for (Map.Entry<String, RtspSrvConfigFileStreamsNg> tmpEntryCfs : mapCfs.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigFileStreams> tmpEntryCfs : mapCfs.entrySet()) {
 			String tmpInpFile = tmpEntryCfs.getKey();
-			RtspSrvConfigFileStreamsNg tmpCfsObj = tmpEntryCfs.getValue();
+			RtspSrvConfigFileStreams tmpCfsObj = tmpEntryCfs.getValue();
 
 			mergeEntries(
 					FNC_NAME,
@@ -104,12 +104,12 @@ final class StreamsCfgReader {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private Optional<RtspSrvConfigFileStreamsNg> readOneInputFile(@NonNull String inputFilename) throws IOException {
+	private Optional<RtspSrvConfigFileStreams> readOneInputFile(@NonNull String inputFilename) throws IOException {
 		final String FNC_NAME = getClass().getSimpleName() + ".readOneInputFile()";
 
 		//logDebug(FNC_NAME, "Input filename: " + inputFilename);
 		try {
-			RtspSrvConfigFileStreamsNg tmpCfs = RtspSrvConfigFileReader.readStreamsConfigFromFile(rtspSrvConfig, inputFilename);
+			RtspSrvConfigFileStreams tmpCfs = RtspSrvConfigFileReader.readStreamsConfigFromFile(rtspSrvConfig, inputFilename);
 			return Optional.of(tmpCfs);
 		} catch (ConfigInvalidException e) {
 			logWarn(FNC_NAME, "ignoring ConfigInvalidException for file '" + inputFilename + "': " +

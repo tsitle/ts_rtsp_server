@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
 import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
+import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.lib_xrtxp.ssl.SslException;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
@@ -40,7 +40,7 @@ public final class RtspServerApp {
 	private static final int MQ_THREADS_EXT = 20;  // one thread per external MQ @TODO make configurable
 	private static final int RTSP_THREADS_TCM = 20;  // one thread per client connection
 
-	private static RtspSrvConfigMainNg rtspSrvConfig = null;
+	private static RtspSrvConfigMain rtspSrvConfig = null;
 
 	private static int clientConnectionCount = 0;
 	private static final AtomicBoolean doStop = new AtomicBoolean(false);

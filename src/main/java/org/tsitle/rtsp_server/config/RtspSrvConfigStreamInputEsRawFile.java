@@ -21,7 +21,7 @@ import java.util.Optional;
 /**
  * Raw File Elementary-Stream Source.
  */
-public final class RtspSrvConfigStreamInputEsRawFileNg implements Cloneable {
+public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 
 	/** Path to the media file */
 	@Expose
@@ -49,7 +49,7 @@ public final class RtspSrvConfigStreamInputEsRawFileNg implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigStreamInputEsRawFileNg() {
+	public RtspSrvConfigStreamInputEsRawFile() {
 		this.filePath = "";
 		this.codec = null;
 		this.videoFps = -1.0;
@@ -148,10 +148,10 @@ public final class RtspSrvConfigStreamInputEsRawFileNg implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamInputEsRawFileNg clone() {
+	public @NonNull RtspSrvConfigStreamInputEsRawFile clone() {
 		checkPostProcessed();
 		try {
-			RtspSrvConfigStreamInputEsRawFileNg clone = (RtspSrvConfigStreamInputEsRawFileNg)super.clone();
+			RtspSrvConfigStreamInputEsRawFile clone = (RtspSrvConfigStreamInputEsRawFile)super.clone();
 			//
 			clone.videoFps = (double)videoFps;
 			clone.audioSamplerateHz = (int)audioSamplerateHz;
@@ -183,7 +183,7 @@ public final class RtspSrvConfigStreamInputEsRawFileNg implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamInputEsRawFileNg that)) {
+		if (! (o instanceof RtspSrvConfigStreamInputEsRawFile that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());
