@@ -16,6 +16,7 @@ import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSsNg;
@@ -323,6 +324,7 @@ final class StreamsCfgVirtualEsMapper {
 				codec,
 				esSourceType,
 				inputUri,
+				RtspProtoClientCredentials.ofEmpty(),
 				durationSecs,
 				(byte)0,
 				SampleRateEnum.UNKNOWN,
@@ -354,6 +356,7 @@ final class StreamsCfgVirtualEsMapper {
 				codec,
 				esSourceType,
 				inputUri,
+				RtspProtoClientCredentials.ofEmpty(),
 				durationSecs,
 				audioChannelCount,
 				audioSampleRate,

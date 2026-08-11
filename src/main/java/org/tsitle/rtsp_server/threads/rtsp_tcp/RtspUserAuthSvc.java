@@ -16,6 +16,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoUserAuthInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMainNg;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * RTSP User Authentication and Authorization Service
@@ -124,15 +125,13 @@ final class RtspUserAuthSvc implements RtspProtoUserAuthInterface {
 			return true;
 		}
 
-		/*
-		Set<String> tmpUsers = rtspSrvConfig.getUsersAllowedToAccessInputSource(idInputSource);
+		Set<String> tmpUsers = rtspSrvConfig.getUsersAllowedToAccessInputSource(
+				tmpIsObj.getAllowedUserAccountGroups()
+			);
 		if (tmpUsers.isEmpty()) {
 			return false;
 		}
 		return tmpUsers.contains(requAuthClient.getAuthUser().toLowerCase());
-		@TODO
-		 */
-		return false;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

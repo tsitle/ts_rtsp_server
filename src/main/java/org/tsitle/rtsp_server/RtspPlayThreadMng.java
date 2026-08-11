@@ -40,7 +40,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 
 	private final @NonNull Map<@NonNull RtspProtoIdSession, @NonNull ThreadRtspPlay> rtspPlayThreadMap = new ConcurrentHashMap<>();
 
-	private static final ExecutorService poolRtspPlay = new ThreadPoolExecutor(
+	private final ExecutorService poolRtspPlay = new ThreadPoolExecutor(
 			RTSP_THREADS_PLAY,
 			RTSP_THREADS_PLAY,
 			60L, TimeUnit.SECONDS,
@@ -153,7 +153,7 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 				rtspPlayThreadMap.put(varsForNewThread.rtspSessionInfo().getIdSession(), threadRtspPlay);
 			}
 		} catch (RejectedExecutionException e) {
-			logError(FNC_NAME, "RejectedExecutionException caught: task queue is most likely full");
+			logError(FNC_NAME, "RejectedExecutionException caught: POOLRTSPPLAY is most likely full");
 		}
 	}
 
@@ -192,6 +192,9 @@ public final class RtspPlayThreadMng implements RtspPlayThreadMngInterface {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void shutdownAllThreads() {
+		for (RtspProtoIdSession entryId : rtspPlayThreadMap.keySet()) {
+			shutdownThreadBySessionId(entryId);
+		}
 		poolRtspPlay.shutdown();
 	}
 

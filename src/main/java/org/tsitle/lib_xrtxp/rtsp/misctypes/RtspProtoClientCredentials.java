@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Container for client credentials for authentication.
  */
-public final class RtspProtoClientCredentials {
+public final class RtspProtoClientCredentials implements Cloneable {
 
 	/** Authentication credentials: username */
 	private @NonNull String authUser = "";
@@ -50,6 +50,14 @@ public final class RtspProtoClientCredentials {
 
 	public boolean isEmpty() {
 		return authUser.isBlank();  // the password can be empty as long as the user is specified
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+	@Override
+	public @NonNull RtspProtoClientCredentials clone() {
+		return RtspProtoClientCredentials.of(authUser, authPlainPassword);
 	}
 
 }

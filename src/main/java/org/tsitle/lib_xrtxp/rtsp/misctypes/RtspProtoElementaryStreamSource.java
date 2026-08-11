@@ -10,6 +10,8 @@ public final class RtspProtoElementaryStreamSource implements Cloneable {
 
 	private boolean isWriteProtected = false;
 
+	/** External Elementary-Stream Source ID, e.g. from a config file */
+	private @NonNull String externalId = "";
 	/** Elementary-Stream Source ID */
 	private final @NonNull RtspProtoIdEsSource id = RtspProtoIdEsSource.ofEmpty();
 	/** Is this Elementary-Stream Source enabled? (default: true) */
@@ -19,6 +21,17 @@ public final class RtspProtoElementaryStreamSource implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull String getExternalId() {
+		return externalId;
+	}
+	public void setExternalId(@NonNull String externalId) {
+		if (isWriteProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
+		this.externalId = externalId;
+	}
 
 	public @NonNull RtspProtoIdEsSource getIdEsSource() {
 		return id.clone();
@@ -54,6 +67,7 @@ public final class RtspProtoElementaryStreamSource implements Cloneable {
 	@Override
 	public @NonNull RtspProtoElementaryStreamSource clone() {
 		RtspProtoElementaryStreamSource clone = new RtspProtoElementaryStreamSource();
+		clone.externalId = externalId;
 		clone.id.copyFrom(id);
 		clone.enabled = enabled;
 		return clone;

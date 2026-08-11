@@ -228,7 +228,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		}
 
 		//
-		availableStreamsSvc.updateAvailableStreams(asSvcInputData);
+		availableStreamsSvc.updateAvailableStreamsFromConfig(asSvcInputData);
 
 		//
 		int tmpCntDeleted = asSvcInputData.isIdsDeleted.size();

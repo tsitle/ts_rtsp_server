@@ -1,22 +1,28 @@
 package org.tsitle.rtsp_server.availstreams;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
+import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
+import org.tsitle.rtsp_server.threads.mq_e2i.CodecSettingsChangedFromMqInterface;
 
+import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface {
+public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, CodecSettingsChangedFromMqInterface {
 
 	private static class AsData {
 		final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
@@ -40,45 +46,147 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	private final Lock theReadLock = theLock.readLock();
 	private final Lock theWriteLock = theLock.writeLock();
 
+	private final AtomicBoolean haveStreamsChanged = new AtomicBoolean(false);
+
 	public RtspAvailableStreamsSvc() {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void updateAvailableStreams(@NonNull RtspAsSvcInputData asSvcInputData) {
-		/* @TODO
-		 * - svc: only data in staging area
-		 * - svc: set flag that the main thread can poll
-		 * - let the main thread do its thing
-		 */
-
-		/* @TODO
-		 * - main: stop all RTSP TCP + PLAY threads for changed ISs
-		 * - main: stop all changed MQs
-		 * - main: wait until all stopped
-		 */
-
-		//
+	public void updateAvailableStreamsFromConfig(@NonNull RtspAsSvcInputData asSvcInputData) {
 		theWriteLock.lock();
 		try {
 			internalUpdateFromAsSvcInputData(asSvcInputData);
+
+			haveStreamsChanged.set(true);
 		} finally {
 			theWriteLock.unlock();
 		}
+	}
 
-		//
+	public boolean haveStreamsChanged() {
+		theReadLock.lock();
+		try {
+			return haveStreamsChanged.get();
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void performStreamsUpdate() {
 		theWriteLock.lock();
 		try {
 			asDataCurrent.move(asDataStaged);
+
+			haveStreamsChanged.set(false);
 		} finally {
 			theWriteLock.unlock();
 		}
+	}
 
-		/* @TODO
-		 * - svc: copy from staging area
-		 * - main: re-adjust MQ pool and start new thread per MQ
-		 */
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public @NonNull Set<@NonNull RtspProtoIdEsSource> findMqEsSources() {
+		theReadLock.lock();
+		try {
+			Set<RtspProtoIdEsSource> resSet = new HashSet<>();
+			for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataCurrent.eseiMap.entrySet()) {
+				RtspProtoElementaryStreamSource esSourceObj = asDataCurrent.esSourceMap.get(entryEsei.getKey());
+				if (esSourceObj == null || ! esSourceObj.getEnabled() ||
+						entryEsei.getValue().esSourceType() != RtspProtoEsSourceType.ST_ES_MQ) {
+					continue;
+				}
+				resSet.add(entryEsei.getKey());
+			}
+			return resSet;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	@Override
+	public void onCodecSettingsChangedFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+		theWriteLock.lock();
+		try {
+			RtspProtoEsSourceExpandedInfo eseiOld = getElementaryStreamSourceExpInfo(idEsSource);
+			FrameRateEnum tmpFr;
+			if (codecSettings.videoFps != null && codecSettings.videoFps != FrameRateEnum.UNKNOWN) {
+				tmpFr = codecSettings.videoFps;
+			} else {
+				tmpFr = eseiOld.videoFps();
+			}
+			SampleRateEnum tmpSr;
+			if (codecSettings.audioSamplerate != null && codecSettings.audioSamplerate != SampleRateEnum.UNKNOWN) {
+				tmpSr = codecSettings.audioSamplerate;
+			} else {
+				tmpSr = eseiOld.audioSampleRate();
+			}
+			RtspProtoEsSourceExpandedInfo eseiNew = new RtspProtoEsSourceExpandedInfo(
+					eseiOld.demuxerSubStreamIx(),
+					codecSettings.codec != null ? codecSettings.getAsRtpPacketType() : eseiOld.codec(),
+					eseiOld.esSourceType(),
+					URI.create(eseiOld.inputUri().toString()),
+					eseiOld.credentials().clone(),
+					eseiOld.durationSecs(),
+					codecSettings.audioChannels != null ? codecSettings.audioChannels : eseiOld.audioChannelCount(),
+					tmpSr,
+					codecSettings.audioSamplesPerFrame != null ? codecSettings.audioSamplesPerFrame : eseiOld.audioSamplesPerFrame(),
+					true,  // when reading from a MQ, the PCM audio data is expected to be big-endian
+					ExtradataContainerHex.ofEmpty(),  // this will be populated later
+					tmpFr,
+					ExtradataContainerSdp.ofEmpty()  // this will be populated later
+				);
+
+			//
+			asDataCurrent.eseiMap.put(idEsSource, eseiNew);
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			// fail silently
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@Override
+	public void onCodecMetadataFromMq(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+		theWriteLock.lock();
+		try {
+			RtspProtoEsSourceExpandedInfo eseiOld = getElementaryStreamSourceExpInfo(idEsSource);
+
+			ExtradataContainerHex ech;
+			ExtradataContainerSdp ecs = ExtradataForSdpHelper.buildExtradataForSdp(eseiOld.codec(), metadataHex);
+			switch (eseiOld.codec()) {
+				case A_AAC -> ech = ExtradataContainerHex.ofAac(metadataHex);
+				case V_H264 -> ech = ExtradataContainerHex.ofH264_annexB(metadataHex);
+				case V_H265 -> ech = ExtradataContainerHex.ofH265_annexB(metadataHex);
+				default -> ech = ExtradataContainerHex.ofEmpty();
+			}
+
+			RtspProtoEsSourceExpandedInfo eseiNew = new RtspProtoEsSourceExpandedInfo(
+					eseiOld.demuxerSubStreamIx(),
+					eseiOld.codec(),
+					eseiOld.esSourceType(),
+					URI.create(eseiOld.inputUri().toString()),
+					eseiOld.credentials().clone(),
+					eseiOld.durationSecs(),
+					eseiOld.audioChannelCount(),
+					eseiOld.audioSampleRate(),
+					eseiOld.audioSamplesPerFrame(),
+					eseiOld.isAudioPcmBigEndian(),
+					ech,
+					eseiOld.videoFps(),
+					ecs
+				);
+
+			//
+			asDataCurrent.eseiMap.put(idEsSource, eseiNew);
+		} catch (RtspProtoIdEsSourceNotFoundException e) {
+			// fail silently
+		} finally {
+			theWriteLock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -281,7 +389,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			}
 			RtspProtoEsSourceExpandedInfo esei = asDataCurrent.eseiMap.get(tmpEsId);
 			if ((isVideo && esei.codec().isVideo()) || (! isVideo && esei.codec().isAudio())) {
-				return Optional.of(asDataCurrent.esSourceMap.get(tmpEsId));
+				return Optional.of(asDataCurrent.esSourceMap.get(tmpEsId).clone());
 			}
 		}
 		return Optional.empty();

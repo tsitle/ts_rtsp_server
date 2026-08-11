@@ -2,6 +2,8 @@ package org.tsitle.lib_mq.client.types;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.constants.MqConstants;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 
 import java.net.URI;
@@ -45,8 +47,58 @@ public final class MqElementaryStreamSourceSettings implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static @NonNull MqElementaryStreamSourceSettings of(
+				@NonNull RtspProtoClientCredentials credentials,
+				@NonNull URI inputUri
+			) {
+		final String FNC_NAME = MqElementaryStreamSourceSettings.class.getSimpleName() + ".of()";
+
+		try {
+			if (inputUri.getHost() == null) {
+				throw new IllegalArgumentException(FNC_NAME + ": hostname in URI is missing");
+			}
+			if (inputUri.getPath() == null) {
+				throw new IllegalArgumentException(FNC_NAME + ": path in URI is missing");
+			}
+			if (inputUri.getPath().length() < MqConstants.MQ_URL_PATH_PREFIX.length() + 3) {
+				throw new IllegalArgumentException(FNC_NAME + ": path in URI is too short");
+			}
+			String tmpRscGrpAndCh = inputUri.getPath().substring(MqConstants.MQ_URL_PATH_PREFIX.length() + 1);
+			String[] tmpSplit = tmpRscGrpAndCh.split("/");
+			if (tmpSplit.length != 2) {
+				throw new IllegalArgumentException(FNC_NAME + ": path in URI is invalid");
+			}
+			String tmpRscGrp = tmpSplit[0];
+			if (tmpRscGrp.isBlank()) {
+				throw new IllegalArgumentException(FNC_NAME + ": RscGroup in path in URI is missing");
+			}
+			String tmpRscCh = tmpSplit[1];
+			if (! tmpRscCh.endsWith(MqConstants.MQ_URL_PATH_SUFFIX)) {
+				throw new IllegalArgumentException(FNC_NAME + ": RscChannel in path in URI is missing suffix " +
+						"'" + MqConstants.MQ_URL_PATH_SUFFIX + "'");
+			}
+			tmpRscCh = tmpRscCh.substring(0, tmpRscCh.length() - MqConstants.MQ_URL_PATH_SUFFIX.length());
+			if (tmpRscCh.isBlank()) {
+				throw new IllegalArgumentException(FNC_NAME + ": RscChannel in path in URI is missing");
+			}
+			tmpRscCh = convertRscChannelToInternalFormat(tmpRscCh);
+			return new MqElementaryStreamSourceSettings(
+					credentials.getAuthUser().orElse(""),
+					credentials.getAuthPlainPassword().orElse(""),
+					inputUri.getHost(),
+					RtspProtoSocketPortNr.of(inputUri.getPort()),
+					tmpRscGrp,
+					tmpRscCh
+				);
+		} catch (RtspProtoNumberRangeException e) {
+			throw new IllegalArgumentException(FNC_NAME + ": invalid port number in URI");
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public @NonNull URI getInputUri() {
-		String tmpRscGrpAndChan = resourceGroup + "/" + getRscChannelForUrl();
+		String tmpRscGrpAndChan = resourceGroup + "/" + convertRscChannelToUrlFormat(resourceChannel);
 		return URI.create("https://" + hostname + ":" + Integer.toUnsignedString(port.getPort16bit().orElseThrow()) + "/" +
 				MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX);
 	}
@@ -93,10 +145,16 @@ public final class MqElementaryStreamSourceSettings implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull String getRscChannelForUrl() {
+	private static @NonNull String convertRscChannelToUrlFormat(@NonNull String resourceChannel) {
 		return resourceChannel
 				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_SHORT, MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_LONG)
 				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_SHORT, MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_LONG);
+	}
+
+	private static @NonNull String convertRscChannelToInternalFormat(@NonNull String resourceChannel) {
+		return resourceChannel
+				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_LONG, MqConstants.MQ_RSC_CHANNEL_RECV_VIDEO_SHORT)
+				.replace(MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_LONG, MqConstants.MQ_RSC_CHANNEL_RECV_AUDIO_SHORT);
 	}
 
 	/**

@@ -26,6 +26,7 @@ import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFileNg;
@@ -325,6 +326,7 @@ final class StreamsCfgReadEsRawFileMeta {
 				codec,
 				RtspProtoEsSourceType.ST_ES_RAW_FILE,
 				inputUri,
+				RtspProtoClientCredentials.ofEmpty(),
 				-1,
 				(byte)0,
 				SampleRateEnum.UNKNOWN,
@@ -353,6 +355,7 @@ final class StreamsCfgReadEsRawFileMeta {
 				codec,
 				RtspProtoEsSourceType.ST_ES_RAW_FILE,
 				inputUri,
+				RtspProtoClientCredentials.ofEmpty(),
 				-1,
 				audioChannelCount,
 				audioSampleRate,

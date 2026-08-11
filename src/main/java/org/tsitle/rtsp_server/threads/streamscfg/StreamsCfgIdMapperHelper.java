@@ -21,7 +21,7 @@ final class StreamsCfgIdMapperHelper {
 	static @NonNull RtspProtoIdEsSource computeInternalEsId(@NonNull String externalId) {
 		// @TODO detect collisions and automatically use longer hash
 		return RtspProtoIdEsSource.of(
-				"e" + HashMd5Helper.hashOfString(
+				"E" + HashMd5Helper.hashOfString(
 						"internal_es_#" + externalId + "#",
 						false
 				).substring(0, ES_ID_HASH_LEN)

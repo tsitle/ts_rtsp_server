@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
 
+import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -156,6 +157,9 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 	/** Map of User Account Groups (the map keys are unique group names) */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull Set<@NonNull String>> userAccountGroups;
+	/** Map of Remote MQ Server SSL Certificates (the map keys are unique host-port combinations) */
+	@Expose
+	private @NonNull Map<@NonNull String, @NonNull String> remoteMqServerSslCertificates;
 	/** List of Stream Config Directories */
 	@Expose
 	private @NonNull Set<@NonNull String> streamConfigDirectories;
@@ -172,6 +176,7 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 		this.debugging = new SectionDebugging();
 		this.userAccounts = new HashMap<>();
 		this.userAccountGroups = new HashMap<>();
+		this.remoteMqServerSslCertificates = new HashMap<>();
 		this.streamConfigDirectories = new HashSet<>();
 
 		this.internalHasBeenPostProcessed = false;
@@ -333,6 +338,67 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 		return Set.copyOf(userAccountGroups.keySet());
 	}
 
+	/**
+	 * Get usernames that are allowed to access an RTSP Input Source.
+	 * @param allowedUserAccountGroups Allowed User Account Groups for the Input Source
+	 * @return Usernames that are allowed to access an RTSP Input Source
+	 */
+	public @NonNull Set<String> getUsersAllowedToAccessInputSource(
+				@NonNull Set<String> allowedUserAccountGroups
+			) {
+		checkPostProcessed();
+		//
+		Set<String> resSet = new HashSet<>();
+		for (String tmpUag : allowedUserAccountGroups) {
+			if (! userAccountGroups.containsKey(tmpUag)) {
+				continue;
+			}
+			resSet.addAll(userAccountGroups.get(tmpUag));
+		}
+		return resSet;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Get the path to the SSL Certificate file for the given host and port.
+	 * @param mqServerUri URI of the MQ server
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
+	 */
+	public Optional<String> getMqServerSslCertificatePath(@NonNull URI mqServerUri) throws ConfigInvalidException {
+		String tmpHost = (mqServerUri.getHost() == null ? "" : mqServerUri.getHost());
+		return getMqServerSslCertificatePath(tmpHost + ":" + mqServerUri.getPort());
+	}
+
+	/**
+	 * Get the path to the SSL Certificate file for the given host and port.
+	 * @param hostAndPort Host and port (e.g. 'example.com:443' or '192.168.3.4:8976')
+	 * @return Path to the file
+	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
+	 */
+	public Optional<String> getMqServerSslCertificatePath(@NonNull String hostAndPort) throws ConfigInvalidException {
+		checkPostProcessed();
+		if (hostAndPort.isBlank()) {
+			return Optional.empty();
+		}
+		URI tmpUri = URI.create((hostAndPort.startsWith("https://") ? "" : "https://") + hostAndPort);
+		String tmpHost = (tmpUri.getHost() == null ? "" : tmpUri.getHost());
+		int tmpPort = (tmpUri.getPort() < 1 ? 443 : tmpUri.getPort());
+		String tmpSearch1 = tmpHost + ":" + tmpPort;
+		String tmpPathStr = null;
+		if (remoteMqServerSslCertificates.containsKey(tmpSearch1)) {
+			tmpPathStr = remoteMqServerSslCertificates.get(tmpSearch1);
+		}
+		if (tmpPathStr == null && remoteMqServerSslCertificates.containsKey(tmpHost)) {
+			tmpPathStr = remoteMqServerSslCertificates.get(tmpHost);
+		}
+		return getAbsoluteFilePathInDataDir(
+				"Invalid MQ SSL Certificate file path for host '" + tmpSearch1 + "'",
+				tmpPathStr
+			);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public @NonNull Set<@NonNull String> getStreamConfigDirs() {
@@ -370,6 +436,11 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 		}
 		userAccountGroups = tmpNewUags;
 
+		//noinspection ConstantValue
+		if (remoteMqServerSslCertificates == null) {
+			throw new ConfigInvalidException(FNC_NAME + ": Empty value for 'remoteMqServerSslCertificates'");
+		}
+
 		//
 		streamConfigDirectories = RewriteSetStringHelper.removeNullAndBlank(streamConfigDirectories, false);
 
@@ -390,6 +461,7 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 		validateSectionDebugging();
 		validateSectionsUserAcc();
 		validateSectionUag();
+		validateSectionMqSslCerts();
 		validateSectionScd(mainConfigFileDirectory);
 	}
 
@@ -526,6 +598,16 @@ public final class RtspSrvConfigMainNg extends RtspSrvConfigFileBase {
 							entry.getKey() + "' does not exist");
 				}
 			}
+		}
+	}
+
+	private void validateSectionMqSslCerts() throws ConfigInvalidException {
+		for (Map.Entry<@NonNull String, @NonNull String> entry : remoteMqServerSslCertificates.entrySet()) {
+			//noinspection ConstantValue
+			if (entry.getKey() == null || entry.getValue() == null) {
+				continue;
+			}
+			getMqServerSslCertificatePath(entry.getKey());
 		}
 	}
 
