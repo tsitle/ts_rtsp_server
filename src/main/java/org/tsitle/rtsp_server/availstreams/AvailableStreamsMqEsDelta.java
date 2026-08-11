@@ -18,13 +18,13 @@ final class AvailableStreamsMqEsDelta {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static void findMqEsIdsToStopThreadsFor(
+	static void findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 				@NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMapStaged,
 				@NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> eseiMapCurrent,
 				@NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> eseiMapStaged,
-				@NonNull Set<@NonNull RtspProtoIdEsSource> stopMqEsIds
+				@NonNull Set<@NonNull RtspProtoIdEsSource> mqEsIds
 			) {
-		stopMqEsIds.clear();
+		mqEsIds.clear();
 
 		//
 		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> eseiEntryCur : eseiMapCurrent.entrySet()) {
@@ -33,7 +33,7 @@ final class AvailableStreamsMqEsDelta {
 			}
 			if (! eseiMapStaged.containsKey(eseiEntryCur.getKey())) {
 				// --> deleted
-				stopMqEsIds.add(eseiEntryCur.getKey().clone());
+				mqEsIds.add(eseiEntryCur.getKey().clone());
 			}
 		}
 
@@ -48,7 +48,7 @@ final class AvailableStreamsMqEsDelta {
 			}
 			if (hasMqEsChanged(eseiEntryStaged.getValue(), eseiMapCurrent.get(eseiEntryStaged.getKey()))) {
 				// --> modified
-				stopMqEsIds.add(eseiEntryStaged.getKey().clone());
+				mqEsIds.add(eseiEntryStaged.getKey().clone());
 			}
 		}
 
@@ -65,7 +65,7 @@ final class AvailableStreamsMqEsDelta {
 			}
 			if (! mqEsIdsInUse.contains(eseiEntryStaged.getKey())) {
 				// --> not in use
-				stopMqEsIds.add(eseiEntryStaged.getKey().clone());
+				mqEsIds.add(eseiEntryStaged.getKey().clone());
 			}
 		}
 	}

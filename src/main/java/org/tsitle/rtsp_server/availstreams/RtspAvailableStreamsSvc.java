@@ -73,7 +73,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 			//
 			stagedEsIdsToStopThreadsFor.clear();
-			AvailableStreamsMqEsDelta.findMqEsIdsToStopThreadsFor(
+			AvailableStreamsMqEsDelta.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 					asDataStaged.inputSourceMap,
 					asDataCurrent.eseiMap,
 					asDataStaged.eseiMap,
@@ -343,7 +343,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			asDataStaged.inputSourceMap.remove(idIs);
 		}
 
-		//
+		// clone Input Source objects
 		for (Map.Entry<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> entry
 				: asSvcInputData.mapIsIdToIsObj.entrySet()) {
 			asDataStaged.inputSourceMap.put(
@@ -352,7 +352,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 				);
 		}
 
-		//
+		// clone ES Source objects
 		for (Map.Entry<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> entry
 				: asSvcInputData.mapEsIdToEsObj.entrySet()) {
 			asDataStaged.esSourceMap.put(
@@ -361,7 +361,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 				);
 		}
 
-		//
+		// clone ESEI objects
 		asDataStaged.eseiMap.clear();
 		for (Map.Entry<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> entry
 				: asSvcInputData.mapEsIdToEseiObj.entrySet()) {
@@ -371,14 +371,14 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 				);
 		}
 
-		//
+		// find all ES Source IDs that are in use by an Input Source
 		Set<RtspProtoIdEsSource> esSourceIdsInUse = new HashSet<>();
 		for (Map.Entry<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> entry
 				: asDataStaged.inputSourceMap.entrySet()) {
 			esSourceIdsInUse.addAll(entry.getValue().getEsSourceIds());
 		}
 
-		//
+		// delete all ES Source objects that are not in use by an Input Source
 		Set<RtspProtoIdEsSource> esSourceIdsToDelete = new HashSet<>();
 		for (RtspProtoIdEsSource esSourceId : asDataStaged.esSourceMap.keySet()) {
 			if (! esSourceIdsInUse.contains(esSourceId)) {
@@ -389,7 +389,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			asDataStaged.esSourceMap.remove(esSourceId);
 		}
 
-		//
+		// delete all ESEI objects that are not in use by an Input Source
 		esSourceIdsToDelete.clear();
 		for (RtspProtoIdEsSource esSourceId : asDataStaged.eseiMap.keySet()) {
 			if (! esSourceIdsInUse.contains(esSourceId)) {
@@ -398,6 +398,25 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		}
 		for (RtspProtoIdEsSource esSourceId : esSourceIdsToDelete) {
 			asDataStaged.eseiMap.remove(esSourceId);
+		}
+
+		// copy ESEI objects for MQs from 'current' to 'staged' if they have not changed
+		Set<@NonNull RtspProtoIdEsSource> irrelevantEsIds = new HashSet<>();
+		AvailableStreamsMqEsDelta.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+				asDataStaged.inputSourceMap,
+				asDataCurrent.eseiMap,
+				asDataStaged.eseiMap,
+				irrelevantEsIds
+			);
+		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataStaged.eseiMap.entrySet()) {
+			if (! irrelevantEsIds.contains(entryEsei.getKey()) &&
+					asDataCurrent.eseiMap.containsKey(entryEsei.getKey()) &&
+					entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
+				asDataStaged.eseiMap.put(
+						entryEsei.getKey().clone(),
+						asDataCurrent.eseiMap.get(entryEsei.getKey()).clone()
+					);
+			}
 		}
 	}
 
