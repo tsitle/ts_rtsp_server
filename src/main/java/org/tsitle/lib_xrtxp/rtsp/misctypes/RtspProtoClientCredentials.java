@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -53,6 +54,28 @@ public final class RtspProtoClientCredentials implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof RtspProtoClientCredentials that)) {
+			return false;
+		}
+		if (isEmpty() && that.isEmpty()) {
+			return true;
+		}
+		if (isEmpty() != that.isEmpty()) {
+			return false;
+		}
+		return (Objects.equals(authUser, that.authUser) && Objects.equals(authPlainPassword, that.authPlainPassword));
+	}
+
+	@Override
+	public int hashCode() {
+		if (isEmpty()) {
+			return 0;
+		}
+		return Objects.hash(authUser, authPlainPassword);
+	}
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
