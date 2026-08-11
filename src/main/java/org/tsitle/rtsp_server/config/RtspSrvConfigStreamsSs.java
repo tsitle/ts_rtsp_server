@@ -42,6 +42,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 	@GsonAnnoExclude
 	private final boolean internalIsVirtual;
 
+	@SuppressWarnings("unused")
 	public RtspSrvConfigStreamsSs() {
 		this(false);
 	}
@@ -144,6 +145,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(rtsp.clone());
 	}
 
+	@SuppressWarnings("unused")
 	public boolean getIsVirtual() {
 		checkPostProcessed();
 		return internalIsVirtual;
@@ -156,7 +158,8 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		checkPostProcessed();
 		try {
 			RtspSrvConfigStreamsSs clone = (RtspSrvConfigStreamsSs)super.clone();
-			clone.enabled = (boolean)enabled;
+			//noinspection ConstantValue
+			clone.enabled = (enabled != null && enabled);
 			if (rawFile != null) {
 				clone.rawFile = rawFile.clone();
 			}

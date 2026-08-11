@@ -95,14 +95,17 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 		checkPostProcessed();
 		try {
 			RtspSrvConfigStreamsStream clone = (RtspSrvConfigStreamsStream)super.clone();
-			clone.enabled = (boolean)enabled;
-			clone.needsAuthentication = (boolean)needsAuthentication;
+			//noinspection ConstantValue
+			clone.enabled = (enabled != null && enabled);
+			//noinspection ConstantValue
+			clone.needsAuthentication = (needsAuthentication != null && needsAuthentication);
 			clone.allowedUserAccountGroups = new HashSet<>();
 			//noinspection ConstantValue
 			if (allowedUserAccountGroups != null && ! allowedUserAccountGroups.isEmpty()) {
 				clone.allowedUserAccountGroups.addAll(allowedUserAccountGroups);
 			}
-			clone.needsEncryption = (boolean)needsEncryption;
+			//noinspection ConstantValue
+			clone.needsEncryption = (needsEncryption != null && needsEncryption);
 			clone.subStreamIds = new HashSet<>();
 			//noinspection ConstantValue
 			if (subStreamIds != null && ! subStreamIds.isEmpty()) {

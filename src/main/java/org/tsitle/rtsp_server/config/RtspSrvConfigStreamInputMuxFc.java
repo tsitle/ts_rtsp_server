@@ -40,6 +40,7 @@ public final class RtspSrvConfigStreamInputMuxFc implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public @NonNull String getFilePath() {
 		checkPostProcessed();
 		return filePath;

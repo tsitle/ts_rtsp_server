@@ -65,6 +65,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public @NonNull String getFilePath() {
 		checkPostProcessed();
 		return filePath;
@@ -153,11 +154,16 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		try {
 			RtspSrvConfigStreamInputEsRawFile clone = (RtspSrvConfigStreamInputEsRawFile)super.clone();
 			//
-			clone.videoFps = (double)videoFps;
-			clone.audioSamplerateHz = (int)audioSamplerateHz;
-			clone.audioChannelCount = (int)audioChannelCount;
-			clone.isPcmAudioBigEndian = (boolean)isPcmAudioBigEndian;
-			clone.aacSamplesPerFrame = (int)aacSamplesPerFrame;
+			//noinspection ConstantValue
+			clone.videoFps = (videoFps != null ? videoFps : -1.0);
+			//noinspection ConstantValue
+			clone.audioSamplerateHz = (audioSamplerateHz != null ? audioSamplerateHz : -1);
+			//noinspection ConstantValue
+			clone.audioChannelCount = (audioChannelCount != null ? audioChannelCount : 0);
+			//noinspection ConstantValue
+			clone.isPcmAudioBigEndian = (isPcmAudioBigEndian != null && isPcmAudioBigEndian);
+			//noinspection ConstantValue
+			clone.aacSamplesPerFrame = (aacSamplesPerFrame != null ? aacSamplesPerFrame : -1);
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
