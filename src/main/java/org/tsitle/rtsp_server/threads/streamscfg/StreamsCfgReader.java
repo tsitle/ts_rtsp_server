@@ -16,6 +16,8 @@ import java.util.stream.Stream;
 
 final class StreamsCfgReader {
 
+	static final String STREAMS_CFG_FILE_EXT = ".json";
+
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull Set<@NonNull String> streamsConfigDirs;
@@ -41,6 +43,7 @@ final class StreamsCfgReader {
 				resSet.addAll(
 						stream
 								.filter(Files::isRegularFile)
+								.filter(path -> path.toString().endsWith(STREAMS_CFG_FILE_EXT))
 								.map(tmpScdPath::resolve)
 								.map(Path::toString)
 								.collect(Collectors.toSet())

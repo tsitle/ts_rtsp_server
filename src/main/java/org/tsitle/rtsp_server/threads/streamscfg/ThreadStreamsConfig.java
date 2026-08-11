@@ -172,7 +172,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 					continue;
 				}
 				Path ctx = wd.path.resolve((Path)event.context()).toAbsolutePath();
-				if (! (Files.isRegularFile(ctx) && ctx.toString().endsWith(".json"))) {
+				if (! (Files.isRegularFile(ctx) && ctx.toString().endsWith(StreamsCfgReader.STREAMS_CFG_FILE_EXT))) {
 					continue;
 				}
 				/*logDebug("checkForChangesInOneScd()", "Event kind: " + event.kind() + ": '" + ctx.toAbsolutePath() + "'");*/
