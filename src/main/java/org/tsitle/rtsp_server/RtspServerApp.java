@@ -334,51 +334,23 @@ public final class RtspServerApp {
 						}
 					}
 					if (! haveConn || socketRtspTcp == null) {
-						boolean isLoopCount50 = (++loopCount % 50 == 0);
-						// check for Streams' Config update
-						if (isLoopCount50 && availableStreamsSvc.haveStreamsChanged()) {
-							performStreamsUpdate(globalSessionInfoSvc);
-						}
-						// start a queued Play thread
-						if (! isLoopCount50) {
-							rtspPlayThreadMng.startNewPlayThreadFromQueue();
-						}
-						// clean up expired Play threads and Session Info objects
-						if (isLoopCount50) {
-							rtspPlayThreadMng.doHousekeepingForPlayThreads();
-							//
-							globalSessionInfoSvc.doHousekeepingForSessionInfos(dbgDeletedSessionIds);
-							for (RtspProtoIdSession tmpId : dbgDeletedSessionIds) {
-								logDebug(FNC_NAME, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
-							}
-						}
+						innerMainLoop_tasksMaintenance(
+								FNC_NAME,
+								++loopCount,
+								dbgDeletedSessionIds,
+								globalSessionInfoSvc
+							);
 						continue;
 					}
 					haveConn = false;
-					socketRtspTcp.setSoTimeout(10);  // only for read()
 
-					//
-					ThreadRtspTcpClientInbound thread = new ThreadRtspTcpClientInbound(
-							RtspServerApp::addMsgForLogThread,
-							cancelToken,
-							rtspSrvConfig,
+					innerMainLoop_submitNewTcpThread(
+							FNC_NAME,
 							cfgServerNameAndVersion,
-							availableStreamsSvc,
 							globalSessionInfoSvc,
-							rtspPlayThreadMng,
-							++clientConnectionCount,
 							socketRtspTcp,
 							isRtspsConn
 						);
-
-					try {
-						if (poolRtspTcm != null) {
-							poolRtspTcm.submit(thread);
-						}
-					} catch (RejectedExecutionException e) {
-						logError(FNC_NAME, "RejectedExecutionException caught: POOLRTSPTCM is most likely full");
-						try { socketRtspTcp.close(); } catch (IOException ignored) { }
-					}
 
 					/*if (clientConnectionCount == 2) {  // for profiling only
 						break;
@@ -387,6 +359,9 @@ public final class RtspServerApp {
 			}
 		} catch (BindException e) {
 			logError(FNC_NAME, "BindException caught: " + e.getMessage());
+			return false;
+		} catch (SocketException e) {
+			logError(FNC_NAME, "SocketException caught: " + e.getMessage());
 			return false;
 		} catch (IOException e) {
 			logError(FNC_NAME, "IOException caught: " + e.getMessage());
@@ -397,6 +372,69 @@ public final class RtspServerApp {
 		}
 		return true;
 	}
+
+	private static void innerMainLoop_tasksMaintenance(
+				@NonNull String fncName,
+				int loopCount,
+				@NonNull Set<@NonNull RtspProtoIdSession> dbgDeletedSessionIds,
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
+			) {
+		boolean isLoopCount50 = (loopCount % 50 == 0);
+
+		// check for Streams' Config update
+		if (isLoopCount50 && availableStreamsSvc.haveStreamsChanged()) {
+			performStreamsUpdate(globalSessionInfoSvc);
+		}
+		// start a queued Play thread
+		if (! isLoopCount50 && rtspPlayThreadMng != null) {
+			rtspPlayThreadMng.startNewPlayThreadFromQueue();
+		}
+		// clean up expired Play threads and Session Info objects
+		if (isLoopCount50 && rtspPlayThreadMng != null) {
+			rtspPlayThreadMng.doHousekeepingForPlayThreads();
+			//
+			globalSessionInfoSvc.doHousekeepingForSessionInfos(dbgDeletedSessionIds);
+			for (RtspProtoIdSession tmpId : dbgDeletedSessionIds) {
+				logDebug(fncName, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
+			}
+		}
+	}
+
+	private static void innerMainLoop_submitNewTcpThread(
+				@NonNull String fncName,
+				@NonNull String cfgServerNameAndVersion,
+				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc,
+				@NonNull Socket socketRtspTcp,
+				boolean isRtspsConn
+			) throws SocketException {
+		if (rtspPlayThreadMng == null || poolRtspTcm == null) {
+			return;
+		}
+		socketRtspTcp.setSoTimeout(10);  // only for read()
+
+		//
+		ThreadRtspTcpClientInbound thread = new ThreadRtspTcpClientInbound(
+				RtspServerApp::addMsgForLogThread,
+				cancelToken,
+				rtspSrvConfig,
+				cfgServerNameAndVersion,
+				availableStreamsSvc,
+				globalSessionInfoSvc,
+				rtspPlayThreadMng,
+				++clientConnectionCount,
+				socketRtspTcp,
+				isRtspsConn
+			);
+
+		try {
+			poolRtspTcm.submit(thread);
+		} catch (RejectedExecutionException e) {
+			logError(fncName, "RejectedExecutionException caught: POOLRTSPTCM is most likely full");
+			try { socketRtspTcp.close(); } catch (IOException ignored) { }
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void stopThreads() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
