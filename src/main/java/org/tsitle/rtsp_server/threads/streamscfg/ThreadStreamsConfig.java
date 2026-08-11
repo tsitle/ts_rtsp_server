@@ -234,8 +234,8 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		int tmpCntDeleted = asSvcInputData.isIdsDeleted.size();
 		int tmpCntAdded = asSvcInputData.isIdsAdded.size();
 		int tmpCntModified = asSvcInputData.isIdsModified.size();
-		logInfo(FNC_NAME, String.format("updated available streams (del=%d, new=%d, mod=%d)",
-				tmpCntDeleted, tmpCntAdded, tmpCntModified));
+		logInfo(FNC_NAME, String.format("updated available streams (new=%d, mod=%d, del=%d)",
+				tmpCntAdded, tmpCntModified, tmpCntDeleted));
 	}
 
 }
