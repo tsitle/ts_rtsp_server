@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -348,6 +349,32 @@ public final class RtspProtoGlobalSessionInfoSvc implements RtspProtoGlobalSessi
 		}
 		for (RtspProtoIdSession tmpId : dbgOutputDeletedSessionIds) {
 			deleteSessionInfo(tmpId);
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void findSessionsThatUseInputSources(
+				@NonNull Set<@NonNull RtspProtoIdInputSource> idInputSources,
+				@NonNull Set<@NonNull RtspProtoIdSession> sessionIds
+			) {
+		sessionIds.clear();
+
+		theReadLock.lock();
+		try {
+			for (RtspProtoIdInputSource tmpIsId : idInputSources) {
+				for (Map.Entry<RtspProtoIdSession, RtspProtoSessionInfo> sessionEntry : sessionInfoMap.entrySet()) {
+					Optional<RtspProtoRscUrl> tmpRscUrl = sessionEntry.getValue().getLastRequestResourceUrl_mainStream();
+					if (tmpRscUrl.isEmpty()) {
+						continue;
+					}
+					if (tmpRscUrl.get().idInputSource.equals(tmpIsId)) {
+						sessionIds.add(sessionEntry.getKey().clone());
+					}
+				}
+			}
+		} finally {
+			theReadLock.unlock();
 		}
 	}
 
