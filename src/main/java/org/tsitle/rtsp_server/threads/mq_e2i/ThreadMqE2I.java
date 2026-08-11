@@ -147,7 +147,7 @@ public final class ThreadMqE2I extends RunnableBase {
 					logError(FNC_NAME, "Connection to MQ failed");
 				}
 				try {
-					while (! hasBeenRequestedToStop() && mqExternalSub.isOpen()) {
+					while (! (hasBeenRequestedToStop() || localCancelToken.cancelled) && mqExternalSub.isOpen()) {
 						mainLoop();
 						failCount = 0;
 					}
