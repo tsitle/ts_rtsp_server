@@ -151,6 +151,12 @@ final class RtspThreadMngTci extends RtspThreadMngBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public void shutdownThreadsForSessionIds(@NonNull Set<@NonNull RtspProtoIdSession> stopSessionIds) {
+		for (RtspProtoIdSession entryId : stopSessionIds) {
+			shutdownThreadBySessionId(entryId);
+		}
+	}
+
 	public void shutdownAllThreads() {
 		for (Integer tmpCcn : rtspTciThreadMap.keySet()) {
 			shutdownThreadByCcn(tmpCcn);

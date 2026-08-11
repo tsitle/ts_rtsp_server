@@ -7,7 +7,6 @@ import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -41,6 +40,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	}
 
 	private final @NonNull AsData asDataStaged = new AsData();
+	private final @NonNull Set<@NonNull RtspProtoIdInputSource> stagedIsIdsToStopThreadsFor = new HashSet<>();
+	private final @NonNull Set<@NonNull RtspProtoIdEsSource> stagedEsIdsToStopThreadsFor = new HashSet<>();
 	private final @NonNull AsData asDataCurrent = new AsData();
 
 	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
@@ -62,7 +63,22 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 				return;  // we have pending changes
 			}
 
+			//
 			internalUpdateFromAsSvcInputData(asSvcInputData);
+
+			//
+			stagedIsIdsToStopThreadsFor.clear();
+			copyIsIds(asSvcInputData.isIdsModified, stagedIsIdsToStopThreadsFor);
+			copyIsIds(asSvcInputData.isIdsDeleted, stagedIsIdsToStopThreadsFor);
+
+			//
+			stagedEsIdsToStopThreadsFor.clear();
+			AvailableStreamsMqEsDelta.findMqEsIdsToStopThreadsFor(
+					asDataStaged.inputSourceMap,
+					asDataCurrent.eseiMap,
+					asDataStaged.eseiMap,
+					stagedEsIdsToStopThreadsFor
+				);
 
 			haveStreamsChanged.set(true);
 		} finally {
@@ -82,18 +98,22 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void getIdsForThreadsThatNeedToBeStopped(
-				Set<@NonNull RtspProtoIdSession> stopSessionIds,
-				Set<@NonNull RtspProtoIdInputSource> stopIsIds,
-				Set<@NonNull RtspProtoIdEsSource> stopMqEsIds
+				@NonNull Set<@NonNull RtspProtoIdInputSource> stopIsIds,
+				@NonNull Set<@NonNull RtspProtoIdEsSource> stopMqEsIds
 			) {
 		theReadLock.lock();
 		try {
-			stopSessionIds.clear();
 			stopIsIds.clear();
 			stopMqEsIds.clear();
 			if (! haveStreamsChanged.get()) {
 				return;
 			}
+
+			copyIsIds(stagedIsIdsToStopThreadsFor, stopIsIds);
+			stagedIsIdsToStopThreadsFor.clear();
+
+			copyEsIds(stagedEsIdsToStopThreadsFor, stopMqEsIds);
+			stagedEsIdsToStopThreadsFor.clear();
 		} finally {
 			theReadLock.unlock();
 		}
@@ -103,6 +123,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		theWriteLock.lock();
 		try {
 			asDataCurrent.move(asDataStaged);
+			stagedIsIdsToStopThreadsFor.clear();
+			stagedEsIdsToStopThreadsFor.clear();
 
 			haveStreamsChanged.set(false);
 		} finally {
@@ -112,18 +134,15 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull Set<@NonNull RtspProtoIdEsSource> findMqEsSources() {
+	public @NonNull Set<@NonNull RtspProtoIdEsSource> findRequiredMqEsSourcesForInputSources() {
 		theReadLock.lock();
 		try {
 			Set<RtspProtoIdEsSource> resSet = new HashSet<>();
-			for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataCurrent.eseiMap.entrySet()) {
-				RtspProtoElementaryStreamSource esSourceObj = asDataCurrent.esSourceMap.get(entryEsei.getKey());
-				if (esSourceObj == null || ! esSourceObj.getEnabled() ||
-						entryEsei.getValue().esSourceType() != RtspProtoEsSourceType.ST_ES_MQ) {
-					continue;
-				}
-				resSet.add(entryEsei.getKey());
-			}
+			AvailableStreamsMqEsDelta.findMqEsThatAreInUse(
+					asDataCurrent.inputSourceMap,
+					asDataCurrent.eseiMap,
+					resSet
+				);
 			return resSet;
 		} finally {
 			theReadLock.unlock();
@@ -416,6 +435,26 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			}
 		}
 		return Optional.empty();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void copyIsIds(
+				@NonNull Set<@NonNull RtspProtoIdInputSource> srcIsIds,
+				@NonNull Set<@NonNull RtspProtoIdInputSource> dstIsIds
+			) {
+		for (RtspProtoIdInputSource idInputSource : srcIsIds) {
+			dstIsIds.add(idInputSource.clone());
+		}
+	}
+
+	private static void copyEsIds(
+				@NonNull Set<@NonNull RtspProtoIdEsSource> srcEsIds,
+				@NonNull Set<@NonNull RtspProtoIdEsSource> dstEsIds
+			) {
+		for (RtspProtoIdEsSource idEsSource : srcEsIds) {
+			dstEsIds.add(idEsSource.clone());
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

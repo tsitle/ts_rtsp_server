@@ -16,6 +16,7 @@ import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspPlayThreadMngInterface;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.*;
 
 final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThreadMngInterface {
@@ -173,7 +174,7 @@ final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThrea
 		for (Map.Entry<RtspProtoIdSession, ThreadRtspPlay> entry : rtspPlayThreadMap.entrySet()) {
 			ThreadRtspPlay threadRtspPlay = entry.getValue();
 			if (! threadRtspPlay.isRunning()) {
-				logDebug(FNC_NAME, "removing play thread for SID=" + entry.getKey().getIdStr().orElse("-unset-"));
+				logDebug(FNC_NAME, "removing Play thread for SID=" + entry.getKey().getIdStr().orElse("-unset-"));
 				shutdownThreadBySessionId(entry.getKey());
 				continue;
 			}
@@ -201,10 +202,14 @@ final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThrea
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void shutdownAllThreads() {
-		for (RtspProtoIdSession entryId : rtspPlayThreadMap.keySet()) {
+	public void shutdownThreadsForSessionIds(@NonNull Set<@NonNull RtspProtoIdSession> stopSessionIds) {
+		for (RtspProtoIdSession entryId : stopSessionIds) {
 			shutdownThreadBySessionId(entryId);
 		}
+	}
+
+	public void shutdownAllThreads() {
+		shutdownThreadsForSessionIds(rtspPlayThreadMap.keySet());
 		//
 		internalShutdownAllThreads(POOL_NAME);
 	}

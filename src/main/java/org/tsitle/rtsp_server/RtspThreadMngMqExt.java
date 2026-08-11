@@ -15,6 +15,7 @@ import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.*;
 
 final class RtspThreadMngMqExt extends RtspThreadMngBase {
@@ -49,6 +50,10 @@ final class RtspThreadMngMqExt extends RtspThreadMngBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	public boolean isThreadForEsSourceIdRunning(@NonNull RtspProtoIdEsSource idEsSource) {
+		return (mqThreadMap.containsKey(idEsSource) && mqThreadMap.get(idEsSource).isRunning());
+	}
 
 	public void startNewMqExtThread(@NonNull RtspProtoIdEsSource idEsSource) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startNewMqExtThread()";
@@ -127,7 +132,7 @@ final class RtspThreadMngMqExt extends RtspThreadMngBase {
 			if (threadMqExt.isRunning()) {
 				continue;
 			}
-			logDebug(FNC_NAME, "removing MQext thread for ID=" + entry.getKey());
+			logDebug(FNC_NAME, "removing MqE2I thread for ID=" + entry.getKey());
 			shutdownThreadByIdEsSource(entry.getKey());
 		}
 	}
@@ -145,10 +150,14 @@ final class RtspThreadMngMqExt extends RtspThreadMngBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void shutdownAllThreads() {
-		for (RtspProtoIdEsSource tmpCcn : mqThreadMap.keySet()) {
-			shutdownThreadByIdEsSource(tmpCcn);
+	public void shutdownThreadsForEsIds(@NonNull Set<@NonNull RtspProtoIdEsSource> stopEsSourceIds) {
+		for (RtspProtoIdEsSource entryId : stopEsSourceIds) {
+			shutdownThreadByIdEsSource(entryId);
 		}
+	}
+
+	public void shutdownAllThreads() {
+		shutdownThreadsForEsIds(mqThreadMap.keySet());
 		//
 		internalShutdownAllThreads(POOL_NAME);
 	}

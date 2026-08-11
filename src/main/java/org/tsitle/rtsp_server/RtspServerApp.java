@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.security.Provider;
 import java.security.Security;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RtspServerApp {
@@ -344,7 +343,6 @@ public final class RtspServerApp {
 								FNC_NAME,
 								++loopCount,
 								dbgDeletedSessionIds,
-								cfgServerNameAndVersion,
 								globalSessionInfoSvc
 							);
 						continue;
@@ -378,14 +376,13 @@ public final class RtspServerApp {
 				@NonNull String fncName,
 				int loopCount,
 				@NonNull Set<@NonNull RtspProtoIdSession> dbgDeletedSessionIds,
-				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
 		boolean isLoopCount50 = (loopCount % 50 == 0);
 
 		// check for Streams' Config update
 		if (isLoopCount50 && availableStreamsSvc.haveStreamsChanged()) {
-			performStreamsUpdate(cfgServerNameAndVersion, globalSessionInfoSvc);
+			performStreamsUpdate(globalSessionInfoSvc);
 		}
 		// start a queued Play thread
 		if (! isLoopCount50 && rtspThreadMngPlay != null) {
@@ -470,46 +467,38 @@ public final class RtspServerApp {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static void performStreamsUpdate(
-				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc
 			) {
-		// @TODO figure out affected Session IDs and MQ ES IDs
-		// @TODO stop only affected threads
-		Set<@NonNull RtspProtoIdSession> stopSessionIds = new HashSet<>();
 		Set<@NonNull RtspProtoIdInputSource> stopIsIds = new HashSet<>();
 		Set<@NonNull RtspProtoIdEsSource> stopMqEsIds = new HashSet<>();
-
-		availableStreamsSvc.getIdsForThreadsThatNeedToBeStopped(stopSessionIds, stopIsIds, stopMqEsIds);
+		availableStreamsSvc.getIdsForThreadsThatNeedToBeStopped(stopIsIds, stopMqEsIds);
 
 		//
-		cancelToken.cancelled = true;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
+		Set<@NonNull RtspProtoIdSession> stopSessionIds = new HashSet<>();
+		globalSessionInfoSvc.findSessionsThatUseInputSources(stopIsIds, stopSessionIds);
+
+		//
 		if (rtspThreadMngPlay != null) {
-			rtspThreadMngPlay.shutdownAllThreads();
-			rtspThreadMngPlay = null;
+			rtspThreadMngPlay.shutdownThreadsForSessionIds(stopSessionIds);
 		}
 		if (rtspThreadMngTci != null) {
-			rtspThreadMngTci.shutdownAllThreads();
-			rtspThreadMngTci = null;
+			rtspThreadMngTci.shutdownThreadsForSessionIds(stopSessionIds);
 		}
 		if (rtspThreadMngMqExt != null) {
-			rtspThreadMngMqExt.shutdownAllThreads();
-			rtspThreadMngMqExt = null;
+			rtspThreadMngMqExt.shutdownThreadsForEsIds(stopMqEsIds);
 		}
 
 		//
 		availableStreamsSvc.performStreamsUpdate();
 
 		//
-		cancelToken.cancelled = false;  // used by RtspThreadMngTci, RtspThreadMngPlay, RtspThreadMngMqExt
-		rtspThreadMngPlay = createRtspThreadMngPlay(globalSessionInfoSvc);
-		rtspThreadMngTci = createRtspThreadMngTci(cfgServerNameAndVersion, globalSessionInfoSvc);
 		startMessageQueueThreadsE2I();
 	}
 
 	private static void startMessageQueueThreadsE2I() {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMessageQueueThreadsE2I()";
 
-		final Set<@NonNull RtspProtoIdEsSource> mqStreamSources = availableStreamsSvc.findMqEsSources();
+		final Set<@NonNull RtspProtoIdEsSource> mqStreamSources = availableStreamsSvc.findRequiredMqEsSourcesForInputSources();
 		if (mqStreamSources.isEmpty()) {
 			return;
 		}
@@ -524,6 +513,9 @@ public final class RtspServerApp {
 		}
 
 		for (RtspProtoIdEsSource tmpEsSourceId : mqStreamSources) {
+			if (rtspThreadMngMqExt.isThreadForEsSourceIdRunning(tmpEsSourceId)) {
+				continue;
+			}
 			rtspThreadMngMqExt.startNewMqExtThread(tmpEsSourceId);
 		}
 	}
