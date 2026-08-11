@@ -131,7 +131,7 @@ public final class MqChannelBus {
 		} catch (ZMQException e) {
 			throw new MqException("Failed to create publisher socket " +
 					"for Channel ID=" + id.getId32bit().orElse(-1L) + ": " +
-					e.toString()  // ^= ErrorNo and ErrorMsg
+					e  // ^= ErrorNo and ErrorMsg
 				);
 		}
 	}
@@ -169,7 +169,7 @@ public final class MqChannelBus {
 		} catch (ZMQException e) {
 			throw new MqException("Failed to create subscriber socket " +
 					"for Channel ID=" + id.getId32bit().orElse(-1L) + ": " +
-					e.toString()  // ^= ErrorNo and ErrorMsg
+					e  // ^= ErrorNo and ErrorMsg
 				);
 		}
 	}
