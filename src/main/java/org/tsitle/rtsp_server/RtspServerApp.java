@@ -37,9 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RtspServerApp {
 
-	private static final int MQ_THREADS_EXT = 20;  // one thread per external MQ @TODO make configurable
-	private static final int RTSP_THREADS_TCM = 20;  // one thread per client connection
-
 	private static RtspSrvConfigMain rtspSrvConfig = null;
 
 	private static int clientConnectionCount = 0;
@@ -48,7 +45,7 @@ public final class RtspServerApp {
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 	private static @Nullable ThreadRtxpLogger threadRtxpLogger = null;
-	private static @NonNull ExecutorService poolRtspTcm = createRtspTcmPool();
+	private static @Nullable ExecutorService poolRtspTcm = null;
 	private static @Nullable ExecutorService poolMqE2I = null;
 	private static @Nullable RtspPlayThreadMng rtspPlayThreadMng = null;
 
@@ -88,6 +85,9 @@ public final class RtspServerApp {
 
 		//
 		startStreamsConfigThread();
+
+		//
+		poolRtspTcm = createRtspTcmPool();
 
 		//
 		boolean resB = runServerLoop();
@@ -161,8 +161,8 @@ public final class RtspServerApp {
 
 	private static @NonNull ThreadPoolExecutor createMqPool() {
 		return new ThreadPoolExecutor(
-				Math.max(MQ_THREADS_EXT, 1),
-				Math.max(MQ_THREADS_EXT, 1),
+				Math.max(rtspSrvConfig.getThreadsMaximumMq(), 1),
+				Math.max(rtspSrvConfig.getThreadsMaximumMq(), 1),
 				60L, TimeUnit.SECONDS,
 				new SynchronousQueue<>(true)
 			);
@@ -170,8 +170,8 @@ public final class RtspServerApp {
 
 	private static @NonNull ThreadPoolExecutor createRtspTcmPool() {
 		return new ThreadPoolExecutor(
-				RTSP_THREADS_TCM,
-				RTSP_THREADS_TCM,
+				rtspSrvConfig.getThreadsMaximumTcp(),
+				rtspSrvConfig.getThreadsMaximumTcp(),
 				60L, TimeUnit.SECONDS,
 				new SynchronousQueue<>(true)
 			);
@@ -372,7 +372,9 @@ public final class RtspServerApp {
 						);
 
 					try {
-						poolRtspTcm.submit(thread);
+						if (poolRtspTcm != null) {
+							poolRtspTcm.submit(thread);
+						}
 					} catch (RejectedExecutionException e) {
 						logError(FNC_NAME, "RejectedExecutionException caught: POOLRTSPTCM is most likely full");
 						try { socketRtspTcp.close(); } catch (IOException ignored) { }
@@ -404,13 +406,17 @@ public final class RtspServerApp {
 		}
 
 		//
-		poolRtspTcm.shutdown();
+		if (poolRtspTcm != null) {
+			poolRtspTcm.shutdown();
+		}
 		if (poolMqE2I != null) {
 			poolMqE2I.shutdown();
 		}
 		cancelToken.cancelled = true;  // used by RtspPlayThreadMng, ThreadMqE2I, ThreadRtspTcpClientInbound
 
-		stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
+		if (poolRtspTcm != null) {
+			stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
+		}
 
 		if (poolMqE2I != null) {
 			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
@@ -467,11 +473,15 @@ public final class RtspServerApp {
 		if (rtspPlayThreadMng != null) {
 			rtspPlayThreadMng.shutdownAllThreads();
 		}
-		poolRtspTcm.shutdown();
+		if (poolRtspTcm != null) {
+			poolRtspTcm.shutdown();
+		}
 		if (poolMqE2I != null) {
 			poolMqE2I.shutdown();
 		}
-		stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
+		if (poolRtspTcm != null) {
+			stopPool(FNC_NAME, "POOLRTSPTCM", poolRtspTcm);
+		}
 		if (poolMqE2I != null) {
 			stopPool(FNC_NAME, "POOLMQEXT", poolMqE2I);
 		}
@@ -490,9 +500,9 @@ public final class RtspServerApp {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startMessageQueueThreadsE2I()";
 
 		final Set<@NonNull RtspProtoIdEsSource> mqStreamSources = availableStreamsSvc.findMqEsSources();
-		if (mqStreamSources.size() > MQ_THREADS_EXT) {
+		if (mqStreamSources.size() > rtspSrvConfig.getThreadsMaximumMq()) {
 			logError(FNC_NAME, "Too many MQ Sub-Stream sources " +
-					"(have=" + mqStreamSources.size() + ", max=" + MQ_THREADS_EXT + ")");
+					"(have=" + mqStreamSources.size() + ", max=" + rtspSrvConfig.getThreadsMaximumMq() + ")");
 			return;
 		}
 		poolMqE2I = createMqPool();

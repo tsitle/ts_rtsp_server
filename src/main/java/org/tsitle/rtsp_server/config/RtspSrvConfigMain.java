@@ -18,9 +18,12 @@ import java.util.*;
  */
 public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
-	final int SERVER_USERNAME_LENGTH_MAX = 64;
-	final int SERVER_USERPASS_LENGTH_MIN = 8;
-	final int SERVER_USERPASS_LENGTH_MAX = 64;
+	static final int RTSP_THREADS_TCM_DEFAULT = 20;  // one thread per client connection
+	static final int MQ_THREADS_EXT_DEFAULT = 20;  // one thread per external MQ
+
+	static final int SERVER_USERNAME_LENGTH_MAX = 64;
+	static final int SERVER_USERPASS_LENGTH_MIN = 8;
+	static final int SERVER_USERPASS_LENGTH_MAX = 64;
 
 	private static class SectionServer {
 		/** RTSP Server TCP port (without SSL/TLS) -- use -1 to disable */
@@ -41,6 +44,12 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** SSL Certificate Authority -- optional */
 		@Expose
 		private final @NonNull String sslCa;
+		/** Maxmimum number of threads for TCP connections */
+		@Expose
+		private final int threadsMaximumTcp;
+		/** Maxmimum number of threads for Message Queues */
+		@Expose
+		private final int threadsMaximumMq;
 
 		public SectionServer() {
 			this.tcpPortRtsp = RtspServerConstants.SERVER_RTSP_TCP_PORT;
@@ -49,6 +58,8 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.sslCertificate = "";
 			this.sslKey = "";
 			this.sslCa = "";
+			this.threadsMaximumTcp = RTSP_THREADS_TCM_DEFAULT;
+			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 		}
 	}
 
@@ -230,6 +241,14 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		return getAbsoluteFilePathInDataDir("Invalid RTSPS Server SSL CA file path", server.sslCa);
 	}
 
+	public int getThreadsMaximumTcp() {
+		return server.threadsMaximumTcp;
+	}
+
+	public int getThreadsMaximumMq() {
+		return server.threadsMaximumMq;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -343,9 +362,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	 * @param allowedUserAccountGroups Allowed User Account Groups for the Input Source
 	 * @return Usernames that are allowed to access an RTSP Input Source
 	 */
-	public @NonNull Set<String> getUsersAllowedToAccessInputSource(
-				@NonNull Set<String> allowedUserAccountGroups
-			) {
+	public @NonNull Set<String> getUsersAllowedToAccessInputSource(@NonNull Set<String> allowedUserAccountGroups) {
 		checkPostProcessed();
 		//
 		Set<String> resSet = new HashSet<>();
@@ -540,6 +557,14 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			checkFileExistsInDataDir("server.sslCertificate", false, server.sslCertificate);
 			checkFileExistsInDataDir("server.sslKey", false, server.sslKey);
 			checkFileExistsInDataDir("server.sslCa", true, server.sslCa);
+		}
+
+		//
+		if (server.threadsMaximumTcp < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumTcp': " + server.threadsMaximumTcp);
+		}
+		if (server.threadsMaximumMq < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumMq': " + server.threadsMaximumMq);
 		}
 	}
 
