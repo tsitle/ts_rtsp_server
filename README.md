@@ -31,7 +31,7 @@
 		- raw Opus/VP8 files (uses a proprietary file format though)
 	- file containers:
 		- audio/video: MKV, MP4, MOV, WEBM
-		- audio: AAC, AC-3, Opus, WAV
+		- audio: AAC, AC-3, Ogg, WAV
 	- other RTSP streams (if they use supported codecs)
 	- proprietary Message Queues, e.g. for Foscam IP Cameras
 
