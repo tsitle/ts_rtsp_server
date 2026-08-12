@@ -73,7 +73,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 			//
 			stagedEsIdsToStopThreadsFor.clear();
-			AvailableStreamsMqEsDelta.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+			RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 					asDataStaged.inputSourceMap,
 					asDataCurrent.eseiMap,
 					asDataStaged.eseiMap,
@@ -138,7 +138,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		theReadLock.lock();
 		try {
 			Set<RtspProtoIdEsSource> resSet = new HashSet<>();
-			AvailableStreamsMqEsDelta.findMqEsThatAreInUse(
+			RtspAsMqEsDeltaHelper.findMqEsThatAreInUse(
 					asDataCurrent.inputSourceMap,
 					asDataCurrent.eseiMap,
 					resSet
@@ -402,7 +402,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 		// copy ESEI objects for MQs from 'current' to 'staged' if they have not changed
 		Set<@NonNull RtspProtoIdEsSource> irrelevantEsIds = new HashSet<>();
-		AvailableStreamsMqEsDelta.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+		RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 				asDataStaged.inputSourceMap,
 				asDataCurrent.eseiMap,
 				asDataStaged.eseiMap,
