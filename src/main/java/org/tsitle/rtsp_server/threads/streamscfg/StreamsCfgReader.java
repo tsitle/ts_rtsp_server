@@ -115,7 +115,7 @@ final class StreamsCfgReader {
 			RtspSrvConfigFileStreams tmpCfs = RtspSrvConfigFileReader.readStreamsConfigFromFile(rtspSrvConfig, inputFilename);
 			return Optional.of(tmpCfs);
 		} catch (ConfigInvalidException e) {
-			logWarn(FNC_NAME, "ignoring ConfigInvalidException for file '" + inputFilename + "': " +
+			logError(FNC_NAME, "ConfigInvalidException for file '" + inputFilename + "': " +
 					e.getMessage());
 		} catch (IOException e) {
 			throw new IOException(FNC_NAME + ": readStreamsConfigFromFile() failed: " + e.getMessage());
@@ -151,6 +151,10 @@ final class StreamsCfgReader {
 
 	private void logWarn(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.WARN, fncName, msg);
+	}
+
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
 
 	@SuppressWarnings("SameParameterValue")
