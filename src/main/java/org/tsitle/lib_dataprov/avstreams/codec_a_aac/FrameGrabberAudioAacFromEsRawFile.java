@@ -24,7 +24,7 @@ public final class FrameGrabberAudioAacFromEsRawFile extends FrameGrabberAvFromE
 				null,
 				avStreamIncoming,
 				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
-				12
+				AudioAacParser.AAC_LENGTH_BITS_FRAME_START_MAGICBYTES
 			);
 	}
 
@@ -41,7 +41,7 @@ public final class FrameGrabberAudioAacFromEsRawFile extends FrameGrabberAvFromE
 				logMsgInterface,
 				avStreamIncoming,
 				AudioAacParser.AAC_FRAME_START_MAGICBYTES,
-				12
+				AudioAacParser.AAC_LENGTH_BITS_FRAME_START_MAGICBYTES
 			);
 	}
 

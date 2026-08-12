@@ -13,6 +13,7 @@ public final class AudioAacParser {
 
 	/** AAC Magic Bytes (12 bits long) */
 	public static final byte[] AAC_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xF0};
+	public static final int AAC_LENGTH_BITS_FRAME_START_MAGICBYTES = 12;
 
 	public static final int AAC_HEADER_SIZE_MIN = 7;
 	public static final int AAC_HEADER_SIZE_MAX = 9;
