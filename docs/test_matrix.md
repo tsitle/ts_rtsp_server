@@ -6,11 +6,11 @@
 | VLC 3.0.23 (LIVE555 v2016.11.28)                         | macOS x86 (Sonoma), Win x86                 | Yes            | No              | No                  | No                       | TCP, UDP             | all              |
 | VLC 3.0.23 (LIVE555 v2016.11.21)                         | iOS                                         | Yes            | No              | No                  | No                       | TCP                  | all              |
 | GStreamer 1.24.2, 1.24.11                                | Linux x86 (Rocky Linux, KUbuntu)            | Yes            | Yes             | Yes (*2)            | Yes                      | TCP, UDP             | all (*5)         |
-| FFplay (7.1.2 with Lavf61.7.100, 8.1 with Lavf62.12.100) | Linux x86 (Rocky Linux), macOS x86 (Sonoma) | Yes            | Yes             | Yes (*3)            | No                       | TCP, UDP             | all (*6)         |
-| RTSP Player (Lavf59.27.100)                              | macOS x86 (Sonoma), Win x86                 | Yes            | Yes             | Yes (*3)            | No                       | TCP                  | all              |
+| FFplay (7.1.2 with Lavf61.7.100, 8.1 with Lavf62.12.100) | Linux x86 (Rocky Linux), macOS x86 (Sonoma) | Yes            | Yes             | Yes (*3)            | No                       | TCP, UDP             | all but LPCMu8   |
+| RTSP Player (Lavf59.27.100)                              | macOS x86 (Sonoma), Win x86                 | Yes            | Yes             | Yes (*3)            | No                       | TCP                  | all but LPCMu8   |
 | OpenRTSP (LIVE555 v2026.04.01)                           | Linux x86 (Debian)                          | Yes            | Yes             | Yes (*4)            | Yes                      | TCP, UDP             | all              |
 
-All Codecs: H264, H265, MJPEG, VP8, AAC, AC-3, Opus, PCMU (G711U, aka mu-law), PCMA (G711A, aka a-law), LPCM16  
+All Codecs: H264, H265, MJPEG, VP8, AAC, AC-3, Opus, PCMU (G711U, aka mu-law), PCMA (G711A, aka a-law), LPCMu8, LPCMs16  
 (neither VLC, nor GStreamer, nor FFplay support E-AC-3 over RTP)
 
 
@@ -34,8 +34,6 @@ Note 4) *OpenRTSP's* support for SRTP is excellent.
         To enable SRTP with UDP transport when accessing a stream over RTSPS the URL query parameter `?srtp=1` must be used.
 
 Note 5) *GStreamer* seems to only support PCMA with default settings: mono with 8000 Hz
-
-Note 6) *FFplay* supports PCMA, but in my limited tests there seems to be an issue with the playback
 
 
 RTSP Clients:
