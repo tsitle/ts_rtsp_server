@@ -10,7 +10,6 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSubStreamInfoVideo;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -19,6 +18,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
@@ -98,7 +98,7 @@ final class StreamsCfgVirtualEsMapper {
 					internalUri,
 					tmpFfSsInfoVid.durationSecs,
 					videoFps,
-					ExtradataForSdpHelper.buildExtradataForSdp(videoCodec, tmpFfSsInfoVid.extradataHex)
+					RtspAsEdSdpHelper.buildExtradataForSdp(videoCodec, tmpFfSsInfoVid.extradataHex)
 				);
 			mapVirtEsIdToEsei.put(tmpInternalId, eseiVideo);
 		}

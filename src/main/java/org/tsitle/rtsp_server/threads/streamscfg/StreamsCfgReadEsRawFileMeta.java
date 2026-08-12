@@ -17,7 +17,6 @@ import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264SpsContext;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -29,6 +28,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
@@ -228,7 +228,7 @@ final class StreamsCfgReadEsRawFileMeta {
 			ExtradataContainerSdp videoExtraB64Cfg;
 			if (tmpHaveSps && tmpHavePps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString();
-				videoExtraB64Cfg = ExtradataForSdpHelper.buildExtradataForSdp(RtpPacketType.V_H264, extradataHex);
+				videoExtraB64Cfg = RtspAsEdSdpHelper.buildExtradataForSdp(RtpPacketType.V_H264, extradataHex);
 			} else {
 				videoExtraB64Cfg = ExtradataContainerSdp.ofEmpty();
 			}
@@ -292,7 +292,7 @@ final class StreamsCfgReadEsRawFileMeta {
 			ExtradataContainerSdp videoExtraB64Cfg;
 			if (tmpHaveSps && tmpHavePps && tmpHaveVps) {
 				String extradataHex = tmpStoreSps.toHexString() + tmpStorePps.toHexString() + tmpStoreVps.toHexString();
-				videoExtraB64Cfg = ExtradataForSdpHelper.buildExtradataForSdp(RtpPacketType.V_H265, extradataHex);
+				videoExtraB64Cfg = RtspAsEdSdpHelper.buildExtradataForSdp(RtpPacketType.V_H265, extradataHex);
 			} else {
 				videoExtraB64Cfg = ExtradataContainerSdp.ofEmpty();
 			}

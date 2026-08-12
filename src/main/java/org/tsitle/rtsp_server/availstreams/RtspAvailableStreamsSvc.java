@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
@@ -198,7 +197,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			RtspProtoEsSourceExpandedInfo eseiOld = getElementaryStreamSourceExpInfo(idEsSource);
 
 			ExtradataContainerHex ech;
-			ExtradataContainerSdp ecs = ExtradataForSdpHelper.buildExtradataForSdp(eseiOld.codec(), metadataHex);
+			ExtradataContainerSdp ecs = RtspAsEdSdpHelper.buildExtradataForSdp(eseiOld.codec(), metadataHex);
 			switch (eseiOld.codec()) {
 				case A_AAC -> ech = ExtradataContainerHex.ofAac(metadataHex);
 				case V_H264 -> ech = ExtradataContainerHex.ofH264_annexB(metadataHex);
