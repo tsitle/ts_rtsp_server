@@ -87,7 +87,7 @@ final class StreamsCfgMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean mapStreamsCfg(
+	Optional<Boolean> mapStreamsCfg(
 				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> currentSubStreams,
 				@NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsStream> currentStreams,
 				@NonNull RtspAsSvcInputData asSvcInputData
@@ -104,7 +104,10 @@ final class StreamsCfgMapper {
 		//debugPrintStreams();
 
 		//
-		updateVirtualEses();
+		boolean tmpResB = updateVirtualEses();
+		if (! tmpResB) {
+			return Optional.empty();
+		}
 
 		//
 		updateRawFileOrMqMetaInfo(true);
@@ -123,7 +126,7 @@ final class StreamsCfgMapper {
 		mappingsEs.moveCurrentToPrevious();
 
 		//
-		return mappingsIs.haveChanges();
+		return Optional.of(mappingsIs.haveChanges());
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -234,7 +237,7 @@ final class StreamsCfgMapper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void updateVirtualEses() {
+	private boolean updateVirtualEses() {
 		// delete virtual ESs for deleted/new/modified streams
 		Set<@NonNull String> addedAndModAndDelStreamIds = new HashSet<>();
 		addedAndModAndDelStreamIds.addAll(mappingsIs.deltaAddedIds);
@@ -280,11 +283,15 @@ final class StreamsCfgMapper {
 							realSsCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_RTSP)) {
 				continue;
 			}
-			createVirtualEsesForOneStream(extStreamId, streamCfgObj, realSsCfgObj, extRealSsId);
+			boolean tmpResB = createVirtualEsesForOneStream(extStreamId, streamCfgObj, realSsCfgObj, extRealSsId);
+			if (! tmpResB) {
+				return false;
+			}
 		}
+		return true;
 	}
 
-	private void createVirtualEsesForOneStream(
+	private boolean createVirtualEsesForOneStream(
 				@NonNull String extStreamId,
 				@NonNull RtspSrvConfigStreamsStream realStreamCfgObj,
 				@NonNull RtspSrvConfigStreamsSs realSsCfgObj,
@@ -310,8 +317,10 @@ final class StreamsCfgMapper {
 			dmxVirtualEses.mapExternalIsIdToInternalVirtIsId.put(extStreamId, virtIsId);
 			dmxVirtualEses.mapVirtIsIdToCfgObj.put(virtIsId, virtStreamCfg);
 		} catch (ConfigInvalidException e) {
-			logWarn(FNC_NAME, "Failed to create virtual ES: " + e.getMessage());
+			logError(FNC_NAME, "Failed to create virtual ES: " + e.getMessage());
+			return false;
 		}
+		return true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -575,6 +584,10 @@ final class StreamsCfgMapper {
 
 	private void logWarn(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.WARN, fncName, msg);
+	}
+
+	private void logError(@NonNull String fncName, @NonNull String msg) {
+		internalLog(RtxpLogLevel.ERROR, fncName, msg);
 	}
 
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {

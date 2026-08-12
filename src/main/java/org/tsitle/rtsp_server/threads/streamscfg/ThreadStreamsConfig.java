@@ -172,7 +172,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 					continue;
 				}
 				Path ctx = wd.path.resolve((Path)event.context()).toAbsolutePath();
-				if (! (Files.isRegularFile(ctx) && ctx.toString().endsWith(StreamsCfgReader.STREAMS_CFG_FILE_EXT))) {
+				if (! ctx.toString().endsWith(StreamsCfgReader.STREAMS_CFG_FILE_EXT)) {
 					continue;
 				}
 				/*logDebug("checkForChangesInOneScd()", "Event kind: " + event.kind() + ": '" + ctx.toAbsolutePath() + "'");*/
@@ -224,8 +224,12 @@ public final class ThreadStreamsConfig extends ThreadBase {
 
 		//
 		RtspAsSvcInputData asSvcInputData = new RtspAsSvcInputData();
-		boolean haveChanges = streamsCfgMapper.mapStreamsCfg(allSubStreams, allStreams, asSvcInputData);
-		if (! haveChanges) {
+		Optional<Boolean> tmpOptHaveChanges = streamsCfgMapper.mapStreamsCfg(allSubStreams, allStreams, asSvcInputData);
+		if (tmpOptHaveChanges.isEmpty()) {
+			logWarn(FNC_NAME, "aborting processing of Streams Config files");
+			return;
+		}
+		if (! tmpOptHaveChanges.get()) {
 			logInfo(FNC_NAME, "updated available streams (no changes)");
 			return;
 		}
