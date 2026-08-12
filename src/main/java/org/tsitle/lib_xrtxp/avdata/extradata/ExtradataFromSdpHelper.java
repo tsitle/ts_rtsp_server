@@ -1,12 +1,10 @@
 package org.tsitle.lib_xrtxp.avdata.extradata;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 /**
  * Helper class for converting A/V codec 'extradata' from SDP data to hex-encoded strings suitable for A/V encoders.
  */
-@SuppressWarnings("unused")
 public final class ExtradataFromSdpHelper {
 
 	private ExtradataFromSdpHelper() { }
@@ -15,35 +13,12 @@ public final class ExtradataFromSdpHelper {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Convert 'extradata' from SDP data in a codec-specific format.<br />
-	 * The output is suitable for use as the 'extradata' for an A/V encoder.
-	 * @param codec A/V codec
-	 * @param outputH26xAsAnnexB Whether to output the 'extradata' for H264/H265 in AnnexB format (true) or avcC/hvcC format (false).
-	 * @param sdpData Codec-specific SDP data
-	 * @return Hex-encoded 'extradata'
-	 */
-	@SuppressWarnings("unused")
-	public static @NonNull ExtradataContainerHex buildExtradataForSdp(
-				@NonNull RtpPacketType codec,
-				boolean outputH26xAsAnnexB,
-				@NonNull ExtradataContainerSdp sdpData
-			) {
-		return switch (codec) {
-				case A_AAC -> buildAacEncoderExtradataFromSdp(sdpData);
-				case V_H264 -> buildH264EncoderExtradataFromSdp(outputH26xAsAnnexB, sdpData);
-				case V_H265 -> buildH265EncoderExtradataFromSdp(outputH26xAsAnnexB, sdpData);
-				default -> ExtradataContainerHex.ofEmpty();
-			};
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
 	 * Convert SDP data to an output that is suitable for use as the
 	 * 'extradata' for an AAC audio stream with FFmpeg.
 	 * @param sdpData Codec-specific SDP data
 	 * @return Hex-encoded 'extradata'
 	 */
+	@SuppressWarnings("unused")
 	public static @NonNull ExtradataContainerHex buildAacEncoderExtradataFromSdp(
 				@NonNull ExtradataContainerSdp sdpData
 			) {
