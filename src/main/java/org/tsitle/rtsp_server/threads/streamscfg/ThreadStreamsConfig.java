@@ -199,6 +199,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		Optional<Map<@NonNull String, @NonNull RtspSrvConfigFileStreams>> optAllInputFiles =
 				streamsCfgReader.readAllInputFiles(allInputFiles);
 		if (optAllInputFiles.isEmpty()) {
+			logWarn(FNC_NAME, "no Streams Config files to process");
 			return;
 		}
 		Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> allSubStreams = new HashMap<>();
@@ -217,6 +218,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 				allStreams
 			);
 		if (! tmpR) {
+			logWarn(FNC_NAME, "aborting processing of Streams Config files");
 			return;
 		}
 
@@ -224,6 +226,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		RtspAsSvcInputData asSvcInputData = new RtspAsSvcInputData();
 		boolean haveChanges = streamsCfgMapper.mapStreamsCfg(allSubStreams, allStreams, asSvcInputData);
 		if (! haveChanges) {
+			logInfo(FNC_NAME, "updated available streams (no changes)");
 			return;
 		}
 
