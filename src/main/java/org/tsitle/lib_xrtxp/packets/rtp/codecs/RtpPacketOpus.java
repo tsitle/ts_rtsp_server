@@ -42,7 +42,7 @@ public final class RtpPacketOpus extends RtpPacketCodecBase {
 	public RtpPacketOpus(@NonNull BufferExt packetData) {
 		super(RtpPacketType.A_OPUS, packetData);
 
-		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + 4 + 1) {  // 4^=inner header length, 1^=inner payload length
+		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + INNER_HEADER_SIZE + 1) {  // 1^=inner payload length
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
 		}
 
