@@ -4,7 +4,6 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.DpConstants;
-import org.tsitle.lib_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -84,21 +83,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		if (codec == null) {
 			return Optional.empty();
 		}
-		MqPacketCodec tmpMqPktCodec = switch (codec) {
-				case AACLC -> MqPacketCodec.AACLC;
-				case AC3 -> MqPacketCodec.AC3;
-				case OPUS -> MqPacketCodec.OPUS;
-				case PCMA -> MqPacketCodec.PCMA;
-				case PCMU -> MqPacketCodec.PCMU;
-				case LPCM08U -> MqPacketCodec.LPCM08U;
-				case LPCM16S -> MqPacketCodec.LPCM16S;
-				//
-				case H264 -> MqPacketCodec.H264;
-				case H265 -> MqPacketCodec.H265;
-				case MJPEG -> MqPacketCodec.MJPEG;
-				case VP8 -> MqPacketCodec.VP8;
-			};
-		RtpPacketType resEn = tmpMqPktCodec.convertToRtpPacketType(getAudioSamplerate(), getAudioChannelCount());
+		RtpPacketType resEn = codec.convertToRtpPacketType(getAudioSamplerate(), getAudioChannelCount());
 		return Optional.of(resEn);
 	}
 
@@ -132,6 +117,9 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		}
 		if (internalCodec == RtpPacketType.A_AC3) {
 			return DpConstants.DP_SAMPLES_PER_FRAME_AC3_AUDIO;
+		}
+		if (internalCodec == RtpPacketType.A_MP3) {
+			return DpConstants.DP_SAMPLES_PER_FRAME_MP3_AUDIO;
 		}
 		if (internalCodec.isPcmAudio()) {
 			double tmpSampleIntvMs = 1000.0 / (double)getAudioSamplerate().getSrHz();
