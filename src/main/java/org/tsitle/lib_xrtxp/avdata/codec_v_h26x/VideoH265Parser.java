@@ -79,7 +79,7 @@ public final class VideoH265Parser {
 						tmpFbit, resObj.nalUnitTypeEn, resObj.nalUnitTypeBy, resObj.nalUnitTypeBy);
 			}
 		} catch (BitReaderEosException e) {
-			throw new AvInvalidCodecDataException("could not read NAL unit header");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": could not read NAL unit header");
 		}
 
 		if (resObj.isValid && resObj.nuhLayerId != 0) {

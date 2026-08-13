@@ -79,7 +79,7 @@ public final class VideoH264Parser {
 		/*logDebugTemp(FNC_NAME, debugStreamOffset, 0, String.format("0x%02X", inputBv.getByte(0)));*/
 		int offs = resObj.nalUnitOffset;
 		if ((byte)(inputBv.getByte(offs) & 0x80) != 0) {
-			throw new AvInvalidCodecDataException(
+			throw new AvInvalidCodecDataException(FNC_NAME + ": " +
 					String.format("NAL unit F bit must be zero (is=0x%02X)", (byte)((inputBv.getByte(offs) & 0x80) >> 7))
 				);
 		}
