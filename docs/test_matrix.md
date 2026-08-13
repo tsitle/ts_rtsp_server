@@ -14,7 +14,8 @@ All Audio Codecs:
 
 - AAC
 - AC-3
-- MP3 (aka MPEG-1 Layer III)
+- MP2 (aka MPEG-1/2 Layer II)
+- MP3 (aka MPEG-1/2 Layer III)
 - Opus
 - PCMU (G711U, aka mu-law)
 - PCMA (G711A, aka a-law)
