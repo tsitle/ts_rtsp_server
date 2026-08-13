@@ -54,7 +54,7 @@ public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
 		//
 		this.rtpTicksPerFrame = paramsAudioCommon.getAudioSpf();
 		if (this.rtpTicksPerFrame < 1L) {
-			this.rtpTicksPerFrame = 1L;  // it is necessary to determine this for each PCM frame (or at least once)
+			this.rtpTicksPerFrame = 1L;  // it is necessary to determine this for each Opus frame (or at least once)
 		}
 
 		//
