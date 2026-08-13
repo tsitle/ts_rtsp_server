@@ -49,6 +49,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private final @NonNull FfmpegDmxSettingsInternal dmxSettings;
 	private final @Nullable FfmpegReceiveDemuxerStatsInterface recvDemuxerStatsInterface;
 
+	private final boolean isInputSourceAudioOnly;
+
 	private @Nullable AVFormatContext inputAvFmtCtx;
 	private final @NonNull FfmpegDmxSubStreamInfoVideo inputSsInfoVid = new FfmpegDmxSubStreamInfoVideo();
 	private final @NonNull FfmpegDmxSubStreamInfoAudio inputSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
@@ -86,8 +88,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 
 		//
-		inputAvFmtCtx = avformat.avformat_alloc_context();
-		if (inputAvFmtCtx == null) {
+		this.isInputSourceAudioOnly = checkIfInputSourceIsAudioOnly();
+
+		//
+		this.inputAvFmtCtx = avformat.avformat_alloc_context();
+		if (this.inputAvFmtCtx == null) {
 			throw new IllegalStateException(FfmpegDemuxer.class.getSimpleName() + ".ctor(): " +
 					"could not allocate inputAvFmtCtx");
 		}
@@ -326,6 +331,24 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private boolean checkIfInputSourceIsAudioOnly() {
+		/*
+		 * Audio files can contain metadata like cover art.
+		 * FFmpeg will read an embedded JPEG file as a MJPEG video stream, for instance.
+		 */
+		String tmpInputLc = inputPathOrUri.toLowerCase();
+		return (
+				tmpInputLc.endsWith(".aac") ||
+				tmpInputLc.endsWith(".ac3") ||
+				tmpInputLc.endsWith(".eac3") ||
+				tmpInputLc.endsWith(".flac") ||
+				tmpInputLc.endsWith(".mp3") ||
+				tmpInputLc.endsWith(".mpa") ||
+				tmpInputLc.endsWith(".ogg") ||
+				tmpInputLc.endsWith(".wav")
+			);
+	}
+
 	private void internalReadStreamInfos() throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".internalReadStreamInfos()";
 
@@ -390,6 +413,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			logDebug(FNC_NAME, "Codec type: " + par.codec_type());*/
 			switch (par.codec_type()) {
 				case avutil.AVMEDIA_TYPE_VIDEO:
+					if (isInputSourceAudioOnly) {
+						continue;
+					}
 					++curStreamNumberVid;
 					if (! tmpFfmpegCodec.isVideo()) {
 						logDebug(FNC_NAME,
