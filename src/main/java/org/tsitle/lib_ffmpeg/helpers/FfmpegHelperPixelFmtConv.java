@@ -18,6 +18,7 @@ public final class FfmpegHelperPixelFmtConv {
 				case YUV420P -> avutil.AV_PIX_FMT_YUV420P;
 				case YUV420P10LE -> avutil.AV_PIX_FMT_YUV420P10LE;
 				case YUV422P -> avutil.AV_PIX_FMT_YUV422P;
+				case YUV444P -> avutil.AV_PIX_FMT_YUV444P;
 			};
 	}
 
@@ -27,6 +28,7 @@ public final class FfmpegHelperPixelFmtConv {
 				case avutil.AV_PIX_FMT_YUV420P, avutil.AV_PIX_FMT_YUVJ420P -> FfmpegPixelFmt.YUV420P;
 				case avutil.AV_PIX_FMT_YUV422P, avutil.AV_PIX_FMT_YUVJ422P -> FfmpegPixelFmt.YUV422P;
 				case avutil.AV_PIX_FMT_YUV420P10LE -> FfmpegPixelFmt.YUV420P10LE;
+				case avutil.AV_PIX_FMT_YUV444P, avutil.AV_PIX_FMT_YUVJ444P -> FfmpegPixelFmt.YUV444P;
 				default -> {
 					String pixFmtName;
 					try (BytePointer bp = avutil.av_get_pix_fmt_name(pixelFmt)) {

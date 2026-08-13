@@ -6,6 +6,7 @@ public enum FfmpegPixelFmt {
 	/** the default pixel format */
 	YUV420P,
 	YUV420P10LE,
-	YUV422P
+	YUV422P,
+	YUV444P
 
 }
