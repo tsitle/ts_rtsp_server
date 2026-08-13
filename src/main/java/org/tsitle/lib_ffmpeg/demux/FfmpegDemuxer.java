@@ -342,9 +342,12 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				tmpInputLc.endsWith(".ac3") ||
 				tmpInputLc.endsWith(".eac3") ||
 				tmpInputLc.endsWith(".flac") ||
+				tmpInputLc.endsWith(".m4a") ||
+				tmpInputLc.endsWith(".mp2") ||
 				tmpInputLc.endsWith(".mp3") ||
 				tmpInputLc.endsWith(".mpa") ||
 				tmpInputLc.endsWith(".ogg") ||
+				tmpInputLc.endsWith(".opus") ||
 				tmpInputLc.endsWith(".wav")
 			);
 	}

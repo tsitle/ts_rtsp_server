@@ -15,6 +15,7 @@ public enum FfmpegCodec {
 	A_ALAC(avcodec.AV_CODEC_ID_ALAC),
 	A_EAC3(avcodec.AV_CODEC_ID_EAC3),
 	A_FLAC(avcodec.AV_CODEC_ID_FLAC),
+	A_MP2(avcodec.AV_CODEC_ID_MP2),
 	A_MP3(avcodec.AV_CODEC_ID_MP3),
 	A_OPUS(avcodec.AV_CODEC_ID_OPUS),
 	A_PCM_ALAW(avcodec.AV_CODEC_ID_PCM_ALAW),
@@ -102,7 +103,7 @@ public enum FfmpegCodec {
 	public boolean isAudio() {
 		return (isPcmAudio() ||
 				this == A_AAC || this == A_AC3 || this == A_ALAC ||
-				this == A_EAC3 || this == A_FLAC || this == A_MP3 ||
+				this == A_EAC3 || this == A_FLAC || this == A_MP2 || this == A_MP3 ||
 				this == A_OPUS || this == A_VORBIS);
 	}
 
