@@ -15,7 +15,7 @@ public final class BuilderThreadRtpSenderOpus {
 		// Fluent setters
 		/*
 		 * Future Opus-only fields go here, e.g.,
-		 * public @NonNull Builder opsQuality(int q) { ...; return self(); }
+		 * public @NonNull Builder opusQuality(int q) { ...; return self(); }
 		 */
 
 		//
