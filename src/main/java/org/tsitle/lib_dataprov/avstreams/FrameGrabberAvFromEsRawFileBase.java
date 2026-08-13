@@ -39,9 +39,6 @@ public abstract class FrameGrabberAvFromEsRawFileBase extends FrameGrabberAvBase
 		this.avstricFromEsRawFile = avstricFromEsRawFile;
 
 		//
-		if (magicBytesLengthInBits % 4 != 0) {
-			throw new IllegalArgumentException("magicBytesLengthInBits must be zero or a multiple of 4");
-		}
 		this.frameStartMagicBytesPtr_fixed = frameStartMagicBytes;
 		this.magicBytesLengthInBits_fixed = magicBytesLengthInBits;
 	}
@@ -264,6 +261,11 @@ public abstract class FrameGrabberAvFromEsRawFileBase extends FrameGrabberAvBase
 	}
 
 	private int findStartCodeOddMB_fixed(byte[] data, int length, int startIdx) {
+		if (magicBytesLengthInBits_fixed % 4 != 0) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".findStartCodeOddMB_fixed(): " +
+					"magicBytesLengthInBits must be zero or a multiple of 4");
+		}
+
 		boolean isOk;
 		int magicBitsLeft;
 		for (int i = startIdx; i + frameStartMagicBytesPtr_fixed.length - 1 < length; i++) {
