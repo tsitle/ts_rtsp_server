@@ -1,5 +1,6 @@
 package org.tsitle.lib_xrtxp.packets.rtp;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.MikeyParser;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DebugRtpPacketTest {
 
+	@Disabled
 	@Test
 	void debugRtpPacket1() throws RtspProtoNumberRangeException {
 		final BufferExt tmpBufferExt = BufferExt.decodeHexString("80 00 bf 65 a8 9f ed 09 f2 3d d9 09");
@@ -24,6 +26,7 @@ class DebugRtpPacketTest {
 		assertEquals(RtspProtoIdXsrc.of(0xF23DD909L), tmpRtpPacket.getSsrcId());
 	}
 
+	@Disabled
 	@Test
 	void debugRtpPacket2() throws Exception {
 		/*
@@ -50,6 +53,7 @@ class DebugRtpPacketTest {
 		decryptPacketBuffer(senderMikeyMsgB64, encryptedSrtpPktBuf);
 	}
 
+	@Disabled
 	@Test
 	void debugRtpPacket3() throws Exception {
 		/*

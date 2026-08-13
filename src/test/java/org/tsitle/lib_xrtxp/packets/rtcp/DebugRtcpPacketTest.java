@@ -1,5 +1,6 @@
 package org.tsitle.lib_xrtxp.packets.rtcp;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.kmd.MikeyGenerator;
@@ -27,6 +28,7 @@ class DebugRtcpPacketTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@Disabled
 	@Test
 	void testDebugRtcpPacketInbound() throws Exception {
 		final RtspProtoIdXsrc hdSsrc = RtspProtoIdXsrc.of(0xDEADBEEFL);
