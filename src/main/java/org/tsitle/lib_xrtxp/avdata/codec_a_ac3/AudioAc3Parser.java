@@ -78,7 +78,7 @@ public final class AudioAc3Parser {
 		try {
 			// Syncinfo: Verify syncword 0x0B77: bits 0-15 (16 bits)
 			if (bitReader.readBits(8) != 0x0B || bitReader.readBits(8) != 0x77) {
-				throw new AvInvalidCodecDataException("Invalid AC-3 syncword");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 syncword");
 			}
 
 			// Syncinfo: CRC1: bits 16-31 (16 bits)
@@ -88,18 +88,18 @@ public final class AudioAc3Parser {
 			int fscod = bitReader.readBits(2);
 			resObj.samplerate = AudioAc3Info.Samplerate.of(fscod);
 			if (resObj.samplerate == AudioAc3Info.Samplerate.UNKNOWN) {
-				throw new AvInvalidCodecDataException("Invalid AC-3 FSCOD");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 FSCOD");
 			}
 
 			// Syncinfo: FRMSIZECOD: bits 34-39 (6 bits)
 			int frmsizecod = bitReader.readBits(6);
 			resObj.bitrate = lookupBitrate(frmsizecod);
 			if (resObj.bitrate == AudioAc3Info.Bitrate.UNKNOWN) {
-				throw new AvInvalidCodecDataException("Invalid AC-3 FRMSIZECOD (bitrate)");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 FRMSIZECOD (bitrate)");
 			}
 			resObj.frameLength = lookupBytesPerSyncframe(frmsizecod, resObj.samplerate);
 			if (resObj.frameLength < 1) {
-				throw new AvInvalidCodecDataException("Invalid AC-3 FRMSIZECOD (frameLength)");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 FRMSIZECOD (frameLength)");
 			}
 
 			// BSI: bsid: bits 40-44 (5 bits)
@@ -112,7 +112,7 @@ public final class AudioAc3Parser {
 			int acmod = bitReader.readBits(3);
 			resObj.audioCodingMode = AudioAc3Info.AudioCodingMode.of(acmod);
 			if (resObj.audioCodingMode == AudioAc3Info.AudioCodingMode.UNKNOWN) {
-				throw new AvInvalidCodecDataException("Invalid AC-3 ACMOD");
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid AC-3 ACMOD");
 			}
 		} catch (BitReaderEosException e) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Could not read all bits from AC-3 header");
