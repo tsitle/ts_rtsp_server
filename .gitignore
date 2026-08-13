@@ -25,6 +25,8 @@ data/**/*.ac3
 data/**/*.eac3
 data/**/*.m4a
 data/**/*.mp3
+data/**/*.ogg
+data/**/*.opus
 data/**/*.raw
 data/**/*.wav
 
