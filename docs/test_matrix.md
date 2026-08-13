@@ -10,7 +10,24 @@
 | RTSP Player (Lavf59.27.100)                              | macOS x86 (Sonoma), Win x86                 | Yes            | Yes             | Yes (*3)            | No                       | TCP                  | all but LPCMu8   |
 | OpenRTSP (LIVE555 v2026.04.01)                           | Linux x86 (Debian)                          | Yes            | Yes             | Yes (*4)            | Yes                      | TCP, UDP             | all              |
 
-All Codecs: H264, H265, MJPEG, VP8, AAC, AC-3, Opus, PCMU (G711U, aka mu-law), PCMA (G711A, aka a-law), LPCMu8, LPCMs16  
+All Audio Codecs:
+
+- AAC
+- AC-3
+- MP3 (aka MPEG-1 Layer III)
+- Opus
+- PCMU (G711U, aka mu-law)
+- PCMA (G711A, aka a-law)
+- LPCMu8
+- LPCMs16
+
+All Video Codecs:
+
+- H264
+- H265
+- MJPEG
+- VP8
+
 (neither VLC, nor GStreamer, nor FFplay support E-AC-3 over RTP)
 
 
