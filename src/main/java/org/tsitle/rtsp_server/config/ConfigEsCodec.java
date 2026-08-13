@@ -8,16 +8,16 @@ public enum ConfigEsCodec {
 
 	AACLC,
 	AC3,
-	OPUS,
+	CSTM_OPUS,
 	PCMA,
 	PCMU,
 	LPCM08U,
 	LPCM16S,
 
+	CSTM_VP8,
 	H264,
 	H265,
-	MJPEG,
-	VP8;
+	MJPEG;
 
 	public @NonNull RtpPacketType convertToRtpPacketType(
 				@NonNull SampleRateEnum audioSamplerate,
@@ -26,7 +26,7 @@ public enum ConfigEsCodec {
 		return switch (this) {
 				case AACLC -> RtpPacketType.A_AAC;
 				case AC3 -> RtpPacketType.A_AC3;
-				case OPUS -> RtpPacketType.A_OPUS;
+				case CSTM_OPUS -> RtpPacketType.A_OPUS;
 				case PCMA -> {
 						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;
@@ -49,10 +49,11 @@ public enum ConfigEsCodec {
 						}
 						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
 					}
+				//
+				case CSTM_VP8 -> RtpPacketType.V_VP8;
 				case H264 -> RtpPacketType.V_H264;
 				case H265 -> RtpPacketType.V_H265;
 				case MJPEG -> RtpPacketType.V_MJPEG;
-				case VP8 -> RtpPacketType.V_VP8;
 			};
 	}
 
