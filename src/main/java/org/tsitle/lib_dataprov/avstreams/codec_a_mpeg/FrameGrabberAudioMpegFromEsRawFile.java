@@ -1,30 +1,30 @@
-package org.tsitle.lib_dataprov.avstreams.codec_a_mp3;
+package org.tsitle.lib_dataprov.avstreams.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 
-public final class FrameGrabberAudioMp3FromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
+public final class FrameGrabberAudioMpegFromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 
 	/**
 	 * Constructor.
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioMp3FromEsRawFile(
+	public FrameGrabberAudioMpegFromEsRawFile(
 				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				null,
 				avStreamIncoming,
-				AudioMp3Parser.MP3_FRAME_START_MAGICBYTES,
-				AudioMp3Parser.MP3_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
+				AudioMpegParser.MPEG_AUDIO_FRAME_START_MAGICBYTES,
+				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
 			);
 	}
 
@@ -33,15 +33,15 @@ public final class FrameGrabberAudioMp3FromEsRawFile extends FrameGrabberAvFromE
 	 * @param logMsgInterface Log message interface
 	 * @param avStreamIncoming Incoming A/V stream
 	 */
-	public FrameGrabberAudioMp3FromEsRawFile(
+	public FrameGrabberAudioMpegFromEsRawFile(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull AvStreamIncomingFromEsRawFile avStreamIncoming
 			) {
 		super(
 				logMsgInterface,
 				avStreamIncoming,
-				AudioMp3Parser.MP3_FRAME_START_MAGICBYTES,
-				AudioMp3Parser.MP3_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
+				AudioMpegParser.MPEG_AUDIO_FRAME_START_MAGICBYTES,
+				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
 			);
 	}
 
@@ -66,10 +66,10 @@ public final class FrameGrabberAudioMp3FromEsRawFile extends FrameGrabberAvFromE
 				false,
 				null,
 				null,
-				AudioMp3Parser.MP3_HEADER_SIZE
+				AudioMpegParser.MPEG_AUDIO_HEADER_SIZE_MIN
 			);
 		//
-		int remainingPayloadLength = AudioMp3Parser.getRemainingMp3PayloadLengthToRead(frameBuf);
+		int remainingPayloadLength = AudioMpegParser.getRemainingMpaPayloadLengthToRead(frameBuf);
 		//
 		internalReadRemainingFrameForFrameWithStartCode(frameBuf, remainingPayloadLength);
 	}

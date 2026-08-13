@@ -1,7 +1,7 @@
 package org.tsitle.lib_xrtxp.packets.rtp.codecs;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Info;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
@@ -11,11 +11,11 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketCodecBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 /**
- * RTP Packet Payload for MP3.<br />
+ * RTP Packet Payload for MPEG Audio.<br />
  * See <a href="https://datatracker.ietf.org/doc/html/rfc3551#section-4.5.13">RFC-3551 Section 4.5.13</a>
  * and <a href="https://datatracker.ietf.org/doc/html/rfc2250#section-3.5">RFC-2250 Section 3.5</a>
  */
-public final class RtpPacketMp3 extends RtpPacketCodecBase {
+public final class RtpPacketMpa extends RtpPacketCodecBase {
 
 	/** Size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE = 4;
@@ -25,20 +25,20 @@ public final class RtpPacketMp3 extends RtpPacketCodecBase {
 	/**
 	 * Constructor.
 	 * @param paramsBase Base Container parameters
-	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the MP3 frame data) (16 bits)
-	 * @param mp3Info MP3 info
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the MPEG Audio frame data) (16 bits)
+	 * @param mpaInfo MPEG Audio info
 	 * @param payloadView Payload data view
 	 */
-	public RtpPacketMp3(
+	public RtpPacketMpa(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
-				@NonNull AudioMp3Info mp3Info,
+				@NonNull AudioMpegInfo mpaInfo,
 				@NonNull BufferView payloadView
 			) {
-		super(RtpPacketType.A_MP3, paramsBase);
+		super(RtpPacketType.A_MPEG, paramsBase);
 
 		//
-		updatePacket(paramsBase, fragmentOffset, mp3Info, payloadView);
+		updatePacket(paramsBase, fragmentOffset, mpaInfo, payloadView);
 	}
 
 	/**
@@ -46,8 +46,8 @@ public final class RtpPacketMp3 extends RtpPacketCodecBase {
 	 * @param packetData RTP packet bitstream including header and payload
 	 */
 	@SuppressWarnings("unused")
-	public RtpPacketMp3(@NonNull BufferExt packetData) {
-		super(RtpPacketType.A_MP3, packetData);
+	public RtpPacketMpa(@NonNull BufferExt packetData) {
+		super(RtpPacketType.A_MPEG, packetData);
 
 		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + INNER_HEADER_SIZE + 1) {  // 1^=inner payload length
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
@@ -75,21 +75,21 @@ public final class RtpPacketMp3 extends RtpPacketCodecBase {
 	/**
 	 * Update the entire packet.
 	 * @param paramsBase Base Container parameters
-	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the MP3 frame data) (16 bits)
-	 * @param mp3Info MP3 info
+	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the MPEG Audio frame data) (16 bits)
+	 * @param mpaInfo MPEG Audio info
 	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
 				int fragmentOffset,
-				@NonNull AudioMp3Info mp3Info,
+				@NonNull AudioMpegInfo mpaInfo,
 				@NonNull BufferView payloadView
 			) {
 		if (fragmentOffset < 0 || fragmentOffset > 0xFFFF) {
 			throw new IllegalArgumentException("Invalid fragment offset");
 		}
-		if (payloadView.getLength() > mp3Info.getPayloadLength()) {
-			throw new IllegalArgumentException("Invalid MP3 payload size");
+		if (payloadView.getLength() > mpaInfo.getPayloadLength()) {
+			throw new IllegalArgumentException("Invalid MPEG Audio payload size");
 		}
 
 		//

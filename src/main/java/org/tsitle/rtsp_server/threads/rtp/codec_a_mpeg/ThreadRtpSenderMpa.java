@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtp.codec_a_mp3;
+package org.tsitle.rtsp_server.threads.rtp.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -7,15 +7,15 @@ import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMp3;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_a_mp3.ThreadDataProvEsMp3FromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.codec_a_mp3.ThreadDataProvEsMp3FromMq;
-import org.tsitle.lib_dataprov.threads_es.codec_a_mp3.ThreadDataProvEsMp3FromRawFile;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Info;
+import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromMq;
+import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromRawFile;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMp3;
+import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMpa;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
@@ -23,32 +23,32 @@ import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 
 import java.util.Objects;
 
-public final class ThreadRtpSenderMp3<AVSTRIC extends AvStreamIncomingBase>
-		extends ThreadRtpSenderBase<AudioMp3Info, AVSTRIC, ThreadDataProvEsBase<AudioMp3Info>> {
+public final class ThreadRtpSenderMpa<AVSTRIC extends AvStreamIncomingBase>
+		extends ThreadRtpSenderBase<AudioMpegInfo, AVSTRIC, ThreadDataProvEsBase<AudioMpegInfo>> {
 
-	private final ParamsThreadDpMp3 paramsMp3;
+	private final ParamsThreadDpMpa paramsMpa;
 
-	private final AudioMp3Info curFrameMp3Info = new AudioMp3Info();
-	private @Nullable RtpPacketMp3 cachePlainPacket = null;
+	private final AudioMpegInfo curFrameMpaInfo = new AudioMpegInfo();
+	private @Nullable RtpPacketMpa cachePlainPacket = null;
 
 	/**
 	 * Constructor.
 	 * @param avStreamIncomingType Class of the AvStreamIncoming object
 	 * @param paramsCommon Common thread parameters
 	 * @param paramsAudioCommon Common Audio thread parameters
-	 * @param paramsMp3 Thread-specific parameters
+	 * @param paramsMpa Thread-specific parameters
 	 */
-	public ThreadRtpSenderMp3(
+	public ThreadRtpSenderMpa(
 				Class<AVSTRIC> avStreamIncomingType,
 				@NonNull ParamsThreadRtpSenderCommon paramsCommon,
 				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
-				@NonNull ParamsThreadDpMp3 paramsMp3
+				@NonNull ParamsThreadDpMpa paramsMpa
 			) {
 		super(
 				avStreamIncomingType,
 				paramsCommon,
 				Objects.requireNonNull(paramsAudioCommon).getAudioSamplerate().getSrHz(),
-				RtpPacketType.A_MP3
+				RtpPacketType.A_MPEG
 			);
 
 		//
@@ -56,8 +56,8 @@ public final class ThreadRtpSenderMp3<AVSTRIC extends AvStreamIncomingBase>
 
 		//
 		paramsAudioCommon.validate();
-		paramsMp3.validate();
-		this.paramsMp3 = paramsMp3.clone();
+		paramsMpa.validate();
+		this.paramsMpa = paramsMpa.clone();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -74,22 +74,22 @@ public final class ThreadRtpSenderMp3<AVSTRIC extends AvStreamIncomingBase>
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected @NonNull ThreadDataProvEsBase<AudioMp3Info> newThreadDataProv() {
+	protected @NonNull ThreadDataProvEsBase<AudioMpegInfo> newThreadDataProv() {
 		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
-			return new ThreadDataProvEsMp3FromRawFile(
+			return new ThreadDataProvEsMpaFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
-					paramsMp3,
+					paramsMpa,
 					10,
 					paramsCommon.getDebugRewindMediaFiles()
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
-			return new ThreadDataProvEsMp3FromMq(
+			return new ThreadDataProvEsMpaFromMq(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsMp3FromDemuxMs(
+			return new ThreadDataProvEsMpaFromDemuxMs(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
@@ -100,7 +100,7 @@ public final class ThreadRtpSenderMp3<AVSTRIC extends AvStreamIncomingBase>
 
 	@Override
 	protected @NonNull FrameData cbFrameDataSupplier() {
-		return defaultFrameDataSupplier(curFrameMp3Info);
+		return defaultFrameDataSupplier(curFrameMpaInfo);
 	}
 
 	@Override
@@ -125,17 +125,17 @@ public final class ThreadRtpSenderMp3<AVSTRIC extends AvStreamIncomingBase>
 		}
 		//
 		if (cachePlainPacket == null) {
-			cachePlainPacket = new RtpPacketMp3(
+			cachePlainPacket = new RtpPacketMpa(
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
-					curFrameMp3Info,
+					curFrameMpaInfo,
 					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
 					cacheParamsBase,
 					curFragmentData.fragmentOffset(),
-					curFrameMp3Info,
+					curFrameMpaInfo,
 					cacheRtpInnerPayloadBufView
 				);
 		}

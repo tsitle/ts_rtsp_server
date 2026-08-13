@@ -118,9 +118,6 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		if (internalCodec == RtpPacketType.A_AC3) {
 			return DpConstants.DP_SAMPLES_PER_FRAME_AC3_AUDIO;
 		}
-		if (internalCodec == RtpPacketType.A_MP3) {
-			return DpConstants.DP_SAMPLES_PER_FRAME_MP3_AUDIO;
-		}
 		if (internalCodec.isPcmAudio()) {
 			double tmpSampleIntvMs = 1000.0 / (double)getAudioSamplerate().getSrHz();
 			double tmpSpF = (double)RtpConstants.RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS / tmpSampleIntvMs;

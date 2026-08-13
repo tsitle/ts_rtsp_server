@@ -1,9 +1,9 @@
-package org.tsitle.lib_xrtxp.avdata.codec_a_mp3;
+package org.tsitle.lib_xrtxp.avdata.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
 
 /** Bitrates in kbit per second for MPEG-2 Layer II+III according to ISO/IEC 11172-3 */
-enum AudioMp3BitrateV2L23 {
+enum AudioMpegBitrateV2L23 {
 	KBPS_FREE(0),
 	KBPS008(1),
 	KBPS016(2),
@@ -22,12 +22,12 @@ enum AudioMp3BitrateV2L23 {
 	UNKNOWN(255);
 
 	public final int index;
-	AudioMp3BitrateV2L23(int index) {
+	AudioMpegBitrateV2L23(int index) {
 		this.index = index;
 	}
 
-	public static @NonNull AudioMp3BitrateV2L23 of(int index) {
-		for (AudioMp3BitrateV2L23 rate : AudioMp3BitrateV2L23.values()) {
+	public static @NonNull AudioMpegBitrateV2L23 of(int index) {
+		for (AudioMpegBitrateV2L23 rate : AudioMpegBitrateV2L23.values()) {
 			if (rate.index == index) {
 				return rate;
 			}

@@ -1,29 +1,29 @@
-package org.tsitle.lib_dataprov.threads_es.codec_a_mp3;
+package org.tsitle.lib_dataprov.threads_es.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_dataprov.avstreams.codec_a_mp3.FrameGrabberAudioMp3FromEsRawFile;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMp3;
+import org.tsitle.lib_dataprov.avstreams.codec_a_mpeg.FrameGrabberAudioMpegFromEsRawFile;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Info;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 
-public final class ThreadDataProvEsMp3FromRawFile extends ThreadDataProvEsFromRawFileBase<AudioMp3Info> {
+public final class ThreadDataProvEsMpaFromRawFile extends ThreadDataProvEsFromRawFileBase<AudioMpegInfo> {
 
-	private final @NonNull PacketParserMp3 packetParser;
+	private final @NonNull PacketParserMpa packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
-	 * @param paramsMp3 Thread-specific parameters
+	 * @param paramsMpa Thread-specific parameters
 	 * @param queueSize Size of the input queue
 	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
-	public ThreadDataProvEsMp3FromRawFile(
+	public ThreadDataProvEsMpaFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
-				@NonNull ParamsThreadDpMp3 paramsMp3,
+				@NonNull ParamsThreadDpMpa paramsMpa,
 				int queueSize,
 				boolean debugRewindMediaFiles
 			) {
@@ -35,9 +35,9 @@ public final class ThreadDataProvEsMp3FromRawFile extends ThreadDataProvEsFromRa
 			);
 
 		//
-		paramsMp3.validate();
+		paramsMpa.validate();
 		//
-		this.packetParser = new PacketParserMp3();
+		this.packetParser = new PacketParserMpa();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -60,19 +60,19 @@ public final class ThreadDataProvEsMp3FromRawFile extends ThreadDataProvEsFromRa
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioMp3FromEsRawFile(
+		this.frameGrabber = new FrameGrabberAudioMpegFromEsRawFile(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull AudioMp3Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull AudioMpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull AudioMp3Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull AudioMpegInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
 	}
 

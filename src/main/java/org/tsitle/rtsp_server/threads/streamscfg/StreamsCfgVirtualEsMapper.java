@@ -272,7 +272,7 @@ final class StreamsCfgVirtualEsMapper {
 		return switch (ffmpegCodec) {
 				case A_AAC -> RtpPacketType.A_AAC;
 				case A_AC3 -> RtpPacketType.A_AC3;
-				case A_MP3 -> RtpPacketType.A_MP3;
+				case A_MP2, A_MP3 -> RtpPacketType.A_MPEG;
 				case A_OPUS -> RtpPacketType.A_OPUS;
 				case A_PCM_ALAW -> {
 						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {

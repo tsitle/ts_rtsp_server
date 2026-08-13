@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.codec_a_aac.FrameGrabberAudioAacFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.codec_a_ac3.FrameGrabberAudioAc3FromEsRawFile;
-import org.tsitle.lib_dataprov.avstreams.codec_a_mp3.FrameGrabberAudioMp3FromEsRawFile;
+import org.tsitle.lib_dataprov.avstreams.codec_a_mpeg.FrameGrabberAudioMpegFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26XFromEsRawFile;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
@@ -12,8 +12,8 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacParser;
 import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Parser;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Info;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mp3.AudioMp3Parser;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegParser;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.*;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PpsContext;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264SpsContext;
@@ -57,7 +57,7 @@ final class StreamsCfgReadEsRawFileMeta {
 			return switch (codec) {
 					case RtpPacketType.A_AAC -> StreamsCfgReadEsRawFileMeta.readMeta_aac(idEsSource, esSourceObj);
 					case RtpPacketType.A_AC3 -> StreamsCfgReadEsRawFileMeta.readMeta_ac3(idEsSource, esSourceObj);
-					case RtpPacketType.A_MP3 -> StreamsCfgReadEsRawFileMeta.readMeta_mp3(idEsSource, esSourceObj);
+					case RtpPacketType.A_MPEG -> StreamsCfgReadEsRawFileMeta.readMeta_mpa(idEsSource, esSourceObj);
 					case RtpPacketType.V_H264 -> StreamsCfgReadEsRawFileMeta.readMeta_h264Header(idEsSource, esSourceObj);
 					case RtpPacketType.V_H265 -> StreamsCfgReadEsRawFileMeta.readMeta_h265Header(idEsSource, esSourceObj);
 					default -> {
@@ -188,7 +188,7 @@ final class StreamsCfgReadEsRawFileMeta {
 		}
 	}
 
-	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_mp3(
+	private static @NonNull RtspProtoEsSourceExpandedInfo readMeta_mpa(
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull RtspSrvConfigStreamInputEsRawFile esSourceObj
 			) throws ConfigInvalidException {
@@ -197,41 +197,41 @@ final class StreamsCfgReadEsRawFileMeta {
 					esSourceObj.getInputUri()
 				)) {
 			BufferExt tmpBuf = new BufferExt();
-			FrameGrabberAudioMp3FromEsRawFile asoMp3 = new FrameGrabberAudioMp3FromEsRawFile(avStreamIncoming);
+			FrameGrabberAudioMpegFromEsRawFile asoMpa = new FrameGrabberAudioMpegFromEsRawFile(avStreamIncoming);
 			TimestampMonotonic tmpStTimestamp = TimestampMonotonic.ofEmpty();
-			asoMp3.getNextFrame(tmpBuf, tmpStTimestamp);
+			asoMpa.getNextFrame(tmpBuf, tmpStTimestamp);
 
-			AudioMp3Parser mp3Parser = new AudioMp3Parser();
-			AudioMp3Info mp3Info = mp3Parser.parseMp3Data(new BufferView(tmpBuf));
+			AudioMpegParser mpaParser = new AudioMpegParser();
+			AudioMpegInfo mpaInfo = mpaParser.parseMpaData(new BufferView(tmpBuf));
 
-			if (mp3Info.getSampleRateHz() < 1) {
-				throw new ConfigInvalidException("Could not parse MP3 Samplerate");
+			if (mpaInfo.getSampleRateHz() < 1) {
+				throw new ConfigInvalidException("Could not parse MPEG Audio Samplerate");
 			}
 			if (esSourceObj.getAudioSamplerate() != SampleRateEnum.UNKNOWN &&
-					SampleRateEnum.of(mp3Info.getSampleRateHz()) != esSourceObj.getAudioSamplerate()) {
-				throw new ConfigInvalidException("MP3 Samplerate mismatch (" +
-						"config=" + esSourceObj.getAudioSamplerate().getSrHz() + ", fileHeader=" + mp3Info.getSampleRateHz() + ")");
+					SampleRateEnum.of(mpaInfo.getSampleRateHz()) != esSourceObj.getAudioSamplerate()) {
+				throw new ConfigInvalidException("MPEG Audio Samplerate mismatch (" +
+						"config=" + esSourceObj.getAudioSamplerate().getSrHz() + ", fileHeader=" + mpaInfo.getSampleRateHz() + ")");
 			}
 			if (esSourceObj.getAudioChannelCount() > 0 &&
-					mp3Info.channelMode.getChannelCount() != esSourceObj.getAudioChannelCount()) {
-				throw new ConfigInvalidException("MP3 ChannelCount mismatch (" +
+					mpaInfo.channelMode.getChannelCount() != esSourceObj.getAudioChannelCount()) {
+				throw new ConfigInvalidException("MPEG Audio ChannelCount mismatch (" +
 						"config=" + esSourceObj.getAudioChannelCount() +
-						", fileHeader=" + mp3Info.channelMode.getChannelCount() + ")");
+						", fileHeader=" + mpaInfo.channelMode.getChannelCount() + ")");
 			}
 
 			return createEsei_audio(
-					RtpPacketType.A_MP3,
+					RtpPacketType.A_MPEG,
 					esSourceObj.getInputUri(),
-					(byte)mp3Info.channelMode.getChannelCount(),
-					SampleRateEnum.of(mp3Info.getSampleRateHz()),
+					(byte)mpaInfo.channelMode.getChannelCount(),
+					SampleRateEnum.of(mpaInfo.getSampleRateHz()),
 					esSourceObj.getAudioSamplesPerFrame(),
 					false,
 					ExtradataContainerHex.ofEmpty()
 				);
 		} catch (AvCannotOpenInputException | InputStreamIoException | InputStreamEosException e) {
-			throw new ConfigInvalidException("Could not read from MP3 file: " + e.getMessage());
+			throw new ConfigInvalidException("Could not read from MPEG Audio file: " + e.getMessage());
 		} catch (AvInvalidCodecDataException e) {
-			throw new ConfigInvalidException("Could not parse MP3 header: " + e.getMessage());
+			throw new ConfigInvalidException("Could not parse MPEG Audio header: " + e.getMessage());
 		}
 	}
 

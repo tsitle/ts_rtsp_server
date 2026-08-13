@@ -23,8 +23,6 @@ public final class DpConstants {
 	public static final int DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
 	/** Samples per frame for AC-3 audio */
 	public static final int DP_SAMPLES_PER_FRAME_AC3_AUDIO = 1536;
-	/** Samples per frame for MP3 (MPEG-1 Layer III) audio */
-	public static final int DP_SAMPLES_PER_FRAME_MP3_AUDIO = 1152;
 	/** Maximum channel count for audio */
 	public static final int DP_PCM_AUDIO_CHANNELS_MAX = AudioPcmInfo.AUDIO_CHANNELS_MAX;
 	/** Maximum channel count for Opus audio */
@@ -41,6 +39,7 @@ public final class DpConstants {
 	public static final @NonNull Set<@NonNull FfmpegCodec> DP_FFMPEG_ALLOWED_CODECS_AUDIO = new HashSet<>() {{
 			add(FfmpegCodec.A_AAC);
 			add(FfmpegCodec.A_AC3);
+			add(FfmpegCodec.A_MP2);
 			add(FfmpegCodec.A_MP3);
 			add(FfmpegCodec.A_OPUS);
 			add(FfmpegCodec.A_PCM_ALAW);

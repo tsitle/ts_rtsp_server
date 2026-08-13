@@ -1,33 +1,33 @@
-package org.tsitle.lib_xrtxp.avdata.codec_a_mp3;
+package org.tsitle.lib_xrtxp.avdata.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
 
-/** Bitrates in kbit per second for MPEG-1 Layer III according to ISO/IEC 11172-3 */
-enum AudioMp3BitrateV1L3 {
+/** Bitrates in kbit per second for MPEG-1 Layer II according to ISO/IEC 11172-3 */
+enum AudioMpegBitrateV1L2 {
 	KBPS_FREE(0),
 	KBPS032(1),
-	KBPS040(2),
-	KBPS048(3),
-	KBPS056(4),
-	KBPS064(5),
-	KBPS080(6),
-	KBPS096(7),
-	KBPS112(8),
-	KBPS128(9),
-	KBPS160(10),
-	KBPS192(11),
-	KBPS224(12),
-	KBPS256(13),
-	KBPS320(14),
+	KBPS048(2),
+	KBPS056(3),
+	KBPS064(4),
+	KBPS080(5),
+	KBPS096(6),
+	KBPS112(7),
+	KBPS128(8),
+	KBPS160(9),
+	KBPS192(10),
+	KBPS224(11),
+	KBPS256(12),
+	KBPS320(13),
+	KBPS384(14),
 	UNKNOWN(255);
 
 	public final int index;
-	AudioMp3BitrateV1L3(int index) {
+	AudioMpegBitrateV1L2(int index) {
 		this.index = index;
 	}
 
-	public static @NonNull AudioMp3BitrateV1L3 of(int index) {
-		for (AudioMp3BitrateV1L3 rate : AudioMp3BitrateV1L3.values()) {
+	public static @NonNull AudioMpegBitrateV1L2 of(int index) {
+		for (AudioMpegBitrateV1L2 rate : AudioMpegBitrateV1L2.values()) {
 			if (rate.index == index) {
 				return rate;
 			}
@@ -39,7 +39,6 @@ enum AudioMp3BitrateV1L3 {
 		return switch (this) {
 				case KBPS_FREE -> 0;  // ?
 				case KBPS032 -> 32;
-				case KBPS040 -> 40;
 				case KBPS048 -> 48;
 				case KBPS056 -> 56;
 				case KBPS064 -> 64;
@@ -52,6 +51,7 @@ enum AudioMp3BitrateV1L3 {
 				case KBPS224 -> 224;
 				case KBPS256 -> 256;
 				case KBPS320 -> 320;
+				case KBPS384 -> 384;
 				case UNKNOWN -> -1;
 			};
 	}

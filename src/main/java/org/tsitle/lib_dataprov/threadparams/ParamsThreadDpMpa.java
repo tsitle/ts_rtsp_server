@@ -2,9 +2,9 @@ package org.tsitle.lib_dataprov.threadparams;
 
 import org.jspecify.annotations.NonNull;
 
-public final class ParamsThreadDpMp3 implements Cloneable {
+public final class ParamsThreadDpMpa implements Cloneable {
 
-	// ... fields only for MP3 ...
+	// ... fields only for MPEG Audio ...
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -19,9 +19,9 @@ public final class ParamsThreadDpMp3 implements Cloneable {
 	}
 
 	@Override
-	public @NonNull ParamsThreadDpMp3 clone() {
+	public @NonNull ParamsThreadDpMpa clone() {
 		try {
-			return (ParamsThreadDpMp3)super.clone();
+			return (ParamsThreadDpMpa)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}

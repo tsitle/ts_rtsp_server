@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.avdata.codec_a_mp3;
+package org.tsitle.lib_xrtxp.avdata.codec_a_mpeg;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
 
-public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Cloneable {
+public final class AudioMpegInfo implements CodecInfoInterface<AudioMpegInfo>, Cloneable {
 
 	/** MPEG Audio Version according to ISO/IEC 11172-3 */
 	public enum MpegAudioVersion {
@@ -91,7 +91,7 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 	public int samplesOffset;
 	/** Length of the audio samples in the audio data */
 	public int samplesLength;
-	/** Length of the complete MP3 frame (including header) */
+	/** Length of the complete MPEG Audio frame (including header) */
 	public int frameLength;
 	public @NonNull MpegAudioVersion mpegAudioVersion;
 	public @NonNull MpegLayer mpegLayer;
@@ -99,7 +99,7 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 	int sampleRateIx;
 	public @NonNull ChannelMode channelMode;
 
-	public AudioMp3Info() {
+	public AudioMpegInfo() {
 		reset();
 	}
 
@@ -126,17 +126,17 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 	public int getBitRateKbps() {
 		int resI = -1;
 		if (mpegAudioVersion == MpegAudioVersion.V1 && mpegLayer == MpegLayer.L1) {
-			resI = AudioMp3BitrateV1L1.of(bitRateIx).getKbps();
+			resI = AudioMpegBitrateV1L1.of(bitRateIx).getKbps();
 		} else if (mpegAudioVersion == MpegAudioVersion.V1 && mpegLayer == MpegLayer.L2) {
-			resI = AudioMp3BitrateV1L2.of(bitRateIx).getKbps();
+			resI = AudioMpegBitrateV1L2.of(bitRateIx).getKbps();
 		} else if (mpegAudioVersion == MpegAudioVersion.V1 && mpegLayer == MpegLayer.L3) {
-			resI = AudioMp3BitrateV1L3.of(bitRateIx).getKbps();
+			resI = AudioMpegBitrateV1L3.of(bitRateIx).getKbps();
 		} else if ((mpegAudioVersion == MpegAudioVersion.V2 || mpegAudioVersion == MpegAudioVersion.V2_5) &&
 				mpegLayer == MpegLayer.L1) {
-			resI = AudioMp3BitrateV2L1.of(bitRateIx).getKbps();
+			resI = AudioMpegBitrateV2L1.of(bitRateIx).getKbps();
 		} else if ((mpegAudioVersion == MpegAudioVersion.V2 || mpegAudioVersion == MpegAudioVersion.V2_5) &&
 				(mpegLayer == MpegLayer.L2 || mpegLayer == MpegLayer.L3)) {
-			resI = AudioMp3BitrateV2L23.of(bitRateIx).getKbps();
+			resI = AudioMpegBitrateV2L23.of(bitRateIx).getKbps();
 		}
 		return resI;
 	}
@@ -165,6 +165,21 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 			};
 	}
 
+	@SuppressWarnings("unused")
+	public int getSamplesPerFrame() {
+		if ((mpegAudioVersion == MpegAudioVersion.V1 && mpegLayer == MpegLayer.L3) ||
+				mpegLayer == MpegLayer.L2) {
+			return 1152;
+		}
+		if (mpegLayer == MpegLayer.L3) {
+			return 576;
+		}
+		if (mpegLayer == MpegLayer.L1) {
+			return 384;
+		}
+		return -1;
+	}
+
 	@Override
 	public void reset() {
 		samplesOffset = 0;
@@ -179,10 +194,10 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 	}
 
 	@Override
-	public void copyOf(@NonNull CodecInfoInterface<AudioMp3Info> src) {
+	public void copyOf(@NonNull CodecInfoInterface<AudioMpegInfo> src) {
 		reset();
 
-		AudioMp3Info tmpSrc = (AudioMp3Info)src;
+		AudioMpegInfo tmpSrc = (AudioMpegInfo)src;
 		samplesOffset = tmpSrc.samplesOffset;
 		samplesLength = tmpSrc.samplesLength;
 		frameLength = tmpSrc.frameLength;
@@ -195,9 +210,9 @@ public final class AudioMp3Info implements CodecInfoInterface<AudioMp3Info>, Clo
 	}
 
 	@Override
-	public @NonNull AudioMp3Info clone() {
+	public @NonNull AudioMpegInfo clone() {
 		try {
-			return  (AudioMp3Info)super.clone();
+			return  (AudioMpegInfo)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
