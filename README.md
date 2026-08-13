@@ -17,7 +17,8 @@
 - supported audio codecs:
 	- AAC (mono, stereo, surround)
 	- AC-3 (mono, stereo, surround)
-	- MP3 aka MPEG-1 Layer III (mono, stereo)
+	- MP2 aka MPEG-1/2 Layer II (mono, stereo)
+	- MP3 aka MPEG-1/2 Layer III (mono, stereo)
 	- Opus (mono, stereo)
 	- PCM A-Law (mono, stereo, surround)
 	- PCM Mu-Law (mono, stereo, surround)
@@ -32,7 +33,7 @@
 		- raw Opus/VP8 files (uses a proprietary file format though)
 	- file containers:
 		- audio/video: MKV, MP4, MOV, WEBM
-		- audio: AAC, AC-3, MP3, Ogg(-Opus), Opus, WAV
+		- audio: AAC, AC-3, MP2, MP3, Ogg(-Opus), Opus, WAV
 	- other RTSP streams (if they use supported codecs)
 	- proprietary Message Queues, e.g. for Foscam IP Cameras
 
