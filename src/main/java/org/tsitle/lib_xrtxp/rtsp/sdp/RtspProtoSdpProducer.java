@@ -366,12 +366,12 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		resL.add(String.format("o=%s %s %s %s %s %s",
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
-		// s: Session Name
+		// s: Session Name (FFmpeg will display this as 'Title')
 		resL.add(String.format("s=%s", RtspProtoSdpPrivateConstants.SESSION_NAME));
+		// i: Session Information (FFmpeg will display this as 'Comment')
+		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr().orElseThrow()));
 		// c: Connection Info
 		resL.add(String.format("c=IN IP4 %s", args.serverIpOrName.getIpAddrStr().orElseThrow()));
-		// i: Session Information
-		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr().orElseThrow()));
 		// t: Time Active
 		resL.add("t=0 0");
 		// a: Session Attribute: Name and version number of the tool used to create the session description
