@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server;
+package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.client.types.MqElementaryStreamSourceSettings;
@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
 
-final class RtspThreadMngMqExt extends RtspThreadMngBase {
+public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 
 	private static final String POOL_NAME = "POOLMQEXT";
 

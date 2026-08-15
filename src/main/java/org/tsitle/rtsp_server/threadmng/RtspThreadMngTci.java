@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server;
+package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 
-final class RtspThreadMngTci extends RtspThreadMngBase {
+public final class RtspThreadMngTci extends RtspThreadMngBase {
 
 	private static final String POOL_NAME = "POOLRTSPTCI";
 

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server;
+package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -19,7 +19,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;
 
-final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThreadMngInterface {
+public final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPlayThreadMngInterface {
 
 	private record VarsForNewThread(
 			@NonNull RtspProtoSessionInfo rtspSessionInfo,

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server;
+package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -9,7 +9,7 @@ import org.tsitle.rtsp_server.threads.CancelToken;
 
 import java.util.concurrent.*;
 
-abstract class RtspThreadMngBase {
+public abstract class RtspThreadMngBase {
 
 	protected final @NonNull LogMsgInterface logMsgInterface;
 	protected final @NonNull CancelToken cancelToken;
