@@ -613,6 +613,8 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				(useVideo || (! esInfo.codec().isPcmAudio() && esInfo.codec() != RtpPacketType.A_OPUS) ?
 						"" : "/" + esInfo.audioChannelCount());
 		outputList.add(String.format("a=rtpmap:%d %s", esInfo.codec().getValue(), tmpA_Map));
+		// a: Session Attribute: this media stream is only for receiving it by the client
+		outputList.add("a=recvonly");
 		//
 		addAvFmtpLine(esInfo, outputList);
 		// a: Session Attribute: URL to be used for controlling that particular media stream (RFC-7826 Section D.1.1)
