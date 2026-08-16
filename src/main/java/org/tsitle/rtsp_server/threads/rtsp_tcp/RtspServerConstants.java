@@ -30,6 +30,12 @@ public final class RtspServerConstants {
 		);
 
 	/** Supported RTSP features of the local host */
-	public static final Set<@NonNull String> SERVER_SUPPORTED_FEATURES = Set.of();
+	public static final Set<@NonNull String> SERVER_SUPPORTED_FEATURES = Set.of(
+			/*
+			 * This is not actually supported, but we need this for 'go2rtc'.
+			 * Without this all connections from 'go2rtc' will fail.
+			 */
+			"www.onvif.org/ver20/backchannel"
+		);
 
 }
