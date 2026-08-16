@@ -1,0 +1,88 @@
+{
+	"subStreams": {
+		"sample_video_h264": {
+			"enabled": true,
+			"rawFile": {
+				"filePath": "samples/video-30fps.h264",
+				"codec": "H264",
+				"videoFps": 30.0
+			}
+		},
+		"sample_video_h265": {
+			"enabled": true,
+			"rawFile": {
+				"filePath": "samples/video-25fps.h265",
+				"codec": "H265",
+				"videoFps": 25.0
+			}
+		},
+		"sample_video_mjpeg": {
+			"rawFile": {
+				"filePath": "samples/video-15fps.mjpeg",
+				"codec": "MJPEG",
+				"videoFps": 15.0
+			}
+		},
+
+		"sample_audio_aac": {
+			"rawFile": {
+				"filePath": "samples/audio-surround_51_44100hz.aac",
+				"codec": "AACLC",
+				"audioSamplerateHz": 44100,
+				"audioChannelCount": 6,
+				"aacSamplesPerFrame": 1024
+			}
+		},
+		"sample_audio_ac3": {
+			"rawFile": {
+				"filePath": "samples/audio-surround_51_48000hz.ac3",
+				"codec": "AC3",
+				"audioSamplerateHz": 48000,
+				"audioChannelCount": 5
+			}
+		},
+		"sample_audio_pcma": {
+			"rawFile": {
+				"filePath": "samples/audio-mono_8000hz_alaw.raw",
+				"codec": "PCMA",
+				"audioSamplerateHz": 8000,
+				"audioChannelCount": 1
+			}
+		},
+		"sample_audio_pcmu": {
+			"enabled": true,
+			"rawFile": {
+				"filePath": "samples/audio-mono_8000hz_ulaw.raw",
+				"codec": "PCMU",
+				"audioSamplerateHz": 8000,
+				"audioChannelCount": 1
+			}
+		},
+		"sample_audio_lpcm_s16_be": {
+			"rawFile": {
+				"filePath": "samples/audio-stereo_48000hz_s16b_be.raw",
+				"codec": "LPCM16S",
+				"audioSamplerateHz": 48000,
+				"audioChannelCount": 2,
+				"isPcmAudioBigEndian": true
+			}
+		},
+		"sample_audio_lpcm_s16_le": {
+			"rawFile": {
+				"filePath": "samples/audio-stereo_48000hz_s16b_le.raw",
+				"codec": "LPCM16S",
+				"audioSamplerateHz": 48000,
+				"audioChannelCount": 2,
+				"isPcmAudioBigEndian": false
+			}
+		},
+		"sample_audio_lpcm_u08": {
+			"rawFile": {
+				"filePath": "samples/audio-mono_48000hz_u08b.raw",
+				"codec": "LPCM08U",
+				"audioSamplerateHz": 48000,
+				"audioChannelCount": 1
+			}
+		}
+	}
+}

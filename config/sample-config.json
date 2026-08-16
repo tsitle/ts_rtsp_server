@@ -1,0 +1,44 @@
+{
+	"server": {
+		"tcpPortRtsp": 1151,
+		"tcpPortRtsps": 1332,
+		"dataDir": "data",
+		"sslCertificate": "rtsps_ssl_keys/custom-server.crt",
+		"sslKey": "rtsps_ssl_keys/custom-server-private.key",
+		"sslCa": "rtsps_ssl_keys/custom-ca.crt",
+		"threadsMaximumPlay": 20,
+		"threadsMaximumTci": 20,
+		"threadsMaximumMq": 20
+	},
+
+	"logging": {
+		"logLevel": "info",
+		"outputs": {
+			"filename": "logs/%DATETIME%.log",
+			"enableFile": true,
+			"enableConsole": true
+		}
+	},
+
+	"debugging": {
+		"debugPrintRtspRcvd": false,
+		"debugPrintRtspSent": false,
+		"debugPrintRtspSdpSent": false,
+		"debugRewindMediaFiles": false,
+		"debugDisableTransportUdp": false
+	},
+
+	"userAccounts": {
+		"admin": "ABCDEFGH",
+		"somebody": "thePassword"
+	},
+	"userAccountGroups": {
+		"grp_all_users": [ "admin", "somebody" ],
+		"grp_admin_only": [ "admin" ]
+	},
+
+	"streamConfigDirectories": [
+		"sample-streams-config1",
+		"sample-streams-config2"
+	]
+}

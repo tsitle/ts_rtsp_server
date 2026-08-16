@@ -1,0 +1,18 @@
+{
+	"streams": {
+		"sample-h264_and_pcmu.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_video_h264", "sample_audio_pcmu" ]
+		},
+		"sample-h265_and_aac.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_video_h265", "sample_audio_aac" ]
+		}
+	}
+}
