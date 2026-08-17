@@ -102,19 +102,6 @@ public final class AvStreamIncomingFromEsRawFile extends AvStreamIncomingBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/**
-	 * Rewinds the stream to the beginning
-	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
-	 */
-	@Override
-	public void rewind() throws AvCannotOpenInputException {
-		close();
-		//
-		openInput();
-		//
-		haveEos = false;
-	}
-
 	@Override
 	public Optional<Double> getVideoFps() {
 		return Optional.empty();

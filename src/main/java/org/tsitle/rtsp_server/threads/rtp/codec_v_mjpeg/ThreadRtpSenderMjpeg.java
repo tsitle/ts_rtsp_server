@@ -75,8 +75,7 @@ public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
 		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
 			return new ThreadDataProvEsMjpegFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {

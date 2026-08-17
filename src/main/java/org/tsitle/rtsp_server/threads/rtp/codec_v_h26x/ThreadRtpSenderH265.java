@@ -53,8 +53,7 @@ public final class ThreadRtpSenderH265<AVSTRIC extends AvStreamIncomingBase>
 		if (avStreamIncomingType == AvStreamIncomingFromEsRawFile.class) {
 			return new ThreadDataProvEsH265FromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {

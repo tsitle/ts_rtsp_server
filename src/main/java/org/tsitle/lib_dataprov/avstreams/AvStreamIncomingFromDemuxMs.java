@@ -62,15 +62,6 @@ public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/**
-	 * Rewinds the stream to the beginning
-	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
-	 */
-	@Override
-	public void rewind() throws AvCannotOpenInputException {
-		throw new AvCannotOpenInputException("Cannot rewind a Demuxed sub-stream");
-	}
-
 	@Override
 	public Optional<Double> getVideoFps() {
 		return Optional.empty();

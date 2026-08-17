@@ -19,18 +19,15 @@ public final class ThreadDataProvEsOpusFromRawFile extends ThreadDataProvEsFromR
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param paramsOpus Thread-specific parameters
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvEsOpusFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				@NonNull ParamsThreadDpOpus paramsOpus,
-				int queueSize,
-				boolean debugRewindMediaFiles
+				int queueSize
 			) {
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles,
 				false
 			);
 

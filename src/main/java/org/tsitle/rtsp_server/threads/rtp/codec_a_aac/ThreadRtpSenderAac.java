@@ -76,8 +76,7 @@ public final class ThreadRtpSenderAac<AVSTRIC extends AvStreamIncomingBase>
 			return new ThreadDataProvEsAacFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAac,
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {

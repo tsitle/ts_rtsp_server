@@ -82,8 +82,7 @@ public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
 			return new ThreadDataProvEsOpusFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsOpus,
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {

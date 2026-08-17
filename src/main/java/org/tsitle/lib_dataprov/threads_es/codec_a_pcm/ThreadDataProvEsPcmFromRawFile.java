@@ -24,19 +24,16 @@ public final class ThreadDataProvEsPcmFromRawFile extends ThreadDataProvEsFromRa
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsPcm Thread-specific parameters
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvEsPcmFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadDpPcm paramsPcm,
-				int queueSize,
-				boolean debugRewindMediaFiles
+				int queueSize
 			) {
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles,
 				false
 			);
 

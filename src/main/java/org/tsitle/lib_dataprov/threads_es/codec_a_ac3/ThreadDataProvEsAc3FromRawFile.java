@@ -17,17 +17,14 @@ public final class ThreadDataProvEsAc3FromRawFile extends ThreadDataProvEsFromRa
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvEsAc3FromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
-				int queueSize,
-				boolean debugRewindMediaFiles
+				int queueSize
 			) {
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles,
 				false
 			);
 

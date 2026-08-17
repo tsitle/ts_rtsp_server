@@ -73,10 +73,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/** Debugging: Rewind media files? */
-	private boolean debugRewindMediaFiles;
-	private boolean isSetDebugRewindMediaFiles;
-
 	/** Are the parameters for a video thread? (if false, they are for an audio thread) */
 	private boolean isVideoThread;
 	private boolean isSetIsVideoThread;
@@ -126,12 +122,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
-
-	public boolean getDebugRewindMediaFiles() { return debugRewindMediaFiles; }
-	public void setDebugRewindMediaFiles(boolean debugRewindMediaFiles) {
-		this.debugRewindMediaFiles = debugRewindMediaFiles;
-		this.isSetDebugRewindMediaFiles = true;
-	}
 
 	public boolean getIsVideoThread() { return isVideoThread; }
 	public void setIsVideoThread(boolean value) {
@@ -262,8 +252,6 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void checkAllParamsSet() {
-		requireIsSet(isSetDebugRewindMediaFiles, "debugRewindMediaFiles");
-
 		requireIsSet(isSetIsVideoThread, "isVideoThread");
 
 		requireIsSet(isSetEsSourceType, "esSourceType");

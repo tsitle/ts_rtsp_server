@@ -27,7 +27,6 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		final @NonNull TimestampMonotonic stTimestamp = TimestampMonotonic.ofEmpty();
 	}
 
-	private final boolean doDebugRewindMediaFiles;
 	private final boolean needConvertData;
 
 	protected @Nullable AvStreamIncomingFromEsRawFile avStreamIncoming = null;
@@ -51,13 +50,11 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 * @param needConvertData If true, the data will be converted before being outputted
 	 */
 	protected ThreadDataProvEsFromRawFileBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				int queueSize,
-				boolean debugRewindMediaFiles,
 				boolean needConvertData
 			) {
 		super(paramsCommon);
@@ -67,7 +64,6 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		}
 
 		//
-		this.doDebugRewindMediaFiles = debugRewindMediaFiles;
 		this.needConvertData = needConvertData;
 
 		//
@@ -208,23 +204,11 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
 		if (frameGrabber == null || frameGrabber.haveEos()) {
-			if (frameGrabber != null && doDebugRewindMediaFiles) {
-				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames, rewinding");
-				try {
-					frameGrabber.rewind();
-				} catch (AvCannotOpenInputException e) {
-					logError(FNC_NAME, "AvCannotOpenInputException caught while rewinding: " + e.getMessage());
-					// we have reached the end of the input
-					eosReached.set(true);
-					return;
-				}
-			} else {
-				if (! eosReached.get()) {
-					logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames");
-				}
-				eosReached.set(true);
-				return;
+			if (! eosReached.get()) {
+				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames");
 			}
+			eosReached.set(true);
+			return;
 		}
 
 		//
@@ -295,7 +279,8 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 				eosReached.set(true);
 			} else {
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- InputStreamEosException");
-				// try to rewind in the next iteration
+				// we have reached the end of the input
+				eosReached.set(true);
 			}
 			return false;
 		} catch (AvInvalidCodecDataException e) {

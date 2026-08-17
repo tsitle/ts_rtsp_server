@@ -142,9 +142,6 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Debugging: print the RTSP SDP description that has been sent to the client? */
 		@Expose
 		private final boolean debugPrintRtspSdpSent;
-		/** Debugging: rewind the media files? */
-		@Expose
-		private final boolean debugRewindMediaFiles;
 		/** Debugging: disable UDP transport? */
 		@Expose
 		private boolean debugDisableTransportUdp;
@@ -153,7 +150,6 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.debugPrintRtspRcvd = false;
 			this.debugPrintRtspSent = false;
 			this.debugPrintRtspSdpSent = false;
-			this.debugRewindMediaFiles = false;
 			this.debugDisableTransportUdp = false;
 		}
 	}
@@ -317,15 +313,6 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	public boolean getIsDebugPrintRtspSdpSent() {
 		checkPostProcessed();
 		return debugging.debugPrintRtspSdpSent;
-	}
-
-	/**
-	 * Get if rewinding the media files is enabled for debugging.
-	 * @return True if rewinding the media files is enabled, false otherwise
-	 */
-	public boolean getIsDebugRewindMediaFiles() {
-		checkPostProcessed();
-		return debugging.debugRewindMediaFiles;
 	}
 
 	/**

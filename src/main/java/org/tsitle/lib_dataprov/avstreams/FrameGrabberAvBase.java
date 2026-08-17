@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
@@ -54,14 +53,6 @@ public abstract class FrameGrabberAvBase {
 	 */
 	public abstract void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException, AvInvalidCodecDataException, InputStreamThreadEndedException;
-
-	/**
-	 * Rewinds the stream to the beginning
-	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
-	 */
-	public void rewind() throws AvCannotOpenInputException {
-		avStreamIncomingBase.rewind();
-	}
 
 	/**
 	 * Returns the video frames per second if available

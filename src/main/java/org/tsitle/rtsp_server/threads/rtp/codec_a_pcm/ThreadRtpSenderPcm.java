@@ -95,8 +95,7 @@ public final class ThreadRtpSenderPcm<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAudioCommon,
 					paramsPcm,
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {

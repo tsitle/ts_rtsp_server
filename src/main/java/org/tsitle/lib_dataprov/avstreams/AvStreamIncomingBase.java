@@ -34,12 +34,6 @@ public abstract class AvStreamIncomingBase implements AutoCloseable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Rewinds the stream to the beginning
-	 * @throws AvCannotOpenInputException If the input stream cannot be reopened
-	 */
-	public abstract void rewind() throws AvCannotOpenInputException;
-
-	/**
 	 * Checks if we can still read data from the stream.
 	 * @return True if the end of the stream has been reached, false otherwise
 	 */

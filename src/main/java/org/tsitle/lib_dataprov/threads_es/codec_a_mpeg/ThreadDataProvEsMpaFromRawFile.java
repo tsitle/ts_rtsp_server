@@ -19,18 +19,15 @@ public final class ThreadDataProvEsMpaFromRawFile extends ThreadDataProvEsFromRa
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 * @param paramsMpa Thread-specific parameters
 	 * @param queueSize Size of the input queue
-	 * @param debugRewindMediaFiles If true, the media file will be rewound after EOS is reached
 	 */
 	public ThreadDataProvEsMpaFromRawFile(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				@NonNull ParamsThreadDpMpa paramsMpa,
-				int queueSize,
-				boolean debugRewindMediaFiles
+				int queueSize
 			) {
 		super(
 				paramsCommon,
 				queueSize,
-				debugRewindMediaFiles,
 				false
 			);
 

@@ -418,7 +418,6 @@ final class RtspChildThreadMng {
 				.comTpClientIpAddr(clientIpAddr)
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.getSubStreamTpPtr().getIsEncr())
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))
-				.comDebugRewindMediaFiles(rtspSrvConfig.getIsDebugRewindMediaFiles())
 				.comEsStreamSourceType(avSsi.esSourceType())
 				.comAvFps(avFpsAsDbl)
 				.comRtpSeqNrT0(streamInfo.getRtpSeqNrT0Ptr())

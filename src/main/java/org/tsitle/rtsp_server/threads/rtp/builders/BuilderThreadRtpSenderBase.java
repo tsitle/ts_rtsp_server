@@ -50,8 +50,6 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public BuilderThreadRtpSenderBase<B, T> comCryptoIsRtxpEncryptionEnabled(boolean v) { this.threadParamsCommon.setCryptoIsRtxpEncryptionEnabled(v); return this; }
 	public BuilderThreadRtpSenderBase<B, T> comCryptoKmdOutboundRtp(@Nullable SrtxpKmd v) { this.threadParamsCommon.setCryptoKmdOutbound(v); return this; }
 
-	public BuilderThreadRtpSenderBase<B, T> comDebugRewindMediaFiles(boolean v) { this.threadParamsCommon.setDebugRewindMediaFiles(v); return this; }
-
 	public BuilderThreadRtpSenderBase<B, T> comEsStreamSourceType(@NonNull RtspProtoEsSourceType v) { this.threadParamsCommon.setEsSourceType(v); return this; }
 
 	public BuilderThreadRtpSenderBase<B, T> comAvFps(double v) { this.threadParamsCommon.setAvFramesPerSecond(v); return this; }

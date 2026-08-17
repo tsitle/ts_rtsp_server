@@ -79,8 +79,7 @@ public final class ThreadRtpSenderMpa<AVSTRIC extends AvStreamIncomingBase>
 			return new ThreadDataProvEsMpaFromRawFile(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsMpa,
-					10,
-					paramsCommon.getDebugRewindMediaFiles()
+					10
 				);
 		}
 		if (avStreamIncomingType == AvStreamIncomingFromEsMq.class) {
