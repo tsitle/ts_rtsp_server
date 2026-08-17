@@ -1,7 +1,7 @@
 {
 	"server": {
-		"tcpPortRtsp": 1151,
-		"tcpPortRtsps": 1332,
+		"tcpPortRtsp": 1554,
+		"tcpPortRtsps": 1322,
 		"dataDir": "data",
 		"sslCertificate": "rtsps_ssl_keys/custom-server.crt",
 		"sslKey": "rtsps_ssl_keys/custom-server-private.key",

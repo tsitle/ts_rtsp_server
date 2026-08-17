@@ -5,12 +5,12 @@
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_webm_vp8_opus" ]
+			"subStreamIds": [ "sample_input_webm_vp8_opus" ]
 		}
 	},
 
 	"subStreams": {
-		"sample_webm_vp8_opus": {
+		"sample_input_webm_vp8_opus": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/av-vp8_opus.webm"
