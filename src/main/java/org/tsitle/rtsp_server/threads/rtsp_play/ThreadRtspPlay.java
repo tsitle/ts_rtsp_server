@@ -84,7 +84,6 @@ public final class ThreadRtspPlay extends RunnableBase
 		}
 		this.rtspChildThreadMng = new RtspChildThreadMng(
 				logMsgInterface,
-				rtspSrvConfig,
 				subStreamIds,
 				rtspSessionInfo.getIdSession(),
 				rtspSessionInfo.getClientIpAddr(),

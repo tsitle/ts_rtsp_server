@@ -12,7 +12,6 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_dataprov.threads_demux.ThreadDataProvDemux;
@@ -35,7 +34,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 final class RtspChildThreadMng {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspSrvConfigMain rtspSrvConfig;
 	private final @NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds = new HashSet<>();
 	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 	private final @NonNull RtspProtoIpAddr clientIpAddr = RtspProtoIpAddr.ofLoopback();
@@ -60,7 +58,6 @@ final class RtspChildThreadMng {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param rtspSrvConfig RTSP server configuration
 	 * @param subStreamIds Sub-Stream IDs
 	 * @param idSession Session ID
 	 * @param clientIpAddr Client IP address
@@ -74,7 +71,6 @@ final class RtspChildThreadMng {
 	 */
 	RtspChildThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds,
 				@NonNull RtspProtoIdSession idSession,
 				@NonNull RtspProtoIpAddr clientIpAddr,
@@ -96,7 +92,6 @@ final class RtspChildThreadMng {
 			throw new IllegalArgumentException("clientIpAddr is empty");
 		}
 		this.logMsgInterface = logMsgInterface;
-		this.rtspSrvConfig = rtspSrvConfig;
 		for (RtspProtoIdSubStream tmpIdSs : subStreamIds){
 			this.subStreamIds.add(tmpIdSs.clone());
 		}
