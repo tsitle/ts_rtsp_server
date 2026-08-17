@@ -31,6 +31,10 @@ data/**/*.opus
 data/**/*.raw
 data/**/*.wav
 
+!data/samples/audio*
+!data/samples/av-*
+!data/samples/raw-*
+
 data/**/*.sh
 data/**/*.crt
 data/**/*.key

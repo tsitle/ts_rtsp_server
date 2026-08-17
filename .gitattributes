@@ -8,8 +8,22 @@
 
 *.bat text eol=crlf
 
-# Movies
-*.mjpeg
+# Audio/video files
+*.aac binary
+*.ac3 binary
+*.h264 binary
+*.h265 binary
+*.m4a binary
+*.mjpeg binary
+*.mkv binary
+*.mov binary
+*.mp2 binary
+*.mp3 binary
+*.mp4 binary
+*.opus binary
+*.raw binary
+*.wav binary
+*.webm binary
 
 # Compressed files
 *.gz binary
