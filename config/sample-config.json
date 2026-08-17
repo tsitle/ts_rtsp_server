@@ -24,7 +24,6 @@
 		"debugPrintRtspRcvd": false,
 		"debugPrintRtspSent": false,
 		"debugPrintRtspSdpSent": false,
-		"debugRewindMediaFiles": false,
 		"debugDisableTransportUdp": false
 	},
 

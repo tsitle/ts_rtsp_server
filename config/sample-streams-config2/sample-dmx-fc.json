@@ -1,19 +1,190 @@
 {
 	"streams": {
+		"sample-mkv_with_h264_and_aac.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mkv_h264_aac" ]
+		},
+		"sample-mov_with_h264_and_lpcm16s.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mov_h264_lpcm16s" ]
+		},
+		"sample-mp4_with_h265_and_ac3.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mp4_h265_ac3" ]
+		},
+		"sample-mkv_with_mjpeg_and_mp3.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mkv_mjpeg_mp3" ]
+		},
 		"sample-webm_with_vp8_and_opus.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
 			"subStreamIds": [ "sample_input_webm_vp8_opus" ]
+		},
+
+		"sample-aac.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_aac" ]
+		},
+		"sample-ac3.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_ac3" ]
+		},
+		"sample-mp2.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mp2" ]
+		},
+		"sample-mp3.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_mp3" ]
+		},
+		"sample-opus.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_opus" ]
+		},
+		"sample-pcma.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_pcma_aka_alaw" ]
+		},
+		"sample-pcmu.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_pcmu_aka_mulaw" ]
+		},
+		"sample-lpcm08u.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_lpcm_u08" ]
+		},
+		"sample-lpcm16s.stream": {
+			"enabled": true,
+			"needsAuthentication": true,
+			"allowedUserAccountGroups": [ "grp_all_users" ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_lpcm_s16" ]
 		}
 	},
 
 	"subStreams": {
+		"sample_input_mkv_h264_aac": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/av-h264_aac.mkv"
+			}
+		},
+		"sample_input_mov_h264_lpcm16s": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/av-h264_lpcm16s.mov"
+			}
+		},
+		"sample_input_mp4_h265_ac3": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/av-h265_ac3.mp4"
+			}
+		},
+		"sample_input_mkv_mjpeg_mp3": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/av-mjpeg_mp3.mkv"
+			}
+		},
 		"sample_input_webm_vp8_opus": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/av-vp8_opus.webm"
+			}
+		},
+
+		"sample_input_aac": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio.aac"
+			}
+		},
+		"sample_input_ac3": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio.ac3"
+			}
+		},
+		"sample_input_mp2": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio.mp2"
+			}
+		},
+		"sample_input_mp3": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio.mp3"
+			}
+		},
+		"sample_input_opus": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio.opus"
+			}
+		},
+		"sample_input_pcma_aka_alaw": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio-pcma.wav"
+			}
+		},
+		"sample_input_pcmu_aka_mulaw": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio-pcmu.wav"
+			}
+		},
+		"sample_input_lpcm_u08": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio-lpcm_u08.wav"
+			}
+		},
+		"sample_input_lpcm_s16": {
+			"enabled": true,
+			"fileContainer": {
+				"filePath": "samples/audio-lpcm_s16.wav"
 			}
 		}
 	}

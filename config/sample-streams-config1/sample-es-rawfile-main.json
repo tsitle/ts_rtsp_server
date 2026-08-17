@@ -1,18 +1,61 @@
 {
 	"streams": {
-		"sample-h264_and_pcmu.stream": {
-			"enabled": true,
-			"needsAuthentication": true,
-			"allowedUserAccountGroups": [ "grp_all_users" ],
-			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_video_h264", "sample_input_audio_pcmu" ]
-		},
-		"sample-h265_and_aac.stream": {
+		"sample-raw-aac.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_video_h265", "sample_input_audio_aac" ]
+			"subStreamIds": [ "sample_input_raw_audio_aac_mono" ]
+		},
+		"sample-raw-pcma.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_pcma" ]
+		},
+		"sample-raw-pcmu.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_pcmu" ]
+		},
+		"sample-raw-lpcm08u.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_u08" ]
+		},
+		"sample-raw-lpcm16s_le.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_le" ]
+		},
+		"sample-raw-lpcm16s_be.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_be" ]
+		},
+
+		"sample-raw-h265_and_aac.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_video_h265", "sample_input_raw_audio_aac_surround" ]
+		},
+		"sample-raw-mjpeg_and_ac3.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_video_mjpeg", "sample_input_raw_audio_ac3" ]
 		}
 	}
 }

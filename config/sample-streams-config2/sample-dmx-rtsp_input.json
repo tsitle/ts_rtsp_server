@@ -1,7 +1,7 @@
 {
 	"streams": {
 		"sample-garden_camera.stream": {
-			"enabled": true,
+			"enabled": false,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_admin_only" ],
 			"needsEncryption": true,
@@ -10,7 +10,7 @@
 	},
 	"subStreams": {
 		"sample_input_garden_camera": {
-			"enabled": true,
+			"enabled": false,
 			"rtsp": {
 				"url": "rtsp://bob:secretPassword@192.168.1.100:88/videoMain"
 			}
