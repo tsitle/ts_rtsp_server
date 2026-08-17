@@ -202,3 +202,7 @@ If the TCP ports are set to their default values (RTSP `554` and RTSPS `322`), t
 rtsp://admin:ABCDEFGH@localhost/sample-garden_camera.stream
 rtsps://admin:ABCDEFGH@localhost/sample-garden_camera.stream
 ```
+
+## Sample Media Files
+
+All sample media files are derived from: [blender.org Big Buck Bunny](https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip)
