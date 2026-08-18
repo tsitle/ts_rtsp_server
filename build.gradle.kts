@@ -3,6 +3,8 @@ plugins {
 	id("application")
 	id("org.beryx.runtime") version "2.0.1"  // see https://badass-runtime-plugin.beryx.org/releases/latest/
 	id("com.google.osdetector") version "1.7.3"  // see https://github.com/google/osdetector-gradle-plugin
+	// this plugin will filter the JavaCPP and FFmpeg libraries such that only libs for the current CPU architecture will be included
+	id("org.bytedeco.gradle-javacpp-platform") version "1.5.10"
 }
 
 group = "org.tsitle.rtsp_server"
@@ -77,6 +79,7 @@ dependencies {
 
 	implementation("org.bytedeco:ffmpeg-platform:7.1-1.5.11")
 	//implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
+	//implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
 }
 
 tasks.test {
