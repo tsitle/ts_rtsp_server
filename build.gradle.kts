@@ -77,7 +77,7 @@ dependencies {
 
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
-	implementation("org.bytedeco:ffmpeg-platform:7.1-1.5.11")
+	implementation("org.bytedeco:ffmpeg-platform:7.1.1-1.5.12")
 	//implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
 	//implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
 }
