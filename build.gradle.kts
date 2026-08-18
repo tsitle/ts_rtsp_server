@@ -82,8 +82,17 @@ dependencies {
 	//implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
 }
 
+/*
+ * see https://docs.gradle.org/current/userguide/java_testing.html
+ */
 tasks.test {
 	useJUnitPlatform()
+
+	jvmArgs("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
+
+	testLogging {
+		events("passed")
+	}
 }
 
 tasks.compileJava.configure {
