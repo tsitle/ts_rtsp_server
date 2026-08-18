@@ -3,9 +3,9 @@
 		"tcpPortRtsp": 1554,
 		"tcpPortRtsps": 1322,
 		"dataDir": "data",
-		"sslCertificate": "rtsps_ssl_keys/custom-server.crt",
-		"sslKey": "rtsps_ssl_keys/custom-server-private.key",
-		"sslCa": "rtsps_ssl_keys/custom-ca.crt",
+		"sslCertificate": "rtsps_ssl_keys/YOUR_HOSTNAME-server.crt",
+		"sslKey": "rtsps_ssl_keys/YOUR_HOSTNAME-server-private.key",
+		"sslCa": "rtsps_ssl_keys/YOUR_HOSTNAME-ca.crt",
 		"threadsMaximumPlay": 20,
 		"threadsMaximumTci": 20,
 		"threadsMaximumMq": 20

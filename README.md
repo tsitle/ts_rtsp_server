@@ -1,20 +1,37 @@
-# Java RTSP Server
+# Java-based Real Time Streaming Protocol (RTSP) Server
 
-This Java-based RTSP server was primarily designed for providing a high-security RTSP server for IP cameras  
-that ship with a not so secure RTSP implementation.  
-I have written a C++ application that uses Foscam's encrypted binary protocol to connect to Foscam IP cameras  
-and then forwards the audio and video data into encrypted Message Queues. However, the C++ application is not open source (yet).  
-But even without that C++ application, this RTSP server can, for example, still be used to connect to an (insecure) IP camera via  
-the camera's built-in RTSP server over the LAN and then re-publish the A/V stream as a secure RTSP stream.
+This RTSP server was primarily designed to provide a high-security alternative to existing RTSP implementations.
+
+Usage scenarios include:
+
+- re-publishing an IP camera's (unencrypted) RTSP stream as a secure RTSP stream over the internet
+- media file streaming (e.g., streaming a movie file to a mobile device that runs [VLC](https://www.videolan.org/))
+
+Even though [VLC](https://www.videolan.org/) does not support RTSPS, it does at least support SRTP and SRTCP for encrypting  
+all audio and video data that is being transmitted.  
+Other clients like [GStreamer](https://gstreamer.freedesktop.org/) and [FFmpeg](https://ffmpeg.org/) do support RTSPS.  
+See [docs/test_matrix.md](docs/test_matrix.md) for more details.
+
+Explainer:
+
+- *RTSP* is a protocol for controlling streaming media servers. But it does not transmit audio and video data - that is done using *RTP*
+- *RTSPS* uses SSL/TLS for secure communication over the internet and therefore encrypts all *RTSP* commands being  
+	sent between the client and the server. Since *SRTP/SRTCP* require the exchange of encryption keys between the client  
+	and the server, using *RTSPS* is the only way to truly ensure nobody can eavesdrop on the audio and video data being transmitted
+- *RTP* is a protocol for transmitting audio and video data
+- *SRTP* uses encryption to protect the audio and video data being transmitted
+- *RTCP* is a protocol for transmitting control messages between the client and the server regarding the *RTP* stream
+- *SRTCP* uses encryption to protect the control messages being transmitted
+
 
 ## Features
 
 - UDP and TCP transport modes support
 - SSL/TLS support (RTSPS) for encrypting all RTSP commands.  
-	If TCP transport mode is being used, then audio and video data will also be encrypted.
+	If TCP transport mode is being used, then audio and video data will also be SSL/TLS encrypted
 - SRTP and SRTCP support for encrypting all audio and video data that is being transmitted (for UDP and TCP transport modes).  
 	Both the legacy SDES (e.g. for FFmpeg) and the modern MIKEY (e.g. for VLC and GStreamer) key management protocols are supported.  
-	Re-keying mid-session is also supported for both SDES and MIKEY.
+	Re-keying mid-session is also supported for both SDES and MIKEY
 
 - supported video codecs:
 	- H264
@@ -44,6 +61,7 @@ the camera's built-in RTSP server over the LAN and then re-publish the A/V strea
 		- raw Opus/VP8 files (uses a proprietary file format though)
 	- proprietary Message Queues, e.g. for Foscam IP Cameras
 
+- seeking is supported only for file containers
 - streams can be configured during runtime
 
 **Notes:**  
@@ -62,8 +80,18 @@ the camera's built-in RTSP server over the LAN and then re-publish the A/V strea
 
 ## Configuration
 
-See the sample configuration file [config/sample-config.json](config/sample-config.json) and the  
-'Streams Configuration' files in `config/sample-streams-config1/` and `config/sample-streams-config2/`.
+See the sample configuration files
+
+- [config/sample-config-no_ssl.json](config/sample-config-no_ssl.json) (only `rtsp://` available)
+- [config/sample-config-with_ssl.json](config/sample-config-with_ssl.json) (both `rtsp://` and `rtsps://` available)
+
+and the 'Streams Configuration' files in `config/sample-streams-config1/` and `config/sample-streams-config2/`.
+
+To be able to use the 'with SSL' configuration, you need to generate your own SSL Certificate and Private Key:
+
+- SSL Certificate \[required\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-server.crt`
+- SSL Private Key \[required\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-server-private.key`
+- SSL CA certificate \[optional\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-ca.crt`
 
 The files in the 'Streams Configuration' directories can be edited while the application is running.  
 The changes will take effect immediately.
@@ -81,10 +109,12 @@ depending on the type of the `subStreams` entry:
 - raw elementary sub-stream files and proprietary Message Queues:  
 	can produce only one sub-stream (audio or video)
 
+
 ## Media Files, SSL Certificates & Co.
 
 All media files and server's SSL certificate and key must be either directly in the  
 directory `data/` or inside a subdirectory of `data/`.
+
 
 ## Running the Application
 
@@ -92,8 +122,9 @@ The application can be launched with Gradle and requires Java 25 or higher.
 There is only one argument that needs to be passed: the path to the configuration file:
 
 ```
-./gradlew run --args="config/sample-config.json"
+./gradlew run --args="config/sample-config-no_ssl.json"
 ```
+
 
 ## RTSP Stream URLs
 
@@ -202,6 +233,7 @@ If the TCP ports are set to their default values (RTSP `554` and RTSPS `322`), t
 rtsp://admin:ABCDEFGH@localhost/sample-garden_camera.stream
 rtsps://admin:ABCDEFGH@localhost/sample-garden_camera.stream
 ```
+
 
 ## Sample Media Files
 

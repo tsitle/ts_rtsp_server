@@ -1,0 +1,40 @@
+{
+	"server": {
+		"tcpPortRtsp": 1554,
+		"tcpPortRtsps": -1,
+		"dataDir": "data",
+		"threadsMaximumPlay": 20,
+		"threadsMaximumTci": 20,
+		"threadsMaximumMq": 20
+	},
+
+	"logging": {
+		"logLevel": "info",
+		"outputs": {
+			"filename": "logs/%DATETIME%.log",
+			"enableFile": true,
+			"enableConsole": true
+		}
+	},
+
+	"debugging": {
+		"debugPrintRtspRcvd": false,
+		"debugPrintRtspSent": false,
+		"debugPrintRtspSdpSent": false,
+		"debugDisableTransportUdp": false
+	},
+
+	"userAccounts": {
+		"admin": "ABCDEFGH",
+		"somebody": "thePassword"
+	},
+	"userAccountGroups": {
+		"grp_all_users": [ "admin", "somebody" ],
+		"grp_admin_only": [ "admin" ]
+	},
+
+	"streamConfigDirectories": [
+		"sample-streams-config1",
+		"sample-streams-config2"
+	]
+}
