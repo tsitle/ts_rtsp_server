@@ -164,7 +164,7 @@ public final class ThreadInpMqE2I extends RunnableBase {
 				}
 				//
 				if (failCount > 0) {
-					sleepLongAndProsper(failCount);
+					sleepLongAndProsper(localCancelToken, failCount);
 				}
 			}
 		} catch (MqException e) {  // from mqInternalPub.connectToMq()
@@ -217,19 +217,6 @@ public final class ThreadInpMqE2I extends RunnableBase {
 			throw new IllegalStateException("mqInternalPub is null");
 		}
 		mqInternalPub.sendMessageAv(packet);
-	}
-
-	private void sleepLongAndProsper(int secs) {
-		try {
-			int ms = secs * 1000;
-			while (ms > 0 && ! hasBeenRequestedToStop()) {
-				//noinspection BusyWait
-				Thread.sleep(100L);
-				ms -= 100;
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
-		}
 	}
 
 	private void checkForCodecChanges(@NonNull MqPacketAv packet) {

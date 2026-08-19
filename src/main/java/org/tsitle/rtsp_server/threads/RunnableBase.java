@@ -53,6 +53,21 @@ public abstract class RunnableBase implements Runnable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	protected void sleepLongAndProsper(@NonNull CancelToken localCancelToken, int secs) throws InterruptedException {
+		try {
+			int ms = secs * 1000;
+			while (ms > 0 && ! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
+				//noinspection BusyWait
+				Thread.sleep(100L);
+				ms -= 100;
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	protected void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}

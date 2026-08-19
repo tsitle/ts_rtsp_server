@@ -132,8 +132,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				if (++retryCount > 10) {
 					retryCount = 10;
 				}
-				//noinspection BusyWait
-				Thread.sleep(1000L * retryCount);
+				sleepLongAndProsper(localCancelToken, retryCount);
 			}
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException caught");
