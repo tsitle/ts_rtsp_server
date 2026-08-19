@@ -60,7 +60,7 @@ public final class ThreadMqE2I extends RunnableBase {
 		}
 	}
 
-	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
+	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
 	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 	private final @NonNull MqElementaryStreamSourceSettings mqSettings;
 	private final @NonNull String mqSslCertPath;
@@ -88,7 +88,7 @@ public final class ThreadMqE2I extends RunnableBase {
 	public ThreadMqE2I(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface,
+				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull MqElementaryStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath
@@ -96,7 +96,7 @@ public final class ThreadMqE2I extends RunnableBase {
 		super(logMsgInterface, cancelToken);
 
 		//
-		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
+		this.codecSettingsChangedInterface = codecSettingsChangedInterface;
 		this.idEsSource.copyFrom(idEsSource);
 		//
 		this.mqSettings = mqSettings.clone();
@@ -207,7 +207,7 @@ public final class ThreadMqE2I extends RunnableBase {
 				case H265 -> checkForCodecMetadata_h265(packet);
 			}
 			if (metadataVars.haveAllMetadataPackets) {
-				codecSettingsChangedFromMqInterface.onCodecMetadataFromMq(idEsSource, metadataVars.metadataHex);
+				codecSettingsChangedInterface.onCodecMetadataFromMq(idEsSource, metadataVars.metadataHex);
 			}
 		}
 
@@ -264,7 +264,7 @@ public final class ThreadMqE2I extends RunnableBase {
 			metadataVars.reset(cacheCodecSettings.codec);
 			//
 			logDebug(FNC_NAME, "have new MQ codec settings: " + cacheCodecSettings);
-			codecSettingsChangedFromMqInterface.onCodecSettingsChangedFromMq(idEsSource, cacheCodecSettings);
+			codecSettingsChangedInterface.onCodecSettingsChangedFromMq(idEsSource, cacheCodecSettings);
 		}
 	}
 
