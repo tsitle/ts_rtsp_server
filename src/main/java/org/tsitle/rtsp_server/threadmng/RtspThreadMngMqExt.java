@@ -23,7 +23,7 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 	private static final String POOL_NAME = "POOLMQEXT";
 
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface;
+	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
 
 	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull ThreadMqE2I> mqThreadMap = new ConcurrentHashMap<>();
 
@@ -32,12 +32,12 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedFromMqInterface
+				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface
 			) {
 		super(logMsgInterface, cancelToken, rtspSrvConfig);
 
 		this.availableStreamsInterface = availableStreamsInterface;
-		this.codecSettingsChangedFromMqInterface = codecSettingsChangedFromMqInterface;
+		this.codecSettingsChangedInterface = codecSettingsChangedInterface;
 
 		//
 		this.pool = new ThreadPoolExecutor(
@@ -95,7 +95,7 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 		ThreadMqE2I threadMqExt = new ThreadMqE2I(
 				logMsgInterface,
 				cancelToken,
-				codecSettingsChangedFromMqInterface,
+				codecSettingsChangedInterface,
 				idEsSource,
 				mqSetts,
 				tmpSslCertPath.orElse("")
