@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketVp8;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
@@ -85,8 +85,8 @@ public final class ThreadRtpSenderVp8<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsVp8FromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsVp8FromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

@@ -14,7 +14,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_dataprov.threads_demux.ThreadDataProvDemux;
+import org.tsitle.lib_dataprov.threads_dmxFc.ThreadDataProvDmxFc;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
@@ -50,7 +50,7 @@ final class RtspChildThreadMng {
 	private final Lock theWriteLockCtfos = theLockCtfos.writeLock();
 	private final Map<@NonNull RtspProtoIdSubStream, @NonNull ChildThreadsForOneStream> childThreadsForOneStreamMap = new HashMap<>();
 
-	public @Nullable ThreadDataProvDemux childThreadDemux = null;
+	public @Nullable ThreadDataProvDmxFc childThreadDmxFc = null;
 
 	/** Input Source ID currently in use */
 	private final @NonNull RtspProtoIdInputSource usedIdInputSource = RtspProtoIdInputSource.ofEmpty();
@@ -209,19 +209,19 @@ final class RtspChildThreadMng {
 					continue;
 				}
 				//
-				if (tmpAvSsi.esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC && childThreadDemux == null) {
-					childThreadDemux = new ThreadDataProvDemux(
+				if (tmpAvSsi.esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC && childThreadDmxFc == null) {
+					childThreadDmxFc = new ThreadDataProvDmxFc(
 							logMsgInterface,
 							tmpAvSsi.inputUri()
 						);
-					childThreadDemux.setName(
+					childThreadDmxFc.setName(
 							"RTP_" +
 							"#sid" + idSession.getIdStr().orElseThrow() +
 							"#c" + tmpAvSsi.codec().getValue() +
-							"-demux"
+							"-dmxFc"
 						);
-					childThreadDemux.setDaemon(false);
-					childThreadDemux.start();
+					childThreadDmxFc.setDaemon(false);
+					childThreadDmxFc.start();
 				}
 				//
 				ChildThreadsForOneStream ctfos = new ChildThreadsForOneStream(
@@ -247,8 +247,8 @@ final class RtspChildThreadMng {
 		}
 		theReadLockCtfos.lock();
 		try {
-			if (! doPause && childThreadDemux != null) {
-				childThreadDemux.stopThread();  // blocks until the thread has actually stopped
+			if (! doPause && childThreadDmxFc != null) {
+				childThreadDmxFc.stopThread();  // blocks until the thread has actually stopped
 			}
 			//
 			for (RtspProtoIdSubStream tmpIdSs : subStreamIds) {
@@ -307,10 +307,10 @@ final class RtspChildThreadMng {
 		}
 		theReadLockCtfos.lock();
 		try {
-			if (childThreadDemux == null) {
+			if (childThreadDmxFc == null) {
 				return false;
 			}
-			return childThreadDemux.seekStream(targetTimestamp);
+			return childThreadDmxFc.seekStream(targetTimestamp);
 		} finally {
 			theReadLockCtfos.unlock();
 		}
@@ -401,8 +401,8 @@ final class RtspChildThreadMng {
 					.comTpClientDestTcpIf(rctcbRtpTcp)
 					.comTpClientDestTcpChannRtp(streamInfo.getSubStreamTpPtr().getClientTcpChannRtpPtr());
 		}
-		if (childThreadDemux != null) {
-			builder.comDemuxReadNextAvPacketInterface(childThreadDemux);
+		if (childThreadDmxFc != null) {
+			builder.comDmxFcReadNextAvPacketInterface(childThreadDmxFc);
 		}
 		return builder
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))

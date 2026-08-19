@@ -7,10 +7,10 @@ import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDmxFc;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDmxFcBase;
 
-public final class ThreadDataProvEsH265FromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<VideoH265Info> {
+public final class ThreadDataProvEsH265FromDmxFc extends ThreadDataProvEsFromDmxFcBase<VideoH265Info> {
 
 	private final @NonNull PacketParserH265 packetParser;
 
@@ -18,7 +18,7 @@ public final class ThreadDataProvEsH265FromDemuxMs extends ThreadDataProvEsFromD
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvEsH265FromDemuxMs(
+	public ThreadDataProvEsH265FromDmxFc(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
 		super(paramsCommon, true, false, false);
@@ -34,7 +34,7 @@ public final class ThreadDataProvEsH265FromDemuxMs extends ThreadDataProvEsFromD
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAvFromDemuxMs(
+		this.frameGrabber = new FrameGrabberAvFromDmxFc(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);

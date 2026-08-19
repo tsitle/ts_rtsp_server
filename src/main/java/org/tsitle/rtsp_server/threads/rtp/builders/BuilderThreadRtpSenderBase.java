@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
-import org.tsitle.lib_dataprov.threads_demux.TdpDemuxReadNextAvPacketInterface;
+import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -73,7 +73,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public BuilderThreadRtpSenderBase<B, T> comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return this; }
 
 	@SuppressWarnings("UnusedReturnValue")
-	public BuilderThreadRtpSenderBase<B, T> comDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface v) { this.threadParamsCommon.setDemuxReadNextAvPacketInterface(v); return this; }
+	public BuilderThreadRtpSenderBase<B, T> comDmxFcReadNextAvPacketInterface(@NonNull TdpDemuxFcReadNextAvPacketInterface v) { this.threadParamsCommon.setDmxFcReadNextAvPacketInterface(v); return this; }
 
 	//
 	public abstract T build();

@@ -9,11 +9,11 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDmxFc;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterface<I>>
+public abstract class ThreadDataProvEsFromDmxFcBase<I extends CodecInfoInterface<I>>
 		extends ThreadDataProvEsBase<I> {
 
 	private @Nullable PacketSplitter<I> packetSplitter = null;
@@ -21,7 +21,7 @@ public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterfa
 	private final boolean needConvertData;
 	private final boolean canReadFrameLenFromAvInfo;
 
-	protected @Nullable AvStreamIncomingFromDemuxMs avStreamIncoming = null;
+	protected @Nullable AvStreamIncomingFromDmxFc avStreamIncoming = null;
 
 	/**
 	 * Constructor.
@@ -30,7 +30,7 @@ public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterfa
 	 * @param needConvertData Do we need the 'Parse and Convert' callback? (if false, then we need 'Parse Only' callback)
 	 * @param canReadFrameLenFromAvInfo Can we read the frame length from the A/V info?
 	 */
-	protected ThreadDataProvEsFromDemuxMsBase(
+	protected ThreadDataProvEsFromDmxFcBase(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				boolean needMagicBytes,
 				boolean needConvertData,
@@ -146,7 +146,7 @@ public abstract class ThreadDataProvEsFromDemuxMsBase<I extends CodecInfoInterfa
 
 	@Override
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
-		this.avStreamIncoming = new AvStreamIncomingFromDemuxMs(
+		this.avStreamIncoming = new AvStreamIncomingFromDmxFc(
 				logMsgInterface,
 				paramsCommon.getIdEsSource(),
 				paramsCommon.getIsVideoThread(),

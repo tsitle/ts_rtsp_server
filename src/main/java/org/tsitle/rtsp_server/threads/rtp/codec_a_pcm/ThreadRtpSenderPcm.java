@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketPcm;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
@@ -105,8 +105,8 @@ public final class ThreadRtpSenderPcm<AVSTRIC extends AvStreamIncomingBase>
 					paramsPcm
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsPcmFromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsPcmFromDmxFc(
 					paramsCommon.copyToThreadDpCommon(),
 					paramsAudioCommon,
 					paramsPcm

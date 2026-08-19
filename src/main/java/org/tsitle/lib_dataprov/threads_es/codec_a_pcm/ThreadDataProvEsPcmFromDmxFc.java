@@ -6,12 +6,12 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
+import org.tsitle.lib_dataprov.avstreams.codec_a_pcm.FrameGrabberAudioPcmFromDmxFc;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDmxFcBase;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
 
-public final class ThreadDataProvEsPcmFromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<AudioPcmInfo> {
+public final class ThreadDataProvEsPcmFromDmxFc extends ThreadDataProvEsFromDmxFcBase<AudioPcmInfo> {
 
 	private final @NonNull ParamsThreadDpAudioCommon paramsAudioCommon;
 	private final @NonNull ParamsThreadDpPcm paramsPcm;
@@ -24,7 +24,7 @@ public final class ThreadDataProvEsPcmFromDemuxMs extends ThreadDataProvEsFromDe
 	 * @param paramsAudioCommon Common Audio thread parameters
 	 * @param paramsPcm Thread-specific parameters
 	 */
-	public ThreadDataProvEsPcmFromDemuxMs(
+	public ThreadDataProvEsPcmFromDmxFc(
 				@NonNull ParamsThreadDpCommon paramsCommon,
 				@NonNull ParamsThreadDpAudioCommon paramsAudioCommon,
 				@NonNull ParamsThreadDpPcm paramsPcm
@@ -52,7 +52,7 @@ public final class ThreadDataProvEsPcmFromDemuxMs extends ThreadDataProvEsFromDe
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAudioPcmFromDemuxMs(
+		this.frameGrabber = new FrameGrabberAudioPcmFromDmxFc(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming,
 				paramsPcm.getAudioChannelCount(),

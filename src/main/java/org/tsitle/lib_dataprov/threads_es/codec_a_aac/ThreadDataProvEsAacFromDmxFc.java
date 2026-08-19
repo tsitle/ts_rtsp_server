@@ -1,28 +1,28 @@
-package org.tsitle.lib_dataprov.threads_es.codec_a_mpeg;
+package org.tsitle.lib_dataprov.threads_es.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDmxFc;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDmxFcBase;
 
-public final class ThreadDataProvEsMpaFromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<AudioMpegInfo> {
+public final class ThreadDataProvEsAacFromDmxFc extends ThreadDataProvEsFromDmxFcBase<AudioAacInfo> {
 
-	private final @NonNull PacketParserMpa packetParser;
+	private final @NonNull PacketParserAac packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvEsMpaFromDemuxMs(
+	public ThreadDataProvEsAacFromDmxFc(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
 		super(paramsCommon, false, false, true);
 
-		this.packetParser = new PacketParserMpa();
+		this.packetParser = new PacketParserAac();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,19 +33,19 @@ public final class ThreadDataProvEsMpaFromDemuxMs extends ThreadDataProvEsFromDe
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAvFromDemuxMs(
+		this.frameGrabber = new FrameGrabberAvFromDmxFc(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull AudioMpegInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull AudioAacInfo parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull AudioMpegInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull AudioAacInfo parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(inputBv);
 	}
 
@@ -55,7 +55,7 @@ public final class ThreadDataProvEsMpaFromDemuxMs extends ThreadDataProvEsFromDe
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull AudioMpegInfo avInfo) {
+	protected int readFrameLenFromAvInfo(final @NonNull AudioAacInfo avInfo) {
 		return avInfo.frameLength;
 	}
 

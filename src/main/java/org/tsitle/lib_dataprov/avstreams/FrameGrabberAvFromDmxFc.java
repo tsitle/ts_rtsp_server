@@ -9,22 +9,22 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-public class FrameGrabberAvFromDemuxMs extends FrameGrabberAvBase {
+public class FrameGrabberAvFromDmxFc extends FrameGrabberAvBase {
 
-	protected @NonNull AvStreamIncomingFromDemuxMs avstricFromDemuxMs;
+	protected @NonNull AvStreamIncomingFromDmxFc avstricFromDmxFc;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
-	 * @param avstricFromDemuxMs Incoming A/V stream
+	 * @param avstricFromDmxFc Incoming A/V stream
 	 */
-	public FrameGrabberAvFromDemuxMs(
+	public FrameGrabberAvFromDmxFc(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromDemuxMs avstricFromDemuxMs
+				@NonNull AvStreamIncomingFromDmxFc avstricFromDmxFc
 			) {
-		super(logMsgInterface, avstricFromDemuxMs);
+		super(logMsgInterface, avstricFromDmxFc);
 
-		this.avstricFromDemuxMs = avstricFromDemuxMs;
+		this.avstricFromDmxFc = avstricFromDmxFc;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -37,13 +37,13 @@ public class FrameGrabberAvFromDemuxMs extends FrameGrabberAvBase {
 
 	@Override
 	public boolean haveEos() {
-		return avstricFromDemuxMs.haveEos();
+		return avstricFromDmxFc.haveEos();
 	}
 
 	@Override
 	public void getNextFrame(@NonNull BufferExt frameBuf, @NonNull TimestampMonotonic stTimestamp)
 			throws InputStreamIoException, InputStreamEosException, InputStreamThreadEndedException {
-		avstricFromDemuxMs.readFrame(frameBuf, stTimestamp);
+		avstricFromDmxFc.readFrame(frameBuf, stTimestamp);
 	}
 
 }

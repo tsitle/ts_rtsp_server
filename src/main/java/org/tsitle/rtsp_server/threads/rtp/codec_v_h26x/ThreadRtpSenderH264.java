@@ -8,7 +8,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketH264;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH264FromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH264FromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH264FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH264FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
@@ -61,8 +61,8 @@ public final class ThreadRtpSenderH264<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsH264FromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsH264FromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

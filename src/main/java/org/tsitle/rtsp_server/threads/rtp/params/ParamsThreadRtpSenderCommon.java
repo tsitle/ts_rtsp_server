@@ -11,7 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
-import org.tsitle.lib_dataprov.threads_demux.TdpDemuxReadNextAvPacketInterface;
+import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 
 import java.net.URI;
 import java.util.Objects;
@@ -114,7 +114,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean isSetAvStreamIncomingUri;
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
-	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
+	private @Nullable TdpDemuxFcReadNextAvPacketInterface dmxFcReadNextAvPacketInterface = null;
 
 	public ParamsThreadRtpSenderCommon() {
 		super(false, true);
@@ -202,9 +202,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetAvStreamIncomingUri = true;
 	}
 
-	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
-	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
-		this.demuxReadNextAvPacketInterface = value;
+	public Optional<TdpDemuxFcReadNextAvPacketInterface> getDmxFcReadNextAvPacketInterface() { return Optional.ofNullable(dmxFcReadNextAvPacketInterface); }
+	public void setDmxFcReadNextAvPacketInterface(@NonNull TdpDemuxFcReadNextAvPacketInterface value) {
+		this.dmxFcReadNextAvPacketInterface = value;
 		// only required when actually demuxing
 	}
 
@@ -242,8 +242,8 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		resObj.setIsVideoThread(getIsVideoThread());
 		resObj.setIdEsSource(getIdEsSource());
 		resObj.setAvStreamIncomingUri(getAvStreamIncomingUri().orElseThrow());
-		if (getDemuxReadNextAvPacketInterface().isPresent()) {
-			resObj.setDemuxReadNextAvPacketInterface(getDemuxReadNextAvPacketInterface().orElseThrow());
+		if (getDmxFcReadNextAvPacketInterface().isPresent()) {
+			resObj.setDemuxReadNextAvPacketInterface(getDmxFcReadNextAvPacketInterface().orElseThrow());
 		}
 		return resObj;
 	}

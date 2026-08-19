@@ -1,4 +1,4 @@
-package org.tsitle.lib_dataprov.threads_demux;
+package org.tsitle.lib_dataprov.threads_dmxFc;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.*;
 
-public final class ThreadDataProvDemux extends ThreadDpBase implements TdpDemuxReadNextAvPacketInterface {
+public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxFcReadNextAvPacketInterface {
 
 	private static final int CACHE_SIZE_DEFAULT = 10;
 	private static final int CACHE_SIZE_MAX = 500;
@@ -53,7 +53,7 @@ public final class ThreadDataProvDemux extends ThreadDpBase implements TdpDemuxR
 		}
 	}
 
-	private final @NonNull URI inputSourceDemuxMsUri;
+	private final @NonNull URI inputSourceDmxFcUri;
 	private final boolean isFromFile;
 
 	private @Nullable FfmpegDemuxer ffDemuxerPtr = null;
@@ -74,27 +74,27 @@ public final class ThreadDataProvDemux extends ThreadDpBase implements TdpDemuxR
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param inputSourceDemuxMsUri URI of the Input Source
+	 * @param inputSourceDmxFcUri URI of the Input Source
 	 */
-	public ThreadDataProvDemux(@NonNull LogMsgInterface logMsgInterface, @NonNull URI inputSourceDemuxMsUri) {
+	public ThreadDataProvDmxFc(@NonNull LogMsgInterface logMsgInterface, @NonNull URI inputSourceDmxFcUri) {
 		super(logMsgInterface);
 
 		//
-		if (inputSourceDemuxMsUri.toString().isBlank()) {
+		if (inputSourceDmxFcUri.toString().isBlank()) {
 			throw new IllegalArgumentException("Input URI must not be blank");
 		}
-		this.inputSourceDemuxMsUri = URI.create(inputSourceDemuxMsUri.toString());
-		if (this.inputSourceDemuxMsUri.getScheme() == null) {
+		this.inputSourceDmxFcUri = URI.create(inputSourceDmxFcUri.toString());
+		if (this.inputSourceDmxFcUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI must have a protocol");
 		}
-		if (this.inputSourceDemuxMsUri.getPath() == null) {
+		if (this.inputSourceDmxFcUri.getPath() == null) {
 			throw new IllegalArgumentException("Input URI must have a path");
 		}
 
 		//
-		this.isFromFile = "file".equals(inputSourceDemuxMsUri.getScheme());
+		this.isFromFile = "file".equals(inputSourceDmxFcUri.getScheme());
 		if (! (isFromFile ||
-				"http".equals(inputSourceDemuxMsUri.getScheme()) || "https".equals(inputSourceDemuxMsUri.getScheme()))) {
+				"http".equals(inputSourceDmxFcUri.getScheme()) || "https".equals(inputSourceDmxFcUri.getScheme()))) {
 			throw new IllegalArgumentException("Input URI scheme must be 'file|http|https'");
 		}
 
@@ -116,7 +116,7 @@ public final class ThreadDataProvDemux extends ThreadDpBase implements TdpDemuxR
 		logDebug(FNC_NAME, "Thread started");
 
 		//
-		String inputFilePath = inputSourceDemuxMsUri.toString()
+		String inputFilePath = inputSourceDmxFcUri.toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
 

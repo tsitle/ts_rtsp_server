@@ -2,7 +2,7 @@ package org.tsitle.lib_dataprov.threadparams;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_dataprov.threads_demux.TdpDemuxReadNextAvPacketInterface;
+import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
@@ -28,7 +28,7 @@ public final class ParamsThreadDpCommon implements Cloneable {
 	private boolean isSetAvStreamIncomingUri;
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
-	private @Nullable TdpDemuxReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
+	private @Nullable TdpDemuxFcReadNextAvPacketInterface demuxReadNextAvPacketInterface = null;
 
 	public ParamsThreadDpCommon() { }
 
@@ -60,8 +60,8 @@ public final class ParamsThreadDpCommon implements Cloneable {
 		this.isSetAvStreamIncomingUri = true;
 	}
 
-	public Optional<TdpDemuxReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
-	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxReadNextAvPacketInterface value) {
+	public Optional<TdpDemuxFcReadNextAvPacketInterface> getDemuxReadNextAvPacketInterface() { return Optional.ofNullable(demuxReadNextAvPacketInterface); }
+	public void setDemuxReadNextAvPacketInterface(@NonNull TdpDemuxFcReadNextAvPacketInterface value) {
 		this.demuxReadNextAvPacketInterface = value;
 		// only required when actually demuxing
 	}

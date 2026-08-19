@@ -3,13 +3,13 @@ package org.tsitle.rtsp_server.threads.rtp.codec_a_mpeg;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDmxFc;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromMq;
 import org.tsitle.lib_dataprov.threads_es.codec_a_mpeg.ThreadDataProvEsMpaFromRawFile;
 import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
@@ -87,8 +87,8 @@ public final class ThreadRtpSenderMpa<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsMpaFromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsMpaFromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

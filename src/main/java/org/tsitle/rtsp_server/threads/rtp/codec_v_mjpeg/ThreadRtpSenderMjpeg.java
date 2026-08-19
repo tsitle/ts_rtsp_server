@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
@@ -83,8 +83,8 @@ public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsMjpegFromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsMjpegFromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

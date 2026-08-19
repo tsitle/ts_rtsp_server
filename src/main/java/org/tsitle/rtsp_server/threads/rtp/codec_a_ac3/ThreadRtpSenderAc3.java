@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketAc3;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_ac3.ThreadDataProvEsAc3FromMq;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
@@ -80,8 +80,8 @@ public final class ThreadRtpSenderAc3<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsAc3FromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsAc3FromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

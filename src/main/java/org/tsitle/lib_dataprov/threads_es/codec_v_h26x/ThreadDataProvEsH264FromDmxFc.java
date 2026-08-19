@@ -1,28 +1,29 @@
-package org.tsitle.lib_dataprov.threads_es.codec_v_vpx;
+package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_vpx.VideoVp8Info;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
-import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDemuxMsBase;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDmxFc;
+import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromDmxFcBase;
 
-public final class ThreadDataProvEsVp8FromDemuxMs extends ThreadDataProvEsFromDemuxMsBase<VideoVp8Info> {
+public final class ThreadDataProvEsH264FromDmxFc extends ThreadDataProvEsFromDmxFcBase<VideoH264Info> {
 
-	private final @NonNull PacketParserVp8 packetParser;
+	private final @NonNull PacketParserH264 packetParser;
 
 	/**
 	 * Constructor.
 	 * @param paramsCommon Common parameters for RTP sender threads
 	 */
-	public ThreadDataProvEsVp8FromDemuxMs(
+	public ThreadDataProvEsH264FromDmxFc(
 				@NonNull ParamsThreadDpCommon paramsCommon
 			) {
-		super(paramsCommon, false, false, false);
+		super(paramsCommon, true, false, false);
 
-		this.packetParser = new PacketParserVp8();
+		this.packetParser = new PacketParserH264();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -33,29 +34,29 @@ public final class ThreadDataProvEsVp8FromDemuxMs extends ThreadDataProvEsFromDe
 		if (avStreamIncoming == null) {
 			throw new IllegalStateException("avStreamIncoming is null");
 		}
-		this.frameGrabber = new FrameGrabberAvFromDemuxMs(
+		this.frameGrabber = new FrameGrabberAvFromDmxFc(
 				paramsCommon.getLogMsgInterface().orElseThrow(),
 				avStreamIncoming
 			);
 	}
 
 	@Override
-	protected @NonNull VideoVp8Info parseAndConvertData(@NonNull BufferExt ioBuf) {
+	protected @NonNull VideoH264Info parseAndConvertData(@NonNull BufferExt ioBuf) {
 		throw new RuntimeException(getClass().getSimpleName() + ".parseAndConvertData(): not implemented");
 	}
 
 	@Override
-	protected @NonNull VideoVp8Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
+	protected @NonNull VideoH264Info parseData(@NonNull BufferView inputBv) throws AvInvalidCodecDataException {
 		return packetParser.parseData(debugStreamOffset, inputBv);
 	}
 
 	@Override
 	protected int findNextMagicBytes(final @NonNull BufferView inputBv) {
-		throw new RuntimeException(getClass().getSimpleName() + ".findNextMagicBytes(): not implemented");
+		return MagicBytesH26xHelper.findH26xNextNalUnit(inputBv);
 	}
 
 	@Override
-	protected int readFrameLenFromAvInfo(final @NonNull VideoVp8Info avInfo) {
+	protected int readFrameLenFromAvInfo(final @NonNull VideoH264Info avInfo) {
 		throw new RuntimeException(getClass().getSimpleName() + ".readFrameLenFromAvInfo(): not implemented");
 	}
 

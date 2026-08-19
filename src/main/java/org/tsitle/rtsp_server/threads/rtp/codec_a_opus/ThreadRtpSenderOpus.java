@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketOpus;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromDemuxMs;
+import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_a_opus.ThreadDataProvEsOpusFromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
@@ -90,8 +90,8 @@ public final class ThreadRtpSenderOpus<AVSTRIC extends AvStreamIncomingBase>
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}
-		if (avStreamIncomingType == AvStreamIncomingFromDemuxMs.class) {
-			return new ThreadDataProvEsOpusFromDemuxMs(
+		if (avStreamIncomingType == AvStreamIncomingFromDmxFc.class) {
+			return new ThreadDataProvEsOpusFromDmxFc(
 					paramsCommon.copyToThreadDpCommon()
 				);
 		}

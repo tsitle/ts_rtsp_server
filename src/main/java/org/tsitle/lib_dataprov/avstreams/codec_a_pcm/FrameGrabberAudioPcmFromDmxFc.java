@@ -7,12 +7,12 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
-import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDmxFc;
+import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromDmxFc;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDemuxMs {
+public final class FrameGrabberAudioPcmFromDmxFc extends FrameGrabberAvFromDmxFc {
 
 	private final int channels;
 	private final int bitsPerSample;
@@ -31,9 +31,9 @@ public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDem
 	 * @param rtpSamplesPerFrame Samples per frame as required for RTP
 	 * @param isBigEndian Is the input data big-endian?
 	 */
-	public FrameGrabberAudioPcmFromDemuxMs(
+	public FrameGrabberAudioPcmFromDmxFc(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull AvStreamIncomingFromDemuxMs avStreamIncoming,
+				@NonNull AvStreamIncomingFromDmxFc avStreamIncoming,
 				int channels,
 				int bitsPerSample,
 				int rtpSamplesPerFrame,
@@ -78,7 +78,7 @@ public final class FrameGrabberAudioPcmFromDemuxMs extends FrameGrabberAvFromDem
 		}
 
 		//
-		avstricFromDemuxMs.readFrame(cachedDataFromAsi, stTimestamp);
+		avstricFromDmxFc.readFrame(cachedDataFromAsi, stTimestamp);
 		if (rtpSamplesPerFrame < 1) {
 			pcmFrameHandler.updateParamFrameSize(cachedDataFromAsi.getUsed());
 			rtpSamplesPerFrame = pcmFrameHandler.getSamplesPerFrame();

@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.rtp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
-import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDemuxMs;
+import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDmxFc;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
@@ -14,7 +14,7 @@ final class BuilderThreadRtpSenderHelper {
 	static Class<? extends AvStreamIncomingBase> getAvStreamIncomingType(@NonNull RtspProtoEsSourceType esSourceType) {
 		return switch (esSourceType) {
 				case ST_ES_RAW_FILE -> AvStreamIncomingFromEsRawFile.class;
-				case ST_DMX_VIRTUAL_ES_FC -> AvStreamIncomingFromDemuxMs.class;
+				case ST_DMX_VIRTUAL_ES_FC -> AvStreamIncomingFromDmxFc.class;
 				default -> AvStreamIncomingFromEsMq.class;
 			};
 	}

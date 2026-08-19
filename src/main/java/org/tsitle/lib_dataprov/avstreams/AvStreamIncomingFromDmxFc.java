@@ -9,14 +9,14 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
-import org.tsitle.lib_dataprov.threads_demux.TdpDemuxReadNextAvPacketInterface;
+import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 
 import java.util.Optional;
 
-public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
+public final class AvStreamIncomingFromDmxFc extends AvStreamIncomingBase {
 
 	private final boolean isVideo;
-	private final @NonNull TdpDemuxReadNextAvPacketInterface readNextAvPacketInterface;
+	private final @NonNull TdpDemuxFcReadNextAvPacketInterface readNextAvPacketInterface;
 
 	/**
 	 * Constructor.
@@ -26,11 +26,11 @@ public final class AvStreamIncomingFromDemuxMs extends AvStreamIncomingBase {
 	 * @param readNextAvPacketInterface 'Demuxer: Read next A/V packet' instance
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
-	public AvStreamIncomingFromDemuxMs(
+	public AvStreamIncomingFromDmxFc(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				boolean isVideo,
-				@NonNull TdpDemuxReadNextAvPacketInterface readNextAvPacketInterface
+				@NonNull TdpDemuxFcReadNextAvPacketInterface readNextAvPacketInterface
 			) throws AvCannotOpenInputException {
 		super(logMsgInterface, idEsSource);
 
