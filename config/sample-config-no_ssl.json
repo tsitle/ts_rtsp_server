@@ -5,7 +5,8 @@
 		"dataDir": "data",
 		"threadsMaximumPlay": 20,
 		"threadsMaximumTci": 20,
-		"threadsMaximumMq": 20
+		"threadsMaximumMq": 20,
+		"threadsMaximumDmxRtsp": 20
 	},
 
 	"logging": {

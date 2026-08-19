@@ -8,7 +8,8 @@
 		"sslCa": "rtsps_ssl_keys/YOUR_HOSTNAME-ca.crt",
 		"threadsMaximumPlay": 20,
 		"threadsMaximumTci": 20,
-		"threadsMaximumMq": 20
+		"threadsMaximumMq": 20,
+		"threadsMaximumDmxRtsp": 20
 	},
 
 	"logging": {
