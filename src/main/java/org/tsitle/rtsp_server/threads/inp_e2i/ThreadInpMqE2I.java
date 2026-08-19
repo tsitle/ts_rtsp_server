@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.mq_e2i;
+package org.tsitle.rtsp_server.threads.inp_e2i;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -17,6 +17,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromMqInterface;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 
@@ -24,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public final class ThreadMqE2I extends RunnableBase {
+public final class ThreadInpMqE2I extends RunnableBase {
 
 	private static class MetadataVars {
 		boolean haveAllMetadataPackets = false;
@@ -85,7 +86,7 @@ public final class ThreadMqE2I extends RunnableBase {
 	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
 	 */
-	public ThreadMqE2I(
+	public ThreadInpMqE2I(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface,

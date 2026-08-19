@@ -14,7 +14,7 @@ final class BuilderThreadRtpSenderHelper {
 	static Class<? extends AvStreamIncomingBase> getAvStreamIncomingType(@NonNull RtspProtoEsSourceType esSourceType) {
 		return switch (esSourceType) {
 				case ST_ES_RAW_FILE -> AvStreamIncomingFromEsRawFile.class;
-				case ST_DEMUX_MS_FILE, ST_DEMUX_MS_RTSP -> AvStreamIncomingFromDemuxMs.class;
+				case ST_DMX_VIRTUAL_ES_FC -> AvStreamIncomingFromDemuxMs.class;
 				default -> AvStreamIncomingFromEsMq.class;
 			};
 	}

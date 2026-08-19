@@ -10,24 +10,24 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.threads.CancelToken;
-import org.tsitle.rtsp_server.threads.mq_e2i.CodecSettingsChangedFromMqInterface;
-import org.tsitle.rtsp_server.threads.mq_e2i.ThreadMqE2I;
+import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromMqInterface;
+import org.tsitle.rtsp_server.threads.inp_e2i.ThreadInpMqE2I;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
 
-public final class RtspThreadMngMqExt extends RtspThreadMngBase {
+public final class RtspThreadMngInpMqExt extends RtspThreadMngBase {
 
 	private static final String POOL_NAME = "POOLMQEXT";
 
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
 
-	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull ThreadMqE2I> mqThreadMap = new ConcurrentHashMap<>();
+	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull ThreadInpMqE2I> mqThreadMap = new ConcurrentHashMap<>();
 
-	public RtspThreadMngMqExt(
+	public RtspThreadMngInpMqExt(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
@@ -92,7 +92,7 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 				mqSetts.getRscGroup() + ":" + mqSetts.getRscChannel() + "'");
 
 		//
-		ThreadMqE2I threadMqExt = new ThreadMqE2I(
+		ThreadInpMqE2I threadMqExt = new ThreadInpMqE2I(
 				logMsgInterface,
 				cancelToken,
 				codecSettingsChangedInterface,
@@ -127,8 +127,8 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 	public void doHousekeeping() {
 		final String FNC_NAME = getClass().getSimpleName() + ".doHousekeeping()";
 
-		for (Map.Entry<RtspProtoIdEsSource, ThreadMqE2I> entry : mqThreadMap.entrySet()) {
-			ThreadMqE2I threadMqExt = entry.getValue();
+		for (Map.Entry<RtspProtoIdEsSource, ThreadInpMqE2I> entry : mqThreadMap.entrySet()) {
+			ThreadInpMqE2I threadMqExt = entry.getValue();
 			if (threadMqExt.isRunning()) {
 				continue;
 			}
@@ -141,7 +141,7 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 		if (! mqThreadMap.containsKey(idEsSource)) {
 			return;
 		}
-		ThreadMqE2I threadMqExt = mqThreadMap.get(idEsSource);
+		ThreadInpMqE2I threadMqExt = mqThreadMap.get(idEsSource);
 		if (threadMqExt != null) {
 			threadMqExt.stopThread();
 			mqThreadMap.remove(idEsSource);
@@ -167,7 +167,7 @@ public final class RtspThreadMngMqExt extends RtspThreadMngBase {
 
 	private int countActiveThreads() {
 		int resI = 0;
-		for (ThreadMqE2I entryT : mqThreadMap.values()) {
+		for (ThreadInpMqE2I entryT : mqThreadMap.values()) {
 			if (entryT.isRunning()) {
 				++resI;
 			}

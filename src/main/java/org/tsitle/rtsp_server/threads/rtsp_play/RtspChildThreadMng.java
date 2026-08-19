@@ -209,7 +209,7 @@ final class RtspChildThreadMng {
 					continue;
 				}
 				//
-				if (tmpAvSsi.esSourceType().isDemuxed() && childThreadDemux == null) {
+				if (tmpAvSsi.esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC && childThreadDemux == null) {
 					childThreadDemux = new ThreadDataProvDemux(
 							logMsgInterface,
 							tmpAvSsi.inputUri()

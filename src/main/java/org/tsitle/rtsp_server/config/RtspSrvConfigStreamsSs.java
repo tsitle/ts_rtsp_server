@@ -71,9 +71,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		final String errMsgUri = buildMsSourceUriForErrorMsgs(msSourceUri);
 
 		RtspSrvConfigStreamsSs resObj = new RtspSrvConfigStreamsSs(true);
-		if (esSourceType == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
+		if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC) {
 			resObj.fileContainer = RtspSrvConfigStreamInputMuxFc.of(msSourceUri.getPath());
-		} else if (esSourceType == RtspProtoEsSourceType.ST_DEMUX_MS_RTSP) {
+		} else if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ) {
 			resObj.rtsp = RtspSrvConfigStreamInputMuxRtsp.of(msSourceUri.toString());
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type " + esSourceType + " " +

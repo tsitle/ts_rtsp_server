@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.mq_e2i;
+package org.tsitle.rtsp_server.availstreams;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;

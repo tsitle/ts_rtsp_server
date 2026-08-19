@@ -307,7 +307,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		try {
 			final RtspProtoEsSourceExpandedInfo esInfo =
 					availableStreamsInterface.getElementaryStreamSourceExpInfo(esObj.getIdEsSource());
-			if (esInfo.esSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
+			if (esInfo.esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC) {
 				return esInfo.durationSecs();
 			}
 		} catch (RtspProtoIdEsSourceNotFoundException e) {

@@ -53,10 +53,13 @@ final class StreamsCfgVirtualEsMapper {
 		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extRealSsId + "'";
 
 		final URI internalUri;
+		final RtspProtoEsSourceType virtualEsSourceType;
 		if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
 			internalUri = ssCfgObj.getSsSourceMuxFc().orElseThrow().getInputUri();
+			virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC;
 		} else if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_RTSP) {
 			internalUri = ssCfgObj.getSsSourceMuxRtsp().orElseThrow().getInputUri();
+			virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ;
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": Unsupported ES source type '" + ssCfgObj.getEsSourceType() + "' " +
 					errMsgSuffix);
@@ -65,7 +68,7 @@ final class StreamsCfgVirtualEsMapper {
 		final String errMsgUri = RtspSrvConfigStreamsSs.buildMsSourceUriForErrorMsgs(internalUri);
 
 		//
-		vem.readSubStreamInfos(internalUri, errMsgSuffix);
+		vem.readDmxSubStreamInfos(internalUri, errMsgSuffix);
 
 		//
 		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtualInternalIdToCfgObj = new HashMap<>();
@@ -76,7 +79,7 @@ final class StreamsCfgVirtualEsMapper {
 		FfmpegDmxSubStreamInfoVideo tmpFfSsInfoVid = vem.ffSubStreamInfoVideo;
 		if (tmpFfSsInfoVid.ffmpegCodec.isVideo()) {
 			RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
-					ssCfgObj.getEsSourceType(),
+					virtualEsSourceType,
 					internalUri
 				);
 			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, true);
@@ -94,7 +97,7 @@ final class StreamsCfgVirtualEsMapper {
 			RtspProtoEsSourceExpandedInfo eseiVideo = createEsei_video(
 					tmpFfSsInfoVid.subStreamIx,
 					videoCodec,
-					ssCfgObj.getEsSourceType(),
+					virtualEsSourceType,
 					internalUri,
 					tmpFfSsInfoVid.durationSecs,
 					videoFps,
@@ -107,7 +110,7 @@ final class StreamsCfgVirtualEsMapper {
 		FfmpegDmxSubStreamInfoAudio tmpFfSsInfoAud = vem.ffSubStreamInfoAudio;
 		if (tmpFfSsInfoAud.ffmpegCodec.isAudio()) {
 			RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
-					ssCfgObj.getEsSourceType(),
+					virtualEsSourceType,
 					internalUri
 				);
 			String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, false);
@@ -145,7 +148,7 @@ final class StreamsCfgVirtualEsMapper {
 			RtspProtoEsSourceExpandedInfo eseiAudio = createEsei_audio(
 					tmpFfSsInfoAud.subStreamIx,
 					audioCodec,
-					ssCfgObj.getEsSourceType(),
+					virtualEsSourceType,
 					internalUri,
 					tmpFfSsInfoAud.durationSecs,
 					(byte)tmpFfSsInfoAud.channelCount,
@@ -164,7 +167,7 @@ final class StreamsCfgVirtualEsMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readSubStreamInfos(@NonNull URI internalUri, @NonNull String errMsgSuffix) throws ConfigInvalidException {
+	private void readDmxSubStreamInfos(@NonNull URI internalUri, @NonNull String errMsgSuffix) throws ConfigInvalidException {
 		final String realUri = internalUri.toString()
 				.replace("http://", "rtsp://")
 				.replace("https://", "rtsps://");
@@ -201,7 +204,7 @@ final class StreamsCfgVirtualEsMapper {
 			}
 			if (ffSubStreamInfoVideo.fps.toDouble() > 120.0) {
 				/*
-				 * FFmpeg sometimes reports the Time Base as the Frame Rate for RTSP streams.
+				 * FFmpeg reports the Time Base as the Frame Rate for RTSP streams if the SDP doesn't define the actual FPS.
 				 * Then the FPS is 90000. So we set it to a safe 30.
 				 */
 				ffSubStreamInfoVideo.fps.copyFrom(RationalNumber.ofFps(30.0));

@@ -21,6 +21,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	static final int RTSP_THREADS_PLAY_DEFAULT = 20;  // one thread per client session
 	static final int RTSP_THREADS_TCI_DEFAULT = 20;  // one thread per client connection
 	static final int MQ_THREADS_EXT_DEFAULT = 20;  // one thread per external MQ
+	static final int DMX_RTSP_THREADS_DEFAULT = 20;  // one thread per RTSP input source
 
 	static final int SERVER_USERNAME_LENGTH_MAX = 64;
 	static final int SERVER_USERPASS_LENGTH_MIN = 8;
@@ -54,6 +55,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Maxmimum number of threads for Message Queues */
 		@Expose
 		private final int threadsMaximumMq;
+		/** Maxmimum number of threads for Demux RTSP */
+		@Expose
+		private final int threadsMaximumDmxRtsp;
 
 		public SectionServer() {
 			this.tcpPortRtsp = RtspServerConstants.SERVER_RTSP_TCP_PORT;
@@ -65,6 +69,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.threadsMaximumPlay = RTSP_THREADS_PLAY_DEFAULT;
 			this.threadsMaximumTci = RTSP_THREADS_TCI_DEFAULT;
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
+			this.threadsMaximumDmxRtsp = DMX_RTSP_THREADS_DEFAULT;
 		}
 	}
 
@@ -252,6 +257,10 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
 	public int getThreadsMaximumMq() {
 		return server.threadsMaximumMq;
+	}
+
+	public int getThreadsMaximumDmxRtsp() {
+		return server.threadsMaximumDmxRtsp;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -564,6 +573,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		}
 		if (server.threadsMaximumMq < 1) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumMq': " + server.threadsMaximumMq);
+		}
+		if (server.threadsMaximumDmxRtsp < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumDmxRtsp': " + server.threadsMaximumDmxRtsp);
 		}
 	}
 

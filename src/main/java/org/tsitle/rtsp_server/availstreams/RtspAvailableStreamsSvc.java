@@ -12,7 +12,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
-import org.tsitle.rtsp_server.threads.mq_e2i.CodecSettingsChangedFromMqInterface;
 
 import java.net.URI;
 import java.util.*;
@@ -21,7 +20,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, CodecSettingsChangedFromMqInterface {
+public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, CodecSettingsChangedFromMqInterface,
+		CodecSettingsChangedFromDmxRtspInterface {
 
 	private static class AsData {
 		final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
@@ -228,6 +228,38 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		} finally {
 			theWriteLock.unlock();
 		}
+	}
+
+	public @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxRtspInputSources() {
+		theReadLock.lock();
+		try {
+			Set<RtspProtoIdInputSource> resSet = new HashSet<>();
+			for (RtspProtoInputSource tmpIsObj : asDataCurrent.inputSourceMap.values()) {
+				if (! tmpIsObj.getEnabled()) {
+					continue;
+				}
+				for (RtspProtoIdEsSource tmpIdEs : tmpIsObj.getEsSourceIds()) {
+					if (asDataCurrent.eseiMap.containsKey(tmpIdEs) &&
+							asDataCurrent.eseiMap.get(tmpIdEs).esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ) {
+						resSet.add(tmpIsObj.getIdInputSource());
+						break;
+					}
+				}
+			}
+			return resSet;
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	@Override
+	public void onCodecSettingsChangedFromDmxRtsp(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+		onCodecSettingsChangedFromMq(idEsSource, codecSettings);
+	}
+
+	@Override
+	public void onCodecMetadataFromDmxRtsp(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+		onCodecMetadataFromMq(idEsSource, metadataHex);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
