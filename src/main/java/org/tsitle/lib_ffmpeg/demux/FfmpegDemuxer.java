@@ -310,6 +310,26 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	}
 
 	@SuppressWarnings("unused")
+	public Optional<FfmpegDmxSubStreamInfoVideo> getFfAvSubStreamInfoVideo() {
+		if (inputSsInfoVid.subStreamIx < 0) {
+			return Optional.empty();
+		}
+		FfmpegDmxSubStreamInfoVideo resObj = new FfmpegDmxSubStreamInfoVideo();
+		resObj.copyFrom(inputSsInfoVid);
+		return Optional.of(resObj);
+	}
+
+	@SuppressWarnings("unused")
+	public Optional<FfmpegDmxSubStreamInfoAudio> getFfAvSubStreamInfoAudio() {
+		if (inputSsInfoAud.subStreamIx < 0) {
+			return Optional.empty();
+		}
+		FfmpegDmxSubStreamInfoAudio resObj = new FfmpegDmxSubStreamInfoAudio();
+		resObj.copyFrom(inputSsInfoAud);
+		return Optional.of(resObj);
+	}
+
+	@SuppressWarnings("unused")
 	public Optional<Double> getDurationSecs() {
 		double resD = (inputSsInfoVid.subStreamIx >= 0 ? inputSsInfoVid.durationSecs : -1.0);
 		resD = (resD < 0.001 && inputSsInfoAud.subStreamIx >= 0 ? inputSsInfoAud.durationSecs : resD);
