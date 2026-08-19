@@ -1,6 +1,7 @@
 package org.tsitle.lib_ffmpeg.helpers;
 
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avutil;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegAvPktBasics;
@@ -35,11 +36,13 @@ public final class FfmpegHelperPktConverter {
 		// other
 		outputPktBas.flags = inputPktAv.flags();
 		outputPktBas.isVideo = isVideo;
+		outputPktBas.isVidKeyFrame = (isVideo && (outputPktBas.flags & avcodec.AV_PKT_FLAG_KEY) != 0);
 		outputPktBas.subStreamIndex = inputPktAv.stream_index();
 		outputPktBas.duration = inputPktAv.duration();
 		outputPktBas.pos = inputPktAv.pos();
 	}
 
+	@SuppressWarnings("unused")
 	public static void convertBasicsToFf(
 				@NonNull FfmpegAvPktBasics inputPktBas,
 				@NonNull BufferView inputPktPayloadBv,

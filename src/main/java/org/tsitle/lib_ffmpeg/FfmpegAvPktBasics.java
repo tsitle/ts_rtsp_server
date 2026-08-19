@@ -13,6 +13,7 @@ public final class FfmpegAvPktBasics {
 	public final @NonNull RationalNumber timeBase = RationalNumber.ofEmpty();
 	public int flags;
 	public boolean isVideo;
+	public boolean isVidKeyFrame;
 	public int subStreamIndex;
 	public long duration;
 	public long pos;
@@ -28,6 +29,7 @@ public final class FfmpegAvPktBasics {
 		timeBase.copyFrom(RationalNumber.ofEmpty());
 		flags = 0;
 		isVideo = false;
+		isVidKeyFrame = false;
 		subStreamIndex = -1;
 		duration = 0;
 		pos = -1L;
@@ -57,6 +59,7 @@ public final class FfmpegAvPktBasics {
 		timeBase.copyFrom(other.timeBase);
 		flags = other.flags;
 		isVideo = other.isVideo;
+		isVidKeyFrame = other.isVidKeyFrame;
 		subStreamIndex = other.subStreamIndex;
 		duration = other.duration;
 		pos = other.pos;
@@ -71,6 +74,7 @@ public final class FfmpegAvPktBasics {
 				", timeBase=" + timeBase +
 				", flags=" + flags +
 				", isVideo=" + (isVideo ? "T" : "F") +
+				", isVidKeyFrame=" + (isVidKeyFrame ? "T" : "F") +
 				", subStreamIndex=" + subStreamIndex +
 				", duration=" + duration +
 				", pos=" + pos +
