@@ -337,7 +337,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		 * FFmpeg will read an embedded JPEG file as a MJPEG video stream, for instance.
 		 */
 		String tmpInputLc = inputPathOrUri.toLowerCase();
-		return (
+		return (  // @CODEC
 				tmpInputLc.endsWith(".aac") ||
 				tmpInputLc.endsWith(".ac3") ||
 				tmpInputLc.endsWith(".eac3") ||
