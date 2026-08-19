@@ -42,8 +42,8 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 		if (inputUri.getScheme() == null) {
 			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
 		}
-		if (! inputUri.getScheme().equals("https")) {
-			throw new IllegalArgumentException("Input URI scheme must be 'https'");
+		if (! (inputUri.getScheme().equals("http") || inputUri.getScheme().equals("https"))) {
+			throw new IllegalArgumentException("Input URI scheme must be 'http' or 'https'");
 		}
 
 		//
