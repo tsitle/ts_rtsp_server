@@ -10,11 +10,6 @@ public final class RtspProtoLowMsgConstants {
 
 	public static final String CRLF = "\r\n";
 
-	/** RTSP URL Protocol */
-	public static final String RTSP_URL_PROTOCOL = "rtsp";
-	/** RTSPS URL Protocol */
-	public static final String RTSPS_URL_PROTOCOL = "rtsps";
-
 	/** Maximum length for RTSP Resource URLs */
 	public static final int RTSP_MAX_RESOURCE_URL_LENGTH = 512;
 
