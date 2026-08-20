@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -267,7 +268,7 @@ public final class ProUri implements Cloneable {
 		}
 
 		tmpOptStr = getHost();
-		tmpOptStr.ifPresent(sb::append);
+		tmpOptStr.ifPresent(s -> sb.append(s.toLowerCase()));
 
 		Optional<Integer> tmpOptInt = getPortIfPresent();
 		tmpOptInt.ifPresent(s -> sb.append(":").append(s));
@@ -291,6 +292,21 @@ public final class ProUri implements Cloneable {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof ProUri other)) {
+			return false;
+		}
+		String otherStr = other.getUriString().orElse("-empty-");
+		String thisStr = getUriString().orElse("-empty-");
+		return thisStr.equals(otherStr);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getUriString().orElse("-empty-"));
+	}
 
 	@Override
 	public @NonNull ProUri clone() {
