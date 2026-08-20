@@ -16,11 +16,11 @@ public final class ProUri implements Cloneable {
 		NONE, FILE, HTTP, HTTPS, RTSP, RTSPS
 	}
 
-	public static final String SCHEME_FILE = "file";
-	public static final String SCHEME_HTTP = "http";
-	public static final String SCHEME_HTTPS = "https";
-	public static final String SCHEME_RTSP = "rtsp";
-	public static final String SCHEME_RTSPS = "rtsps";
+	private static final String SCHEME_FILE = "file";
+	private static final String SCHEME_HTTP = "http";
+	private static final String SCHEME_HTTPS = "https";
+	private static final String SCHEME_RTSP = "rtsp";
+	private static final String SCHEME_RTSPS = "rtsps";
 
 	/** Default TCP port for an HTTP server (without SSL/TLS) */
 	public static final int HTTP_TCP_PORT_DEFAULT = 80;
@@ -250,11 +250,11 @@ public final class ProUri implements Cloneable {
 		StringBuilder sb = new StringBuilder();
 
 		String tmpSch = switch (mScheme) {
-				case FILE -> "file";
-				case HTTP -> "http";
-				case HTTPS -> "https";
-				case RTSP -> "rtsp";
-				case RTSPS -> "rtsps";
+				case FILE -> SCHEME_FILE;
+				case HTTP -> SCHEME_HTTP;
+				case HTTPS -> SCHEME_HTTPS;
+				case RTSP -> SCHEME_RTSP;
+				case RTSPS -> SCHEME_RTSPS;
 				default -> "-none-";
 			};
 		sb.append(tmpSch).append("://");
