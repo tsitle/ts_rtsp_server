@@ -26,6 +26,7 @@ import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromDmxRtspInterf
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -191,6 +192,14 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		if (! readNextAvPktFromDemuxer()) {
 			return false;
 		}
+		//
+		if (! haveInputSi.get()) {
+			initCodecInfo();
+
+			//
+			tsEpochStart.copyFrom(TimestampEpoch.ofNow());
+		}
+		//
 		if (ffPktCacheEntry.ffPktObj.isVideo && mqInternalPubVid != null) {
 			sendAvPktToMq(mqInternalPubVid, dataPerMqVid);
 		} else if (! ffPktCacheEntry.ffPktObj.isVideo && mqInternalPubAud != null) {
@@ -203,7 +212,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean readNextAvPktFromDemuxer() throws MqException {
+	private boolean readNextAvPktFromDemuxer() {
 		final String FNC_NAME = getClass().getSimpleName() + ".readNextAvPktFromDemuxer()";
 
 		if (ffDemuxerPtr == null) {
@@ -220,20 +229,48 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		}
 
 		//
-		if (! haveInputSi.get()) {
-			initCodecInfo();
-
-			//
-			tsEpochStart.copyFrom(TimestampEpoch.ofNow());
-		}
-
-		//
 		ffPktCacheEntry.ffPktTimestamp = TimestampMonotonic.ofNsUnsigned64bit(
 				(long)(ffPktCacheEntry.ffPktObj.ptsUnitsToSeconds() * 1_000_000_000.0)
 			);
 
 		return true;
 	}
+
+	private void sendAvPktToMq(
+				@NonNull MqInternalPub mqInternalPub,
+				@NonNull DataPerMq dataPerMq
+			) throws MqException {
+		if (dataPerMq.mqCodecSettings.codec == null) {
+			return;
+		}
+
+		//
+		TimestampEpoch tmpTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
+				tsEpochStart.getEpochNsUnsigned64bit().orElseThrow() +
+				ffPktCacheEntry.ffPktTimestamp.getNsUnsigned64bit().orElseThrow()
+			);
+
+		//
+		MqPacketAv mqPkt = new MqPacketAv(
+				dataPerMq.msgNr++,
+				dataPerMq.mqCodecSettings.codec,
+				false,
+				tmpTsEpoch,
+				dataPerMq.counter++,
+				ffPktCacheEntry.ffPktObj.isVidKeyFrame,
+				dataPerMq.videoReso,
+				Objects.requireNonNullElse(dataPerMq.mqCodecSettings.videoFps, FrameRateEnum.UNKNOWN),
+				0,
+				Objects.requireNonNullElse(dataPerMq.mqCodecSettings.audioSamplerate, SampleRateEnum.UNKNOWN),
+				Objects.requireNonNullElse(dataPerMq.mqCodecSettings.audioChannels, (byte)0),
+				Objects.requireNonNullElse(dataPerMq.mqCodecSettings.audioSamplesPerFrame, 0),
+				(byte)0x00,  // CRC8, 0x00 ^= do not validate checksum
+				ffPktCacheEntry.ffPktObj.pktBe
+			);
+		mqInternalPub.sendMessageAv(mqPkt);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	private void initCodecInfo() throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".initCodecInfo()";
@@ -251,7 +288,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 			FfmpegDmxSubStreamInfoVideo tmpSsInfo = ffDemuxerPtr.getFfAvSubStreamInfoVideo().orElseThrow();
 
 			dataPerMqVid.ffCodec = tmpSsInfo.ffmpegCodec;
-			Optional<MqPacketCodec> tmpOptMqCodec = convertFfToMqCodec(dataPerMqVid.ffCodec);
+			Optional<MqPacketCodec> tmpOptMqCodec = FfCodecToMqCodecHelper.convertFfToMqCodec(dataPerMqVid.ffCodec);
 			if (tmpOptMqCodec.isEmpty()) {
 				logWarn(FNC_NAME, "Unsupported codec: " + tmpSsInfo.ffmpegCodec);
 				haveInputVideo.set(false);
@@ -274,9 +311,6 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 						dataPerMqVid.mqCodecSettings.videoFps = approximateFps(tmpSsInfo.fps.toDouble());
 					}
 				}
-				dataPerMqVid.mqCodecSettings.audioSamplerate = SampleRateEnum.UNKNOWN;
-				dataPerMqVid.mqCodecSettings.audioChannels = (byte)0;
-				dataPerMqVid.mqCodecSettings.audioSamplesPerFrame = 0;
 				codecSettingsChangedInterface.onCodecSettingsChangedFromDmxRtsp(idEsSourceVid, dataPerMqVid.mqCodecSettings);
 
 				String metadataHexVid = tmpSsInfo.extradataHex.getEd();
@@ -287,7 +321,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 			FfmpegDmxSubStreamInfoAudio tmpSsInfo = ffDemuxerPtr.getFfAvSubStreamInfoAudio().orElseThrow();
 
 			dataPerMqAud.ffCodec = tmpSsInfo.ffmpegCodec;
-			Optional<MqPacketCodec> tmpOptMqCodec = convertFfToMqCodec(dataPerMqAud.ffCodec);
+			Optional<MqPacketCodec> tmpOptMqCodec = FfCodecToMqCodecHelper.convertFfToMqCodec(dataPerMqAud.ffCodec);
 			if (tmpOptMqCodec.isEmpty()) {
 				logWarn(FNC_NAME, "Unsupported codec: " + tmpSsInfo.ffmpegCodec);
 				haveInputAudio.set(false);
@@ -296,7 +330,6 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				haveInputAudio.set(false);
 			} else {
 				dataPerMqAud.mqCodecSettings.codec = tmpOptMqCodec.get();
-				dataPerMqAud.mqCodecSettings.videoFps = FrameRateEnum.UNKNOWN;
 				dataPerMqAud.mqCodecSettings.audioSamplerate = tmpSsInfo.sampleRate;
 				dataPerMqAud.mqCodecSettings.audioChannels = (byte)tmpSsInfo.channelCount;
 				dataPerMqAud.mqCodecSettings.audioSamplesPerFrame = tmpSsInfo.samplesPerFrame;
@@ -316,62 +349,6 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 			mqInternalPubAud = new MqInternalPub(logMsgInterface, idEsSourceAud);
 			mqInternalPubAud.connectToMq();
 		}
-	}
-
-	private void sendAvPktToMq(
-				@NonNull MqInternalPub mqInternalPub,
-				@NonNull DataPerMq dataPerMq
-			) throws MqException {
-		if (dataPerMq.mqCodecSettings.codec == null || dataPerMq.mqCodecSettings.videoFps == null ||
-				dataPerMq.mqCodecSettings.audioSamplerate == null || dataPerMq.mqCodecSettings.audioChannels == null ||
-				dataPerMq.mqCodecSettings.audioSamplesPerFrame == null) {
-			return;
-		}
-
-		//
-		TimestampEpoch tmpTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
-				tsEpochStart.getEpochNsUnsigned64bit().orElseThrow() +
-				ffPktCacheEntry.ffPktTimestamp.getNsUnsigned64bit().orElseThrow()
-			);
-
-		//
-		MqPacketAv mqPkt = new MqPacketAv(
-				dataPerMq.msgNr++,
-				dataPerMq.mqCodecSettings.codec,
-				false,
-				tmpTsEpoch,
-				dataPerMq.counter++,
-				ffPktCacheEntry.ffPktObj.isVidKeyFrame,
-				dataPerMq.videoReso,
-				dataPerMq.mqCodecSettings.videoFps,
-				0,
-				dataPerMq.mqCodecSettings.audioSamplerate,
-				dataPerMq.mqCodecSettings.audioChannels,
-				dataPerMq.mqCodecSettings.audioSamplesPerFrame,
-				(byte)0x00,  // CRC8, 0x00 ^= do not validate checksum
-				ffPktCacheEntry.ffPktObj.pktBe
-			);
-		mqInternalPub.sendMessageAv(mqPkt);
-	}
-
-	private static Optional<MqPacketCodec> convertFfToMqCodec(@NonNull FfmpegCodec ffCodec) {
-		return switch (ffCodec) {
-				case A_AAC -> Optional.of(MqPacketCodec.AACLC);
-				case A_AC3 -> Optional.of(MqPacketCodec.AC3);
-				case A_MP2 -> Optional.of(MqPacketCodec.MP2);
-				case A_MP3 -> Optional.of(MqPacketCodec.MP3);
-				case A_OPUS -> Optional.of(MqPacketCodec.OPUS);
-				case A_PCM_ALAW -> Optional.of(MqPacketCodec.PCMA);
-				case A_PCM_MULAW -> Optional.of(MqPacketCodec.PCMU);
-				case A_PCM_U8 -> Optional.of(MqPacketCodec.LPCM08U);
-				case A_PCM_S16BE -> Optional.of(MqPacketCodec.LPCM16S);
-				//
-				case V_H264 -> Optional.of(MqPacketCodec.H264);
-				case V_H265 -> Optional.of(MqPacketCodec.H265);
-				case V_MJPEG -> Optional.of(MqPacketCodec.MJPEG);
-				case V_VP8 -> Optional.of(MqPacketCodec.VP8);
-				default -> Optional.empty();
-			};
 	}
 
 	private static @NonNull FrameRateEnum approximateFps(double orgFps) {
