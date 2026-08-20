@@ -24,6 +24,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -35,7 +36,6 @@ import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -365,7 +365,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_video(
 				@NonNull RtpPacketType codec,
-				@NonNull URI inputUri,
+				@NonNull ProUri inputUri,
 				@NonNull FrameRateEnum videoFps,
 				@NonNull ExtradataContainerSdp videoExtraB64Cfg
 			) {
@@ -391,7 +391,7 @@ final class StreamsCfgReadEsRawFileMeta {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_audio(
 				@NonNull RtpPacketType codec,
-				@NonNull URI inputUri,
+				@NonNull ProUri inputUri,
 				byte audioChannelCount,
 				@NonNull SampleRateEnum audioSampleRate,
 				int audioSamplesPerFrame,

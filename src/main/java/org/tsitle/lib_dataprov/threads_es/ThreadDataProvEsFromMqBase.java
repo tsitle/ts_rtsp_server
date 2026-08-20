@@ -145,8 +145,7 @@ public abstract class ThreadDataProvEsFromMqBase<I extends CodecInfoInterface<I>
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
 		this.avStreamIncoming = new AvStreamIncomingFromEsMq(
 				logMsgInterface,
-				paramsCommon.getIdEsSource(),
-				paramsCommon.getAvStreamIncomingUri().orElseThrow()
+				paramsCommon.getIdEsSource()
 			);
 	}
 

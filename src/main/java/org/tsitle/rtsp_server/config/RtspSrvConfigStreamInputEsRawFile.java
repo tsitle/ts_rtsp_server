@@ -4,8 +4,10 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.DpConstants;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
@@ -13,7 +15,6 @@ import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -70,10 +71,14 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		return filePath;
 	}
 
-	public @NonNull URI getInputUri() {
+	public @NonNull ProUri getInputUri() {
 		checkPostProcessed();
 		if (! filePath.isBlank()) {
-			return URI.create("file:" + filePath);
+			try {
+				return ProUri.ofFile(filePath);
+			} catch (ProUriInvalidUriException e) {
+				throw new IllegalStateException("could not create ProUri for RawFile");
+			}
 		}
 		throw new IllegalStateException("filePath is blank");
 	}

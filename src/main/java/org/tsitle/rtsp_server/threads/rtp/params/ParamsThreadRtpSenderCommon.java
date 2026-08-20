@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
@@ -13,7 +14,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -110,7 +110,7 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private boolean isSetCbThreadMayStartPlayback;
 
 	/** Incoming A/V stream URI */
-	private @Nullable URI avStreamIncomingUri = null;
+	private @Nullable ProUri avStreamIncomingUri = null;
 	private boolean isSetAvStreamIncomingUri;
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
@@ -196,9 +196,9 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 		this.isSetCbThreadMayStartPlayback = true;
 	}
 
-	public Optional<URI> getAvStreamIncomingUri() { return Optional.ofNullable(avStreamIncomingUri); }
-	public void setAvStreamIncomingUri(@NonNull URI avStreamIncomingUri) {
-		this.avStreamIncomingUri = URI.create(avStreamIncomingUri.toString());
+	public Optional<ProUri> getAvStreamIncomingUri() { return Optional.ofNullable(avStreamIncomingUri); }
+	public void setAvStreamIncomingUri(@NonNull ProUri avStreamIncomingUri) {
+		this.avStreamIncomingUri = avStreamIncomingUri.clone();
 		this.isSetAvStreamIncomingUri = true;
 	}
 

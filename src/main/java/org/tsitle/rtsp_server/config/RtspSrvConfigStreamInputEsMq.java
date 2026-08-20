@@ -3,12 +3,13 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.constants.MqConstants;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * Message Queue Elementary-Stream Source.
@@ -39,11 +40,15 @@ public final class RtspSrvConfigStreamInputEsMq implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull URI getInputUri() {
+	public @NonNull ProUri getInputUri() {
 		checkPostProcessed();
-		String tmpRscGrpAndChan = resourceGroupAndChannel.replace(":", "/");
-		return URI.create("https://" + hostAndPort + "/" +
-				MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX);
+		try {
+			String tmpRscGrpAndChan = resourceGroupAndChannel.replace(":", "/");
+			return ProUri.of("https://" + hostAndPort + "/" +
+					MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX);
+		} catch (ProUriInvalidUriException e) {
+			throw new IllegalStateException("could not create ProUri for MQ");
+		}
 	}
 
 	public @NonNull String getHost() {

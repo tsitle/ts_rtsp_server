@@ -2,11 +2,11 @@ package org.tsitle.lib_mq.client.types;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.constants.MqConstants;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
-
-import java.net.URI;
 
 /**
  * Message Queue settings for an Elementary-Stream Source.
@@ -49,21 +49,22 @@ public final class MqElementaryStreamSourceSettings implements Cloneable {
 
 	public static @NonNull MqElementaryStreamSourceSettings of(
 				@NonNull RtspProtoClientCredentials credentials,
-				@NonNull URI inputUri
+				@NonNull ProUri inputUri
 			) {
 		final String FNC_NAME = MqElementaryStreamSourceSettings.class.getSimpleName() + ".of()";
 
 		try {
-			if (inputUri.getHost() == null) {
+			if (inputUri.getHost().isEmpty()) {
 				throw new IllegalArgumentException(FNC_NAME + ": hostname in URI is missing");
 			}
-			if (inputUri.getPath() == null) {
+			if (inputUri.getPath().isEmpty()) {
 				throw new IllegalArgumentException(FNC_NAME + ": path in URI is missing");
 			}
-			if (inputUri.getPath().length() < MqConstants.MQ_URL_PATH_PREFIX.length() + 3) {
+			String tmpUriPath = inputUri.getPath().orElseThrow();
+			if (tmpUriPath.length() < MqConstants.MQ_URL_PATH_PREFIX.length() + 3) {
 				throw new IllegalArgumentException(FNC_NAME + ": path in URI is too short");
 			}
-			String tmpRscGrpAndCh = inputUri.getPath().substring(MqConstants.MQ_URL_PATH_PREFIX.length() + 1);
+			String tmpRscGrpAndCh = tmpUriPath.substring(MqConstants.MQ_URL_PATH_PREFIX.length() + 1);
 			String[] tmpSplit = tmpRscGrpAndCh.split("/");
 			if (tmpSplit.length != 2) {
 				throw new IllegalArgumentException(FNC_NAME + ": path in URI is invalid");
@@ -85,8 +86,8 @@ public final class MqElementaryStreamSourceSettings implements Cloneable {
 			return new MqElementaryStreamSourceSettings(
 					credentials.getAuthUser().orElse(""),
 					credentials.getAuthPlainPassword().orElse(""),
-					inputUri.getHost(),
-					RtspProtoSocketPortNr.of(inputUri.getPort()),
+					inputUri.getHost().orElseThrow(),
+					RtspProtoSocketPortNr.of(inputUri.getPortOrDefault().orElseThrow()),
 					tmpRscGrp,
 					tmpRscCh
 				);
@@ -97,10 +98,19 @@ public final class MqElementaryStreamSourceSettings implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public @NonNull URI getInputUri() {
-		String tmpRscGrpAndChan = resourceGroup + "/" + convertRscChannelToUrlFormat(resourceChannel);
-		return URI.create("https://" + hostname + ":" + Integer.toUnsignedString(port.getPort16bit().orElseThrow()) + "/" +
-				MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX);
+	public @NonNull ProUri getInputUri() {
+		try {
+			String tmpRscGrpAndChan = resourceGroup + "/" + convertRscChannelToUrlFormat(resourceChannel);
+			return ProUri.of(
+					ProUri.Scheme.HTTPS,
+					hostname,
+					port.getPort16bit().orElseThrow(),
+					"/" + MqConstants.MQ_URL_PATH_PREFIX + tmpRscGrpAndChan + MqConstants.MQ_URL_PATH_SUFFIX
+				);
+		} catch (ProUriInvalidUriException e) {
+			// this should never happen
+			throw new RuntimeException("ProUriInvalidUriException caught: " + e.getMessage());
+		}
 	}
 
 	public @NonNull String getHostname() {

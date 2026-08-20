@@ -26,7 +26,6 @@ import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromDmxRtspInterf
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,7 +45,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	}
 
 	private final @NonNull CodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface;
-	private final @NonNull URI inputSourceDmxRtspUri;
+	private final @NonNull ProUri inputSourceDmxRtspUri;
 	private final @NonNull RtspProtoIdEsSource idEsSourceVid = RtspProtoIdEsSource.ofEmpty();
 	private final @NonNull RtspProtoIdEsSource idEsSourceAud = RtspProtoIdEsSource.ofEmpty();
 
@@ -79,7 +78,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	public ThreadInpDmxRtsp(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull URI inputSourceDmxRtspUri,
+				@NonNull ProUri inputSourceDmxRtspUri,
 				@NonNull CodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdEsSource idEsSourceVid,
@@ -89,17 +88,15 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 
 		//
 		this.codecSettingsChangedInterface = codecSettingsChangedInterface;
-		if (inputSourceDmxRtspUri.toString().isBlank()) {
-			throw new IllegalArgumentException("Input URI must not be blank");
+		this.inputSourceDmxRtspUri = inputSourceDmxRtspUri.clone();
+		if (this.inputSourceDmxRtspUri.isEmpty()) {
+			throw new IllegalArgumentException("Input URI must not be empty");
 		}
-		this.inputSourceDmxRtspUri = URI.create(inputSourceDmxRtspUri.toString());
-		if (this.inputSourceDmxRtspUri.getScheme() == null) {
-			throw new IllegalArgumentException("Input URI must have a protocol");
+		if (inputSourceDmxRtspUri.getScheme().orElseThrow() != ProUri.Scheme.RTSP &&
+				inputSourceDmxRtspUri.getScheme().orElseThrow() != ProUri.Scheme.RTSPS) {
+			throw new IllegalArgumentException("Input URI scheme must be 'rtsp|rtsps'");
 		}
-		if (! ("http".equals(inputSourceDmxRtspUri.getScheme()) || "https".equals(inputSourceDmxRtspUri.getScheme()))) {
-			throw new IllegalArgumentException("Input URI scheme must be 'http|https'");
-		}
-		if (this.inputSourceDmxRtspUri.getPath() == null) {
+		if (this.inputSourceDmxRtspUri.getPath().isEmpty()) {
 			throw new IllegalArgumentException("Input URI must have a path");
 		}
 		this.idEsSourceVid.copyFrom(idEsSourceVid);
@@ -163,11 +160,6 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void demuxerConnectWrapper() throws InterruptedException, MqException {
-		String inputFilePath = inputSourceDmxRtspUri.toString()
-				.replace("http://", "rtsp://")
-				.replace("https://", "rtsps://");
-
-		//
 		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
 		dmxSettingsDemux.cfgOutputModeH26x = FfmpegPktConvModeH26x.ANNEXB;
 		dmxSettingsDemux.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
@@ -178,7 +170,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 
 		try (FfmpegDemuxer ffDemuxer = FfmpegDemuxer.createForDemuxingOnly(
 					logMsgInterface,
-					inputFilePath,
+					inputSourceDmxRtspUri.getUriString().orElseThrow(),
 					dmxSettingsDemux
 				)) {
 			ffDemuxerPtr = ffDemuxer;

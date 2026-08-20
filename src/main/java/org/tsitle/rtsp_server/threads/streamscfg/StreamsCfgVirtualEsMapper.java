@@ -11,6 +11,7 @@ import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
@@ -22,7 +23,6 @@ import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +52,7 @@ final class StreamsCfgVirtualEsMapper {
 
 		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extRealSsId + "'";
 
-		final URI internalUri;
+		final ProUri internalUri;
 		final RtspProtoEsSourceType virtualEsSourceType;
 		if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
 			internalUri = ssCfgObj.getSsSourceMuxFc().orElseThrow().getInputUri();
@@ -65,7 +65,7 @@ final class StreamsCfgVirtualEsMapper {
 					errMsgSuffix);
 		}
 
-		final String errMsgUri = RtspSrvConfigStreamsSs.buildMsSourceUriForErrorMsgs(internalUri);
+		final String errMsgUri = RtspSrvConfigStreamsSs.buildDmxSourceUriForErrorMsgs(internalUri);
 
 		//
 		vem.readDmxSubStreamInfos(internalUri, errMsgSuffix);
@@ -167,11 +167,8 @@ final class StreamsCfgVirtualEsMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void readDmxSubStreamInfos(@NonNull URI internalUri, @NonNull String errMsgSuffix) throws ConfigInvalidException {
-		final String realUri = internalUri.toString()
-				.replace("http://", "rtsp://")
-				.replace("https://", "rtsps://");
-		final String errMsgUri = RtspSrvConfigStreamsSs.buildMsSourceUriForErrorMsgs(internalUri);
+	private void readDmxSubStreamInfos(@NonNull ProUri internalUri, @NonNull String errMsgSuffix) throws ConfigInvalidException {
+		final String errMsgUri = RtspSrvConfigStreamsSs.buildDmxSourceUriForErrorMsgs(internalUri);
 
 		//
 		FfmpegDmxSettingsRsi dmxSettingsRsi = new FfmpegDmxSettingsRsi();
@@ -183,7 +180,7 @@ final class StreamsCfgVirtualEsMapper {
 		try {
 			FfmpegDemuxer.readStreamInfos(
 					null,
-					realUri,
+					internalUri.getUriString().orElse(""),
 					dmxSettingsRsi,
 					ffSubStreamInfoVideo,
 					ffSubStreamInfoAudio
@@ -315,7 +312,7 @@ final class StreamsCfgVirtualEsMapper {
 				int demuxerSubStreamIx,
 				@NonNull RtpPacketType codec,
 				@NonNull RtspProtoEsSourceType esSourceType,
-				@NonNull URI inputUri,
+				@NonNull ProUri inputUri,
 				double durationSecs,
 				@NonNull FrameRateEnum videoFps,
 				@NonNull ExtradataContainerSdp videoExtraB64Cfg
@@ -344,7 +341,7 @@ final class StreamsCfgVirtualEsMapper {
 				int demuxerSubStreamIx,
 				@NonNull RtpPacketType codec,
 				@NonNull RtspProtoEsSourceType esSourceType,
-				@NonNull URI inputUri,
+				@NonNull ProUri inputUri,
 				double durationSecs,
 				byte audioChannelCount,
 				@NonNull SampleRateEnum audioSampleRate,

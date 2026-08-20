@@ -1,8 +1,10 @@
 package org.tsitle.lib_xrtxp.rtsp.lowlevel.request;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
@@ -14,7 +16,6 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.helper.RtspLowInvalidRrException;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,20 +62,34 @@ public final class RtspProtoLowRequestProducer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String buildResourceUrlForRequestLine(@NonNull String inputUrl) throws RtspProtoInvalidRequestException {
-		boolean isRtsps = inputUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://");
-		if (! (inputUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://") || isRtsps)) {
+		ProUri tmpInpProUri;
+		try {
+			tmpInpProUri = ProUri.of(inputUrl);
+		} catch (ProUriInvalidUriException e) {
+			throw new RtspProtoInvalidRequestException("Invalid URL '" + inputUrl + "': " + e.getMessage());
+		}
+		boolean isRtsps = (tmpInpProUri.getScheme().orElse(ProUri.Scheme.NONE) == ProUri.Scheme.RTSPS);
+		if (tmpInpProUri.getScheme().orElse(ProUri.Scheme.NONE) != ProUri.Scheme.RTSP && ! isRtsps) {
 			throw new RtspProtoInvalidRequestException("Invalid protocol in URL '" + inputUrl + "'");
 		}
+		int tmpPort = tmpInpProUri.getPortIfPresent().orElse(-1);
+
 		// rewrite the URL to get rid of any fragments and userinfo (username + password)
-		URI tmpUri = URI.create(inputUrl);
-		int tmpPort = tmpUri.getPort();
-		String resS = (isRtsps ? RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL) +
-				"://" + (tmpUri.getHost() == null ? "" : tmpUri.getHost()) +
-				(tmpPort > 0 ? ":" + tmpUri.getPort() : "") + (tmpUri.getPath() == null ? "" : tmpUri.getPath());
-		if (tmpUri.getQuery() != null) {
-			resS += "?" + tmpUri.getQuery();
+		ProUri tmpOutpProUri;
+		try {
+			tmpOutpProUri = ProUri.of(
+					tmpInpProUri.getScheme().orElseThrow(),
+					"",
+					"",
+					tmpInpProUri.getHost().orElseThrow(),
+					tmpPort,
+					tmpInpProUri.getPath().orElse(""),
+					tmpInpProUri.getQuery().orElse("")
+				);
+		} catch (ProUriInvalidUriException e) {
+			throw new RtspProtoInvalidRequestException("Invalid URL '" + inputUrl + "': " + e.getMessage());
 		}
-		return resS;
+		return tmpOutpProUri.getUriString().orElseThrow();
 	}
 
 	private void buildAllHeaders(

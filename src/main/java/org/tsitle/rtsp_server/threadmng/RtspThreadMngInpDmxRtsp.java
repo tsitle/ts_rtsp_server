@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -14,7 +15,6 @@ import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromDmxRtspInterface;
 import org.tsitle.rtsp_server.threads.inp_e2i.ThreadInpDmxRtsp;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -70,7 +70,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 		}
 
 		//
-		URI inputUri = null;
+		ProUri inputUri = null;
 		RtspProtoIdEsSource idEsSourceVid = RtspProtoIdEsSource.ofEmpty();
 		RtspProtoIdEsSource idEsSourceAud = RtspProtoIdEsSource.ofEmpty();
 		try {

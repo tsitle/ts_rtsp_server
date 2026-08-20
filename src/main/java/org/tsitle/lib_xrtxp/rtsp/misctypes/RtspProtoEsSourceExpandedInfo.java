@@ -4,16 +4,15 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-
-import java.net.URI;
 
 public record RtspProtoEsSourceExpandedInfo(
 			int demuxerSubStreamIx,
 			@NonNull RtpPacketType codec,
 			@NonNull RtspProtoEsSourceType esSourceType,
-			@NonNull URI inputUri,
+			@NonNull ProUri inputUri,
 			@NonNull RtspProtoClientCredentials credentials,
 			double durationSecs,
 			byte audioChannelCount,
@@ -38,7 +37,7 @@ public record RtspProtoEsSourceExpandedInfo(
 				demuxerSubStreamIx,
 				codec,
 				esSourceType,
-				URI.create(inputUri.toString()),
+				inputUri.clone(),
 				credentials.clone(),
 				durationSecs,
 				audioChannelCount,

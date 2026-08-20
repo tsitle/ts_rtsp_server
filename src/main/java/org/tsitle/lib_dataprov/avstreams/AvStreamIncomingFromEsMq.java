@@ -13,7 +13,6 @@ import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
-import java.net.URI;
 import java.util.Optional;
 
 public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
@@ -29,22 +28,13 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 	 * Constructor.
 	 * @param logMsgInterface Log message interface
 	 * @param idEsSource Elementary-Stream source identifier
-	 * @param inputUri Input URI
 	 * @throws AvCannotOpenInputException If the input stream cannot be opened
 	 */
 	public AvStreamIncomingFromEsMq(
 				@Nullable LogMsgInterface logMsgInterface,
-				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull URI inputUri
+				@NonNull RtspProtoIdEsSource idEsSource
 			) throws AvCannotOpenInputException {
 		super(logMsgInterface, idEsSource);
-
-		if (inputUri.getScheme() == null) {
-			throw new IllegalArgumentException("Input URI scheme cannot be null (inputUri='" + inputUri + "')");
-		}
-		if (! (inputUri.getScheme().equals("http") || inputUri.getScheme().equals("https"))) {
-			throw new IllegalArgumentException("Input URI scheme must be 'http' or 'https'");
-		}
 
 		//
 		this.mqInternalSub = new MqInternalSub(logMsgInterface, idEsSource);

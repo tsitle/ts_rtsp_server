@@ -7,7 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -37,7 +39,6 @@ import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URI;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -101,39 +102,44 @@ public class FullBidirRequRespSvcTest {
 		@Override
 		public @NonNull RtspProtoEsSourceExpandedInfo getElementaryStreamSourceExpInfo(@NonNull RtspProtoIdEsSource idEsSource)
 				throws RtspProtoIdEsSourceNotFoundException {
-			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
-				return new RtspProtoEsSourceExpandedInfo(
-						1,
-						RtpPacketType.V_H264,
-						RtspProtoEsSourceType.ST_ES_RAW_FILE,
-						URI.create("file:///dummy-file-video"),
-						RtspProtoClientCredentials.ofEmpty(),
-						-1.0,
-						(byte)-1,
-						SampleRateEnum.UNKNOWN,
-						-1,
-						false,
-						ExtradataContainerHex.ofEmpty(),
-						FrameRateEnum.FPS_15_0,
-						ExtradataContainerSdp.ofEmpty()
-					);
-			}
-			if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
-				return new RtspProtoEsSourceExpandedInfo(
-						2,
-						RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
-						RtspProtoEsSourceType.ST_ES_RAW_FILE,
-						URI.create("file:///dummy-file-audio"),
-						RtspProtoClientCredentials.ofEmpty(),
-						-1.0,
-						(byte)2,
-						SampleRateEnum.SR_044100,
-						-1,
-						false,
-						ExtradataContainerHex.ofEmpty(),
-						FrameRateEnum.UNKNOWN,
-						ExtradataContainerSdp.ofEmpty()
-					);
+			try {
+				if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-video")) {
+					return new RtspProtoEsSourceExpandedInfo(
+							1,
+							RtpPacketType.V_H264,
+							RtspProtoEsSourceType.ST_ES_RAW_FILE,
+							ProUri.ofFile("/dummy-file-video"),
+							RtspProtoClientCredentials.ofEmpty(),
+							-1.0,
+							(byte) -1,
+							SampleRateEnum.UNKNOWN,
+							-1,
+							false,
+							ExtradataContainerHex.ofEmpty(),
+							FrameRateEnum.FPS_15_0,
+							ExtradataContainerSdp.ofEmpty()
+						);
+				}
+				if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
+					return new RtspProtoEsSourceExpandedInfo(
+							2,
+							RtpPacketType.A_LINEAR_PCM_S16_441K_MONO,
+							RtspProtoEsSourceType.ST_ES_RAW_FILE,
+							ProUri.ofFile("/dummy-file-audio"),
+							RtspProtoClientCredentials.ofEmpty(),
+							-1.0,
+							(byte) 2,
+							SampleRateEnum.SR_044100,
+							-1,
+							false,
+							ExtradataContainerHex.ofEmpty(),
+							FrameRateEnum.UNKNOWN,
+							ExtradataContainerSdp.ofEmpty()
+						);
+				}
+			} catch (ProUriInvalidUriException e) {
+				// this should never happen
+				throw new RuntimeException("ProUriInvalidUriException caught: " + e.getMessage());
 			}
 			throw new RtspProtoIdEsSourceNotFoundException("esSrc='" + idEsSource.getIdStr().orElse("-unset-") + "'");
 		}

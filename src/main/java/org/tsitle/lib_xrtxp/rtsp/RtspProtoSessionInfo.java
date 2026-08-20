@@ -2,8 +2,9 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
@@ -20,7 +21,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
@@ -1140,9 +1140,9 @@ public final class RtspProtoSessionInfo {
 		}
 		String tmpRtspHostname;
 		try {
-			URI rscUriObj = HostnameHelper.convertRtspUrlIntoURI(rscUrl.getUrlStr());
-			tmpRtspHostname = rscUriObj.getHost();
-		} catch (HostnameHelperInvalidUriException e) {
+			ProUri tmpProUri = ProUri.of(rscUrl.getUrlStr());
+			tmpRtspHostname = tmpProUri.getHost().orElseThrow();
+		} catch (ProUriInvalidUriException e) {
 			// this should never happen
 			throw new RtspProtoCannotFindIpFromRscUrlException(FNC_NAME + ": Could not parse URL: " + e.getMessage());
 		}

@@ -1,8 +1,6 @@
 package org.tsitle.lib_xrtxp.common.helpers;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 
 import java.net.*;
 import java.util.Arrays;
@@ -60,36 +58,6 @@ public final class HostnameHelper {
 			}
 		}
 		return matches;
-	}
-
-	/**
-	 * Convert an RTSP URL into a URI object.
-	 * @param url RTSP URL
-	 * @return URI object
-	 * @throws HostnameHelperInvalidUriException If the URL is invalid
-	 */
-	public static @NonNull URI convertRtspUrlIntoURI(@NonNull String url) throws HostnameHelperInvalidUriException {
-		try {
-			if (! (url.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://") ||
-						url.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://"))) {
-				throw new HostnameHelperInvalidUriException("Invalid protocol in URL: '" + url + "'");
-			}
-			// we need to replace the protocol here since the URI class does not support 'rtsp://'
-			@SuppressWarnings("HttpUrlsUsage") URI resObj = new URI(
-					url
-							.replaceAll("^" + RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://", "https://")
-							.replaceAll("^" + RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://", "http://"
-						));
-			if (! ("https".equals(resObj.getScheme()) || "http".equals(resObj.getScheme()))) {
-				throw new HostnameHelperInvalidUriException("Invalid protocol: " + resObj.getScheme());
-			}
-			if (resObj.getHost() == null) {
-				throw new HostnameHelperInvalidUriException("Invalid host in URL: '" + url + "'");
-			}
-			return resObj;
-		} catch (URISyntaxException e) {
-			throw new HostnameHelperInvalidUriException(e.getMessage());
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.lowlevel.helper;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidPbRangeException;
@@ -15,7 +15,6 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspTransportMode;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 
-import java.net.URI;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -55,25 +54,24 @@ public final class RtspLowParserHelper {
 		 * Contains an absolute URI as base for resolving relative URLs within the entity
 		 */
 		try {
-			URI tmpUri = HostnameHelper.convertRtspUrlIntoURI(hdValue);
-
-			// we strip away any user credentials and fragment
-			outputHd.contentBaseStr = (tmpUri.getScheme().equals("https") ?
-					RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL);
-			outputHd.contentBaseStr += "://" + tmpUri.getHost();
-			if (tmpUri.getPort() > 0) {
-				outputHd.contentBaseStr += ":" + tmpUri.getPort();
-			}
-			outputHd.contentBaseStr += (tmpUri.getPath() == null ? "" : tmpUri.getPath());
+			ProUri tmpInpUri = ProUri.of(hdValue);
+			String tmpPath = tmpInpUri.getPath().orElse("");
 			// add a slash to the end
-			if (! outputHd.contentBaseStr.endsWith("/")) {
-				outputHd.contentBaseStr += "/";
+			if (! tmpPath.endsWith("/")) {
+				tmpPath += "/";
 			}
-			// add query parameters
-			if (tmpUri.getQuery() != null) {
-				outputHd.contentBaseStr += "?" + tmpUri.getQuery();
-			}
-		} catch (HostnameHelperInvalidUriException e) {
+			// we strip away any user credentials and fragment
+			ProUri tmpOutpUri = ProUri.of(
+					tmpInpUri.getScheme().orElseThrow(),
+					"",
+					"",
+					tmpInpUri.getHost().orElseThrow(),
+					tmpInpUri.getPortIfPresent().orElse(-1),
+					tmpPath,
+					tmpInpUri.getQuery().orElse("")
+				);
+			outputHd.contentBaseStr = tmpOutpUri.getUriString().orElseThrow();
+		} catch (ProUriInvalidUriException e) {
 			// we ignore this error and use the value as-is
 			outputHd.contentBaseStr = hdValue;
 		}

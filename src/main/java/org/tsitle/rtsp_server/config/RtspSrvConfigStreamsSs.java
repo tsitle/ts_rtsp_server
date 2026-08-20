@@ -3,13 +3,14 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,10 +31,10 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 	private @Nullable RtspSrvConfigStreamInputEsMq mq;
 	/** (Muxed) File Container Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputMuxFc fileContainer;
+	private @Nullable RtspSrvConfigStreamInputDmxFc fileContainer;
 	/** (Muxed) RTSP Stream Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputMuxRtsp rtsp;
+	private @Nullable RtspSrvConfigStreamInputDmxRtsp rtsp;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -64,17 +65,17 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 
 	public static @NonNull RtspSrvConfigStreamsSs createVirtualSsFromDemuxedSubStream(
 				@NonNull RtspProtoEsSourceType esSourceType,
-				@NonNull URI msSourceUri
+				@NonNull ProUri dmxSourceUri
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspSrvConfigStreamsSs.class.getSimpleName() + ".createVirtualSsFromDemuxedSubStream()";
 
-		final String errMsgUri = buildMsSourceUriForErrorMsgs(msSourceUri);
+		final String errMsgUri = buildDmxSourceUriForErrorMsgs(dmxSourceUri);
 
 		RtspSrvConfigStreamsSs resObj = new RtspSrvConfigStreamsSs(true);
 		if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC) {
-			resObj.fileContainer = RtspSrvConfigStreamInputMuxFc.of(msSourceUri.getPath());
+			resObj.fileContainer = RtspSrvConfigStreamInputDmxFc.of(dmxSourceUri);
 		} else if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ) {
-			resObj.rtsp = RtspSrvConfigStreamInputMuxRtsp.of(msSourceUri.toString());
+			resObj.rtsp = RtspSrvConfigStreamInputDmxRtsp.of(dmxSourceUri);
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type " + esSourceType + " " +
 					"for MS Source '" + errMsgUri + "'");
@@ -85,20 +86,27 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull String buildMsSourceUriForErrorMsgs(@NonNull URI msSourceUri) {
-		if (! ("http".equals(msSourceUri.getScheme()) || "https".equals(msSourceUri.getScheme()))) {
-			return msSourceUri.toString();
+	public static @NonNull String buildDmxSourceUriForErrorMsgs(@NonNull ProUri uri) {
+		if (uri.isEmpty()) {
+			return "-empty-";
 		}
-		String tmpProto = msSourceUri.getScheme();
-		String tmpHost = msSourceUri.getHost();
-		int tmpPort = msSourceUri.getPort();
-		String tmpPath = msSourceUri.getPath();
-		String tmpQuery = msSourceUri.getQuery();
-		URI cleanedUp = URI.create(tmpProto + "://" + tmpHost + (tmpPort > 0 ? ":" + tmpPort : "") +
-				tmpPath + (tmpQuery != null ? "?" + tmpQuery : ""));
-		return cleanedUp.toString()
-				.replace("http://", "rtsp://")
-				.replace("https://", "rtsps://");
+		if (uri.getScheme().orElseThrow() == ProUri.Scheme.FILE) {
+			return uri.getPath().orElse("");
+		}
+		try {
+			ProUri tmpOutp = ProUri.of(
+					uri.getScheme().orElseThrow(),
+					"",
+					"",
+					uri.getHost().orElseThrow(),
+					uri.getPortIfPresent().orElse(-1),
+					uri.getPath().orElse(""),
+					uri.getQuery().orElse("")
+				);
+			return tmpOutp.getUriString().orElseThrow();
+		} catch (ProUriInvalidUriException e) {
+			return "-cannot build-";  // this should never happen
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -129,7 +137,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(mq.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputMuxFc> getSsSourceMuxFc() {
+	public Optional<RtspSrvConfigStreamInputDmxFc> getSsSourceMuxFc() {
 		checkPostProcessed();
 		if (fileContainer == null) {
 			return Optional.empty();
@@ -137,7 +145,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(fileContainer.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputMuxRtsp> getSsSourceMuxRtsp() {
+	public Optional<RtspSrvConfigStreamInputDmxRtsp> getSsSourceMuxRtsp() {
 		checkPostProcessed();
 		if (rtsp == null) {
 			return Optional.empty();

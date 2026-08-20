@@ -12,13 +12,14 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.*;
 
@@ -53,8 +54,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 		}
 	}
 
-	private final @NonNull URI inputSourceDmxFcUri;
-	private final boolean isFromFile;
+	private final @NonNull ProUri inputSourceDmxFcUri;
 
 	private @Nullable FfmpegDemuxer ffDemuxerPtr = null;
 	private final ReadWriteLock demuxerLock = new ReentrantReadWriteLock();
@@ -76,26 +76,17 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param inputSourceDmxFcUri URI of the Input Source
 	 */
-	public ThreadDataProvDmxFc(@NonNull LogMsgInterface logMsgInterface, @NonNull URI inputSourceDmxFcUri) {
+	public ThreadDataProvDmxFc(@NonNull LogMsgInterface logMsgInterface, @NonNull ProUri inputSourceDmxFcUri) {
 		super(logMsgInterface);
 
 		//
-		if (inputSourceDmxFcUri.toString().isBlank()) {
-			throw new IllegalArgumentException("Input URI must not be blank");
+		this.inputSourceDmxFcUri = inputSourceDmxFcUri.clone();
+		Optional<ProUri.Scheme> tmpOptScheme = this.inputSourceDmxFcUri.getScheme();
+		if (tmpOptScheme.isEmpty() || tmpOptScheme.orElseThrow() != ProUri.Scheme.FILE) {
+			throw new IllegalArgumentException("Input URI scheme must be 'file'");
 		}
-		this.inputSourceDmxFcUri = URI.create(inputSourceDmxFcUri.toString());
-		if (this.inputSourceDmxFcUri.getScheme() == null) {
-			throw new IllegalArgumentException("Input URI must have a protocol");
-		}
-		if (this.inputSourceDmxFcUri.getPath() == null) {
+		if (this.inputSourceDmxFcUri.getPath().isEmpty()) {
 			throw new IllegalArgumentException("Input URI must have a path");
-		}
-
-		//
-		this.isFromFile = "file".equals(inputSourceDmxFcUri.getScheme());
-		if (! (isFromFile ||
-				"http".equals(inputSourceDmxFcUri.getScheme()) || "https".equals(inputSourceDmxFcUri.getScheme()))) {
-			throw new IllegalArgumentException("Input URI scheme must be 'file|http|https'");
 		}
 
 		//
@@ -116,9 +107,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 		logDebug(FNC_NAME, "Thread started");
 
 		//
-		String inputFilePath = inputSourceDmxFcUri.toString()
-				.replace("http://", "rtsp://")
-				.replace("https://", "rtsps://");
+		String inputFilePath = inputSourceDmxFcUri.getPath().orElseThrow();
 
 		//
 		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
@@ -181,7 +170,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 	public boolean seekStream(double targetTimestamp) {
 		final String FNC_NAME = getClass().getSimpleName() + ".seekStream()";
 
-		if (! isFromFile || targetTimestamp < 0.0 || eosReached.get() ||
+		if (targetTimestamp < 0.0 || eosReached.get() ||
 				durationSecs < 0.001 || targetTimestamp > durationSecs + 0.1) {
 			return false;
 		}

@@ -2,6 +2,8 @@ package org.tsitle.lib_xrtxp.rtsp.highlevel.request;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.kmd.MikeyParser;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
@@ -23,7 +25,6 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryRequest;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpConsumerInterface;
@@ -414,12 +415,17 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoDataCntStreamTpMain ioStreamTpMain
 			) throws RtspProtoInvalidRequestException, RtspProtoInvalidUriException,
 					RtspProtoIdInputSourceNotFoundException, RtspProtoIdSubStreamNotFoundException,
-			RtspProtoIdEsSourceNotFoundException {
-		if (ioStreamTpMain.getIsRtspsConnection() && ! resourceUrlStr.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://")) {
-			throw new RtspProtoInvalidUriException("Invalid URL for RTSPS");
-		}
-		if (! ioStreamTpMain.getIsRtspsConnection() && ! resourceUrlStr.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://")) {
-			throw new RtspProtoInvalidUriException("Invalid URL for RTSP");
+					RtspProtoIdEsSourceNotFoundException {
+		try {
+			ProUri tmpProUri = ProUri.of(resourceUrlStr);
+			if (! ioStreamTpMain.getIsRtspsConnection() && tmpProUri.getScheme().orElse(ProUri.Scheme.NONE) != ProUri.Scheme.RTSP) {
+				throw new RtspProtoInvalidUriException("Invalid URL for RTSP");
+			}
+			if (ioStreamTpMain.getIsRtspsConnection() && tmpProUri.getScheme().orElse(ProUri.Scheme.NONE) != ProUri.Scheme.RTSPS) {
+				throw new RtspProtoInvalidUriException("Invalid URL for RTSPS");
+			}
+		} catch (ProUriInvalidUriException e) {
+			throw new RtspProtoInvalidUriException("Invalid URL: " + e.getMessage());
 		}
 
 		//

@@ -1,10 +1,10 @@
 package org.tsitle.lib_xrtxp.rtsp.lowlevel.request;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidUriException;
@@ -18,7 +18,6 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 
-import java.net.URI;
 import java.util.*;
 
 public final class RtspProtoLowRequestConsumer {
@@ -119,32 +118,29 @@ public final class RtspProtoLowRequestConsumer {
 			tokens.nextToken();  // messageType
 			String currentUrl = tokens.nextToken();
 
-			boolean isRtsps = currentUrl.startsWith(RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL + "://");
-			if (! (currentUrl.startsWith(RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL + "://") || isRtsps)) {
+			//
+			ProUri tmpInpProUri = ProUri.of(currentUrl);
+			boolean isRtsps = (tmpInpProUri.getScheme().orElse(ProUri.Scheme.NONE) == ProUri.Scheme.RTSPS);
+			if (tmpInpProUri.getScheme().orElse(ProUri.Scheme.NONE) != ProUri.Scheme.RTSP &&
+					! isRtsps) {
 				logWarn(FNC_NAME, "invalid protocol in URL '" + currentUrl + "'");
 				output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 				return;
 			}
-			// rewrite the URL to get rid of any query parameters, fragments and userinfo (username + password)
-			URI tmpUri = URI.create(currentUrl);
-			if (tmpUri.getUserInfo() != null && tmpUri.getUserInfo().split(":").length == 2) {
-				output.authUser = tmpUri.getUserInfo().split(":")[0];
-				output.authPlainPassword = tmpUri.getUserInfo().split(":")[1];
+			if (tmpInpProUri.getCredentialsUsername().isPresent() && tmpInpProUri.getCredentialsPassword().isPresent()) {
+				output.authUser = tmpInpProUri.getCredentialsUsername().get();
+				output.authPlainPassword = tmpInpProUri.getCredentialsPassword().get();
 			}
-			int tmpPort = tmpUri.getPort();
-			currentUrl = (isRtsps ? RtspProtoLowMsgConstants.RTSPS_URL_PROTOCOL : RtspProtoLowMsgConstants.RTSP_URL_PROTOCOL) +
-					"://" + (tmpUri.getHost() == null ? "" : tmpUri.getHost()) +
-					(tmpPort > 0 ? ":" + tmpUri.getPort() : "") + (tmpUri.getPath() == null ? "" : tmpUri.getPath());
-			if (tmpUri.getQuery() != null) {
-				try {
-					extractResourceUrlQueryParam(currentUrl + "?" + tmpUri.getQuery(), output);
-				} catch (RtspProtoInvalidUriException e) {
-					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
-					return;
-				}
-			}
+			int tmpPort = tmpInpProUri.getPortIfPresent().orElse(-1);
 
-			//
+			// rewrite the URL to get rid of any query parameters, fragments and userinfo (username + password)
+			ProUri tmpOutpProUri = ProUri.of(
+					tmpInpProUri.getScheme().orElseThrow(),
+					tmpInpProUri.getHost().orElseThrow(),
+					tmpPort,
+					tmpInpProUri.getPath().orElse("")
+				);
+			currentUrl = tmpOutpProUri.getUriString().orElseThrow();
 			if (currentUrl.length() > RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH) {
 				logWarn(FNC_NAME, String.format("Resource URL too long (is=%d, max=%d), rejecting request",
 						currentUrl.length(), RtspProtoLowMsgConstants.RTSP_MAX_RESOURCE_URL_LENGTH));
@@ -153,9 +149,22 @@ public final class RtspProtoLowRequestConsumer {
 			}
 
 			//
+			if (tmpInpProUri.getQuery().isPresent()) {
+				try {
+					extractResourceUrlQueryParam(currentUrl + "?" + tmpInpProUri.getQuery().get(), output);
+				} catch (RtspProtoInvalidUriException e) {
+					output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+					return;
+				}
+			}
+
+			//
 			output.resourceUrl = currentUrl;
 		} catch (NoSuchElementException e) {
 			logWarn(FNC_NAME, "Missing element in request line '" + requestLine + "'");
+			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
+		} catch (ProUriInvalidUriException e) {
+			logWarn(FNC_NAME, "Invalid URI in request line '" + requestLine + "'");
 			output.statusCode = RtspProtoStatusCode.BAD_REQUEST;
 		}
 	}
@@ -164,14 +173,14 @@ public final class RtspProtoLowRequestConsumer {
 				@NonNull String resourceUrlStr,
 				@NonNull RtspProtoHighMsgStructuredRequest output
 			) throws RtspProtoInvalidUriException {
-		URI rscUriObj;
+		ProUri rscUriObj;
 		try {
-			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(resourceUrlStr);
-		} catch (HostnameHelperInvalidUriException e) {
+			rscUriObj = ProUri.of(resourceUrlStr);
+		} catch (ProUriInvalidUriException e) {
 			throw new RtspProtoInvalidUriException(e.getMessage());
 		}
-		String tmpQuery = rscUriObj.getQuery();
-		if (tmpQuery == null) {
+		String tmpQuery = rscUriObj.getQuery().orElse("");
+		if (tmpQuery.isEmpty()) {
 			return;
 		}
 		for (String tmpParam : tmpQuery.split("&")) {

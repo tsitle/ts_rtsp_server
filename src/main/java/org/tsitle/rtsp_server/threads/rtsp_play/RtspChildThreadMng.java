@@ -2,13 +2,13 @@ package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -25,7 +25,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -176,9 +175,9 @@ final class RtspChildThreadMng {
 		//
 		String cnameHostname;
 		try {
-			URI tmpIsUri = HostnameHelper.convertRtspUrlIntoURI(rscUrl.getUrlStr());
-			cnameHostname = tmpIsUri.getHost();
-		} catch (HostnameHelperInvalidUriException e) {
+			ProUri tmpIsUri = ProUri.of(rscUrl.getUrlStr());
+			cnameHostname = tmpIsUri.getHost().orElse("");
+		} catch (ProUriInvalidUriException e) {
 			// this should never happen
 			throw new RuntimeException(e);
 		}

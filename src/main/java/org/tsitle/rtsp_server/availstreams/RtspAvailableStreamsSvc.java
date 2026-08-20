@@ -13,7 +13,6 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -169,7 +168,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 					eseiOld.demuxerSubStreamIx(),
 					codecSettings.codec != null ? codecSettings.getAsRtpPacketType() : eseiOld.codec(),
 					eseiOld.esSourceType(),
-					URI.create(eseiOld.inputUri().toString()),
+					eseiOld.inputUri().clone(),
 					eseiOld.credentials().clone(),
 					eseiOld.durationSecs(),
 					codecSettings.audioChannels != null ? codecSettings.audioChannels : eseiOld.audioChannelCount(),
@@ -209,7 +208,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 					eseiOld.demuxerSubStreamIx(),
 					eseiOld.codec(),
 					eseiOld.esSourceType(),
-					URI.create(eseiOld.inputUri().toString()),
+					eseiOld.inputUri().clone(),
 					eseiOld.credentials().clone(),
 					eseiOld.durationSecs(),
 					eseiOld.audioChannelCount(),

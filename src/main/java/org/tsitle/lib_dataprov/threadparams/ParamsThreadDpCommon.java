@@ -4,9 +4,9 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
-import java.net.URI;
 import java.util.Optional;
 
 public final class ParamsThreadDpCommon implements Cloneable {
@@ -24,7 +24,7 @@ public final class ParamsThreadDpCommon implements Cloneable {
 	private boolean isSetIdEsSource;
 
 	/** Incoming A/V stream URI */
-	private @Nullable URI avStreamIncomingUri = null;
+	private @Nullable ProUri avStreamIncomingUri = null;
 	private boolean isSetAvStreamIncomingUri;
 
 	/** Optional: 'Demuxer: Read next A/V packet' instance */
@@ -54,9 +54,9 @@ public final class ParamsThreadDpCommon implements Cloneable {
 		this.isSetIdEsSource = true;
 	}
 
-	public Optional<URI> getAvStreamIncomingUri() { return Optional.ofNullable(avStreamIncomingUri); }
-	public void setAvStreamIncomingUri(@NonNull URI avStreamIncomingUri) {
-		this.avStreamIncomingUri = URI.create(avStreamIncomingUri.toString());
+	public Optional<ProUri> getAvStreamIncomingUri() { return Optional.ofNullable(avStreamIncomingUri); }
+	public void setAvStreamIncomingUri(@NonNull ProUri avStreamIncomingUri) {
+		this.avStreamIncomingUri = avStreamIncomingUri.clone();
 		this.isSetAvStreamIncomingUri = true;
 	}
 

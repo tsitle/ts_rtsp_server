@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -16,7 +17,6 @@ import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsStream;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
-import java.net.URI;
 import java.util.*;
 
 final class StreamsCfgMapper {
@@ -382,7 +382,7 @@ final class StreamsCfgMapper {
 							subStreamCfgObj.getSsSourceEsMq().orElseThrow().getUsername(),
 							subStreamCfgObj.getSsSourceEsMq().orElseThrow().getPassword()
 						);
-					URI tmpUri = subStreamCfgObj.getSsSourceEsMq().orElseThrow().getInputUri();
+					ProUri tmpUri = subStreamCfgObj.getSsSourceEsMq().orElseThrow().getInputUri();
 					tmpMeta = createEsei_mqDummy(tmpCred, tmpUri);
 				}
 				outputEsMetaInfo.mapEsIdToEsei.put(intEsId, tmpMeta);
@@ -394,13 +394,13 @@ final class StreamsCfgMapper {
 
 	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_mqDummy(
 				@NonNull RtspProtoClientCredentials credentials,
-				@NonNull URI inputUri
+				@NonNull ProUri inputUri
 			) {
 		return new RtspProtoEsSourceExpandedInfo(
 				-1,
 				RtpPacketType.UNKNOWN,
 				RtspProtoEsSourceType.ST_ES_MQ,
-				inputUri,
+				inputUri.clone(),
 				credentials,
 				-1,
 				(byte)0,

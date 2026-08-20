@@ -92,7 +92,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	private void requestMqInfo() throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".requestMqInfo()";
 
-		final String mqHttpUrl = mqSettingsExtended.settsBasic.getInputUri().toString();
+		final String mqHttpUrl = mqSettingsExtended.settsBasic.getInputUri().getUriString().orElse("");
 		HttpResponseOpenMq responseOpenMq;
 		try {
 			final String tmpAuthUser = mqSettingsExtended.settsBasic.getUsername();

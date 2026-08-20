@@ -2,8 +2,8 @@ package org.tsitle.lib_xrtxp.rtsp.highlevel;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.exceptions.HostnameHelperInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdSubStreamNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidUriException;
@@ -14,7 +14,6 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -137,13 +136,13 @@ public final class ResourceUrlProcessor {
 	 * @throws RtspProtoInvalidUriException If the Resource URL is invalid
 	 */
 	private @NonNull String extractResourceUrlPath() throws RtspProtoInvalidUriException {
-		URI rscUriObj;
+		ProUri rscUriObj;
 		try {
-			rscUriObj = HostnameHelper.convertRtspUrlIntoURI(fullRscUrlStr);
-		} catch (HostnameHelperInvalidUriException e) {
+			rscUriObj = ProUri.of(fullRscUrlStr);
+		} catch (ProUriInvalidUriException e) {
 			throw new RtspProtoInvalidUriException(e.getMessage());
 		}
-		String tmpPath = (rscUriObj.getPath() == null ? "" : rscUriObj.getPath());
+		String tmpPath = rscUriObj.getPath().orElse("");
 		tmpPath = tmpPath.strip();
 		if (tmpPath.startsWith("/")) {
 			tmpPath = tmpPath.substring(1).strip();

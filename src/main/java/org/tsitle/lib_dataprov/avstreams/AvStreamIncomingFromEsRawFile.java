@@ -6,10 +6,10 @@ import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.*;
-import java.net.URI;
 import java.util.Optional;
 
 public final class AvStreamIncomingFromEsRawFile extends AvStreamIncomingBase {
@@ -26,7 +26,7 @@ public final class AvStreamIncomingFromEsRawFile extends AvStreamIncomingBase {
 	 */
 	public AvStreamIncomingFromEsRawFile(
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull URI inputUri
+				@NonNull ProUri inputUri
 			) throws AvCannotOpenInputException {
 		this(null, idEsSource, inputUri);
 	}
@@ -41,14 +41,15 @@ public final class AvStreamIncomingFromEsRawFile extends AvStreamIncomingBase {
 	public AvStreamIncomingFromEsRawFile(
 				@Nullable LogMsgInterface logMsgInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
-				@NonNull URI inputUri
+				@NonNull ProUri inputUri
 			) throws AvCannotOpenInputException {
 		super(logMsgInterface, idEsSource);
 
-		if (! "file".equals(inputUri.getScheme())) {
+		Optional<ProUri.Scheme> tmpOptScheme = inputUri.getScheme();
+		if (tmpOptScheme.isEmpty() || tmpOptScheme.orElseThrow() != ProUri.Scheme.FILE) {
 			throw new IllegalArgumentException("Input URI scheme must be 'file'");
 		}
-		this.inputUriPath = (inputUri.getPath() == null ? "" : inputUri.getPath());
+		this.inputUriPath = inputUri.getPath().orElse("");
 
 		//
 		openInput();

@@ -3,11 +3,11 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
 
-import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,8 +60,8 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		private final int threadsMaximumDmxRtsp;
 
 		public SectionServer() {
-			this.tcpPortRtsp = RtspServerConstants.SERVER_RTSP_TCP_PORT;
-			this.tcpPortRtsps = RtspServerConstants.SERVER_RTSPS_TCP_PORT;
+			this.tcpPortRtsp = ProUri.RTSP_TCP_PORT_DEFAULT;
+			this.tcpPortRtsps = ProUri.RTSPS_TCP_PORT_DEFAULT;
 			this.dataDir = "";
 			this.sslCertificate = "";
 			this.sslKey = "";
@@ -388,9 +388,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	 * @return Path to the file
 	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
 	 */
-	public Optional<String> getMqServerSslCertificatePath(@NonNull URI mqServerUri) throws ConfigInvalidException {
-		String tmpHost = (mqServerUri.getHost() == null ? "" : mqServerUri.getHost());
-		return getMqServerSslCertificatePath(tmpHost + ":" + mqServerUri.getPort());
+	public Optional<String> getMqServerSslCertificatePath(@NonNull ProUri mqServerUri) throws ConfigInvalidException {
+		String tmpHost = mqServerUri.getHost().orElse("");
+		return getMqServerSslCertificatePath(tmpHost + ":" + mqServerUri.getPortOrDefault().orElse(0));
 	}
 
 	/**
@@ -400,20 +400,29 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	 * @throws ConfigInvalidException If the file is set in the config but the file could not be found
 	 */
 	public Optional<String> getMqServerSslCertificatePath(@NonNull String hostAndPort) throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".getMqServerSslCertificatePath()";
+
 		checkPostProcessed();
 		if (hostAndPort.isBlank()) {
 			return Optional.empty();
 		}
-		URI tmpUri = URI.create((hostAndPort.startsWith("https://") ? "" : "https://") + hostAndPort);
-		String tmpHost = (tmpUri.getHost() == null ? "" : tmpUri.getHost());
-		int tmpPort = (tmpUri.getPort() < 1 ? 443 : tmpUri.getPort());
-		String tmpSearch1 = tmpHost + ":" + tmpPort;
+		String tmpHostStr;
+		String tmpSearch1;
+		try {
+			String tmpUrlStr = (hostAndPort.startsWith("https://") ? "" : "https://") + hostAndPort;
+			ProUri tmpProUri = ProUri.of(tmpUrlStr);
+			tmpHostStr = tmpProUri.getHost().orElseThrow();
+			tmpSearch1 = tmpHostStr + ":" + tmpProUri.getPortOrDefault().orElseThrow();
+		} catch (ProUriInvalidUriException e) {
+			throw new ConfigInvalidException(FNC_NAME + ": could not parse hostAndPort '" + hostAndPort + "': " + e.getMessage());
+		}
+
 		String tmpPathStr = null;
 		if (remoteMqServerSslCertificates.containsKey(tmpSearch1)) {
 			tmpPathStr = remoteMqServerSslCertificates.get(tmpSearch1);
 		}
-		if (tmpPathStr == null && remoteMqServerSslCertificates.containsKey(tmpHost)) {
-			tmpPathStr = remoteMqServerSslCertificates.get(tmpHost);
+		if (tmpPathStr == null && remoteMqServerSslCertificates.containsKey(tmpHostStr)) {
+			tmpPathStr = remoteMqServerSslCertificates.get(tmpHostStr);
 		}
 		return getAbsoluteFilePathInDataDir(
 				"Invalid MQ SSL Certificate file path for host '" + tmpSearch1 + "'",

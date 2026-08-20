@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threads.rtp.builders;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerXsrcBlock;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -16,7 +17,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 
 import java.net.DatagramSocket;
-import java.net.URI;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -70,7 +70,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public BuilderThreadRtpSenderBase<B, T> comCbNotifyThreadReady(@NonNull Consumer<@NonNull RtspProtoIdSubStream> v) { this.threadParamsCommon.setCbNotifyThreadReady(v); return this; }
 	public BuilderThreadRtpSenderBase<B, T> comCbThreadMayStartPlayback(@NonNull Supplier<@NonNull Boolean> v) { this.threadParamsCommon.setCbThreadMayStartPlayback(v); return this; }
 
-	public BuilderThreadRtpSenderBase<B, T> comAvStreamIncomingUri(@NonNull URI v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return this; }
+	public BuilderThreadRtpSenderBase<B, T> comAvStreamIncomingUri(@NonNull ProUri v) { this.threadParamsCommon.setAvStreamIncomingUri(v); return this; }
 
 	@SuppressWarnings("UnusedReturnValue")
 	public BuilderThreadRtpSenderBase<B, T> comDmxFcReadNextAvPacketInterface(@NonNull TdpDemuxFcReadNextAvPacketInterface v) { this.threadParamsCommon.setDmxFcReadNextAvPacketInterface(v); return this; }

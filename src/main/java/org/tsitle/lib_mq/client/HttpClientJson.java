@@ -118,6 +118,9 @@ public final class HttpClientJson {
 	 */
 	public <T> T postJson(@NonNull String url, @NonNull Map<String, Object> requestBody, @NonNull Type T)
 			throws IOException, InterruptedException {
+		if (url.isBlank()) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".postJson(): URL cannot be blank");
+		}
 		String jsonBody = gson.toJson(requestBody);
 
 		HttpRequest.Builder tmpBuilder = HttpRequest.newBuilder()
