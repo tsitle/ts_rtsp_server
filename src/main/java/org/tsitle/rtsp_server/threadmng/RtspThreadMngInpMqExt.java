@@ -11,7 +11,7 @@ import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromMqInterface;
-import org.tsitle.rtsp_server.threads.inp_e2i.ThreadInpMqE2I;
+import org.tsitle.rtsp_server.threads.inp_to_internal_mq.ThreadInpMqE2I;
 
 import java.util.Map;
 import java.util.Optional;

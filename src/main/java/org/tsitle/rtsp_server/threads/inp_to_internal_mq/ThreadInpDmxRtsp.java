@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.inp_e2i;
+package org.tsitle.rtsp_server.threads.inp_to_internal_mq;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;

@@ -13,7 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromDmxRtspInterface;
-import org.tsitle.rtsp_server.threads.inp_e2i.ThreadInpDmxRtsp;
+import org.tsitle.rtsp_server.threads.inp_to_internal_mq.ThreadInpDmxRtsp;
 
 import java.util.Map;
 import java.util.Objects;
