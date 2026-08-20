@@ -179,13 +179,15 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				if (! mainLoop()) {
 					break;
 				}
+				//noinspection BusyWait
+				Thread.sleep(1);
 			}
 		} finally {
 			ffDemuxerPtr = null;
 		}
 	}
 
-	private boolean mainLoop() throws MqException {
+	private boolean mainLoop() throws MqException, InterruptedException {
 		if (! readNextAvPktFromDemuxer()) {
 			return false;
 		}
@@ -193,6 +195,8 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 			sendAvPktToMq(mqInternalPubVid, dataPerMqVid);
 		} else if (! ffPktCacheEntry.ffPktObj.isVideo && mqInternalPubAud != null) {
 			sendAvPktToMq(mqInternalPubAud, dataPerMqAud);
+		} else {
+			Thread.sleep(100);
 		}
 		return true;
 	}
