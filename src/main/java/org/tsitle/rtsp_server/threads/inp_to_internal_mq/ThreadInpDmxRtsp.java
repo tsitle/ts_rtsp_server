@@ -292,8 +292,8 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				logWarn(FNC_NAME, "Unsupported codec: " + tmpSsInfo.ffmpegCodec);
 				haveInputAudio.set(false);
 			} else if (idEsSourceAud.isEmpty()) {
-				logWarn(FNC_NAME, "ignoring video sub-stream");
-				haveInputVideo.set(false);
+				logWarn(FNC_NAME, "ignoring audio sub-stream");
+				haveInputAudio.set(false);
 			} else {
 				dataPerMqAud.mqCodecSettings.codec = tmpOptMqCodec.get();
 				dataPerMqAud.mqCodecSettings.videoFps = FrameRateEnum.UNKNOWN;
