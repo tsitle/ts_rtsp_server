@@ -77,7 +77,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			RtspProtoInputSource tmpIsObj = availableStreamsInterface.getInputSourceObj(idInputSource);
 			Set<@NonNull RtspProtoIdEsSource> tmpEsIds = tmpIsObj.getEsSourceIds();
 			if (tmpEsIds.isEmpty()) {
-				logError(FNC_NAME, "Invalid DMX IS Source ID '" + idInputSource + "': no ES sources");
+				logError(FNC_NAME, "Invalid DMX IS ID '" + idInputSource + "': no ES sources");
 				return;
 			}
 			for (RtspProtoIdEsSource tmpIdEs : tmpEsIds) {
@@ -99,7 +99,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			}
 		} catch (RtspProtoIdInputSourceNotFoundException e) {
 			// should never happen
-			logError(FNC_NAME, "Invalid DMX IS Source ID '" + idInputSource + "': " + e.getMessage());
+			logError(FNC_NAME, "Invalid DMX IS ID '" + idInputSource + "': " + e.getMessage());
 			return;
 		}
 		logDebug(FNC_NAME, "Starting DmxRtsp for '" +
