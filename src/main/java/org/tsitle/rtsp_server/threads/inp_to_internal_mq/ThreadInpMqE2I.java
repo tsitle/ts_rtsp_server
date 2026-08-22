@@ -82,6 +82,7 @@ public final class ThreadInpMqE2I extends RunnableBase {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
+	 * @param codecSettingsChangedInterface 'Codec settings changed' interface
 	 * @param idEsSource Elementary-Stream Source identifier
 	 * @param mqSettings Message Queue settings
 	 * @param mqSslCertPath Path to the SSL certificate file (can be empty)
