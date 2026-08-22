@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtp;
+package org.tsitle.rtsp_server.threads;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 import java.util.concurrent.locks.LockSupport;
 
-final class AdaptiveScheduler {
+public final class AdaptiveScheduler {
 
 	@SuppressWarnings("FieldCanBeLocal")
 	private final LogMsgInterface logMsgInterface;
