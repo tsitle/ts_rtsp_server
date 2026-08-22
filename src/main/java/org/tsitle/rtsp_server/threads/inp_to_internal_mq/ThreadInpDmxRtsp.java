@@ -170,7 +170,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		dmxSettingsDemux.cfgAllowedCodecsAudio.addAll(DpConstants.DP_FFMPEG_ALLOWED_CODECS_AUDIO);
 
 		try (FfmpegDemuxer ffDemuxer = FfmpegDemuxer.createForDemuxingOnly(
-					logMsgInterface,
+					null,
 					inputSourceDmxRtspUri.getUriString().orElseThrow(),
 					dmxSettingsDemux
 				)) {
@@ -367,7 +367,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String computeIsIdForThreadName(@NonNull RtspProtoIdInputSource idInputSource) {
-		return "I" + HashMd5Helper.hashOfString(
+		return "R" + HashMd5Helper.hashOfString(
 						idInputSource.getIdStr().orElse("-unset-"),
 						false
 				).substring(0, 8);
