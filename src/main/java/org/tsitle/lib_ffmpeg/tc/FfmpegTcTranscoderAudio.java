@@ -372,9 +372,14 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 
 		// Required basics
 		decoderCtx.sample_rate(sourceParamsAudio.sampleRate.getSrHz());
-		/*
-		 * Note: it seems that the channel layout and sample format are not required
-		 */
+		if (sourceFfmpegCodec.isPcmAudio()) {
+			// Channel layout is required for raw PCM codecs (e.g. PCM_MULAW, PCM_ALAW, PCM_S16LE, ...)
+			try (AVChannelLayout tmpChLayout = new AVChannelLayout()) {
+				avutil.av_channel_layout_default(tmpChLayout, sourceParamsAudio.channelCount);
+				int r = avutil.av_channel_layout_copy(decoderCtx.ch_layout(), tmpChLayout);
+				FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_channel_layout_copy(decoderCtx)", r);
+			}
+		}
 
 		// Optional but often helpful if known
 		try (AVRational tmpTb = new AVRational()) {
