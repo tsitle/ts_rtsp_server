@@ -3,7 +3,7 @@ package org.tsitle.lib_ffmpeg;
 import org.jspecify.annotations.NonNull;
 
 /**
- * Audio bit rates in kbps.
+ * Audio bit rates in kbps (kilobits per second).
  */
 public enum FfmpegAudioBitRate {
 
