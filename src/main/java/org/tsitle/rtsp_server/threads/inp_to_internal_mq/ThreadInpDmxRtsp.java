@@ -72,6 +72,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
 	 * @param inputSourceDmxRtspUri URI of the Input Source
+	 * @param codecSettingsChangedInterface 'Codec settings changed' interface
 	 * @param idInputSource Input Source identifier
 	 * @param idEsSourceVid Elementary-Stream Source identifier for video
 	 * @param idEsSourceAud Elementary-Stream Source identifier for audio
