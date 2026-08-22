@@ -5,6 +5,7 @@ import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.avformat.AVStream;
 import org.bytedeco.ffmpeg.avutil.AVDictionary;
+import org.bytedeco.ffmpeg.avutil.AVDictionaryEntry;
 import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
@@ -25,7 +26,9 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -399,13 +402,16 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		long durationTs = inputAvFmtCtx.duration();  // in AV_TIME_BASE units, can be AV_NOPTS_VALUE
 		double durationSecs = (durationTs != avutil.AV_NOPTS_VALUE ? durationTs / (double)avutil.AV_TIME_BASE : -1.0);
 
+		final Map<@NonNull String, @NonNull String> metaMap = new HashMap<>();
+		readFileMetadata(metaMap);
+
 		// ------------------------------------------------
 
 		if (inputSsInfoVid.subStreamIx != -1) {
-			getSubStreamInfoVideo(inputAvFmtCtx, durationSecs, dmxSettings.cfgOutputModeH26x, inputSsInfoVid);
+			getSubStreamInfoVideo(inputAvFmtCtx, durationSecs, dmxSettings.cfgOutputModeH26x, metaMap, inputSsInfoVid);
 		}
 		if (inputSsInfoAud.subStreamIx != -1) {
-			getSubStreamInfoAudio(inputAvFmtCtx, durationSecs, inputSsInfoAud);
+			getSubStreamInfoAudio(inputAvFmtCtx, durationSecs, metaMap, inputSsInfoAud);
 		}
 		avformat.avformat_close_input(inputAvFmtCtx);
 	}
@@ -491,6 +497,28 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		}
 	}
 
+	private void readFileMetadata(@NonNull Map<@NonNull String, @NonNull String> metaMap) {
+		if (inputAvFmtCtx == null) {
+			return;
+		}
+		AVDictionary metadata = inputAvFmtCtx.metadata();
+		if (metadata == null) {
+			return;
+		}
+		for (String tag : FfmpegDmxSubStreamInfoBase.META_KEYS) {
+			AVDictionaryEntry entry = avutil.av_dict_get(metadata, tag, null, 0);
+			if (entry == null) {
+				continue;
+			}
+			try (BytePointer valBp = entry.value()) {
+				if (valBp != null && valBp.getString() != null) {
+					String tmpTagValue = valBp.getString().replaceAll("[^\\x20-\\x7E]", "");
+					metaMap.put(tag, tmpTagValue);
+				}
+			}
+		}
+	}
+
 	private static @NonNull RationalNumber getSubStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int subStreamIx) {
 		int tmpResNum = 0;
 		int tmpResDen = 1;
@@ -506,6 +534,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 				@NonNull AVFormatContext inputAvFmtCtx,
 				double durationSecs,
 				@NonNull FfmpegPktConvModeH26x pktConvModeH26x,
+				@NonNull Map<@NonNull String, @NonNull String> metaMap,
 				@NonNull FfmpegDmxSubStreamInfoVideo ioSsInfoVideo
 			) throws FfmpegGenericException {
 		final String FNC_NAME = FfmpegDemuxer.class.getSimpleName() + ".getSubStreamInfoVideo()";
@@ -523,6 +552,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		ioSsInfoVideo.bitRate = st.codecpar().bit_rate();
 		ioSsInfoVideo.pixelFmt = FfmpegHelperPixelFmtConv.convertPixelFmtFromInt(FNC_NAME, st.codecpar().format());
 		copySubStreamInfoExtradata(st, pktConvModeH26x, ioSsInfoVideo);
+		ioSsInfoVideo.metaMap.clear();
+		ioSsInfoVideo.metaMap.putAll(metaMap);
 
 		//
 		int tmpFpsNum = 0;
@@ -546,6 +577,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private static void getSubStreamInfoAudio(
 				@NonNull AVFormatContext inputAvFmtCtx,
 				double durationSecs,
+				@NonNull Map<@NonNull String, @NonNull String> metaMap,
 				@NonNull FfmpegDmxSubStreamInfoAudio ioSsInfoAudio
 			) {
 		ioSsInfoAudio.timeBasePts = getSubStreamTimeBase(inputAvFmtCtx, ioSsInfoAudio.subStreamIx);
@@ -570,6 +602,8 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			ioSsInfoAudio.samplesPerFrame = -1;
 		}
 		copySubStreamInfoExtradata(st, FfmpegPktConvModeH26x.PASSTHROUGH, ioSsInfoAudio);
+		ioSsInfoAudio.metaMap.clear();
+		ioSsInfoAudio.metaMap.putAll(metaMap);
 	}
 
 	private static void copySubStreamInfoExtradata(
