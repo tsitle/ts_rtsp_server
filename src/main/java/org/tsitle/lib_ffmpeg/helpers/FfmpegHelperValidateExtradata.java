@@ -16,7 +16,7 @@ public final class FfmpegHelperValidateExtradata {
 				@NonNull ExtradataContainerHex extradata
 			) throws FfmpegGenericException {
 		if (extradata.isEmpty() &&  // @CODEC
-				(ffmpegCodec == FfmpegCodec.A_AAC ||
+				(/*ffmpegCodec == FfmpegCodec.A_AAC || -- turns out that AAC does not always require extradata*/
 						ffmpegCodec == FfmpegCodec.A_ALAC ||
 						ffmpegCodec == FfmpegCodec.A_FLAC ||
 						ffmpegCodec == FfmpegCodec.A_VORBIS ||
