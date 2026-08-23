@@ -43,7 +43,7 @@ public enum FfmpegAudioBitRate {
 		return brInt;
 	}
 
-	public static @NonNull FfmpegAudioBitRate of(double value) {
+	public static @NonNull FfmpegAudioBitRate of(int value) {
 		for (FfmpegAudioBitRate tmpEn : FfmpegAudioBitRate.values()) {
 			if (tmpEn != UNKNOWN && tmpEn.getBrInt() == value) {
 				return tmpEn;
