@@ -132,7 +132,7 @@ class ProUriTest {
 	}
 
 	@Test
-	void testEmptyUriIsValid() throws Exception {
+	void testEmptyUriIsValid() {
 		// Act
 		ProUri emptyUri = ProUri.ofEmpty();
 

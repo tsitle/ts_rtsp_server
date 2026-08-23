@@ -93,8 +93,12 @@ public final class ProUri implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static @NonNull ProUri ofEmpty() throws ProUriInvalidUriException {
-		return new ProUri("");
+	public static @NonNull ProUri ofEmpty() {
+		try {
+			return new ProUri("");
+		} catch (ProUriInvalidUriException e) {
+			throw new RuntimeException("this will never happen");
+		}
 	}
 
 	public static @NonNull ProUri ofFile(@NonNull String path) throws ProUriInvalidUriException {
