@@ -175,12 +175,20 @@ final class FileFolderWatcher implements AutoCloseable {
 
 		try (var stream = Files.walk(directory)) {
 			stream
-					.filter(Files::isDirectory)
-					.forEach(path -> {
+					.filter(p ->
+							Files.isDirectory(p) || Files.isSymbolicLink(p)
+						)
+					.forEach(p -> {
 							try {
-								registerDirectory(path);
+								if (Files.isSymbolicLink(p)) {
+									p = p.toRealPath().toAbsolutePath().normalize();
+									if (! Files.isDirectory(p)) {
+										return;
+									}
+								}
+								registerDirectory(p);
 							} catch (IOException e) {
-								logError(FNC_NAME, "Could not register directory: " + path);
+								logError(FNC_NAME, "Could not register directory: " + p);
 							}
 						});
 		}
@@ -209,6 +217,18 @@ final class FileFolderWatcher implements AutoCloseable {
 		final String FNC_NAME = getClass().getSimpleName() + ".scanRecursively()";
 
 		if (! running.get() || cancelToken.cancelled) {
+			return;
+		}
+
+		try {
+			if (Files.isSymbolicLink(directory)) {
+				directory = directory.toRealPath().toAbsolutePath().normalize();
+				if (! Files.isDirectory(directory)) {
+					return;
+				}
+			}
+		} catch (IOException e) {
+			logError(FNC_NAME, "Could not convert symlink to abs directory '" + directory + "': " + e.getMessage());
 			return;
 		}
 
