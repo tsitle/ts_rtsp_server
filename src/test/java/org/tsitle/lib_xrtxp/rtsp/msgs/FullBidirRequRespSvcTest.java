@@ -117,7 +117,8 @@ public class FullBidirRequRespSvcTest {
 							false,
 							ExtradataContainerHex.ofEmpty(),
 							FrameRateEnum.FPS_15_0,
-							ExtradataContainerSdp.ofEmpty()
+							ExtradataContainerSdp.ofEmpty(),
+							null
 						);
 				}
 				if (idEsSource.getIdStr().orElse("-unset-").equals("dummy-stream-source-audio")) {
@@ -134,7 +135,8 @@ public class FullBidirRequRespSvcTest {
 							false,
 							ExtradataContainerHex.ofEmpty(),
 							FrameRateEnum.UNKNOWN,
-							ExtradataContainerSdp.ofEmpty()
+							ExtradataContainerSdp.ofEmpty(),
+							null
 						);
 				}
 			} catch (ProUriInvalidUriException e) {
