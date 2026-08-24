@@ -17,6 +17,10 @@ import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.*;
@@ -29,6 +33,7 @@ import org.tsitle.rtsp_server.helpers.CfgTcCodecToFfCodecHelper;
 import org.tsitle.rtsp_server.threads.AdaptiveScheduler;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,10 +49,13 @@ public final class ThreadInpDmxAf extends RunnableBase {
 	private static class DataPerMq {
 		final FfmpegTcSettingsOutAudio ffTcSettingsOutAudio = new FfmpegTcSettingsOutAudio();
 		final MqCodecSettings mqCodecSettings = new MqCodecSettings();
+		double virtualFps = -1.0;
 		@NonNull String metadataTags = "";
 		boolean hasMetadataTagsChanged = false;
 		long msgNr = 1;
 		int counter = 0;
+
+		final AudioOpusParser parserOpus = new AudioOpusParser();
 	}
 
 	private static class DynamicObjs {
@@ -400,6 +408,9 @@ public final class ThreadInpDmxAf extends RunnableBase {
 		}
 
 		//
+		boolean isVirtFpsOk = updateMqCodecSettings_spf(tcAvPkt, false);
+
+		//
 		double tmpPtsSeconds = tcAvPkt.ptsUnitsToSeconds();
 		if (tmpPtsSeconds < 0.0) {
 			return;
@@ -413,6 +424,11 @@ public final class ThreadInpDmxAf extends RunnableBase {
 				tmpTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
 				(long)(computeDurationSeconds((int)tcAvPkt.duration, rd.dpm.mqCodecSettings.audioSamplerate) * 1_000_000_000L)
 			);
+
+		//
+		if (! isVirtFpsOk) {
+			return;
+		}
 
 		//
 		MqPacketAv mqPkt = new MqPacketAv(
@@ -469,36 +485,81 @@ public final class ThreadInpDmxAf extends RunnableBase {
 				FfCodecToMqCodecHelper.convertFfToMqCodec(rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec).orElseThrow();
 		rd.dpm.mqCodecSettings.audioSamplerate = rd.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed;
 		rd.dpm.mqCodecSettings.audioChannels = (byte)tmpCdcParams.channelCount;
-		if (tmpCdcParams.samplesPerFrame < 1) {
-			if (rd.dpm.mqCodecSettings.codec.isPcmAudio()) {
-				int tmpBytes = firstAvPkt.pktBe.getUsed();
-				tmpBytes /= rd.dpm.mqCodecSettings.audioChannels;
-				tmpBytes /= (rd.dpm.mqCodecSettings.codec == MqPacketCodec.LPCM16S ? 2 : 1);
-				rd.dpm.mqCodecSettings.audioSamplesPerFrame = tmpBytes;
-			} else {
-				throw new IllegalStateException(FNC_NAME + ": Transcoder did not provide samplesPerFrame");
-			}
-		} else {
-			rd.dpm.mqCodecSettings.audioSamplesPerFrame = tmpCdcParams.samplesPerFrame;
-		}
-		double virtualFps = computeVirtualFps(
-				rd.dpm.mqCodecSettings.audioSamplesPerFrame,
-				rd.dpm.mqCodecSettings.audioSamplerate
-			);
-		if (virtualFps < 1.0 || virtualFps > 100.0) {
-			logError(FNC_NAME, "Invalid virtual FPS: " + virtualFps + " " +
-					"(codec=" + rd.dpm.mqCodecSettings.codec + ", inpFn=" + rd.ifs.currentFilePath + ")");
-			return;
-		}
-		codecSettingsChangedInterface.onCodecSettingsChangedFromDmxAf(idEsSource, rd.dpm.mqCodecSettings);
+		updateMqCodecSettings_spf(firstAvPkt, true);
 
 		String metadataHex = tmpCdcParams.extradataHex.getEd();
 		codecSettingsChangedInterface.onCodecMetadataFromDmxAf(idEsSource, metadataHex);
 	}
 
+	private boolean updateMqCodecSettings_spf(@NonNull FfmpegAvPktBasics avPkt, boolean forceUpdateUpstream) {
+		final String FNC_NAME = getClass().getSimpleName() + ".updateMqCodecSettings_spf()";
+
+		if (rd.dyn.ffmpegTcObj == null) {
+			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
+		}
+		if (rd.dpm.mqCodecSettings.codec == null || rd.dpm.mqCodecSettings.audioChannels == null ||
+				rd.dpm.mqCodecSettings.audioSamplerate == null) {
+			throw new IllegalStateException(FNC_NAME + ": MQ Codec Settings not initialized");
+		}
+
+		final int lastSpf = Objects.requireNonNullElse(rd.dpm.mqCodecSettings.audioSamplesPerFrame, -1);
+		int nextSpf;
+		final double lastVirtualFps = rd.dpm.virtualFps;
+
+		if (rd.dpm.mqCodecSettings.codec == MqPacketCodec.AACLC) {
+			if (avPkt.duration != DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1) {
+				// this can happen at the end of an input file
+				return false;
+			}
+			nextSpf = (int)avPkt.duration;
+		} else if (rd.dpm.mqCodecSettings.codec == MqPacketCodec.OPUS) {
+			AudioOpusInfo tmpInf;
+			try {
+				tmpInf = rd.dpm.parserOpus.parseOpusData(new BufferView(avPkt.pktBe));
+			} catch (AvInvalidCodecDataException e) {
+				logError(FNC_NAME, "Invalid Opus data: " + e.getMessage());
+				return false;
+			}
+			nextSpf = tmpInf.samplesPerChannelInAudioData;
+		} else if (avPkt.duration < 1) {
+			if (! rd.dpm.mqCodecSettings.codec.isPcmAudio()) {
+				throw new IllegalStateException(FNC_NAME + ": Transcoder did not provide samplesPerFrame");
+			}
+			int tmpBytes = avPkt.pktBe.getUsed();
+			tmpBytes /= rd.dpm.mqCodecSettings.audioChannels;
+			tmpBytes /= (rd.dpm.mqCodecSettings.codec == MqPacketCodec.LPCM16S ? 2 : 1);
+			nextSpf = tmpBytes;
+		} else {
+			nextSpf = (int)avPkt.duration;
+		}
+		final double tmpVirtFps = computeVirtualFps(
+				nextSpf,
+				rd.dpm.mqCodecSettings.audioSamplerate
+			);
+		if (tmpVirtFps < 1.0 || tmpVirtFps > RtpConstants.RTP_MAX_FRAMES_PER_SECOND) {
+			logError(FNC_NAME, "Invalid virtual FPS: " + tmpVirtFps + " " +
+					"(codec=" + rd.dpm.mqCodecSettings.codec + ", inpFn=" + rd.ifs.currentFilePath + ")");
+			return false;
+		}
+		rd.dpm.mqCodecSettings.audioSamplesPerFrame = nextSpf;
+		rd.dpm.virtualFps = tmpVirtFps;
+		if (forceUpdateUpstream ||
+				lastSpf != rd.dpm.mqCodecSettings.audioSamplesPerFrame || lastVirtualFps != rd.dpm.virtualFps) {
+			if (! forceUpdateUpstream) {
+				logDebug(FNC_NAME, "update virtual FPS: " + tmpVirtFps + " " +
+						"/ SPF: " + rd.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
+						"(codec=" + rd.dpm.mqCodecSettings.codec + ")");
+			}
+			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxAf(idEsSource, rd.dpm.mqCodecSettings);
+		}
+		return true;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private boolean findAndLoadNextFile() {
+		final String FNC_NAME = getClass().getSimpleName() + ".findAndLoadNextFile()";
+
 		rd.dyn.closeDemuxer();
 
 		if (rd.ifs.ffwPtr == null) {
@@ -510,6 +571,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 
 		do {
 			if (rd.ifs.inputFilePaths.isEmpty()) {
+				logError(FNC_NAME, "no input files available");
 				return false;
 			}
 
@@ -531,6 +593,8 @@ public final class ThreadInpDmxAf extends RunnableBase {
 			initDemuxer();
 			break;
 		} while (true);
+
+		logDebug(FNC_NAME, "Input file: '" + rd.ifs.currentFilePath + "'");
 		return true;
 	}
 

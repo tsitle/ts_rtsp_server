@@ -13,6 +13,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
+import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -274,9 +275,11 @@ public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implemen
 	private void validateParamValues() {
 		final String errPrefix = getClass().getSimpleName() + ": ";
 
-		if (avFramesPerSecond > 100.0f) {
-			throw new IllegalArgumentException(errPrefix + "avFramesPerSecond must be <= 100.0 (is=" +
-					String.format("%.3f", avFramesPerSecond) + ")");
+		if (avFramesPerSecond > RtpConstants.RTP_MAX_FRAMES_PER_SECOND) {
+			throw new IllegalArgumentException(errPrefix +
+					String.format("avFramesPerSecond must be <= %.1f (is=%.3f)",
+							RtpConstants.RTP_MAX_FRAMES_PER_SECOND, avFramesPerSecond)
+				);
 		}
 
 		requireNonNull(rtpSeqNrT0, "rtpSeqNrT0");

@@ -18,6 +18,9 @@ import java.nio.file.Path;
 public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 
 	public static class SectionTranscodeAudio implements Cloneable {
+		public static final int AUDIO_BITRATE_KBPS_MIN = 8;
+		public static final int AUDIO_BITRATE_KBPS_MAX = 224;  // higher bitrates cause problems with Opus @48kHz and 2 channels
+
 		/** Codec used for the stream (default is AAC) */
 		@Expose
 		private @NonNull ConfigTcCodec codec;
@@ -91,8 +94,9 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 			if (getAudioChannelCount() < 1 || getAudioChannelCount() > 2) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Channel Count (min=1, max=2)" + errMsgSuffix);
 			}
-			if (getAudioBitrateKbps() < 1 || getAudioBitrateKbps() > 448) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Bitrate (min=1, max=448)" + errMsgSuffix);
+			if (getAudioBitrateKbps() < AUDIO_BITRATE_KBPS_MIN || getAudioBitrateKbps() > AUDIO_BITRATE_KBPS_MAX) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Bitrate (min=" + AUDIO_BITRATE_KBPS_MIN +
+						", max=" + AUDIO_BITRATE_KBPS_MAX + ")" + errMsgSuffix);
 			}
 		}
 

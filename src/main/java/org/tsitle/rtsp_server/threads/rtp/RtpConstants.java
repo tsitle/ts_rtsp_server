@@ -4,6 +4,9 @@ public final class RtpConstants {
 
 	private RtpConstants() { }
 
+	/** Maximum frames per second (or virtual FPS in case of audio) */
+	public static final double RTP_MAX_FRAMES_PER_SECOND = 100.0;
+
 	/** Interval for sending PCM audio samples that were read from a file (in milliseconds) */
 	public static final int RTP_SEND_INTERVAL_PCM_AUDIO_FROM_FILE_MS = 20;
 
