@@ -116,7 +116,7 @@ public final class RtspSrvConfigStreamInputDmxFc implements Cloneable {
 		checkPostProcessed();
 
 		//
-		final String errMsgSuffix = " for Muxed-Stream Source ID '" + extIdStr + "'";
+		final String errMsgSuffix = " for DMX FC Source ID '" + extIdStr + "'";
 		if (filePath.isBlank()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No File Path found" + errMsgSuffix);
 		}

@@ -116,7 +116,7 @@ public final class RtspSrvConfigStreamInputDmxRtsp implements Cloneable {
 		checkPostProcessed();
 
 		//
-		final String errMsgSuffix = " for Muxed-Stream Source ID '" + extIdStr + "'";
+		final String errMsgSuffix = " for DMX RTSP Source ID '" + extIdStr + "'";
 		if (url.isBlank()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No URL found" + errMsgSuffix);
 		}
