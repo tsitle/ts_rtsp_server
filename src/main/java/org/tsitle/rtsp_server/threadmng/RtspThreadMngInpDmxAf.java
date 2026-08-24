@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server.threadmng;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
+import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -10,31 +11,30 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
+import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromDmxAfInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
-import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromDmxRtspInterface;
-import org.tsitle.rtsp_server.threads.inp_to_internal_mq.ThreadInpDmxRtsp;
+import org.tsitle.rtsp_server.threads.inp_to_internal_mq.ThreadInpDmxAf;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 
-public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
+public final class RtspThreadMngInpDmxAf extends RtspThreadMngBase {
 
-	private static final String POOL_NAME = "POOLDMXRTSP";
+	private static final String POOL_NAME = "POOLDMXAF";
 
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull AsCodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface;
+	private final @NonNull AsCodecSettingsChangedFromDmxAfInterface codecSettingsChangedInterface;
 
-	private final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull ThreadInpDmxRtsp> dmxThreadMap = new ConcurrentHashMap<>();
+	private final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull ThreadInpDmxAf> dmxThreadMap = new ConcurrentHashMap<>();
 
-	public RtspThreadMngInpDmxRtsp(
+	public RtspThreadMngInpDmxAf(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull AsCodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface
+				@NonNull AsCodecSettingsChangedFromDmxAfInterface codecSettingsChangedInterface
 			) {
 		super(logMsgInterface, cancelToken, rtspSrvConfig);
 
@@ -43,8 +43,8 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 
 		//
 		this.pool = new ThreadPoolExecutor(
-				rtspSrvConfig.getThreadsMaximumDmxRtsp(),
-				rtspSrvConfig.getThreadsMaximumDmxRtsp(),
+				rtspSrvConfig.getThreadsMaximumDmxAf(),
+				rtspSrvConfig.getThreadsMaximumDmxAf(),
 				60L, TimeUnit.SECONDS,
 				new SynchronousQueue<>(true)
 			);
@@ -64,15 +64,15 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			return;
 		}
 
-		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumDmxRtsp()) {
-			logWarn(FNC_NAME, "cannot start DmxRtsp thread - pool full");
+		if (countActiveThreads() >= rtspSrvConfig.getThreadsMaximumDmxAf()) {
+			logWarn(FNC_NAME, "cannot start DmxAf thread - pool full");
 			return;
 		}
 
 		//
-		ProUri inputUri = null;
-		RtspProtoIdEsSource idEsSourceVid = RtspProtoIdEsSource.ofEmpty();
-		RtspProtoIdEsSource idEsSourceAud = RtspProtoIdEsSource.ofEmpty();
+		ProUri inputSourceDmxAfUri = ProUri.ofEmpty();
+		RtspProtoEsSourceExpandedInfo.TcSettingsAudio tcSettingsAudio = null;
+		RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 		try {
 			RtspProtoInputSource tmpIsObj = availableStreamsInterface.getInputSourceObj(idInputSource);
 			Set<@NonNull RtspProtoIdEsSource> tmpEsIds = tmpIsObj.getEsSourceIds();
@@ -83,14 +83,14 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			for (RtspProtoIdEsSource tmpIdEs : tmpEsIds) {
 				try {
 					RtspProtoEsSourceExpandedInfo tmpEsei = availableStreamsInterface.getElementaryStreamSourceExpInfo(tmpIdEs);
-					if (tmpEsei.codec().isVideo()) {
-						idEsSourceVid.copyFrom(tmpIdEs);
-					} else if (tmpEsei.codec().isAudio()) {
-						idEsSourceAud.copyFrom(tmpIdEs);
-					} else {
-						continue;
+					if (tmpEsei.codec() != RtpPacketType.UNKNOWN) {
+						logError(FNC_NAME, "Invalid DMX ES Source '" + tmpIdEs + "': codec should be UNKNOWN");
+						return;
 					}
-					inputUri = tmpEsei.inputUri();
+					idEsSource.copyFrom(tmpIdEs);
+					inputSourceDmxAfUri = tmpEsei.inputUri().clone();
+					tcSettingsAudio = (tmpEsei.tcSettingsAudio() == null ? null : tmpEsei.tcSettingsAudio().clone());
+					break;
 				} catch (RtspProtoIdEsSourceNotFoundException e) {
 					// should never happen
 					logError(FNC_NAME, "Invalid DMX ES Source ID '" + tmpIdEs + "': " + e.getMessage());
@@ -102,18 +102,33 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			logError(FNC_NAME, "Invalid DMX IS ID '" + idInputSource + "': " + e.getMessage());
 			return;
 		}
-		logDebug(FNC_NAME, "Starting DmxRtsp for '" +
+		if (idEsSource.isEmpty()) {
+			// should never happen
+			logError(FNC_NAME, "Invalid DMX IS '" + idInputSource + "': ES ID is missing");
+			return;
+		}
+		if (inputSourceDmxAfUri.isEmpty()) {
+			// should never happen
+			logError(FNC_NAME, "Invalid DMX IS '" + idInputSource + "': ES URI is missing");
+			return;
+		}
+		if (tcSettingsAudio == null) {
+			// should never happen
+			logError(FNC_NAME, "Invalid DMX IS '" + idInputSource + "': ES TcSettings are missing");
+			return;
+		}
+		logDebug(FNC_NAME, "Starting DmxAf for '" +
 				idInputSource.getIdStr().orElse("-unset-") + "'");
 
 		//
-		ThreadInpDmxRtsp threadDmx = new ThreadInpDmxRtsp(
+		ThreadInpDmxAf threadDmx = new ThreadInpDmxAf(
 				logMsgInterface,
 				cancelToken,
-				Objects.requireNonNull(inputUri),
+				inputSourceDmxAfUri,
+				tcSettingsAudio,
 				codecSettingsChangedInterface,
 				idInputSource,
-				idEsSourceVid,
-				idEsSourceAud
+				idEsSource
 			);
 
 		try {
@@ -142,12 +157,12 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 	public void doHousekeeping() {
 		final String FNC_NAME = getClass().getSimpleName() + ".doHousekeeping()";
 
-		for (Map.Entry<RtspProtoIdInputSource, ThreadInpDmxRtsp> entry : dmxThreadMap.entrySet()) {
-			ThreadInpDmxRtsp threadDmx = entry.getValue();
+		for (Map.Entry<RtspProtoIdInputSource, ThreadInpDmxAf> entry : dmxThreadMap.entrySet()) {
+			ThreadInpDmxAf threadDmx = entry.getValue();
 			if (threadDmx.isRunning()) {
 				continue;
 			}
-			logDebug(FNC_NAME, "removing DmxRtsp thread for ID=" + entry.getKey());
+			logDebug(FNC_NAME, "removing DmxAf thread for ID=" + entry.getKey());
 			shutdownThreadByIdInputSource(entry.getKey());
 		}
 	}
@@ -156,7 +171,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 		if (! dmxThreadMap.containsKey(idInputSource)) {
 			return;
 		}
-		ThreadInpDmxRtsp threadDmx = dmxThreadMap.get(idInputSource);
+		ThreadInpDmxAf threadDmx = dmxThreadMap.get(idInputSource);
 		if (threadDmx != null) {
 			threadDmx.stopThread();
 			dmxThreadMap.remove(idInputSource);
@@ -182,7 +197,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 
 	private int countActiveThreads() {
 		int resI = 0;
-		for (ThreadInpDmxRtsp entryT : dmxThreadMap.values()) {
+		for (ThreadInpDmxAf entryT : dmxThreadMap.values()) {
 			if (entryT.isRunning()) {
 				++resI;
 			}

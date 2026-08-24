@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
-public enum ConfigEsCodec {
+public enum ConfigEsRawFileCodec {
 
 	AACLC,
 	AC3,

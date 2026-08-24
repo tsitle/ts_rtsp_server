@@ -9,6 +9,9 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
+import org.tsitle.rtsp_server.availstreams.AsGetFileTagsInterface;
+
+import java.util.Optional;
 
 /**
  * Service for getting and setting RTSP parameters.
@@ -16,10 +19,15 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterInterface, RtspProtoParameterSetterInterface {
 
 	public static final String CONTENT_LANGUAGE = "en";
+	public static final String PARAM_KEY_FILETAGS = "filetags";
+
+	private final @NonNull AsGetFileTagsInterface asGetFileTagsInterface;
 
 	private final RtspProtoIdSession currentSessionId = RtspProtoIdSession.ofEmpty();
 
-	public RtspParamGetterSetterSvc() { }
+	public RtspParamGetterSetterSvc(@NonNull AsGetFileTagsInterface asGetFileTagsInterface) {
+		this.asGetFileTagsInterface = asGetFileTagsInterface;
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -58,6 +66,13 @@ public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterI
 			) {
 		RtspProtoDataCntGetSetParamKvs resObj = new RtspProtoDataCntGetSetParamKvs();
 		resObj.setContentLang(CONTENT_LANGUAGE);
+
+		/*
+		 * Note: we do not validate the Session ID here to avoid the client having to send a 'SETUP' request.
+		 */
+		Optional<String> tmpOptFileTags = asGetFileTagsInterface.getFileTags(idInputSource);
+		tmpOptFileTags.ifPresent(s -> resObj.putParamKvsEntry(PARAM_KEY_FILETAGS, s));
+
 		return resObj;
 	}
 

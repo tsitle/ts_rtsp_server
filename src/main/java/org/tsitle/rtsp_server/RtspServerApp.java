@@ -10,10 +10,7 @@ import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.lib_xrtxp.ssl.SslException;
-import org.tsitle.rtsp_server.threadmng.RtspThreadMngInpDmxRtsp;
-import org.tsitle.rtsp_server.threadmng.RtspThreadMngInpMqExt;
-import org.tsitle.rtsp_server.threadmng.RtspThreadMngPlay;
-import org.tsitle.rtsp_server.threadmng.RtspThreadMngTci;
+import org.tsitle.rtsp_server.threadmng.*;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -48,6 +45,7 @@ public final class RtspServerApp {
 	private static @Nullable RtspThreadMngTci rtspThreadMngTci = null;
 	private static @Nullable RtspThreadMngInpMqExt rtspThreadMngInpMqExt = null;
 	private static @Nullable RtspThreadMngInpDmxRtsp rtspThreadMngInpDmxRtsp = null;
+	private static @Nullable RtspThreadMngInpDmxAf rtspThreadMngInpDmxAf = null;
 
 	private static final @NonNull RtspAvailableStreamsSvc availableStreamsSvc = new RtspAvailableStreamsSvc();
 	private static @Nullable ThreadStreamsConfig threadStreamsConfig = null;
@@ -85,6 +83,9 @@ public final class RtspServerApp {
 
 		// start the Demux RTSP Thread Manager
 		startDmxRtspThreads();
+
+		// start the Demux AF Thread Manager
+		startDmxAfThreads();
 
 		//
 		startStreamsConfigThread();
@@ -174,6 +175,7 @@ public final class RtspServerApp {
 				rtspSrvConfig,
 				cfgServerNameAndVersion,
 				availableStreamsSvc,
+				availableStreamsSvc,
 				globalSessionInfoSvc,
 				rtspThreadMngPlay
 			);
@@ -202,6 +204,16 @@ public final class RtspServerApp {
 
 	private static @NonNull RtspThreadMngInpDmxRtsp createRtspThreadMngDmxRtsp() {
 		return new RtspThreadMngInpDmxRtsp(
+				RtspServerApp::addMsgForLogThread,
+				cancelToken,
+				rtspSrvConfig,
+				availableStreamsSvc,
+				availableStreamsSvc
+			);
+	}
+
+	private static @NonNull RtspThreadMngInpDmxAf createRtspThreadMngDmxAf() {
+		return new RtspThreadMngInpDmxAf(
 				RtspServerApp::addMsgForLogThread,
 				cancelToken,
 				rtspSrvConfig,
@@ -415,15 +427,12 @@ public final class RtspServerApp {
 				logDebug(fncName, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
 			}
 		}
-		// clean up expired TCI, MQext and DmxRtsp threads
-		if (isLoopCount50 && rtspThreadMngTci != null) {
-			rtspThreadMngTci.doHousekeeping();
-		}
-		if (isLoopCount50 && rtspThreadMngInpMqExt != null) {
-			rtspThreadMngInpMqExt.doHousekeeping();
-		}
-		if (isLoopCount50 && rtspThreadMngInpDmxRtsp != null) {
-			rtspThreadMngInpDmxRtsp.doHousekeeping();
+		// clean up expired TCI, MQext, DmxRtsp and DmxAf threads
+		if (isLoopCount50) {
+			if (rtspThreadMngTci != null) { rtspThreadMngTci.doHousekeeping(); }
+			if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.doHousekeeping(); }
+			if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.doHousekeeping(); }
+			if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.doHousekeeping(); }
 		}
 	}
 
@@ -448,18 +457,11 @@ public final class RtspServerApp {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".stopThreads()";
 
 		cancelToken.cancelled = true;  // used by RtspThreadMngXxx
-		if (rtspThreadMngPlay != null) {
-			rtspThreadMngPlay.shutdownAllThreads();
-		}
-		if (rtspThreadMngTci != null) {
-			rtspThreadMngTci.shutdownAllThreads();
-		}
-		if (rtspThreadMngInpMqExt != null) {
-			rtspThreadMngInpMqExt.shutdownAllThreads();
-		}
-		if (rtspThreadMngInpDmxRtsp != null) {
-			rtspThreadMngInpDmxRtsp.shutdownAllThreads();
-		}
+		if (rtspThreadMngPlay != null) { rtspThreadMngPlay.shutdownAllThreads(); }
+		if (rtspThreadMngTci != null) { rtspThreadMngTci.shutdownAllThreads(); }
+		if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.shutdownAllThreads(); }
+		if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.shutdownAllThreads(); }
+		if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.shutdownAllThreads(); }
 
 		//
 		if (threadStreamsConfig != null) {
@@ -502,18 +504,13 @@ public final class RtspServerApp {
 		globalSessionInfoSvc.findSessionsThatUseInputSources(stopIsIds, stopSessionIds);
 
 		//
-		if (rtspThreadMngPlay != null) {
-			rtspThreadMngPlay.shutdownThreadsForSessionIds(stopSessionIds);
-		}
-		if (rtspThreadMngTci != null) {
-			rtspThreadMngTci.shutdownThreadsForSessionIds(stopSessionIds);
-		}
-		if (rtspThreadMngInpMqExt != null) {
-			rtspThreadMngInpMqExt.shutdownThreadsForEsIds(stopMqEsIds);
-		}
-		if (rtspThreadMngInpDmxRtsp != null) {
-			rtspThreadMngInpDmxRtsp.shutdownThreadsForIsIds(stopIsIds);
-		}
+		if (rtspThreadMngPlay != null) { rtspThreadMngPlay.shutdownThreadsForSessionIds(stopSessionIds); }
+		if (rtspThreadMngTci != null) { rtspThreadMngTci.shutdownThreadsForSessionIds(stopSessionIds); }
+		if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.shutdownThreadsForEsIds(stopMqEsIds); }
+		if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.shutdownThreadsForIsIds(stopIsIds); }
+		if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.shutdownThreadsForIsIds(stopIsIds); }
+
+		sleepLongAndProsper();
 
 		//
 		availableStreamsSvc.performStreamsUpdate();
@@ -521,6 +518,20 @@ public final class RtspServerApp {
 		//
 		startMessageQueueThreadsE2I();
 		startDmxRtspThreads();
+		startDmxAfThreads();
+	}
+
+	private static void sleepLongAndProsper() {
+		try {
+			int ms = 1000;
+			while (ms > 0 && ! doStop.get()) {
+				//noinspection BusyWait
+				Thread.sleep(100L);
+				ms -= 100;
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+		}
 	}
 
 	private static void startMessageQueueThreadsE2I() {
@@ -570,6 +581,31 @@ public final class RtspServerApp {
 				continue;
 			}
 			rtspThreadMngInpDmxRtsp.startNewDmxThread(tmpIsId);
+		}
+	}
+
+	private static void startDmxAfThreads() {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startDmxAfThreads()";
+
+		final Set<@NonNull RtspProtoIdInputSource> dmxAfStreamSources = availableStreamsSvc.findRequiredDmxAfInputSources();
+		if (dmxAfStreamSources.isEmpty()) {
+			return;
+		}
+		if (dmxAfStreamSources.size() > rtspSrvConfig.getThreadsMaximumDmxAf()) {
+			logError(FNC_NAME, "Too many DMX AF Sub-Stream sources " +
+					"(have=" + dmxAfStreamSources.size() + ", max=" + rtspSrvConfig.getThreadsMaximumDmxAf() + ")");
+			return;
+		}
+
+		if (rtspThreadMngInpDmxAf == null) {
+			rtspThreadMngInpDmxAf = createRtspThreadMngDmxAf();
+		}
+
+		for (RtspProtoIdInputSource tmpIsId : dmxAfStreamSources) {
+			if (rtspThreadMngInpDmxAf.isThreadForInputSourceIdRunning(tmpIsId)) {
+				continue;
+			}
+			rtspThreadMngInpDmxAf.startNewDmxThread(tmpIsId);
 		}
 	}
 

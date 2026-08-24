@@ -22,7 +22,8 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromDmxRtspInterface;
+import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromDmxRtspInterface;
+import org.tsitle.rtsp_server.helpers.FfCodecToMqCodecHelper;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 
@@ -45,7 +46,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		int counter = 0;
 	}
 
-	private final @NonNull CodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface;
+	private final @NonNull AsCodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface;
 	private final @NonNull ProUri inputSourceDmxRtspUri;
 	private final @NonNull RtspProtoIdEsSource idEsSourceVid = RtspProtoIdEsSource.ofEmpty();
 	private final @NonNull RtspProtoIdEsSource idEsSourceAud = RtspProtoIdEsSource.ofEmpty();
@@ -81,7 +82,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
 				@NonNull ProUri inputSourceDmxRtspUri,
-				@NonNull CodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface,
+				@NonNull AsCodecSettingsChangedFromDmxRtspInterface codecSettingsChangedInterface,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdEsSource idEsSourceVid,
 				@NonNull RtspProtoIdEsSource idEsSourceAud

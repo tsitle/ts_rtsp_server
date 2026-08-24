@@ -19,13 +19,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, CodecSettingsChangedFromMqInterface,
-		CodecSettingsChangedFromDmxRtspInterface {
+public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, AsCodecSettingsChangedFromMqInterface,
+		AsCodecSettingsChangedFromDmxRtspInterface, AsCodecSettingsChangedFromDmxAfInterface, AsGetFileTagsInterface {
 
 	private static class AsData {
-		final @NonNull Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
-		final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> esSourceMap = new HashMap<>();
-		final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> eseiMap = new HashMap<>();
+		final Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
+		final Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoElementaryStreamSource> esSourceMap = new HashMap<>();
+		final Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> eseiMap = new HashMap<>();
 
 		void move(@NonNull AsData src) {
 			this.inputSourceMap.clear();
@@ -37,16 +37,18 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		}
 	}
 
-	private final @NonNull AsData asDataStaged = new AsData();
-	private final @NonNull Set<@NonNull RtspProtoIdInputSource> stagedIsIdsToStopThreadsFor = new HashSet<>();
-	private final @NonNull Set<@NonNull RtspProtoIdEsSource> stagedEsIdsToStopThreadsFor = new HashSet<>();
-	private final @NonNull AsData asDataCurrent = new AsData();
+	private final AsData asDataStaged = new AsData();
+	private final Set<@NonNull RtspProtoIdInputSource> stagedIsIdsToStopThreadsFor = new HashSet<>();
+	private final Set<@NonNull RtspProtoIdEsSource> stagedEsIdsToStopThreadsFor = new HashSet<>();
+	private final AsData asDataCurrent = new AsData();
 
 	private final ReadWriteLock theLock = new ReentrantReadWriteLock();
 	private final Lock theReadLock = theLock.readLock();
 	private final Lock theWriteLock = theLock.writeLock();
 
 	private final AtomicBoolean haveStreamsChanged = new AtomicBoolean(false);
+
+	private final Map<@NonNull RtspProtoIdInputSource, @NonNull String> mapIsIdToFileTags = new HashMap<>();
 
 	public RtspAvailableStreamsSvc() {
 	}
@@ -177,7 +179,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 					true,  // when reading from a MQ, the PCM audio data is expected to be big-endian
 					ExtradataContainerHex.ofEmpty(),  // this will be populated later
 					tmpFr,
-					ExtradataContainerSdp.ofEmpty()  // this will be populated later
+					ExtradataContainerSdp.ofEmpty(),  // this will be populated later,
+					eseiOld.tcSettingsAudio()
 				);
 
 			//
@@ -217,7 +220,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 					eseiOld.isAudioPcmBigEndian(),
 					ech,
 					eseiOld.videoFps(),
-					ecs
+					ecs,
+					eseiOld.tcSettingsAudio()
 				);
 
 			//
@@ -230,25 +234,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	}
 
 	public @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxRtspInputSources() {
-		theReadLock.lock();
-		try {
-			Set<RtspProtoIdInputSource> resSet = new HashSet<>();
-			for (RtspProtoInputSource tmpIsObj : asDataCurrent.inputSourceMap.values()) {
-				if (! tmpIsObj.getEnabled()) {
-					continue;
-				}
-				for (RtspProtoIdEsSource tmpIdEs : tmpIsObj.getEsSourceIds()) {
-					if (asDataCurrent.eseiMap.containsKey(tmpIdEs) &&
-							asDataCurrent.eseiMap.get(tmpIdEs).esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ) {
-						resSet.add(tmpIsObj.getIdInputSource());
-						break;
-					}
-				}
-			}
-			return resSet;
-		} finally {
-			theReadLock.unlock();
-		}
+		return findRequiredDmxXxxInputSources(RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP);
 	}
 
 	@Override
@@ -259,6 +245,43 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 	@Override
 	public void onCodecMetadataFromDmxRtsp(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
 		onCodecMetadataFromMq(idEsSource, metadataHex);
+	}
+
+	public @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxAfInputSources() {
+		return findRequiredDmxXxxInputSources(RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF);
+	}
+
+	@Override
+	public void onCodecSettingsChangedFromDmxAf(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+		onCodecSettingsChangedFromMq(idEsSource, codecSettings);
+	}
+
+	@Override
+	public void onCodecMetadataFromDmxAf(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+		onCodecMetadataFromMq(idEsSource, metadataHex);
+	}
+
+	@Override
+	public void onFileTagsChangedFromDmxAf(@NonNull RtspProtoIdInputSource idInputSource, @NonNull String fileTags) {
+		theWriteLock.lock();
+		try {
+			if (! existsInputSourceId(idInputSource)) {
+				return;
+			}
+			mapIsIdToFileTags.put(idInputSource.clone(), fileTags);
+		} finally {
+			theWriteLock.unlock();
+		}
+	}
+
+	@Override
+	public Optional<String> getFileTags(@NonNull RtspProtoIdInputSource idInputSource) {
+		theReadLock.lock();
+		try {
+			return Optional.ofNullable(mapIsIdToFileTags.get(idInputSource));
+		} finally {
+			theReadLock.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -447,6 +470,32 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 						asDataCurrent.eseiMap.get(entryEsei.getKey()).clone()
 					);
 			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxXxxInputSources(
+				@NonNull RtspProtoEsSourceType esSourceType
+			) {
+		theReadLock.lock();
+		try {
+			Set<RtspProtoIdInputSource> resSet = new HashSet<>();
+			for (RtspProtoInputSource tmpIsObj : asDataCurrent.inputSourceMap.values()) {
+				if (! tmpIsObj.getEnabled()) {
+					continue;
+				}
+				for (RtspProtoIdEsSource tmpIdEs : tmpIsObj.getEsSourceIds()) {
+					if (asDataCurrent.eseiMap.containsKey(tmpIdEs) &&
+							asDataCurrent.eseiMap.get(tmpIdEs).esSourceType() == esSourceType) {
+						resSet.add(tmpIsObj.getIdInputSource());
+						break;
+					}
+				}
+			}
+			return resSet;
+		} finally {
+			theReadLock.unlock();
 		}
 	}
 

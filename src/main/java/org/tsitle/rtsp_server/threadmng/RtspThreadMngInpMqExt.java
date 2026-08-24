@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.threads.CancelToken;
-import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromMqInterface;
+import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromMqInterface;
 import org.tsitle.rtsp_server.threads.inp_to_internal_mq.ThreadInpMqE2I;
 
 import java.util.Map;
@@ -23,7 +23,7 @@ public final class RtspThreadMngInpMqExt extends RtspThreadMngBase {
 	private static final String POOL_NAME = "POOLMQEXT";
 
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
-	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
+	private final @NonNull AsCodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
 
 	private final @NonNull Map<@NonNull RtspProtoIdEsSource, @NonNull ThreadInpMqE2I> mqThreadMap = new ConcurrentHashMap<>();
 
@@ -32,7 +32,7 @@ public final class RtspThreadMngInpMqExt extends RtspThreadMngBase {
 				@NonNull CancelToken cancelToken,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
-				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface
+				@NonNull AsCodecSettingsChangedFromMqInterface codecSettingsChangedInterface
 			) {
 		super(logMsgInterface, cancelToken, rtspSrvConfig);
 

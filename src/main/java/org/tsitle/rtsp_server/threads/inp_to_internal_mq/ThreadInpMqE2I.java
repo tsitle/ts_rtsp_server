@@ -17,7 +17,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.rtsp_server.availstreams.CodecSettingsChangedFromMqInterface;
+import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromMqInterface;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 
@@ -61,7 +61,7 @@ public final class ThreadInpMqE2I extends RunnableBase {
 		}
 	}
 
-	private final @NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
+	private final @NonNull AsCodecSettingsChangedFromMqInterface codecSettingsChangedInterface;
 	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 	private final @NonNull MqElementaryStreamSourceSettings mqSettings;
 	private final @NonNull String mqSslCertPath;
@@ -90,7 +90,7 @@ public final class ThreadInpMqE2I extends RunnableBase {
 	public ThreadInpMqE2I(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull CodecSettingsChangedFromMqInterface codecSettingsChangedInterface,
+				@NonNull AsCodecSettingsChangedFromMqInterface codecSettingsChangedInterface,
 				@NonNull RtspProtoIdEsSource idEsSource,
 				@NonNull MqElementaryStreamSourceSettings mqSettings,
 				@NonNull String mqSslCertPath

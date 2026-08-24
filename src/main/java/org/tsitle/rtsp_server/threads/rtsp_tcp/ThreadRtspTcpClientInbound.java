@@ -11,6 +11,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
+import org.tsitle.rtsp_server.availstreams.AsGetFileTagsInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.*;
@@ -88,6 +89,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@NonNull AsGetFileTagsInterface asGetFileTagsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtspPlayThreadMngInterface playThreadMngInterface,
 				int clientConnectionNr,
@@ -126,7 +128,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			);
 
 		//
-		this.rtspParamGetterSetterSvc = new RtspParamGetterSetterSvc();
+		this.rtspParamGetterSetterSvc = new RtspParamGetterSetterSvc(asGetFileTagsInterface);
 
 		//
 		this.rtspProtoRequestInputSvc = new RtspProtoRequestInputSvc(

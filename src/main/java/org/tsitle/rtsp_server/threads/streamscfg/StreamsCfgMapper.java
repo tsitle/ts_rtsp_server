@@ -278,12 +278,17 @@ final class StreamsCfgMapper {
 			}
 			final String extRealSsId = tmpSsIds.iterator().next();
 			RtspSrvConfigStreamsSs realSsCfgObj = mappingsEs.mapExternalIdToCfgObjCur.get(extRealSsId);
-			if (! realSsCfgObj.getEnabled() || (
-					realSsCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_FILE &&
-							realSsCfgObj.getEsSourceType() != RtspProtoEsSourceType.ST_DEMUX_MS_RTSP)) {
+			if (! realSsCfgObj.getEnabled()) {
 				continue;
 			}
-			boolean tmpResB = createVirtualEsesForOneStream(extStreamId, streamCfgObj, realSsCfgObj, extRealSsId);
+			boolean tmpResB;
+			if (realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_FC ||
+					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_RTSP ||
+					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_AF) {
+				tmpResB = createVirtualEsesForOneStream_dmx(extStreamId, streamCfgObj, realSsCfgObj, extRealSsId);
+			} else {
+				tmpResB = true;
+			}
 			if (! tmpResB) {
 				return false;
 			}
@@ -291,20 +296,29 @@ final class StreamsCfgMapper {
 		return true;
 	}
 
-	private boolean createVirtualEsesForOneStream(
+	private boolean createVirtualEsesForOneStream_dmx(
 				@NonNull String extStreamId,
 				@NonNull RtspSrvConfigStreamsStream realStreamCfgObj,
 				@NonNull RtspSrvConfigStreamsSs realSsCfgObj,
 				@NonNull String extRealSsId
 			) {
-		final String FNC_NAME = getClass().getSimpleName() + ".createVirtualEsesForOneStream()";
+		final String FNC_NAME = getClass().getSimpleName() + ".createVirtualEsesForOneStream_dmx()";
 
 		try {
 			//logDebug(FNC_NAME, "Creating virtual ES for muxed IS : " + extStreamId);
-			StreamsCfgVirtualEsMapper.VirtualEsObjs veo = StreamsCfgVirtualEsMapper.createVirtualEsesFromDemuxedSource(
-					realSsCfgObj,
-					extRealSsId
-				);
+			StreamsCfgVirtualEsMapper.VirtualEsObjs veo;
+			if (realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_FC ||
+					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_RTSP) {
+				veo = StreamsCfgVirtualEsMapper.createVirtualEsesFromDemuxedSource_fcOrRtsp(
+						realSsCfgObj,
+						extRealSsId
+					);
+			} else {
+				veo = StreamsCfgVirtualEsMapper.createVirtualEsesFromDemuxedSource_af(
+						realSsCfgObj,
+						extRealSsId
+					);
+			}
 			dmxVirtualEses.mapVirtExternalEsIdToInternal.putAll(veo.mapVirtExternalEsIdToInternal());
 			dmxVirtualEses.mapVirtEsIdToCfgObj.putAll(veo.mapVirtInternalIdEsToEsCfgObj());
 			dmxVirtualEses.mapVirtEsIdToEsei.putAll(veo.mapVirtEsIdToEsei());
@@ -409,7 +423,8 @@ final class StreamsCfgMapper {
 				false,
 				ExtradataContainerHex.ofEmpty(),
 				FrameRateEnum.UNKNOWN,
-				ExtradataContainerSdp.ofEmpty()
+				ExtradataContainerSdp.ofEmpty(),
+				null
 			);
 	}
 

@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
-public interface CodecSettingsChangedFromDmxRtspInterface {
+public interface AsCodecSettingsChangedFromDmxRtspInterface {
 
 	void onCodecSettingsChangedFromDmxRtsp(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings);
 

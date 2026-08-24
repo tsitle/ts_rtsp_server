@@ -35,6 +35,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 	/** (Muxed) RTSP Stream Source */
 	@Expose
 	private @Nullable RtspSrvConfigStreamInputDmxRtsp rtsp;
+	/** Audio Folder Source */
+	@Expose
+	private @Nullable RtspSrvConfigStreamInputDmxAf audioFolder;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -54,6 +57,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		this.mq = null;
 		this.fileContainer = null;
 		this.rtsp = null;
+		this.audioFolder = null;
 
 		this.internalHasBeenPostProcessed = false;
 		this.internalEsSourceType = RtspProtoEsSourceType.ST_ES_RAW_FILE;
@@ -64,7 +68,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static @NonNull RtspSrvConfigStreamsSs createVirtualSsFromDemuxedSubStream(
-				@NonNull RtspProtoEsSourceType esSourceType,
+				@NonNull RtspProtoEsSourceType esSourceTypeUsed,
 				@NonNull ProUri dmxSourceUri
 			) throws ConfigInvalidException {
 		final String FNC_NAME = RtspSrvConfigStreamsSs.class.getSimpleName() + ".createVirtualSsFromDemuxedSubStream()";
@@ -72,13 +76,15 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		final String errMsgUri = buildDmxSourceUriForErrorMsgs(dmxSourceUri);
 
 		RtspSrvConfigStreamsSs resObj = new RtspSrvConfigStreamsSs(true);
-		if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC) {
+		if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC) {
 			resObj.fileContainer = RtspSrvConfigStreamInputDmxFc.of(dmxSourceUri);
-		} else if (esSourceType == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ) {
+		} else if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP) {
 			resObj.rtsp = RtspSrvConfigStreamInputDmxRtsp.of(dmxSourceUri);
+		} else if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF) {
+			resObj.audioFolder = RtspSrvConfigStreamInputDmxAf.of(dmxSourceUri);
 		} else {
-			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type " + esSourceType + " " +
-					"for MS Source '" + errMsgUri + "'");
+			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type Used " + esSourceTypeUsed + " " +
+					"for uri='" + errMsgUri + "'");
 		}
 		resObj.postProcess();
 		return resObj;
@@ -137,7 +143,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(mq.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputDmxFc> getSsSourceMuxFc() {
+	public Optional<RtspSrvConfigStreamInputDmxFc> getSsSourceDmxFc() {
 		checkPostProcessed();
 		if (fileContainer == null) {
 			return Optional.empty();
@@ -145,12 +151,20 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(fileContainer.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputDmxRtsp> getSsSourceMuxRtsp() {
+	public Optional<RtspSrvConfigStreamInputDmxRtsp> getSsSourceDmxRtsp() {
 		checkPostProcessed();
 		if (rtsp == null) {
 			return Optional.empty();
 		}
 		return Optional.of(rtsp.clone());
+	}
+
+	public Optional<RtspSrvConfigStreamInputDmxAf> getSsSourceDmxAf() {
+		checkPostProcessed();
+		if (audioFolder == null) {
+			return Optional.empty();
+		}
+		return Optional.of(audioFolder.clone());
 	}
 
 	@SuppressWarnings("unused")
@@ -180,6 +194,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			if (rtsp != null) {
 				clone.rtsp = rtsp.clone();
 			}
+			if (audioFolder != null) {
+				clone.audioFolder = audioFolder.clone();
+			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -195,6 +212,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			baos.write(mq != null ? 1 : 0);
 			baos.write(fileContainer != null ? 1 : 0);
 			baos.write(rtsp != null ? 1 : 0);
+			baos.write(audioFolder != null ? 1 : 0);
 			if (rawFile != null) {
 				baos.write(rawFile.hashSum().getBytes());
 			}
@@ -206,6 +224,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			}
 			if (rtsp != null) {
 				baos.write(rtsp.hashSum().getBytes());
+			}
+			if (audioFolder != null) {
+				baos.write(audioFolder.hashSum().getBytes());
 			}
 			baos.write(internalIsVirtual ? 1 : 0);
 		} catch (IOException e) {
@@ -247,10 +268,13 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			internalEsSourceType = RtspProtoEsSourceType.ST_ES_MQ;
 		} else if (fileContainer != null) {
 			fileContainer.postProcess();
-			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_MS_FILE;
+			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_FC;
 		} else if (rtsp != null) {
 			rtsp.postProcess();
-			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_MS_RTSP;
+			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_RTSP;
+		} else if (audioFolder != null) {
+			audioFolder.postProcess();
+			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_AF;
 		}
 	}
 
@@ -269,6 +293,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		if (mq != null) { tmpSourcesCnt++; }
 		if (fileContainer != null) { tmpSourcesCnt++; }
 		if (rtsp != null) { tmpSourcesCnt++; }
+		if (audioFolder != null) { tmpSourcesCnt++; }
 		if (tmpSourcesCnt == 0) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Sub-Stream Source defined " +
 					"in Sub-Stream ID '" + extIdStr + "'");
@@ -283,14 +308,19 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		switch (internalEsSourceType) {
 			case ST_ES_RAW_FILE -> Objects.requireNonNull(rawFile).validate(extIdStr, dataDirPath);
 			case ST_ES_MQ -> Objects.requireNonNull(mq).validate(extIdStr);
-			case ST_DEMUX_MS_FILE -> {
+			case ST_DEMUX_FC -> {
 				if (! internalIsVirtual) {
 					Objects.requireNonNull(fileContainer).validate(extIdStr, dataDirPath);
 				}
 			}
-			case ST_DEMUX_MS_RTSP -> {
+			case ST_DEMUX_RTSP -> {
 				if (! internalIsVirtual) {
 					Objects.requireNonNull(rtsp).validate(extIdStr);
+				}
+			}
+			case ST_DEMUX_AF -> {
+				if (! internalIsVirtual) {
+					Objects.requireNonNull(audioFolder).validate(extIdStr, dataDirPath);
 				}
 			}
 		}

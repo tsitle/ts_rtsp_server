@@ -385,7 +385,8 @@ final class StreamsCfgReadEsRawFileMeta {
 				false,
 				ExtradataContainerHex.ofEmpty(),
 				videoFps,
-				clonedVideoExtraB64Cfg
+				clonedVideoExtraB64Cfg,
+				null
 			);
 	}
 
@@ -414,7 +415,8 @@ final class StreamsCfgReadEsRawFileMeta {
 				isAudioPcmBigEndian,
 				clonedAudioAacHexCfg,
 				FrameRateEnum.UNKNOWN,
-				ExtradataContainerSdp.ofEmpty()
+				ExtradataContainerSdp.ofEmpty(),
+				null
 			);
 	}
 

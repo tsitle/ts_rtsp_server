@@ -20,11 +20,14 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputDmxAf;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
+import org.tsitle.rtsp_server.helpers.FfCodecToRtpPacketTypeHelper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 final class StreamsCfgVirtualEsMapper {
 
@@ -42,24 +45,24 @@ final class StreamsCfgVirtualEsMapper {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource(
+	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource_fcOrRtsp(
 				@NonNull RtspSrvConfigStreamsSs ssCfgObj,
 				@NonNull String extRealSsId
 			) throws ConfigInvalidException {
-		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".createVirtualEsesFromDemuxedSource()";
+		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".createVirtualEsesFromDemuxedSource_fcOrRtsp()";
 
 		StreamsCfgVirtualEsMapper vem = new StreamsCfgVirtualEsMapper();
 
-		final String errMsgSuffix = "for Muxed-Stream Source ID '" + extRealSsId + "'";
+		final String errMsgSuffix = "for DMX FC/RTSP Source ID '" + extRealSsId + "'";
 
 		final ProUri internalUri;
 		final RtspProtoEsSourceType virtualEsSourceType;
-		if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE) {
-			internalUri = ssCfgObj.getSsSourceMuxFc().orElseThrow().getInputUri();
+		if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_FC) {
+			internalUri = ssCfgObj.getSsSourceDmxFc().orElseThrow().getInputUri();
 			virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_FC;
-		} else if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_RTSP) {
-			internalUri = ssCfgObj.getSsSourceMuxRtsp().orElseThrow().getInputUri();
-			virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ;
+		} else if (ssCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_RTSP) {
+			internalUri = ssCfgObj.getSsSourceDmxRtsp().orElseThrow().getInputUri();
+			virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP;
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": Unsupported ES source type '" + ssCfgObj.getEsSourceType() + "' " +
 					errMsgSuffix);
@@ -88,11 +91,16 @@ final class StreamsCfgVirtualEsMapper {
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
 
 			//
-			RtpPacketType videoCodec = convertFfmpegVideoCodecToRtpPacketType(tmpFfSsInfoVid.ffmpegCodec);
+			Optional<RtpPacketType> tmpOptVideoCodec =
+					FfCodecToRtpPacketTypeHelper.convertFfmpegVideoCodecToRtpPacketType(tmpFfSsInfoVid.ffmpegCodec);
+			if (tmpOptVideoCodec.isEmpty()) {
+				throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + tmpFfSsInfoVid.ffmpegCodec);
+			}
+			RtpPacketType videoCodec = tmpOptVideoCodec.get();
 			FrameRateEnum videoFps = FrameRateEnum.of(tmpFfSsInfoVid.fps.toDouble());
 			if (videoFps == FrameRateEnum.UNKNOWN) {  // just in case
 				throw new ConfigInvalidException(FNC_NAME + ": cannot handle FPS value " + tmpFfSsInfoVid.fps + " " +
-						"for MS Source '" + errMsgUri + "'");
+						"for uri='" + errMsgUri + "'");
 			}
 			RtspProtoEsSourceExpandedInfo eseiVideo = createEsei_video(
 					tmpFfSsInfoVid.subStreamIx,
@@ -119,33 +127,37 @@ final class StreamsCfgVirtualEsMapper {
 			mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
 
 			//
-			RtpPacketType audioCodec = convertFfmpegAudioCodecToRtpPacketType(
+			Optional<RtpPacketType> tmpOptAudioCodec = FfCodecToRtpPacketTypeHelper.convertFfmpegAudioCodecToRtpPacketType(
 					tmpFfSsInfoAud.ffmpegCodec,
 					tmpFfSsInfoAud.sampleRate,
 					(byte)tmpFfSsInfoAud.channelCount
 				);
+			if (tmpOptAudioCodec.isEmpty()) {
+				throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + tmpFfSsInfoAud.ffmpegCodec);
+			}
+			RtpPacketType audioCodec = tmpOptAudioCodec.get();
 			SampleRateEnum audioSr = SampleRateEnum.of(tmpFfSsInfoAud.sampleRate.getSrHz());
 			if (audioSr == SampleRateEnum.UNKNOWN) {  // just in case
 				throw new ConfigInvalidException(FNC_NAME + ": cannot handle SampleRate value " + tmpFfSsInfoAud.sampleRate + " " +
-						"for MS Source '" + errMsgUri + "'");
+						"for uri='" + errMsgUri + "'");
 			}
 			if (audioCodec.isPcmAudio() &&
 					(tmpFfSsInfoAud.channelCount < 1 ||
 							tmpFfSsInfoAud.channelCount > DpConstants.DP_PCM_AUDIO_CHANNELS_MAX)) {  // just in case
 				throw new ConfigInvalidException(FNC_NAME + ": cannot handle PCM Audio ChannelCount value " +
-						tmpFfSsInfoAud.channelCount + " " + "for MS Source '" + errMsgUri + "'");
+						tmpFfSsInfoAud.channelCount + " " + "for uri='" + errMsgUri + "'");
 			}
 			if (audioCodec == RtpPacketType.A_OPUS &&
 					(tmpFfSsInfoAud.channelCount < 1 ||
 							tmpFfSsInfoAud.channelCount > DpConstants.DP_OPUS_AUDIO_CHANNELS_MAX)) {  // just in case
 				throw new ConfigInvalidException(FNC_NAME + ": cannot handle Opus Audio ChannelCount value " +
-						tmpFfSsInfoAud.channelCount + " " + "for MS Source '" + errMsgUri + "'");
+						tmpFfSsInfoAud.channelCount + " " + "for uri='" + errMsgUri + "'");
 			}
 			ExtradataContainerHex audioExtradataHex = ExtradataContainerHex.ofEmpty();
 			if (tmpFfSsInfoAud.ffmpegCodec == FfmpegCodec.A_AAC) {
 				audioExtradataHex.copyFrom(tmpFfSsInfoAud.extradataHex);
 			}
-			RtspProtoEsSourceExpandedInfo eseiAudio = createEsei_audio(
+			RtspProtoEsSourceExpandedInfo eseiAudio = createEsei_audio_default(
 					tmpFfSsInfoAud.subStreamIx,
 					audioCodec,
 					virtualEsSourceType,
@@ -159,6 +171,46 @@ final class StreamsCfgVirtualEsMapper {
 				);
 			mapVirtEsIdToEsei.put(tmpInternalId, eseiAudio);
 		}
+
+		//
+		return new VirtualEsObjs(mapVirtualInternalIdToCfgObj, mapVirtExternalEsIdToInternal, mapVirtEsIdToEsei);
+	}
+
+	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource_af(
+				@NonNull RtspSrvConfigStreamsSs ssCfgObj,
+				@NonNull String extRealSsId
+			) throws ConfigInvalidException {
+		final RtspSrvConfigStreamInputDmxAf ssCfgDmxAfObj = ssCfgObj.getSsSourceDmxAf().orElseThrow();
+		final RtspProtoEsSourceType virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF;
+
+		//
+		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtualInternalIdToCfgObj = new HashMap<>();
+		Map<@NonNull String, @NonNull RtspProtoIdEsSource> mapVirtExternalEsIdToInternal = new HashMap<>();
+		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspProtoEsSourceExpandedInfo> mapVirtEsIdToEsei = new HashMap<>();
+
+		//
+		RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
+				virtualEsSourceType,
+				ssCfgDmxAfObj.getInputUri()
+			);
+		String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, false);
+		RtspProtoIdEsSource tmpInternalId = StreamsCfgIdMapperHelper.computeInternalEsId(tmpExternalId);
+		mapVirtExternalEsIdToInternal.put(tmpExternalId, tmpInternalId);
+		mapVirtualInternalIdToCfgObj.put(tmpInternalId, tmpEsSrcObj);
+
+		//
+		RtspProtoEsSourceExpandedInfo.TcSettingsAudio tcSettingsAudio = new RtspProtoEsSourceExpandedInfo.TcSettingsAudio(
+				ssCfgDmxAfObj.getTcCodec(),
+				ssCfgDmxAfObj.getTcAudioChannelCount(),
+				ssCfgDmxAfObj.getTcAudioSampleRate(),
+				ssCfgDmxAfObj.getTcAudioBitrateKbps()
+			);
+		RtspProtoEsSourceExpandedInfo eseiAudio = createEsei_audio_withTc(
+				virtualEsSourceType,
+				ssCfgDmxAfObj.getInputUri(),
+				tcSettingsAudio
+			);
+		mapVirtEsIdToEsei.put(tmpInternalId, eseiAudio);
 
 		//
 		return new VirtualEsObjs(mapVirtualInternalIdToCfgObj, mapVirtExternalEsIdToInternal, mapVirtEsIdToEsei);
@@ -249,59 +301,6 @@ final class StreamsCfgVirtualEsMapper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull RtpPacketType convertFfmpegVideoCodecToRtpPacketType(@NonNull FfmpegCodec ffmpegCodec)
-			throws ConfigInvalidException {
-		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".convertFfmpegVideoCodecToRtpPacketType()";
-
-		return switch (ffmpegCodec) {
-				case V_H264 -> RtpPacketType.V_H264;
-				case V_H265 -> RtpPacketType.V_H265;
-				case V_MJPEG -> RtpPacketType.V_MJPEG;
-				case V_VP8 -> RtpPacketType.V_VP8;
-				default -> throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
-			};
-	}
-
-	private static @NonNull RtpPacketType convertFfmpegAudioCodecToRtpPacketType(
-				@NonNull FfmpegCodec ffmpegCodec,
-				@NonNull SampleRateEnum audioSamplerate,
-				byte audioChannelCount
-			) throws ConfigInvalidException {
-		final String FNC_NAME = StreamsCfgVirtualEsMapper.class.getSimpleName() + ".convertFfmpegAudioCodecToRtpPacketType()";
-
-		return switch (ffmpegCodec) {
-				case A_AAC -> RtpPacketType.A_AAC;
-				case A_AC3 -> RtpPacketType.A_AC3;
-				case A_MP2, A_MP3 -> RtpPacketType.A_MPEG;
-				case A_OPUS -> RtpPacketType.A_OPUS;
-				case A_PCM_ALAW -> {
-						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
-							yield RtpPacketType.A_PCMA_8KHZ_MONO;
-						}
-						yield RtpPacketType.A_PCMA_VAR;
-					}
-				case A_PCM_MULAW -> {
-						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
-							yield RtpPacketType.A_PCMU_8KHZ_MONO;
-						}
-						yield RtpPacketType.A_PCMU_VAR;
-					}
-				case A_PCM_U8 -> RtpPacketType.A_LINEAR_PCM_U08_VAR;
-				case A_PCM_S16BE, A_PCM_S16LE -> {
-						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_044100) {
-							yield RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
-						}
-						if (audioChannelCount == 2 && audioSamplerate == SampleRateEnum.SR_044100) {
-							yield RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
-						}
-						yield RtpPacketType.A_LINEAR_PCM_S16_VAR;
-					}
-				default -> throw new ConfigInvalidException(FNC_NAME + ": cannot convert Codec " + ffmpegCodec);
-			};
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
 	private static @NonNull String generateVirtualDemuxedExternalEsId(@NonNull String extRealSsId, boolean isVideo) {
 		return String.format("demuxed_ss_#%s#-virtual_es_#%s#", extRealSsId, isVideo ? "v" : "a");
 	}
@@ -333,11 +332,12 @@ final class StreamsCfgVirtualEsMapper {
 				false,
 				ExtradataContainerHex.ofEmpty(),
 				videoFps,
-				clonedVideoExtraB64Cfg
+				clonedVideoExtraB64Cfg,
+				null
 			);
 	}
 
-	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_audio(
+	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_audio_default(
 				int demuxerSubStreamIx,
 				@NonNull RtpPacketType codec,
 				@NonNull RtspProtoEsSourceType esSourceType,
@@ -365,7 +365,31 @@ final class StreamsCfgVirtualEsMapper {
 				isAudioPcmBigEndian,
 				clonedAudioAacHexCfg,
 				FrameRateEnum.UNKNOWN,
-				ExtradataContainerSdp.ofEmpty()
+				ExtradataContainerSdp.ofEmpty(),
+				null
+			);
+	}
+
+	private static @NonNull RtspProtoEsSourceExpandedInfo createEsei_audio_withTc(
+				@NonNull RtspProtoEsSourceType esSourceType,
+				@NonNull ProUri inputUri,
+				RtspProtoEsSourceExpandedInfo.@NonNull TcSettingsAudio tcSettingsAudio
+			) {
+		return new RtspProtoEsSourceExpandedInfo(
+				-1,
+				RtpPacketType.UNKNOWN,
+				esSourceType,
+				inputUri,
+				RtspProtoClientCredentials.ofEmpty(),
+				-1.0,
+				(byte)0,
+				SampleRateEnum.UNKNOWN,
+				-1,
+				true,
+				ExtradataContainerHex.ofEmpty(),
+				FrameRateEnum.UNKNOWN,
+				ExtradataContainerSdp.ofEmpty(),
+				tcSettingsAudio
 			);
 	}
 

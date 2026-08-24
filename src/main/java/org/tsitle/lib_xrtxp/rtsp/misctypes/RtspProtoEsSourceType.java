@@ -7,31 +7,20 @@ public enum RtspProtoEsSourceType {
 	/** Elementary-Stream from an external Message Queue */
 	ST_ES_MQ,
 	/** Demuxed Elementary-Stream from a file container */
-	ST_DEMUX_MS_FILE,
+	ST_DEMUX_FC,
 	/** Demuxed Elementary-Stream from an RTSP stream */
-	ST_DEMUX_MS_RTSP,
+	ST_DEMUX_RTSP,
+	/** Demuxed Elementary-Stream from an 'Audio Folder' stream */
+	ST_DEMUX_AF,
 	/** Elementary-Stream from a demuxed file container */
 	ST_DMX_VIRTUAL_ES_FC,
 	/** Elementary-Stream from a demuxed RTSP stream using a Message Queue for internal transport  */
-	ST_DMX_VIRTUAL_ES_MQ;
+	ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP,
+	/** Elementary-Stream from an 'Audio Folder' stream using a Message Queue for internal transport  */
+	ST_DMX_VIRTUAL_ES_MQ_FROM_AF;
 
 	public boolean isFromFile() {
-		return (this == ST_ES_RAW_FILE || this == ST_DEMUX_MS_FILE || this == ST_DMX_VIRTUAL_ES_FC);
-	}
-
-	@SuppressWarnings("unused")
-	public boolean isDemuxed() {
-		return (this == ST_DEMUX_MS_FILE || this == ST_DMX_VIRTUAL_ES_FC || this == ST_DEMUX_MS_RTSP || this == ST_DMX_VIRTUAL_ES_MQ);
-	}
-
-	@SuppressWarnings("unused")
-	public boolean isExternalMq() {
-		return (this == ST_ES_MQ);
-	}
-
-	@SuppressWarnings("unused")
-	public boolean isAnyMq() {
-		return (this == ST_ES_MQ || this == ST_DMX_VIRTUAL_ES_MQ);
+		return (this == ST_ES_RAW_FILE || this == ST_DEMUX_FC || this == ST_DEMUX_AF || this == ST_DMX_VIRTUAL_ES_FC);
 	}
 
 }

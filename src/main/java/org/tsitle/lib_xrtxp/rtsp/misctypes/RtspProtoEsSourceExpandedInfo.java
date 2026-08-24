@@ -1,12 +1,14 @@
 package org.tsitle.lib_xrtxp.rtsp.misctypes;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import org.tsitle.rtsp_server.config.ConfigTcCodec;
 
 public record RtspProtoEsSourceExpandedInfo(
 			int demuxerSubStreamIx,
@@ -21,8 +23,25 @@ public record RtspProtoEsSourceExpandedInfo(
 			boolean isAudioPcmBigEndian,
 			@NonNull ExtradataContainerHex audioAacHexCfg,
 			@NonNull FrameRateEnum videoFps,
-			@NonNull ExtradataContainerSdp videoExtraB64Cfg
+			@NonNull ExtradataContainerSdp videoExtraB64Cfg,
+			@Nullable TcSettingsAudio tcSettingsAudio
 		) implements Cloneable {
+
+	public record TcSettingsAudio(
+				@NonNull ConfigTcCodec codec,
+				byte audioChannelCount,
+				@NonNull SampleRateEnum audioSampleRate,
+				int audioBitRateKbps
+			) implements Cloneable {
+		@Override
+		public @NonNull TcSettingsAudio clone() {
+			try {
+				return (TcSettingsAudio)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new RuntimeException();
+			}
+		}
+	}
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
@@ -46,7 +65,8 @@ public record RtspProtoEsSourceExpandedInfo(
 				isAudioPcmBigEndian,
 				tmpAudioAacHexCfg,
 				videoFps,
-				tmpVideoExtraB64Cfg
+				tmpVideoExtraB64Cfg,
+				tcSettingsAudio == null ? null : tcSettingsAudio.clone()
 			);
 	}
 

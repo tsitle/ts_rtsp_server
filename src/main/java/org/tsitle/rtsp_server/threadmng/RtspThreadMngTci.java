@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
+import org.tsitle.rtsp_server.availstreams.AsGetFileTagsInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspPlayThreadMngInterface;
@@ -24,6 +25,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @NonNull AsGetFileTagsInterface asGetFileTagsInterface;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
 	private final @NonNull Map<@NonNull Integer, @NonNull ThreadRtspTcpClientInbound> rtspTciThreadMap = new ConcurrentHashMap<>();
@@ -34,6 +36,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
+				@NonNull AsGetFileTagsInterface asGetFileTagsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull RtspPlayThreadMngInterface playThreadMngInterface
 			) {
@@ -41,6 +44,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.availableStreamsInterface = availableStreamsInterface;
+		this.asGetFileTagsInterface = asGetFileTagsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 		this.playThreadMngInterface = playThreadMngInterface;
 
@@ -78,6 +82,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 				rtspSrvConfig,
 				cfgServerNameAndVersion,
 				availableStreamsInterface,
+				asGetFileTagsInterface,
 				globalSessionInfoInterface,
 				playThreadMngInterface,
 				clientConnectionNr,

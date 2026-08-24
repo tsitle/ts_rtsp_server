@@ -22,6 +22,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	static final int RTSP_THREADS_TCI_DEFAULT = 20;  // one thread per client connection
 	static final int MQ_THREADS_EXT_DEFAULT = 20;  // one thread per external MQ
 	static final int DMX_RTSP_THREADS_DEFAULT = 20;  // one thread per RTSP input source
+	static final int DMX_AF_THREADS_DEFAULT = 20;  // one thread per AF input source
 
 	static final int SERVER_USERNAME_LENGTH_MAX = 64;
 	static final int SERVER_USERPASS_LENGTH_MIN = 8;
@@ -58,6 +59,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Maxmimum number of threads for Demux RTSP */
 		@Expose
 		private final int threadsMaximumDmxRtsp;
+		/** Maxmimum number of threads for Demux AF */
+		@Expose
+		private final int threadsMaximumDmxAf;
 
 		public SectionServer() {
 			this.tcpPortRtsp = ProUri.RTSP_TCP_PORT_DEFAULT;
@@ -70,6 +74,7 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.threadsMaximumTci = RTSP_THREADS_TCI_DEFAULT;
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 			this.threadsMaximumDmxRtsp = DMX_RTSP_THREADS_DEFAULT;
+			this.threadsMaximumDmxAf = DMX_AF_THREADS_DEFAULT;
 		}
 	}
 
@@ -261,6 +266,10 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
 	public int getThreadsMaximumDmxRtsp() {
 		return server.threadsMaximumDmxRtsp;
+	}
+
+	public int getThreadsMaximumDmxAf() {
+		return server.threadsMaximumDmxAf;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -585,6 +594,9 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		}
 		if (server.threadsMaximumDmxRtsp < 1) {
 			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumDmxRtsp': " + server.threadsMaximumDmxRtsp);
+		}
+		if (server.threadsMaximumDmxAf < 1) {
+			throw new ConfigInvalidException(FNC_NAME + ": Invalid value for 'threadsMaximumDmxAf': " + server.threadsMaximumDmxAf);
 		}
 	}
 

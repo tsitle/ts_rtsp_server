@@ -124,8 +124,8 @@ final class StreamsCfgExtendedValidator {
 			if (! tmpSs.getEnabled()) {
 				continue;
 			}
-			if (tmpSs.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_FILE ||
-					tmpSs.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_MS_RTSP) {
+			if (tmpSs.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_FC ||
+					tmpSs.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_RTSP) {
 				continue;
 			}
 			if (tmpSs.getSsSourceEsRawFile().isPresent()) {

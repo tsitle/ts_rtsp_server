@@ -28,7 +28,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 	private @NonNull String filePath;
 	/** Codec used for the stream */
 	@Expose
-	private @Nullable ConfigEsCodec codec;
+	private @Nullable ConfigEsRawFileCodec codec;
 	/** Video frames per second */
 	@Expose
 	private @NonNull Double videoFps;
