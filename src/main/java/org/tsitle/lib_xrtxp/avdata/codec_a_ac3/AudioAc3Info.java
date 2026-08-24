@@ -144,7 +144,7 @@ public final class AudioAc3Info implements CodecInfoInterface<AudioAc3Info>, Clo
 	/** Nominal Bit Rate of the audio data (6 bits) */
 	public @NonNull Bitrate bitrate;
 	/** Audio Coding Mode (3 bits) */
-	public AudioCodingMode audioCodingMode;
+	public @NonNull AudioCodingMode audioCodingMode;
 
 	public AudioAc3Info() {
 		reset();
