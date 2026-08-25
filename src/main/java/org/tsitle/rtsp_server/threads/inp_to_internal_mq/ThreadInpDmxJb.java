@@ -27,7 +27,7 @@ import org.tsitle.lib_xrtxp.common.types.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
-import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromDmxAfInterface;
+import org.tsitle.rtsp_server.availstreams.AsCodecSettingsChangedFromDmxJbInterface;
 import org.tsitle.rtsp_server.helpers.FfCodecToMqCodecHelper;
 import org.tsitle.rtsp_server.helpers.CfgTcCodecToFfCodecHelper;
 import org.tsitle.rtsp_server.threads.AdaptiveScheduler;
@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public final class ThreadInpDmxAf extends RunnableBase {
+public final class ThreadInpDmxJb extends RunnableBase {
 
 	private static class FfDmxPktCacheEntry {
 		final FfmpegAvPktBasics ffPktObj = new FfmpegAvPktBasics();
@@ -109,8 +109,8 @@ public final class ThreadInpDmxAf extends RunnableBase {
 			"aac", "ac3", "eac3", "flac", "m4a", "mp2", "mp3", "ogg", "opus", "wav"
 		);
 
-	private final @NonNull ProUri inputSourceDmxAfUri;
-	private final @NonNull AsCodecSettingsChangedFromDmxAfInterface codecSettingsChangedInterface;
+	private final @NonNull ProUri inputSourceDmxJbUri;
+	private final @NonNull AsCodecSettingsChangedFromDmxJbInterface codecSettingsChangedInterface;
 	private final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
 	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 
@@ -123,18 +123,18 @@ public final class ThreadInpDmxAf extends RunnableBase {
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
 	 * @param cancelToken Cancel token
-	 * @param inputSourceDmxAfUri URI of the Input Source
+	 * @param inputSourceDmxJbUri URI of the Input Source
 	 * @param tcCodecSettings Transcoder Codec settings for the output
 	 * @param codecSettingsChangedInterface 'Codec settings changed' interface
 	 * @param idInputSource Input Source identifier
 	 * @param idEsSource Elementary-Stream Source identifier
 	 */
-	public ThreadInpDmxAf(
+	public ThreadInpDmxJb(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull CancelToken cancelToken,
-				@NonNull ProUri inputSourceDmxAfUri,
+				@NonNull ProUri inputSourceDmxJbUri,
 				RtspProtoEsSourceExpandedInfo.@NonNull TcSettingsAudio tcCodecSettings,
-				@NonNull AsCodecSettingsChangedFromDmxAfInterface codecSettingsChangedInterface,
+				@NonNull AsCodecSettingsChangedFromDmxJbInterface codecSettingsChangedInterface,
 				@NonNull RtspProtoIdInputSource idInputSource,
 				@NonNull RtspProtoIdEsSource idEsSource
 			) {
@@ -143,7 +143,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".ctor()";
 
 		//
-		this.inputSourceDmxAfUri = inputSourceDmxAfUri.clone();
+		this.inputSourceDmxJbUri = inputSourceDmxJbUri.clone();
 
 		this.rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec =
 				CfgTcCodecToFfCodecHelper.convertCfgTcCodecToFfmpegCodec(tcCodecSettings.codec());
@@ -162,7 +162,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 		this.idEsSource.copyFrom(idEsSource);
 
 		//
-		this.threadName = String.format("DMXAF#is%s", computeIsIdForThreadName(idInputSource));
+		this.threadName = String.format("DMXJB#is%s", computeIsIdForThreadName(idInputSource));
 
 		//
 		this.adaptiveScheduler = new AdaptiveScheduler(logMsgInterface, -1.0);
@@ -197,7 +197,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 		try (FileFolderWatcher localAffl = new FileFolderWatcher(
 					Objects.requireNonNull(logMsgInterface),
 					localCancelToken,
-					inputSourceDmxAfUri,
+				inputSourceDmxJbUri,
 					ALLOWED_INPUT_FILE_EXTS
 				)) {
 			rd.ifs.ffwPtr = localAffl;
@@ -251,7 +251,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 
 			//
 			if (rd.dpm.hasMetadataTagsChanged) {
-				codecSettingsChangedInterface.onFileTagsChangedFromDmxAf(idInputSource, rd.dpm.metadataTags);
+				codecSettingsChangedInterface.onFileTagsChangedFromDmxJb(idInputSource, rd.dpm.metadataTags);
 				rd.dpm.hasMetadataTagsChanged = false;
 			}
 
@@ -488,7 +488,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 		updateMqCodecSettings_spf(firstAvPkt, true);
 
 		String metadataHex = tmpCdcParams.extradataHex.getEd();
-		codecSettingsChangedInterface.onCodecMetadataFromDmxAf(idEsSource, metadataHex);
+		codecSettingsChangedInterface.onCodecMetadataFromDmxJb(idEsSource, metadataHex);
 	}
 
 	private boolean updateMqCodecSettings_spf(@NonNull FfmpegAvPktBasics avPkt, boolean forceUpdateUpstream) {
@@ -550,7 +550,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 						"/ SPF: " + rd.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
 						"(codec=" + rd.dpm.mqCodecSettings.codec + ")");
 			}
-			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxAf(idEsSource, rd.dpm.mqCodecSettings);
+			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxJb(idEsSource, rd.dpm.mqCodecSettings);
 		}
 		return true;
 	}
@@ -711,7 +711,7 @@ public final class ThreadInpDmxAf extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String computeIsIdForThreadName(@NonNull RtspProtoIdInputSource idInputSource) {
-		return "AF" + HashMd5Helper.hashOfString(
+		return "JB" + HashMd5Helper.hashOfString(
 						idInputSource.getIdStr().orElse("-unset-"),
 						false
 				).substring(0, 8);

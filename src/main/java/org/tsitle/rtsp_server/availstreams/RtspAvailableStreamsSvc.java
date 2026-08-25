@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsInterface, AsCodecSettingsChangedFromMqInterface,
-		AsCodecSettingsChangedFromDmxRtspInterface, AsCodecSettingsChangedFromDmxAfInterface, AsGetFileTagsInterface {
+		AsCodecSettingsChangedFromDmxRtspInterface, AsCodecSettingsChangedFromDmxJbInterface, AsGetFileTagsInterface {
 
 	private static class AsData {
 		final Map<@NonNull RtspProtoIdInputSource, @NonNull RtspProtoInputSource> inputSourceMap = new HashMap<>();
@@ -247,22 +247,22 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		onCodecMetadataFromMq(idEsSource, metadataHex);
 	}
 
-	public @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxAfInputSources() {
-		return findRequiredDmxXxxInputSources(RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF);
+	public @NonNull Set<@NonNull RtspProtoIdInputSource> findRequiredDmxJbInputSources() {
+		return findRequiredDmxXxxInputSources(RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_JB);
 	}
 
 	@Override
-	public void onCodecSettingsChangedFromDmxAf(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
+	public void onCodecSettingsChangedFromDmxJb(@NonNull RtspProtoIdEsSource idEsSource, @NonNull MqCodecSettings codecSettings) {
 		onCodecSettingsChangedFromMq(idEsSource, codecSettings);
 	}
 
 	@Override
-	public void onCodecMetadataFromDmxAf(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
+	public void onCodecMetadataFromDmxJb(@NonNull RtspProtoIdEsSource idEsSource, @NonNull String metadataHex) {
 		onCodecMetadataFromMq(idEsSource, metadataHex);
 	}
 
 	@Override
-	public void onFileTagsChangedFromDmxAf(@NonNull RtspProtoIdInputSource idInputSource, @NonNull String fileTags) {
+	public void onFileTagsChangedFromDmxJb(@NonNull RtspProtoIdInputSource idInputSource, @NonNull String fileTags) {
 		theWriteLock.lock();
 		try {
 			if (! existsInputSourceId(idInputSource)) {

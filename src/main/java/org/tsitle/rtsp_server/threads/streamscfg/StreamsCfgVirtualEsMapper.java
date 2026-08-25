@@ -20,7 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.availstreams.RtspAsEdSdpHelper;
-import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputDmxAf;
+import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputDmxJb;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.helpers.FfCodecToRtpPacketTypeHelper;
@@ -176,12 +176,12 @@ final class StreamsCfgVirtualEsMapper {
 		return new VirtualEsObjs(mapVirtualInternalIdToCfgObj, mapVirtExternalEsIdToInternal, mapVirtEsIdToEsei);
 	}
 
-	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource_af(
+	static @NonNull VirtualEsObjs createVirtualEsesFromDemuxedSource_jb(
 				@NonNull RtspSrvConfigStreamsSs ssCfgObj,
 				@NonNull String extRealSsId
 			) throws ConfigInvalidException {
-		final RtspSrvConfigStreamInputDmxAf ssCfgDmxAfObj = ssCfgObj.getSsSourceDmxAf().orElseThrow();
-		final RtspProtoEsSourceType virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF;
+		final RtspSrvConfigStreamInputDmxJb ssCfgDmxJbObj = ssCfgObj.getSsSourceDmxJb().orElseThrow();
+		final RtspProtoEsSourceType virtualEsSourceType = RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_JB;
 
 		//
 		Map<@NonNull RtspProtoIdEsSource, @NonNull RtspSrvConfigStreamsSs> mapVirtualInternalIdToCfgObj = new HashMap<>();
@@ -191,7 +191,7 @@ final class StreamsCfgVirtualEsMapper {
 		//
 		RtspSrvConfigStreamsSs tmpEsSrcObj = RtspSrvConfigStreamsSs.createVirtualSsFromDemuxedSubStream(
 				virtualEsSourceType,
-				ssCfgDmxAfObj.getInputUri()
+				ssCfgDmxJbObj.getInputUri()
 			);
 		String tmpExternalId = generateVirtualDemuxedExternalEsId(extRealSsId, false);
 		RtspProtoIdEsSource tmpInternalId = StreamsCfgIdMapperHelper.computeInternalEsId(tmpExternalId);
@@ -200,14 +200,14 @@ final class StreamsCfgVirtualEsMapper {
 
 		//
 		RtspProtoEsSourceExpandedInfo.TcSettingsAudio tcSettingsAudio = new RtspProtoEsSourceExpandedInfo.TcSettingsAudio(
-				ssCfgDmxAfObj.getTcCodec(),
-				ssCfgDmxAfObj.getTcAudioChannelCount(),
-				ssCfgDmxAfObj.getTcAudioSampleRate(),
-				ssCfgDmxAfObj.getTcAudioBitrateKbps()
+				ssCfgDmxJbObj.getTcCodec(),
+				ssCfgDmxJbObj.getTcAudioChannelCount(),
+				ssCfgDmxJbObj.getTcAudioSampleRate(),
+				ssCfgDmxJbObj.getTcAudioBitrateKbps()
 			);
 		RtspProtoEsSourceExpandedInfo eseiAudio = createEsei_audio_withTc(
 				virtualEsSourceType,
-				ssCfgDmxAfObj.getInputUri(),
+				ssCfgDmxJbObj.getInputUri(),
 				tcSettingsAudio
 			);
 		mapVirtEsIdToEsei.put(tmpInternalId, eseiAudio);

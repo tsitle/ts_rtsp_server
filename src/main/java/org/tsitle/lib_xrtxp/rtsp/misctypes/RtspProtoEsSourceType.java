@@ -10,17 +10,17 @@ public enum RtspProtoEsSourceType {
 	ST_DEMUX_FC,
 	/** Demuxed Elementary-Stream from an RTSP stream */
 	ST_DEMUX_RTSP,
-	/** Demuxed Elementary-Stream from an 'Audio Folder' stream */
-	ST_DEMUX_AF,
+	/** Demuxed Elementary-Stream from a 'Jukebox' stream */
+	ST_DEMUX_JB,
 	/** Elementary-Stream from a demuxed file container */
 	ST_DMX_VIRTUAL_ES_FC,
 	/** Elementary-Stream from a demuxed RTSP stream using a Message Queue for internal transport  */
 	ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP,
-	/** Elementary-Stream from an 'Audio Folder' stream using a Message Queue for internal transport  */
-	ST_DMX_VIRTUAL_ES_MQ_FROM_AF;
+	/** Elementary-Stream from a 'Jukebox' stream using a Message Queue for internal transport  */
+	ST_DMX_VIRTUAL_ES_MQ_FROM_JB;
 
 	public boolean isFromFile() {
-		return (this == ST_ES_RAW_FILE || this == ST_DEMUX_FC || this == ST_DEMUX_AF || this == ST_DMX_VIRTUAL_ES_FC);
+		return (this == ST_ES_RAW_FILE || this == ST_DEMUX_FC || this == ST_DEMUX_JB || this == ST_DMX_VIRTUAL_ES_FC);
 	}
 
 }

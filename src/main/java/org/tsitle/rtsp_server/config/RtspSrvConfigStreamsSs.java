@@ -35,9 +35,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 	/** (Muxed) RTSP Stream Source */
 	@Expose
 	private @Nullable RtspSrvConfigStreamInputDmxRtsp rtsp;
-	/** Audio Folder Source */
+	/** Jukebox Source */
 	@Expose
-	private @Nullable RtspSrvConfigStreamInputDmxAf audioFolder;
+	private @Nullable RtspSrvConfigStreamInputDmxJb jukebox;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -57,7 +57,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		this.mq = null;
 		this.fileContainer = null;
 		this.rtsp = null;
-		this.audioFolder = null;
+		this.jukebox = null;
 
 		this.internalHasBeenPostProcessed = false;
 		this.internalEsSourceType = RtspProtoEsSourceType.ST_ES_RAW_FILE;
@@ -80,8 +80,8 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			resObj.fileContainer = RtspSrvConfigStreamInputDmxFc.of(dmxSourceUri);
 		} else if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP) {
 			resObj.rtsp = RtspSrvConfigStreamInputDmxRtsp.of(dmxSourceUri);
-		} else if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_AF) {
-			resObj.audioFolder = RtspSrvConfigStreamInputDmxAf.of(dmxSourceUri);
+		} else if (esSourceTypeUsed == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_JB) {
+			resObj.jukebox = RtspSrvConfigStreamInputDmxJb.of(dmxSourceUri);
 		} else {
 			throw new ConfigInvalidException(FNC_NAME + ": invalid ES Source Type Used " + esSourceTypeUsed + " " +
 					"for uri='" + errMsgUri + "'");
@@ -159,12 +159,12 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		return Optional.of(rtsp.clone());
 	}
 
-	public Optional<RtspSrvConfigStreamInputDmxAf> getSsSourceDmxAf() {
+	public Optional<RtspSrvConfigStreamInputDmxJb> getSsSourceDmxJb() {
 		checkPostProcessed();
-		if (audioFolder == null) {
+		if (jukebox == null) {
 			return Optional.empty();
 		}
-		return Optional.of(audioFolder.clone());
+		return Optional.of(jukebox.clone());
 	}
 
 	@SuppressWarnings("unused")
@@ -194,8 +194,8 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			if (rtsp != null) {
 				clone.rtsp = rtsp.clone();
 			}
-			if (audioFolder != null) {
-				clone.audioFolder = audioFolder.clone();
+			if (jukebox != null) {
+				clone.jukebox = jukebox.clone();
 			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
@@ -212,7 +212,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			baos.write(mq != null ? 1 : 0);
 			baos.write(fileContainer != null ? 1 : 0);
 			baos.write(rtsp != null ? 1 : 0);
-			baos.write(audioFolder != null ? 1 : 0);
+			baos.write(jukebox != null ? 1 : 0);
 			if (rawFile != null) {
 				baos.write(rawFile.hashSum().getBytes());
 			}
@@ -225,8 +225,8 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			if (rtsp != null) {
 				baos.write(rtsp.hashSum().getBytes());
 			}
-			if (audioFolder != null) {
-				baos.write(audioFolder.hashSum().getBytes());
+			if (jukebox != null) {
+				baos.write(jukebox.hashSum().getBytes());
 			}
 			baos.write(internalIsVirtual ? 1 : 0);
 		} catch (IOException e) {
@@ -272,9 +272,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		} else if (rtsp != null) {
 			rtsp.postProcess();
 			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_RTSP;
-		} else if (audioFolder != null) {
-			audioFolder.postProcess();
-			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_AF;
+		} else if (jukebox != null) {
+			jukebox.postProcess();
+			internalEsSourceType = RtspProtoEsSourceType.ST_DEMUX_JB;
 		}
 	}
 
@@ -293,7 +293,7 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 		if (mq != null) { tmpSourcesCnt++; }
 		if (fileContainer != null) { tmpSourcesCnt++; }
 		if (rtsp != null) { tmpSourcesCnt++; }
-		if (audioFolder != null) { tmpSourcesCnt++; }
+		if (jukebox != null) { tmpSourcesCnt++; }
 		if (tmpSourcesCnt == 0) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Sub-Stream Source defined " +
 					"in Sub-Stream ID '" + extIdStr + "'");
@@ -318,9 +318,9 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 					Objects.requireNonNull(rtsp).validate(extIdStr);
 				}
 			}
-			case ST_DEMUX_AF -> {
+			case ST_DEMUX_JB -> {
 				if (! internalIsVirtual) {
-					Objects.requireNonNull(audioFolder).validate(extIdStr, dataDirPath);
+					Objects.requireNonNull(jukebox).validate(extIdStr, dataDirPath);
 				}
 			}
 		}

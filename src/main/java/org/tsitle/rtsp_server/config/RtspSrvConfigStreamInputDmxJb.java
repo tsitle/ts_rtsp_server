@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * (Muxed) File Container Stream Source.
+ * Jukebox Stream Source.
  */
-public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
+public final class RtspSrvConfigStreamInputDmxJb implements Cloneable {
 
 	public static class SectionTranscodeAudio implements Cloneable {
 		public static final int AUDIO_BITRATE_KBPS_MIN = 8;
@@ -129,7 +129,7 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
 
-	public RtspSrvConfigStreamInputDmxAf() {
+	public RtspSrvConfigStreamInputDmxJb() {
 		this.folder = "";
 		this.transcode = new SectionTranscodeAudio();
 
@@ -139,8 +139,8 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	static @NonNull RtspSrvConfigStreamInputDmxAf of(@NonNull ProUri uri) {
-		RtspSrvConfigStreamInputDmxAf resObj = new RtspSrvConfigStreamInputDmxAf();
+	static @NonNull RtspSrvConfigStreamInputDmxJb of(@NonNull ProUri uri) {
+		RtspSrvConfigStreamInputDmxJb resObj = new RtspSrvConfigStreamInputDmxJb();
 		resObj.folder = uri.getPath().orElse("");
 		resObj.postProcess();
 		return resObj;
@@ -189,10 +189,10 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public @NonNull RtspSrvConfigStreamInputDmxAf clone() {
+	public @NonNull RtspSrvConfigStreamInputDmxJb clone() {
 		checkPostProcessed();
 		try {
-			RtspSrvConfigStreamInputDmxAf cloned = (RtspSrvConfigStreamInputDmxAf)super.clone();
+			RtspSrvConfigStreamInputDmxJb cloned = (RtspSrvConfigStreamInputDmxJb)super.clone();
 			cloned.transcode = transcode.clone();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
@@ -214,7 +214,7 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (! (o instanceof RtspSrvConfigStreamInputDmxAf that)) {
+		if (! (o instanceof RtspSrvConfigStreamInputDmxJb that)) {
 			return false;
 		}
 		return hashSum().equals(that.hashSum());
@@ -253,7 +253,7 @@ public final class RtspSrvConfigStreamInputDmxAf implements Cloneable {
 		checkPostProcessed();
 
 		//
-		final String errMsgSuffix = " for DMX AF Source ID '" + extIdStr + "'";
+		final String errMsgSuffix = " for DMX JB Source ID '" + extIdStr + "'";
 		if (folder.isBlank()) {
 			throw new ConfigInvalidException(FNC_NAME + ": No Folder Path found" + errMsgSuffix);
 		}

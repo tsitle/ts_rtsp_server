@@ -284,7 +284,7 @@ final class StreamsCfgMapper {
 			boolean tmpResB;
 			if (realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_FC ||
 					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_RTSP ||
-					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_AF) {
+					realSsCfgObj.getEsSourceType() == RtspProtoEsSourceType.ST_DEMUX_JB) {
 				tmpResB = createVirtualEsesForOneStream_dmx(extStreamId, streamCfgObj, realSsCfgObj, extRealSsId);
 			} else {
 				tmpResB = true;
@@ -314,7 +314,7 @@ final class StreamsCfgMapper {
 						extRealSsId
 					);
 			} else {
-				veo = StreamsCfgVirtualEsMapper.createVirtualEsesFromDemuxedSource_af(
+				veo = StreamsCfgVirtualEsMapper.createVirtualEsesFromDemuxedSource_jb(
 						realSsCfgObj,
 						extRealSsId
 					);

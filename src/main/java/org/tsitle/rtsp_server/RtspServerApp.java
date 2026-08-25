@@ -45,7 +45,7 @@ public final class RtspServerApp {
 	private static @Nullable RtspThreadMngTci rtspThreadMngTci = null;
 	private static @Nullable RtspThreadMngInpMqExt rtspThreadMngInpMqExt = null;
 	private static @Nullable RtspThreadMngInpDmxRtsp rtspThreadMngInpDmxRtsp = null;
-	private static @Nullable RtspThreadMngInpDmxAf rtspThreadMngInpDmxAf = null;
+	private static @Nullable RtspThreadMngInpDmxJb rtspThreadMngInpDmxJb = null;
 
 	private static final @NonNull RtspAvailableStreamsSvc availableStreamsSvc = new RtspAvailableStreamsSvc();
 	private static @Nullable ThreadStreamsConfig threadStreamsConfig = null;
@@ -84,8 +84,8 @@ public final class RtspServerApp {
 		// start the Demux RTSP Thread Manager
 		startDmxRtspThreads();
 
-		// start the Demux AF Thread Manager
-		startDmxAfThreads();
+		// start the Demux JB Thread Manager
+		startDmxJbThreads();
 
 		//
 		startStreamsConfigThread();
@@ -212,8 +212,8 @@ public final class RtspServerApp {
 			);
 	}
 
-	private static @NonNull RtspThreadMngInpDmxAf createRtspThreadMngDmxAf() {
-		return new RtspThreadMngInpDmxAf(
+	private static @NonNull RtspThreadMngInpDmxJb createRtspThreadMngDmxJb() {
+		return new RtspThreadMngInpDmxJb(
 				RtspServerApp::addMsgForLogThread,
 				cancelToken,
 				rtspSrvConfig,
@@ -427,12 +427,12 @@ public final class RtspServerApp {
 				logDebug(fncName, "Deleted Session ID after timeout: " + tmpId.getIdStr().orElse("-unset-"));
 			}
 		}
-		// clean up expired TCI, MQext, DmxRtsp and DmxAf threads
+		// clean up expired TCI, MQext, DmxRtsp and DmxJb threads
 		if (isLoopCount50) {
 			if (rtspThreadMngTci != null) { rtspThreadMngTci.doHousekeeping(); }
 			if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.doHousekeeping(); }
 			if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.doHousekeeping(); }
-			if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.doHousekeeping(); }
+			if (rtspThreadMngInpDmxJb != null) { rtspThreadMngInpDmxJb.doHousekeeping(); }
 		}
 	}
 
@@ -461,7 +461,7 @@ public final class RtspServerApp {
 		if (rtspThreadMngTci != null) { rtspThreadMngTci.shutdownAllThreads(); }
 		if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.shutdownAllThreads(); }
 		if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.shutdownAllThreads(); }
-		if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.shutdownAllThreads(); }
+		if (rtspThreadMngInpDmxJb != null) { rtspThreadMngInpDmxJb.shutdownAllThreads(); }
 
 		//
 		if (threadStreamsConfig != null) {
@@ -508,7 +508,7 @@ public final class RtspServerApp {
 		if (rtspThreadMngTci != null) { rtspThreadMngTci.shutdownThreadsForSessionIds(stopSessionIds); }
 		if (rtspThreadMngInpMqExt != null) { rtspThreadMngInpMqExt.shutdownThreadsForEsIds(stopMqEsIds); }
 		if (rtspThreadMngInpDmxRtsp != null) { rtspThreadMngInpDmxRtsp.shutdownThreadsForIsIds(stopIsIds); }
-		if (rtspThreadMngInpDmxAf != null) { rtspThreadMngInpDmxAf.shutdownThreadsForIsIds(stopIsIds); }
+		if (rtspThreadMngInpDmxJb != null) { rtspThreadMngInpDmxJb.shutdownThreadsForIsIds(stopIsIds); }
 
 		sleepLongAndProsper();
 
@@ -518,7 +518,7 @@ public final class RtspServerApp {
 		//
 		startMessageQueueThreadsE2I();
 		startDmxRtspThreads();
-		startDmxAfThreads();
+		startDmxJbThreads();
 	}
 
 	private static void sleepLongAndProsper() {
@@ -584,28 +584,28 @@ public final class RtspServerApp {
 		}
 	}
 
-	private static void startDmxAfThreads() {
-		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startDmxAfThreads()";
+	private static void startDmxJbThreads() {
+		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".startDmxJbThreads()";
 
-		final Set<@NonNull RtspProtoIdInputSource> dmxAfStreamSources = availableStreamsSvc.findRequiredDmxAfInputSources();
-		if (dmxAfStreamSources.isEmpty()) {
+		final Set<@NonNull RtspProtoIdInputSource> dmxJbStreamSources = availableStreamsSvc.findRequiredDmxJbInputSources();
+		if (dmxJbStreamSources.isEmpty()) {
 			return;
 		}
-		if (dmxAfStreamSources.size() > rtspSrvConfig.getThreadsMaximumDmxAf()) {
-			logError(FNC_NAME, "Too many DMX AF Sub-Stream sources " +
-					"(have=" + dmxAfStreamSources.size() + ", max=" + rtspSrvConfig.getThreadsMaximumDmxAf() + ")");
+		if (dmxJbStreamSources.size() > rtspSrvConfig.getThreadsMaximumDmxJb()) {
+			logError(FNC_NAME, "Too many DMX JB Sub-Stream sources " +
+					"(have=" + dmxJbStreamSources.size() + ", max=" + rtspSrvConfig.getThreadsMaximumDmxJb() + ")");
 			return;
 		}
 
-		if (rtspThreadMngInpDmxAf == null) {
-			rtspThreadMngInpDmxAf = createRtspThreadMngDmxAf();
+		if (rtspThreadMngInpDmxJb == null) {
+			rtspThreadMngInpDmxJb = createRtspThreadMngDmxJb();
 		}
 
-		for (RtspProtoIdInputSource tmpIsId : dmxAfStreamSources) {
-			if (rtspThreadMngInpDmxAf.isThreadForInputSourceIdRunning(tmpIsId)) {
+		for (RtspProtoIdInputSource tmpIsId : dmxJbStreamSources) {
+			if (rtspThreadMngInpDmxJb.isThreadForInputSourceIdRunning(tmpIsId)) {
 				continue;
 			}
-			rtspThreadMngInpDmxAf.startNewDmxThread(tmpIsId);
+			rtspThreadMngInpDmxJb.startNewDmxThread(tmpIsId);
 		}
 	}
 
