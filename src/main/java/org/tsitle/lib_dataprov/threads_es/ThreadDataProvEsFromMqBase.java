@@ -51,33 +51,7 @@ public abstract class ThreadDataProvEsFromMqBase<I extends CodecInfoInterface<I>
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
-		try {
-			createAvStreamIncoming();
-			createFrameGrabber();
-		} catch (AvCannotOpenInputException e) {
-			logError(FNC_NAME, "cannot open input: " + e.getMessage());
-			return;
-		}
-
-		//
-		isRunning.set(true);
-		logDebug(FNC_NAME, "Thread started");
-
-		//
-		try {
-			while (! doStop.get()) {
-				//noinspection BusyWait
-				Thread.sleep(50);
-			}
-		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException caught");
-			Thread.currentThread().interrupt();  // restore flag
-		} catch (Exception e) {
-			logError(FNC_NAME, "Exception caught: " + e.getMessage());
-		} finally {
-			isRunning.set(false);
-			logDebug(FNC_NAME, "Thread ended");
-		}
+		internalRun(FNC_NAME);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -143,10 +117,17 @@ public abstract class ThreadDataProvEsFromMqBase<I extends CodecInfoInterface<I>
 
 	@Override
 	protected void createAvStreamIncoming() throws AvCannotOpenInputException {
-		this.avStreamIncoming = new AvStreamIncomingFromEsMq(
+		avStreamIncoming = new AvStreamIncomingFromEsMq(
 				logMsgInterface,
 				paramsCommon.getIdEsSource()
 			);
+	}
+
+	protected void closeAvStreamIncoming() {
+		if (avStreamIncoming != null) {
+			avStreamIncoming.close();
+			avStreamIncoming = null;
+		}
 	}
 
 	protected abstract int findNextMagicBytes(final @NonNull BufferView inputBv);

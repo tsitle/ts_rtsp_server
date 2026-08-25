@@ -80,32 +80,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 	public void run() {
 		final String FNC_NAME = getClass().getSimpleName() + ".run()";
 
-		try {
-			createAvStreamIncoming();
-			createFrameGrabber();
-		} catch (AvCannotOpenInputException e) {
-			logError(FNC_NAME, "cannot open input: " + e.getMessage());
-			return;
-		}
-
-		//
-		isRunning.set(true);
-		logDebug(FNC_NAME, "Thread started");
-
-		//
-		try {
-			while (! (doStop.get() || eosReached.get())) {
-				mainLoop();
-			}
-		} catch (InterruptedException e) {
-			logError(FNC_NAME, "InterruptedException caught");
-			Thread.currentThread().interrupt();  // restore flag
-		} catch (Exception e) {
-			logError(FNC_NAME, "Exception caught: " + e.getMessage());
-		} finally {
-			isRunning.set(false);
-			logDebug(FNC_NAME, "Thread ended");
-		}
+		internalRun(FNC_NAME);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -175,10 +150,17 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 			);
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
+	protected void closeAvStreamIncoming() {
+		if (avStreamIncoming != null) {
+			avStreamIncoming.close();
+			avStreamIncoming = null;
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void mainLoop() throws InterruptedException {
+	@Override
+	protected void mainLoop() throws InterruptedException {
 		// fill the queue first
 		while (! (doStop.get() || eosReached.get()) && queueAvail.get() < dataQueue.size()) {
 			try {
@@ -198,6 +180,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		}
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void acquireData() throws InputStreamEosException {

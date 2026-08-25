@@ -78,6 +78,38 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	protected void internalRun(@NonNull String fncName) {
+		try {
+			logDebug(fncName, "Prepare ASI and FG");
+			createAvStreamIncoming();
+			createFrameGrabber();
+		} catch (AvCannotOpenInputException e) {
+			logError(fncName, "cannot open input: " + e.getMessage());
+			return;
+		}
+
+		//
+		isRunning.set(true);
+		logDebug(fncName, "Thread started");
+
+		//
+		try {
+			while (! doStop.get()) {
+				mainLoop();
+			}
+		} catch (InterruptedException e) {
+			logError(fncName, "InterruptedException caught");
+			Thread.currentThread().interrupt();  // restore flag
+		} catch (Exception e) {
+			logError(fncName, "Exception caught: " + e.getMessage());
+		} finally {
+			closeAvStreamIncoming();
+			//
+			isRunning.set(false);
+			logDebug(fncName, "Thread ended");
+		}
+	}
+
 	@Override
 	protected void stopThreadHook() {
 		lock.lock();
@@ -93,6 +125,16 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 	protected abstract void createAvStreamIncoming() throws AvCannotOpenInputException;
 
 	protected abstract void createFrameGrabber();
+
+	protected abstract void closeAvStreamIncoming();
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected void mainLoop() throws InterruptedException {
+		Thread.sleep(50);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	protected abstract @NonNull I parseAndConvertData(@NonNull BufferExt ioBuf) throws AvInvalidCodecDataException;
 

@@ -33,9 +33,6 @@ public abstract class ThreadBase extends Thread {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public synchronized void stopThread() {
-		if (doStop.get()) {
-			return;
-		}
 		doStop.set(true);
 		stopThreadHook();
 		while (isRunning.get()) {
