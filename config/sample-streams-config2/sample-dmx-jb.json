@@ -1,0 +1,25 @@
+{
+	"streams": {
+		"sample-jukebox.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_jukebox" ]
+		}
+	},
+	"subStreams": {
+		"sample_input_jukebox": {
+			"enabled": true,
+			"jukebox": {
+				"folder": "samples",
+				"transcode": {
+					"codec": "AACLC",
+					"audioSamplerateHz": 48000,
+					"audioChannelCount": 2,
+					"audioBitrateKbps": 224
+				}
+			}
+		}
+	}
+}
