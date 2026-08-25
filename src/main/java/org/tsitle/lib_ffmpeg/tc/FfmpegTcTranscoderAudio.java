@@ -34,8 +34,8 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 	private final @NonNull FfmpegTcParamsInpAudio sourceParamsAudio = new FfmpegTcParamsInpAudio();
 	private final @NonNull FfmpegTcSettingsOutAudio tcSettingsAud = new FfmpegTcSettingsOutAudio();
 
-	private final int outputChannelCount;
-	private final @NonNull SampleRateEnum outputSampleRate;
+	private int outputChannelCount = -1;
+	private @NonNull SampleRateEnum outputSampleRate = SampleRateEnum.UNKNOWN;
 
 	private @Nullable SwrContext swrCtx = null;
 	private boolean needsAudioConversion = false;
@@ -84,9 +84,59 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 			);
 
 		//
+		this.tcSettingsAud.copyFrom(tcSettingsAud);
+		//
+		this.cacheBsfAvPktBasics.isVideo = false;
+		//
+		try {
+			updateAudioDecoder(true, sourceParamsAudio, null, null);
+		} catch (FfmpegDecoderNotFoundException | FfmpegGenericException e) {
+			// this will never happen
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public void close() {
+		final String FNC_NAME = getClass().getSimpleName() + ".close()";
+
+		try {
+			flushEverythingBeforeClosing();
+		} catch (FfmpegGenericException e) {
+			logError(FNC_NAME, "FfmpegGenericException caught: " + e.getMessage());
+		} finally {
+			if (swrCtx != null) { swresample.swr_free(swrCtx); swrCtx = null; }
+			if (audioFifo != null) { avutil.av_audio_fifo_free(audioFifo); audioFifo = null; }
+			if (fifoReadFrame != null) { avutil.av_frame_free(fifoReadFrame); fifoReadFrame = null; }
+
+			if (isSwrInChLayoutSet) { avutil.av_channel_layout_uninit(swrInChLayoutObj); isSwrInChLayoutSet = false; }
+			if (isTmpNormalizedInLayoutSet) { avutil.av_channel_layout_uninit(tmpNormalizedInLayoutObj); isTmpNormalizedInLayoutSet = false; }
+
+			needsAudioConversion = false;
+
+			super.closeTranscoder();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	void updateAudioDecoder(
+				boolean isCallFromCtor,
+				@NonNull FfmpegTcParamsInpAudio sourceParamsAudio,
+				@Nullable AVFormatContext inputAvFmtCtx,
+				@Nullable Integer subStreamIx
+			) throws FfmpegDecoderNotFoundException, FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".updateAudioDecoder()";
+
+		int prevOpChannelCount = this.outputChannelCount;
+		SampleRateEnum prevOpSampleRate = this.outputSampleRate;
+
+		//
 		if (tcSettingsAud.cfgFfmpegCodec != FfmpegCodec.UNKNOWN && sourceParamsAudio.channelCount < 1) {
-			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-					"sourceParamsAudio.channelCount must be set");
+			throw new IllegalArgumentException(FNC_NAME + ": sourceParamsAudio.channelCount must be set");
 		}
 		if (sourceParamsAudio.channelCount > 1 &&
 				tcSettingsAud.cfgChannelCm == FfmpegTcSettingsOutAudio.ChannelConversionMode.DOWNMIX_MONO) {
@@ -107,8 +157,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 
 		//
 		if (tcSettingsAud.cfgFfmpegCodec != FfmpegCodec.UNKNOWN && sourceParamsAudio.sampleRate == SampleRateEnum.UNKNOWN) {
-			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-					"sourceParamsAudio.sampleRate must be set");
+			throw new IllegalArgumentException(FNC_NAME + ": sourceParamsAudio.sampleRate must be set");
 		}
 		if (tcSettingsAud.cfgSrCm == FfmpegTcSettingsOutAudio.SampleRateConversionMode.PASSTHROUGH &&
 				(tcSettingsAud.cfgFfmpegCodec != FfmpegCodec.A_OPUS ||
@@ -119,8 +168,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 						tcSettingsAud.cfgOutputModeOpus != FfmpegTcSettingsOutAudio.OutputModeOpus.RTP)) {
 			if (tcSettingsAud.cfgFfmpegCodec != FfmpegCodec.UNKNOWN &&
 					tcSettingsAud.cfgSampleRateFixed == SampleRateEnum.UNKNOWN) {
-				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-						"tcSettingsAud.cfgFixedSampleRate must be set");
+				throw new IllegalArgumentException(FNC_NAME + ": tcSettingsAud.cfgFixedSampleRate must be set");
 			}
 			this.outputSampleRate = tcSettingsAud.cfgSampleRateFixed;
 		} else {
@@ -156,46 +204,39 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 						this.outputSampleRate == SampleRateEnum.SR_016000 ||
 						this.outputSampleRate == SampleRateEnum.SR_024000 ||
 						this.outputSampleRate == SampleRateEnum.SR_048000)) {
-			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-					"Opus only supports 8/12/16/24/48 kHz as sample rate");
+			throw new IllegalArgumentException(FNC_NAME + ": Opus only supports 8/12/16/24/48 kHz as sample rate");
 		}
 
 		//
 		if (tcSettingsAud.cfgBitRateKbps == FfmpegAudioBitRate.UNKNOWN) {
-			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
-					"Bitrate must be set");
+			throw new IllegalArgumentException(FNC_NAME + ": Bitrate must be set");
 		}
 
 		//
 		this.sourceParamsAudio.copyFrom(sourceParamsAudio);
-		this.tcSettingsAud.copyFrom(tcSettingsAud);
+		//
+		this.sourceFfmpegCodec = sourceParamsAudio.ffmpegCodec;
+		this.sourceTimeBase.copyFrom(sourceParamsAudio.timeBase);
+		this.sourceExtradataHex.copyFrom(sourceParamsAudio.extradataHex);
 
-		this.cacheBsfAvPktBasics.isVideo = false;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public void close() {
-		final String FNC_NAME = getClass().getSimpleName() + ".close()";
-
-		try {
-			flushEverythingBeforeClosing();
-		} catch (FfmpegGenericException e) {
-			logError(FNC_NAME, "FfmpegGenericException caught: " + e.getMessage());
-		} finally {
-			if (swrCtx != null) { swresample.swr_free(swrCtx); swrCtx = null; }
-			if (audioFifo != null) { avutil.av_audio_fifo_free(audioFifo); audioFifo = null; }
-			if (fifoReadFrame != null) { avutil.av_frame_free(fifoReadFrame); fifoReadFrame = null; }
-
-			if (isSwrInChLayoutSet) { avutil.av_channel_layout_uninit(swrInChLayoutObj); isSwrInChLayoutSet = false; }
-			if (isTmpNormalizedInLayoutSet) { avutil.av_channel_layout_uninit(tmpNormalizedInLayoutObj); isTmpNormalizedInLayoutSet = false; }
-
-			needsAudioConversion = false;
-
-			super.closeTranscoder();
+		//
+		if (isCallFromCtor) {
+			return;
 		}
+		boolean needOnlyUpdate = (prevOpChannelCount == this.outputChannelCount && prevOpSampleRate == this.outputSampleRate);
+		if (! needOnlyUpdate) {
+			throw new IllegalArgumentException(FNC_NAME + ": Audio encoder parameters changed - need re-init");
+		}
+
+		//
+		if (decoderCtx != null) {
+			flushOnlyDecoder();
+			avcodec.avcodec_free_context(decoderCtx);
+			decoderCtx = null;
+		}
+		if (decodedFrame != null) { avutil.av_frame_free(decodedFrame); decodedFrame = null; }
+		//
+		openDecoderCtx(isSourceFromFile, inputAvFmtCtx, subStreamIx);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -325,15 +366,8 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 			throw new IllegalStateException(FNC_NAME + ": decoderCtx is null");
 		}
 
-		// flush decoder: send null packet, pull remaining decoded frames
-		//noinspection RedundantCast
-		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
-		if (r < 0 && r != avutil.AVERROR_EOF) {
-			FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
-		}
-
-		// receive all remaining decoded frames
-		recvAllFrames();
+		// flush decoder
+		flushOnlyDecoder();
 
 		// flush encoder
 		flushAudioPipelineToEncoder();
@@ -646,6 +680,20 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private void flushOnlyDecoder() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".flushOnlyDecoder()";
+
+		// flush decoder: send null packet, pull remaining decoded frames
+		//noinspection RedundantCast
+		int r = avcodec.avcodec_send_packet(decoderCtx, (AVPacket)null);
+		if (r < 0 && r != avutil.AVERROR_EOF) {
+			FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_send_packet()", r);
+		}
+
+		// receive all remaining decoded frames
+		recvAllFrames();
+	}
+
 	private void pushFrameToFifo(@NonNull AVFrame src) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".pushFrameToFifo()";
 
@@ -722,7 +770,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		}
 
 		//noinspection RedundantCast
-		int r = avcodec.avcodec_send_frame(encoderCtx, (AVFrame) null);
+		int r = avcodec.avcodec_send_frame(encoderCtx, (AVFrame)null);
 		if (r < 0 && r != avutil.AVERROR_EOF) {
 			FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_send_frame()", r);
 		}

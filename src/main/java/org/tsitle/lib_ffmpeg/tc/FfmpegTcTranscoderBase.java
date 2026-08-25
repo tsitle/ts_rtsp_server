@@ -37,7 +37,7 @@ abstract class FfmpegTcTranscoderBase {
 	protected final @Nullable LogMsgInterface logMsgInterface;
 	private final boolean isTranscoderForVideo;
 	protected final @Nullable FfmpegReceiveTcAvInterface ffmpegReceiveTcAvInterface;
-	protected final @NonNull FfmpegCodec sourceFfmpegCodec;
+	protected @NonNull FfmpegCodec sourceFfmpegCodec;
 	protected final @NonNull RationalNumber sourceTimeBase = RationalNumber.ofEmpty();
 	protected final @NonNull ExtradataContainerHex sourceExtradataHex = ExtradataContainerHex.ofEmpty();
 	private final @NonNull FfmpegTcSettingsOutBase tcSettingsOut;

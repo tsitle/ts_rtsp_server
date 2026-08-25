@@ -300,6 +300,31 @@ public final class FfmpegTranscoder implements AutoCloseable {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
+	public void updateAudioDecoderFromBuffer(@NonNull FfmpegTcParamsInpAudio sourceParamsAudio)
+			throws FfmpegDecoderNotFoundException, FfmpegGenericException {
+		if (ffmpegTranscoderAudio == null) {
+			throw new IllegalStateException(getClass().getSimpleName() + ".updateAudioDecoderFromBuffer(): " +
+					"Audio Transcoder not initialized");
+		}
+		ffmpegTranscoderAudio.updateAudioDecoder(false, sourceParamsAudio, null, null);
+	}
+
+	@SuppressWarnings("unused")
+	public void updateAudioDecoderFromDemuxer(
+				@NonNull FfmpegTcParamsInpAudio sourceParamsAudio,
+				@Nullable AVFormatContext inputAvFmtCtx,
+				@Nullable Integer subStreamIx
+			) throws FfmpegDecoderNotFoundException, FfmpegGenericException {
+		if (ffmpegTranscoderAudio == null) {
+			throw new IllegalStateException(getClass().getSimpleName() + ".updateAudioDecoderFromDemuxer(): " +
+					"Audio Transcoder not initialized");
+		}
+		ffmpegTranscoderAudio.updateAudioDecoder(false, sourceParamsAudio, inputAvFmtCtx, subStreamIx);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
 	public void close() {
 		recvTcAvHandler.rcvdPktsVid.clear();
