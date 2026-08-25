@@ -512,11 +512,30 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			}
 			try (BytePointer valBp = entry.value()) {
 				if (valBp != null && valBp.getString() != null) {
-					String tmpTagValue = valBp.getString().replaceAll("[^\\x20-\\x7E]", "");
+					String tmpTagValue = sanitizeTagString(valBp.getString());
 					metaMap.put(tag, tmpTagValue);
 				}
 			}
 		}
+	}
+
+	private static @NonNull String sanitizeTagString(@NonNull String tagValue) {
+		return tagValue
+				.replace("ö", "oe")
+				.replace("ø", "oe")
+				.replace("ä", "ae")
+				.replace("å", "ae")
+				.replace("ü", "ue")
+				.replace("ß", "ss")
+				.replace("Ö", "Oe")
+				.replace("Ø", "Oe")
+				.replace("Ä", "Ae")
+				.replace("Å", "Ae")
+				.replace("Ü", "Ue")
+				.replace("`", "'")
+				.replace("ñ", "nj")
+				.replace("Ñ", "Nj")
+				.replaceAll("[^\\x20-\\x7E]", "");
 	}
 
 	private static @NonNull RationalNumber getSubStreamTimeBase(@NonNull AVFormatContext inputAvFmtCtx, int subStreamIx) {
