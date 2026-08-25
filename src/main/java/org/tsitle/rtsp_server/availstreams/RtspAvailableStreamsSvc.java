@@ -71,7 +71,6 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			copyIsIds(asSvcInputData.isIdsModified, stagedIsIdsToStopThreadsFor);
 			copyIsIds(asSvcInputData.isIdsDeleted, stagedIsIdsToStopThreadsFor);
 
-			//
 			stagedEsIdsToStopThreadsFor.clear();
 			RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 					asDataStaged.inputSourceMap,
@@ -453,7 +452,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			asDataStaged.eseiMap.remove(esSourceId);
 		}
 
-		// copy ESEI objects for MQs from 'current' to 'staged' if they have not changed
+		// copy ESEI objects for MQs/DmxRtsp/DmxJb from 'current' to 'staged' if they have not changed
 		Set<@NonNull RtspProtoIdEsSource> irrelevantEsIds = new HashSet<>();
 		RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 				asDataStaged.inputSourceMap,
@@ -464,7 +463,9 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataStaged.eseiMap.entrySet()) {
 			if (! irrelevantEsIds.contains(entryEsei.getKey()) &&
 					asDataCurrent.eseiMap.containsKey(entryEsei.getKey()) &&
-					entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_ES_MQ) {
+					(entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_ES_MQ ||
+						entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_RTSP ||
+						entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_DMX_VIRTUAL_ES_MQ_FROM_JB)) {
 				asDataStaged.eseiMap.put(
 						entryEsei.getKey().clone(),
 						asDataCurrent.eseiMap.get(entryEsei.getKey()).clone()
