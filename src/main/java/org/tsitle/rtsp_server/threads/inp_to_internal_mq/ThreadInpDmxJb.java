@@ -76,10 +76,12 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 	private static class InputFileStuff {
 		@Nullable FileFolderWatcher ffwPtr = null;
-		final Set<@NonNull String> inputFilePaths = new HashSet<>();
+		final Set<@NonNull String> inputFilePathsAsSet = new HashSet<>();
+		final List<@NonNull String> inputFilePathsAsList = new ArrayList<>();
 		final Set<@NonNull String> blacklistedFilePaths = new HashSet<>();
-		int inputFilePathIdx = -1;
+		final Set<@NonNull Integer> alreadyPlayedFpIdx = new HashSet<>();
 		@NonNull String currentFilePath = "";
+		int lastPlayedFpIdx = -1;
 	}
 
 	private static class Bandwidth {
@@ -547,7 +549,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				lastSpf != rd.dpm.mqCodecSettings.audioSamplesPerFrame || lastVirtualFps != rd.dpm.virtualFps) {
 			if (! forceUpdateUpstream) {
 				logDebug(FNC_NAME, "update virtual FPS: " + tmpVirtFps + " " +
-						"/ SPF: " + rd.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
+						", SPF: " + rd.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
 						"(codec=" + rd.dpm.mqCodecSettings.codec + ")");
 			}
 			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxJb(idEsSource, rd.dpm.mqCodecSettings);
@@ -566,29 +568,40 @@ public final class ThreadInpDmxJb extends RunnableBase {
 			return false;
 		}
 		if (rd.ifs.ffwPtr.haveMatchingFilesChanged()) {
-			rd.ifs.ffwPtr.getMatchingFilesAsStrings(rd.ifs.blacklistedFilePaths, rd.ifs.inputFilePaths);
+			rd.ifs.ffwPtr.getMatchingFilesAsStrings(rd.ifs.blacklistedFilePaths, rd.ifs.inputFilePathsAsSet);
+			rd.ifs.inputFilePathsAsList.clear();
+			rd.ifs.inputFilePathsAsList.addAll(rd.ifs.inputFilePathsAsSet);
+			rd.ifs.alreadyPlayedFpIdx.clear();
+			rd.ifs.lastPlayedFpIdx = -1;
 		}
 
 		do {
-			if (rd.ifs.inputFilePaths.isEmpty()) {
+			if (rd.ifs.inputFilePathsAsList.isEmpty()) {
 				logError(FNC_NAME, "no input files available");
 				return false;
 			}
+			if (rd.ifs.alreadyPlayedFpIdx.size() >= rd.ifs.inputFilePathsAsList.size()) {
+				rd.ifs.alreadyPlayedFpIdx.clear();
+				if (rd.ifs.inputFilePathsAsList.size() > 1) {
+					rd.ifs.alreadyPlayedFpIdx.add(rd.ifs.lastPlayedFpIdx);
+				}
+			}
 
 			// pick an index in the range [0, rd.ifs.inputFilePaths.size())
-			int tmpNextIx = (int)(Math.random() * rd.ifs.inputFilePaths.size());
-			if (rd.ifs.inputFilePaths.size() > 1 && tmpNextIx == rd.ifs.inputFilePathIdx) {
+			int tmpNextIx = (int)(Math.random() * rd.ifs.inputFilePathsAsList.size());
+			if (rd.ifs.alreadyPlayedFpIdx.contains(tmpNextIx)) {
 				continue;
 			}
-			String tmpAbsFn = rd.ifs.inputFilePaths.toArray(new String[0])[tmpNextIx];
+			String tmpAbsFn = rd.ifs.inputFilePathsAsList.get(tmpNextIx);
 			//
 			Path tmpPathObj = Paths.get(tmpAbsFn);
 			if (! tmpPathObj.toFile().exists()) {
 				blacklistFilePath(tmpAbsFn);
 				continue;
 			}
-			rd.ifs.inputFilePathIdx = tmpNextIx;
 			rd.ifs.currentFilePath = tmpAbsFn;
+			rd.ifs.alreadyPlayedFpIdx.add(tmpNextIx);
+			rd.ifs.lastPlayedFpIdx = tmpNextIx;
 			//
 			initDemuxer();
 			break;
@@ -599,7 +612,24 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	}
 
 	private void blacklistFilePath(@NonNull String fp) {
-		rd.ifs.inputFilePaths.remove(fp);
+		int tmpFpIx = -1;
+		for (int tmpSearchIx = 0; tmpSearchIx < rd.ifs.inputFilePathsAsList.size(); tmpSearchIx++) {
+			if (rd.ifs.inputFilePathsAsList.get(tmpSearchIx).equals(fp)) {
+				tmpFpIx = tmpSearchIx;
+				break;
+			}
+		}
+		if (tmpFpIx >= 0) {
+			rd.ifs.alreadyPlayedFpIdx.remove(tmpFpIx);
+			if (rd.ifs.lastPlayedFpIdx == tmpFpIx) {
+				rd.ifs.lastPlayedFpIdx = -1;
+			} else if (rd.ifs.lastPlayedFpIdx > tmpFpIx) {
+				--rd.ifs.lastPlayedFpIdx;
+			}
+		}
+
+		rd.ifs.inputFilePathsAsSet.remove(fp);
+		rd.ifs.inputFilePathsAsList.remove(fp);
 		rd.ifs.blacklistedFilePaths.add(fp);
 	}
 
