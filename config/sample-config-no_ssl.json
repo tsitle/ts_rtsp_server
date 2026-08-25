@@ -6,7 +6,8 @@
 		"threadsMaximumPlay": 20,
 		"threadsMaximumTci": 20,
 		"threadsMaximumMq": 20,
-		"threadsMaximumDmxRtsp": 20
+		"threadsMaximumDmxRtsp": 20,
+		"threadsMaximumDmxJb": 20
 	},
 
 	"logging": {
