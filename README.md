@@ -6,6 +6,7 @@ Usage scenarios include:
 
 - re-publishing an IP camera's (unencrypted) RTSP stream as a secure RTSP stream over the internet
 - media file streaming (e.g., streaming a movie file to a mobile device that runs [VLC](https://www.videolan.org/))
+- Jukebox or Internet Radio Station
 
 Even though [VLC](https://www.videolan.org/) does not support RTSPS, it does at least support SRTP and SRTCP for encrypting  
 all audio and video data that is being transmitted.  
@@ -53,6 +54,7 @@ Explainer:
 	- file containers:
 		- audio/video: MKV, MP4, MOV, WEBM
 		- audio: AAC, AC-3, MP2, MP3, Ogg(-Opus), Opus, WAV
+	- 'Jukebox' for audio files in a folder (and its sub-folders)
 	- other RTSP streams (if they use supported codecs)
 	- raw elementary sub-stream files
 		- raw H264/H265 files
@@ -66,6 +68,9 @@ Explainer:
 
 **Notes:**  
 
+- streams that use a 'Jukebox' sub-stream as input will recursively read all audio files in the configured folder  
+	and convert them to a configurable format (AAC, AC-3, MP2, MP3, Opus, PCM) before sending the audio to the client.  
+	The audio files will be played back in random order.
 - raw elementary sub-stream files are mainly intended for testing purposes. But they can also be used  
 	as regular inputs if you know how to create the files correctly (FFmpeg and Audacity are your friends)
 - when using raw elementary sub-stream files or proprietary Message Queues, the A/V data needs to be in a specific format:  
