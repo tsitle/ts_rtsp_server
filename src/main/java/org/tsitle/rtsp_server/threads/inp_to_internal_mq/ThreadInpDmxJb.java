@@ -96,7 +96,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		final DynamicObjs dyn = new DynamicObjs();
 		final InputFileStuff ifs = new InputFileStuff();
 
-		boolean needToDrainTc = false;
+		boolean needToUpdateTcDecoder = false;
 		boolean haveInitTcDependentObjs = false;
 
 		final TimestampEpoch tsEpochStart = TimestampEpoch.ofEmpty();
@@ -265,9 +265,8 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		}
 
 		//
-		if (rd.needToDrainTc) {
-			rd.dyn.ffmpegTcObj = null;
-			rd.needToDrainTc = false;
+		if (rd.needToUpdateTcDecoder) {
+			rd.needToUpdateTcDecoder = false;
 			if (! rd.tsEpochLast.isEmpty()) {
 				rd.tsEpochStart.copyFrom(rd.tsEpochLast);
 			}
@@ -281,14 +280,14 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				return false;
 			}
 
-			if (rd.dyn.ffmpegTcObj == null) {
+			if (rd.dyn.ffmpegTcObj == null || rd.needToUpdateTcDecoder) {
 				FfmpegDmxSubStreamInfoAudio tmpSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
 				if (! checkInputCodecInfo(tmpSsInfoAud)) {
 					blacklistFilePath(rd.ifs.currentFilePath);
 					continue;
 				}
 				//
-				initTranscoder(tmpSsInfoAud);
+				updateTranscoder(tmpSsInfoAud);
 				//
 				updateTrackMetadata(tmpSsInfoAud.metaMap);
 			}
@@ -302,12 +301,6 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 		if (rd.dyn.ffmpegTcObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
-		}
-
-		if (rd.needToDrainTc) {
-			rd.dyn.ffmpegTcObj.close();  // drain the encoder etc.
-			//
-			return Optional.of(rd.dyn.ffmpegTcObj.getRemainingPackets(false));
 		}
 
 		//
@@ -373,7 +366,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 						return false;  // empty file?
 					}
 					haveEof = true;
-					rd.needToDrainTc = (rd.dyn.ffmpegTcObj != null);
+					rd.needToUpdateTcDecoder = (rd.dyn.ffmpegTcObj != null);
 					continue;
 				}
 				break;
@@ -686,6 +679,29 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				sourceParamsAudio,
 				rd.dpm.ffTcSettingsOutAudio
 			);
+	}
+
+	private void updateTranscoder(@NonNull FfmpegDmxSubStreamInfoAudio ssInfoAud) {
+		final String FNC_NAME = getClass().getSimpleName() + ".updateTranscoder()";
+
+		if (rd.dyn.ffmpegTcObj == null) {
+			initTranscoder(ssInfoAud);
+			return;
+		}
+		FfmpegTcParamsInpAudio sourceParamsAudio = new FfmpegTcParamsInpAudio();
+		sourceParamsAudio.ffmpegCodec = ssInfoAud.ffmpegCodec;
+		sourceParamsAudio.timeBase.copyFrom(ssInfoAud.timeBasePts);
+		sourceParamsAudio.sampleRate = ssInfoAud.sampleRate;
+		sourceParamsAudio.channelCount = ssInfoAud.channelCount;
+		sourceParamsAudio.extradataHex.copyFrom(ssInfoAud.extradataHex);
+
+		try {
+			rd.dyn.ffmpegTcObj.updateAudioDecoderFromBuffer(sourceParamsAudio);
+		} catch (FfmpegDecoderNotFoundException e) {
+			logError(FNC_NAME, "FfmpegDecoderNotFoundException caught: " + e.getMessage());
+		} catch (FfmpegGenericException e) {
+			logError(FNC_NAME, "FfmpegGenericException caught: " + e.getMessage());
+		}
 	}
 
 	private static double computeDurationSeconds(int samplesPerFrame, @NonNull SampleRateEnum sr) {
