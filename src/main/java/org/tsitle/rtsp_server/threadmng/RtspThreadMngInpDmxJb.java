@@ -3,7 +3,6 @@ package org.tsitle.rtsp_server.threadmng;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -83,10 +82,6 @@ public final class RtspThreadMngInpDmxJb extends RtspThreadMngBase {
 			for (RtspProtoIdEsSource tmpIdEs : tmpEsIds) {
 				try {
 					RtspProtoEsSourceExpandedInfo tmpEsei = availableStreamsInterface.getElementaryStreamSourceExpInfo(tmpIdEs);
-					if (tmpEsei.codec() != RtpPacketType.UNKNOWN) {
-						logError(FNC_NAME, "Invalid DMX ES Source '" + tmpIdEs + "': codec should be UNKNOWN");
-						return;
-					}
 					idEsSource.copyFrom(tmpIdEs);
 					inputSourceDmxJbUri = tmpEsei.inputUri().clone();
 					tcSettingsAudio = (tmpEsei.tcSettingsAudio() == null ? null : tmpEsei.tcSettingsAudio().clone());

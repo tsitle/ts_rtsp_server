@@ -72,7 +72,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			copyIsIds(asSvcInputData.isIdsDeleted, stagedIsIdsToStopThreadsFor);
 
 			stagedEsIdsToStopThreadsFor.clear();
-			RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+			RtspAsDeltaEsHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 					asDataStaged.inputSourceMap,
 					asDataCurrent.eseiMap,
 					asDataStaged.eseiMap,
@@ -137,7 +137,7 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		theReadLock.lock();
 		try {
 			Set<RtspProtoIdEsSource> resSet = new HashSet<>();
-			RtspAsMqEsDeltaHelper.findMqEsThatAreInUse(
+			RtspAsDeltaEsHelper.findMqEsThatAreInUse(
 					asDataCurrent.inputSourceMap,
 					asDataCurrent.eseiMap,
 					resSet
@@ -453,14 +453,36 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		}
 
 		// copy ESEI objects for MQs/DmxRtsp/DmxJb from 'current' to 'staged' if they have not changed
-		Set<@NonNull RtspProtoIdEsSource> irrelevantEsIds = new HashSet<>();
-		RtspAsMqEsDeltaHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+		Set<@NonNull RtspProtoIdEsSource> tmpIrrelevantEsIdsMq = new HashSet<>();
+		RtspAsDeltaEsHelper.findMqEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
 				asDataStaged.inputSourceMap,
 				asDataCurrent.eseiMap,
 				asDataStaged.eseiMap,
-				irrelevantEsIds
+				tmpIrrelevantEsIdsMq
 			);
+		Set<@NonNull RtspProtoIdEsSource> irrelevantEsIds = new HashSet<>(tmpIrrelevantEsIdsMq);
+		Set<@NonNull RtspProtoIdEsSource> tmpIrrelevantEsIdsDmxFcOrRtsp = new HashSet<>();
+		RtspAsDeltaEsHelper.findDmxFcOrRtspEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+				asDataStaged.inputSourceMap,
+				asDataCurrent.eseiMap,
+				asDataStaged.eseiMap,
+				tmpIrrelevantEsIdsDmxFcOrRtsp
+			);
+		irrelevantEsIds.addAll(tmpIrrelevantEsIdsDmxFcOrRtsp);
+		Set<@NonNull RtspProtoIdEsSource> tmpIrrelevantEsIdsDmxJb = new HashSet<>();
+		RtspAsDeltaEsHelper.findDmxJbEsIdsThatHaveBeenDeletedOrModifiedOrNotInUse(
+				asDataStaged.inputSourceMap,
+				asDataCurrent.eseiMap,
+				asDataStaged.eseiMap,
+				tmpIrrelevantEsIdsDmxJb
+			);
+		irrelevantEsIds.addAll(tmpIrrelevantEsIdsDmxJb);
 		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataStaged.eseiMap.entrySet()) {
+			/*System.out.println("Xstag ESEI " + entryEsei.getKey() + ": uri=" + entryEsei.getValue().inputUri() + ", " +
+					"codec=" + entryEsei.getValue().codec() + " // " +
+					"irrelevantEsIds.contains=" + (irrelevantEsIds.contains(entryEsei.getKey())) + " // " +
+					"asDataCurrent.eseiMap.contains=" + (asDataCurrent.eseiMap.containsKey(entryEsei.getKey())) + " // " +
+					"entryEsei.getValue().esSourceType()=" + entryEsei.getValue().esSourceType());*/
 			if (! irrelevantEsIds.contains(entryEsei.getKey()) &&
 					asDataCurrent.eseiMap.containsKey(entryEsei.getKey()) &&
 					(entryEsei.getValue().esSourceType() == RtspProtoEsSourceType.ST_ES_MQ ||
@@ -472,6 +494,19 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 					);
 			}
 		}
+
+		//
+		/*
+		System.out.println("##########################################################################################");
+		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataStaged.eseiMap.entrySet()) {
+			System.out.println("stage ESEI " + entryEsei.getKey() + ": uri=" + entryEsei.getValue().inputUri() + ", codec=" + entryEsei.getValue().codec());
+		}
+		System.out.println("ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp");
+		for (Map.Entry<RtspProtoIdEsSource, RtspProtoEsSourceExpandedInfo> entryEsei : asDataCurrent.eseiMap.entrySet()) {
+			System.out.println("curre ESEI " + entryEsei.getKey() + ": uri=" + entryEsei.getValue().inputUri() + ", codec=" + entryEsei.getValue().codec());
+		}
+		System.out.println("##########################################################################################");
+		*/
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -529,6 +564,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 				continue;
 			}
 			RtspProtoEsSourceExpandedInfo esei = asDataCurrent.eseiMap.get(tmpEsId);
+			/*System.out.println("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK IS " + idInputSource + " KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK " +
+					"found ES " + tmpEsId + " uri=" + esei.inputUri() + ", codec=" + esei.codec());*/
 			if ((isVideo && esei.codec().isVideo()) || (! isVideo && esei.codec().isAudio())) {
 				return Optional.of(asDataCurrent.esSourceMap.get(tmpEsId).clone());
 			}

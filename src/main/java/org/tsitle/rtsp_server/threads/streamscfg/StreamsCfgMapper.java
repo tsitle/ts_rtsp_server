@@ -101,13 +101,12 @@ final class StreamsCfgMapper {
 		compareSubStreamsPerStream();
 
 		//
-		//debugPrintStreams();
-
-		//
+		//debugPrintStreams(false);
 		boolean tmpResB = updateVirtualEses();
 		if (! tmpResB) {
 			return Optional.empty();
 		}
+		//debugPrintStreams(true);
 
 		//
 		updateRawFileOrMqMetaInfo(true);
@@ -216,24 +215,56 @@ final class StreamsCfgMapper {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/*private void debugPrintStreams() {
+	/*
+	private void debugPrintStreams(boolean withEsei) {
 		final String FNC_NAME = getClass().getSimpleName() + ".debugPrintStreams()";
 
+		logDebug(FNC_NAME, "------------------------------------------------------------");
 		for (String extId : mappingsIs.deltaDeletedIds) {
 			logDebug(FNC_NAME, "stream deleted: " + extId);
 		}
-		for (Map.Entry<String, RtspSrvConfigStreamsStreamNg> entry : mappingsIs.mapExternalIdToCfgObjCur.entrySet()) {
+		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : mappingsIs.mapExternalIdToCfgObjCur.entrySet()) {
 			if (mappingsIs.deltaAddedIds.contains(entry.getKey())) {
 				logDebug(FNC_NAME, "stream added: " + entry.getKey());
-				continue;
-			}
-			if (mappingsIs.deltaModifiedIds.contains(entry.getKey())) {
+			} else if (mappingsIs.deltaModifiedIds.contains(entry.getKey())) {
 				logDebug(FNC_NAME, "stream modified: " + entry.getKey());
+			}
+			//else { logDebug(FNC_NAME, "stream unchanged: " + entry.getKey()); }
+			if (! withEsei) {
 				continue;
 			}
-			//logDebug(FNC_NAME, "stream unchanged: " + entry.getKey());
+			//
+			RtspProtoIdInputSource tmpVirtualInternalIsId = dmxVirtualEses.mapExternalIsIdToInternalVirtIsId.get(entry.getKey());
+			if (tmpVirtualInternalIsId == null) {
+				// Input Source has been disabled or removed or is not a DMX Input Source
+				logDebug(FNC_NAME, " __ DMX Input Source: NO VIRTUAL INTERNAL ID for ExtID='" + entry.getKey() + "'");
+				continue;
+			}
+			RtspSrvConfigStreamsStream tmpVirtualIsObj = dmxVirtualEses.mapVirtIsIdToCfgObj.get(tmpVirtualInternalIsId);
+			if (tmpVirtualIsObj == null) {
+				logError(FNC_NAME, " __ DMX Input Source: NO VIRTUAL INTERNAL OBJ for VirtIntID='" + tmpVirtualInternalIsId + "'");
+				continue;
+			}
+			logDebug(FNC_NAME, " __ DMX Input Source: ExtID='" + entry.getKey() + "' | VirtIntID=" + tmpVirtualInternalIsId);
+			//
+			for (String virtExtEsId : tmpVirtualIsObj.getSubStreamIds()) {
+				RtspProtoIdEsSource tmpIdEs = dmxVirtualEses.mapVirtExternalEsIdToInternal.get(virtExtEsId);
+				if (tmpIdEs == null) {
+					logError(FNC_NAME, " __ DMX ES: NO INTERNAL ID for ExtID='" + virtExtEsId + "'");
+					continue;
+				}
+				RtspProtoEsSourceExpandedInfo tmpEsei = dmxVirtualEses.mapVirtEsIdToEsei.get(tmpIdEs);
+				if (tmpEsei == null) {
+					logError(FNC_NAME, " __ DMX ES: NO ESEI for ExtID='" + virtExtEsId + "' | IntID=" + tmpIdEs);
+					continue;
+				}
+				logDebug(FNC_NAME, " __ DMX ES: ESEI ExtID='" + virtExtEsId + "' " +
+						"| IntID=" + tmpIdEs + ": uri=" + tmpEsei.inputUri() + ", codec=" + tmpEsei.codec());
+			}
 		}
-	}*/
+		logDebug(FNC_NAME, "------------------------------------------------------------");
+	}
+	*/
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -322,6 +353,11 @@ final class StreamsCfgMapper {
 			dmxVirtualEses.mapVirtExternalEsIdToInternal.putAll(veo.mapVirtExternalEsIdToInternal());
 			dmxVirtualEses.mapVirtEsIdToCfgObj.putAll(veo.mapVirtInternalIdEsToEsCfgObj());
 			dmxVirtualEses.mapVirtEsIdToEsei.putAll(veo.mapVirtEsIdToEsei());
+			//
+			/*for (String virtExtEsId : veo.mapVirtExternalEsIdToInternal().keySet()) {
+				logDebug(FNC_NAME, " __ VirtExtID='" + virtExtEsId + "' " +
+						"| VirtIntID=" + veo.mapVirtExternalEsIdToInternal().get(virtExtEsId));
+			}*/
 			//
 			RtspSrvConfigStreamsStream virtStreamCfg = RtspSrvConfigStreamsStream.createVirtual(
 					realStreamCfgObj,
