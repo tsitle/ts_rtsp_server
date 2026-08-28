@@ -133,6 +133,7 @@ public final class RtspServerApp {
 					System.out.println();
 					System.out.println(fncName + ": SDH: Shutting down ...");
 					doStop.set(true);
+					cancelToken.cancelled = true;
 					//
 					int loopCnt = 0;
 					while (! isShutdownComplete.get() && loopCnt++ < 60) {
