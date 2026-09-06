@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.common.buffers;
 
 import org.jspecify.annotations.NonNull;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HexFormat;
 
@@ -66,6 +67,7 @@ public final class BufferExt implements Cloneable {
 	 */
 	public void clear() {
 		used = 0;
+		Arrays.fill(buf, (byte)0);
 	}
 
 	/**
