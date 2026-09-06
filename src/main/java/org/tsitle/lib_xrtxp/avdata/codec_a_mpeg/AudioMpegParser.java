@@ -111,9 +111,6 @@ public final class AudioMpegParser {
 		resObj.frameLength = (int)(144.0 * (double)(resObj.getBitRateKbps() * 1000) / (double)resObj.getSampleRateHz()) +
 				(hdHavePadd ? 1 : 0);
 		resObj.samplesLength = resObj.frameLength - resObj.samplesOffset;
-		if (inputBv.getLength() < resObj.frameLength) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio data size");
-		}
 
 		return resObj;
 	}
