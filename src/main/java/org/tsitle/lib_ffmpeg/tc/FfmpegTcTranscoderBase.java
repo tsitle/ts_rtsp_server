@@ -359,6 +359,8 @@ abstract class FfmpegTcTranscoderBase {
 			if (cacheInputPkt == null) {
 				throw new RuntimeException(FNC_NAME + ": Cannot allocate Cache Input Packet");
 			}
+		} else {
+			avcodec.av_packet_unref(cacheInputPkt);
 		}
 		int r = avcodec.av_new_packet(cacheInputPkt, inputPktBasics.pktBe.getUsed());
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
