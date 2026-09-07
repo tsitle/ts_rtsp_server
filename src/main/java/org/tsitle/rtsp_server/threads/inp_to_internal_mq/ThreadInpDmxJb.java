@@ -148,7 +148,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		this.inputSourceDmxJbUri = inputSourceDmxJbUri.clone();
 
 		this.rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec =
-				CfgTcCodecToFfCodecHelper.convertCfgTcCodecToFfmpegCodec(tcCodecSettings.codec());
+				CfgTcCodecToFfCodecHelper.convertCfgTcCodecToFfmpegCodec(tcCodecSettings.codecStr());
 		this.rd.dpm.ffTcSettingsOutAudio.cfgBitRateKbps = approximateBr(tcCodecSettings.audioBitRateKbps());
 		this.rd.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed = tcCodecSettings.audioSampleRate();
 		this.rd.dpm.ffTcSettingsOutAudio.cfgChannelCm = (tcCodecSettings.audioChannelCount() == 1 ?

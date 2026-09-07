@@ -8,6 +8,16 @@ public final class CfgTcCodecToFfCodecHelper {
 
 	private CfgTcCodecToFfCodecHelper() { }
 
+	public static @NonNull FfmpegCodec convertCfgTcCodecToFfmpegCodec(@NonNull String cfgTcCodecStr) {
+		try {
+			return convertCfgTcCodecToFfmpegCodec(
+					ConfigTcCodec.valueOf(cfgTcCodecStr)
+				);
+		} catch (IllegalArgumentException e) {
+			return FfmpegCodec.UNKNOWN;
+		}
+	}
+
 	public static @NonNull FfmpegCodec convertCfgTcCodecToFfmpegCodec(@NonNull ConfigTcCodec cfgTcCodec) {
 		return switch (cfgTcCodec) {
 				case AACLC -> FfmpegCodec.A_AAC;

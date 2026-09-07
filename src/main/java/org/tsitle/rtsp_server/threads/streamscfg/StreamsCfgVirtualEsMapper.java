@@ -200,7 +200,7 @@ final class StreamsCfgVirtualEsMapper {
 
 		//
 		RtspProtoEsSourceExpandedInfo.TcSettingsAudio tcSettingsAudio = new RtspProtoEsSourceExpandedInfo.TcSettingsAudio(
-				ssCfgDmxJbObj.getTcCodec(),
+				ssCfgDmxJbObj.getTcCodec().name(),
 				ssCfgDmxJbObj.getTcAudioChannelCount(),
 				ssCfgDmxJbObj.getTcAudioSampleRate(),
 				ssCfgDmxJbObj.getTcAudioBitrateKbps()

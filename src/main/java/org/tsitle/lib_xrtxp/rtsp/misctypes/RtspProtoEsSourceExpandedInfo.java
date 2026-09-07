@@ -8,7 +8,6 @@ import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
-import org.tsitle.rtsp_server.config.ConfigTcCodec;
 
 public record RtspProtoEsSourceExpandedInfo(
 			int demuxerSubStreamIx,
@@ -28,7 +27,7 @@ public record RtspProtoEsSourceExpandedInfo(
 		) implements Cloneable {
 
 	public record TcSettingsAudio(
-				@NonNull ConfigTcCodec codec,
+				@NonNull String codecStr,
 				byte audioChannelCount,
 				@NonNull SampleRateEnum audioSampleRate,
 				int audioBitRateKbps
