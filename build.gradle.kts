@@ -82,6 +82,8 @@ dependencies {
 	//implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
 }
 
+// ----------------------------------------------------------------
+
 /*
  * see https://docs.gradle.org/current/userguide/java_testing.html
  */
@@ -95,10 +97,14 @@ tasks.test {
 	}
 }
 
+// ----------------------------------------------------------------
+
 tasks.compileJava.configure {
 	options.encoding = "UTF-8"
 	options.compilerArgs.add("-Xlint:deprecation")
 }
+
+// ----------------------------------------------------------------
 
 application {
 	mainClass = "org.tsitle.rtsp_server.RtspServerApp"
@@ -109,11 +115,15 @@ application {
 	applicationDefaultJvmArgs += "--enable-native-access=ALL-UNNAMED"  // for FFmpeg
 }
 
+// ----------------------------------------------------------------
+
 tasks.jar {
 	manifest {
 		attributes["Main-Class"] = "org.tsitle.rtsp_server.RtspServerApp"
 	}
 }
+
+// ----------------------------------------------------------------
 
 distributions {
 	main {
