@@ -14,6 +14,7 @@ public final class ExtradataContainerHex {  // @CODEC
 	private boolean isCodecFlac;
 	private boolean isCodecH264;
 	private boolean isCodecH265;
+	private boolean isCodecLpcm;
 	private boolean isCodecMpeg2;
 	private boolean isCodecMpeg4;
 	private boolean isCodecOpus;
@@ -83,6 +84,13 @@ public final class ExtradataContainerHex {  // @CODEC
 		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
 		resObj.isCodecH265 = true;
 		resObj.isFmtH26xAnnexB = true;
+		return resObj;
+	}
+
+	@SuppressWarnings("unused")
+	public static @NonNull ExtradataContainerHex ofLpcm(@NonNull String hex) {
+		ExtradataContainerHex resObj = new ExtradataContainerHex(hex);
+		resObj.isCodecLpcm = true;
 		return resObj;
 	}
 
@@ -157,6 +165,11 @@ public final class ExtradataContainerHex {  // @CODEC
 	}
 
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
+	public boolean isCodecLpcm() {
+		return isCodecLpcm;
+	}
+
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 	public boolean isCodecMpeg2() {
 		return isCodecMpeg2;
 	}
@@ -189,6 +202,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		if (isCodecFlac) { return "FLAC"; }
 		if (isCodecH264) { return "H264"; }
 		if (isCodecH265) { return "H265"; }
+		if (isCodecLpcm) { return "LPCM"; }
 		if (isCodecMpeg2) { return "MPEG2"; }
 		if (isCodecMpeg4) { return "MPEG4"; }
 		if (isCodecOpus) { return "Opus"; }
@@ -216,6 +230,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		isCodecFlac = false;
 		isCodecH264 = false;
 		isCodecH265 = false;
+		isCodecLpcm = false;
 		isCodecMpeg2 = false;
 		isCodecMpeg4 = false;
 		isCodecOpus = false;
@@ -234,6 +249,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		isCodecFlac = other.isCodecFlac;
 		isCodecH264 = other.isCodecH264;
 		isCodecH265 = other.isCodecH265;
+		isCodecLpcm = other.isCodecLpcm;
 		isCodecMpeg2 = other.isCodecMpeg2;
 		isCodecMpeg4 = other.isCodecMpeg4;
 		isCodecOpus = other.isCodecOpus;
@@ -256,17 +272,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		if (isEmpty() != that.isEmpty()) {
 			return false;
 		}
-		return (isCodecAac == that.isCodecAac &&
-				isCodecAlac == that.isCodecAlac &&
-				isCodecAv1 == that.isCodecAv1 &&
-				isCodecFlac == that.isCodecFlac &&
-				isCodecH264 == that.isCodecH264 &&
-				isCodecH265 == that.isCodecH265 &&
-				isCodecMpeg2 == that.isCodecMpeg2 &&
-				isCodecMpeg4 == that.isCodecMpeg4 &&
-				isCodecOpus == that.isCodecOpus &&
-				isCodecTheora == that.isCodecTheora &&
-				isCodecVorbis == that.isCodecVorbis &&
+		return (getCodecStr().equals(that.getCodecStr()) &&
 				isFmtH26xAnnexB == that.isFmtH26xAnnexB &&
 				Objects.equals(hex, that.hex));
 	}
@@ -278,17 +284,7 @@ public final class ExtradataContainerHex {  // @CODEC
 		}
 		return Objects.hash(
 				hex,
-				isCodecAac,
-				isCodecAlac,
-				isCodecAv1,
-				isCodecFlac,
-				isCodecH264,
-				isCodecH265,
-				isCodecMpeg2,
-				isCodecMpeg4,
-				isCodecOpus,
-				isCodecTheora,
-				isCodecVorbis,
+				getCodecStr(),
 				isFmtH26xAnnexB
 			);
 	}
