@@ -248,6 +248,10 @@ public final class ProUri implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public Optional<String> getUriString() {
+		return getUriString(true, true);
+	}
+
+	public Optional<String> getUriString(boolean withCredentials, boolean withPort) {
 		if (mScheme == Scheme.NONE) {
 			return Optional.empty();
 		}
@@ -263,19 +267,23 @@ public final class ProUri implements Cloneable {
 			};
 		sb.append(tmpSch).append("://");
 
-		Optional<String> tmpOptStr = getCredentialsUsername();
-		if (tmpOptStr.isPresent()) {
-			sb.append(tmpOptStr.get());
-			tmpOptStr = getCredentialsPassword();
-			tmpOptStr.ifPresent(s -> sb.append(":").append(s));
-			sb.append("@");
+		if (withCredentials) {
+			Optional<String> tmpOptCredsStr = getCredentialsUsername();
+			if (tmpOptCredsStr.isPresent()) {
+				sb.append(tmpOptCredsStr.get());
+				tmpOptCredsStr = getCredentialsPassword();
+				tmpOptCredsStr.ifPresent(s -> sb.append(":").append(s));
+				sb.append("@");
+			}
 		}
 
-		tmpOptStr = getHost();
+		Optional<String> tmpOptStr = getHost();
 		tmpOptStr.ifPresent(s -> sb.append(s.toLowerCase()));
 
-		Optional<Integer> tmpOptInt = getPortIfPresent();
-		tmpOptInt.ifPresent(s -> sb.append(":").append(s));
+		if (withPort) {
+			Optional<Integer> tmpOptInt = getPortIfPresent();
+			tmpOptInt.ifPresent(s -> sb.append(":").append(s));
+		}
 
 		tmpOptStr = getPath();
 		tmpOptStr.ifPresent(sb::append);
