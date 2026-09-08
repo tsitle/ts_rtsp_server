@@ -250,7 +250,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
-		rtxpTcpReadWrite.writeRtpBinary(bufView, channNr);
+		rtxpTcpReadWrite.writeRtpOrRtcpBinary(bufView, channNr);
 	}
 
 	@Override
@@ -259,7 +259,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
-		return rtxpTcpReadWrite.canReadRtcp(channNr);
+		return rtxpTcpReadWrite.canReadRtpOrRtcp(channNr);
 	}
 
 	@Override
@@ -268,7 +268,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
-		return rtxpTcpReadWrite.readRtcpBinary(buf, channNr);
+		return rtxpTcpReadWrite.readRtpOrRtcpBinary(buf, channNr);
 	}
 
 	@Override
@@ -277,7 +277,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
-		rtxpTcpReadWrite.writeRtcpBinary(bufView, channNr);
+		rtxpTcpReadWrite.writeRtpOrRtcpBinary(bufView, channNr);
 	}
 
 	@Override

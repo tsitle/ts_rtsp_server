@@ -274,7 +274,7 @@ public final class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean canReadRtcp(@NonNull RtspProtoTcpChannelNr channNr)
+	public boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
@@ -301,18 +301,12 @@ public final class RtxpTcpReadWrite {
 		}
 	}
 
-	public boolean readRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
+	public boolean readRtpOrRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		return internalReadRtpRtcpBinary(buf, channNr);
 	}
 
-	public void writeRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
-		internalWriteRtpRtcpBinary(bufView, channNr);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public void writeRtpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
+	public void writeRtpOrRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException {
 		internalWriteRtpRtcpBinary(bufView, channNr);
 	}
 
