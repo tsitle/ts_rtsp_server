@@ -160,10 +160,12 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	public @NonNull FrameType getHdFrameType() {
 		return hdFrameType;
 	}
 
+	@SuppressWarnings("unused")
 	public int getHdNumberOfFragments() {
 		return hdNumberOfFragments;
 	}
