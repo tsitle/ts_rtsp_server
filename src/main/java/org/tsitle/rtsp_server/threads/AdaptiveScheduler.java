@@ -8,8 +8,7 @@ import java.util.concurrent.locks.LockSupport;
 
 public final class AdaptiveScheduler {
 
-	@SuppressWarnings("FieldCanBeLocal")
-	private final LogMsgInterface logMsgInterface;
+	private final @NonNull LogMsgInterface logMsgInterface;
 
 	private double targetIntervalNs;
 	private boolean isWaitForNextFrameEnabled;
