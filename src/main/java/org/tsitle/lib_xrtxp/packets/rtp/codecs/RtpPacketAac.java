@@ -83,7 +83,8 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 			) {
 		super(RtpPacketType.A_AAC, packetData);
 
-		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + 4 + 1) {  // 4^=inner header length, 1^=inner payload length
+		final int totalInnerHeaderLengthBits = headerFieldSizeLengthBits + headerFieldIndexLengthBits + headerFieldIndexDeltaLengthBits;
+		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + (totalInnerHeaderLengthBits / 8) + 1) {  // 1^=inner payload length
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
 		}
 
@@ -93,7 +94,7 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		try {
 			// AU-headers-length (16 bits)
 			int tmpAuHeadersLengthBits = bitReader.readBits(16);
-			if (tmpAuHeadersLengthBits != headerFieldSizeLengthBits + headerFieldIndexLengthBits + headerFieldIndexDeltaLengthBits) {
+			if (tmpAuHeadersLengthBits != totalInnerHeaderLengthBits) {
 				/*
 				 * Either there are multiple AU-headers - which is not supported - or the header field sizes are incorrect.
 				 */
