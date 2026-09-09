@@ -588,7 +588,8 @@ public final class RtspProtoHighRequestProducer {
 			outputMsgRequ.headers.put(hdEntry.getHdKey(), hdEntry);
 		}
 		// Auth(Client)
-		if (! inputDataRequ.requAuthClient.getAuthNonce().isBlank()) {
+		if (! inputDataRequ.requAuthClient.getAuthNonce().isBlank() &&
+				! inputDataRequ.requAuthClient.getAuthUser().isBlank()) {
 			RtspProtoHeaderEntryRequest hdEntry = new RtspProtoHeaderEntryRequest(RtspHeaderKey.AUTH_CLIENT);
 			hdEntry.hdValAuthClient.authUser = inputDataRequ.requAuthClient.getAuthUser();
 			hdEntry.hdValAuthClient.authUri = outputMsgRequ.resourceUrl;
