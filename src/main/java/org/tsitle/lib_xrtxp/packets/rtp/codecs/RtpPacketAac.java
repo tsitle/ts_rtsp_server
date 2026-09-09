@@ -120,12 +120,6 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 
 		// determine the length of the inner header bitstream
 		this.payloadSpecHeaderSize = (tmpReadBits / 8);
-
-		if (packetData.getUsed() != RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize + Short.toUnsignedInt(this.hdInnAuSize)) {
-			int tmpPaySz = packetData.getUsed() - RTP_CONT_HEADER_SIZE - this.payloadSpecHeaderSize;
-			throw new IllegalArgumentException("Invalid RTP payload size (is=" +
-					tmpPaySz + ", exp=" + Short.toUnsignedInt(this.hdInnAuSize) + ")");
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
