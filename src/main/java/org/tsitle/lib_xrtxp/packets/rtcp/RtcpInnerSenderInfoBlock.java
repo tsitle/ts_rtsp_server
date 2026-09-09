@@ -99,19 +99,25 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	}
 
 	public static @NonNull RtcpInnerSenderInfoBlock decodeFromBuffer(@NonNull ByteBuffer bb) {
+		int tmpNtpTsMsw = bb.getInt();
+		int tmpNtpTsLsw = bb.getInt();
+		int tmpRtpTsInt = bb.getInt();
+		int tmpSenderPktCount = bb.getInt();
+		int tmpSenderOctCount = bb.getInt();
+
 		RtspProtoRtpTimestamp tmpTs;
 		try {
-			tmpTs = RtspProtoRtpTimestamp.of(Integer.toUnsignedLong(bb.getInt()));
+			tmpTs = RtspProtoRtpTimestamp.of(Integer.toUnsignedLong(tmpRtpTsInt));
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
 			tmpTs = RtspProtoRtpTimestamp.ofZero();
 		}
 		return new RtcpInnerSenderInfoBlock(
-				bb.getInt(),  // ntpTsMsw
-				bb.getInt(),  // ntpTsLsw
+				tmpNtpTsMsw,
+				tmpNtpTsLsw,
 				tmpTs,  // rtpTs
-				bb.getInt(),  // sendersPktCount
-				bb.getInt()  // sendersOctCount
+				tmpSenderPktCount,
+				tmpSenderOctCount
 			);
 	}
 

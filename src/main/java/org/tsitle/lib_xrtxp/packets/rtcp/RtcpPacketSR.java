@@ -44,7 +44,7 @@ public final class RtcpPacketSR {
 				@Nullable List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks
 			) {
 		if (recpReportBlocks != null && recpReportBlocks.size() > 255) {
-			throw new IllegalArgumentException("Invalid RTCP RR packet: invalid number of RRBs");
+			throw new IllegalArgumentException("Invalid RTCP SR packet: invalid number of RRBs");
 		}
 
 		//
@@ -67,7 +67,7 @@ public final class RtcpPacketSR {
 				INNER_HEADER_SIZE + allItemsPayloadSize
 			);
 
-		// Construct the bitstream
+		// construct the bitstream
 		byte[] tmpBuf = new byte[INNER_HEADER_SIZE + allItemsPayloadSize];
 		ByteBuffer bb = ByteBuffer.wrap(tmpBuf);  // big-endian by default
 		bb.putInt(this.hdSsrcSender.getId32bit().orElse(0L).intValue());
@@ -95,19 +95,20 @@ public final class RtcpPacketSR {
 			throw new IllegalArgumentException("Invalid RTCP packet size");
 		}
 		this.mainPktHd = mainPacketHeader;
-		if (mainPacketHeader.getItemsCount() > 0) {
-			this.rawPayload.copyOf(packet, RtcpPacketHeader.HEADER_SIZE, INNER_HEADER_SIZE + allItemsPayloadSize);
-		}
+		this.rawPayload.copyOf(packet, RtcpPacketHeader.HEADER_SIZE, INNER_HEADER_SIZE + allItemsPayloadSize);
 
-		// Parse payload fields
 		ByteBuffer bb = ByteBuffer.wrap(this.rawPayload.getBaPtr(), 0, this.rawPayload.getUsed());  // big-endian by default
+
+		// parse inner header
 		this.hdSsrcSender = RtspProtoIdXsrc.ofEmpty();
 		try {
 			this.hdSsrcSender.setId32bit(Integer.toUnsignedLong(bb.getInt()));
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
 		}
+		// parse Sender Info block
 		this.senderInfoBlock = RtcpInnerSenderInfoBlock.decodeFromBuffer(bb);
+		// parse Recipient Report blocks
 		for (int i = 1; i <= mainPacketHeader.getItemsCount(); i++) {
 			RtcpInnerRecpReportBlock block = RtcpInnerRecpReportBlock.decodeFromBuffer(i, bb);
 			this.recpReportBlocks.add(block);
