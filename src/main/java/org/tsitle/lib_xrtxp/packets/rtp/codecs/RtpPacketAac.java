@@ -125,6 +125,18 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
+	public int getHdAuSize() {
+		return Short.toUnsignedInt(this.hdInnAuSize);
+	}
+
+	@SuppressWarnings("unused")
+	public int getHdAuFragmentIndex() {
+		return Byte.toUnsignedInt(this.hdInnAuIndex);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Update the entire packet.
 	 * @param paramsBase Base Container parameters
