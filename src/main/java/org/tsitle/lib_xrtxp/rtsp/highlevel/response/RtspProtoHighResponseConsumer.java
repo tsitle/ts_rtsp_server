@@ -3,17 +3,18 @@ package org.tsitle.lib_xrtxp.rtsp.highlevel.response;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeTransport;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntCseqRespInp;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataResponse;
+import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
+import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.ResourceUrlProcessor;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredResponse;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderEntryResponse;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeRtpinfo;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header.RtspProtoHeaderTypeTransport;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoSdpConsumerInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.*;
@@ -95,7 +96,7 @@ public final class RtspProtoHighResponseConsumer {
 
 		// handle body
 		try {
-			handleBody(inputMsgStc.messageType, ioDataResp);
+			handleBody(inputMsgStc, ioDataResp);
 		} catch (RtspProtoSdpException e) {
 			logWarn(FNC_NAME, e.getMessage() + logMsgSuffix);
 			return RtspResponseBasics.createInternalServerError();
@@ -532,7 +533,8 @@ public final class RtspProtoHighResponseConsumer {
 		// Content-Type
 		boolean haveHdContTp = inputMsgStc.headers.containsKey(RtspHeaderKey.CONTENT_TYPE);
 		if (! haveHdContTp) {
-			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE) {
+			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE &&
+					inputMsgStc.statusCode == RtspProtoStatusCode.OK) {
 				throw new RtspProtoInvalidResponseException("Content-Type header is required for DESCRIBE message");
 			}
 			return;
@@ -541,14 +543,16 @@ public final class RtspProtoHighResponseConsumer {
 		// Content-Length
 		boolean haveHdContLen = inputMsgStc.headers.containsKey(RtspHeaderKey.CONTENT_LEN);
 		if (! haveHdContLen) {
-			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE) {
+			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE &&
+					inputMsgStc.statusCode == RtspProtoStatusCode.OK) {
 				throw new RtspProtoInvalidResponseException("Content-Length header is required for DESCRIBE message");
 			}
 			return;
 		}
 		long contentLengthLong = inputMsgStc.headers.get(RtspHeaderKey.CONTENT_LEN).hdValContLen.contentLen.getLen32bit().orElseThrow();
 		if (contentLengthLong == 0L) {
-			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE) {
+			if (inputMsgStc.messageType == RtspProtoMessageType.DESCRIBE &&
+					inputMsgStc.statusCode == RtspProtoStatusCode.OK) {
 				throw new RtspProtoInvalidResponseException("Body for DESCRIBE message missing");
 			}
 			return;
@@ -597,17 +601,19 @@ public final class RtspProtoHighResponseConsumer {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void handleBody(
-				@NonNull RtspProtoMessageType messageType,
+				@NonNull RtspProtoHighMsgStructuredResponse inputMsgStc,
 				@NonNull RtspProtoDataResponse outputDataResp
 			) throws RtspProtoSdpException {
-		switch (messageType) {
+		switch (inputMsgStc.messageType) {
 			case RtspProtoMessageType.DESCRIBE:
-				handleBody_describe(outputDataResp);
+				if (inputMsgStc.statusCode == RtspProtoStatusCode.OK) {
+					handleBody_describe(outputDataResp);
+				}
 				break;
 			case RtspProtoMessageType.GET_PARAMETER, RtspProtoMessageType.SET_PARAMETER:
 				if (! outputDataResp.rrInvalidParamNames.isParamNamesEmpty()) {
 					handleBody_invalidParam();
-				} else if (messageType == RtspProtoMessageType.GET_PARAMETER) {
+				} else if (inputMsgStc.messageType == RtspProtoMessageType.GET_PARAMETER) {
 					handleBody_getParam();
 				}
 				break;
