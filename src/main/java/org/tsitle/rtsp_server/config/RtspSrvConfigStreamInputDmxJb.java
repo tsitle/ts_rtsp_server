@@ -20,6 +20,8 @@ public final class RtspSrvConfigStreamInputDmxJb implements Cloneable {
 	public static class SectionTranscodeAudio implements Cloneable {
 		public static final int AUDIO_BITRATE_KBPS_MIN = 8;
 		public static final int AUDIO_BITRATE_KBPS_MAX = 224;  // higher bitrates cause problems with Opus @48kHz and 2 channels
+		public static final int AUDIO_SAMPLERATE_MIN = 8000;
+		public static final int AUDIO_SAMPLERATE_MAX = 48000;  // AAC only allows up to 48kHz
 
 		/** Codec used for the stream (default is AAC) */
 		@Expose
@@ -89,7 +91,11 @@ public final class RtspSrvConfigStreamInputDmxJb implements Cloneable {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Codec" + errMsgSuffix);
 			}
 			if (getAudioSampleRate() == SampleRateEnum.UNKNOWN) {
-				throw new ConfigInvalidException(FNC_NAME + ": Invalid Sample Rate" + errMsgSuffix);
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Samplerate" + errMsgSuffix);
+			}
+			if (getAudioSampleRate().getSrHz() < AUDIO_SAMPLERATE_MIN || getAudioSampleRate().getSrHz() > AUDIO_SAMPLERATE_MAX) {
+				throw new ConfigInvalidException(FNC_NAME + ": Invalid Samplerate (min=" + AUDIO_SAMPLERATE_MIN +
+						", max=" + AUDIO_SAMPLERATE_MAX + ")" + errMsgSuffix);
 			}
 			if (getAudioChannelCount() < 1 || getAudioChannelCount() > 2) {
 				throw new ConfigInvalidException(FNC_NAME + ": Invalid Channel Count (min=1, max=2)" + errMsgSuffix);
