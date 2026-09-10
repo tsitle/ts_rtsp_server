@@ -155,7 +155,7 @@ public final class RtpPacketH264 extends RtpPacketCodecBase {
 			if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize) {
 				throw new IllegalArgumentException("Invalid RTP packet size");
 			}
-			byte tmpByte = packetData.get(offs);
+			byte tmpByte = packetData.get(++offs);
 			this.hdInnData.fuS = ((tmpByte & (byte)0x80) != 0);
 			this.hdInnData.fuE = ((tmpByte & (byte)0x40) != 0);
 			this.hdInnData.fuTypeBy = (byte)(tmpByte & (byte)0x3F);
