@@ -25,6 +25,12 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		public int cfgHdInnIndexLength = HEADER_FLD_INDEX_LENGTH_BITS;
 		/** AU-header field 'index delta' length in bits */
 		public int cfgHdInnIndexDeltaLength = HEADER_FLD_INDEXDELTA_LENGTH_BITS;
+
+		public void copyFrom(@NonNull InnerHeaderConfig other) {
+			cfgHdInnSizeLength = other.cfgHdInnSizeLength;
+			cfgHdInnIndexLength = other.cfgHdInnIndexLength;
+			cfgHdInnIndexDeltaLength = other.cfgHdInnIndexDeltaLength;
+		}
 	}
 
 	public static class InnerHeaderData implements Cloneable {
