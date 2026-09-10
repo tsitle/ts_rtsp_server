@@ -17,10 +17,7 @@ import org.tsitle.rtsp_server.threads.CancelToken;
 import org.tsitle.rtsp_server.threads.RunnableBase;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -73,11 +70,15 @@ public final class ThreadRtspPlay extends RunnableBase
 
 		//
 		Map<RtspProtoIdSubStream, RtspProtoSetupInfoForSubStream> setupInfoPerSsMap = new HashMap<>();
-		Set<RtspProtoIdSubStream> subStreamIds = rtspSessionInfo.getDescrAvailableSubStreamIds();
-		for (RtspProtoIdSubStream tmpIdSs : subStreamIds) {
+		Set<RtspProtoIdSubStream> subStreamIds = new HashSet<>();
+		for (RtspProtoIdSubStream tmpIdSs : rtspSessionInfo.getDescrSetupInfoSubStreamIds()) {
 			try {
 				RtspProtoSetupInfoForSubStream tmpSiSs = rtspSessionInfo.getDescrSetupInfoBySubStreamsId(tmpIdSs);
+				if (! tmpSiSs.getHaveSetup()) {
+					continue;
+				}
 				setupInfoPerSsMap.put(tmpIdSs, tmpSiSs);
+				subStreamIds.add(tmpIdSs);
 			} catch (RtspProtoSessionInfoException e) {
 				throw new IllegalStateException(getClass().getSimpleName() + ".ctor(): idSubStream not found");
 			}
@@ -158,11 +159,15 @@ public final class ThreadRtspPlay extends RunnableBase
 	public synchronized void cbSendRtcpSrPacketFromRtp(@NonNull RtspProtoIdXsrc ssrcId, @NonNull BufferExt rtcpPacketsBuf) {
 		final String FNC_NAME = getClass().getSimpleName() + ".cbSendRtcpSrPacketFromRtp()";
 
-		ChildThreadsForOneStream ctfosToUse = findCtfosBySsrc(FNC_NAME, ssrcId);
-		if (ctfosToUse.rtcpThreadSendRecv != null &&
-				! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
-				ctfosToUse.rtcpThreadSendRecv.isRunning()) {
-			ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
+		try {
+			ChildThreadsForOneStream ctfosToUse = findCtfosBySsrc(FNC_NAME, ssrcId);
+			if (ctfosToUse.rtcpThreadSendRecv != null &&
+					! ctfosToUse.rtcpThreadSendRecv.hasBeenRequestedToStop() &&
+					ctfosToUse.rtcpThreadSendRecv.isRunning()) {
+				ctfosToUse.rtcpThreadSendRecv.appendToSendQueue(rtcpPacketsBuf);
+			}
+		} catch (IllegalStateException e) {
+			logWarn(FNC_NAME, "findCtfosBySsrc() failed: " + e.getMessage());
 		}
 	}
 
@@ -237,7 +242,13 @@ public final class ThreadRtspPlay extends RunnableBase
 	public synchronized @NonNull Boolean cbThreadMayStartPlayback() {
 		boolean areAllReady = true;
 		for (RtspProtoIdSubStream tmpIdSs : sessionInfoPtr.ptr().getDescrSetupInfoSubStreamIds()) {
-			if (! threadReadyStates.getOrDefault(tmpIdSs, false)) {
+			boolean haveSetup;
+			try {
+				haveSetup = sessionInfoPtr.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSs).getHaveSetup();
+			} catch (RtspProtoSessionInfoException e) {
+				haveSetup = false;
+			}
+			if (haveSetup && ! threadReadyStates.getOrDefault(tmpIdSs, false)) {
 				areAllReady = false;
 				break;
 			}
