@@ -60,7 +60,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 		/** FU Header: E bit, needs to be one for the last packet and zero for all other packets (1 bit) */
 		public boolean fuE = false;
 		/** FU Header: NAL Unit Type, must be equal to the field Type of the NAL Unit (6 bits) */
-		public byte fuTypeBy = H265PayloadType.UNKNOWN.value;
+		public byte fuTypeBy = 0;
 
 		@Override
 		public @NonNull String toString() {
@@ -140,7 +140,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 		this.hdInnData.payTypeEn = H265PayloadType.of(this.hdInnData.payTypeBy);
 		this.hdInnData.payNuhLayerId = (byte)( ( ((packetData.get(offs++) & 0x01) << 5) |
 				((packetData.get(offs) & 0xF8) >> 3) ) & 0x3F);
-		this.hdInnData.payNuhTemporalIdPlus1 = (byte)(packetData.get(offs++) & 0x07);
+		this.hdInnData.payNuhTemporalIdPlus1 = (byte)(packetData.get(offs) & 0x07);
 
 		// determine the length of the inner header bitstream
 		final int additionalHeaderSize = (this.hdInnData.payTypeEn == H265PayloadType.FU ? 1 : 0);
@@ -154,7 +154,7 @@ public final class RtpPacketH265 extends RtpPacketCodecBase {
 			if (packetData.getUsed() < RTP_CONT_HEADER_SIZE + this.payloadSpecHeaderSize) {
 				throw new IllegalArgumentException("Invalid RTP packet size");
 			}
-			byte tmpByte = packetData.get(offs);
+			byte tmpByte = packetData.get(++offs);
 			this.hdInnData.fuS = ((tmpByte & (byte)0x80) != 0);
 			this.hdInnData.fuE = ((tmpByte & (byte)0x40) != 0);
 			this.hdInnData.fuTypeBy = (byte)(tmpByte & (byte)0x3F);
