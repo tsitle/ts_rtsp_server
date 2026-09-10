@@ -112,7 +112,6 @@ public final class RtxpTcpReadWrite {
 
 	private static final String CRLF = "\r\n";
 	private static final int RTSP_INPUT_LINE_MAX_LENGTH = 1024 * 4;
-	private static final int QUEUES_MAX_SIZE = 50;
 	private static final int READ_MAX_RETRIES_BIN = 5;
 	private static final int READ_MAX_RETRIES_STR = 2;
 
@@ -326,35 +325,26 @@ public final class RtxpTcpReadWrite {
 				return;
 			}
 			boolean haveAnythingAtAll = false;
-			int tmpQueueSize = 0;
 			boolean localIsRtpRtcpAllowed = isRtpRtcpAllowed.get();
-			while (! doStop.get()) {
-				checkTcpActivityTimeout();
-				boolean canContinue = true;
-				boolean haveSomething = false;
-				while (! doStop.get()) {
-					int tmpInt;
-					try {
-						tmpInt = socketIs.read();  // blocks for setSoTimeout() value
-					} catch (SocketTimeoutException e) {
-						break;
-					}
-					if (tmpInt == -1) {
-						throw new TcpSocketClosedException();
-					}
-					haveAnythingAtAll = true;
-					if (localIsRtpRtcpAllowed && tmpInt == '$') {
-						tmpQueueSize = internalReadSocket_binary();
-					} else {
-						canContinue = internalReadSocket_string((char)tmpInt);
-						tmpQueueSize = queueRtspLinesRcvd.size();
-					}
-					haveSomething = true;
+
+			checkTcpActivityTimeout();
+
+			int tmpInt;
+			try {
+				tmpInt = socketIs.read();  // blocks for setSoTimeout() value
+				if (tmpInt == -1) {
+					throw new TcpSocketClosedException();
 				}
-				if (! haveSomething || ! canContinue || tmpQueueSize >= QUEUES_MAX_SIZE) {
-					break;
+				haveAnythingAtAll = true;
+				if (localIsRtpRtcpAllowed && tmpInt == '$') {
+					internalReadSocket_binary();
+				} else {
+					internalReadSocket_string((char)tmpInt);
 				}
+			} catch (SocketTimeoutException e) {
+				// ignore
 			}
+
 			//
 			if (haveAnythingAtAll) {
 				resetTcpActivityTimeoutTimer();
@@ -366,7 +356,7 @@ public final class RtxpTcpReadWrite {
 		}
 	}
 
-	private int internalReadSocket_binary() throws IOException, TcpSocketClosedException {
+	private void internalReadSocket_binary() throws IOException, TcpSocketClosedException {
 		int channIdInt;
 		RtspProtoTcpChannelNr channIdObj = RtspProtoTcpChannelNr.ofEmpty();
 		int packetLen = 4;  // we need at least 3 more bytes
@@ -441,10 +431,9 @@ public final class RtxpTcpReadWrite {
 		}
 		payloadBe.setUsed(payloadLen);
 		if (channIdObj.isEmpty()) {
-			return 0;
+			return;
 		}
 		mapQueueRtpRtcpDataRcvd.get(channIdObj).add(payloadBe);
-		return mapQueueRtpRtcpDataRcvd.get(channIdObj).size();
 	}
 
 	private static String listToString(ArrayList<Character> list) {
@@ -455,11 +444,10 @@ public final class RtxpTcpReadWrite {
 		return builder.toString();
 	}
 
-	private boolean internalReadSocket_string(char firstChar) throws IOException, TcpSocketClosedException {
+	private void internalReadSocket_string(char firstChar) throws IOException, TcpSocketClosedException {
 		ArrayList<Character> tmpList = new ArrayList<>();
 		tmpList.add(firstChar);
 
-		boolean resB = true;
 		boolean haveCr = (firstChar == CRLF.charAt(0));
 		int tmpInt;
 		int readTimeoutCnt = 0;
@@ -472,7 +460,6 @@ public final class RtxpTcpReadWrite {
 				readTimeoutCnt = 0;
 			} catch (SocketTimeoutException e) {
 				if (++readTimeoutCnt >= READ_MAX_RETRIES_STR) {
-					resB = false;
 					break;
 				}
 				continue;
@@ -490,7 +477,6 @@ public final class RtxpTcpReadWrite {
 
 		String tmpStr = listToString(tmpList);
 		queueRtspLinesRcvd.add(tmpStr);
-		return resB;
 	}
 
 	private boolean internalReadRtpRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
