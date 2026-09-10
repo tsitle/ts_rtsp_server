@@ -14,8 +14,31 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public final class RtpPacketOpus extends RtpPacketCodecBase {
 
+	public static class InnerHeaderData implements Cloneable {
+		// there are no inner header fields
+
+		@Override
+		public @NonNull String toString() {
+			return "no inner header fields";
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE = 0;
+
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -56,6 +79,13 @@ public final class RtpPacketOpus extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * Update the entire packet.
 	 * @param paramsBase Base Container parameters
@@ -88,6 +118,16 @@ public final class RtpPacketOpus extends RtpPacketCodecBase {
 				this.packetBuf.getUsed(),
 				payloadView.getLength()
 			);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				super.toString(true) +
+				", " + hdInnData.toString() +
+				"]";
 	}
 
 }

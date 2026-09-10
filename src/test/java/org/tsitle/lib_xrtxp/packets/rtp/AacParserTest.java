@@ -67,7 +67,10 @@ class AacParserTest {
 				new BufferView(orgFrame, aacInfoOrg.samplesOffset, aacInfoOrg.samplesLength)
 			);
 
-		RtpPacketAac packetTwo = new RtpPacketAac(packetOne.getPacketBufferPtr());
+		RtpPacketAac packetTwo = new RtpPacketAac(
+				packetOne.getPacketBufferPtr(),
+				new RtpPacketAac.InnerHeaderConfig()
+			);
 
 		assertEquals(packetOne.getPacketBufferPtr(), packetTwo.getPacketBufferPtr());
 

@@ -17,44 +17,68 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public final class RtpPacketVp8 extends RtpPacketCodecBase {
 
+	public static class InnerHeaderData implements Cloneable {
+		/** Extended control bits present? */
+		public boolean main_FlagX = false;
+		/** Non-reference frame? */
+		public boolean main_FlagN = false;
+		/** Start of VP8 partition? */
+		public boolean main_FlagS = false;
+		/** Partition index */
+		public byte main_PartIx = 0;
+
+		/** PictureID present? */
+		public boolean subX_FlagI = false;
+		/** TL0PICIDX present? */
+		public boolean subX_FlagL = false;
+		/** TID present? */
+		public boolean subX_FlagT = false;
+		/** KEYIDX present? */
+		public boolean subX_FlagK = false;
+
+		/** If M is set, the remainder of the PictureID field MUST contain 15 bits, else it MUST contain 7 bits */
+		public boolean subI_M = false;
+		/** PictureID: 7 or 15 bits */
+		public short subI_PID = 0;
+
+		/** 8-bits temporal level zero index */
+		public byte subL_TL0PICIDX = 0;
+
+		/** 2-bits temporal-layer index */
+		public byte subTK_TID = 0;
+		/** 1 layer sync bit */
+		public boolean subTK_Y = false;
+		/** 5-bits temporal key frame index */
+		public byte subTK_KEYIDX = 0;
+
+		@Override
+		public @NonNull String toString() {
+			//noinspection StringBufferReplaceableByString
+			StringBuilder sb = new StringBuilder();
+			sb.append("IsStartOfPart=").append(main_FlagS ? "T" : "F");
+			return sb.toString();
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Minimum size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE_MIN = 1;
 	/** Maximum size of the main payload-specific RTP header */
 	@SuppressWarnings("unused")
 	public static final int INNER_HEADER_SIZE_MAX = INNER_HEADER_SIZE_MIN + 5;
 
-	/** Extended control bits present? */
-	private boolean hdInnMain_FlagX = false;
-	/** Non-reference frame? */
-	private boolean hdInnMain_FlagN = false;
-	/** Start of VP8 partition? */
-	private boolean hdInnMain_FlagS = false;
-	/** Partition index */
-	private byte hdInnMain_PartIx = 0;
-
-	/** PictureID present? */
-	private boolean hdInnSubX_FlagI = false;
-	/** TL0PICIDX present? */
-	private boolean hdInnSubX_FlagL = false;
-	/** TID present? */
-	private boolean hdInnSubX_FlagT = false;
-	/** KEYIDX present? */
-	private boolean hdInnSubX_FlagK = false;
-
-	/** If M is set, the remainder of the PictureID field MUST contain 15 bits, else it MUST contain 7 bits */
-	private boolean hdInnSubI_M = false;
-	/** PictureID: 7 or 15 bits */
-	private short hdInnSubI_PID = 0;
-
-	/** 8-bits temporal level zero index */
-	private byte hdInnSubL_TL0PICIDX = 0;
-
-	/** 2-bits temporal-layer index */
-	private byte hdInnSubTK_TID = 0;
-	/** 1 layer sync bit */
-	private boolean hdInnSubTK_Y = false;
-	/** 5-bits temporal key frame index */
-	private byte hdInnSubTK_KEYIDX = 0;
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -92,35 +116,36 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 		// parse inner main header fields
 		BitReaderHelper brh = new BitReaderHelper(packetData, RTP_CONT_HEADER_SIZE);
 		try {
-			this.hdInnMain_FlagX = (brh.readBits(1) == 1);
+			this.hdInnData.main_FlagX = (brh.readBits(1) == 1);
 			brh.readBits(1);  // reserved
-			this.hdInnMain_FlagN = (brh.readBits(1) == 1);
-			this.hdInnMain_FlagS = (brh.readBits(1) == 1);
+			this.hdInnData.main_FlagN = (brh.readBits(1) == 1);
+			this.hdInnData.main_FlagS = (brh.readBits(1) == 1);
 			brh.readBits(1);  // reserved
-			this.hdInnMain_PartIx = (byte)(brh.readBits(3) & 0x07);
+			this.hdInnData.main_PartIx = (byte)(brh.readBits(3) & 0x07);
 
-			if (this.hdInnMain_FlagX) {
-				this.hdInnSubX_FlagI = (brh.readBits(1) == 1);
-				this.hdInnSubX_FlagL = (brh.readBits(1) == 1);
-				this.hdInnSubX_FlagT = (brh.readBits(1) == 1);
-				this.hdInnSubX_FlagK = (brh.readBits(1) == 1);
+			if (this.hdInnData.main_FlagX) {
+				this.hdInnData.subX_FlagI = (brh.readBits(1) == 1);
+				this.hdInnData.subX_FlagL = (brh.readBits(1) == 1);
+				this.hdInnData.subX_FlagT = (brh.readBits(1) == 1);
+				this.hdInnData.subX_FlagK = (brh.readBits(1) == 1);
 				brh.readBits(4);  // reserved
-				if (this.hdInnSubX_FlagI) {
-					this.hdInnSubI_M = (brh.readBits(1) == 1);
-					this.hdInnSubI_PID = (short)(brh.readBits(this.hdInnSubI_M ? 15 : 7) & (hdInnSubI_M ? 0x7FFF : 0x7F));
+				if (this.hdInnData.subX_FlagI) {
+					this.hdInnData.subI_M = (brh.readBits(1) == 1);
+					this.hdInnData.subI_PID =
+							(short)(brh.readBits(this.hdInnData.subI_M ? 15 : 7) & (this.hdInnData.subI_M ? 0x7FFF : 0x7F));
 				}
-				if (this.hdInnSubX_FlagL) {
-					this.hdInnSubL_TL0PICIDX = (byte)(brh.readBits(8) & 0xFF);
+				if (this.hdInnData.subX_FlagL) {
+					this.hdInnData.subL_TL0PICIDX = (byte)(brh.readBits(8) & 0xFF);
 				}
-				if (this.hdInnSubX_FlagT || this.hdInnSubX_FlagK) {
-					this.hdInnSubTK_TID = (byte)(brh.readBits(2) & 0x03);
-					if (! this.hdInnSubX_FlagT) {
-						this.hdInnSubTK_TID = 0;
+				if (this.hdInnData.subX_FlagT || this.hdInnData.subX_FlagK) {
+					this.hdInnData.subTK_TID = (byte)(brh.readBits(2) & 0x03);
+					if (! this.hdInnData.subX_FlagT) {
+						this.hdInnData.subTK_TID = 0;
 					}
-					this.hdInnSubTK_Y = (brh.readBits(1) == 1);
-					this.hdInnSubTK_KEYIDX = (byte)(brh.readBits(5) & 0x1F);
-					if (! this.hdInnSubX_FlagK) {
-						this.hdInnSubTK_KEYIDX = 0;
+					this.hdInnData.subTK_Y = (brh.readBits(1) == 1);
+					this.hdInnData.subTK_KEYIDX = (byte)(brh.readBits(5) & 0x1F);
+					if (! this.hdInnData.subX_FlagK) {
+						this.hdInnData.subTK_KEYIDX = 0;
 					}
 				}
 			}
@@ -129,11 +154,18 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 		}
 
 		// determine the length of the inner header bitstream
-		final int additionalHeaderSize = (hdInnMain_FlagX ? 4 + (hdInnSubI_M ? 1 : 0) : 0);
+		final int additionalHeaderSize = (this.hdInnData.main_FlagX ? 4 + (this.hdInnData.subI_M ? 1 : 0) : 0);
 		this.payloadSpecHeaderSize = INNER_HEADER_SIZE_MIN + additionalHeaderSize;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -150,7 +182,7 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 		updatePacketHeader(paramsBase);
 
 		// set inner main header fields
-		this.hdInnMain_FlagS = (fragmentOffset == 0);
+		this.hdInnData.main_FlagS = (fragmentOffset == 0);
 
 		// build the inner header bitstream (main header + optional FU header)
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
@@ -173,7 +205,7 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				super.toString(true) +
-				", isStartOfPart=" + (hdInnMain_FlagS ? "T" : "F") +
+				", " + hdInnData.toString() +
 				"]";
 	}
 
@@ -182,35 +214,35 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 
 	private byte[] buildRawInnerHeaderFromFields() {
 		BitWriterHelper bwh = new BitWriterHelper();
-		bwh.writeBits(hdInnMain_FlagX ? 1 : 0, 1);
+		bwh.writeBits(hdInnData.main_FlagX ? 1 : 0, 1);
 		bwh.writeBits(0, 1);  // reserved
-		bwh.writeBits(hdInnMain_FlagN ? 1 : 0, 1);
-		bwh.writeBits(hdInnMain_FlagS ? 1 : 0, 1);
+		bwh.writeBits(hdInnData.main_FlagN ? 1 : 0, 1);
+		bwh.writeBits(hdInnData.main_FlagS ? 1 : 0, 1);
 		bwh.writeBits(0, 1);  // reserved
-		bwh.writeBits(hdInnMain_PartIx & 0x07, 3);
+		bwh.writeBits(hdInnData.main_PartIx & 0x07, 3);
 
 		//
-		if (hdInnMain_FlagX) {
-			bwh.writeBits(hdInnSubX_FlagI ? 1 : 0, 1);
-			bwh.writeBits(hdInnSubX_FlagL ? 1 : 0, 1);
-			bwh.writeBits(hdInnSubX_FlagT ? 1 : 0, 1);
-			bwh.writeBits(hdInnSubX_FlagK ? 1 : 0, 1);
+		if (hdInnData.main_FlagX) {
+			bwh.writeBits(hdInnData.subX_FlagI ? 1 : 0, 1);
+			bwh.writeBits(hdInnData.subX_FlagL ? 1 : 0, 1);
+			bwh.writeBits(hdInnData.subX_FlagT ? 1 : 0, 1);
+			bwh.writeBits(hdInnData.subX_FlagK ? 1 : 0, 1);
 			bwh.writeBits(0, 4);  // reserved
 			//
-			if (hdInnSubX_FlagI) {
-				bwh.writeBits(hdInnSubI_M ? 1 : 0, 1);
-				int tmpPictId = (int)hdInnSubI_PID & 0xFFFF;
-				bwh.writeBits(tmpPictId & (hdInnSubI_M ? 0x7FFF : 0x7F), hdInnSubI_M ? 15 : 7);
+			if (hdInnData.subX_FlagI) {
+				bwh.writeBits(hdInnData.subI_M ? 1 : 0, 1);
+				int tmpPictId = (int)hdInnData.subI_PID & 0xFFFF;
+				bwh.writeBits(tmpPictId & (hdInnData.subI_M ? 0x7FFF : 0x7F), hdInnData.subI_M ? 15 : 7);
 			}
 			//
-			if (hdInnSubX_FlagL) {
-				bwh.writeBits(hdInnSubL_TL0PICIDX, 8);
+			if (hdInnData.subX_FlagL) {
+				bwh.writeBits(hdInnData.subL_TL0PICIDX, 8);
 			}
 			//
-			if (hdInnSubX_FlagT || hdInnSubX_FlagK) {
-				bwh.writeBits(hdInnSubX_FlagT ? (hdInnSubTK_TID & 0x03) : 0, 2);
-				bwh.writeBits(hdInnSubTK_Y ? 1 : 0, 1);
-				bwh.writeBits(hdInnSubX_FlagK ? (hdInnSubTK_KEYIDX & 0x1F) : 0, 5);
+			if (hdInnData.subX_FlagT || hdInnData.subX_FlagK) {
+				bwh.writeBits(hdInnData.subX_FlagT ? (hdInnData.subTK_TID & 0x03) : 0, 2);
+				bwh.writeBits(hdInnData.subTK_Y ? 1 : 0, 1);
+				bwh.writeBits(hdInnData.subX_FlagK ? (hdInnData.subTK_KEYIDX & 0x1F) : 0, 5);
 			}
 		}
 

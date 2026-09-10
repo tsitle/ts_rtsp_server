@@ -18,6 +18,43 @@ import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpConstants;
  */
 public final class RtpPacketAac extends RtpPacketCodecBase {
 
+	public static class InnerHeaderConfig {
+		/** AU-header field 'size' length in bits */
+		public int cfgHdInnSizeLength = HEADER_FLD_SIZE_LENGTH_BITS;
+		/** AU-header field 'index' length in bits */
+		public int cfgHdInnIndexLength = HEADER_FLD_INDEX_LENGTH_BITS;
+		/** AU-header field 'index delta' length in bits */
+		public int cfgHdInnIndexDeltaLength = HEADER_FLD_INDEXDELTA_LENGTH_BITS;
+	}
+
+	public static class InnerHeaderData implements Cloneable {
+		/** Size of the entire AAC Access Unit in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
+		public short auSize;
+		/** Access Unit Index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits) */
+		public byte auIndex;
+		/** Access Unit Index Delta ({@code AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS} bits) */
+		public byte auIdxDelta;
+
+		@Override
+		public @NonNull String toString() {
+			return "AuSize: " + auSize +
+					", AuIndex: " + Byte.toUnsignedInt(auIndex) +
+					", AuIdxDelta: " + Byte.toUnsignedInt(auIdxDelta);
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * AU-header field AU-Size length in bits.<br />
 	 * See RFC-3640 Section 3.3.6
@@ -34,12 +71,7 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	 */
 	public static final int HEADER_FLD_INDEXDELTA_LENGTH_BITS = RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS;
 
-	/** Size of the entire AAC Access Unit in bytes ({@code HEADER_FLD_SIZE_LENGTH_BITS} bits) */
-	private short hdInnAuSize;
-	/** Access Unit Index ({@code HEADER_FLD_INDEX_LENGTH_BITS} bits) */
-	private byte hdInnAuIndex;
-	/** Access Unit Index Delta ({@code AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS} bits) */
-	private byte hdInnAuIdxDelta;
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -63,27 +95,16 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	/**
 	 * Constructor.
 	 * @param packetData RTP packet bitstream including header and payload
-	 */
-	public RtpPacketAac(@NonNull BufferExt packetData) {
-		this(packetData, HEADER_FLD_SIZE_LENGTH_BITS, HEADER_FLD_INDEX_LENGTH_BITS, HEADER_FLD_INDEXDELTA_LENGTH_BITS);
-	}
-
-	/**
-	 * Constructor.
-	 * @param packetData RTP packet bitstream including header and payload
-	 * @param headerFieldSizeLengthBits AU-header field 'size' length in bits
-	 * @param headerFieldIndexLengthBits AU-header field 'index' length in bits
-	 * @param headerFieldIndexDeltaLengthBits AU-header field 'index delta' length in bits
+	 * @param innerHeaderConfig AU-header field lengths
 	 */
 	public RtpPacketAac(
 				@NonNull BufferExt packetData,
-				int headerFieldSizeLengthBits,
-				int headerFieldIndexLengthBits,
-				int headerFieldIndexDeltaLengthBits
+				@NonNull InnerHeaderConfig innerHeaderConfig
 			) {
 		super(RtpPacketType.A_AAC, packetData);
 
-		final int totalInnerHeaderLengthBits = headerFieldSizeLengthBits + headerFieldIndexLengthBits + headerFieldIndexDeltaLengthBits;
+		final int totalInnerHeaderLengthBits = innerHeaderConfig.cfgHdInnSizeLength +
+				innerHeaderConfig.cfgHdInnIndexLength + innerHeaderConfig.cfgHdInnIndexDeltaLength;
 		if (packetData.getUsed() <= RTP_CONT_HEADER_SIZE + (totalInnerHeaderLengthBits / 8) + 1) {  // 1^=inner payload length
 			throw new IllegalArgumentException("Invalid RTP packet size (too short)");
 		}
@@ -102,15 +123,15 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 			}
 			tmpReadBits += 16;
 			// AU-header (size + index + indexDelta)
-			this.hdInnAuSize = (short)bitReader.readBits(headerFieldSizeLengthBits);
-			tmpReadBits += headerFieldSizeLengthBits;
-			if (headerFieldIndexLengthBits > 0) {
-				this.hdInnAuIndex = (byte)bitReader.readBits(headerFieldIndexLengthBits);
-				tmpReadBits += headerFieldIndexLengthBits;
+			this.hdInnData.auSize = (short)bitReader.readBits(innerHeaderConfig.cfgHdInnSizeLength);
+			tmpReadBits += innerHeaderConfig.cfgHdInnSizeLength;
+			if (innerHeaderConfig.cfgHdInnIndexLength > 0) {
+				this.hdInnData.auIndex = (byte)bitReader.readBits(innerHeaderConfig.cfgHdInnIndexLength);
+				tmpReadBits += innerHeaderConfig.cfgHdInnIndexLength;
 			}
-			if (headerFieldIndexDeltaLengthBits > 0) {
-				this.hdInnAuIdxDelta = (byte)bitReader.readBits(headerFieldIndexDeltaLengthBits);
-				tmpReadBits += headerFieldIndexDeltaLengthBits;
+			if (innerHeaderConfig.cfgHdInnIndexDeltaLength > 0) {
+				this.hdInnData.auIdxDelta = (byte)bitReader.readBits(innerHeaderConfig.cfgHdInnIndexDeltaLength);
+				tmpReadBits += innerHeaderConfig.cfgHdInnIndexDeltaLength;
 			}
 			if (tmpReadBits % 8 != 0) {
 				bitReader.readBits(8 - (tmpReadBits % 8));
@@ -127,13 +148,8 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("unused")
-	public int getHdAuSize() {
-		return Short.toUnsignedInt(this.hdInnAuSize);
-	}
-
-	@SuppressWarnings("unused")
-	public int getHdAuFragmentIndex() {
-		return Byte.toUnsignedInt(this.hdInnAuIndex);
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -175,12 +191,12 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		 */
 
 		// set inner main header fields
-		this.hdInnAuSize = (short)aacInfo.getPayloadLength();  // size of the entire AAC Access Unit
-		if (Short.toUnsignedInt(this.hdInnAuSize) != aacInfo.getPayloadLength()) {
+		this.hdInnData.auSize = (short)aacInfo.getPayloadLength();  // size of the entire AAC Access Unit
+		if (Short.toUnsignedInt(this.hdInnData.auSize) != aacInfo.getPayloadLength()) {
 			throw new IllegalArgumentException("Invalid AAC payload size -- exceeds 16 bits");
 		}
-		validatePayloadSize(Short.toUnsignedInt(this.hdInnAuSize));
-		this.hdInnAuIndex = fragmentIndex;
+		validatePayloadSize(Short.toUnsignedInt(this.hdInnData.auSize));
+		this.hdInnData.auIndex = fragmentIndex;
 
 		// build the inner header bitstream
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
@@ -197,13 +213,23 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				super.toString(true) +
+				", " + hdInnData.toString() +
+				"]";
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private byte[] buildRawInnerHeaderFromFields() {
-		if (Short.toUnsignedInt(hdInnAuSize) >= (1 << HEADER_FLD_SIZE_LENGTH_BITS)) {
+		if (Short.toUnsignedInt(hdInnData.auSize) >= (1 << HEADER_FLD_SIZE_LENGTH_BITS)) {
 			throw new IllegalArgumentException("AAC frame too large for " + HEADER_FLD_SIZE_LENGTH_BITS + "-bit size field");
 		}
-		if (Byte.toUnsignedInt(hdInnAuIndex) >= (1 << HEADER_FLD_INDEX_LENGTH_BITS)) {
+		if (Byte.toUnsignedInt(hdInnData.auIndex) >= (1 << HEADER_FLD_INDEX_LENGTH_BITS)) {
 			throw new IllegalArgumentException("AAC AU Index too large for " + HEADER_FLD_INDEX_LENGTH_BITS + "-bit index field");
 		}
 
@@ -222,12 +248,12 @@ public final class RtpPacketAac extends RtpPacketCodecBase {
 		 * Index     :  3 bits                  111
 		 * IndexDelta:  3 bits                      1110 0000 0000 0000
 		 */
-		bitWriter.writeBits(Short.toUnsignedInt(hdInnAuSize), HEADER_FLD_SIZE_LENGTH_BITS);
+		bitWriter.writeBits(Short.toUnsignedInt(hdInnData.auSize), HEADER_FLD_SIZE_LENGTH_BITS);
 		if (HEADER_FLD_INDEX_LENGTH_BITS > 0) {
-			bitWriter.writeBits(Byte.toUnsignedInt(hdInnAuIndex), HEADER_FLD_INDEX_LENGTH_BITS);
+			bitWriter.writeBits(Byte.toUnsignedInt(hdInnData.auIndex), HEADER_FLD_INDEX_LENGTH_BITS);
 		}
 		if (HEADER_FLD_INDEXDELTA_LENGTH_BITS > 0) {
-			bitWriter.writeBits(Byte.toUnsignedInt(hdInnAuIdxDelta), HEADER_FLD_INDEXDELTA_LENGTH_BITS);
+			bitWriter.writeBits(Byte.toUnsignedInt(hdInnData.auIdxDelta), HEADER_FLD_INDEXDELTA_LENGTH_BITS);
 		}
 
 		return bitWriter.toByteArray();

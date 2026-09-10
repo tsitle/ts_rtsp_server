@@ -17,10 +17,35 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public final class RtpPacketMpa extends RtpPacketCodecBase {
 
+	public static class InnerHeaderData implements Cloneable {
+		/** Fragment offset */
+		public int fragOffset = 0;
+
+		@Override
+		public @NonNull String toString() {
+			//noinspection StringBufferReplaceableByString
+			StringBuilder sb = new StringBuilder();
+			sb.append("FragmentOffset: ").append(Integer.toUnsignedString(fragOffset));
+			return sb.toString();
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE = 4;
 
-	private int hdFragOffset = 0;
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -63,13 +88,20 @@ public final class RtpPacketMpa extends RtpPacketCodecBase {
 			if (tmpMbz != 0) {
 				throw new IllegalArgumentException("Invalid RTP packet (MBZ field != 0)");
 			}
-			this.hdFragOffset = brh.readBits(16);
+			this.hdInnData.fragOffset = brh.readBits(16);
 		} catch (BitReaderEosException e) {
 			throw new RuntimeException();  // this should never happen
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -96,7 +128,7 @@ public final class RtpPacketMpa extends RtpPacketCodecBase {
 		updatePacketHeader(paramsBase);
 
 		// set inner main header fields
-		this.hdFragOffset = fragmentOffset;
+		this.hdInnData.fragOffset = fragmentOffset;
 
 		// build the inner header bitstream
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
@@ -113,15 +145,25 @@ public final class RtpPacketMpa extends RtpPacketCodecBase {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				super.toString(true) +
+				", " + hdInnData.toString() +
+				"]";
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private byte[] buildRawInnerHeaderFromFields() {
 		final byte[] resA = new byte[INNER_HEADER_SIZE];
 
-		resA[0] = 0x00;
-		resA[1] = 0x00;
-		resA[2] = (byte)((hdFragOffset >> 8) & 0xFF);
-		resA[3] = (byte)(hdFragOffset & 0xFF);
+		resA[0] = 0x00;  // MBZ (must be zero)
+		resA[1] = 0x00;  // MBZ (must be zero)
+		resA[2] = (byte)((hdInnData.fragOffset >> 8) & 0xFF);
+		resA[3] = (byte)(hdInnData.fragOffset & 0xFF);
 
 		return resA;
 	}

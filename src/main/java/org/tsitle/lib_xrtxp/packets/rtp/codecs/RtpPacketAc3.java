@@ -46,13 +46,35 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public static class InnerHeaderData implements Cloneable {
+		/** Frame type (2 bits) */
+		public @NonNull FrameType frameType = FrameType.UNKNOWN;
+		/** Number of fragments or complete frames (if hdFrameType==0) (8 bits) */
+		public byte numberOfFragments = 0;
+
+		@Override
+		public @NonNull String toString() {
+			return "FrameType: " + frameType +
+					", NumberOfFragments: " + Byte.toUnsignedInt(numberOfFragments);
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Size of the main payload-specific RTP header */
 	public static final int INNER_HEADER_SIZE = 2;
 
-	/** Frame type (2 bits) */
-	private FrameType hdFrameType;
-	/** Number of fragments or complete frames (if hdFrameType==0) (8 bits) */
-	private byte hdNumberOfFragments;
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -104,15 +126,22 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 				throw new IllegalArgumentException("Invalid RTP packet: MBZ (Must Be Zero) is not zero");
 			}
 			// FT (Frame Type): 2 bits
-			this.hdFrameType = FrameType.of((byte)bitReader.readBits(2));
+			this.hdInnData.frameType = FrameType.of((byte)bitReader.readBits(2));
 			// NF (Number of frames/fragments): 8 bits
-			this.hdNumberOfFragments = (byte)bitReader.readBits(8);
+			this.hdInnData.numberOfFragments = (byte)bitReader.readBits(8);
 		} catch (BitReaderEosException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -136,10 +165,10 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 		updatePacketHeader(paramsBase);
 
 		// set inner main header fields
-		this.hdFrameType = (numberOfFragments == 1 ?
+		this.hdInnData.frameType = (numberOfFragments == 1 ?
 				FrameType.FT_ONE_OR_MORE_COMPLETE_FRAMES :
 				(isLastFragment ? FrameType.FT_NOT_INITIAL_FRAGMENT : FrameType.FT_INITIAL_FRAGMENT_NOT_5_8));
-		this.hdNumberOfFragments = (byte)numberOfFragments;
+		this.hdInnData.numberOfFragments = (byte)numberOfFragments;
 
 		// build the inner header bitstream
 		this.payloadSpecHeaderSize = INNER_HEADER_SIZE;
@@ -160,14 +189,12 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("unused")
-	public @NonNull FrameType getHdFrameType() {
-		return hdFrameType;
-	}
-
-	@SuppressWarnings("unused")
-	public int getHdNumberOfFragments() {
-		return hdNumberOfFragments;
+	@Override
+	public @NonNull String toString() {
+		return getClass().getSimpleName() + " [" +
+				super.toString(true) +
+				", " + hdInnData.toString() +
+				"]";
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -179,9 +206,9 @@ public final class RtpPacketAc3 extends RtpPacketCodecBase {
 		// MBZ (Must Be Zero): 6 bits
 		bitWriter.writeBits(0x00, 6);
 		// FT (Frame Type): 2 bits
-		bitWriter.writeBits(hdFrameType.index & 0x03, 2);
+		bitWriter.writeBits(hdInnData.frameType.index & 0x03, 2);
 		// NF (Number of frames/fragments): 8 bits
-		bitWriter.writeBits(hdNumberOfFragments & 0xFF, 8);
+		bitWriter.writeBits(hdInnData.numberOfFragments & 0xFF, 8);
 
 		return bitWriter.toByteArray();
 	}

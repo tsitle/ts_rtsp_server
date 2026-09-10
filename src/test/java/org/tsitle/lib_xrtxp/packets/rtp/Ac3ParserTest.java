@@ -104,8 +104,8 @@ class Ac3ParserTest {
 		RtpPacketAc3 packetTwo = new RtpPacketAc3(packetOne.getPacketBufferPtr());
 
 		assertEquals(packetOne.getPacketBufferPtr(), packetTwo.getPacketBufferPtr());
-		assertEquals(packetOne.getHdFrameType(), packetTwo.getHdFrameType());
-		assertEquals(packetOne.getHdNumberOfFragments(), packetTwo.getHdNumberOfFragments());
+		assertEquals(packetOne.getParsedInnerHeaderData().frameType, packetTwo.getParsedInnerHeaderData().frameType);
+		assertEquals(packetOne.getParsedInnerHeaderData().numberOfFragments, packetTwo.getParsedInnerHeaderData().numberOfFragments);
 	}
 
 }

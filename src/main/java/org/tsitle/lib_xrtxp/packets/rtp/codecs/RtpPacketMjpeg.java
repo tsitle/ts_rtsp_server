@@ -14,6 +14,55 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
+	public static class InnerHeaderData implements Cloneable {
+		/** Type-specific first byte (8 bits)<br />
+		 *   0=Image is progressively scanned<br />
+		 *   1=Image is an odd field of an interlaced video signal<br />
+		 *   2=Image is an even field of an interlaced video signal<br />
+		 *   3=Image is a single field from an interlaced video signal
+		 */
+		public byte firstByte = 0;
+		/** Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits) */
+		public int fragmentOffset = 0;
+		/**
+		 * JPEG Type (8 bits)<br />
+		 *   0=YCbCr 4:2:2<br />
+		 *   1=YCbCr 4:2:0
+		 */
+		public byte jpegType = 0;
+		/** Q value (8 bits) */
+		public byte q = 0;
+		/** Image width divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
+		public byte imageWidthDiv8 = 0;
+		/** Image height divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
+		public byte imageHeightDiv8 = 0;
+
+		@Override
+		public @NonNull String toString() {
+			//noinspection StringBufferReplaceableByString
+			StringBuilder sb = new StringBuilder();
+			sb.append("FirstByte: ").append(Integer.toUnsignedString(firstByte));
+			sb.append(", FragmentOffset: ").append(Integer.toUnsignedString(fragmentOffset));
+			sb.append(", Type: ").append(Integer.toUnsignedString(jpegType));
+			sb.append(", Q: ").append(Integer.toUnsignedString(q));
+			sb.append(", ImageWidth: ").append(Integer.toUnsignedString(imageWidthDiv8));
+			sb.append(", ImageHeight: ").append(Integer.toUnsignedString(imageHeightDiv8));
+			return sb.toString();
+		}
+
+		@Override
+		public InnerHeaderData clone() {
+			try {
+				return (InnerHeaderData)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/** Maximum width and height of an image */
 	public static final int IMAGE_MAX_WIDTH_HEIGHT = 2040;
 
@@ -22,27 +71,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	/** Size of the QT RTP header without the tables */
 	public static final int INNER_HEADER_QT_PRE_SIZE = 4;
 
-	/** Type-specific first byte (8 bits)<br />
-	 *   0=Image is progressively scanned<br />
-	 *   1=Image is an odd field of an interlaced video signal<br />
-	 *   2=Image is an even field of an interlaced video signal<br />
-	 *   3=Image is a single field from an interlaced video signal
-	 */
-	private byte hdInnFirstByte;
-	/** Fragment Offset (offset in bytes of the current packet in the JPEG frame data) (24 bits) */
-	private int hdInnFragmentOffset;
-	/**
-	 * JPEG Type (8 bits)<br />
-	 *   0=YCbCr 4:2:2<br />
-	 *   1=YCbCr 4:2:0
-	 */
-	private byte hdInnType;
-	/** Q value (8 bits) */
-	private byte hdInnQ;
-	/** Image width divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private byte hdInnImageWidthDiv8;
-	/** Image height divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
-	private byte hdInnImageHeightDiv8;
+	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
 	/**
 	 * Constructor.
@@ -76,24 +105,31 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 		int offs = RTP_CONT_HEADER_SIZE;
 		// parse inner main header fields
-		this.hdInnFirstByte = packetData.get(offs++);
-		this.hdInnFragmentOffset = (((packetData.get(offs++) << 16) |
+		this.hdInnData.firstByte = packetData.get(offs++);
+		this.hdInnData.fragmentOffset = (((packetData.get(offs++) << 16) |
 				(packetData.get(offs++) << 8) |
 				packetData.get(offs++)) & 0xFFFFFF);
-		this.hdInnType = packetData.get(offs++);
-		this.hdInnQ = packetData.get(offs++);
-		this.hdInnImageWidthDiv8 = packetData.get(offs++);
-		this.hdInnImageHeightDiv8 = packetData.get(offs++);
+		this.hdInnData.jpegType = packetData.get(offs++);
+		this.hdInnData.q = packetData.get(offs++);
+		this.hdInnData.imageWidthDiv8 = packetData.get(offs++);
+		this.hdInnData.imageHeightDiv8 = packetData.get(offs++);
 
 		// determine the length of the inner header bitstream (main header + optional QT header)
 		final int tmpTotalMinLen = (RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE + INNER_HEADER_QT_PRE_SIZE);
-		final int tmpQtHdLength = (this.hdInnFragmentOffset == 0 && packetData.getUsed() > tmpTotalMinLen ?
+		final int tmpQtHdLength = (this.hdInnData.fragmentOffset == 0 && packetData.getUsed() > tmpTotalMinLen ?
 				INNER_HEADER_QT_PRE_SIZE + parseInnerHeaderQuantTableLength(packetData, offs)
 				: 0);
 		this.payloadSpecHeaderSize = INNER_HEADER_MAIN_SIZE + tmpQtHdLength;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unused")
+	public @NonNull InnerHeaderData getParsedInnerHeaderData() {
+		return hdInnData.clone();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -130,12 +166,12 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		}
 
 		// set inner main header fields
-		this.hdInnFirstByte = (byte)0;
-		this.hdInnFragmentOffset = fragmentOffset;
-		this.hdInnType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
-		this.hdInnQ = (byte)255;
-		this.hdInnImageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
-		this.hdInnImageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
+		this.hdInnData.firstByte = (byte)0;
+		this.hdInnData.fragmentOffset = fragmentOffset;
+		this.hdInnData.jpegType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
+		this.hdInnData.q = (byte)255;
+		this.hdInnData.imageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
+		this.hdInnData.imageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
 
 		// build the inner header bitstream (main header + optional QT header)
 		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields(fragmentOffset == 0, jpegInfo);
@@ -157,12 +193,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				super.toString(true) +
-				", FirstByte: " + Integer.toUnsignedString(hdInnFirstByte) +
-				", FragmentOffset: " + Integer.toUnsignedString(hdInnFragmentOffset) +
-				", Type: " + Integer.toUnsignedString(hdInnType) +
-				", Q: " + Integer.toUnsignedString(hdInnQ) +
-				", ImageWidth: " + Integer.toUnsignedString(hdInnImageWidthDiv8 * 8) +
-				", ImageHeight: " + Integer.toUnsignedString(hdInnImageHeightDiv8 * 8) +
+				", " + hdInnData.toString() +
 				"]";
 	}
 
@@ -198,14 +229,14 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		final byte[] resA = new byte[completeHdLength];
 
 		// main RTP/JPEG header
-		resA[0] = hdInnFirstByte;
-		resA[1] = (byte)((hdInnFragmentOffset >> 16) & 0xFF);
-		resA[2] = (byte)((hdInnFragmentOffset >> 8) & 0xFF);
-		resA[3] = (byte)(hdInnFragmentOffset & 0xFF);
-		resA[4] = hdInnType;
-		resA[5] = hdInnQ;
-		resA[6] = hdInnImageWidthDiv8;
-		resA[7] = hdInnImageHeightDiv8;
+		resA[0] = hdInnData.firstByte;
+		resA[1] = (byte)((hdInnData.fragmentOffset >> 16) & 0xFF);
+		resA[2] = (byte)((hdInnData.fragmentOffset >> 8) & 0xFF);
+		resA[3] = (byte)(hdInnData.fragmentOffset & 0xFF);
+		resA[4] = hdInnData.jpegType;
+		resA[5] = hdInnData.q;
+		resA[6] = hdInnData.imageWidthDiv8;
+		resA[7] = hdInnData.imageHeightDiv8;
 
 		// The JPEG Quantization Table RTP header is only present in the first packet of a frame
 		if (! withQtHeader) {
