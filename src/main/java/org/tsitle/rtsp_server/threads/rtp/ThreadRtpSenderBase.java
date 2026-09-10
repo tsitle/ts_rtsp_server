@@ -333,7 +333,7 @@ public abstract class ThreadRtpSenderBase<
 			}
 		}
 		if (doStop.get()) {
-			logError(FNC_NAME, "DataProv start-up failed: doStop==true");
+			logWarn(FNC_NAME, "DataProv start-up failed: doStop==true");
 			return;
 		}
 		if (threadDataProv == null) {
