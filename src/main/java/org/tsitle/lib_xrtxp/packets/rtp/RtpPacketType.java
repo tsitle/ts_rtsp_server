@@ -166,23 +166,22 @@ public enum RtpPacketType {
 	}
 
 	/** Get SDP codec name for the packet type (or codec) */
-	public @NonNull String getSdpCodecName() {
+	public Optional<String> getSdpCodecName() {
 		return switch (this) {
-				case A_AAC -> "MPEG4-GENERIC";
-				case A_AC3 -> "AC3";
-				case A_EAC3_UNSUPPORTED -> "EAC3";
-				case A_MPEG -> "MPA";
-				case A_OPUS -> "OPUS";
-				case A_PCMA_8KHZ_MONO, A_PCMA_VAR -> "PCMA";
-				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> "PCMU";
-				case A_LINEAR_PCM_U08_VAR -> "L8";
-				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> "L16";
-				case V_H264 -> "H264";
-				case V_H265 -> "H265";
-				case V_MJPEG -> "JPEG";
-				case V_VP8 -> "VP8";
-				default -> throw new IllegalStateException(getClass().getSimpleName() + ".getSdpCodecName(): " +
-						"Unsupported codec: " + this);
+				case A_AAC -> Optional.of("MPEG4-GENERIC");
+				case A_AC3 -> Optional.of("AC3");
+				case A_EAC3_UNSUPPORTED -> Optional.of("EAC3");
+				case A_MPEG -> Optional.of("MPA");
+				case A_OPUS -> Optional.of("OPUS");
+				case A_PCMA_8KHZ_MONO, A_PCMA_VAR -> Optional.of("PCMA");
+				case A_PCMU_8KHZ_MONO, A_PCMU_VAR -> Optional.of("PCMU");
+				case A_LINEAR_PCM_U08_VAR -> Optional.of("L8");
+				case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> Optional.of("L16");
+				case V_H264 -> Optional.of("H264");
+				case V_H265 -> Optional.of("H265");
+				case V_MJPEG -> Optional.of("JPEG");
+				case V_VP8 -> Optional.of("VP8");
+				default -> Optional.empty();
 			};
 	}
 

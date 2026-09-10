@@ -607,7 +607,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				);
 		}
 		// a: Session Attribute: map the codec number from the 'm' attribute to an actual codec and its clock rate
-		final String tmpA_Map = esInfo.codec().getSdpCodecName() +
+		final String tmpA_Map = esInfo.codec().getSdpCodecName().orElseThrow() +
 				"/" +
 				(useVideo ? ssVideoRtpClockRate : esInfo.audioSampleRate().getSrHz()) +
 				(useVideo || (! esInfo.codec().isPcmAudio() && esInfo.codec() != RtpPacketType.A_OPUS) ?
