@@ -94,7 +94,7 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 
 		//
 		try {
-			while (! doStop.get()) {
+			while (! doStop.get() && frameGrabber != null && ! frameGrabber.haveEos()) {
 				mainLoop();
 			}
 		} catch (InterruptedException e) {
