@@ -4,8 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
 import java.util.Objects;
 
@@ -229,7 +229,7 @@ public final class VideoJpegParser {
 		int curOffs = blockOffset + 2 + 2;
 
 		if (blockLen < 6) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size (is=" + blockLen + ", min=6)");
 		}
 
 		jpegInfo.sof0_hasBaselineDCT = true;
@@ -252,7 +252,8 @@ public final class VideoJpegParser {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid number of components");
 		}
 		if (blockLen < 6 + (paramNf * 3)) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size " +
+					"(is=" + blockLen + ", min=" + (6 + (paramNf * 3)) + ", nf=" + paramNf + ")");
 		}
 
 		byte yH = 0, yV = 0;
