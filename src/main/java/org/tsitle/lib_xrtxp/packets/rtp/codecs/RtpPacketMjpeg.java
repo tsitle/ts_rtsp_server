@@ -236,8 +236,10 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static int parseInnerHeaderQuantTableLength(@NonNull BufferExt data, int offs) {
-		return ((((data.get(offs + INNER_HEADER_MAIN_SIZE + 2) & 0xFF) << 8) & 0xFF00) |
-				(data.get(offs + INNER_HEADER_MAIN_SIZE + 3) & 0xFF));
+		++offs;  // MBZ
+		++offs;  // Precision
+		return ((((data.get(offs) & 0xFF) << 8) & 0xFF00) |
+				(data.get(offs + 1) & 0xFF));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -284,7 +286,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		//   Each table is an array of 64 values.
 		///
 		int offs = INNER_HEADER_MAIN_SIZE;
-		/// MBZ - purpose unknown (8 bits)
+		/// MBZ - must be zero (8 bits)
 		resA[offs++] = 0;
 		/// Precision (8 bits): the Precision field specifies the size of the coefficients in the table.
 		///   The lowest bit corresponds to the first table. The second bit corresponds to the second table.
