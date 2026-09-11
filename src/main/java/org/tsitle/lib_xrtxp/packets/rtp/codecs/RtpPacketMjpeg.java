@@ -44,6 +44,41 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public static class InnerHeaderData implements Cloneable {
+		public static class CustomQt implements Cloneable {
+			public boolean haveCustomQt;
+			public boolean isPrecision8bit_y_lqt;
+			public boolean isPrecision8bit_cb_cqt;
+			public int tablesLen;
+			public final @NonNull BufferExt tableDataLqt = new BufferExt();
+			public final @NonNull BufferExt tableDataCqt = new BufferExt();
+
+			public CustomQt() {
+				clear();
+			}
+
+			public void clear() {
+				this.haveCustomQt = false;
+				this.isPrecision8bit_y_lqt = true;
+				this.isPrecision8bit_cb_cqt = true;
+				this.tablesLen = 0;
+				this.tableDataLqt.clear();
+				this.tableDataCqt.clear();
+			}
+
+			@Override
+			@SuppressWarnings("MethodDoesntCallSuperMethod")
+			public CustomQt clone() {
+				CustomQt cloned = new CustomQt();
+				cloned.haveCustomQt = this.haveCustomQt;
+				cloned.isPrecision8bit_y_lqt = this.isPrecision8bit_y_lqt;
+				cloned.isPrecision8bit_cb_cqt = this.isPrecision8bit_cb_cqt;
+				cloned.tablesLen = this.tablesLen;
+				cloned.tableDataLqt.copyOf(this.tableDataLqt);
+				cloned.tableDataCqt.copyOf(this.tableDataCqt);
+				return cloned;
+			}
+		}
+
 		/** Type-specific first byte (8 bits)<br />
 		 *   0=Image is progressively scanned<br />
 		 *   1=Image is an odd field of an interlaced video signal<br />
@@ -66,6 +101,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		/** Image height divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
 		public byte imageHeightDiv8 = 0;
 
+		public @NonNull CustomQt customQt = new CustomQt();
+
 		@Override
 		public @NonNull String toString() {
 			//noinspection StringBufferReplaceableByString
@@ -76,13 +113,16 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 			sb.append(", Q: ").append(Byte.toUnsignedInt(q));
 			sb.append(", ImageWidth: ").append(Byte.toUnsignedInt(imageWidthDiv8));
 			sb.append(", ImageHeight: ").append(Byte.toUnsignedInt(imageHeightDiv8));
+			sb.append(", HaveCustomQT: ").append(customQt.haveCustomQt ? "T" : "F");
 			return sb.toString();
 		}
 
 		@Override
 		public InnerHeaderData clone() {
 			try {
-				return (InnerHeaderData)super.clone();
+				InnerHeaderData cloned = (InnerHeaderData)super.clone();
+				cloned.customQt = customQt.clone();
+				return cloned;
 			} catch (CloneNotSupportedException e) {
 				throw new AssertionError();
 			}
@@ -145,11 +185,19 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		this.hdInnData.imageWidthDiv8 = packetData.get(offs++);
 		this.hdInnData.imageHeightDiv8 = packetData.get(offs++);
 
+		int tmpQtHdLength = 0;
+		final int qAsUint = Byte.toUnsignedInt(this.hdInnData.q);
+		this.hdInnData.customQt.haveCustomQt = (this.hdInnData.fragmentOffset == 0 && qAsUint >= 128);
+		if (this.hdInnData.customQt.haveCustomQt) {
+			final int tmpTotalMinLen = (RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE + INNER_HEADER_QT_PRE_SIZE);
+			if (packetData.getUsed() < tmpTotalMinLen) {
+				throw new IllegalArgumentException("Invalid RTP packet size - missing QT header");
+			}
+			parseInnerHeaderQuantTables(packetData, offs);
+			tmpQtHdLength = INNER_HEADER_QT_PRE_SIZE + this.hdInnData.customQt.tablesLen;
+		}
+
 		// determine the length of the inner header bitstream (main header + optional QT header)
-		final int tmpTotalMinLen = (RTP_CONT_HEADER_SIZE + INNER_HEADER_MAIN_SIZE + INNER_HEADER_QT_PRE_SIZE);
-		final int tmpQtHdLength = (this.hdInnData.fragmentOffset == 0 && packetData.getUsed() > tmpTotalMinLen ?
-				INNER_HEADER_QT_PRE_SIZE + parseInnerHeaderQuantTableLength(packetData, offs)
-				: 0);
 		this.payloadSpecHeaderSize = INNER_HEADER_MAIN_SIZE + tmpQtHdLength;
 	}
 
@@ -204,12 +252,44 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				JpegChannelEncodingType.YCBCR420
 				: JpegChannelEncodingType.YCBCR422
 			);
-		this.hdInnData.q = (byte)255;
+		this.hdInnData.q = (byte)255;  // custom Quantization Table, QT follows inner header of first packet
 		this.hdInnData.imageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
 		this.hdInnData.imageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
 
+		this.hdInnData.customQt.clear();
+		this.hdInnData.customQt.haveCustomQt = (fragmentOffset == 0);
+		if (this.hdInnData.customQt.haveCustomQt) {
+			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
+				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table precision not found");
+			}
+			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == null ||
+					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCr] == null) {
+				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
+			}
+			this.hdInnData.customQt.isPrecision8bit_y_lqt = (
+					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8
+				);
+			this.hdInnData.customQt.isPrecision8bit_cb_cqt = (
+					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8
+				);
+			this.hdInnData.customQt.tablesLen = (
+					64 * (this.hdInnData.customQt.isPrecision8bit_y_lqt ? 1 : 2) +
+					64 * (this.hdInnData.customQt.isPrecision8bit_cb_cqt ? 1 : 2)
+				);
+			byte[] outputLqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelY);
+			if (outputLqt == null) {
+				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table data not found");
+			}
+			this.hdInnData.customQt.tableDataLqt.copyOf(outputLqt);
+			byte[] outputCqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelCb);
+			if (outputCqt == null) {
+				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table data not found");
+			}
+			this.hdInnData.customQt.tableDataCqt.copyOf(outputCqt);
+		}
+
 		// build the inner header bitstream (main header + optional QT header)
-		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields(fragmentOffset == 0, jpegInfo);
+		byte[] tmpRtpXxxHeader = buildRawInnerHeaderFromFields();
 		this.payloadSpecHeaderSize = tmpRtpXxxHeader.length;
 		this.packetBuf.append(tmpRtpXxxHeader);
 
@@ -235,34 +315,29 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static int parseInnerHeaderQuantTableLength(@NonNull BufferExt data, int offs) {
+	private void parseInnerHeaderQuantTables(@NonNull BufferExt data, int offs) {
 		++offs;  // MBZ
-		++offs;  // Precision
-		return ((((data.get(offs) & 0xFF) << 8) & 0xFF00) |
-				(data.get(offs + 1) & 0xFF));
+		byte tmpPrecBits = data.get(offs++);
+		hdInnData.customQt.isPrecision8bit_y_lqt = ((tmpPrecBits & 0x01) == 0);
+		hdInnData.customQt.isPrecision8bit_cb_cqt = ((tmpPrecBits & 0x02) == 0);
+		hdInnData.customQt.tablesLen = ((((data.get(offs++) & 0xFF) << 8) & 0xFF00) |
+				(data.get(offs++) & 0xFF));
+		int tmpLenQtLqt = (64 * (hdInnData.customQt.isPrecision8bit_y_lqt ? 1 : 2));
+		int tmpLenQtCqt = (64 * (hdInnData.customQt.isPrecision8bit_cb_cqt ? 1 : 2));
+		if (hdInnData.customQt.tablesLen != tmpLenQtLqt + tmpLenQtCqt) {
+			throw new IllegalArgumentException("Invalid RTP packet data - QT tables length mismatch");
+		}
+		hdInnData.customQt.tableDataLqt.copyOf(data, offs, tmpLenQtLqt);
+		offs += tmpLenQtLqt;
+		hdInnData.customQt.tableDataCqt.copyOf(data, offs, tmpLenQtCqt);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	@SuppressWarnings("DanglingJavadoc")
-	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull VideoJpegInfo jpegInfo) {
+	private byte[] buildRawInnerHeaderFromFields() {
 		int qtHdLengthWithPreAndTables = 0;
-		int qtTablesLength = 0;
-		if (withQtHeader) {
-			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
-				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table precision not found");
-			}
-			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == null ||
-					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCr] == null) {
-				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
-			}
-			qtTablesLength = (
-					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-							1 : 2) +
-					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-							1 : 2)
-				);
-			qtHdLengthWithPreAndTables += INNER_HEADER_QT_PRE_SIZE + qtTablesLength;
+		if (hdInnData.customQt.haveCustomQt) {
+			qtHdLengthWithPreAndTables += INNER_HEADER_QT_PRE_SIZE + hdInnData.customQt.tablesLen;
 		}
 		final int completeHdLength = INNER_HEADER_MAIN_SIZE + qtHdLengthWithPreAndTables;
 		final byte[] resA = new byte[completeHdLength];
@@ -278,49 +353,48 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		resA[7] = hdInnData.imageHeightDiv8;
 
 		// The JPEG Quantization Table RTP header is only present in the first packet of a frame
-		if (! withQtHeader) {
+		if (! hdInnData.customQt.haveCustomQt) {
 			return resA;
 		}
+
 		// Quantization Table: JPEG type 0 and 1 use two tables: one for
 		//   the luminance component and one shared by the chrominance components.
 		//   Each table is an array of 64 values.
-		///
+
 		int offs = INNER_HEADER_MAIN_SIZE;
-		/// MBZ - must be zero (8 bits)
+
+		// MBZ - must be zero (8 bits)
 		resA[offs++] = 0;
-		/// Precision (8 bits): the Precision field specifies the size of the coefficients in the table.
-		///   The lowest bit corresponds to the first table. The second bit corresponds to the second table.
-		///   If a bit is zero, the coefficients are 8 bits yielding a table length of 64 bytes.
-		///   If a bit is one, the coefficients are 16 bits for a table length of 128 bytes.
+
+		// Precision (8 bits): the Precision field specifies the size of the coefficients in the table.
+		//   The lowest bit corresponds to the first table. The second bit corresponds to the second table.
+		//   If a bit is zero, the coefficients are 8 bits yielding a table length of 64 bytes.
+		//   If a bit is one, the coefficients are 16 bits for a table length of 128 bytes.
 		resA[offs++] = (byte)(
-				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-						0 : 1) |
-				(jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-						0 : 2)
+				(this.hdInnData.customQt.isPrecision8bit_y_lqt ? 0 : 1) |
+				(this.hdInnData.customQt.isPrecision8bit_cb_cqt ? 0 : 2)
 			);
-		/// QT Table Length (16 bits)
-		resA[offs++] = (byte)((qtTablesLength >> 8) & 0xFF);
-		resA[offs++] = (byte)(qtTablesLength & 0xFF);
-		/// QT Table (128..256 bytes)
-		//// copied QT Table
-		byte[] outputLqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelY);
-		if (outputLqt == null) {
-			throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table data not found");
-		}
-		byte[] outputCqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelCb);
-		if (outputCqt == null) {
-			throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table data not found");
-		}
-		////
-		if (jpegInfo.sof0_quantTableSelCb != jpegInfo.sof0_quantTableSelCr) {
-			throw new IllegalArgumentException("Invalid JPEG info: Quantization tables for Cb and Cr must be the same");
-		}
-		if (outputLqt.length + outputCqt.length != qtTablesLength) {
-			throw new IllegalArgumentException("Invalid JPEG info: Invalid Quantization table sizes");
-		}
-		System.arraycopy(outputLqt, 0, resA, offs, outputLqt.length);
-		offs += outputLqt.length;
-		System.arraycopy(outputCqt, 0, resA, offs, outputCqt.length);
+
+		// QT Tables Length (16 bits)
+		resA[offs++] = (byte)((hdInnData.customQt.tablesLen >> 8) & 0xFF);
+		resA[offs++] = (byte)(hdInnData.customQt.tablesLen & 0xFF);
+
+		// QT Tables (128..256 bytes)
+		System.arraycopy(
+				hdInnData.customQt.tableDataLqt.getBaPtr(),
+				0,
+				resA,
+				offs,
+				hdInnData.customQt.tableDataLqt.getUsed()
+			);
+		offs += hdInnData.customQt.tableDataLqt.getUsed();
+		System.arraycopy(
+				hdInnData.customQt.tableDataCqt.getBaPtr(),
+				0,
+				resA,
+				offs,
+				hdInnData.customQt.tableDataCqt.getUsed()
+			);
 
 		return resA;
 	}
