@@ -70,12 +70,12 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		public @NonNull String toString() {
 			//noinspection StringBufferReplaceableByString
 			StringBuilder sb = new StringBuilder();
-			sb.append("FirstByte: ").append(Integer.toUnsignedString(firstByte));
+			sb.append("FirstByte: ").append(Byte.toUnsignedInt(firstByte));
 			sb.append(", FragmentOffset: ").append(Integer.toUnsignedString(fragmentOffset));
 			sb.append(", Type: ").append(jpegType);
-			sb.append(", Q: ").append(Integer.toUnsignedString(q));
-			sb.append(", ImageWidth: ").append(Integer.toUnsignedString(imageWidthDiv8));
-			sb.append(", ImageHeight: ").append(Integer.toUnsignedString(imageHeightDiv8));
+			sb.append(", Q: ").append(Byte.toUnsignedInt(q));
+			sb.append(", ImageWidth: ").append(Byte.toUnsignedInt(imageWidthDiv8));
+			sb.append(", ImageHeight: ").append(Byte.toUnsignedInt(imageHeightDiv8));
 			return sb.toString();
 		}
 
