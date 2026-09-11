@@ -244,7 +244,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 	@SuppressWarnings("DanglingJavadoc")
 	private byte[] buildRawInnerHeaderFromFields(boolean withQtHeader, @NonNull VideoJpegInfo jpegInfo) {
-		int qtHdLength = 0;
+		int qtHdLengthWithPreAndTables = 0;
+		int qtTablesLength = 0;
 		if (withQtHeader) {
 			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
 				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table precision not found");
@@ -253,14 +254,15 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCr] == null) {
 				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
 			}
-			qtHdLength += INNER_HEADER_QT_PRE_SIZE + (
+			qtTablesLength = (
 					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2) +
 					64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
 							1 : 2)
 				);
+			qtHdLengthWithPreAndTables += INNER_HEADER_QT_PRE_SIZE + qtTablesLength;
 		}
-		final int completeHdLength = INNER_HEADER_MAIN_SIZE + qtHdLength;
+		final int completeHdLength = INNER_HEADER_MAIN_SIZE + qtHdLengthWithPreAndTables;
 		final byte[] resA = new byte[completeHdLength];
 
 		// main RTP/JPEG header
@@ -295,14 +297,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 						0 : 2)
 			);
 		/// QT Table Length (16 bits)
-		final int tmpHdLength = (
-				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-						1 : 2) +
-				64 * (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-						1 : 2)
-			);
-		resA[offs++] = (byte)((tmpHdLength >> 8) & 0xFF);
-		resA[offs++] = (byte)(tmpHdLength & 0xFF);
+		resA[offs++] = (byte)((qtTablesLength >> 8) & 0xFF);
+		resA[offs++] = (byte)(qtTablesLength & 0xFF);
 		/// QT Table (128..256 bytes)
 		//// generated QT Table
 		/*byte[] outputLqt = new byte[64];
@@ -321,7 +317,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		if (jpegInfo.sof0_quantTableSelCb != jpegInfo.sof0_quantTableSelCr) {
 			throw new IllegalArgumentException("Invalid JPEG info: Quantization tables for Cb and Cr must be the same");
 		}
-		if (outputLqt.length + outputCqt.length != tmpHdLength) {
+		if (outputLqt.length + outputCqt.length != qtTablesLength) {
 			throw new IllegalArgumentException("Invalid JPEG info: Invalid Quantization table sizes");
 		}
 		System.arraycopy(outputLqt, 0, resA, offs, outputLqt.length);
