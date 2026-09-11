@@ -14,6 +14,35 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
+	public enum JpegChannelEncodingType {
+		/** 4:2:2 */
+		YCBCR422(0),
+		/** 4:2:0 */
+		YCBCR420(1),
+		/** Unknown type */
+		UNKNOWN(0xFF);
+
+		private final byte value;
+
+		JpegChannelEncodingType(int value) {
+			this.value = (byte)value;
+		}
+		public byte getValue() {
+			return value;
+		}
+		public static @NonNull JpegChannelEncodingType of(byte value) {
+			for (JpegChannelEncodingType type : JpegChannelEncodingType.values()) {
+				if (type != UNKNOWN && type.getValue() == value) {
+					return type;
+				}
+			}
+			return UNKNOWN;
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
 	public static class InnerHeaderData implements Cloneable {
 		/** Type-specific first byte (8 bits)<br />
 		 *   0=Image is progressively scanned<br />
@@ -29,7 +58,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		 *   0=YCbCr 4:2:2<br />
 		 *   1=YCbCr 4:2:0
 		 */
-		public byte jpegType = 0;
+		public @NonNull JpegChannelEncodingType jpegType = JpegChannelEncodingType.UNKNOWN;
 		/** Q value (8 bits) */
 		public byte q = 0;
 		/** Image width divided by 8 pixels, max. is 255*8=2040 pixels (8 bits) */
@@ -43,7 +72,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 			StringBuilder sb = new StringBuilder();
 			sb.append("FirstByte: ").append(Integer.toUnsignedString(firstByte));
 			sb.append(", FragmentOffset: ").append(Integer.toUnsignedString(fragmentOffset));
-			sb.append(", Type: ").append(Integer.toUnsignedString(jpegType));
+			sb.append(", Type: ").append(jpegType);
 			sb.append(", Q: ").append(Integer.toUnsignedString(q));
 			sb.append(", ImageWidth: ").append(Integer.toUnsignedString(imageWidthDiv8));
 			sb.append(", ImageHeight: ").append(Integer.toUnsignedString(imageHeightDiv8));
@@ -109,7 +138,9 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		this.hdInnData.fragmentOffset = (((packetData.get(offs++) << 16) |
 				(packetData.get(offs++) << 8) |
 				packetData.get(offs++)) & 0xFFFFFF);
-		this.hdInnData.jpegType = packetData.get(offs++);
+		this.hdInnData.jpegType = JpegChannelEncodingType.of(
+				packetData.get(offs++)
+			);
 		this.hdInnData.q = packetData.get(offs++);
 		this.hdInnData.imageWidthDiv8 = packetData.get(offs++);
 		this.hdInnData.imageHeightDiv8 = packetData.get(offs++);
@@ -168,7 +199,11 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		// set inner main header fields
 		this.hdInnData.firstByte = (byte)0;
 		this.hdInnData.fragmentOffset = fragmentOffset;
-		this.hdInnData.jpegType = (byte)(jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ? 1 : 0);
+		this.hdInnData.jpegType = (
+				jpegInfo.sof0_channelEncoding == VideoJpegInfo.ChannelEncoding.YCBCR420 ?
+				JpegChannelEncodingType.YCBCR420
+				: JpegChannelEncodingType.YCBCR422
+			);
 		this.hdInnData.q = (byte)255;
 		this.hdInnData.imageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
 		this.hdInnData.imageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
@@ -233,7 +268,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		resA[1] = (byte)((hdInnData.fragmentOffset >> 16) & 0xFF);
 		resA[2] = (byte)((hdInnData.fragmentOffset >> 8) & 0xFF);
 		resA[3] = (byte)(hdInnData.fragmentOffset & 0xFF);
-		resA[4] = hdInnData.jpegType;
+		resA[4] = hdInnData.jpegType.value;
 		resA[5] = hdInnData.q;
 		resA[6] = hdInnData.imageWidthDiv8;
 		resA[7] = hdInnData.imageHeightDiv8;
