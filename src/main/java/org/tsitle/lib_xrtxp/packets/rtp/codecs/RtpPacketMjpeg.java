@@ -252,12 +252,12 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				JpegChannelEncodingType.YCBCR420
 				: JpegChannelEncodingType.YCBCR422
 			);
-		this.hdInnData.q = (byte)255;  // custom Quantization Table, QT follows inner header of first packet
+		this.hdInnData.q = (byte)255;  // 255^=custom Quantization Tables, QT follows inner header of first packet, QT can change with each frame
 		this.hdInnData.imageWidthDiv8 = (byte)(jpegInfo.sof0_imgWidth / 8);
 		this.hdInnData.imageHeightDiv8 = (byte)(jpegInfo.sof0_imgHeight / 8);
 
 		this.hdInnData.customQt.clear();
-		this.hdInnData.customQt.haveCustomQt = (fragmentOffset == 0);
+		this.hdInnData.customQt.haveCustomQt = (fragmentOffset == 0 && Byte.toUnsignedInt(this.hdInnData.q) >= 128);
 		if (this.hdInnData.customQt.haveCustomQt) {
 			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
 				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table precision not found");
