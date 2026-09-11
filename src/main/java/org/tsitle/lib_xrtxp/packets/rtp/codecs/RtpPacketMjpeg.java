@@ -302,10 +302,6 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		resA[offs++] = (byte)((qtTablesLength >> 8) & 0xFF);
 		resA[offs++] = (byte)(qtTablesLength & 0xFF);
 		/// QT Table (128..256 bytes)
-		//// generated QT Table
-		/*byte[] outputLqt = new byte[64];
-		byte[] outputCqt = new byte[64];
-		generateQuantizationTable8bits(hdQ, outputLqt, outputCqt);*/
 		//// copied QT Table
 		byte[] outputLqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelY);
 		if (outputLqt == null) {
@@ -344,88 +340,6 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 						jpegInfo.dqt_tables8Bit[tableSel].tableData :
 						jpegInfo.dqt_tables16Bit[tableSel].tableData
 			);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	/*
-	 * JPEG quantization table generation.
-	 * See https://datatracker.ietf.org/doc/html/rfc2435#appendix-A
-	 */
-
-	/**
-	 * Table K.1 from JPEG spec.
-	 */
-	private static final byte[] JPEG_LUMA_QUANTIZER = {
-			16, 11, 10, 16, 24,  40,  51,  61,
-			12, 12, 14, 19, 26,  58,  60,  55,
-			14, 13, 16, 24, 40,  57,  69,  56,
-			14, 17, 22, 29, 51,  87,  80,  62,
-			18, 22, 37, 56, 68,  109, 103, 77,
-			24, 35, 55, 64, 81,  104, 113, 92,
-			49, 64, 78, 87, 103, 121, 120, 101,
-			72, 92, 95, 98, 112, 100, 103, 99
-		};
-
-	/**
-	 * Table K.2 from JPEG spec.
-	 */
-	private static final byte[] JPEG_CHROMA_QUANTIZER = {
-			17, 18, 24, 47, 99, 99, 99, 99,
-			18, 21, 26, 66, 99, 99, 99, 99,
-			24, 26, 56, 99, 99, 99, 99, 99,
-			47, 66, 99, 99, 99, 99, 99, 99,
-			99, 99, 99, 99, 99, 99, 99, 99,
-			99, 99, 99, 99, 99, 99, 99, 99,
-			99, 99, 99, 99, 99, 99, 99, 99,
-			99, 99, 99, 99, 99, 99, 99, 99
-		};
-
-	/**
-	 * Generates a quantization table from the specified quality factor.
-	 * @param q Q factor (8 bits)
-	 * @param outputLqt Luma quantization table (64 bytes)
-	 * @param outputCqt Chroma quantization table (64 bytes)
-	 */
-	@SuppressWarnings("unused")
-	private static void generateQuantizationTable8bits(int q, byte[] outputLqt, byte[] outputCqt) {
-		assert (q >= 0 && q <= 255);
-		assert (outputLqt != null && outputLqt.length == 64);
-		assert (outputCqt != null && outputCqt.length == 64);
-
-		int i;
-		int factor = q;
-
-		if (q < 1) {
-			factor = 1;
-		} else if (q > 99) {
-			factor = 99;
-		}
-		if (q < 50) {
-			q = 5000 / factor;
-		} else {
-			q = 200 - factor * 2;
-		}
-
-		for (i = 0; i < 64; i++) {
-			int lq = (JPEG_LUMA_QUANTIZER[i] * q + 50) / 100;
-			int cq = (JPEG_CHROMA_QUANTIZER[i] * q + 50) / 100;
-
-			// Limit the quantizers to 1 <= q <= 255
-			if (lq < 1) {
-				lq = 1;
-			} else if (lq > 255) {
-				lq = 255;
-			}
-			outputLqt[i] = (byte)lq;
-
-			if (cq < 1) {
-				cq = 1;
-			} else if (cq > 255) {
-				cq = 255;
-			}
-			outputCqt[i] = (byte)cq;
-		}
 	}
 
 }
