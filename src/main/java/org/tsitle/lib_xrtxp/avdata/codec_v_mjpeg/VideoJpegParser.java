@@ -7,9 +7,14 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
+/**
+ * JPEG parser for video data.<br />
+ * See <a href="https://workspace.hackschule.de/jpeg">Decoding JPEG Images</a>
+ */
 public final class VideoJpegParser {
 
 	public static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
+	public static final String MJPEG_HUFFMAN_TABLES_DEFAULT_HASH = "F4C278F75F33947A14E32A0FD45D6C82";
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String logThreadId;
