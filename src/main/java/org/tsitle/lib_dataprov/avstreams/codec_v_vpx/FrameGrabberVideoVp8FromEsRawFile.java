@@ -51,7 +51,7 @@ public final class FrameGrabberVideoVp8FromEsRawFile extends FrameGrabberAvFromE
 				false,
 				null,
 				null,
-				VideoVp8Parser.VP8_CUSTOM_HEADER_SIZE
+				VideoVp8Parser.VP8_CUSTOM_HEADER_SIZE + VideoVp8Parser.VP8_HEADER_SIZE
 			);
 		//
 		int remainingPayloadLength = VideoVp8Parser.getRemainingVp8PayloadLengthToRead(frameBuf);
