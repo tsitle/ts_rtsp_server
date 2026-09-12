@@ -140,6 +140,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 	public static final int INNER_HEADER_MAIN_SIZE = 8;
 	/** Size of the QT RTP header without the tables */
 	public static final int INNER_HEADER_QT_PRE_SIZE = 4;
+	/** Maximum size of the QT RTP header with two 16-bit tables */
+	public static final int INNER_HEADER_QT_MAX_SIZE = INNER_HEADER_QT_PRE_SIZE + 64 * 2 * 2;
 
 	private final InnerHeaderData hdInnData = new InnerHeaderData();
 
@@ -322,8 +324,14 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		if (hdInnData.customQt.tablesLen != tmpLenQtLqt + tmpLenQtCqt) {
 			throw new IllegalArgumentException("Invalid RTP packet data - QT tables length mismatch");
 		}
+		if (data.getUsed() < offs + tmpLenQtLqt) {
+			throw new IllegalArgumentException("Invalid RTP packet data - QT tables length too short for LQT");
+		}
 		hdInnData.customQt.tableDataLqt.copyOf(data, offs, tmpLenQtLqt);
 		offs += tmpLenQtLqt;
+		if (data.getUsed() < offs + tmpLenQtCqt) {
+			throw new IllegalArgumentException("Invalid RTP packet data - QT tables length too short for CQT");
+		}
 		hdInnData.customQt.tableDataCqt.copyOf(data, offs, tmpLenQtCqt);
 	}
 
