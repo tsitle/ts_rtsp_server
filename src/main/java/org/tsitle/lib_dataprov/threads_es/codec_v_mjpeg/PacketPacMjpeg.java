@@ -40,7 +40,8 @@ final class PacketPacMjpeg {
 					curFrameJpegInfo.segmSOF0.channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
 				//curFrameJpegInfo.segmSOF0.quantTableSelY == curFrameJpegInfo.segmSOF0.quantTableSelCb ||
 				curFrameJpegInfo.segmSOF0.imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-				curFrameJpegInfo.segmSOF0.imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+				curFrameJpegInfo.segmSOF0.imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+				! curFrameJpegInfo.segmDHT.hashSum().equalsIgnoreCase(VideoJpegParser.MJPEG_HUFFMAN_TABLES_DEFAULT_HASH)) {
 			cacheTempBuffer.copyOf(ioBuf);
 			/*
 			 * To provide a compatible JPEG image, we need to re-encode the image.
