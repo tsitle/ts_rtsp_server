@@ -170,8 +170,7 @@ public abstract class ThreadRtpSenderBase<
 		udpMaxPacketLenDelta = RtpPacketContainerBase.RTP_CONT_HEADER_SIZE + 4;
 		if (rtpPacketType == RtpPacketType.V_MJPEG) {
 			// RTP/JPEG header can be rather big
-			udpMaxPacketLenDelta += RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE +
-					RtpPacketMjpeg.INNER_HEADER_QT_PRE_SIZE + 128 * 2;
+			udpMaxPacketLenDelta += RtpPacketMjpeg.INNER_HEADER_MAIN_SIZE + RtpPacketMjpeg.INNER_HEADER_QT_MAX_SIZE;
 		} else if (rtpPacketType == RtpPacketType.V_H264 || rtpPacketType == RtpPacketType.V_H265) {
 			udpMaxPacketLenDelta += RtpPacketH264.INNER_HEADER_SIZE_MAX;
 		} else if (rtpPacketType == RtpPacketType.V_VP8) {
