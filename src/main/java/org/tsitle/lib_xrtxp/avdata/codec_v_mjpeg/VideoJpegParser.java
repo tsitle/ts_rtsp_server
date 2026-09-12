@@ -7,8 +7,6 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
-import java.util.Objects;
-
 public final class VideoJpegParser {
 
 	public static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
@@ -54,7 +52,8 @@ public final class VideoJpegParser {
 		}
 		// find SOI marker (Start of Image: 0xFFD8)
 		while (offs + 1 < inputBv.getLength()) {
-			if (inputBv.getByte(offs) != (byte)0xFF || inputBv.getByte(offs + 1) != (byte)0xD8) {
+			if (inputBv.getByte(offs) != MJPEG_FRAME_START_MAGICBYTES[0] ||
+					inputBv.getByte(offs + 1) != MJPEG_FRAME_START_MAGICBYTES[1]) {
 				logError(FNC_NAME, String.format("skipping invalid JPEG data @ 0x%08X: 0x%02X 0x%02X%n",
 						offs + debugStreamOffset, inputBv.getByte(offs), inputBv.getByte(offs + 1)));
 				if (offs > 20) {
@@ -360,58 +359,37 @@ public final class VideoJpegParser {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DQT Table Precision");
 		}
 		byte tmpTq = (byte)(tmpPqTq & 0x0F);  // Table ID
-		if ((tmpPq == 0 && tmpTq >= jpegInfo.dqt_tables8Bit.length) ||
-				(tmpPq == 1 && tmpTq >= jpegInfo.dqt_tables16Bit.length)) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid DQT Table ID");
-		}
-		if (jpegInfo.dqt_tablePrecisions[tmpTq] != null) {
+		//logDebug(FNC_NAME, blockOffset, "DQT - Table ID: " + tmpTq);
+		if (jpegInfo.dqt_tablePrecisionsMap.containsKey(tmpTq)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
-		if (jpegInfo.dqt_tables8Bit[tmpTq] != null || jpegInfo.dqt_tables16Bit[tmpTq] != null) {
+		if (jpegInfo.dqt_tables8BitMap.containsKey(tmpTq) || jpegInfo.dqt_tables16BitMap.containsKey(tmpTq)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
 		if (tmpPq == 0) {
-			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT8;
-			if (jpegInfo.dqt_table8bitCount >= jpegInfo.dqt_tables8Bit.length) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Too many DQT tables");
-			}
-			jpegInfo.dqt_tables8Bit[tmpTq] = new VideoJpegInfo.DqtTable8Bit(tmpTq);
+			jpegInfo.dqt_tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT8);
+			jpegInfo.dqt_tables8BitMap.put(tmpTq, new VideoJpegInfo.DqtTable8Bit(tmpTq));
 		} else {
-			jpegInfo.dqt_tablePrecisions[tmpTq] = VideoJpegInfo.QuantizationTablePrecision.INT16;
-			if (jpegInfo.dqt_table16bitCount >= jpegInfo.dqt_tables16Bit.length) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Too many DQT tables");
-			}
-			jpegInfo.dqt_tables16Bit[tmpTq] = new VideoJpegInfo.DqtTable16Bit(tmpTq);
+			jpegInfo.dqt_tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT16);
+			jpegInfo.dqt_tables16BitMap.put(tmpTq, new VideoJpegInfo.DqtTable16Bit(tmpTq));
 		}
-		if ((tmpPq == 0 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length + 1) ||
-				(tmpPq == 1 && blockLen != Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length + 1)) {
+		if ((tmpPq == 0 && blockLen != jpegInfo.dqt_tables8BitMap.get(tmpTq).getTableDataPtr().length + 1) ||
+				(tmpPq == 1 && blockLen != jpegInfo.dqt_tables16BitMap.get(tmpTq).getTableDataPtr().length + 1)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
-		int copyLen = (tmpPq == 0 ?
-				Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData.length
-				: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData.length);
+		byte[] tmpTargetPtr = (tmpPq == 0 ?
+				jpegInfo.dqt_tables8BitMap.get(tmpTq).getTableDataPtr()
+				: jpegInfo.dqt_tables16BitMap.get(tmpTq).getTableDataPtr());
+		final int copyLen = tmpTargetPtr.length;
 		BufferView bvForCopy = inputBv.clone();
 		bvForCopy.setOffset(innerOffs);
 		bvForCopy.setLength(copyLen);
 		BufferExt beForCopy = new BufferExt();
 		bvForCopy.copyViewIntoBe(beForCopy);
-		beForCopy.copyInto(
-				0,
-				tmpPq == 0 ?
-						Objects.requireNonNull(jpegInfo.dqt_tables8Bit[tmpTq]).tableData
-						: Objects.requireNonNull(jpegInfo.dqt_tables16Bit[tmpTq]).tableData,
-				0,
-				copyLen
-			);
+		beForCopy.copyInto(0, tmpTargetPtr, 0, copyLen);
 		innerOffs += copyLen;
-
-		if (tmpPq == 0) {
-			++jpegInfo.dqt_table8bitCount;
-		} else {
-			++jpegInfo.dqt_table16bitCount;
-		}
 
 		//
 		if (curOffs + blockLen != innerOffs) {

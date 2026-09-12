@@ -239,7 +239,6 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				jpegInfo.sof0_precision != 8 ||
 				jpegInfo.sos_scanDataOffs < 0 || jpegInfo.sos_scanDataLength < 1 ||
 				jpegInfo.sof2_isProgressive ||
-				jpegInfo.dqt_table16bitCount != 0 ||
 				! jpegInfo.foundEoi || jpegInfo.usesDri) {
 			throw new IllegalArgumentException("Cannot process this kind of JPEG");
 		}
@@ -259,32 +258,26 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		this.hdInnData.customQt.clear();
 		this.hdInnData.customQt.haveCustomQt = (fragmentOffset == 0 && Byte.toUnsignedInt(this.hdInnData.q) >= 128);
 		if (this.hdInnData.customQt.haveCustomQt) {
-			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == null) {
+			if (! jpegInfo.dqt_tablePrecisionsMap.containsKey(jpegInfo.sof0_quantTableSelY)) {
 				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table precision not found");
 			}
-			if (jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == null ||
-					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCr] == null) {
+			if (! (jpegInfo.dqt_tablePrecisionsMap.containsKey(jpegInfo.sof0_quantTableSelCb) &&
+					jpegInfo.dqt_tablePrecisionsMap.containsKey(jpegInfo.sof0_quantTableSelCr))) {
 				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table precision not found");
 			}
 			this.hdInnData.customQt.isPrecision8bit_y_lqt = (
-					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelY] == VideoJpegInfo.QuantizationTablePrecision.INT8
+					jpegInfo.dqt_tablePrecisionsMap.get(jpegInfo.sof0_quantTableSelY) == VideoJpegInfo.QuantizationTablePrecision.INT8
 				);
 			this.hdInnData.customQt.isPrecision8bit_cb_cqt = (
-					jpegInfo.dqt_tablePrecisions[jpegInfo.sof0_quantTableSelCb] == VideoJpegInfo.QuantizationTablePrecision.INT8
+					jpegInfo.dqt_tablePrecisionsMap.get(jpegInfo.sof0_quantTableSelCb) == VideoJpegInfo.QuantizationTablePrecision.INT8
 				);
 			this.hdInnData.customQt.tablesLen = (
 					64 * (this.hdInnData.customQt.isPrecision8bit_y_lqt ? 1 : 2) +
 					64 * (this.hdInnData.customQt.isPrecision8bit_cb_cqt ? 1 : 2)
 				);
 			byte[] outputLqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelY);
-			if (outputLqt == null) {
-				throw new IllegalArgumentException("Invalid JPEG info: Luma quantization table data not found");
-			}
 			this.hdInnData.customQt.tableDataLqt.copyOf(outputLqt);
 			byte[] outputCqt = getQuantizationTableData(jpegInfo, jpegInfo.sof0_quantTableSelCb);
-			if (outputCqt == null) {
-				throw new IllegalArgumentException("Invalid JPEG info: Chroma quantization table data not found");
-			}
 			this.hdInnData.customQt.tableDataCqt.copyOf(outputCqt);
 		}
 
@@ -334,7 +327,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private byte[] buildRawInnerHeaderFromFields() {
+	private byte @NonNull [] buildRawInnerHeaderFromFields() {
 		int qtHdLengthWithPreAndTables = 0;
 		if (hdInnData.customQt.haveCustomQt) {
 			qtHdLengthWithPreAndTables += INNER_HEADER_QT_PRE_SIZE + hdInnData.customQt.tablesLen;
@@ -399,20 +392,20 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		return resA;
 	}
 
-	private static byte[] getQuantizationTableData(@NonNull VideoJpegInfo jpegInfo, byte tableSel) {
-		if (jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT8 &&
-				jpegInfo.dqt_tables8Bit[tableSel] == null) {
+	private static byte @NonNull [] getQuantizationTableData(@NonNull VideoJpegInfo jpegInfo, byte tableSel) {
+		VideoJpegInfo.QuantizationTablePrecision tmpPrec = jpegInfo.dqt_tablePrecisionsMap.get(tableSel);
+		if (tmpPrec == VideoJpegInfo.QuantizationTablePrecision.INT8 &&
+				! jpegInfo.dqt_tables8BitMap.containsKey(tableSel)) {
 			throw new IllegalStateException("Invalid JPEG info: DQT 8-bit table is null");
 		}
-		if (jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT16 &&
-				jpegInfo.dqt_tables16Bit[tableSel] == null) {
+		if (tmpPrec == VideoJpegInfo.QuantizationTablePrecision.INT16 &&
+				! jpegInfo.dqt_tables16BitMap.containsKey(tableSel)) {
 			throw new IllegalStateException("Invalid JPEG info: DQT 16-bit table is null");
 		}
-		//noinspection DataFlowIssue
 		return (
-				jpegInfo.dqt_tablePrecisions[tableSel] == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
-						jpegInfo.dqt_tables8Bit[tableSel].tableData :
-						jpegInfo.dqt_tables16Bit[tableSel].tableData
+				tmpPrec == VideoJpegInfo.QuantizationTablePrecision.INT8 ?
+						jpegInfo.dqt_tables8BitMap.get(tableSel).getTableDataPtr() :
+						jpegInfo.dqt_tables16BitMap.get(tableSel).getTableDataPtr()
 			);
 	}
 
