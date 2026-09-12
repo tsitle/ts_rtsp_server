@@ -11,7 +11,7 @@ import java.util.HexFormat;
  */
 public final class BufferExt implements Cloneable {
 
-	private byte[] buf = new byte[1024 * 64];
+	private byte[] buf = new byte[16];
 	private int used;
 
 	// -----------------------------------------------------------------------------------------------------------------
