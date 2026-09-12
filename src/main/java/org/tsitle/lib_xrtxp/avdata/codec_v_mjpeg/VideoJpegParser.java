@@ -10,6 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 /**
  * JPEG parser for video data.<br />
  * See <a href="https://workspace.hackschule.de/jpeg">Decoding JPEG Images</a>
+ * and <a href="https://www.ccoderun.ca/programming/2017-01-31_jpeg/">Anatomy of a JPEG</a>
  */
 public final class VideoJpegParser {
 
@@ -325,7 +326,7 @@ public final class VideoJpegParser {
 			/*if (dbgPktNum == 0) {
 				String tmpDebugCompName = switch (componentIx) { case 0 -> "Y"; case 1 -> "Cb"; default -> "Cr"; };
 				logDebug(FNC_NAME, innerOffs - 3,
-						String.format("__ Ci %d (%s), HiVi %d (%d / %d), Tqi %d",
+						String.format("__ Ci %d (%s), HiVi 0x%02x (0x%02x / 0x%02x), Tqi %d",
 								componentId, tmpDebugCompName,
 								componentTmpHiVi, componentHi, componentVi,
 								componentQuantTableSel));
