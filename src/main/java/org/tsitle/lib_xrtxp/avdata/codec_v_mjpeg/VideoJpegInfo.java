@@ -41,17 +41,11 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		}
 
 		@SuppressWarnings("unused")
-		public boolean isPrecision8bit() {
-			return isPrecision8bit;
-		}
+		public boolean isPrecision8bit() { return isPrecision8bit; }
 
-		public byte getTableId() {
-			return tableId;
-		}
+		public byte getTableId() { return tableId; }
 
-		public byte @NonNull [] getTableDataPtr() {
-			return tableData;
-		}
+		public byte @NonNull [] getTableDataPtr() { return tableData; }
 
 		@Override
 		public @NonNull DqtTableBase clone() {
@@ -95,6 +89,70 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	public static class DqtTable16Bit extends DqtTableBase {
 		public DqtTable16Bit(byte tableId) {
 			super(false, tableId, new byte[64 * 2]);
+		}
+	}
+
+	public static class DhtTable implements Cloneable {
+		/**
+		 * class 0: DC table (encodes DC coefficient differences)
+		 * class 1: AC table (encodes AC coefficient differences)
+		 */
+		private final byte tableClass;
+		private final byte tableNo;
+		private byte @NonNull [] tableDataCodelens = new byte[16];
+		private byte @NonNull [] tableDataSymbols = new byte[0];
+
+		public DhtTable(byte tableClass, byte tableNo) {
+			this.tableClass = tableClass;
+			this.tableNo = tableNo;
+		}
+
+		public byte getTableClass() { return tableClass; }
+
+		public byte getTableNo() { return tableNo; }
+
+		public byte @NonNull [] getTableDataCodelensPtr() { return tableDataCodelens; }
+
+		public void setTableDataSymbols(byte @NonNull [] data) {
+			tableDataSymbols = new byte[data.length];
+			System.arraycopy(data, 0, tableDataSymbols, 0, data.length);
+		}
+		@SuppressWarnings("unused")
+		public byte @NonNull [] getTableDataSymbolsPtr() { return tableDataSymbols; }
+
+		@Override
+		public @NonNull DhtTable clone() {
+			try {
+				DhtTable cloned = (DhtTable)super.clone();
+				cloned.tableDataCodelens = new byte[this.tableDataCodelens.length];
+				cloned.tableDataSymbols = new byte[this.tableDataSymbols.length];
+				System.arraycopy(this.tableDataCodelens, 0, cloned.tableDataCodelens, 0, this.tableDataCodelens.length);
+				System.arraycopy(this.tableDataSymbols, 0, cloned.tableDataSymbols, 0, this.tableDataSymbols.length);
+				return cloned;
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+
+		public @NonNull String hashSum() {
+			return hashSum(false);
+		}
+
+		public @NonNull String hashSum(boolean onlyTableData) {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			if (! onlyTableData) {
+				baos.write(tableClass);
+				baos.write(tableNo);
+			}
+			try {
+				baos.write(tableDataCodelens);
+				baos.write(tableDataSymbols);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
 		}
 	}
 
@@ -224,24 +282,24 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 		/** Y component ID */
 		public byte compId_y;
-		/** Y Huffman Table ID */
-		public byte huff_y_id;
-		/** Y Huffman Table Class */
-		public byte huff_y_class;
+		/** Y Huffman DC Table Selector */
+		public byte huff_y_dc;
+		/** Y Huffman AC Table Selector */
+		public byte huff_y_ac;
 
 		/** CB component ID */
 		public byte compId_cb;
-		/** CB Huffman Table ID */
-		public byte huff_cb_id;
-		/** CB Huffman Table Class */
-		public byte huff_cb_class;
+		/** CB Huffman DC Table Selector */
+		public byte huff_cb_dc;
+		/** CB Huffman AC Table Selector */
+		public byte huff_cb_ac;
 
 		/** CR component ID */
 		public byte compId_cr;
-		/** CR Huffman Table ID */
-		public byte huff_cr_id;
-		/** CR Huffman Table Class */
-		public byte huff_cr_class;
+		/** CR Huffman DC Table Selector */
+		public byte huff_cr_dc;
+		/** CR Huffman AC Table Selector */
+		public byte huff_cr_ac;
 
 		/** start of spectral selection or predictor selection (should be 0x00) */
 		public byte startSpectralSel;
@@ -260,14 +318,14 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 			numComp = 0;
 			compId_y = -1;
-			huff_y_id = -1;
-			huff_y_class = -1;
+			huff_y_dc = -1;
+			huff_y_ac = -1;
 			compId_cb = -1;
-			huff_cb_id = -1;
-			huff_cb_class = -1;
+			huff_cb_dc = -1;
+			huff_cb_ac = -1;
 			compId_cr = -1;
-			huff_cr_id = -1;
-			huff_cr_class = -1;
+			huff_cr_dc = -1;
+			huff_cr_ac = -1;
 
 			startSpectralSel = 0;
 			endSpectralSel = 0;
@@ -282,14 +340,14 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 			numComp = other.numComp;
 			compId_y = other.compId_y;
-			huff_y_id = other.huff_y_id;
-			huff_y_class = other.huff_y_class;
+			huff_y_dc = other.huff_y_dc;
+			huff_y_ac = other.huff_y_ac;
 			compId_cb = other.compId_cb;
-			huff_cb_id = other.huff_cb_id;
-			huff_cb_class = other.huff_cb_class;
+			huff_cb_dc = other.huff_cb_dc;
+			huff_cb_ac = other.huff_cb_ac;
 			compId_cr = other.compId_cr;
-			huff_cr_id = other.huff_cr_id;
-			huff_cr_class = other.huff_cr_class;
+			huff_cr_dc = other.huff_cr_dc;
+			huff_cr_ac = other.huff_cr_ac;
 
 			startSpectralSel = other.startSpectralSel;
 			endSpectralSel = other.endSpectralSel;
@@ -303,24 +361,24 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 				sb
 						.append("c0:{")
 							.append("cID=").append(Byte.toUnsignedInt(compId_y))
-							.append(", hID=").append(Byte.toUnsignedInt(huff_y_id))
-							.append(", hCL=").append(Byte.toUnsignedInt(huff_y_class))
+							.append(", hDC=").append(Byte.toUnsignedInt(huff_y_dc))
+							.append(", hAC=").append(Byte.toUnsignedInt(huff_y_ac))
 						.append("}");
 			}
 			if (numComp > 1) {
 				sb
 						.append(", c1:{")
 							.append("cID=").append(Byte.toUnsignedInt(compId_cb))
-							.append(", hID=").append(Byte.toUnsignedInt(huff_cb_id))
-							.append(", hCL=").append(Byte.toUnsignedInt(huff_cb_class))
+							.append(", hDC=").append(Byte.toUnsignedInt(huff_cb_dc))
+							.append(", hAC=").append(Byte.toUnsignedInt(huff_cb_ac))
 						.append("}");
 			}
 			if (numComp > 2) {
 				sb
 						.append(", c2:{")
 							.append("cID=").append(Byte.toUnsignedInt(compId_cr))
-							.append(", hID=").append(Byte.toUnsignedInt(huff_cr_id))
-							.append(", hCL=").append(Byte.toUnsignedInt(huff_cr_class))
+							.append(", hDC=").append(Byte.toUnsignedInt(huff_cr_dc))
+							.append(", hAC=").append(Byte.toUnsignedInt(huff_cr_ac))
 						.append("}");
 			}
 
@@ -340,14 +398,14 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 			baos.write(numComp);
 			baos.write(compId_y);
-			baos.write(huff_y_id);
-			baos.write(huff_y_class);
+			baos.write(huff_y_dc);
+			baos.write(huff_y_ac);
 			baos.write(compId_cb);
-			baos.write(huff_cb_id);
-			baos.write(huff_cb_class);
+			baos.write(huff_cb_dc);
+			baos.write(huff_cb_ac);
 			baos.write(compId_cr);
-			baos.write(huff_cr_id);
-			baos.write(huff_cr_class);
+			baos.write(huff_cr_dc);
+			baos.write(huff_cr_ac);
 
 			baos.write(startSpectralSel);
 			baos.write(endSpectralSel);
@@ -472,11 +530,71 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		}
 	}
 
+	/** Segment 'Define Huffman Table' */
+	public static class SegmentDHT {
+		public final Map<@NonNull Byte, @NonNull DhtTable> tablesMap = new HashMap<>();
+
+		public SegmentDHT() {
+			reset();
+		}
+
+		public void reset() {
+			tablesMap.clear();
+		}
+
+		public void copyOf(@NonNull SegmentDHT other) {
+			reset();
+
+			for (Map.Entry<Byte, DhtTable> entry : other.tablesMap.entrySet()) {
+				tablesMap.put(entry.getKey(), entry.getValue().clone());
+			}
+		}
+
+		@Override
+		public @NonNull String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("[");
+			boolean tmpIsFirst = true;
+			for (Map.Entry<Byte, DhtTable> entry : tablesMap.entrySet()) {
+				if (! tmpIsFirst) {
+					sb.append(", ");
+				}
+				tmpIsFirst = false;
+				sb.append("{");
+				sb.append(String.format("hCL=%d", entry.getValue().getTableClass()));
+				sb.append(String.format(", hNO=%d", entry.getValue().getTableNo()));
+				sb.append(String.format(", hash=%s", entry.getValue().hashSum()));
+				sb.append("}");
+			}
+			sb.append("]");
+
+			return "[" +
+					"tables=" + sb +
+					"]";
+		}
+
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(tablesMap.size());
+			for (Map.Entry<Byte, DhtTable> entry : tablesMap.entrySet()) {
+				baos.write(entry.getKey());
+				try {
+					baos.write(entry.getValue().hashSum().getBytes(StandardCharsets.UTF_8));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
 	public final SegmentSOF0 segmSOF0 = new SegmentSOF0();
 	public final SegmentSOF2 segmSOF2 = new SegmentSOF2();
 	public final SegmentSOS segmSOS = new SegmentSOS();
 	public final SegmentDQT segmDQT = new SegmentDQT();
-	public int dht_tableCount;
+	public final SegmentDHT segmDHT = new SegmentDHT();
 	public int app_blockCount;
 	public boolean usesDri;
 	public boolean foundEoi;
@@ -512,7 +630,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		segmSOF2.reset();
 		segmSOS.reset();
 		segmDQT.reset();
-		dht_tableCount = 0;
+		segmDHT.reset();
 		app_blockCount = 0;
 		usesDri = false;
 		foundEoi = false;
@@ -528,7 +646,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		segmSOF2.copyOf(tmpSrc.segmSOF2);
 		segmSOS.copyOf(tmpSrc.segmSOS);
 		segmDQT.copyOf(tmpSrc.segmDQT);
-		dht_tableCount = tmpSrc.dht_tableCount;
+		segmDHT.copyOf(tmpSrc.segmDHT);
 		app_blockCount = tmpSrc.app_blockCount;
 		usesDri = tmpSrc.usesDri;
 		foundEoi = tmpSrc.foundEoi;
@@ -556,7 +674,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 					", SOF2=" + segmSOF2 +
 					", SOS=" + segmSOS +
 					", DQT=" + segmDQT +
-					", dht_tableCount=" + dht_tableCount +
+					", DHT=" + segmDHT +
 					", app_blockCount=" + app_blockCount +
 					", usesDri=" + (usesDri ? "T" : "F") +
 					", foundEoi=" + (foundEoi ? "T" : "F") +
@@ -586,26 +704,27 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
 		try {
 			baos.write(segmSOF2.hashSum().getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
 		try {
 			baos.write(segmSOS.hashSum().getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
 		try {
 			baos.write(segmDQT.hashSum().getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+		try {
+			baos.write(segmDHT.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
-		baos.write(dht_tableCount);
 		baos.write(app_blockCount);
 		baos.write(usesDri ? 1 : 0);
 		baos.write(foundEoi ? 1 : 0);

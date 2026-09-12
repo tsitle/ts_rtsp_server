@@ -91,6 +91,11 @@ public final class VideoJpegParser {
 				offs = parseBlockDQT(inputBv, resObj, curBlockOffset);
 				continue;
 			}
+			if (marker == (byte)0xC4) {
+				// DHT marker (Define Huffman Table: 0xFFC4)
+				offs = parseBlockDHT(inputBv, resObj, curBlockOffset);
+				continue;
+			}
 
 			if (marker == (byte)0xD9) {
 				// EOI marker (End of Image: 0xFFD9)
@@ -103,10 +108,6 @@ public final class VideoJpegParser {
 				// SOF2 marker (progressive: 0xFFC2)
 				resObj.segmSOF2.isProgressive = true;
 				//logDebug(FNC_NAME, curBlockOffset, "SOF2");
-			} else if (marker == (byte)0xC4) {
-				// DHT marker (Define Huffman Table: 0xFFC4)
-				++resObj.dht_tableCount;  // @TODO parse DHT
-				//logDebug(FNC_NAME, curBlockOffset, "DHT");
 			} else if (marker >= (byte)0xD0 && marker <= (byte)0xD7) {
 				// Restart marker (if DRI is used: 0xFFD0..FFD7) - this probably can only occur inside the scan data
 				logDebug(FNC_NAME, curBlockOffset,
@@ -217,24 +218,24 @@ public final class VideoJpegParser {
 
 		// Y component ID
 		jpegInfo.segmSOS.compId_y = inputBv.getByte(fieldsOffset++);
-		// Y huffman table ID and Class
+		// Y huffman DC and AC table selectors
 		byte tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
-		jpegInfo.segmSOS.huff_y_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
-		jpegInfo.segmSOS.huff_y_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+		jpegInfo.segmSOS.huff_y_dc = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_y_ac = (byte)(tmpHuffTblIdAndClass & 0x0F);
 
 		// CB component ID
 		jpegInfo.segmSOS.compId_cb = inputBv.getByte(fieldsOffset++);
-		// CB huffman table ID and Class
+		// CB huffman DC and AC table selectors
 		tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
-		jpegInfo.segmSOS.huff_cb_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
-		jpegInfo.segmSOS.huff_cb_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+		jpegInfo.segmSOS.huff_cb_dc = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_cb_ac = (byte)(tmpHuffTblIdAndClass & 0x0F);
 
 		// CR component ID
 		jpegInfo.segmSOS.compId_cr = inputBv.getByte(fieldsOffset++);
-		// CR huffman table ID and Class
+		// CR huffman DC and AC table selectors
 		tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
-		jpegInfo.segmSOS.huff_cr_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
-		jpegInfo.segmSOS.huff_cr_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+		jpegInfo.segmSOS.huff_cr_dc = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_cr_ac = (byte)(tmpHuffTblIdAndClass & 0x0F);
 
 		// start of spectral selection or predictor selection (should be 0x00)
 		jpegInfo.segmSOS.startSpectralSel = inputBv.getByte(fieldsOffset++);
@@ -387,43 +388,39 @@ public final class VideoJpegParser {
 		int innerOffs = curOffs;
 
 		//
-		byte tmpPqTq = inputBv.getByte(innerOffs++);
-		byte tmpPq = (byte)((tmpPqTq >> 4) & 0x0F);  // Pq=0 for 8-bit, Pq=1 for 16-bit quantization tables
-		if (tmpPq != 0 && tmpPq != 1) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DQT Table Precision");
-		}
-		byte tmpTq = (byte)(tmpPqTq & 0x0F);  // Table ID
-		//logDebug(FNC_NAME, blockOffset, "DQT - Table ID: " + tmpTq);
-		if (jpegInfo.segmDQT.tablePrecisionsMap.containsKey(tmpTq)) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
-		}
-		if (jpegInfo.segmDQT.tables8BitMap.containsKey(tmpTq) || jpegInfo.segmDQT.tables16BitMap.containsKey(tmpTq)) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
-		}
-		if (tmpPq == 0) {
-			jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT8);
-			jpegInfo.segmDQT.tables8BitMap.put(tmpTq, new VideoJpegInfo.DqtTable8Bit(tmpTq));
-		} else {
-			jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT16);
-			jpegInfo.segmDQT.tables16BitMap.put(tmpTq, new VideoJpegInfo.DqtTable16Bit(tmpTq));
-		}
-		if ((tmpPq == 0 && blockLen != jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr().length + 1) ||
-				(tmpPq == 1 && blockLen != jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr().length + 1)) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
-		}
-		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
+		do {
+			byte tmpPqTq = inputBv.getByte(innerOffs++);
+			byte tmpPq = (byte) ((tmpPqTq >> 4) & 0x0F);  // Pq=0 for 8-bit, Pq=1 for 16-bit quantization tables
+			if (tmpPq != 0 && tmpPq != 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DQT Table Precision");
+			}
+			byte tmpTq = (byte) (tmpPqTq & 0x0F);  // Table ID
+			//logDebug(FNC_NAME, blockOffset, "DQT - Table ID: " + tmpTq);
+			if (jpegInfo.segmDQT.tablePrecisionsMap.containsKey(tmpTq)) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
+			}
+			if (jpegInfo.segmDQT.tables8BitMap.containsKey(tmpTq) || jpegInfo.segmDQT.tables16BitMap.containsKey(tmpTq)) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
+			}
+			if (tmpPq == 0) {
+				jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT8);
+				jpegInfo.segmDQT.tables8BitMap.put(tmpTq, new VideoJpegInfo.DqtTable8Bit(tmpTq));
+			} else {
+				jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT16);
+				jpegInfo.segmDQT.tables16BitMap.put(tmpTq, new VideoJpegInfo.DqtTable16Bit(tmpTq));
+			}
+			if ((tmpPq == 0 && blockLen != jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr().length + 1) ||
+					(tmpPq == 1 && blockLen != jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr().length + 1)) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
+			}
+			//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
-		byte[] tmpTargetPtr = (tmpPq == 0 ?
-				jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr()
-				: jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr());
-		final int copyLen = tmpTargetPtr.length;
-		BufferView bvForCopy = inputBv.clone();
-		bvForCopy.setOffset(innerOffs);
-		bvForCopy.setLength(copyLen);
-		BufferExt beForCopy = new BufferExt();
-		bvForCopy.copyViewIntoBe(beForCopy);
-		beForCopy.copyInto(0, tmpTargetPtr, 0, copyLen);
-		innerOffs += copyLen;
+			byte[] tmpTargetPtr = (tmpPq == 0 ?
+					jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr()
+					: jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr());
+			copyFromBufferView(inputBv, innerOffs, tmpTargetPtr.length, tmpTargetPtr);
+			innerOffs += tmpTargetPtr.length;
+		} while (curOffs + blockLen > innerOffs);
 
 		//
 		if (curOffs + blockLen != innerOffs) {
@@ -431,6 +428,74 @@ public final class VideoJpegParser {
 		}
 
 		return curOffs + blockLen;
+	}
+
+	/**
+	 * Parses the DHT (Define Huffman Table: 0xFFC4) block.
+	 * @param inputBv JPEG data
+	 * @param jpegInfo Parsed JPEG information
+	 * @param blockOffset Start offset of the block marker
+	 * @return Offset after the block in the JPEG data
+	 */
+	private int parseBlockDHT(@NonNull BufferView inputBv, @NonNull VideoJpegInfo jpegInfo, final int blockOffset)
+			throws AvInvalidCodecDataException {
+		final String FNC_NAME = getClass().getSimpleName() + ".parseBlockDHT()";
+
+		//logDebug(FNC_NAME, blockOffset, "DHT");
+		int blockLen = parseBlockLength(inputBv, blockOffset);
+		int curOffs = blockOffset + 2 + 2;
+
+		int innerOffs = curOffs;
+
+		do {
+			// huffman table class and number
+			byte tmpClNo = inputBv.getByte(innerOffs++);
+			byte tmpCl = (byte) ((tmpClNo >> 4) & 0x0F);
+			if (tmpCl != 0 && tmpCl != 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Unsupported DHT Table Class");
+			}
+			byte tmpNo = (byte) (tmpClNo & 0x0F);  // Table Number
+			//logDebug(FNC_NAME, blockOffset, "DHT - Table: cl=" + tmpCl + ", no=" + tmpNo);
+
+			if (jpegInfo.segmDHT.tablesMap.containsKey(tmpClNo)) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DHT table");
+			}
+
+			VideoJpegInfo.DhtTable dhtTable = new VideoJpegInfo.DhtTable(tmpCl, tmpNo);
+
+			// codelens
+			byte[] tmpTargetPtrC = dhtTable.getTableDataCodelensPtr();
+			copyFromBufferView(inputBv, innerOffs, tmpTargetPtrC.length, tmpTargetPtrC);
+			innerOffs += tmpTargetPtrC.length;
+
+			// symbols
+			int symbolsLen = 0;
+			for (byte tmpX : tmpTargetPtrC) {
+				symbolsLen += Byte.toUnsignedInt(tmpX);
+			}
+			byte[] tmpTargetS = new byte[symbolsLen];
+			copyFromBufferView(inputBv, innerOffs, tmpTargetS.length, tmpTargetS);
+			innerOffs += tmpTargetS.length;
+			dhtTable.setTableDataSymbols(tmpTargetS);
+
+			jpegInfo.segmDHT.tablesMap.put(tmpClNo, dhtTable);
+		} while (curOffs + blockLen > innerOffs);
+
+		//
+		if (curOffs + blockLen != innerOffs) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": sanity check failed");
+		}
+
+		return curOffs + blockLen;
+	}
+
+	private static void copyFromBufferView(@NonNull BufferView inputBv, int startOffs, int len, byte @NonNull [] targetBa) {
+		BufferView bvForCopy = inputBv.clone();
+		bvForCopy.setOffset(startOffs);
+		bvForCopy.setLength(len);
+		BufferExt beForCopy = new BufferExt();
+		bvForCopy.copyViewIntoBe(beForCopy);
+		beForCopy.copyInto(0, targetBa, 0, len);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
