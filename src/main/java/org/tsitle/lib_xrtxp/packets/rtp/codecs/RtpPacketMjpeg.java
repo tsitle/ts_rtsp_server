@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.packets.rtp.codecs;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegParser;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.packets.rtp.ParamsContainerBase;
@@ -239,7 +240,8 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				jpegInfo.segmSOF0.precision != 8 ||
 				jpegInfo.segmSOS.scanDataOffs < 0 || jpegInfo.segmSOS.scanDataLength < 1 ||
 				jpegInfo.segmSOF2.isProgressive ||
-				! jpegInfo.foundEoi || jpegInfo.usesDri) {
+				! jpegInfo.foundEoi || jpegInfo.usesDri ||
+				! jpegInfo.segmDHT.hashSum().equalsIgnoreCase(VideoJpegParser.MJPEG_HUFFMAN_TABLES_DEFAULT_HASH)) {
 			throw new IllegalArgumentException("Cannot process this kind of JPEG");
 		}
 
