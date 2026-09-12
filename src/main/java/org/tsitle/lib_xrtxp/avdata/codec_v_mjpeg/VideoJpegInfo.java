@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, Cloneable {
 
@@ -532,7 +533,7 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 	/** Segment 'Define Huffman Table' */
 	public static class SegmentDHT {
-		public final Map<@NonNull Byte, @NonNull DhtTable> tablesMap = new HashMap<>();
+		public final Map<@NonNull Byte, @NonNull DhtTable> tablesMap = new TreeMap<>();
 
 		public SegmentDHT() {
 			reset();

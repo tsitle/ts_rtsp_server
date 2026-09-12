@@ -14,7 +14,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 public final class VideoJpegParser {
 
 	public static final byte[] MJPEG_FRAME_START_MAGICBYTES = {(byte)0xFF, (byte)0xD8};
-	public static final String MJPEG_HUFFMAN_TABLES_DEFAULT_HASH = "F4C278F75F33947A14E32A0FD45D6C82";
+	public static final String MJPEG_HUFFMAN_TABLES_DEFAULT_HASH = "1A799F2EB783C160690792564D0893B1";
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull String logThreadId;
