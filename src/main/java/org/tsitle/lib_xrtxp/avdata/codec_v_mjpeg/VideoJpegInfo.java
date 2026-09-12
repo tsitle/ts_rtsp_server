@@ -98,20 +98,384 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		}
 	}
 
-	public @NonNull ChannelEncoding sof0_channelEncoding;
-	public int sof0_imgWidth;
-	public int sof0_imgHeight;
-	public boolean sof0_hasBaselineDCT;
-	public byte sof0_precision;
-	public byte sof0_quantTableSelY;
-	public byte sof0_quantTableSelCb;
-	public byte sof0_quantTableSelCr;
-	public boolean sof2_isProgressive;
-	public int sos_scanDataOffs;
-	public int sos_scanDataLength;
-	public final Map<@NonNull Byte, @NonNull DqtTable8Bit> dqt_tables8BitMap = new HashMap<>();
-	public final Map<@NonNull Byte, @NonNull DqtTable16Bit> dqt_tables16BitMap = new HashMap<>();
-	public final Map<@NonNull Byte, @NonNull QuantizationTablePrecision> dqt_tablePrecisionsMap = new HashMap<>();
+	/** Segment 'Start of Frame - Baseline DCT' */
+	public static class SegmentSOF0 {
+		public @NonNull ChannelEncoding channelEncoding;
+		public int imgWidth;
+		public int imgHeight;
+		public boolean hasBaselineDCT;
+		public byte precision;
+		public byte quantTableSelY;
+		public byte quantTableSelCb;
+		public byte quantTableSelCr;
+
+		public SegmentSOF0() {
+			reset();
+		}
+
+		public void reset() {
+			channelEncoding = ChannelEncoding.UNKNOWN;
+			imgWidth = 0;
+			imgHeight = 0;
+			hasBaselineDCT = false;
+			precision = 0;
+			quantTableSelY = -1;
+			quantTableSelCb = -1;
+			quantTableSelCr = -1;
+		}
+
+		public void copyOf(@NonNull SegmentSOF0 other) {
+			reset();
+
+			channelEncoding = other.channelEncoding;
+			imgWidth = other.imgWidth;
+			imgHeight = other.imgHeight;
+			hasBaselineDCT = other.hasBaselineDCT;
+			precision = other.precision;
+			quantTableSelY = other.quantTableSelY;
+			quantTableSelCb = other.quantTableSelCb;
+			quantTableSelCr = other.quantTableSelCr;
+		}
+
+		@Override
+		public @NonNull String toString() {
+			return toString(false);
+		}
+
+		public @NonNull String toString(boolean shortOutput) {
+			String longFields = "";
+			if (! shortOutput) {
+				String tmpSbQts = "[" +
+						"Y=" + quantTableSelY +
+						", Cb=" + quantTableSelCb +
+						", Cr=" + quantTableSelCr +
+						"]";
+
+				longFields =
+						", hasBaselineDCT=" + (hasBaselineDCT ? "T" : "F") +
+						", precision=" + precision +
+						", quantTableSel=" + tmpSbQts;
+			}
+			return "[" +
+					"channelEncoding=" + channelEncoding +
+					", imgW=" + Integer.toUnsignedString(imgWidth) +
+					", imgH=" + imgHeight +
+					longFields +
+					"]";
+		}
+
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(channelEncoding.ordinal());
+			baos.write(imgWidth);
+			baos.write(imgHeight);
+			baos.write(hasBaselineDCT ? 1 : 0);
+			baos.write(precision);
+			baos.write(quantTableSelY);
+			baos.write(quantTableSelCb);
+			baos.write(quantTableSelCr);
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
+	/** Segment 'Start of Frame - Progressive DCT' */
+	public static class SegmentSOF2 {
+		public boolean isProgressive;
+
+		public SegmentSOF2() {
+			reset();
+		}
+
+		public void reset() {
+			isProgressive = false;
+		}
+
+		public void copyOf(@NonNull SegmentSOF2 other) {
+			reset();
+
+			isProgressive = other.isProgressive;
+		}
+
+		@Override
+		public @NonNull String toString() {
+			return "[" +
+					"isProgressive=" + (isProgressive ? "T" : "F") +
+					"]";
+		}
+
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(isProgressive ? 1 : 0);
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
+	/** Segment 'Start of Scan' */
+	public static class SegmentSOS {
+		public int scanDataOffs;
+		public int scanDataLength;
+
+		/** number of components (1=monochrome, 3=color) */
+		public byte numComp;
+
+		/** Y component ID */
+		public byte compId_y;
+		/** Y Huffman Table ID */
+		public byte huff_y_id;
+		/** Y Huffman Table Class */
+		public byte huff_y_class;
+
+		/** CB component ID */
+		public byte compId_cb;
+		/** CB Huffman Table ID */
+		public byte huff_cb_id;
+		/** CB Huffman Table Class */
+		public byte huff_cb_class;
+
+		/** CR component ID */
+		public byte compId_cr;
+		/** CR Huffman Table ID */
+		public byte huff_cr_id;
+		/** CR Huffman Table Class */
+		public byte huff_cr_class;
+
+		/** start of spectral selection or predictor selection (should be 0x00) */
+		public byte startSpectralSel;
+		/** end of spectral selection (should be 0x3F) */
+		public byte endSpectralSel;
+		/** successive approximation bit position or point transform (should be 0x00) */
+		public byte successiveApproxBitPos;
+
+		public SegmentSOS() {
+			reset();
+		}
+
+		public void reset() {
+			scanDataOffs = 0;
+			scanDataLength = 0;
+
+			numComp = 0;
+			compId_y = -1;
+			huff_y_id = -1;
+			huff_y_class = -1;
+			compId_cb = -1;
+			huff_cb_id = -1;
+			huff_cb_class = -1;
+			compId_cr = -1;
+			huff_cr_id = -1;
+			huff_cr_class = -1;
+
+			startSpectralSel = 0;
+			endSpectralSel = 0;
+			successiveApproxBitPos = 0;
+		}
+
+		public void copyOf(@NonNull SegmentSOS other) {
+			reset();
+
+			scanDataOffs = other.scanDataOffs;
+			scanDataLength = other.scanDataLength;
+
+			numComp = other.numComp;
+			compId_y = other.compId_y;
+			huff_y_id = other.huff_y_id;
+			huff_y_class = other.huff_y_class;
+			compId_cb = other.compId_cb;
+			huff_cb_id = other.huff_cb_id;
+			huff_cb_class = other.huff_cb_class;
+			compId_cr = other.compId_cr;
+			huff_cr_id = other.huff_cr_id;
+			huff_cr_class = other.huff_cr_class;
+
+			startSpectralSel = other.startSpectralSel;
+			endSpectralSel = other.endSpectralSel;
+			successiveApproxBitPos = other.successiveApproxBitPos;
+		}
+
+		@Override
+		public @NonNull String toString() {
+			StringBuilder sb = new StringBuilder();
+			if (numComp >= 1) {
+				sb
+						.append("c0:{")
+							.append("cID=").append(Byte.toUnsignedInt(compId_y))
+							.append(", hID=").append(Byte.toUnsignedInt(huff_y_id))
+							.append(", hCL=").append(Byte.toUnsignedInt(huff_y_class))
+						.append("}");
+			}
+			if (numComp > 1) {
+				sb
+						.append(", c1:{")
+							.append("cID=").append(Byte.toUnsignedInt(compId_cb))
+							.append(", hID=").append(Byte.toUnsignedInt(huff_cb_id))
+							.append(", hCL=").append(Byte.toUnsignedInt(huff_cb_class))
+						.append("}");
+			}
+			if (numComp > 2) {
+				sb
+						.append(", c2:{")
+							.append("cID=").append(Byte.toUnsignedInt(compId_cr))
+							.append(", hID=").append(Byte.toUnsignedInt(huff_cr_id))
+							.append(", hCL=").append(Byte.toUnsignedInt(huff_cr_class))
+						.append("}");
+			}
+
+			return "[" +
+					"scanDataOffs=" + scanDataOffs +
+					", scanDataLength=" + scanDataLength +
+					", numComp=" + Byte.toUnsignedInt(numComp) +
+					", comp=[" + sb + "]" +
+					"]";
+		}
+
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(scanDataOffs);
+			baos.write(scanDataLength);
+
+			baos.write(numComp);
+			baos.write(compId_y);
+			baos.write(huff_y_id);
+			baos.write(huff_y_class);
+			baos.write(compId_cb);
+			baos.write(huff_cb_id);
+			baos.write(huff_cb_class);
+			baos.write(compId_cr);
+			baos.write(huff_cr_id);
+			baos.write(huff_cr_class);
+
+			baos.write(startSpectralSel);
+			baos.write(endSpectralSel);
+			baos.write(successiveApproxBitPos);
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
+	/** Segment 'Define Quantization Table' */
+	public static class SegmentDQT {
+		public final Map<@NonNull Byte, @NonNull DqtTable8Bit> tables8BitMap = new HashMap<>();
+		public final Map<@NonNull Byte, @NonNull DqtTable16Bit> tables16BitMap = new HashMap<>();
+		public final Map<@NonNull Byte, @NonNull QuantizationTablePrecision> tablePrecisionsMap = new HashMap<>();
+
+		public SegmentDQT() {
+			reset();
+		}
+
+		public void reset() {
+			tables8BitMap.clear();
+			tables16BitMap.clear();
+			tablePrecisionsMap.clear();
+		}
+
+		public void copyOf(@NonNull SegmentDQT other) {
+			reset();
+
+			for (Map.Entry<Byte, DqtTable8Bit> entry : other.tables8BitMap.entrySet()) {
+				tables8BitMap.put(entry.getKey(), (DqtTable8Bit)entry.getValue().clone());
+			}
+			for (Map.Entry<Byte, DqtTable16Bit> entry : other.tables16BitMap.entrySet()) {
+				tables16BitMap.put(entry.getKey(), (DqtTable16Bit)entry.getValue().clone());
+			}
+			tablePrecisionsMap.putAll(other.tablePrecisionsMap);
+		}
+
+		@Override
+		public @NonNull String toString() {
+			StringBuilder tmpSb8bit = new StringBuilder();
+			tmpSb8bit.append("[");
+			boolean tmpIsFirst = true;
+			for (Map.Entry<Byte, DqtTable8Bit> entry : tables8BitMap.entrySet()) {
+				if (! tmpIsFirst) {
+					tmpSb8bit.append(", ");
+				}
+				tmpIsFirst = false;
+				tmpSb8bit.append("{");
+				tmpSb8bit.append(String.format("tId=%d", entry.getValue().getTableId()));
+				tmpSb8bit.append(String.format(", hash=%s", entry.getValue().hashSum()));
+				tmpSb8bit.append("}");
+			}
+			tmpSb8bit.append("]");
+
+			StringBuilder tmpSb16bit = new StringBuilder();
+			tmpSb16bit.append("[");
+			tmpIsFirst = true;
+			for (Map.Entry<Byte, DqtTable16Bit> entry : tables16BitMap.entrySet()) {
+				if (! tmpIsFirst) {
+					tmpSb16bit.append(", ");
+				}
+				tmpIsFirst = false;
+				tmpSb16bit.append("{");
+				tmpSb16bit.append(String.format("tId=%d", entry.getValue().getTableId()));
+				tmpSb16bit.append(String.format(", hash=%s", entry.getValue().hashSum()));
+				tmpSb16bit.append("}");
+			}
+			tmpSb16bit.append("]");
+
+			StringBuilder tmpSbPrec = new StringBuilder();
+			tmpSbPrec.append("[");
+			tmpIsFirst = true;
+			for (Map.Entry<Byte, QuantizationTablePrecision> entry : tablePrecisionsMap.entrySet()) {
+				if (! tmpIsFirst) {
+					tmpSbPrec.append(", ");
+				}
+				tmpIsFirst = false;
+				tmpSbPrec.append("{");
+				tmpSbPrec.append(String.format("tId=%d", entry.getKey()));
+				tmpSbPrec.append(String.format(", p=%s", entry.getValue().toString()));
+				tmpSbPrec.append("}");
+			}
+			tmpSbPrec.append("]");
+
+			return "[" +
+					"tables8Bit=" + tmpSb8bit +
+					", tables16Bit=" + tmpSb16bit +
+					", tablePrecisions=" + tmpSbPrec +
+					"]";
+		}
+
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(tables8BitMap.size());
+			for (Map.Entry<Byte, DqtTable8Bit> entry : tables8BitMap.entrySet()) {
+				baos.write(entry.getKey());
+				try {
+					baos.write(entry.getValue().hashSum().getBytes(StandardCharsets.UTF_8));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			baos.write(tables16BitMap.size());
+			for (Map.Entry<Byte, DqtTable16Bit> entry : tables16BitMap.entrySet()) {
+				baos.write(entry.getKey());
+				try {
+					baos.write(entry.getValue().hashSum().getBytes(StandardCharsets.UTF_8));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			baos.write(tablePrecisionsMap.size());
+			for (Map.Entry<Byte, QuantizationTablePrecision> entry : tablePrecisionsMap.entrySet()) {
+				baos.write(entry.getKey());
+				baos.write(entry.getValue().ordinal());
+			}
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
+	public final SegmentSOF0 segmSOF0 = new SegmentSOF0();
+	public final SegmentSOF2 segmSOF2 = new SegmentSOF2();
+	public final SegmentSOS segmSOS = new SegmentSOS();
+	public final SegmentDQT segmDQT = new SegmentDQT();
 	public int dht_tableCount;
 	public int app_blockCount;
 	public boolean usesDri;
@@ -134,30 +498,20 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 
 	@Override
 	public int getPayloadOffset() {
-		return sos_scanDataOffs;
+		return segmSOS.scanDataOffs;
 	}
 
 	@Override
 	public int getPayloadLength() {
-		return sos_scanDataLength;
+		return segmSOS.scanDataLength;
 	}
 
 	@Override
 	public void reset() {
-		sof0_channelEncoding = ChannelEncoding.UNKNOWN;
-		sof0_imgWidth = 0;
-		sof0_imgHeight = 0;
-		sof0_hasBaselineDCT = false;
-		sof0_precision = 0;
-		sof0_quantTableSelY = -1;
-		sof0_quantTableSelCb = -1;
-		sof0_quantTableSelCr = -1;
-		sof2_isProgressive = false;
-		sos_scanDataOffs = -1;
-		sos_scanDataLength = 0;
-		dqt_tables8BitMap.clear();
-		dqt_tables16BitMap.clear();
-		dqt_tablePrecisionsMap.clear();
+		segmSOF0.reset();
+		segmSOF2.reset();
+		segmSOS.reset();
+		segmDQT.reset();
 		dht_tableCount = 0;
 		app_blockCount = 0;
 		usesDri = false;
@@ -170,24 +524,10 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		reset();
 
 		VideoJpegInfo tmpSrc = (VideoJpegInfo)src;
-		sof0_channelEncoding = tmpSrc.sof0_channelEncoding;
-		sof0_imgWidth = tmpSrc.sof0_imgWidth;
-		sof0_imgHeight = tmpSrc.sof0_imgHeight;
-		sof0_hasBaselineDCT = tmpSrc.sof0_hasBaselineDCT;
-		sof0_precision = tmpSrc.sof0_precision;
-		sof0_quantTableSelY = tmpSrc.sof0_quantTableSelY;
-		sof0_quantTableSelCb = tmpSrc.sof0_quantTableSelCb;
-		sof0_quantTableSelCr = tmpSrc.sof0_quantTableSelCr;
-		sof2_isProgressive = tmpSrc.sof2_isProgressive;
-		sos_scanDataOffs = tmpSrc.sos_scanDataOffs;
-		sos_scanDataLength = tmpSrc.sos_scanDataLength;
-		for (Map.Entry<Byte, DqtTable8Bit> entry : tmpSrc.dqt_tables8BitMap.entrySet()) {
-			dqt_tables8BitMap.put(entry.getKey(), (DqtTable8Bit)entry.getValue().clone());
-		}
-		for (Map.Entry<Byte, DqtTable16Bit> entry : tmpSrc.dqt_tables16BitMap.entrySet()) {
-			dqt_tables16BitMap.put(entry.getKey(), (DqtTable16Bit)entry.getValue().clone());
-		}
-		dqt_tablePrecisionsMap.putAll(tmpSrc.dqt_tablePrecisionsMap);
+		segmSOF0.copyOf(tmpSrc.segmSOF0);
+		segmSOF2.copyOf(tmpSrc.segmSOF2);
+		segmSOS.copyOf(tmpSrc.segmSOS);
+		segmDQT.copyOf(tmpSrc.segmDQT);
 		dht_tableCount = tmpSrc.dht_tableCount;
 		app_blockCount = tmpSrc.app_blockCount;
 		usesDri = tmpSrc.usesDri;
@@ -208,81 +548,31 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 		return toString(false);
 	}
 
-	@Override
 	public @NonNull String toString(boolean shortOutput) {
 		String longFields = "";
 		if (! shortOutput) {
-			String tmpSbQts = "[" +
-					"Y=" + sof0_quantTableSelY +
-					", Cb=" + sof0_quantTableSelCb +
-					", Cr=" + sof0_quantTableSelCr +
-					"]";
-
-			StringBuilder tmpSb8bit = new StringBuilder();
-			tmpSb8bit.append("[");
-			boolean tmpIsFirst = true;
-			for (Map.Entry<Byte, DqtTable8Bit> entry : dqt_tables8BitMap.entrySet()) {
-				if (! tmpIsFirst) {
-					tmpSb8bit.append(", ");
-				}
-				tmpIsFirst = false;
-				tmpSb8bit.append("{");
-				tmpSb8bit.append(String.format("tId=%d", entry.getValue().getTableId()));
-				tmpSb8bit.append(String.format(", hash=%s", entry.getValue().hashSum()));
-				tmpSb8bit.append("}");
-			}
-			tmpSb8bit.append("]");
-
-			StringBuilder tmpSb16bit = new StringBuilder();
-			tmpSb16bit.append("[");
-			tmpIsFirst = true;
-			for (Map.Entry<Byte, DqtTable16Bit> entry : dqt_tables16BitMap.entrySet()) {
-				if (! tmpIsFirst) {
-					tmpSb16bit.append(", ");
-				}
-				tmpIsFirst = false;
-				tmpSb16bit.append("{");
-				tmpSb16bit.append(String.format("tId=%d", entry.getValue().getTableId()));
-				tmpSb16bit.append(String.format(", hash=%s", entry.getValue().hashSum()));
-				tmpSb16bit.append("}");
-			}
-			tmpSb16bit.append("]");
-
-			StringBuilder tmpSbPrec = new StringBuilder();
-			tmpSbPrec.append("[");
-			tmpIsFirst = true;
-			for (Map.Entry<Byte, QuantizationTablePrecision> entry : dqt_tablePrecisionsMap.entrySet()) {
-				if (! tmpIsFirst) {
-					tmpSbPrec.append(", ");
-				}
-				tmpIsFirst = false;
-				tmpSbPrec.append("{");
-				tmpSbPrec.append(String.format("tId=%d", entry.getKey()));
-				tmpSbPrec.append(String.format(", p=%s", entry.getValue().toString()));
-				tmpSbPrec.append("}");
-			}
-			tmpSbPrec.append("]");
 
 			longFields =
-					", sof0_hasBaselineDCT=" + (sof0_hasBaselineDCT ? "T" : "F") +
-					", sof0_precision=" + sof0_precision +
-					", sof0_quantTableSel=" + tmpSbQts +
-					", sof2_isProgressive=" + (sof2_isProgressive ? "T" : "F") +
-					", sos_scanDataOffs=" + sos_scanDataOffs +
-					", sos_scanDataLength=" + sos_scanDataLength +
-					", dqt_tables8Bit=" + tmpSb8bit +
-					", dqt_tables16Bit=" + tmpSb16bit +
-					", dqt_tablePrecisions=" + tmpSbPrec +
+					", SOF2=" + segmSOF2 +
+					", SOS=" + segmSOS +
+					", DQT=" + segmDQT +
 					", dht_tableCount=" + dht_tableCount +
 					", app_blockCount=" + app_blockCount +
 					", usesDri=" + (usesDri ? "T" : "F") +
 					", foundEoi=" + (foundEoi ? "T" : "F") +
 					", foundCom=" + (foundCom ? "T" : "F");
 		}
+		String tmpSof0Stuff;
+		if (shortOutput) {
+			tmpSof0Stuff =
+					"channelEncoding=" + segmSOF0.channelEncoding +
+					", imgW=" + Integer.toUnsignedString(segmSOF0.imgWidth) +
+					", imgH=" + segmSOF0.imgHeight;
+		} else {
+			tmpSof0Stuff = "SOF0=" + segmSOF0.toString(false);
+		}
 		return getClass().getSimpleName() + " [" +
-				"channelEncoding=" + sof0_channelEncoding +
-				", imgW=" + Integer.toUnsignedString(sof0_imgWidth) +
-				", imgH=" + sof0_imgHeight +
+				tmpSof0Stuff +
 				longFields +
 				"]";
 	}
@@ -291,42 +581,28 @@ public final class VideoJpegInfo implements CodecInfoInterface<VideoJpegInfo>, C
 	public @NonNull String hashSum() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-		baos.write(sof0_channelEncoding.ordinal());
-		baos.write(sof0_imgWidth);
-		baos.write(sof0_imgHeight);
-		baos.write(sof0_hasBaselineDCT ? 1 : 0);
-		baos.write(sof0_precision);
-		baos.write(sof0_quantTableSelY);
-		baos.write(sof0_quantTableSelCb);
-		baos.write(sof0_quantTableSelCr);
-		baos.write(sof2_isProgressive ? 1 : 0);
-		baos.write(sos_scanDataOffs);
-		baos.write(sos_scanDataLength);
-
-		baos.write(dqt_tables8BitMap.size());
-		for (Map.Entry<Byte, DqtTable8Bit> entry : dqt_tables8BitMap.entrySet()) {
-			baos.write(entry.getKey());
-			try {
-				baos.write(entry.getValue().hashSum().getBytes(StandardCharsets.UTF_8));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			baos.write(segmSOF0.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 
-		baos.write(dqt_tables16BitMap.size());
-		for (Map.Entry<Byte, DqtTable16Bit> entry : dqt_tables16BitMap.entrySet()) {
-			baos.write(entry.getKey());
-			try {
-				baos.write(entry.getValue().hashSum().getBytes(StandardCharsets.UTF_8));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			baos.write(segmSOF2.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 
-		baos.write(dqt_tablePrecisionsMap.size());
-		for (Map.Entry<Byte, QuantizationTablePrecision> entry : dqt_tablePrecisionsMap.entrySet()) {
-			baos.write(entry.getKey());
-			baos.write(entry.getValue().ordinal());
+		try {
+			baos.write(segmSOS.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		try {
+			baos.write(segmDQT.hashSum().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 
 		baos.write(dht_tableCount);

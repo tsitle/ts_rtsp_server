@@ -36,18 +36,18 @@ final class PacketPacMjpeg {
 		VideoJpegInfo curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, new BufferView(ioBuf));
 
 		// re-encode or scale the image if necessary
-		if ((curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
-					curFrameJpegInfo.sof0_channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
-				//curFrameJpegInfo.sof0_quantTableSelY == curFrameJpegInfo.sof0_quantTableSelCb ||
-				curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-				curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+		if ((curFrameJpegInfo.segmSOF0.channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR420 &&
+					curFrameJpegInfo.segmSOF0.channelEncoding != VideoJpegInfo.ChannelEncoding.YCBCR422) ||
+				//curFrameJpegInfo.segmSOF0.quantTableSelY == curFrameJpegInfo.segmSOF0.quantTableSelCb ||
+				curFrameJpegInfo.segmSOF0.imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+				curFrameJpegInfo.segmSOF0.imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
 			cacheTempBuffer.copyOf(ioBuf);
 			/*
 			 * To provide a compatible JPEG image, we need to re-encode the image.
 			 */
 			try {
-				if (curFrameJpegInfo.sof0_imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
-						curFrameJpegInfo.sof0_imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
+				if (curFrameJpegInfo.segmSOF0.imgWidth > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT ||
+						curFrameJpegInfo.segmSOF0.imgHeight > RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT) {
 					imageReencoder.scaleImage(
 							cacheTempBuffer,
 							RtpPacketMjpeg.IMAGE_MAX_WIDTH_HEIGHT,

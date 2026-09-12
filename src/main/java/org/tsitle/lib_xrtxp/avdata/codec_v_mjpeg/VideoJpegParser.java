@@ -101,11 +101,11 @@ public final class VideoJpegParser {
 
 			if (marker == (byte)0xC2) {
 				// SOF2 marker (progressive: 0xFFC2)
-				resObj.sof2_isProgressive = true;
+				resObj.segmSOF2.isProgressive = true;
 				//logDebug(FNC_NAME, curBlockOffset, "SOF2");
 			} else if (marker == (byte)0xC4) {
 				// DHT marker (Define Huffman Table: 0xFFC4)
-				++resObj.dht_tableCount;
+				++resObj.dht_tableCount;  // @TODO parse DHT
 				//logDebug(FNC_NAME, curBlockOffset, "DHT");
 			} else if (marker >= (byte)0xD0 && marker <= (byte)0xD7) {
 				// Restart marker (if DRI is used: 0xFFD0..FFD7) - this probably can only occur inside the scan data
@@ -188,9 +188,10 @@ public final class VideoJpegParser {
 		 */
 		//logDebug(FNC_NAME, blockOffset, "SOS");
 		int blockLen = parseBlockLength(inputBv, blockOffset);
+		parseBlockSOS_fields(inputBv, jpegInfo, blockOffset + 2 + 2);
 		int curOffs = blockOffset + 2 + 2 + blockLen;
 		// now find the end of the scan data
-		jpegInfo.sos_scanDataOffs = curOffs;
+		jpegInfo.segmSOS.scanDataOffs = curOffs;
 		while (curOffs + 1 < inputBv.getLength()) {
 			if (inputBv.getByte(curOffs) == (byte)0xFF &&
 					inputBv.getByte(curOffs + 1) != (byte)0x00 &&
@@ -205,9 +206,42 @@ public final class VideoJpegParser {
 			}
 			++curOffs;
 		}
-		jpegInfo.sos_scanDataLength = curOffs - jpegInfo.sos_scanDataOffs;
-		//logDebug(FNC_NAME, curOffs, String.format("__ SOS skipped over %d bytes", jpegInfo.sos_scanDataLength));
+		jpegInfo.segmSOS.scanDataLength = curOffs - jpegInfo.segmSOS.scanDataOffs;
+		//logDebug(FNC_NAME, curOffs, String.format("__ SOS skipped over %d bytes", jpegInfo.segmSOS.scanDataLength));
 		return curOffs;
+	}
+
+	private void parseBlockSOS_fields(@NonNull BufferView inputBv, @NonNull VideoJpegInfo jpegInfo, int fieldsOffset) {
+		// number of components (1=monochrome, 3=color)
+		jpegInfo.segmSOS.numComp = inputBv.getByte(fieldsOffset++);
+
+		// Y component ID
+		jpegInfo.segmSOS.compId_y = inputBv.getByte(fieldsOffset++);
+		// Y huffman table ID and Class
+		byte tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
+		jpegInfo.segmSOS.huff_y_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_y_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+
+		// CB component ID
+		jpegInfo.segmSOS.compId_cb = inputBv.getByte(fieldsOffset++);
+		// CB huffman table ID and Class
+		tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
+		jpegInfo.segmSOS.huff_cb_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_cb_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+
+		// CR component ID
+		jpegInfo.segmSOS.compId_cr = inputBv.getByte(fieldsOffset++);
+		// CR huffman table ID and Class
+		tmpHuffTblIdAndClass = inputBv.getByte(fieldsOffset++);
+		jpegInfo.segmSOS.huff_cr_id = (byte)((tmpHuffTblIdAndClass >> 4) & 0x0F);
+		jpegInfo.segmSOS.huff_cr_class = (byte)(tmpHuffTblIdAndClass & 0x0F);
+
+		// start of spectral selection or predictor selection (should be 0x00)
+		jpegInfo.segmSOS.startSpectralSel = inputBv.getByte(fieldsOffset++);
+		// end of spectral selection (should be 0x3F)
+		jpegInfo.segmSOS.endSpectralSel = inputBv.getByte(fieldsOffset++);
+		// successive approximation bit position or point transform (should be 0x00)
+		jpegInfo.segmSOS.successiveApproxBitPos = inputBv.getByte(fieldsOffset);
 	}
 
 	/*private int dbgPktNum = 0;*/
@@ -231,18 +265,18 @@ public final class VideoJpegParser {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size (is=" + blockLen + ", min=6)");
 		}
 
-		jpegInfo.sof0_hasBaselineDCT = true;
+		jpegInfo.segmSOF0.hasBaselineDCT = true;
 
 		int innerOffs = curOffs;
 
 		// precision field
-		jpegInfo.sof0_precision = inputBv.getByte(innerOffs++);
-		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ prec %d", jpegInfo.sof0_precision));
+		jpegInfo.segmSOF0.precision = inputBv.getByte(innerOffs++);
+		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ prec %d", jpegInfo.segmSOF0.precision));
 
 		// image dimensions
-		jpegInfo.sof0_imgHeight = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
-		jpegInfo.sof0_imgWidth = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
-		//logDebug(FNC_NAME, innerOffs - 4, String.format("__ image %d x %d", jpegInfo.sof0_imgWidth, jpegInfo.sof0_imgHeight));
+		jpegInfo.segmSOF0.imgHeight = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
+		jpegInfo.segmSOF0.imgWidth = ( ( ((inputBv.getByte(innerOffs++) << 8) & 0xFF00) | (inputBv.getByte(innerOffs++) & 0xFF) ) & 0xFFFF);
+		//logDebug(FNC_NAME, innerOffs - 4, String.format("__ image %d x %d", jpegInfo.segmSOF0.imgWidth, jpegInfo.segmSOF0.imgHeight));
 
 		// channel encoding (e.g. 'YCbCr 4:2:0')
 		byte paramNf = inputBv.getByte(innerOffs++);
@@ -294,29 +328,29 @@ public final class VideoJpegParser {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid componentQuantTableSel");
 			}
 			switch (componentIx) {
-				case 0 -> jpegInfo.sof0_quantTableSelY = componentQuantTableSel;
-				case 1 -> jpegInfo.sof0_quantTableSelCb = componentQuantTableSel;
-				default -> jpegInfo.sof0_quantTableSelCr = componentQuantTableSel;
+				case 0 -> jpegInfo.segmSOF0.quantTableSelY = componentQuantTableSel;
+				case 1 -> jpegInfo.segmSOF0.quantTableSelCb = componentQuantTableSel;
+				default -> jpegInfo.segmSOF0.quantTableSelCr = componentQuantTableSel;
 			}
 		}
 		/*++dbgPktNum;*/
 
-		jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.UNKNOWN;
+		jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.UNKNOWN;
 		if (paramNf >= 3 && cbH == crH && cbV == crV && cbH > 0 && cbV > 0) {
 			if ((yH % cbH) == 0 && (yV % cbV) == 0) {
 				int hSub = yH / cbH;
 				int vSub = yV / cbV;
 
 				if (hSub == 4 && vSub == 1) {
-					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR411;
+					jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR411;
 				} else if (hSub == 2 && vSub == 2) {
-					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR420;
+					jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR420;
 				} else if (hSub == 2 && vSub == 1) {
-					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR422;
+					jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR422;
 				} else if (hSub == 1 && vSub == 2) {
-					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR440;
+					jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR440;
 				} else if (hSub == 1 && vSub == 1) {
-					jpegInfo.sof0_channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR444;
+					jpegInfo.segmSOF0.channelEncoding = VideoJpegInfo.ChannelEncoding.YCBCR444;
 				}
 			}
 		}
@@ -324,8 +358,8 @@ public final class VideoJpegParser {
 		/*logDebug(FNC_NAME, innerOffs,
 				String.format(
 						"__ CE %s (QT Y=%d, Cb=%d, Cr=%d)",
-						jpegInfo.sof0_channelEncoding.name(),
-						jpegInfo.sof0_quantTableSelY, jpegInfo.sof0_quantTableSelCb, jpegInfo.sof0_quantTableSelCr));*/
+						jpegInfo.segmSOF0.channelEncoding.name(),
+						jpegInfo.segmSOF0.quantTableSelY, jpegInfo.segmSOF0.quantTableSelCb, jpegInfo.segmSOF0.quantTableSelCr));*/
 
 		//
 		if (curOffs + blockLen != innerOffs) {
@@ -360,28 +394,28 @@ public final class VideoJpegParser {
 		}
 		byte tmpTq = (byte)(tmpPqTq & 0x0F);  // Table ID
 		//logDebug(FNC_NAME, blockOffset, "DQT - Table ID: " + tmpTq);
-		if (jpegInfo.dqt_tablePrecisionsMap.containsKey(tmpTq)) {
+		if (jpegInfo.segmDQT.tablePrecisionsMap.containsKey(tmpTq)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
-		if (jpegInfo.dqt_tables8BitMap.containsKey(tmpTq) || jpegInfo.dqt_tables16BitMap.containsKey(tmpTq)) {
+		if (jpegInfo.segmDQT.tables8BitMap.containsKey(tmpTq) || jpegInfo.segmDQT.tables16BitMap.containsKey(tmpTq)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Duplicate DQT table");
 		}
 		if (tmpPq == 0) {
-			jpegInfo.dqt_tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT8);
-			jpegInfo.dqt_tables8BitMap.put(tmpTq, new VideoJpegInfo.DqtTable8Bit(tmpTq));
+			jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT8);
+			jpegInfo.segmDQT.tables8BitMap.put(tmpTq, new VideoJpegInfo.DqtTable8Bit(tmpTq));
 		} else {
-			jpegInfo.dqt_tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT16);
-			jpegInfo.dqt_tables16BitMap.put(tmpTq, new VideoJpegInfo.DqtTable16Bit(tmpTq));
+			jpegInfo.segmDQT.tablePrecisionsMap.put(tmpTq, VideoJpegInfo.QuantizationTablePrecision.INT16);
+			jpegInfo.segmDQT.tables16BitMap.put(tmpTq, new VideoJpegInfo.DqtTable16Bit(tmpTq));
 		}
-		if ((tmpPq == 0 && blockLen != jpegInfo.dqt_tables8BitMap.get(tmpTq).getTableDataPtr().length + 1) ||
-				(tmpPq == 1 && blockLen != jpegInfo.dqt_tables16BitMap.get(tmpTq).getTableDataPtr().length + 1)) {
+		if ((tmpPq == 0 && blockLen != jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr().length + 1) ||
+				(tmpPq == 1 && blockLen != jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr().length + 1)) {
 			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid JPEG block size");
 		}
 		//logDebug(FNC_NAME, innerOffs - 1, String.format("__ table ID %d", tmpTq));
 
 		byte[] tmpTargetPtr = (tmpPq == 0 ?
-				jpegInfo.dqt_tables8BitMap.get(tmpTq).getTableDataPtr()
-				: jpegInfo.dqt_tables16BitMap.get(tmpTq).getTableDataPtr());
+				jpegInfo.segmDQT.tables8BitMap.get(tmpTq).getTableDataPtr()
+				: jpegInfo.segmDQT.tables16BitMap.get(tmpTq).getTableDataPtr());
 		final int copyLen = tmpTargetPtr.length;
 		BufferView bvForCopy = inputBv.clone();
 		bvForCopy.setOffset(innerOffs);
