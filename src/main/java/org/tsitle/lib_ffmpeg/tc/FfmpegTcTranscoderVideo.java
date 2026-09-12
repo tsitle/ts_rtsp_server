@@ -140,7 +140,6 @@ final class FfmpegTcTranscoderVideo extends FfmpegTcTranscoderBase implements Au
 		}
 		if (tcSettingsVid.cfgFfmpegCodec == FfmpegCodec.V_MJPEG &&
 				tcSettingsVid.cfgOutputModeMjpeg == FfmpegTcSettingsOutVideo.OutputModeMjpeg.RTP) {
-			// MJPEG with standard huffman tables and YUV422P doesn't work with RTP for reasons unknown
 			this.outputPixelFormat = FfmpegPixelFmt.YUV420P;
 			//
 			if (this.outputImgDims.imgWidth() > MJPEG_RTP_IMAGE_MAX_WIDTH_HEIGHT ||
@@ -668,7 +667,7 @@ final class FfmpegTcTranscoderVideo extends FfmpegTcTranscoderBase implements Au
 		if (tcSettingsVid.cfgFfmpegCodec == FfmpegCodec.V_MJPEG &&
 				tcSettingsVid.cfgOutputModeMjpeg == FfmpegTcSettingsOutVideo.OutputModeMjpeg.RTP) {
 			encoderCtx.color_range(avutil.AVCOL_RANGE_JPEG);  // full color range
-			avutil.av_opt_set(encoderCtx, "huffman", "default", 0);  // (mjpeg) Huffman table strategy
+			avutil.av_opt_set(encoderCtx, "huffman", "default", avutil.AV_OPT_SEARCH_CHILDREN);  // (mjpeg) Huffman table strategy
 			return;
 		}
 		// VP8/VP9
