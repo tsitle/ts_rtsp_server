@@ -31,6 +31,8 @@ final class PacketPacMjpeg {
 		imageReencoder.setCompressionQuality(quality);
 	}
 
+	//static long frameCountInp = 0L;
+
 	@NonNull VideoJpegInfo parseAndConvertData(long debugStreamOffset, @NonNull BufferExt ioBuf)
 			throws AvInvalidCodecDataException {
 		VideoJpegInfo curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, new BufferView(ioBuf));
@@ -67,6 +69,10 @@ final class PacketPacMjpeg {
 			//
 			curFrameJpegInfo = pktParser.parseJpegData(debugStreamOffset, new BufferView(ioBuf));
 		}
+
+		/*if (frameCountInp++ == 1) {
+			writeJpegToFile(ioBuf, "reenc", (int)(frameCountInp));
+		}*/
 
 		return curFrameJpegInfo;
 	}
