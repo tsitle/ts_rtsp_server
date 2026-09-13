@@ -119,10 +119,10 @@ public final class RtxpTcpReadWrite {
 	private static final long TCP_ACTIVITY_TIMEOUT_SECS_RTSP_ONLY = 60L;
 
 	/** TCP socket used to send/receive RTxP messages */
-	private final Socket socketTcp;
+	private final @NonNull Socket socketTcp;
 
-	private final InputStream socketIs;
-	private final OutputStream socketOs;
+	private final @NonNull InputStream socketIs;
+	private final @NonNull OutputStream socketOs;
 
 	private final AtomicBoolean doStop = new AtomicBoolean(false);
 
@@ -183,6 +183,9 @@ public final class RtxpTcpReadWrite {
 		}
 		try {
 			doStop.set(true);
+			socketOs.flush();
+			socketOs.close();
+			socketIs.close();
 			socketTcp.close();
 		} catch (IOException e) {
 			// ignore
@@ -273,7 +276,7 @@ public final class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr)
+	public boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr, boolean ignoreEmpty)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		try {
 			blockedState.waitForUnblockedAndThenBlock(Flag.QUEUE_RTP_RTCP_RCVD);
@@ -287,7 +290,7 @@ public final class RtxpTcpReadWrite {
 			if (mapQueueRtpRtcpDataRcvd.containsKey(channNr) && ! mapQueueRtpRtcpDataRcvd.get(channNr).isEmpty()) {
 				return true;
 			}
-			if (doStop.get() || socketTcp.isClosed()) {
+			if (doStop.get() || socketTcp.isClosed() || ignoreEmpty) {
 				return false;
 			}
 			internalReadSocket();
@@ -525,6 +528,7 @@ public final class RtxpTcpReadWrite {
 				}
 				socketOs.write(line.getBytes(StandardCharsets.UTF_8));
 			}
+			socketOs.flush();
 			//
 			resetTcpActivityTimeoutTimer();
 		} catch (IOException e) {
@@ -557,6 +561,7 @@ public final class RtxpTcpReadWrite {
 			tmpBa[3] = (byte)(bufView.getLength() & 0xFF);
 			socketOs.write(tmpBa, 0, 4);
 			socketOs.write(bufView.getInternalBaPtr(), bufView.getOffset(), bufView.getLength());
+			socketOs.flush();
 			//
 			resetTcpActivityTimeoutTimer();
 		} catch (IOException e) {
