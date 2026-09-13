@@ -42,6 +42,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		TIMEOUT
 	}
 
+	private static final boolean ALLOW_TRANSPORT_UDP = true;
+	private static final boolean ALLOW_TRANSPORT_TCP = true;
+
 	private final @NonNull String threadName;
 
 	private final @NonNull RtspProtoIpAddr fromCtorClientIpAddr = new RtspProtoIpAddr();
@@ -326,6 +329,22 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 						if (! threadRtspPlay.seekStream(tmpPbRange.getRelativeTimeStartSecs())) {
 							resObj.statusCode = RtspProtoStatusCode.INVALID_RANGE;
 						}
+					}
+				}
+				if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SETUP &&
+						! (ALLOW_TRANSPORT_UDP && ALLOW_TRANSPORT_TCP)) {
+					try {
+						final RtspProtoIdSubStream tmpIdSubStream = resObj.rscUrl.idSubStream;
+						final boolean tmpIsUdp = sessionInfoPtr.ptr()
+								.getDescrSetupInfoBySubStreamsId(tmpIdSubStream)
+								.getSubStreamTpPtr()
+								.getIsUdp();
+						if ((tmpIsUdp && ! ALLOW_TRANSPORT_UDP) || (! tmpIsUdp && ! ALLOW_TRANSPORT_TCP)) {
+							logDebug(FNC_NAME, "SETUP rejecting " + (tmpIsUdp ? "UDP" : "TCP") + " transport");
+							resObj.statusCode = RtspProtoStatusCode.UNSUPPORTED_TRANSPORT;
+						}
+					} catch (RtspProtoSessionInfoException e) {
+						throw new RuntimeException(e);
 					}
 				}
 				//
