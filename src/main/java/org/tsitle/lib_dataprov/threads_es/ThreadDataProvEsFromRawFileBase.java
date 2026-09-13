@@ -36,7 +36,8 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 
 	private @NonNull String lastValidationErrMsg = "";
 
-	private final AtomicBoolean eosReached = new AtomicBoolean(false);
+	private final AtomicBoolean eosReachedFb = new AtomicBoolean(false);
+	private final AtomicBoolean eosReachedOverall = new AtomicBoolean(false);
 	private long frameCountInp = 0;
 
 	private final AtomicInteger queueIxRead = new AtomicInteger(0);
@@ -87,13 +88,13 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 
 	@Override
 	public synchronized boolean haveEos() {
-		return eosReached.get();
+		return eosReachedOverall.get();
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	@Override
 	public synchronized boolean haveFullInputQueue() {
-		return ((queueAvail.get() > 0 && eosReached.get()) || (queueAvail.get() == dataQueue.size()));
+		return ((queueAvail.get() > 0 && eosReachedFb.get()) || (queueAvail.get() == dataQueue.size()));
 	}
 
 	@Override
@@ -104,7 +105,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 	@Override
 	public void getNextFrame(@NonNull BufferExt buf, @NonNull TimestampMonotonic stTimestamp, @NonNull I infoObj)
 			throws InputStreamEosException {
-		if (eosReached.get()) {
+		if (eosReachedOverall.get()) {
 			throw new InputStreamEosException();
 		}
 
@@ -113,7 +114,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 				buf.clear();
 				infoObj.reset();
 			}
-			return;
+			throw new InputStreamEosException();
 		}
 		lock.lock();
 		try {
@@ -128,6 +129,11 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 				queueIxRead.set(0);
 			}
 			queueAvail.decrementAndGet();
+
+			//
+			if (eosReachedFb.get() && queueAvail.get() == 0) {
+				eosReachedOverall.set(true);
+			}
 
 			//
 			stateChanged.signalAll();
@@ -162,7 +168,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 	@Override
 	protected void mainLoop() throws InterruptedException {
 		// fill the queue first
-		while (! (doStop.get() || eosReached.get()) && queueAvail.get() < dataQueue.size()) {
+		while (! (doStop.get() || eosReachedFb.get() || eosReachedOverall.get()) && queueAvail.get() < dataQueue.size()) {
 			try {
 				acquireData();
 			} catch (InputStreamEosException e) {
@@ -170,7 +176,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 			}
 		}
 		// wait until an element from the queue has been removed
-		if (! (doStop.get() || eosReached.get())) {
+		if (! (doStop.get() || eosReachedOverall.get())) {
 			lock.lock();
 			try {
 				stateChanged.await();
@@ -186,37 +192,39 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 	private void acquireData() throws InputStreamEosException {
 		final String FNC_NAME = getClass().getSimpleName() + ".acquireData()";
 
-		if (frameGrabber == null || frameGrabber.haveEos()) {
-			if (! eosReached.get()) {
-				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames");
-			}
-			eosReached.set(true);
+		if (eosReachedFb.get()) {
 			return;
 		}
-
-		//
 		if (! waitForQueueUnblockedAndThenBlock(false)) {
 			return;
 		}
 		lock.lock();
 		try {
+			if (frameGrabber == null || frameGrabber.haveEos()) {
+				logDebug(FNC_NAME, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames");
+				eosReachedFb.set(true);
+				eosReachedOverall.set(queueAvail.get() == 0);
+				return;
+			}
+
+			//
 			int errorCount = 0;
-			while (! (doStop.get() || haveEos())) {
+			while (! (doStop.get() || eosReachedFb.get() || eosReachedOverall.get())) {
 				boolean wasValid;
 				try {
 					wasValid = acquireData_sub(FNC_NAME);
 				} catch (AvInvalidCodecDataException e) {
 					logError(FNC_NAME, "AvInvalidCodecDataException caught: " + e.getMessage());
-					eosReached.set(true);
+					eosReachedOverall.set(true);
 					break;
 				}
-				if (wasValid || doStop.get() || haveEos()) {
+				if (wasValid || doStop.get() || eosReachedFb.get()) {
 					break;
 				}
 				if (++errorCount >= 60) {  // arbitrary limit
 					logError(FNC_NAME, "read frame with invalid codec data" +
 							(lastValidationErrMsg.isBlank() ? "" : " (" + lastValidationErrMsg + ")"));
-					eosReached.set(true);
+					eosReachedOverall.set(true);
 					break;
 				}
 				logDebug(FNC_NAME, "skipping frame with invalid codec data" +
@@ -244,9 +252,11 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 			}
 			if (tmpFrameBufPtr.getUsed() < frameGrabber.getMinimumMagicBytesLengthBits() / 8) {
 				// we have reached the end of the input
-				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- getNextFrame");
-				eosReached.set(true);
-				throw new InputStreamEosException();
+				if (! eosReachedFb.get()) {
+					logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- getNextFrame");
+					eosReachedFb.set(true);
+				}
+				return false;
 			}
 		} catch (InputStreamIoException | InputStreamEosException | InputStreamThreadEndedException e) {
 			if (doStop.get()) {
@@ -255,27 +265,27 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 			if (e instanceof InputStreamIoException) {
 				logError(fncName, "InputStreamIoException caught while reading next frame: " + e.getMessage());
 				// we have reached the end of the input
-				eosReached.set(true);
+				eosReachedFb.set(true);
 			} else if (e instanceof InputStreamThreadEndedException) {
 				logError(fncName, "InputStreamThreadEndedException caught while reading next frame: " + e.getMessage());
 				// we have reached the end of the input
-				eosReached.set(true);
+				eosReachedFb.set(true);
 			} else {
 				logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- InputStreamEosException");
 				// we have reached the end of the input
-				eosReached.set(true);
+				eosReachedFb.set(true);
 			}
-			return false;
+			return (! eosReachedFb.get());
 		} catch (AvInvalidCodecDataException e) {
 			logError(fncName, "AvInvalidCodecDataException caught: " + e.getMessage());
 			// we have reached the end of the input
-			eosReached.set(true);
+			eosReachedFb.set(true);
 			return false;
 		}
 		if (tmpFrameBufPtr.getUsed() == 0) {  // sanity check
 			// we have reached the end of the input
 			logDebug(fncName, "EOS reached after " + Long.toUnsignedString(frameCountInp) + " frames -- empty frame buf");
-			eosReached.set(true);
+			eosReachedFb.set(true);
 			return false;
 		}
 
@@ -309,7 +319,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		try {
 			final int MAX_TIMEOUT = 1000;
 			int timeoutCnt = 0;
-			while (! eosReached.get() && ++timeoutCnt <= MAX_TIMEOUT) {
+			while (! eosReachedOverall.get() && ++timeoutCnt <= MAX_TIMEOUT) {
 				while (! doStop.get() && queueBlockedState.get()) {
 					queueBlockedChanged.await();
 				}
@@ -332,7 +342,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 		} finally {
 			lock.unlock();
 		}
-		if (eosReached.get()) {
+		if (eosReachedOverall.get()) {
 			throw new InputStreamEosException();
 		}
 		return true;
