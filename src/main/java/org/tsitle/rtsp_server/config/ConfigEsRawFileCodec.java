@@ -9,6 +9,7 @@ public enum ConfigEsRawFileCodec {
 	AACLC,
 	AC3,
 	CSTM_OPUS,
+	MPA,
 	PCMA,
 	PCMU,
 	LPCM08U,
@@ -27,6 +28,7 @@ public enum ConfigEsRawFileCodec {
 				case AACLC -> RtpPacketType.A_AAC;
 				case AC3 -> RtpPacketType.A_AC3;
 				case CSTM_OPUS -> RtpPacketType.A_OPUS;
+				case MPA -> RtpPacketType.A_MPEG;
 				case PCMA -> {
 						if (audioChannelCount == 1 && audioSamplerate == SampleRateEnum.SR_008000) {
 							yield RtpPacketType.A_PCMA_8KHZ_MONO;
