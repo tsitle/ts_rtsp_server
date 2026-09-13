@@ -24,7 +24,7 @@ public final class FrameGrabberAudioMpegFromEsRawFile extends FrameGrabberAvFrom
 				null,
 				avStreamIncoming,
 				AudioMpegParser.MPEG_AUDIO_FRAME_START_MAGICBYTES,
-				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
+				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES
 			);
 	}
 
@@ -41,7 +41,7 @@ public final class FrameGrabberAudioMpegFromEsRawFile extends FrameGrabberAvFrom
 				logMsgInterface,
 				avStreamIncoming,
 				AudioMpegParser.MPEG_AUDIO_FRAME_START_MAGICBYTES,
-				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES + 1  // +1 to get mod 4 == 0
+				AudioMpegParser.MPEG_AUDIO_LENGTH_BITS_FRAME_START_MAGICBYTES
 			);
 	}
 
