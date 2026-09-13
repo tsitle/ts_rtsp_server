@@ -9,12 +9,14 @@ data/**/*.mov
 data/**/*.mp4
 data/**/*.webm
 
+data/**/*.cvp8
 data/**/*.h264
 data/**/*.h265
 data/**/*.mjpeg
 
 data/**/*.aac
 data/**/*.ac3
+data/**/*.copu
 data/**/*.eac3
 data/**/*.m4a
 data/**/*.mp2
