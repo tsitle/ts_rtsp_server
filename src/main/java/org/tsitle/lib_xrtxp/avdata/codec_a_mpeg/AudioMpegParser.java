@@ -28,15 +28,15 @@ public final class AudioMpegParser {
 
 	/**
 	 * Parses the MPEG Audio payload length from the given frame and calculates the remaining payload length to read.
-	 * @param mpaFrame MPEG Audio frame
+	 * @param mpaFrameHeader MPEG Audio frame header
 	 * @return Remaining number of bytes to read
 	 * @throws IllegalArgumentException If MPEG Audio data size is invalid
 	 */
-	public static int getRemainingMpaPayloadLengthToRead(@NonNull BufferExt mpaFrame) throws AvInvalidCodecDataException {
+	public static int getRemainingMpaPayloadLengthToRead(@NonNull BufferExt mpaFrameHeader) throws AvInvalidCodecDataException {
 		AudioMpegParser mpaParser = new AudioMpegParser();
-		AudioMpegInfo mpaInfo = mpaParser.parseMpaData(new BufferView(mpaFrame));
+		AudioMpegInfo mpaInfo = mpaParser.parseMpaData(new BufferView(mpaFrameHeader));
 
-		return mpaInfo.samplesLength;
+		return mpaInfo.frameLength - mpaFrameHeader.getUsed();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -76,11 +76,15 @@ public final class AudioMpegParser {
 			}
 			byte tmpMpegVersion = (byte)brh.readBits(2);
 			resObj.mpegAudioVersion = AudioMpegInfo.MpegAudioVersion.of(tmpMpegVersion);
-			byte tmpMpegLayer = (byte)brh.readBits(2);
-			if (tmpMpegLayer == 0x00) {
-				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio layer in header");
+			if (resObj.mpegAudioVersion == AudioMpegInfo.MpegAudioVersion.RESERVED ||
+					resObj.mpegAudioVersion == AudioMpegInfo.MpegAudioVersion.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio Version in header");
 			}
+			byte tmpMpegLayer = (byte)brh.readBits(2);
 			resObj.mpegLayer = AudioMpegInfo.MpegLayer.of(tmpMpegLayer);
+			if (resObj.mpegLayer == AudioMpegInfo.MpegLayer.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio Layer in header");
+			}
 			hdHaveCrc = (brh.readBits(1) == 0);  // protection bit (16bit CRC follows header)
 			resObj.bitRateIx = (byte)brh.readBits(4);  // bitrate index
 			if (resObj.bitRateIx == 0x00) {
@@ -93,10 +97,19 @@ public final class AudioMpegParser {
 			if (resObj.sampleRateIx == 3) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid sample rate index in MPEG Audio header");
 			}
+			if (resObj.getSampleRateHz() < 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio Samplerate in header");
+			}
+			if (resObj.getBitRateKbps() < 1) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio Bitrate in header");
+			}
 			hdHavePadd = (brh.readBits(1) == 1);
 			brh.readBit();  // skip private bit
 			byte tmpChannMode = (byte)brh.readBits(2);
 			resObj.channelMode = AudioMpegInfo.ChannelMode.of(tmpChannMode);
+			if (resObj.channelMode == AudioMpegInfo.ChannelMode.UNKNOWN) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid MPEG Audio Channel Mode in header");
+			}
 			brh.readBits(2);  // skip mode extension
 			brh.readBit();  // skip copyright bit
 			brh.readBit();  // skip 'original' bit

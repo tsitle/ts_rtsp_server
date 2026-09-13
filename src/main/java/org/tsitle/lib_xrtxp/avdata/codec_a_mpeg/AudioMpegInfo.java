@@ -24,9 +24,9 @@ public final class AudioMpegInfo implements CodecInfoInterface<AudioMpegInfo>, C
 			this.index = index;
 		}
 		public static @NonNull MpegAudioVersion of(int index) {
-			for (MpegAudioVersion rate : MpegAudioVersion.values()) {
-				if (rate.index == index) {
-					return rate;
+			for (MpegAudioVersion mav : MpegAudioVersion.values()) {
+				if (mav != UNKNOWN && mav.index == index) {
+					return mav;
 				}
 			}
 			return UNKNOWN;
@@ -47,7 +47,7 @@ public final class AudioMpegInfo implements CodecInfoInterface<AudioMpegInfo>, C
 		}
 		public static @NonNull MpegLayer of(int index) {
 			for (MpegLayer rate : MpegLayer.values()) {
-				if (rate.index == index) {
+				if (rate != UNKNOWN && rate.index == index) {
 					return rate;
 				}
 			}
@@ -69,9 +69,9 @@ public final class AudioMpegInfo implements CodecInfoInterface<AudioMpegInfo>, C
 			this.index = index;
 		}
 		public static @NonNull ChannelMode of(int index) {
-			for (ChannelMode rate : ChannelMode.values()) {
-				if (rate.index == index) {
-					return rate;
+			for (ChannelMode cm : ChannelMode.values()) {
+				if (cm != UNKNOWN && cm.index == index) {
+					return cm;
 				}
 			}
 			return UNKNOWN;
