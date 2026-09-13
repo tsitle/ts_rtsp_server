@@ -34,22 +34,18 @@ public final class AudioOpusParser {
 
 	/**
 	 * Parses the Opus payload length from the given Opus frame and calculates the remaining payload length to read.
-	 * @param opusFrame Opus frame
+	 * @param opusFrameHeader Opus frame
 	 * @return Remaining number of bytes to read
 	 * @throws IllegalArgumentException If Opus data size is invalid
 	 */
-	public static int getRemainingOpusPayloadLengthToRead(@NonNull BufferExt opusFrame) throws AvInvalidCodecDataException {
-		if (opusFrame.getUsed() < OPUS_CUSTOM_HEADER_SIZE) {
-			throw new IllegalArgumentException("Invalid Opus data size");
-		}
-
+	public static int getRemainingOpusPayloadLengthToRead(@NonNull BufferExt opusFrameHeader) throws AvInvalidCodecDataException {
 		AudioOpusParser opusParser = new AudioOpusParser();
-		AudioOpusInfo opusInfo = opusParser.parseOpusData(new BufferView(opusFrame));
+		AudioOpusInfo opusInfo = opusParser.parseOpusData(new BufferView(opusFrameHeader));
 		if (! opusParser.isCustomFileFmt) {
 			throw new IllegalArgumentException("Invalid Opus data - must be custom file format");
 		}
 
-		return opusInfo.samplesLength;
+		return opusInfo.frameLength - OPUS_HEADER_SIZE;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -74,7 +70,7 @@ public final class AudioOpusParser {
 
 		// -------------------------------------------------
 
-		if (inputBv.getLength() > OPUS_CUSTOM_HEADER_SIZE + OPUS_HEADER_SIZE) {
+		if (inputBv.getLength() >= OPUS_CUSTOM_HEADER_SIZE + OPUS_HEADER_SIZE) {
 			if (isFirstFrame) {
 				isCustomFileFmt = true;
 				for (int x = 0; x < OPUS_CUSTOM_FRAME_START_MAGICBYTES.length; x++) {
@@ -86,14 +82,11 @@ public final class AudioOpusParser {
 			}
 			if (isCustomFileFmt) {
 				int tmpOffs = OPUS_CUSTOM_FRAME_START_MAGICBYTES.length;
-				resObj.frameLength = inputBv.getByte(tmpOffs) |
+				resObj.frameLength = (inputBv.getByte(tmpOffs) & 0xFF) |
 						((inputBv.getByte(tmpOffs + 1) << 8) & 0xFF00) |
 						((inputBv.getByte(tmpOffs + 2) << 16) & 0xFF0000) |
 						((inputBv.getByte(tmpOffs + 3) << 24) & 0xFF000000);
-				resObj.samplesOffset += tmpOffs + 4;
-				if (inputBv.getLength() < resObj.samplesOffset + resObj.frameLength) {
-					throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid Opus data size in custom file format");
-				}
+				resObj.samplesOffset = OPUS_CUSTOM_HEADER_SIZE;
 			}
 		}
 		isFirstFrame = false;
@@ -107,12 +100,14 @@ public final class AudioOpusParser {
 
 		resObj.samplesPerChannelInAudioData = samplesPerFrame * frameCount;
 		if (resObj.samplesPerChannelInAudioData > OPUS_MAX_SAMPLES_FOR_MAX_DURATION_120MS) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Packet exceeds maximum duration of 120 ms");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": Packet exceeds maximum duration of 120 ms " +
+					"(is=" + resObj.samplesPerChannelInAudioData + ", " +
+					"max=" + OPUS_MAX_SAMPLES_FOR_MAX_DURATION_120MS + " samples)");
 		}
 
 		// --------------------------------------------------------------------
 
-		resObj.samplesLength = resObj.frameLength - resObj.samplesOffset;
+		resObj.samplesLength = resObj.frameLength - resObj.samplesOffset + (isCustomFileFmt ? OPUS_CUSTOM_HEADER_SIZE : 0);
 
 		return resObj;
 	}

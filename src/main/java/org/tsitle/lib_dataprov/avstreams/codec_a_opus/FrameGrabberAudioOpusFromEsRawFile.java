@@ -51,7 +51,7 @@ public final class FrameGrabberAudioOpusFromEsRawFile extends FrameGrabberAvFrom
 				false,
 				null,
 				null,
-				AudioOpusParser.OPUS_CUSTOM_HEADER_SIZE
+				AudioOpusParser.OPUS_CUSTOM_HEADER_SIZE + AudioOpusParser.OPUS_HEADER_SIZE
 			);
 		//
 		int remainingPayloadLength = AudioOpusParser.getRemainingOpusPayloadLengthToRead(frameBuf);
