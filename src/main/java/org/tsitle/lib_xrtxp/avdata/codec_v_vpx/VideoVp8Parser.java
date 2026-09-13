@@ -28,13 +28,13 @@ public final class VideoVp8Parser {
 
 	/**
 	 * Parses the VP8 payload length from the given VP8 frame and calculates the remaining payload length to read.
-	 * @param vp8Frame VP8 frame
+	 * @param vp8FrameHeader VP8 frame
 	 * @return Remaining number of bytes to read
 	 * @throws IllegalArgumentException If VP8 data size is invalid
 	 */
-	public static int getRemainingVp8PayloadLengthToRead(@NonNull BufferExt vp8Frame) throws AvInvalidCodecDataException {
+	public static int getRemainingVp8PayloadLengthToRead(@NonNull BufferExt vp8FrameHeader) throws AvInvalidCodecDataException {
 		VideoVp8Parser vp8Parser = new VideoVp8Parser();
-		VideoVp8Info vp8Info = vp8Parser.parseVp8Data(0L, new BufferView(vp8Frame));
+		VideoVp8Info vp8Info = vp8Parser.parseVp8Data(0L, new BufferView(vp8FrameHeader));
 		if (! vp8Parser.isCustomFileFmt) {
 			throw new IllegalArgumentException("Invalid VP8 data - must be custom file format");
 		}
@@ -83,7 +83,7 @@ public final class VideoVp8Parser {
 						((inputBv.getByte(tmpOffs + 1) << 8) & 0xFF00) |
 						((inputBv.getByte(tmpOffs + 2) << 16) & 0xFF0000) |
 						((inputBv.getByte(tmpOffs + 3) << 24) & 0xFF000000);
-				resObj.payloadOffs += tmpOffs + 4;
+				resObj.payloadOffs = VP8_CUSTOM_HEADER_SIZE;
 			}
 		}
 		isFirstFrame = false;
