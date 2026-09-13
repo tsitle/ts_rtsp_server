@@ -242,10 +242,13 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 				jpegInfo.segmSOF0.precision != 8 ||
 				jpegInfo.segmSOS.scanDataOffs < 0 || jpegInfo.segmSOS.scanDataLength < 1 ||
 				jpegInfo.segmSOF2.isProgressive ||
-				! jpegInfo.foundEoi || jpegInfo.usesDri ||
+				jpegInfo.usesDri ||
 				! jpegInfo.segmDHT.hashSum().equalsIgnoreCase(VideoJpegParser.MJPEG_HUFFMAN_TABLES_DEFAULT_HASH)) {
 			throw new IllegalArgumentException("Cannot process this kind of JPEG");
 		}
+		/*if (! jpegInfo.foundEoi) {
+			throw new IllegalArgumentException("Missing JPEG End-Of-Image marker");
+		}*/
 
 		// set inner main header fields
 		this.hdInnData.firstByte = (byte)0;
