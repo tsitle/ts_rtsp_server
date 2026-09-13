@@ -215,6 +215,10 @@ public final class RtxpTcpReadWrite {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	public synchronized boolean getIsRtpRtcpAllowed() {
+		return isRtpRtcpAllowed.get();
+	}
+
 	public synchronized void setIsRtpRtcpAllowed(boolean value) {
 		isRtpRtcpAllowed.set(value);
 	}
