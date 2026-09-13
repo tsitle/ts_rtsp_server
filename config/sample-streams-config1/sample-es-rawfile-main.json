@@ -42,6 +42,13 @@
 			"needsEncryption": false,
 			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_be" ]
 		},
+		"sample-raw-mp3.stream": {
+			"enabled": true,
+			"needsAuthentication": false,
+			"allowedUserAccountGroups": [ ],
+			"needsEncryption": false,
+			"subStreamIds": [ "sample_input_raw_audio_mp3" ]
+		},
 
 		"sample-raw-h265_and_aac.stream": {
 			"enabled": true,

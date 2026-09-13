@@ -154,7 +154,7 @@
 		"sample_input_mp3": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio.mp3"
+				"filePath": "samples/audio-with_ID3v2_tags.mp3"
 			}
 		},
 		"sample_input_opus": {

@@ -99,6 +99,15 @@
 				"audioSamplerateHz": 8000,
 				"audioChannelCount": 1
 			}
+		},
+		"sample_input_raw_audio_mp3": {
+			"enabled": true,
+			"rawFile": {
+				"filePath": "samples/raw-audio-mp3-without_tags.mp3",
+				"codec": "MPA",
+				"audioSamplerateHz": 32000,
+				"audioChannelCount": 2
+			}
 		}
 	}
 }
