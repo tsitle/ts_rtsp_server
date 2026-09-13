@@ -215,6 +215,12 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				if (! mainLoop()) {
 					break;
 				}
+				try {
+					//noinspection BusyWait
+					Thread.sleep(50L);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();  // restore flag
+				}
 			}
 			// send outstanding packets
 			if (! (byePacketHasBeenRcvd.get() || queueSend.isEmpty())) {
