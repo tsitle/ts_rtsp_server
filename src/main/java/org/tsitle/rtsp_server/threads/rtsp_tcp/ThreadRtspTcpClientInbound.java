@@ -262,7 +262,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		if (rtxpTcpReadWrite.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
-		return rtxpTcpReadWrite.canReadRtpOrRtcp(channNr, true);
+		return rtxpTcpReadWrite.canReadRtpOrRtcp(channNr, rtxpTcpReadWrite.getIsRtpRtcpAllowed());
 	}
 
 	@Override
