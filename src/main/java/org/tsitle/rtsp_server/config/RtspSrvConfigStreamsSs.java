@@ -182,21 +182,11 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			RtspSrvConfigStreamsSs clone = (RtspSrvConfigStreamsSs)super.clone();
 			//noinspection ConstantValue
 			clone.enabled = (enabled != null && enabled);
-			if (rawFile != null) {
-				clone.rawFile = rawFile.clone();
-			}
-			if (mq != null) {
-				clone.mq = mq.clone();
-			}
-			if (fileContainer != null) {
-				clone.fileContainer = fileContainer.clone();
-			}
-			if (rtsp != null) {
-				clone.rtsp = rtsp.clone();
-			}
-			if (jukebox != null) {
-				clone.jukebox = jukebox.clone();
-			}
+			if (rawFile != null) { clone.rawFile = rawFile.clone(); }
+			if (mq != null) { clone.mq = mq.clone(); }
+			if (fileContainer != null) { clone.fileContainer = fileContainer.clone(); }
+			if (rtsp != null) { clone.rtsp = rtsp.clone(); }
+			if (jukebox != null) { clone.jukebox = jukebox.clone(); }
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -213,21 +203,11 @@ public final class RtspSrvConfigStreamsSs implements Cloneable {
 			baos.write(fileContainer != null ? 1 : 0);
 			baos.write(rtsp != null ? 1 : 0);
 			baos.write(jukebox != null ? 1 : 0);
-			if (rawFile != null) {
-				baos.write(rawFile.hashSum().getBytes());
-			}
-			if (mq != null) {
-				baos.write(mq.hashSum().getBytes());
-			}
-			if (fileContainer != null) {
-				baos.write(fileContainer.hashSum().getBytes());
-			}
-			if (rtsp != null) {
-				baos.write(rtsp.hashSum().getBytes());
-			}
-			if (jukebox != null) {
-				baos.write(jukebox.hashSum().getBytes());
-			}
+			if (rawFile != null) { baos.write(rawFile.hashSum().getBytes()); }
+			if (mq != null) { baos.write(mq.hashSum().getBytes()); }
+			if (fileContainer != null) { baos.write(fileContainer.hashSum().getBytes()); }
+			if (rtsp != null) { baos.write(rtsp.hashSum().getBytes()); }
+			if (jukebox != null) { baos.write(jukebox.hashSum().getBytes()); }
 			baos.write(internalIsVirtual ? 1 : 0);
 		} catch (IOException e) {
 			// ignore

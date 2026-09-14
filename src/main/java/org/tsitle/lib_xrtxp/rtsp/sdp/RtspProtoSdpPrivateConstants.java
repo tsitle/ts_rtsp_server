@@ -7,8 +7,6 @@ final class RtspProtoSdpPrivateConstants {
 
 	private RtspProtoSdpPrivateConstants() { }
 
-	static final String SESSION_NAME = "Just A Session";
-
 	/** Stream types according to ISO/IEC 14496-1 */
 	enum IsoIec14496_1_StreamType {
 		/** Forbidden */

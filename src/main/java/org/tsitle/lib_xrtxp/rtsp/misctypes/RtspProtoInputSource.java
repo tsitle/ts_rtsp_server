@@ -26,6 +26,10 @@ public final class RtspProtoInputSource implements Cloneable {
 	private boolean needsEncryption = true;
 	/** Elementary-Stream Source IDs to be used by this input source */
 	private final @NonNull Set<@NonNull RtspProtoIdEsSource> elementaryStreamSourceIds = new HashSet<>();
+	/** Tags: Stream name */
+	private @NonNull String tagsStreamName = "";
+	/** Tags: Stream description */
+	private @NonNull String tagsStreamDesc = "";
 
 	public RtspProtoInputSource() { }
 
@@ -104,6 +108,26 @@ public final class RtspProtoInputSource implements Cloneable {
 		this.elementaryStreamSourceIds.add(tmpOut);
 	}
 
+	public @NonNull String getTagsStreamName() {
+		return tagsStreamName;
+	}
+	public void setTagsStreamName(@NonNull String tagsStreamName) {
+		if (isWriteProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
+		this.tagsStreamName = tagsStreamName;
+	}
+
+	public @NonNull String getTagsStreamDesc() {
+		return tagsStreamDesc;
+	}
+	public void setTagsStreamDesc(@NonNull String tagsStreamDesc) {
+		if (isWriteProtected) {
+			throw new IllegalStateException("Cannot modify write protected object");
+		}
+		this.tagsStreamDesc = tagsStreamDesc;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public void writeProtect() {
@@ -124,6 +148,8 @@ public final class RtspProtoInputSource implements Cloneable {
 		res.allowedUserAccountGroups.addAll(allowedUserAccountGroups);
 		res.needsEncryption = needsEncryption;
 		res.elementaryStreamSourceIds.addAll(elementaryStreamSourceIds);
+		res.tagsStreamName = tagsStreamName;
+		res.tagsStreamDesc = tagsStreamDesc;
 		return res;
 	}
 

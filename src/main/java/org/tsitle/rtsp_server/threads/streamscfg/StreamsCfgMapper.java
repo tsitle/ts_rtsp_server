@@ -551,6 +551,8 @@ final class StreamsCfgMapper {
 			RtspProtoIdEsSource internalSsId = StreamsCfgIdMapperHelper.computeInternalEsId(externalSsId);
 			protoInputSource.putIdEsSource(internalSsId);
 		}
+		protoInputSource.setTagsStreamName(cfgObj.getTags().getStreamName());
+		protoInputSource.setTagsStreamDesc(cfgObj.getTags().getStreamDesc());
 		return protoInputSource;
 	}
 

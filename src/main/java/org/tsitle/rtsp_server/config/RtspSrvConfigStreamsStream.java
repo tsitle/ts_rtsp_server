@@ -30,6 +30,9 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 	/** Sub-Stream IDs to be used by this Stream */
 	@Expose
 	private @NonNull Set<@NonNull String> subStreamIds;
+	/** Tags */
+	@Expose
+	private @NonNull RtspSrvConfigStreamTags tags;
 
 	@GsonAnnoExclude
 	private boolean internalHasBeenPostProcessed;
@@ -40,6 +43,7 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 		this.allowedUserAccountGroups = new HashSet<>();
 		this.needsEncryption = true;
 		this.subStreamIds = new HashSet<>();
+		this.tags = new RtspSrvConfigStreamTags();
 
 		this.internalHasBeenPostProcessed = false;
 	}
@@ -49,7 +53,7 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 
 	public static @NonNull RtspSrvConfigStreamsStream createVirtual(
 				@NonNull RtspSrvConfigStreamsStream realStreamCfgObj,
-				Set<@NonNull String> virtExternalEsIds
+				@NonNull Set<@NonNull String> virtExternalEsIds
 			) {
 		RtspSrvConfigStreamsStream resObj = new RtspSrvConfigStreamsStream();
 		resObj.enabled = realStreamCfgObj.enabled;
@@ -58,6 +62,7 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 		resObj.needsEncryption = realStreamCfgObj.needsEncryption;
 		resObj.subStreamIds.addAll(virtExternalEsIds);
 		resObj.internalHasBeenPostProcessed = true;
+		resObj.tags = realStreamCfgObj.tags.clone();
 		return resObj;
 	}
 
@@ -88,6 +93,11 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 		return Set.copyOf(subStreamIds);
 	}
 
+	public @NonNull RtspSrvConfigStreamTags getTags() {
+		checkPostProcessed();
+		return tags.clone();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
@@ -111,6 +121,10 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 			if (subStreamIds != null && ! subStreamIds.isEmpty()) {
 				clone.subStreamIds.addAll(subStreamIds);
 			}
+			//noinspection ConstantValue
+			if (tags != null) {
+				clone.tags = tags.clone();
+			}
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
@@ -126,6 +140,8 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 			baos.write(String.join(",", allowedUserAccountGroups).getBytes());
 			baos.write(String.join(",", subStreamIds).getBytes());
 			baos.write(needsEncryption ? 1 : 0);
+			//noinspection ConstantValue
+			if (tags != null) { baos.write(tags.hashSum().getBytes()); }
 		} catch (IOException e) {
 			// ignore
 		}
@@ -161,6 +177,12 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 
 		//
 		subStreamIds = RewriteSetStringHelper.removeNullAndBlank(subStreamIds, true);
+
+		//noinspection ConstantValue
+		if (tags == null) {
+			tags = new RtspSrvConfigStreamTags();
+		}
+		tags.postProcess();
 	}
 
 	/**
@@ -194,6 +216,10 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 			throw new ConfigInvalidException(FNC_NAME + ": Empty Sub-Stream IDs list" +
 					" used in Stream ID '" + extIdStr + "'");
 		}
+
+		// ---------------------------------------------
+
+		tags.validate(extIdStr);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

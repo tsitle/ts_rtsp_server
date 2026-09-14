@@ -14,6 +14,8 @@ import java.util.Set;
  */
 public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
 
+	private static final int EXTERNAL_ID_MAX_LENGTH = 255;
+
 	/** Map of Sub-Streams */
 	@Expose
 	private @NonNull Map<@NonNull String, @NonNull RtspSrvConfigStreamsSs> subStreams;
@@ -80,21 +82,41 @@ public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
 				@NonNull Set<@NonNull String> userAccountGroupIds,
 				@NonNull Path dataDirPath
 			) throws ConfigInvalidException {
+		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
+
 		checkPostProcessed();
 
 		//
 		for (Map.Entry<String, RtspSrvConfigStreamsSs> entry : subStreams.entrySet()) {
+			validateExtId(FNC_NAME, entry.getKey(), "Sub-Stream");
 			entry.getValue().validate(entry.getKey(), dataDirPath);
 		}
 
 		//
 		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : streams.entrySet()) {
+			validateExtId(FNC_NAME, entry.getKey(), "Stream");
 			entry.getValue().validate(entry.getKey(), userAccountGroupIds);
 		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void validateExtId(
+				@NonNull String fncName,
+				@NonNull String extIdStr,
+				@NonNull String desc
+			) throws ConfigInvalidException {
+		final String errMsgSuffix = " in " + desc + " ID '" + extIdStr + "'";
+		if (extIdStr.length() > EXTERNAL_ID_MAX_LENGTH) {
+			throw new ConfigInvalidException(fncName + ": ID is too long " +
+					"(is=" + extIdStr.length() + ", max=" + EXTERNAL_ID_MAX_LENGTH + ") " + errMsgSuffix);
+		}
+		String sanitized = extIdStr.replaceAll("[^\\x20-\\x7E]", "");
+		if (! sanitized.equals(extIdStr)) {
+			throw new ConfigInvalidException(fncName + ": " + desc + " ID contains invalid characters " + errMsgSuffix);
+		}
+	}
 
 	private void checkPostProcessed() {
 		if (! internalHasBeenPostProcessed) {

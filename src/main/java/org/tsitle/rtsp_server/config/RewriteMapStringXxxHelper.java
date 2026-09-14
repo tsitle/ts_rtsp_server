@@ -22,7 +22,10 @@ final class RewriteMapStringXxxHelper {
 			if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null) {
 				continue;
 			}
-			resMap.put(convIdToLowercase ? entry.getKey().toLowerCase() : entry.getKey(), entry.getValue());
+			resMap.put(
+					(convIdToLowercase ? entry.getKey().toLowerCase() : entry.getKey()).strip(),
+					entry.getValue()
+				);
 		}
 		return resMap;
 	}

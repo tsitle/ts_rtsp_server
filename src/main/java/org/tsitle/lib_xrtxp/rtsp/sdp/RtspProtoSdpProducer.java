@@ -334,6 +334,14 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 		return (durationSecs < 0.1 ? -1.0 : durationSecs);
 	}
 
+	private @NonNull String getStreamTag(@NonNull RtspProtoInputSource inputSourceObj, boolean nameOrDesc) {
+		if (nameOrDesc) {
+			String tmpName = inputSourceObj.getTagsStreamName();
+			return (tmpName.isBlank() ? inputSourceObj.getIdInputSource().getIdStr().orElseThrow() : tmpName);
+		}
+		return inputSourceObj.getTagsStreamDesc();  // allowed to be blank
+	}
+
 	private @NonNull List<@NonNull String> buildSdpLines(
 				@NonNull InternalArgs args,
 				@NonNull RtspProtoInputSource inputSourceObj
@@ -367,9 +375,12 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				tmpO_Username, tmpO_Id, tmpO_Version, tmpO_NetworkType,
 				tmpO_AddressType, tmpO_UnicastAddress));
 		// s: Session Name (FFmpeg will display this as 'Title')
-		resL.add(String.format("s=%s", RtspProtoSdpPrivateConstants.SESSION_NAME));
+		resL.add(String.format("s=%s", getStreamTag(inputSourceObj, true)));
 		// i: Session Information (FFmpeg will display this as 'Comment')
-		resL.add(String.format("i=%s", inputSourceObj.getIdInputSource().getIdStr().orElseThrow()));
+		final String tmpI_SessionInfo = getStreamTag(inputSourceObj, false);
+		if (! tmpI_SessionInfo.isBlank()) {
+			resL.add(String.format("i=%s", tmpI_SessionInfo));
+		}
 		// c: Connection Info
 		resL.add(String.format("c=IN IP4 %s", args.serverIpOrName.getIpAddrStr().orElseThrow()));
 		// t: Time Active
