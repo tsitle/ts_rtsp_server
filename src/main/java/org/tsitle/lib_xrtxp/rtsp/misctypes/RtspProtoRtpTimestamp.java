@@ -101,7 +101,7 @@ public final class RtspProtoRtpTimestamp extends RtspProtoBaseNumberNonNeg32bit<
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
-	public RtspProtoRtpTimestamp clone() {
+	public @NonNull RtspProtoRtpTimestamp clone() {
 		RtspProtoRtpTimestamp cloned = new RtspProtoRtpTimestamp();
 		cloned.copyFrom(this);
 		if (isWriteProtected) {

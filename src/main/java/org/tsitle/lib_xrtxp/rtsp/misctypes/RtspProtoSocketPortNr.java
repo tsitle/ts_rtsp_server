@@ -94,7 +94,7 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoSocketPortNr clone() {
+	public @NonNull RtspProtoSocketPortNr clone() {
 		try {
 			return (RtspProtoSocketPortNr)super.clone();
 		} catch (CloneNotSupportedException e) {

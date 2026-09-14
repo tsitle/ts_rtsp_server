@@ -23,7 +23,7 @@ public final class RtpPacketOpus extends RtpPacketCodecBase {
 		}
 
 		@Override
-		public InnerHeaderData clone() {
+		public @NonNull InnerHeaderData clone() {
 			try {
 				return (InnerHeaderData)super.clone();
 			} catch (CloneNotSupportedException e) {

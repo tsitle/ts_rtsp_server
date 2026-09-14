@@ -89,7 +89,7 @@ public class RtspProtoBaseIdString implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoBaseIdString clone() {
+	public @NonNull RtspProtoBaseIdString clone() {
 		try {
 			return (RtspProtoBaseIdString)super.clone();
 		} catch (CloneNotSupportedException e) {

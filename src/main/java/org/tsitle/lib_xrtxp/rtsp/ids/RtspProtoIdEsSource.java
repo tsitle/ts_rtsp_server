@@ -41,7 +41,7 @@ public final class RtspProtoIdEsSource extends RtspProtoBaseIdString implements 
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoIdEsSource clone() {
+	public @NonNull RtspProtoIdEsSource clone() {
 		return (RtspProtoIdEsSource)super.clone();
 	}
 

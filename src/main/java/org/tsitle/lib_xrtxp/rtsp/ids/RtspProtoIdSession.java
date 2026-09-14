@@ -41,7 +41,7 @@ public final class RtspProtoIdSession extends RtspProtoBaseIdString implements C
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoIdSession clone() {
+	public @NonNull RtspProtoIdSession clone() {
 		return (RtspProtoIdSession)super.clone();
 	}
 

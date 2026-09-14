@@ -77,7 +77,7 @@ public abstract class DynIntegerBase implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public DynIntegerBase clone() {
+	public @NonNull DynIntegerBase clone() {
 		try {
 			return (DynIntegerBase)super.clone();
 		} catch (CloneNotSupportedException e) {

@@ -63,7 +63,7 @@ public final class RtspProtoAdSettingsForSubStream implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoAdSettingsForSubStream clone() {
+	public @NonNull RtspProtoAdSettingsForSubStream clone() {
 		try {
 			RtspProtoAdSettingsForSubStream cloned = (RtspProtoAdSettingsForSubStream)super.clone();
 			cloned.idEsSource = idEsSource.clone();

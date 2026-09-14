@@ -79,7 +79,7 @@ public final class RtspProtoCseqNr extends RtspProtoBaseNumberNonNeg32bit<RtspPr
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
-	public RtspProtoCseqNr clone() {
+	public @NonNull RtspProtoCseqNr clone() {
 		RtspProtoCseqNr cloned = new RtspProtoCseqNr();
 		cloned.copyFrom(this);
 		if (isWriteProtected) {

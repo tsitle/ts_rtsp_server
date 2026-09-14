@@ -132,7 +132,7 @@ public final class RtspProtoIpAddr implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoIpAddr clone() {
+	public @NonNull RtspProtoIpAddr clone() {
 		try {
 			RtspProtoIpAddr cloned = (RtspProtoIpAddr)super.clone();
 			if (ipAddrObj != null) {

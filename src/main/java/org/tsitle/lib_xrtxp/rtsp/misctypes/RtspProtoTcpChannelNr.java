@@ -94,7 +94,7 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoTcpChannelNr clone() {
+	public @NonNull RtspProtoTcpChannelNr clone() {
 		try {
 			return (RtspProtoTcpChannelNr)super.clone();
 		} catch (CloneNotSupportedException e) {

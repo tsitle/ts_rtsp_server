@@ -47,7 +47,7 @@ public final class SrtxpMki extends DynIntegerBase implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public SrtxpMki clone() {
+	public @NonNull SrtxpMki clone() {
 		return (SrtxpMki)super.clone();
 	}
 

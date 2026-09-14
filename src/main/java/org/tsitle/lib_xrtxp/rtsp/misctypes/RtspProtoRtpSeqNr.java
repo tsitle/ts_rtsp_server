@@ -112,7 +112,7 @@ public final class RtspProtoRtpSeqNr implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoRtpSeqNr clone() {
+	public @NonNull RtspProtoRtpSeqNr clone() {
 		try {
 			return (RtspProtoRtpSeqNr)super.clone();
 		} catch (CloneNotSupportedException e) {

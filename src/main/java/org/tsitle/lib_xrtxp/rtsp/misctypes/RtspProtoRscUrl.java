@@ -100,7 +100,7 @@ public final class RtspProtoRscUrl implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoRscUrl clone() {
+	public @NonNull RtspProtoRscUrl clone() {
 		try {
 			RtspProtoRscUrl cloned = (RtspProtoRscUrl)super.clone();
 			cloned.idInputSource = idInputSource.clone();

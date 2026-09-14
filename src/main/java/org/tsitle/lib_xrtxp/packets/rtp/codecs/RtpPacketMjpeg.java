@@ -68,7 +68,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 
 			@Override
 			@SuppressWarnings("MethodDoesntCallSuperMethod")
-			public CustomQt clone() {
+			public @NonNull CustomQt clone() {
 				CustomQt cloned = new CustomQt();
 				cloned.haveCustomQt = this.haveCustomQt;
 				cloned.isPrecision8bit_y_lqt = this.isPrecision8bit_y_lqt;
@@ -119,7 +119,7 @@ public final class RtpPacketMjpeg extends RtpPacketCodecBase {
 		}
 
 		@Override
-		public InnerHeaderData clone() {
+		public @NonNull InnerHeaderData clone() {
 			try {
 				InnerHeaderData cloned = (InnerHeaderData)super.clone();
 				cloned.customQt = customQt.clone();

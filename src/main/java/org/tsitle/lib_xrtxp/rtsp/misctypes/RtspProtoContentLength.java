@@ -68,7 +68,7 @@ public final class RtspProtoContentLength extends RtspProtoBaseNumberNonNeg32bit
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
-	public RtspProtoContentLength clone() {
+	public @NonNull RtspProtoContentLength clone() {
 		RtspProtoContentLength cloned = new RtspProtoContentLength();
 		cloned.copyFrom(this);
 		if (isWriteProtected) {

@@ -41,7 +41,7 @@ public final class RtspProtoIdSubStream extends RtspProtoBaseIdString implements
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoIdSubStream clone() {
+	public @NonNull RtspProtoIdSubStream clone() {
 		return (RtspProtoIdSubStream)super.clone();
 	}
 

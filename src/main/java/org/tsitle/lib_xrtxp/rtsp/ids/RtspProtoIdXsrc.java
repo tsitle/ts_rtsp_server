@@ -76,7 +76,7 @@ public final class RtspProtoIdXsrc extends RtspProtoBaseNumberNonNeg32bit<RtspPr
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
-	public RtspProtoIdXsrc clone() {
+	public @NonNull RtspProtoIdXsrc clone() {
 		RtspProtoIdXsrc cloned = new RtspProtoIdXsrc();
 		cloned.copyFrom(this);
 		if (isWriteProtected) {

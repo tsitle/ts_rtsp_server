@@ -49,7 +49,7 @@ public final class SrtxpKdr extends DynIntegerBase implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public SrtxpKdr clone() {
+	public @NonNull SrtxpKdr clone() {
 		return (SrtxpKdr)super.clone();
 	}
 

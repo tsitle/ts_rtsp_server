@@ -47,7 +47,7 @@ public final class RtspProtoIdInputSource extends RtspProtoBaseIdString implemen
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoIdInputSource clone() {
+	public @NonNull RtspProtoIdInputSource clone() {
 		return (RtspProtoIdInputSource)super.clone();
 	}
 

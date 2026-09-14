@@ -93,7 +93,7 @@ public final class RtspProtoKmdForSubStream implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoKmdForSubStream clone() {
+	public @NonNull RtspProtoKmdForSubStream clone() {
 		try {
 			RtspProtoKmdForSubStream cloned = (RtspProtoKmdForSubStream)super.clone();
 			if (kmd != null) {

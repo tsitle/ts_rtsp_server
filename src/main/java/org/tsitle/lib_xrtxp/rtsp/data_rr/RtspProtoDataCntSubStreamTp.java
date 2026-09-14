@@ -208,7 +208,7 @@ public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 	}
 
 	@Override
-	public RtspProtoDataCntSubStreamTp clone() {
+	public @NonNull RtspProtoDataCntSubStreamTp clone() {
 		try {
 			RtspProtoDataCntSubStreamTp cloned = (RtspProtoDataCntSubStreamTp)super.clone();
 			cloned.tpClientUdpPortRtp = tpClientUdpPortRtp.clone();

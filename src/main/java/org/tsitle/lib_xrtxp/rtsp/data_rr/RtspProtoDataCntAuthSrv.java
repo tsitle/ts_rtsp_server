@@ -66,7 +66,7 @@ public final class RtspProtoDataCntAuthSrv implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public RtspProtoDataCntAuthSrv clone() {
+	public @NonNull RtspProtoDataCntAuthSrv clone() {
 		try {
 			return (RtspProtoDataCntAuthSrv)super.clone();
 		} catch (CloneNotSupportedException e) {
