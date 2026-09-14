@@ -5,7 +5,11 @@
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_admin_only" ],
 			"needsEncryption": true,
-			"subStreamIds": [ "sample_input_garden_camera" ]
+			"subStreamIds": [ "sample_input_garden_camera" ],
+			"tags": {
+				"streamName": "Sample RTSP Input",
+				"streamDesc": "Garden camera"
+			}
 		}
 	},
 	"subStreams": {

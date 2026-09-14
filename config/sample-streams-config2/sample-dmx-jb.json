@@ -5,7 +5,11 @@
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_jukebox" ]
+			"subStreamIds": [ "sample_input_jukebox" ],
+			"tags": {
+				"streamName": "Sample Jukebox AAC",
+				"streamDesc": "All input files will be transcoded to AAC"
+			}
 		}
 	},
 	"subStreams": {

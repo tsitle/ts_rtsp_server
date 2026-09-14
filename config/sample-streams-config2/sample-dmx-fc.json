@@ -5,35 +5,55 @@
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mkv_h264_aac" ]
+			"subStreamIds": [ "sample_input_mkv_h264_aac" ],
+			"tags": {
+				"streamName": "Sample MKV with H264 and AAC",
+				"streamDesc": "H264 video and AAC audio"
+			}
 		},
 		"sample-mov_with_h264_and_lpcm16s.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mov_h264_lpcm16s" ]
+			"subStreamIds": [ "sample_input_mov_h264_lpcm16s" ],
+			"tags": {
+				"streamName": "Sample MOV with H264 and LPCM s16",
+				"streamDesc": "H264 video and Linear PCM with 16-bit signed samples"
+			}
 		},
 		"sample-mp4_with_h265_and_ac3.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mp4_h265_ac3" ]
+			"subStreamIds": [ "sample_input_mp4_h265_ac3" ],
+			"tags": {
+				"streamName": "Sample MP4 with H265 and AC-3",
+				"streamDesc": "H265 aka HEVC video and AC-3 audio"
+			}
 		},
 		"sample-mkv_with_mjpeg_and_mp3.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mkv_mjpeg_mp3" ]
+			"subStreamIds": [ "sample_input_mkv_mjpeg_mp3" ],
+			"tags": {
+				"streamName": "Sample MKV with MJPEG and MP3",
+				"streamDesc": "MJPEG video and MP3 audio"
+			}
 		},
 		"sample-webm_with_vp8_and_opus.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_webm_vp8_opus" ]
+			"subStreamIds": [ "sample_input_webm_vp8_opus" ],
+			"tags": {
+				"streamName": "Sample WebM with VP8 and Opus",
+				"streamDesc": "VP8 video and Opus audio"
+			}
 		},
 
 		"sample-aac.stream": {
@@ -41,63 +61,99 @@
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_aac" ]
+			"subStreamIds": [ "sample_input_aac" ],
+			"tags": {
+				"streamName": "Sample AAC",
+				"streamDesc": "AAC audio"
+			}
 		},
 		"sample-ac3.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_ac3" ]
+			"subStreamIds": [ "sample_input_ac3" ],
+			"tags": {
+				"streamName": "Sample AC-3",
+				"streamDesc": "AC-3 audio"
+			}
 		},
 		"sample-mp2.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mp2" ]
+			"subStreamIds": [ "sample_input_mp2" ],
+			"tags": {
+				"streamName": "Sample MP2",
+				"streamDesc": "MP2 aka MPEG1-Layer II audio"
+			}
 		},
 		"sample-mp3.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_mp3" ]
+			"subStreamIds": [ "sample_input_mp3" ],
+			"tags": {
+				"streamName": "Sample MP3",
+				"streamDesc": "MP3 aka MPEG1-Layer III audio"
+			}
 		},
 		"sample-opus.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_opus" ]
+			"subStreamIds": [ "sample_input_opus" ],
+			"tags": {
+				"streamName": "Sample Opus",
+				"streamDesc": "Opus audio"
+			}
 		},
-		"sample-pcma.stream": {
+		"sample-wav_with_pcma.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_pcma_aka_alaw" ]
+			"subStreamIds": [ "sample_input_wav_pcma_aka_alaw" ],
+			"tags": {
+				"streamName": "Sample WAV with PCMA",
+				"streamDesc": "PCMA aka a-law audio"
+			}
 		},
-		"sample-pcmu.stream": {
+		"sample-wav_with_pcmu.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_pcmu_aka_mulaw" ]
+			"subStreamIds": [ "sample_input_wav_pcmu_aka_mulaw" ],
+			"tags": {
+				"streamName": "Sample WAV with PCMU",
+				"streamDesc": "PCMA aka u-law or mu-law audio"
+			}
 		},
-		"sample-lpcm08u.stream": {
+		"sample-wav_with_lpcm08u.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_lpcm_u08" ]
+			"subStreamIds": [ "sample_input_wav_lpcm_u08" ],
+			"tags": {
+				"streamName": "Sample WAV with LPCM u8",
+				"streamDesc": "Linear PCM with 8-bit unsigned samples audio"
+			}
 		},
-		"sample-lpcm16s.stream": {
+		"sample-wav_with_lpcm16s.stream": {
 			"enabled": true,
 			"needsAuthentication": true,
 			"allowedUserAccountGroups": [ "grp_all_users" ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_lpcm_s16" ]
+			"subStreamIds": [ "sample_input_wav_lpcm_s16" ],
+			"tags": {
+				"streamName": "Sample WAV with LPCM s16",
+				"streamDesc": "Linear PCM with 16-bit signed samples audio"
+			}
 		}
 	},
 
@@ -163,25 +219,25 @@
 				"filePath": "samples/audio.opus"
 			}
 		},
-		"sample_input_pcma_aka_alaw": {
+		"sample_input_wav_pcma_aka_alaw": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/audio-pcma.wav"
 			}
 		},
-		"sample_input_pcmu_aka_mulaw": {
+		"sample_input_wav_pcmu_aka_mulaw": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/audio-pcmu.wav"
 			}
 		},
-		"sample_input_lpcm_u08": {
+		"sample_input_wav_lpcm_u08": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/audio-lpcm_u08.wav"
 			}
 		},
-		"sample_input_lpcm_s16": {
+		"sample_input_wav_lpcm_s16": {
 			"enabled": true,
 			"fileContainer": {
 				"filePath": "samples/audio-lpcm_s16.wav"

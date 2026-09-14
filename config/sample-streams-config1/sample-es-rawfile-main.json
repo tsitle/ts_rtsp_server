@@ -5,49 +5,77 @@
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_aac_mono" ]
+			"subStreamIds": [ "sample_input_raw_audio_aac_mono" ],
+			"tags": {
+				"streamName": "Sample Raw AAC",
+				"streamDesc": "Just a simple demo"
+			}
 		},
 		"sample-raw-pcma.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_pcma" ]
+			"subStreamIds": [ "sample_input_raw_audio_pcma" ],
+			"tags": {
+				"streamName": "Sample Raw PCMA",
+				"streamDesc": "PCMA aka a-law"
+			}
 		},
 		"sample-raw-pcmu.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_pcmu" ]
+			"subStreamIds": [ "sample_input_raw_audio_pcmu" ],
+			"tags": {
+				"streamName": "Sample Raw PCMU",
+				"streamDesc": "PCMU aka u-law or mu-law"
+			}
 		},
 		"sample-raw-lpcm08u.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_lpcm_u08" ]
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_u08" ],
+			"tags": {
+				"streamName": "Sample Raw LPCM u8",
+				"streamDesc": "Linear PCM with 8-bit unsigned samples"
+			}
 		},
 		"sample-raw-lpcm16s_le.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_le" ]
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_le" ],
+			"tags": {
+				"streamName": "Sample Raw LPCM s16 LE",
+				"streamDesc": "Linear PCM with 16-bit signed samples, little-endian"
+			}
 		},
 		"sample-raw-lpcm16s_be.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_be" ]
+			"subStreamIds": [ "sample_input_raw_audio_lpcm_s16_be" ],
+			"tags": {
+				"streamName": "Sample Raw LPCM s16 BE",
+				"streamDesc": "Linear PCM with 16-bit signed samples, big-endian"
+			}
 		},
 		"sample-raw-mp3.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_audio_mp3" ]
+			"subStreamIds": [ "sample_input_raw_audio_mp3" ],
+			"tags": {
+				"streamName": "Sample Raw MP3",
+				"streamDesc": "MPEG1-Layer III Audio"
+			}
 		},
 
 		"sample-raw-h265_and_aac.stream": {
@@ -55,14 +83,22 @@
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_video_h265", "sample_input_raw_audio_aac_surround" ]
+			"subStreamIds": [ "sample_input_raw_video_h265", "sample_input_raw_audio_aac_surround" ],
+			"tags": {
+				"streamName": "Sample Raw H265 and AAC",
+				"streamDesc": "H265 aka HEVC video and AAC audio"
+			}
 		},
 		"sample-raw-mjpeg_and_ac3.stream": {
 			"enabled": true,
 			"needsAuthentication": false,
 			"allowedUserAccountGroups": [ ],
 			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_raw_video_mjpeg", "sample_input_raw_audio_ac3" ]
+			"subStreamIds": [ "sample_input_raw_video_mjpeg", "sample_input_raw_audio_ac3" ],
+			"tags": {
+				"streamName": "Sample Raw MJPEG and AC-3",
+				"streamDesc": "MJPEG video and AC-3 audio"
+			}
 		}
 	}
 }
