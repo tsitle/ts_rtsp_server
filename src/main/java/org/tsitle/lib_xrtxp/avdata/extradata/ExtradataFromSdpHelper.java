@@ -63,7 +63,7 @@ public final class ExtradataFromSdpHelper {
 		if (tmpSplit.length != 1 && tmpSplit.length != 2) {
 			throw new IllegalArgumentException(FNC_NAME + ": Invalid H.264 SDP extradata");
 		}
-		tmpSplit = tmpSplit[0].split(":");
+		tmpSplit = (tmpSplit[0].contains(":") ? tmpSplit[0].split(":") : tmpSplit[0].split(","));
 		if (tmpSplit.length != 2) {
 			throw new IllegalArgumentException(FNC_NAME + ": Invalid H.264 SDP extradata");
 		}
