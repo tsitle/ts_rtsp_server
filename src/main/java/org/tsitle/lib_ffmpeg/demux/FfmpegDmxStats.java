@@ -18,7 +18,7 @@ public final class FfmpegDmxStats implements Cloneable {
 		public double currentPtsSecs = -1.0;
 
 		@Override
-		public PktsAndData clone() {
+		public @NonNull PktsAndData clone() {
 			try {
 				PktsAndData clone = (PktsAndData)super.clone();
 				clone.pktsPerSecsList = new ArrayList<>(pktsPerSecsList);
@@ -38,7 +38,7 @@ public final class FfmpegDmxStats implements Cloneable {
 	public double currentMaxPtsSecs = -1.0;
 
 	@Override
-	public FfmpegDmxStats clone() {
+	public @NonNull FfmpegDmxStats clone() {
 		try {
 			FfmpegDmxStats clone = (FfmpegDmxStats)super.clone();
 			clone.startTime = (startTime == null ? null : Instant.ofEpochMilli(startTime.toEpochMilli()));
