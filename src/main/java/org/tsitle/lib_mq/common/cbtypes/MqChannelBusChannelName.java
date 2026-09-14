@@ -30,7 +30,7 @@ public final class MqChannelBusChannelName extends RtspProtoBaseIdString impleme
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public MqChannelBusChannelName clone() {
+	public @NonNull MqChannelBusChannelName clone() {
 		return (MqChannelBusChannelName)super.clone();
 	}
 

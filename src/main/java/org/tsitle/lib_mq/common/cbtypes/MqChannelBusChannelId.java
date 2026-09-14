@@ -69,7 +69,7 @@ public final class MqChannelBusChannelId extends RtspProtoBaseNumberNonNeg32bit<
 
 	@SuppressWarnings("MethodDoesntCallSuperMethod")
 	@Override
-	public MqChannelBusChannelId clone() {
+	public @NonNull MqChannelBusChannelId clone() {
 		MqChannelBusChannelId cloned = new MqChannelBusChannelId();
 		cloned.copyFrom(this);
 		if (isWriteProtected) {
