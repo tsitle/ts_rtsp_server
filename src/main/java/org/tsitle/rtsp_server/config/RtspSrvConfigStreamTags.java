@@ -125,11 +125,11 @@ public final class RtspSrvConfigStreamTags implements Cloneable {
 		final String errMsgSuffix = " in Stream ID '" + extIdStr + "'";
 		if (value.length() > TAG_MAX_LENGTH) {
 			throw new ConfigInvalidException(fncName + ": Stream Tag '" + desc + "' too long " +
-					"(is=" + value.length() + ", max=" + TAG_MAX_LENGTH + ") " + errMsgSuffix);
+					"(is=" + value.length() + ", max=" + TAG_MAX_LENGTH + ")" + errMsgSuffix);
 		}
-		String sanitized = value.replaceAll("[^\\x20-\\x7E]", "");
-		if (! sanitized.equals(value)) {
-			throw new ConfigInvalidException(fncName + ": Stream Tag '" + desc + "' contains invalid characters " +
+		String sanitizedVal = value.replaceAll("[^\\x20-\\x7E]", "");
+		if (! sanitizedVal.equals(value)) {
+			throw new ConfigInvalidException(fncName + ": Stream Tag '" + desc + "' contains invalid characters" +
 					errMsgSuffix);
 		}
 	}

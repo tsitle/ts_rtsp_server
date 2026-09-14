@@ -2,6 +2,8 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.nio.file.Path;
@@ -13,8 +15,6 @@ import java.util.Set;
  * Streams configuration for the RTSP server.
  */
 public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
-
-	private static final int EXTERNAL_ID_MAX_LENGTH = 255;
 
 	/** Map of Sub-Streams */
 	@Expose
@@ -88,13 +88,13 @@ public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
 
 		//
 		for (Map.Entry<String, RtspSrvConfigStreamsSs> entry : subStreams.entrySet()) {
-			validateExtId(FNC_NAME, entry.getKey(), "Sub-Stream");
+			validateExtId(FNC_NAME, entry.getKey(), "Sub-Stream", false);
 			entry.getValue().validate(entry.getKey(), dataDirPath);
 		}
 
 		//
 		for (Map.Entry<String, RtspSrvConfigStreamsStream> entry : streams.entrySet()) {
-			validateExtId(FNC_NAME, entry.getKey(), "Stream");
+			validateExtId(FNC_NAME, entry.getKey(), "Stream", true);
 			entry.getValue().validate(entry.getKey(), userAccountGroupIds);
 		}
 	}
@@ -105,16 +105,20 @@ public final class RtspSrvConfigFileStreams extends RtspSrvConfigFileBase {
 	private static void validateExtId(
 				@NonNull String fncName,
 				@NonNull String extIdStr,
-				@NonNull String desc
+				@NonNull String desc,
+				boolean isStreamId
 			) throws ConfigInvalidException {
-		final String errMsgSuffix = " in " + desc + " ID '" + extIdStr + "'";
-		if (extIdStr.length() > EXTERNAL_ID_MAX_LENGTH) {
-			throw new ConfigInvalidException(fncName + ": ID is too long " +
-					"(is=" + extIdStr.length() + ", max=" + EXTERNAL_ID_MAX_LENGTH + ") " + errMsgSuffix);
-		}
-		String sanitized = extIdStr.replaceAll("[^\\x20-\\x7E]", "");
-		if (! sanitized.equals(extIdStr)) {
-			throw new ConfigInvalidException(fncName + ": " + desc + " ID contains invalid characters " + errMsgSuffix);
+		final String sanitizedExtId = extIdStr.replaceAll("[^\\x20-\\x7E]", "");
+		final String errMsgSuffix = " in " + desc + " ID '" + sanitizedExtId + "'";
+
+		try {
+			if (isStreamId) {
+				RtspProtoIdInputSource.of(extIdStr);  // throws IllegalArgumentException if the ID is invalid
+			} else {
+				RtspProtoIdEsSource.of(extIdStr);  // throws IllegalArgumentException if the ID is invalid
+			}
+		} catch (IllegalArgumentException e) {
+			throw new ConfigInvalidException(fncName + ": ID contains invalid characters" + errMsgSuffix);
 		}
 	}
 

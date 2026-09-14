@@ -20,6 +20,8 @@ public class RtspProtoBaseIdString implements Cloneable {
 
 	protected RtspProtoBaseIdString(@NonNull String idStr) {
 		this.idStr = idStr;
+
+		validate();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -92,6 +94,19 @@ public class RtspProtoBaseIdString implements Cloneable {
 			return (RtspProtoBaseIdString)super.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected void validate() {
+		final String FNC_NAME = getClass().getSimpleName() + ".validate()";
+
+		String orgId = getIdStr().orElse("");
+		String sanitizedId = orgId.replaceAll("[^\\x20-\\x7E]", "");
+		if (! sanitizedId.equals(orgId)) {
+			throw new IllegalArgumentException(FNC_NAME + ": ID '" + sanitizedId + "' contains non-printable characters");
 		}
 	}
 
