@@ -185,6 +185,52 @@ public enum RtpPacketType {
 			};
 	}
 
+	/**
+	 * Get RTP Packet Type from its SDP codec name and the samplerate plus channel count from the SDP
+	 * @param sdpCodec SDP Codec string
+	 * @param sdpSamplerate SDP samplerate
+	 * @param sdpChannelCount SDP channel count
+	 * @return Packet type
+	 */
+	@SuppressWarnings("unused")
+	public static Optional<RtpPacketType> getCodecFromSdp(
+				@NonNull String sdpCodec,
+				int sdpSamplerate,
+				int sdpChannelCount
+			) {
+		RtpPacketType resEn = RtpPacketType.UNKNOWN;
+		for (RtpPacketType tmpPktTp : RtpPacketType.values()) {
+			if (tmpPktTp != RtpPacketType.UNKNOWN &&
+					tmpPktTp.getSdpCodecName().isPresent() &&
+					tmpPktTp.getSdpCodecName().get().equalsIgnoreCase(sdpCodec)) {
+				resEn = tmpPktTp;
+				break;
+			}
+		}
+
+		switch (resEn) {
+			case A_PCMA_8KHZ_MONO, A_PCMA_VAR ->
+				resEn = (sdpSamplerate == 8000 && sdpChannelCount == 1 ?
+						RtpPacketType.A_PCMA_8KHZ_MONO : RtpPacketType.A_PCMA_VAR);
+			case A_PCMU_8KHZ_MONO, A_PCMU_VAR ->
+				resEn = (sdpSamplerate == 8000 && sdpChannelCount == 1 ?
+						RtpPacketType.A_PCMU_8KHZ_MONO : RtpPacketType.A_PCMU_VAR);
+			case A_LINEAR_PCM_S16_441K_MONO, A_LINEAR_PCM_S16_441K_STEREO, A_LINEAR_PCM_S16_VAR -> {
+				if (sdpSamplerate == 44100 && sdpChannelCount == 1) {
+					resEn = RtpPacketType.A_LINEAR_PCM_S16_441K_MONO;
+				} else if (sdpSamplerate == 44100 && sdpChannelCount == 2) {
+					resEn = RtpPacketType.A_LINEAR_PCM_S16_441K_STEREO;
+				} else {
+					resEn = RtpPacketType.A_LINEAR_PCM_S16_VAR;
+				}
+			}
+		}
+		if (resEn == RtpPacketType.UNKNOWN) {
+			return Optional.empty();
+		}
+		return Optional.of(resEn);
+	}
+
 	/** Get RTP Clock rate for the packet type (or codec) */
 	public int getVideoCodecRtpClockrate() {
 		return switch(this) {
