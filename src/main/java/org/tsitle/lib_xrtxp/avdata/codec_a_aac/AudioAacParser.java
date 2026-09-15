@@ -1,13 +1,15 @@
 package org.tsitle.lib_xrtxp.avdata.codec_a_aac;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.BitReaderEosException;
 import org.tsitle.lib_xrtxp.common.helpers.BitReaderHelper;
 import org.tsitle.lib_xrtxp.common.helpers.BitWriterHelper;
+
+import java.util.HexFormat;
 
 public final class AudioAacParser {
 
@@ -63,6 +65,52 @@ public final class AudioAacParser {
 
 		AudioAacParser aacParser = new AudioAacParser();
 		return aacParser.parseAacData(new BufferView(adtsHeader));
+	}
+
+	@SuppressWarnings("unused")
+	public static AudioAacInfo.@NonNull AacAudioSpecificConfigInfo parseAacAudioSpecificConfig(
+				@NonNull ExtradataContainerHex decoderExtradata
+			) throws AvInvalidCodecDataException {
+		final String FNC_NAME = AudioAacParser.class.getSimpleName() + ".parseAacAudioSpecificConfig()";
+
+		if (! decoderExtradata.isCodecAac()) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": decoderExtradata is not for AAC");
+		}
+		String tmpEdStr = decoderExtradata.getEd();
+		if (tmpEdStr.length() < 2) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": decoderExtradata is missing");
+		}
+		byte[] tmpEdBa;
+		try {
+			tmpEdBa = HexFormat.of().parseHex(tmpEdStr);
+		} catch (IllegalArgumentException e) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": decoderExtradata is not valid hex-string");
+		}
+		BufferExt tmpEdBe = new BufferExt(tmpEdBa);
+		BitReaderHelper brh = new BitReaderHelper(tmpEdBe, 0);
+
+		try {
+			int tmpAudioObjectTypeIndex = brh.readBits(5);
+			int tmpSamplingFrequencyIndex = brh.readBits(4);
+			int tmpSamplingFrequencyCustom = -1;
+			if (tmpSamplingFrequencyIndex == 0x0F) {
+				tmpSamplingFrequencyCustom = brh.readBits(24);
+			}
+			int tmpChannelConfig = brh.readBits(4);
+
+			//
+			if (tmpSamplingFrequencyCustom >= 0) {
+				throw new AvInvalidCodecDataException(FNC_NAME + ": custom AAC samplerate is not supported");
+			}
+
+			AudioAacInfo.AacAudioSpecificConfigInfo resObj = new AudioAacInfo.AacAudioSpecificConfigInfo();
+			resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAudioObjectTypeIndex);
+			resObj.samplerate = AudioAacInfo.Samplerate.of(tmpSamplingFrequencyIndex);
+			resObj.channelConfiguration = tmpChannelConfig;
+			return resObj;
+		} catch (BitReaderEosException e) {
+			throw new AvInvalidCodecDataException(FNC_NAME + ": failed to parse AAC ASC");
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

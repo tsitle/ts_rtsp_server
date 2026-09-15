@@ -160,6 +160,48 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		}
 	}
 
+	/** AAC AudioSpecificConfig info */
+	public static class AacAudioSpecificConfigInfo implements Cloneable {
+		/** Samplerate of the audio data (4 bits) */
+		public @NonNull Samplerate samplerate;
+		/** MPEG-4 Audio Object Type (2 bits) */
+		public @NonNull AudioObjectType audioObjectType;
+		/** Channel configuration (3 bits) */
+		public int channelConfiguration;
+
+		public AacAudioSpecificConfigInfo() {
+			reset();
+		}
+		public void reset() {
+			samplerate = Samplerate.UNKNOWN;
+			audioObjectType = AudioObjectType.UNKNOWN;
+			channelConfiguration = 0;
+		}
+		public void copyOf(@NonNull AacAudioSpecificConfigInfo src) {
+			reset();
+			samplerate = src.samplerate;
+			audioObjectType = src.audioObjectType;
+			channelConfiguration = src.channelConfiguration;
+		}
+		@Override
+		public @NonNull AacAudioSpecificConfigInfo clone() {
+			try {
+				return (AacAudioSpecificConfigInfo)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError();
+			}
+		}
+		public @NonNull String hashSum() {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			baos.write(samplerate.ordinal());
+			baos.write(audioObjectType.ordinal());
+			baos.write(channelConfiguration);
+
+			return HashMd5Helper.hashOfBytes(baos.toByteArray(), true);
+		}
+	}
+
 	/** Offset of the audio samples in the audio data (in case there is a header) */
 	public int samplesOffset;
 	/** Length of the audio samples in the audio data */
