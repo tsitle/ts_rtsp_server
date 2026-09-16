@@ -109,8 +109,10 @@ public final class AdaptiveScheduler {
 			double tmpDeltaUs = (((double)targetTimeNanos - currentTime) / 1_000.0);
 			if (warnIfInPast && Math.abs(tmpDeltaUs) >= 100.0) {
 				logWarn(FNC_NAME,
-						String.format("Target time is in the past (%.3f us, r=%d)", tmpDeltaUs, curFrameNr
-					));
+						String
+								.format("Target time is in the past (%.3f us, r=%d)", tmpDeltaUs, curFrameNr)
+								.replace(",", ".")
+					);
 			}
 			return;
 		}
