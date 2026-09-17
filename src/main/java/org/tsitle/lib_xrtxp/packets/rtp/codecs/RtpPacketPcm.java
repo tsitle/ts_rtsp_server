@@ -44,14 +44,12 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 	 * Constructor.
 	 * @param paramsBase Base Container parameters
 	 * @param packetType RTP packet type (since there are several PCM types)
-	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the PCM frame data) (24 bits)
 	 * @param pcmInfo PCM info
 	 * @param payloadView Payload data view
 	 */
 	public RtpPacketPcm(
 				@NonNull ParamsContainerBase paramsBase,
 				@NonNull RtpPacketType packetType,
-				int fragmentOffset,
 				@NonNull AudioPcmInfo pcmInfo,
 				@NonNull BufferView payloadView
 			) {
@@ -68,7 +66,7 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 		}
 
 		//
-		updatePacket(paramsBase, fragmentOffset, payloadView);
+		updatePacket(paramsBase, payloadView);
 	}
 
 	/**
@@ -104,19 +102,12 @@ public final class RtpPacketPcm extends RtpPacketCodecBase {
 	/**
 	 * Update the entire packet.
 	 * @param paramsBase Base Container parameters
-	 * @param fragmentOffset Fragment Offset (offset in bytes of the current packet in the PCM frame data) (24 bits)
 	 * @param payloadView Payload data view
 	 */
 	public void updatePacket(
 				@NonNull ParamsContainerBase paramsBase,
-				int fragmentOffset,
 				@NonNull BufferView payloadView
 			) {
-		if (fragmentOffset < 0 || fragmentOffset > 0xFFFFFF) {
-			throw new IllegalArgumentException("Invalid fragment offset");
-		}
-
-		//
 		updatePacketHeader(paramsBase);
 
 		// set inner main header fields
