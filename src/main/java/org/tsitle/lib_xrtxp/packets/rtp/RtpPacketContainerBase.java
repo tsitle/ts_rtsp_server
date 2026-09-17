@@ -95,7 +95,7 @@ public class RtpPacketContainerBase {
 		int tmpTsInt = (this.packetBuf.get(7) & 0xFF) | ((this.packetBuf.get(6) & 0xFF) << 8) |
 				((this.packetBuf.get(5) & 0xFF) << 16) | ((this.packetBuf.get(4) & 0xFF) << 24);
 		try {
-			this.hdBaseTimestamp.setTs32bit(tmpTsInt);
+			this.hdBaseTimestamp.setTs32bit(Integer.toUnsignedLong(tmpTsInt));
 		} catch (RtspProtoNumberRangeException e) {
 			// this will never happen
 		}
