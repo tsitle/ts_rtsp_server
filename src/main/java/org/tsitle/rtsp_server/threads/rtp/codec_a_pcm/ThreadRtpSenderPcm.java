@@ -180,14 +180,12 @@ public final class ThreadRtpSenderPcm<AVSTRIC extends AvStreamIncomingBase>
 			cachePlainPacket = new RtpPacketPcm(
 					cacheParamsBase,
 					rtpPayloadType,
-					curFragmentData.fragmentOffset(),
 					curFramePcmInfo,
 					cacheRtpInnerPayloadBufView
 				);
 		} else {
 			cachePlainPacket.updatePacket(
 					cacheParamsBase,
-					curFragmentData.fragmentOffset(),
 					cacheRtpInnerPayloadBufView
 				);
 		}
