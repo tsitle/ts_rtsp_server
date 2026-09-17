@@ -24,7 +24,7 @@ public final class RtpPacketVp8 extends RtpPacketCodecBase {
 		public boolean main_FlagN = false;
 		/** Start of VP8 partition? */
 		public boolean main_FlagS = false;
-		/** Partition index */
+		/** Partition index (can be kept at 0 for all packets). This is not the fragment offset. */
 		public byte main_PartIx = 0;
 
 		/** PictureID present? */
