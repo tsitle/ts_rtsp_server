@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.4] - 2026-09-18
+
+### Added
+
+- UDP/TCP transports for RTP/RTCP can now be enabled/disabled in the main config file
+- added support for pushing 'FileTags' (for Jukebox streams) to compatible clients
+
+### Fixed
+
+- fixed an issue in RtspProtoHighResponseConsumer where a Session ID in the response headers was unnecessarily expected
+
 ## [1.1.3] - 2026-09-18
 
 ### Added
