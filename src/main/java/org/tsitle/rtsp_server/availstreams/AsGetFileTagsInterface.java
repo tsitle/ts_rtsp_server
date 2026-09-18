@@ -7,6 +7,8 @@ import java.util.Optional;
 
 public interface AsGetFileTagsInterface {
 
-	Optional<String> getFileTags(@NonNull RtspProtoIdInputSource idInputSource);
+	Optional<String> getFileTagsValue(@NonNull RtspProtoIdInputSource idInputSource);
+
+	Optional<String> getFileTagsHash(@NonNull RtspProtoIdInputSource idInputSource);
 
 }

@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
+import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
@@ -48,7 +49,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 
 	private final AtomicBoolean haveStreamsChanged = new AtomicBoolean(false);
 
-	private final Map<@NonNull RtspProtoIdInputSource, @NonNull String> mapIsIdToFileTags = new HashMap<>();
+	private final Map<@NonNull RtspProtoIdInputSource, @NonNull String> mapIsIdToFileTagValues = new HashMap<>();
+	private final Map<@NonNull RtspProtoIdInputSource, @NonNull String> mapIsIdToFileTagHashes = new HashMap<>();
 
 	public RtspAvailableStreamsSvc() {
 	}
@@ -260,6 +262,8 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 		onCodecMetadataFromMq(idEsSource, metadataHex);
 	}
 
+	// ------------------------------------------------------
+
 	@Override
 	public void onFileTagsChangedFromDmxJb(@NonNull RtspProtoIdInputSource idInputSource, @NonNull String fileTags) {
 		theWriteLock.lock();
@@ -267,17 +271,28 @@ public final class RtspAvailableStreamsSvc implements RtspProtoAvailableStreamsI
 			if (! existsInputSourceId(idInputSource)) {
 				return;
 			}
-			mapIsIdToFileTags.put(idInputSource.clone(), fileTags);
+			mapIsIdToFileTagValues.put(idInputSource.clone(), fileTags);
+			mapIsIdToFileTagHashes.put(idInputSource.clone(), HashMd5Helper.hashOfString(fileTags, false));
 		} finally {
 			theWriteLock.unlock();
 		}
 	}
 
 	@Override
-	public Optional<String> getFileTags(@NonNull RtspProtoIdInputSource idInputSource) {
+	public Optional<String> getFileTagsValue(@NonNull RtspProtoIdInputSource idInputSource) {
 		theReadLock.lock();
 		try {
-			return Optional.ofNullable(mapIsIdToFileTags.get(idInputSource));
+			return Optional.ofNullable(mapIsIdToFileTagValues.get(idInputSource));
+		} finally {
+			theReadLock.unlock();
+		}
+	}
+
+	@Override
+	public Optional<String> getFileTagsHash(@NonNull RtspProtoIdInputSource idInputSource) {
+		theReadLock.lock();
+		try {
+			return Optional.ofNullable(mapIsIdToFileTagHashes.get(idInputSource));
 		} finally {
 			theReadLock.unlock();
 		}

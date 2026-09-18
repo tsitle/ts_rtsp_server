@@ -70,7 +70,7 @@ public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterI
 		/*
 		 * Note: we do not validate the Session ID here to avoid the client having to send a 'SETUP' request.
 		 */
-		Optional<String> tmpOptFileTags = asGetFileTagsInterface.getFileTags(idInputSource);
+		Optional<String> tmpOptFileTags = asGetFileTagsInterface.getFileTagsValue(idInputSource);
 		tmpOptFileTags.ifPresent(s -> resObj.putParamKvsEntry(PARAM_KEY_FILETAGS, s));
 
 		return resObj;

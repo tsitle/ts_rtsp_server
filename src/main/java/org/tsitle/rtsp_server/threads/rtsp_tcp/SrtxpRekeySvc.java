@@ -4,21 +4,17 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoInvalidRequestException;
-import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoKmdsStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRscUrl;
 import org.tsitle.rtsp_server.threads.rtsp_play.ChildThreadsForOneStream;
@@ -35,14 +31,7 @@ import java.util.Optional;
  * However, it is RECOMMENDED that automated key management allows easy and efficient
  * rekeying at intervals far smaller than 2^31 packets given today's media rates or even HDTV media rates.
  */
-final class SrtxpRekeySvc {
-
-	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtspChildThreadsGetRunning childThreadsGetRunningInterface;
-
-	private final @NonNull RtspProtoRequestOutputSvc rtspProtoRequestOutputSvc;
-	private final @NonNull RtspProtoResponseInputSvc rtspProtoResponseInputSvc;
+final class SrtxpRekeySvc extends RtspSrvToCntSvcBase {
 
 	SrtxpRekeySvc(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -55,30 +44,16 @@ final class SrtxpRekeySvc {
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
-		this.logMsgInterface = logMsgInterface;
-		this.sessionInfoPtr = sessionInfoPtr;
-		this.childThreadsGetRunningInterface = childThreadsGetRunningInterface;
-
-		//
-		this.rtspProtoRequestOutputSvc = new RtspProtoRequestOutputSvc(
+		super(
 				logMsgInterface,
-				false,
+				rtspSrvConfig,
 				cfgServerNameAndVersion,
-				RtspConnectionPolicy.KEEPALIVE,
 				cfgContentLanguage,
-				rtspSrvConfig.getIsDebugPrintRtspSdpSent(),
-				rtspSrvConfig.getIsDebugPrintRtspSent(),
 				sessionInfoPtr,
+				childThreadsGetRunningInterface,
 				rtxpTcpReadWrite,
 				availableStreamsInterface,
 				globalSessionInfoInterface
-			);
-		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
-				logMsgInterface,
-				true,
-				rtspSrvConfig.getIsDebugPrintRtspRcvd(),
-				sessionInfoPtr,
-				rtxpTcpReadWrite
 			);
 	}
 
@@ -242,18 +217,12 @@ final class SrtxpRekeySvc {
 			return false;
 		}
 
-		{
-			try {
-				rtspProtoRequestOutputSvc.sendRequest_options(resourceUrlForSs);
-			} catch (RtspProtoSendRequestFailedException e) {
-				logError(FNC_NAME, logMsgPrefix + "RtspProtoSendRequestFailedException caught: " + e.getMessage());
-				return false;
-			}
-			RtspProtoStatusCode requStatCode = recvResponseFromClient();
-			if (requStatCode != RtspProtoStatusCode.OK) {
-				logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - client does not support OPTIONS request");
-				return false;
-			}
+		if (! haveRequestedOptions &&
+				! requestOptionsFromClient(FNC_NAME, "SRTxP re-keying failed", resourceUrlForSs, true)) {
+			return false;
+		}
+		if (! areClientOptionsOk) {
+			return false;
 		}
 
 		//
@@ -301,18 +270,12 @@ final class SrtxpRekeySvc {
 		}
 		final String resourceUrl = tmpOptRscUrl.get().getUrlStr();
 
-		{
-			try {
-				rtspProtoRequestOutputSvc.sendRequest_options(resourceUrl);
-			} catch (RtspProtoSendRequestFailedException e) {
-				logError(FNC_NAME, "RtspProtoSendRequestFailedException caught: " + e.getMessage());
-				return false;
-			}
-			RtspProtoStatusCode requStatCode = recvResponseFromClient();
-			if (requStatCode != RtspProtoStatusCode.OK) {
-				logError(FNC_NAME, "SRTxP re-keying failed - client does not support OPTIONS request");
-				return false;
-			}
+		if (! haveRequestedOptions &&
+				! requestOptionsFromClient(FNC_NAME, "SRTxP re-keying failed", resourceUrl, true)) {
+			return false;
+		}
+		if (! areClientOptionsOk) {
+			return false;
 		}
 
 		//
@@ -346,41 +309,6 @@ final class SrtxpRekeySvc {
 			srtxpRekeyOutbound_updateThreads(ctfos, tmpOptNextKmdOutbound.get());
 		}
 		return true;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private @NonNull RtspProtoStatusCode recvResponseFromClient()
-			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
-		int timeoutCnt = 0;
-		RtspResponseBasics respBasics = null;
-		while (++timeoutCnt < 100) {
-			try {
-				respBasics = rtspProtoResponseInputSvc.receiveResponse();
-			} catch (RtspProtoTcpSocketNotReadyException ignored) {
-				// ignore
-			}
-		}
-		if (respBasics == null) {
-			throw new TcpSocketIoException("could not receive response");
-		}
-		return respBasics.statusCode;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	private void logDebug(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
-	}
-	private void logInfo(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.INFO, fncName, msg);
-	}
-	private void logError(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.ERROR, fncName, msg);
-	}
-	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
-		logMsgInterface.addMsgForLogThread(logLevel, Thread.currentThread().getName(),
-				fncName + ": " + msg);
 	}
 
 }

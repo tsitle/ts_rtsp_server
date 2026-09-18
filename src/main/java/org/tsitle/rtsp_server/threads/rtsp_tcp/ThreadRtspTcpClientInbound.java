@@ -9,8 +9,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoPlaybackRange;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.rtsp_server.availstreams.AsGetFileTagsInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
@@ -26,7 +25,6 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoIpAddr;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
 
@@ -51,6 +49,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	private final @NonNull String cfgServerNameAndVersion;
 	private final @NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 	private final @NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface;
+	private final @NonNull AsGetFileTagsInterface asGetFileTagsInterface;
 	private final @NonNull RtspPlayThreadMngInterface playThreadMngInterface;
 
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr = RtspProtoPtrSessionInfo.ofNewSi();
@@ -63,6 +62,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	private @Nullable ThreadRtspPlay threadRtspPlay = null;
 	private @Nullable SrtxpRekeySvc srtxpRekeySvc = null;
+	private @Nullable UpdateClientFileTagsSvc updateClientFileTagsSvc = null;
 
 	private final @NonNull RtspProtoDataCntGetSetParamKvs cachedSetParamValues = new RtspProtoDataCntGetSetParamKvs();
 
@@ -105,6 +105,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		this.cfgServerNameAndVersion = cfgServerNameAndVersion;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
+		this.asGetFileTagsInterface = asGetFileTagsInterface;
 		this.playThreadMngInterface = playThreadMngInterface;
 
 		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
@@ -506,6 +507,27 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			);
 	}
 
+	private @NonNull UpdateClientFileTagsSvc buildUpdateClientFileTagsSvc() {
+		if (logMsgInterface == null) {
+			throw new IllegalStateException("logMsgInterface is null");
+		}
+		if (threadRtspPlay == null) {
+			throw new IllegalStateException("threadRtspPlay is null");
+		}
+		return new UpdateClientFileTagsSvc(
+				logMsgInterface,
+				rtspSrvConfig,
+				cfgServerNameAndVersion,
+				RtspParamGetterSetterSvc.CONTENT_LANGUAGE,
+				sessionInfoPtr,
+				threadRtspPlay,
+				rtxpTcpReadWrite,
+				availableStreamsInterface,
+				globalSessionInfoInterface,
+				asGetFileTagsInterface
+			);
+	}
+
 	private void startOrGetThreadRtspPlay() {
 		final String FNC_NAME = getClass().getSimpleName() + ".startOrGetThreadRtspPlay()";
 
@@ -569,6 +591,16 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				if (! srtxpRekeySvc.srtxpRekeyOutbound()) {
 					return MainLoopResult.ERROR;  // terminate session
 				}
+			}
+		}
+
+		//
+		if (threadRtspPlay != null && sessionInfoPtr.ptr().getSessionState() == RtspProtoSessionState.PLAYING) {
+			if (updateClientFileTagsSvc == null && sessionInfoPtr.ptr().getLastRequestResourceUrl_mainStream().isPresent()) {
+				updateClientFileTagsSvc = buildUpdateClientFileTagsSvc();
+			}
+			if (updateClientFileTagsSvc != null && (loopCounter + 5) % 13 == 0) {  // 13^=roughly once every 1s
+				updateClientFileTagsSvc.updateClient();
 			}
 		}
 
