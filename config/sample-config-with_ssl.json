@@ -10,7 +10,9 @@
 		"threadsMaximumTci": 20,
 		"threadsMaximumMq": 20,
 		"threadsMaximumDmxRtsp": 20,
-		"threadsMaximumDmxJb": 20
+		"threadsMaximumDmxJb": 20,
+		"enableRtpTransportUdp": true,
+		"enableRtpTransportTcp": true
 	},
 
 	"logging": {
@@ -25,8 +27,7 @@
 	"debugging": {
 		"debugPrintRtspRcvd": false,
 		"debugPrintRtspSent": false,
-		"debugPrintRtspSdpSent": false,
-		"debugDisableTransportUdp": false
+		"debugPrintRtspSdpSent": false
 	},
 
 	"userAccounts": {
