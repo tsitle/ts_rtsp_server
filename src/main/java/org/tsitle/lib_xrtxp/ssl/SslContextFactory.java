@@ -132,6 +132,21 @@ public final class SslContextFactory {
 		}
 	}
 
+	/**
+	 * Create an SSLContext for client-side SSL/TLS connections with default certificate verification.
+	 * @return SSLContext configured for client-side SSL/TLS
+	 * @throws SslException If any kind of error occurred
+	 */
+	public static @NonNull SSLContext createClientDefaultSslContext() throws SslException {
+		System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "false");
+
+		try {
+			return SSLContext.getDefault();
+		} catch (NoSuchAlgorithmException e) {
+			throw new SslException("NoSuchAlgorithmException: " + e.getMessage());
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
