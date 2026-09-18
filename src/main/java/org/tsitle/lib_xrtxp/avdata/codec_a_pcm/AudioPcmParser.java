@@ -34,7 +34,7 @@ public final class AudioPcmParser {
 		final String FNC_NAME = getClass().getSimpleName() + ".parsePcmData()";
 
 		if (inputBv.getLength() < 1) {
-			throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid PCM data size");
+			throw new AvInvalidCodecDataException(FNC_NAME + ": PCM data is empty");
 		}
 		if (channels < 1 || channels > AudioPcmInfo.AUDIO_CHANNELS_MAX) {
 			throw new IllegalArgumentException(FNC_NAME + ": Invalid audio channel count: " + channels);
