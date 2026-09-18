@@ -1149,15 +1149,12 @@ class RtspProtoHighRequestConsumerTest {
 		cfgSrvSuppIncomingMts.putAllMts(TEMP_SUPPORTED_INCOMING_MESSAGE_TYPES);
 		cfgSrvSuppIncomingMts.writeProtect();
 
-		final boolean cfgIsDebugDisableTransportUdp = false;
-
 		return new RtspProtoHighRequestConsumer(
 				new TestLogs(),
 				true,
 				cfgSrvSuppIncomingMts,
 				Set.of(),
 				Set.of(),
-				cfgIsDebugDisableTransportUdp,
 				new RtspProtoSdpConsumer(),
 				new AvailableStreams(),
 				globalSessionInfoSvc,

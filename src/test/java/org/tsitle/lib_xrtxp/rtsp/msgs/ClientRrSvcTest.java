@@ -179,7 +179,7 @@ public class ClientRrSvcTest {
 
 		// ----------------------------------------------------
 
-		assertDoesNotThrow(() -> outputSvc.sendResponse(resRequBas));
+		assertDoesNotThrow(() -> Objects.requireNonNull(outputSvc).sendResponse(resRequBas));
 	}
 
 	@Test
@@ -312,7 +312,6 @@ public class ClientRrSvcTest {
 				cfgSupportedFeatures,
 				Set.of(),
 				false,
-				false,
 				cliPtrSessionInfo,
 				null,
 				null,
@@ -342,7 +341,6 @@ public class ClientRrSvcTest {
 				"",
 				false,
 				true,
-				false,
 				cliPtrSessionInfo,
 				null,
 				null,

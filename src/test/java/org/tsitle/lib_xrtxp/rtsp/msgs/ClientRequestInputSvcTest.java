@@ -136,7 +136,6 @@ public class ClientRequestInputSvcTest {
 				cfgSupportedFeatures,
 				Set.of(),
 				false,
-				false,
 				cliPtrSessionInfo,
 				null,
 				null,
