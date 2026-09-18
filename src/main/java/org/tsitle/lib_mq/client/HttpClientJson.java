@@ -23,6 +23,15 @@ import java.util.Map;
  */
 public final class HttpClientJson {
 
+	public enum SslCertValidationMode {
+		/** default SSL Certificate validation */
+		DEFAULT,
+		/** only allow SSL Certificates found in a given path */
+		USE_REMOTE_CERT,
+		/** do not validate SSL Certificates */
+		NONE
+	}
+
 	private final HttpClient httpClient;
 	private final Gson gson;
 	private final String authorizationHeaderValue;
@@ -31,23 +40,25 @@ public final class HttpClientJson {
 	 * Constructor.
 	 * @param username Username (can be empty)
 	 * @param password Password (can be empty, will be ignored if {@code username} is empty)
-	 * @param useCompletelyInsecureSsl Use completely insecure SSL?
-	 * @param useRemoteCertForSsl Use a certificate to validate the remote SSL server?
+	 * @param useSsl Use SSL?
+	 * @param sslCertValidationMode SSL Certificate validation mode
 	 * @param remoteCertPath Path to certificate to validate the remote SSL server
 	 */
 	private HttpClientJson(
 				@NonNull String username,
 				@NonNull String password,
-				boolean useCompletelyInsecureSsl,
-				boolean useRemoteCertForSsl,
+				boolean useSsl,
+				@NonNull SslCertValidationMode sslCertValidationMode,
 				@NonNull Path remoteCertPath
 			) throws SslException {
 		HttpClient.Builder builder = HttpClient.newBuilder();
 		builder.connectTimeout(Duration.ofSeconds(10));
-		if (useCompletelyInsecureSsl) {
-			builder.sslContext(SslContextFactory.createClientInsecureSslContext());
-		} else if (useRemoteCertForSsl) {
-			builder.sslContext(SslContextFactory.createClientSslContextFromPem(remoteCertPath));
+		if (useSsl) {
+			switch (sslCertValidationMode) {
+				case DEFAULT -> builder.sslContext(SslContextFactory.createClientDefaultSslContext());
+				case USE_REMOTE_CERT -> builder.sslContext(SslContextFactory.createClientSslContextFromPem(remoteCertPath));
+				case NONE -> builder.sslContext(SslContextFactory.createClientInsecureSslContext());
+			}
 		}
 		this.httpClient = builder.build();
 		this.gson = new Gson();
@@ -75,7 +86,7 @@ public final class HttpClientJson {
 				@NonNull String username,
 				@NonNull String password
 			) throws SslException {
-		return new HttpClientJson(username, password, false, false, Path.of(""));
+		return new HttpClientJson(username, password, false, SslCertValidationMode.DEFAULT, Path.of(""));
 	}
 
 	/**
@@ -87,7 +98,7 @@ public final class HttpClientJson {
 				@NonNull String username,
 				@NonNull String password
 			) throws SslException {
-		return new HttpClientJson(username, password, true, false, Path.of(""));
+		return new HttpClientJson(username, password, true, SslCertValidationMode.NONE, Path.of(""));
 	}
 
 	/**
@@ -101,7 +112,19 @@ public final class HttpClientJson {
 				@NonNull String password,
 				@NonNull Path remoteCertPath
 			) throws SslException {
-		return new HttpClientJson(username, password, false, true, remoteCertPath);
+		return new HttpClientJson(username, password, true, SslCertValidationMode.USE_REMOTE_CERT, remoteCertPath);
+	}
+
+	/**
+	 * Create a new HttpClientJson instance that uses default SSL Certificate validation for the remote SSL server.
+	 * @param username Username (can be empty)
+	 * @param password Password (can be empty, will be ignored if {@code username} is empty)
+	 */
+	public static HttpClientJson createClientWithDefaultSsl(
+				@NonNull String username,
+				@NonNull String password
+			) throws SslException {
+		return new HttpClientJson(username, password, true, SslCertValidationMode.DEFAULT, Path.of(""));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
