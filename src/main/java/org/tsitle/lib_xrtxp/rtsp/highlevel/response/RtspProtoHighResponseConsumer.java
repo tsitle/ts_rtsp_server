@@ -160,6 +160,9 @@ public final class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoHighMsgStructuredResponse inputMsgStc,
 				@NonNull RtspProtoDataResponse outputDataResp
 			) throws RtspProtoInvalidResponseException, RtspProtoInvalidSessionIdException {
+		if (inputMsgStc.statusCode != RtspProtoStatusCode.OK) {
+			return;
+		}
 		Optional<RtspProtoIdSession> tmpOptSessionId = inputMsgStc.getHeaderSessionId();
 		if (! currentIdSession.isEmpty() && tmpOptSessionId.isEmpty()) {
 			throw new RtspProtoInvalidResponseException("Missing Session header");
