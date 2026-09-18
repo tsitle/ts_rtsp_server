@@ -62,6 +62,12 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Maxmimum number of threads for Demux JB */
 		@Expose
 		private final int threadsMaximumDmxJb;
+		/** Enable UDP transport for RTP/RTCP? */
+		@Expose
+		private boolean enableRtpTransportUdp;
+		/** Enable TCP transport for RTP/RTCP? */
+		@Expose
+		private boolean enableRtpTransportTcp;
 
 		public SectionServer() {
 			this.tcpPortRtsp = ProUri.RTSP_TCP_PORT_DEFAULT;
@@ -75,6 +81,8 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 			this.threadsMaximumMq = MQ_THREADS_EXT_DEFAULT;
 			this.threadsMaximumDmxRtsp = DMX_RTSP_THREADS_DEFAULT;
 			this.threadsMaximumDmxJb = DMX_JB_THREADS_DEFAULT;
+			this.enableRtpTransportUdp = true;
+			this.enableRtpTransportTcp = true;
 		}
 	}
 
@@ -152,15 +160,11 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Debugging: print the RTSP SDP description that has been sent to the client? */
 		@Expose
 		private final boolean debugPrintRtspSdpSent;
-		/** Debugging: disable UDP transport? */
-		@Expose
-		private boolean debugDisableTransportUdp;
 
 		public SectionDebugging() {
 			this.debugPrintRtspRcvd = false;
 			this.debugPrintRtspSent = false;
 			this.debugPrintRtspSdpSent = false;
-			this.debugDisableTransportUdp = false;
 		}
 	}
 
@@ -272,6 +276,24 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		return server.threadsMaximumDmxJb;
 	}
 
+	/**
+	 * Check if UDP transport for RTP/RTCP is enabled.
+	 * @return True if UDP transport is enabled, false otherwise
+	 */
+	public boolean getIsRtpTransportUdpEnabled() {
+		checkPostProcessed();
+		return server.enableRtpTransportUdp;
+	}
+
+	/**
+	 * Check if TCP transport for RTP/RTCP is enabled.
+	 * @return True if TCP transport is enabled, false otherwise
+	 */
+	public boolean getIsRtpTransportTcpEnabled() {
+		checkPostProcessed();
+		return server.enableRtpTransportTcp;
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
@@ -331,15 +353,6 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 	public boolean getIsDebugPrintRtspSdpSent() {
 		checkPostProcessed();
 		return debugging.debugPrintRtspSdpSent;
-	}
-
-	/**
-	 * Get if UDP transport is disabled for debugging.
-	 * @return True if UDP transport is disabled, false otherwise
-	 */
-	public boolean getIsDebugDisableTransportUdp() {
-		checkPostProcessed();
-		return debugging.debugDisableTransportUdp;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

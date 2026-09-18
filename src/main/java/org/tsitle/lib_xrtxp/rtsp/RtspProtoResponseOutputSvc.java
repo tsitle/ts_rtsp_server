@@ -56,7 +56,6 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param cfgSubStreamIdPrefix Prefix for Sub-Stream IDs (only required for responses from the server)
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent RTSP SDP for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
-	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param sessionInfoPtr Session Info pointer
 	 * @param availableStreamsInterface Available streams instance (only required for responses from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
@@ -73,7 +72,6 @@ public final class RtspProtoResponseOutputSvc {
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
-				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
@@ -127,7 +125,6 @@ public final class RtspProtoResponseOutputSvc {
 				cfgSenderAppNameAndVersion,
 				cfgSubStreamIdPrefix,
 				cfgIsDebugPrintRtspSdpSent,
-				cfgIsDebugDisableTransportUdp,
 				sdpProducer,
 				availableStreamsInterface,
 				globalSessionInfoInterface,

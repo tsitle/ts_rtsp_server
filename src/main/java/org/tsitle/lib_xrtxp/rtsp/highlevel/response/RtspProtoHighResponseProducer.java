@@ -37,7 +37,6 @@ public final class RtspProtoHighResponseProducer {
 	private final @NonNull String cfgSenderAppNameAndVersion;
 	private final @NonNull String cfgSubStreamIdPrefix;
 	private final boolean cfgIsDebugPrintRtspSdpSent;
-	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @Nullable RtspProtoSdpProducerInterface sdpProducerInterface;
 	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
@@ -50,7 +49,6 @@ public final class RtspProtoHighResponseProducer {
 				@NonNull String cfgSenderAppNameAndVersion,
 				@NonNull String cfgSubStreamIdPrefix,
 				boolean cfgIsDebugPrintRtspSdpSent,
-				boolean cfgIsDebugDisableTransportUdp,
 				@Nullable RtspProtoSdpProducerInterface sdpProducerInterface,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
@@ -76,7 +74,6 @@ public final class RtspProtoHighResponseProducer {
 		this.cfgSenderAppNameAndVersion = cfgSenderAppNameAndVersion;
 		this.cfgSubStreamIdPrefix = cfgSubStreamIdPrefix;
 		this.cfgIsDebugPrintRtspSdpSent = cfgIsDebugPrintRtspSdpSent;
-		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpProducerInterface = sdpProducerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
@@ -466,8 +463,7 @@ public final class RtspProtoHighResponseProducer {
 			tmpSiSsPtr.isTransportValid(
 					inputDataResp.rrStreamTpMain.getRtpRtcpEncryptionRequired(),
 					inputDataResp.rrStreamTpMain.getForceRtpRtcpEncryption(),
-					inputDataResp.rrStreamTpMain.getIsRtspsConnection(),
-					cfgIsDebugDisableTransportUdp
+					inputDataResp.rrStreamTpMain.getIsRtspsConnection()
 				);
 		} catch (RtspProtoInvalidTpSettingsException e) {
 			// this should never happen

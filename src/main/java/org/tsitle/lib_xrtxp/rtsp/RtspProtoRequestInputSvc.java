@@ -60,7 +60,6 @@ public final class RtspProtoRequestInputSvc {
 	 * @param cfgSupportedFeatures Features that the local host supports if it is not a proxy (can be empty)
 	 * @param cfgProxySupportedFeatures Features that the local host - which is a proxy - supports (can be empty)
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
-	 * @param cfgIsDebugDisableTransportUdp Disable UDP transport for debugging?
 	 * @param sessionInfoPtr Session Info pointer
 	 * @param userAuthInterface User authentication instance (only required for requests from the client)
 	 * @param availableStreamsInterface Available streams instance (only required for requests from the client)
@@ -76,7 +75,6 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
 				boolean cfgIsDebugPrintRtspRcvd,
-				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@Nullable RtspProtoUserAuthInterface userAuthInterface,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
@@ -128,7 +126,6 @@ public final class RtspProtoRequestInputSvc {
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				cfgProxySupportedFeatures,
-				cfgIsDebugDisableTransportUdp,
 				sdpConsumer,
 				availableStreamsInterface,
 				globalSessionInfoInterface,

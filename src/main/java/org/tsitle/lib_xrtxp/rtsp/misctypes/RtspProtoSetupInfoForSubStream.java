@@ -202,10 +202,9 @@ public final class RtspProtoSetupInfoForSubStream {
 	public void isTransportValid(
 				boolean needsEncryption,
 				boolean forceEncryption,
-				boolean isRtspsConnection,
-				boolean isTransportUdpDisabled
+				boolean isRtspsConnection
 			) throws RtspProtoInvalidTpSettingsException {
-		subStreamTp.isTransportValid(needsEncryption, forceEncryption, isRtspsConnection, isTransportUdpDisabled);
+		subStreamTp.isTransportValid(needsEncryption, forceEncryption, isRtspsConnection);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

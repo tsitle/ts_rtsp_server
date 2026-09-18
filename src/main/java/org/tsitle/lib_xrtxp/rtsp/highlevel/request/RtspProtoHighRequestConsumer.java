@@ -44,7 +44,6 @@ public final class RtspProtoHighRequestConsumer {
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull Set<@NonNull String> cfgSupportedFeatures;
 	private final @NonNull Set<@NonNull String> cfgProxySupportedFeatures;
-	private final boolean cfgIsDebugDisableTransportUdp;
 	private final @NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface;
 	private final @Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
@@ -58,7 +57,6 @@ public final class RtspProtoHighRequestConsumer {
 				@NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes,
 				@NonNull Set<@NonNull String> cfgSupportedFeatures,
 				@NonNull Set<@NonNull String> cfgProxySupportedFeatures,
-				boolean cfgIsDebugDisableTransportUdp,
 				@NonNull RtspProtoSdpConsumerInterface sdpConsumerInterface,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
@@ -76,7 +74,6 @@ public final class RtspProtoHighRequestConsumer {
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.cfgSupportedFeatures = new HashSet<>(cfgSupportedFeatures);
 		this.cfgProxySupportedFeatures = new HashSet<>(cfgProxySupportedFeatures);
-		this.cfgIsDebugDisableTransportUdp = cfgIsDebugDisableTransportUdp;
 		this.sdpConsumerInterface = sdpConsumerInterface;
 		this.availableStreamsInterface = availableStreamsInterface;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
@@ -860,8 +857,7 @@ public final class RtspProtoHighRequestConsumer {
 			ioSsTp.isTransportValid(
 					ioStreamTpMain.getRtpRtcpEncryptionRequired(),
 					ioStreamTpMain.getForceRtpRtcpEncryption(),
-					ioStreamTpMain.getIsRtspsConnection(),
-					cfgIsDebugDisableTransportUdp
+					ioStreamTpMain.getIsRtspsConnection()
 				);
 		} catch (RtspProtoInvalidTpSettingsException e) {
 			throw new RtspProtoUnsupportedTransportException(errMsgPrefix + "Invalid Transport: " + e.getMessage());

@@ -42,9 +42,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		TIMEOUT
 	}
 
-	private static final boolean ALLOW_TRANSPORT_UDP = true;
-	private static final boolean ALLOW_TRANSPORT_TCP = true;
-
 	private final @NonNull String threadName;
 
 	private final @NonNull RtspProtoIpAddr fromCtorClientIpAddr = new RtspProtoIpAddr();
@@ -142,7 +139,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				RtspServerConstants.SERVER_SUPPORTED_FEATURES,
 				Set.of(),
 				rtspSrvConfig.getIsDebugPrintRtspRcvd(),
-				rtspSrvConfig.getIsDebugDisableTransportUdp(),
 				this.sessionInfoPtr,
 				userAuthSvc,
 				availableStreamsInterface,
@@ -159,7 +155,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				RtspProtoHighConstants.DEFAULT_SUBSTREAM_ID_PREFIX,
 				rtspSrvConfig.getIsDebugPrintRtspSdpSent(),
 				rtspSrvConfig.getIsDebugPrintRtspSent(),
-				rtspSrvConfig.getIsDebugDisableTransportUdp(),
 				this.sessionInfoPtr,
 				availableStreamsInterface,
 				globalSessionInfoInterface,
@@ -332,14 +327,15 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 					}
 				}
 				if (resObj.statusCode == RtspProtoStatusCode.OK && resObj.messageType == RtspProtoMessageType.SETUP &&
-						! (ALLOW_TRANSPORT_UDP && ALLOW_TRANSPORT_TCP)) {
+						! (rtspSrvConfig.getIsRtpTransportUdpEnabled() && rtspSrvConfig.getIsRtpTransportTcpEnabled())) {
 					try {
 						final RtspProtoIdSubStream tmpIdSubStream = resObj.rscUrl.idSubStream;
 						final boolean tmpIsUdp = sessionInfoPtr.ptr()
 								.getDescrSetupInfoBySubStreamsId(tmpIdSubStream)
 								.getSubStreamTpPtr()
 								.getIsUdp();
-						if ((tmpIsUdp && ! ALLOW_TRANSPORT_UDP) || (! tmpIsUdp && ! ALLOW_TRANSPORT_TCP)) {
+						if ((tmpIsUdp && ! rtspSrvConfig.getIsRtpTransportUdpEnabled()) ||
+								(! tmpIsUdp && ! rtspSrvConfig.getIsRtpTransportTcpEnabled())) {
 							logDebug(FNC_NAME, "SETUP rejecting " + (tmpIsUdp ? "UDP" : "TCP") + " transport");
 							resObj.statusCode = RtspProtoStatusCode.UNSUPPORTED_TRANSPORT;
 						}

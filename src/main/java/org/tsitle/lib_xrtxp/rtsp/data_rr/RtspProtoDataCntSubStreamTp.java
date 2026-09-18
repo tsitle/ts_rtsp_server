@@ -100,8 +100,7 @@ public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 	public void isTransportValid(
 				boolean needsEncryption,
 				boolean forceEncryption,
-				boolean isRtspsConnection,
-				boolean isTransportUdpDisabled
+				boolean isRtspsConnection
 			) throws RtspProtoInvalidTpSettingsException {
 		if (! tpIsEncr && ((needsEncryption && ! isRtspsConnection) || forceEncryption)) {
 			throw new RtspProtoInvalidTpSettingsException("Client requested unencrypted transport, but encryption is required");
@@ -124,9 +123,6 @@ public final class RtspProtoDataCntSubStreamTp implements Cloneable {
 			}
 			if (isRtspsConnection && ! tpIsEncr) {
 				throw new RtspProtoInvalidTpSettingsException("UDP cannot be used with RTSPS w/o SRTP");
-			}
-			if (isTransportUdpDisabled) {
-				throw new RtspProtoInvalidTpSettingsException("UDP is disabled");
 			}
 			return;
 		}
