@@ -161,6 +161,7 @@ public final class RtspProtoHighResponseConsumer {
 				@NonNull RtspProtoDataResponse outputDataResp
 			) throws RtspProtoInvalidResponseException, RtspProtoInvalidSessionIdException {
 		if (inputMsgStc.statusCode != RtspProtoStatusCode.OK) {
+			preProcessedHeaders.add(RtspHeaderKey.SESSION);
 			return;
 		}
 		Optional<RtspProtoIdSession> tmpOptSessionId = inputMsgStc.getHeaderSessionId();
