@@ -38,6 +38,7 @@ public final class MqExternalSub extends MqReceiverSubBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static final boolean DISABLE_SSL_CERT_VALIDATION = false;
 	private static final boolean DO_VALIDATE_PAYLOAD = true;
 	private static final int SEND_RECV_HWM = 100;
 
@@ -98,8 +99,10 @@ public final class MqExternalSub extends MqReceiverSubBase {
 			final String tmpAuthUser = mqSettingsExtended.settsBasic.getUsername();
 			final String tmpAuthPw = mqSettingsExtended.settsBasic.getPassword();
 			HttpClientJson client;
-			if (mqSslCertPath.isBlank()) {
+			if (DISABLE_SSL_CERT_VALIDATION) {
 				client = HttpClientJson.createClientWithCompletelyInsecureSsl(tmpAuthUser, tmpAuthPw);
+			} else if (mqSslCertPath.isBlank()) {
+				client = HttpClientJson.createClientWithDefaultSsl(tmpAuthUser, tmpAuthPw);
 			} else {
 				client = HttpClientJson.createClientWithRemoteCertForSsl(tmpAuthUser, tmpAuthPw, Path.of(mqSslCertPath));
 			}
