@@ -55,6 +55,9 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		long msgNr = 1;
 		int counter = 0;
 
+		double lastPtsSecs = 0.0;
+		final TimestampEpoch lastPktTsEpoch = TimestampEpoch.ofEmpty();
+
 		final AudioOpusParser parserOpus = new AudioOpusParser();
 	}
 
@@ -99,11 +102,9 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		final DynamicObjs dyn = new DynamicObjs();
 		final InputFileStuff ifs = new InputFileStuff();
 
-		boolean needToUpdateTcDecoder = false;
+		boolean needToDrainTc = false;
+		boolean needToCreateTc = false;
 		boolean haveInitTcDependentObjs = false;
-
-		final TimestampEpoch tsEpochStart = TimestampEpoch.ofEmpty();
-		final TimestampEpoch tsEpochLast = TimestampEpoch.ofEmpty();
 
 		final Bandwidth bw = new Bandwidth();
 	}
@@ -277,31 +278,26 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		if (tmpOptAvPktListPtr.isEmpty()) {
 			return false;  // error
 		}
-		if (! tmpOptAvPktListPtr.get().isEmpty()) {
-			if (! tmpRdObj.haveInitTcDependentObjs) {
-				mainLoop_initTcDependentObjs(adaptiveScheduler, tmpOptAvPktListPtr.get().iterator().next());
-			}
+		if (tmpOptAvPktListPtr.get().isEmpty()) {
+			return true;
+		}
 
-			//
-			if (tmpRdObj.dpm.hasMetadataTagsChanged) {
-				codecSettingsChangedInterface.onFileTagsChangedFromDmxJb(idInputSource, tmpRdObj.dpm.metadataTags);
-				tmpRdObj.dpm.hasMetadataTagsChanged = false;
-			}
-
-			//
-			for (FfmpegAvPktBasics tcAvPkt : tmpOptAvPktListPtr.get()) {
-				adaptiveScheduler.waitForNextFrame();
-				sendAvPktToMq(tcAvPkt);
-			}
+		if (! tmpRdObj.haveInitTcDependentObjs) {
+			mainLoop_initTcDependentObjs(tmpOptAvPktListPtr.get().iterator().next());
 		}
 
 		//
-		if (tmpRdObj.needToUpdateTcDecoder) {
-			tmpRdObj.needToUpdateTcDecoder = false;
-			if (! tmpRdObj.tsEpochLast.isEmpty()) {
-				tmpRdObj.tsEpochStart.copyFrom(tmpRdObj.tsEpochLast);
-			}
+		if (tmpRdObj.dpm.hasMetadataTagsChanged) {
+			codecSettingsChangedInterface.onFileTagsChangedFromDmxJb(idInputSource, tmpRdObj.dpm.metadataTags);
+			tmpRdObj.dpm.hasMetadataTagsChanged = false;
 		}
+
+		//
+		for (FfmpegAvPktBasics tcAvPkt : tmpOptAvPktListPtr.get()) {
+			adaptiveScheduler.waitForNextFrame();
+			sendAvPktToMq(adaptiveScheduler, tcAvPkt);
+		}
+
 		return true;
 	}
 
@@ -317,16 +313,13 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				return false;
 			}
 
-			if (tmpRdObj.dyn.ffmpegTcObj == null || tmpRdObj.needToUpdateTcDecoder) {
+			if (tmpRdObj.dyn.ffmpegTcObj == null || tmpRdObj.needToCreateTc || tmpRdObj.needToDrainTc) {
 				FfmpegDmxSubStreamInfoAudio tmpSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
 				if (! checkInputCodecInfo(tmpSsInfoAud)) {
 					blacklistFilePath(tmpRdObj.ifs.currentFilePath);
+					tmpRdObj.dyn.closeDemuxer();
 					continue;
 				}
-				//
-				updateTranscoder(tmpSsInfoAud);
-				//
-				updateTrackMetadata(tmpSsInfoAud.metaMap);
 			}
 			break;
 		} while (! (hasBeenRequestedToStop() || localCancelToken.cancelled) && isRunning.get());
@@ -337,6 +330,28 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop_acquireOutput()";
 
 		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffmpegTcObj != null && tmpRdObj.needToDrainTc) {
+			tmpRdObj.needToDrainTc = false;
+			// drain transcoder
+			tmpRdObj.dyn.ffmpegTcObj.close();
+			return Optional.of(
+					tmpRdObj.dyn.ffmpegTcObj.getRemainingPackets(false)
+				);
+		}
+
+		if (tmpRdObj.dyn.ffmpegTcObj == null || tmpRdObj.needToCreateTc) {
+			tmpRdObj.needToCreateTc = false;
+			tmpRdObj.dyn.ffmpegTcObj = null;
+			// create new transcoder
+			FfmpegDmxSubStreamInfoAudio tmpSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
+			checkInputCodecInfo(tmpSsInfoAud);
+			initTranscoder(tmpSsInfoAud);
+			//
+			updateTrackMetadata(tmpSsInfoAud.metaMap);
+			//
+			tmpRdObj.dpm.lastPtsSecs = 0.0;
+		}
 
 		if (tmpRdObj.dyn.ffmpegTcObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
@@ -359,10 +374,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		return Optional.of(tcAvPktListPtr);
 	}
 
-	private void mainLoop_initTcDependentObjs(
-				@NonNull AdaptiveScheduler adaptiveScheduler,
-				@NonNull FfmpegAvPktBasics firstAvPkt
-			) throws MqException {
+	private void mainLoop_initTcDependentObjs(@NonNull FfmpegAvPktBasics firstAvPkt) throws MqException {
 		RuntimeData tmpRdObj = tlRd.get();
 
 		if (tmpRdObj.haveInitTcDependentObjs) {
@@ -375,15 +387,6 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		if (tmpRdObj.dyn.mqInternalPub == null) {
 			tmpRdObj.dyn.mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
 			tmpRdObj.dyn.mqInternalPub.connectToMq();
-		}
-		if (adaptiveScheduler.getSendIntervalNs() < 0.001 &&
-				tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame != null &&
-				tmpRdObj.dpm.mqCodecSettings.audioSamplerate != null) {
-			double virtualFps = computeVirtualFps(
-					tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame,
-					tmpRdObj.dpm.mqCodecSettings.audioSamplerate
-				);
-			adaptiveScheduler.setFps(virtualFps);
 		}
 
 		tmpRdObj.haveInitTcDependentObjs = true;
@@ -411,9 +414,13 @@ public final class ThreadInpDmxJb extends RunnableBase {
 					if (isFirstFrame) {
 						return false;  // empty file?
 					}
-					haveEof = true;
-					tmpRdObj.needToUpdateTcDecoder = (tmpRdObj.dyn.ffmpegTcObj != null);
-					continue;
+					if (tmpRdObj.needToCreateTc) {
+						haveEof = true;
+						continue;
+					}
+					tmpRdObj.needToDrainTc = (tmpRdObj.dyn.ffmpegTcObj != null);
+					tmpRdObj.needToCreateTc = true;
+					return true;
 				}
 				break;
 			} catch (FfmpegGenericException e) {
@@ -428,11 +435,6 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		}
 
 		//
-		if (tmpRdObj.tsEpochStart.isEmpty()) {
-			tmpRdObj.tsEpochStart.copyFrom(TimestampEpoch.ofNow());
-		}
-
-		//
 		tmpRdObj.ffDmxPktCacheEntry.ffPktTimestamp = TimestampMonotonic.ofNsUnsigned64bit(
 				(long)(tmpRdObj.ffDmxPktCacheEntry.ffPktObj.ptsUnitsToSeconds() * 1_000_000_000.0)
 			);
@@ -440,7 +442,8 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		return true;
 	}
 
-	private void sendAvPktToMq(@NonNull FfmpegAvPktBasics tcAvPkt) throws MqException {
+	private void sendAvPktToMq(@NonNull AdaptiveScheduler adaptiveScheduler, @NonNull FfmpegAvPktBasics tcAvPkt)
+			throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendAvPktToMq()";
 
 		RuntimeData tmpRdObj = tlRd.get();
@@ -458,19 +461,18 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		boolean isVirtFpsOk = updateMqCodecSettings_spf(tcAvPkt, false);
 
 		//
+		if (tmpRdObj.dpm.lastPktTsEpoch.isEmpty()) {
+			tmpRdObj.dpm.lastPktTsEpoch.setToNow();
+		}
 		double tmpPtsSeconds = tcAvPkt.ptsUnitsToSeconds();
-		if (tmpPtsSeconds < 0.0) {
+		if (tmpPtsSeconds < 0.0) {  // tmpPtsSeconds is allowed to be exactly zero or greater
 			return;
 		}
-		TimestampEpoch tmpTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
-				tmpRdObj.tsEpochStart.getEpochNsUnsigned64bit().orElseThrow() +
+		TimestampEpoch tmpMqPktTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
+				tmpRdObj.dpm.lastPktTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
 						(long)(tmpPtsSeconds * 1_000_000_000.0)
 			);
-		tmpRdObj.tsEpochLast.copyFrom(tmpTsEpoch);
-		tmpRdObj.tsEpochLast.setEpochNsUnsigned64bit(
-				tmpTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
-				(long)(computeDurationSeconds((int)tcAvPkt.duration, tmpRdObj.dpm.mqCodecSettings.audioSamplerate) * 1_000_000_000L)
-			);
+		tmpRdObj.dpm.lastPktTsEpoch.copyFrom(tmpMqPktTsEpoch);
 
 		//
 		if (! isVirtFpsOk) {
@@ -478,11 +480,19 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		}
 
 		//
+		double deltaSecs = Math.abs(tmpPtsSeconds - tmpRdObj.dpm.lastPtsSecs);
+		tmpRdObj.dpm.lastPtsSecs = tmpPtsSeconds;
+		if (deltaSecs > 0.0001 && deltaSecs < 1.0) {
+			double asVirtualFps = 1.0 / deltaSecs;
+			adaptiveScheduler.setFps(asVirtualFps);
+		}
+
+		//
 		MqPacketAv mqPkt = new MqPacketAv(
 				tmpRdObj.dpm.msgNr++,
 				tmpRdObj.dpm.mqCodecSettings.codec,
 				false,
-				tmpTsEpoch,
+				tmpMqPktTsEpoch,
 				tmpRdObj.dpm.counter++,
 				false,
 				ImageDimensions.ofEmpty(),
@@ -739,6 +749,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 			);
 	}
 
+	@SuppressWarnings("unused")  // keep this method for the time being
 	private void updateTranscoder(@NonNull FfmpegDmxSubStreamInfoAudio ssInfoAud) {
 		final String FNC_NAME = getClass().getSimpleName() + ".updateTranscoder()";
 
