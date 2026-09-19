@@ -66,7 +66,7 @@ public final class ThreadInpMqE2I extends RunnableBase {
 	private final @NonNull MqElementaryStreamSourceSettings mqSettings;
 	private final @NonNull String mqSslCertPath;
 
-	private final String threadName;
+	private final @NonNull String threadName;
 
 	private @Nullable MqExternalSub mqExternalSub = null;
 	private @Nullable MqInternalPub mqInternalPub = null;
