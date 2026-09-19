@@ -59,6 +59,9 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	}
 
 	private static class DynamicObjs {
+		final FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
+		final FfmpegTcParamsInpAudio sourceParamsAudio = new FfmpegTcParamsInpAudio();
+
 		@Nullable MqInternalPub mqInternalPub = null;
 		@Nullable FfmpegDemuxer ffDemuxerObj = null;
 		@Nullable FfmpegTranscoder ffmpegTcObj = null;
@@ -116,10 +119,10 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private final @NonNull RtspProtoIdInputSource idInputSource = RtspProtoIdInputSource.ofEmpty();
 	private final @NonNull RtspProtoIdEsSource idEsSource = RtspProtoIdEsSource.ofEmpty();
 
-	private final String threadName;
+	private final @NonNull String threadName;
 	private final CancelToken localCancelToken = new CancelToken();
-	private final @NonNull AdaptiveScheduler adaptiveScheduler;
-	private final RuntimeData rd = new RuntimeData();
+	private final @NonNull ThreadLocal<@NonNull AdaptiveScheduler> tlAdaptiveScheduler;
+	private final @NonNull ThreadLocal<@NonNull RuntimeData> tlRd;
 
 	/**
 	 * Constructor.
@@ -147,11 +150,15 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		//
 		this.inputSourceDmxJbUri = inputSourceDmxJbUri.clone();
 
-		this.rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec =
+		//
+		RuntimeData tmpRdObj = new RuntimeData();
+
+		//
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec =
 				CfgTcCodecToFfCodecHelper.convertCfgTcCodecToFfmpegCodec(tcCodecSettings.codecStr());
-		this.rd.dpm.ffTcSettingsOutAudio.cfgBitRateKbps = approximateBr(tcCodecSettings.audioBitRateKbps());
-		this.rd.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed = tcCodecSettings.audioSampleRate();
-		this.rd.dpm.ffTcSettingsOutAudio.cfgChannelCm = (tcCodecSettings.audioChannelCount() == 1 ?
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgBitRateKbps = approximateBr(tcCodecSettings.audioBitRateKbps());
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed = tcCodecSettings.audioSampleRate();
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgChannelCm = (tcCodecSettings.audioChannelCount() == 1 ?
 				FfmpegTcSettingsOutAudio.ChannelConversionMode.DOWNMIX_MONO
 				: FfmpegTcSettingsOutAudio.ChannelConversionMode.FIXED_STEREO
 			);
@@ -167,19 +174,30 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		this.threadName = String.format("DMXJB#is%s", computeIsIdForThreadName(idInputSource));
 
 		//
-		this.adaptiveScheduler = new AdaptiveScheduler(logMsgInterface, -1.0);
+		this.tlAdaptiveScheduler = ThreadLocal.withInitial(() -> new AdaptiveScheduler(logMsgInterface, -1.0));
+
+		// demuxer settings
+		tmpRdObj.dyn.dmxSettingsDemux.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
+		tmpRdObj.dyn.dmxSettingsDemux.cfgAllowOnlySpecificCodecsVideo = true;
+		tmpRdObj.dyn.dmxSettingsDemux.cfgAllowOnlySpecificCodecsAudio = true;
+		tmpRdObj.dyn.dmxSettingsDemux.cfgAllowedCodecsAudio.addAll(DpConstants.DP_FFMPEG_ALLOWED_CODECS_AUDIO);
+		tmpRdObj.dyn.dmxSettingsDemux.cfgAllowedCodecsAudio.add(FfmpegCodec.A_PCM_S24LE);
+		tmpRdObj.dyn.dmxSettingsDemux.cfgAllowedCodecsAudio.add(FfmpegCodec.A_PCM_S32LE);
 
 		// remaining transcoder settings
-		if (FfCodecToMqCodecHelper.convertFfToMqCodec(this.rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec).isEmpty()) {
+		if (FfCodecToMqCodecHelper.convertFfToMqCodec(tmpRdObj.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec).isEmpty()) {
 			throw new IllegalArgumentException(FNC_NAME + ": " +
-					"TC Codec not supported: " + this.rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec);
+					"TC Codec not supported: " + tmpRdObj.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec);
 		}
-		if (this.rd.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed == SampleRateEnum.UNKNOWN) {
+		if (tmpRdObj.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed == SampleRateEnum.UNKNOWN) {
 			throw new IllegalArgumentException(FNC_NAME + ": TC Sample rate must be set");
 		}
-		this.rd.dpm.ffTcSettingsOutAudio.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
-		this.rd.dpm.ffTcSettingsOutAudio.cfgOutputModeOpus = FfmpegTcSettingsOutAudio.OutputModeOpus.RTP;
-		this.rd.dpm.ffTcSettingsOutAudio.cfgSrCm = FfmpegTcSettingsOutAudio.SampleRateConversionMode.FIXED;
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgOutputModeOpus = FfmpegTcSettingsOutAudio.OutputModeOpus.RTP;
+		tmpRdObj.dpm.ffTcSettingsOutAudio.cfgSrCm = FfmpegTcSettingsOutAudio.SampleRateConversionMode.FIXED;
+
+		//
+		this.tlRd = ThreadLocal.withInitial(() -> tmpRdObj);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -196,17 +214,23 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		logDebug(FNC_NAME, "Thread started");
 
 		//
+		RuntimeData tmpRdObj = tlRd.get();
+
+		//
 		try (FileFolderWatcher localAffl = new FileFolderWatcher(
 					Objects.requireNonNull(logMsgInterface),
 					localCancelToken,
-				inputSourceDmxJbUri,
+					inputSourceDmxJbUri,
 					ALLOWED_INPUT_FILE_EXTS
 				)) {
-			rd.ifs.ffwPtr = localAffl;
+			tmpRdObj.ifs.ffwPtr = localAffl;
+
+			//
+			AdaptiveScheduler tmpAdaptiveSchedulerObj = tlAdaptiveScheduler.get();
 
 			//
 			while (! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
-				if (! mainLoop()) {
+				if (! mainLoop(tmpAdaptiveSchedulerObj)) {
 					break;
 				}
 				//noinspection BusyWait
@@ -218,11 +242,16 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		} catch (Exception e) {
 			logError(FNC_NAME, "Exception caught: " + e.getMessage());
 		} finally {
-			rd.ifs.ffwPtr = null;
+			tmpRdObj.ifs.ffwPtr = null;
 			//
-			rd.dyn.closeMq();
-			rd.dyn.closeDemuxer();
-			rd.dyn.closeTranscoder();
+			tmpRdObj.dyn.closeMq();
+			tmpRdObj.dyn.closeDemuxer();
+			tmpRdObj.dyn.closeTranscoder();
+
+			//
+			tlAdaptiveScheduler.remove();
+			tlRd.remove();
+
 			//
 			isRunning.set(false);
 			//
@@ -237,24 +266,26 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean mainLoop() throws MqException, InterruptedException {
+	private boolean mainLoop(@NonNull AdaptiveScheduler adaptiveScheduler) throws MqException, InterruptedException {
 		if (! mainLoop_acquireInput()) {
 			return false;
 		}
+
+		RuntimeData tmpRdObj = tlRd.get();
 
 		Optional<FfmpegTcAvPacketList> tmpOptAvPktListPtr = mainLoop_acquireOutput();
 		if (tmpOptAvPktListPtr.isEmpty()) {
 			return false;  // error
 		}
 		if (! tmpOptAvPktListPtr.get().isEmpty()) {
-			if (! rd.haveInitTcDependentObjs) {
-				mainLoop_initTcDependentObjs(tmpOptAvPktListPtr.get().iterator().next());
+			if (! tmpRdObj.haveInitTcDependentObjs) {
+				mainLoop_initTcDependentObjs(adaptiveScheduler, tmpOptAvPktListPtr.get().iterator().next());
 			}
 
 			//
-			if (rd.dpm.hasMetadataTagsChanged) {
-				codecSettingsChangedInterface.onFileTagsChangedFromDmxJb(idInputSource, rd.dpm.metadataTags);
-				rd.dpm.hasMetadataTagsChanged = false;
+			if (tmpRdObj.dpm.hasMetadataTagsChanged) {
+				codecSettingsChangedInterface.onFileTagsChangedFromDmxJb(idInputSource, tmpRdObj.dpm.metadataTags);
+				tmpRdObj.dpm.hasMetadataTagsChanged = false;
 			}
 
 			//
@@ -265,25 +296,31 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		}
 
 		//
-		if (rd.needToUpdateTcDecoder) {
-			rd.needToUpdateTcDecoder = false;
-			if (! rd.tsEpochLast.isEmpty()) {
-				rd.tsEpochStart.copyFrom(rd.tsEpochLast);
+		if (tmpRdObj.needToUpdateTcDecoder) {
+			tmpRdObj.needToUpdateTcDecoder = false;
+			if (! tmpRdObj.tsEpochLast.isEmpty()) {
+				tmpRdObj.tsEpochStart.copyFrom(tmpRdObj.tsEpochLast);
 			}
 		}
 		return true;
 	}
 
 	private boolean mainLoop_acquireInput() {
+		RuntimeData tmpRdObj = tlRd.get();
+
 		do {
 			if (! readNextAvPktFromDemuxer()) {
 				return false;
 			}
 
-			if (rd.dyn.ffmpegTcObj == null || rd.needToUpdateTcDecoder) {
+			if (hasBeenRequestedToStop() || localCancelToken.cancelled || ! isRunning.get()) {
+				return false;
+			}
+
+			if (tmpRdObj.dyn.ffmpegTcObj == null || tmpRdObj.needToUpdateTcDecoder) {
 				FfmpegDmxSubStreamInfoAudio tmpSsInfoAud = new FfmpegDmxSubStreamInfoAudio();
 				if (! checkInputCodecInfo(tmpSsInfoAud)) {
-					blacklistFilePath(rd.ifs.currentFilePath);
+					blacklistFilePath(tmpRdObj.ifs.currentFilePath);
 					continue;
 				}
 				//
@@ -292,21 +329,23 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				updateTrackMetadata(tmpSsInfoAud.metaMap);
 			}
 			break;
-		} while (true);
-		return true;
+		} while (! (hasBeenRequestedToStop() || localCancelToken.cancelled) && isRunning.get());
+		return (! (hasBeenRequestedToStop() || localCancelToken.cancelled) && isRunning.get());
 	}
 
 	private Optional<FfmpegTcAvPacketList> mainLoop_acquireOutput() {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop_acquireOutput()";
 
-		if (rd.dyn.ffmpegTcObj == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffmpegTcObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
 		}
 
 		//
 		FfmpegTcAvPacketList tcAvPktListPtr;
 		try {
-			tcAvPktListPtr = rd.dyn.ffmpegTcObj.transcodePacketFromBuffer(rd.ffDmxPktCacheEntry.ffPktObj);
+			tcAvPktListPtr = tmpRdObj.dyn.ffmpegTcObj.transcodePacketFromBuffer(tmpRdObj.ffDmxPktCacheEntry.ffPktObj);
 		} catch (FfmpegDecoderNotFoundException e) {
 			logError(FNC_NAME, "FfmpegDecoderNotFoundException caught: " + e.getMessage());
 			return Optional.empty();
@@ -320,29 +359,34 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		return Optional.of(tcAvPktListPtr);
 	}
 
-	private void mainLoop_initTcDependentObjs(@NonNull FfmpegAvPktBasics firstAvPkt) throws MqException {
-		if (rd.haveInitTcDependentObjs) {
+	private void mainLoop_initTcDependentObjs(
+				@NonNull AdaptiveScheduler adaptiveScheduler,
+				@NonNull FfmpegAvPktBasics firstAvPkt
+			) throws MqException {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.haveInitTcDependentObjs) {
 			return;
 		}
 
-		if (rd.dpm.mqCodecSettings.codec == null) {
+		if (tmpRdObj.dpm.mqCodecSettings.codec == null) {
 			createMqCodecSettings(firstAvPkt);
 		}
-		if (rd.dyn.mqInternalPub == null) {
-			rd.dyn.mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
-			rd.dyn.mqInternalPub.connectToMq();
+		if (tmpRdObj.dyn.mqInternalPub == null) {
+			tmpRdObj.dyn.mqInternalPub = new MqInternalPub(logMsgInterface, idEsSource);
+			tmpRdObj.dyn.mqInternalPub.connectToMq();
 		}
 		if (adaptiveScheduler.getSendIntervalNs() < 0.001 &&
-				rd.dpm.mqCodecSettings.audioSamplesPerFrame != null &&
-				rd.dpm.mqCodecSettings.audioSamplerate != null) {
+				tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame != null &&
+				tmpRdObj.dpm.mqCodecSettings.audioSamplerate != null) {
 			double virtualFps = computeVirtualFps(
-					rd.dpm.mqCodecSettings.audioSamplesPerFrame,
-					rd.dpm.mqCodecSettings.audioSamplerate
+					tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame,
+					tmpRdObj.dpm.mqCodecSettings.audioSamplerate
 				);
 			adaptiveScheduler.setFps(virtualFps);
 		}
 
-		rd.haveInitTcDependentObjs = true;
+		tmpRdObj.haveInitTcDependentObjs = true;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -350,41 +394,47 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private boolean readNextAvPktFromDemuxer() {
 		final String FNC_NAME = getClass().getSimpleName() + ".readNextAvPktFromDemuxer()";
 
+		RuntimeData tmpRdObj = tlRd.get();
+
 		boolean haveEof = false;
 		boolean isFirstFrame = false;
 		do {
-			if (haveEof || rd.dyn.ffDemuxerObj == null) {
+			if (haveEof || tmpRdObj.dyn.ffDemuxerObj == null) {
 				if (! findAndLoadNextFile()) {
 					return false;
 				}
 				isFirstFrame = true;
 			}
 			try {
-				FfmpegDemuxer.ReadResult tmpRr = rd.dyn.ffDemuxerObj.readNextAvPacket(rd.ffDmxPktCacheEntry.ffPktObj);
+				FfmpegDemuxer.ReadResult tmpRr = tmpRdObj.dyn.ffDemuxerObj.readNextAvPacket(tmpRdObj.ffDmxPktCacheEntry.ffPktObj);
 				if (tmpRr == FfmpegDemuxer.ReadResult.RR_EOF) {
 					if (isFirstFrame) {
 						return false;  // empty file?
 					}
 					haveEof = true;
-					rd.needToUpdateTcDecoder = (rd.dyn.ffmpegTcObj != null);
+					tmpRdObj.needToUpdateTcDecoder = (tmpRdObj.dyn.ffmpegTcObj != null);
 					continue;
 				}
 				break;
 			} catch (FfmpegGenericException e) {
-				logWarn(FNC_NAME, "FfmpegGenericException caught for fn='" + rd.ifs.currentFilePath + "': " + e.getMessage());
-				blacklistFilePath(rd.ifs.currentFilePath);
+				logWarn(FNC_NAME, "FfmpegGenericException caught for fn='" + tmpRdObj.ifs.currentFilePath + "': " + e.getMessage());
+				blacklistFilePath(tmpRdObj.ifs.currentFilePath);
 				haveEof = true;
 			}
-		} while (true);
+		} while (! (hasBeenRequestedToStop() || localCancelToken.cancelled));
 
-		//
-		if (rd.tsEpochStart.isEmpty()) {
-			rd.tsEpochStart.copyFrom(TimestampEpoch.ofNow());
+		if (hasBeenRequestedToStop() || localCancelToken.cancelled) {
+			return false;
 		}
 
 		//
-		rd.ffDmxPktCacheEntry.ffPktTimestamp = TimestampMonotonic.ofNsUnsigned64bit(
-				(long)(rd.ffDmxPktCacheEntry.ffPktObj.ptsUnitsToSeconds() * 1_000_000_000.0)
+		if (tmpRdObj.tsEpochStart.isEmpty()) {
+			tmpRdObj.tsEpochStart.copyFrom(TimestampEpoch.ofNow());
+		}
+
+		//
+		tmpRdObj.ffDmxPktCacheEntry.ffPktTimestamp = TimestampMonotonic.ofNsUnsigned64bit(
+				(long)(tmpRdObj.ffDmxPktCacheEntry.ffPktObj.ptsUnitsToSeconds() * 1_000_000_000.0)
 			);
 
 		return true;
@@ -393,12 +443,14 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private void sendAvPktToMq(@NonNull FfmpegAvPktBasics tcAvPkt) throws MqException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendAvPktToMq()";
 
-		if (rd.dyn.mqInternalPub == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.mqInternalPub == null) {
 			throw new IllegalStateException(FNC_NAME + ": mqInternalPub not initialized");
 		}
-		if (rd.dpm.mqCodecSettings.codec == null ||
-				rd.dpm.mqCodecSettings.audioSamplerate == null || rd.dpm.mqCodecSettings.audioChannels == null ||
-				rd.dpm.mqCodecSettings.audioSamplesPerFrame == null) {
+		if (tmpRdObj.dpm.mqCodecSettings.codec == null ||
+				tmpRdObj.dpm.mqCodecSettings.audioSamplerate == null || tmpRdObj.dpm.mqCodecSettings.audioChannels == null ||
+				tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame == null) {
 			throw new IllegalStateException(FNC_NAME + ": mqCodecSettings not initialized");
 		}
 
@@ -411,13 +463,13 @@ public final class ThreadInpDmxJb extends RunnableBase {
 			return;
 		}
 		TimestampEpoch tmpTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
-				rd.tsEpochStart.getEpochNsUnsigned64bit().orElseThrow() +
+				tmpRdObj.tsEpochStart.getEpochNsUnsigned64bit().orElseThrow() +
 						(long)(tmpPtsSeconds * 1_000_000_000.0)
 			);
-		rd.tsEpochLast.copyFrom(tmpTsEpoch);
-		rd.tsEpochLast.setEpochNsUnsigned64bit(
+		tmpRdObj.tsEpochLast.copyFrom(tmpTsEpoch);
+		tmpRdObj.tsEpochLast.setEpochNsUnsigned64bit(
 				tmpTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
-				(long)(computeDurationSeconds((int)tcAvPkt.duration, rd.dpm.mqCodecSettings.audioSamplerate) * 1_000_000_000L)
+				(long)(computeDurationSeconds((int)tcAvPkt.duration, tmpRdObj.dpm.mqCodecSettings.audioSamplerate) * 1_000_000_000L)
 			);
 
 		//
@@ -427,39 +479,39 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 		//
 		MqPacketAv mqPkt = new MqPacketAv(
-				rd.dpm.msgNr++,
-				rd.dpm.mqCodecSettings.codec,
+				tmpRdObj.dpm.msgNr++,
+				tmpRdObj.dpm.mqCodecSettings.codec,
 				false,
 				tmpTsEpoch,
-				rd.dpm.counter++,
+				tmpRdObj.dpm.counter++,
 				false,
 				ImageDimensions.ofEmpty(),
 				FrameRateEnum.UNKNOWN,
 				0,
-				rd.dpm.mqCodecSettings.audioSamplerate,
-				rd.dpm.mqCodecSettings.audioChannels,
-				rd.dpm.mqCodecSettings.audioSamplesPerFrame,
+				tmpRdObj.dpm.mqCodecSettings.audioSamplerate,
+				tmpRdObj.dpm.mqCodecSettings.audioChannels,
+				tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame,
 				(byte)0x00,  // CRC8, 0x00 ^= do not validate checksum
 				tcAvPkt.pktBe
 			);
-		rd.dyn.mqInternalPub.sendMessageAv(mqPkt);
+		tmpRdObj.dyn.mqInternalPub.sendMessageAv(mqPkt);
 
 		//
-		rd.bw.bytesSent += tcAvPkt.pktBe.getUsed();
-		if (rd.bw.tsLastChecked.isEmpty()) {
-			rd.bw.tsLastChecked.setToNow();
+		tmpRdObj.bw.bytesSent += tcAvPkt.pktBe.getUsed();
+		if (tmpRdObj.bw.tsLastChecked.isEmpty()) {
+			tmpRdObj.bw.tsLastChecked.setToNow();
 		} else {
 			long deltaMs = ((TimestampEpoch.ofNow().getEpochNsUnsigned64bit().orElseThrow() -
-					rd.bw.tsLastChecked.getEpochNsUnsigned64bit().orElseThrow()) / 1_000_000L);
+					tmpRdObj.bw.tsLastChecked.getEpochNsUnsigned64bit().orElseThrow()) / 1_000_000L);
 			if (deltaMs > BW_INFO_OUTPUT_INTV_MS) {
 				if (BW_INFO_OUTPUT_ENABLED) {
-					double bytesPerSec = ((double)rd.bw.bytesSent / (double)deltaMs) * 1_000.0;
+					double bytesPerSec = ((double)tmpRdObj.bw.bytesSent / (double)deltaMs) * 1_000.0;
 					logDebug(FNC_NAME,
 							String.format("bandwidth: %.2f kB/s", bytesPerSec / 1_024.0).replace(",", ".")
 						);
 				}
-				rd.bw.tsLastChecked.setToNow();
-				rd.bw.bytesSent = 0L;
+				tmpRdObj.bw.tsLastChecked.setToNow();
+				tmpRdObj.bw.bytesSent = 0L;
 			}
 		}
 	}
@@ -469,17 +521,19 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private void createMqCodecSettings(@NonNull FfmpegAvPktBasics firstAvPkt) {
 		final String FNC_NAME = getClass().getSimpleName() + ".createMqCodecSettings()";
 
-		if (rd.dyn.ffmpegTcObj == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffmpegTcObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
 		}
 		FfmpegCdcParamsAudio tmpCdcParams = new FfmpegCdcParamsAudio();
-		rd.dyn.ffmpegTcObj.getCdcParamsAudio(tmpCdcParams);
+		tmpRdObj.dyn.ffmpegTcObj.getCdcParamsAudio(tmpCdcParams);
 
 		//
-		rd.dpm.mqCodecSettings.codec =
-				FfCodecToMqCodecHelper.convertFfToMqCodec(rd.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec).orElseThrow();
-		rd.dpm.mqCodecSettings.audioSamplerate = rd.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed;
-		rd.dpm.mqCodecSettings.audioChannels = (byte)tmpCdcParams.channelCount;
+		tmpRdObj.dpm.mqCodecSettings.codec =
+				FfCodecToMqCodecHelper.convertFfToMqCodec(tmpRdObj.dpm.ffTcSettingsOutAudio.cfgFfmpegCodec).orElseThrow();
+		tmpRdObj.dpm.mqCodecSettings.audioSamplerate = tmpRdObj.dpm.ffTcSettingsOutAudio.cfgSampleRateFixed;
+		tmpRdObj.dpm.mqCodecSettings.audioChannels = (byte)tmpCdcParams.channelCount;
 		updateMqCodecSettings_spf(firstAvPkt, true);
 
 		String metadataHex = tmpCdcParams.extradataHex.getEd();
@@ -489,63 +543,65 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private boolean updateMqCodecSettings_spf(@NonNull FfmpegAvPktBasics avPkt, boolean forceUpdateUpstream) {
 		final String FNC_NAME = getClass().getSimpleName() + ".updateMqCodecSettings_spf()";
 
-		if (rd.dyn.ffmpegTcObj == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffmpegTcObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Transcoder object not initialized");
 		}
-		if (rd.dpm.mqCodecSettings.codec == null || rd.dpm.mqCodecSettings.audioChannels == null ||
-				rd.dpm.mqCodecSettings.audioSamplerate == null) {
+		if (tmpRdObj.dpm.mqCodecSettings.codec == null || tmpRdObj.dpm.mqCodecSettings.audioChannels == null ||
+				tmpRdObj.dpm.mqCodecSettings.audioSamplerate == null) {
 			throw new IllegalStateException(FNC_NAME + ": MQ Codec Settings not initialized");
 		}
 
-		final int lastSpf = Objects.requireNonNullElse(rd.dpm.mqCodecSettings.audioSamplesPerFrame, -1);
+		final int lastSpf = Objects.requireNonNullElse(tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame, -1);
 		int nextSpf;
-		final double lastVirtualFps = rd.dpm.virtualFps;
+		final double lastVirtualFps = tmpRdObj.dpm.virtualFps;
 
-		if (rd.dpm.mqCodecSettings.codec == MqPacketCodec.AACLC) {
+		if (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.AACLC) {
 			if (avPkt.duration != DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1) {
 				// this can happen at the end of an input file
 				return false;
 			}
 			nextSpf = (int)avPkt.duration;
-		} else if (rd.dpm.mqCodecSettings.codec == MqPacketCodec.OPUS) {
+		} else if (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.OPUS) {
 			AudioOpusInfo tmpInf;
 			try {
-				tmpInf = rd.dpm.parserOpus.parseOpusData(new BufferView(avPkt.pktBe));
+				tmpInf = tmpRdObj.dpm.parserOpus.parseOpusData(new BufferView(avPkt.pktBe));
 			} catch (AvInvalidCodecDataException e) {
 				logError(FNC_NAME, "Invalid Opus data: " + e.getMessage());
 				return false;
 			}
 			nextSpf = tmpInf.samplesPerChannelInAudioData;
 		} else if (avPkt.duration < 1) {
-			if (! rd.dpm.mqCodecSettings.codec.isPcmAudio()) {
+			if (! tmpRdObj.dpm.mqCodecSettings.codec.isPcmAudio()) {
 				throw new IllegalStateException(FNC_NAME + ": Transcoder did not provide samplesPerFrame");
 			}
 			int tmpBytes = avPkt.pktBe.getUsed();
-			tmpBytes /= rd.dpm.mqCodecSettings.audioChannels;
-			tmpBytes /= (rd.dpm.mqCodecSettings.codec == MqPacketCodec.LPCM16S ? 2 : 1);
+			tmpBytes /= tmpRdObj.dpm.mqCodecSettings.audioChannels;
+			tmpBytes /= (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.LPCM16S ? 2 : 1);
 			nextSpf = tmpBytes;
 		} else {
 			nextSpf = (int)avPkt.duration;
 		}
 		final double tmpVirtFps = computeVirtualFps(
 				nextSpf,
-				rd.dpm.mqCodecSettings.audioSamplerate
+				tmpRdObj.dpm.mqCodecSettings.audioSamplerate
 			);
 		if (tmpVirtFps < 1.0 || tmpVirtFps > RtpConstants.RTP_MAX_FRAMES_PER_SECOND) {
 			logError(FNC_NAME, "Invalid virtual FPS: " + tmpVirtFps + " " +
-					"(codec=" + rd.dpm.mqCodecSettings.codec + ", inpFn=" + rd.ifs.currentFilePath + ")");
+					"(codec=" + tmpRdObj.dpm.mqCodecSettings.codec + ", inpFn=" + tmpRdObj.ifs.currentFilePath + ")");
 			return false;
 		}
-		rd.dpm.mqCodecSettings.audioSamplesPerFrame = nextSpf;
-		rd.dpm.virtualFps = tmpVirtFps;
+		tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame = nextSpf;
+		tmpRdObj.dpm.virtualFps = tmpVirtFps;
 		if (forceUpdateUpstream ||
-				lastSpf != rd.dpm.mqCodecSettings.audioSamplesPerFrame || lastVirtualFps != rd.dpm.virtualFps) {
+				lastSpf != tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame || lastVirtualFps != tmpRdObj.dpm.virtualFps) {
 			if (! forceUpdateUpstream) {
 				logDebug(FNC_NAME, "update virtual FPS: " + tmpVirtFps + " " +
-						", SPF: " + rd.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
-						"(codec=" + rd.dpm.mqCodecSettings.codec + ")");
+						", SPF: " + tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
+						"(codec=" + tmpRdObj.dpm.mqCodecSettings.codec + ")");
 			}
-			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxJb(idEsSource, rd.dpm.mqCodecSettings);
+			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxJb(idEsSource, tmpRdObj.dpm.mqCodecSettings);
 		}
 		return true;
 	}
@@ -555,84 +611,91 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	private boolean findAndLoadNextFile() {
 		final String FNC_NAME = getClass().getSimpleName() + ".findAndLoadNextFile()";
 
-		rd.dyn.closeDemuxer();
+		RuntimeData tmpRdObj = tlRd.get();
 
-		if (rd.ifs.ffwPtr == null) {
+		tmpRdObj.dyn.closeDemuxer();
+
+		if (tmpRdObj.ifs.ffwPtr == null) {
 			return false;
 		}
-		if (rd.ifs.ffwPtr.haveMatchingFilesChanged()) {
-			rd.ifs.ffwPtr.getMatchingFilesAsStrings(rd.ifs.blacklistedFilePaths, rd.ifs.inputFilePathsAsSet);
-			rd.ifs.inputFilePathsAsList.clear();
-			rd.ifs.inputFilePathsAsList.addAll(rd.ifs.inputFilePathsAsSet);
-			rd.ifs.alreadyPlayedFpIdx.clear();
-			rd.ifs.lastPlayedFpIdx = -1;
+		if (tmpRdObj.ifs.ffwPtr.haveMatchingFilesChanged()) {
+			tmpRdObj.ifs.ffwPtr.getMatchingFilesAsStrings(tmpRdObj.ifs.blacklistedFilePaths, tmpRdObj.ifs.inputFilePathsAsSet);
+			tmpRdObj.ifs.inputFilePathsAsList.clear();
+			tmpRdObj.ifs.inputFilePathsAsList.addAll(tmpRdObj.ifs.inputFilePathsAsSet);
+			tmpRdObj.ifs.alreadyPlayedFpIdx.clear();
+			tmpRdObj.ifs.lastPlayedFpIdx = -1;
+			tmpRdObj.ifs.blacklistedFilePaths.clear();
 		}
 
 		do {
-			if (rd.ifs.inputFilePathsAsList.isEmpty()) {
+			if (tmpRdObj.ifs.inputFilePathsAsList.isEmpty()) {
 				logError(FNC_NAME, "no input files available");
 				return false;
 			}
-			if (rd.ifs.alreadyPlayedFpIdx.size() >= rd.ifs.inputFilePathsAsList.size()) {
-				rd.ifs.alreadyPlayedFpIdx.clear();
-				if (rd.ifs.inputFilePathsAsList.size() > 1) {
-					rd.ifs.alreadyPlayedFpIdx.add(rd.ifs.lastPlayedFpIdx);
+			if (tmpRdObj.ifs.alreadyPlayedFpIdx.size() >= tmpRdObj.ifs.inputFilePathsAsList.size()) {
+				tmpRdObj.ifs.alreadyPlayedFpIdx.clear();
+				if (tmpRdObj.ifs.inputFilePathsAsList.size() > 1) {
+					tmpRdObj.ifs.alreadyPlayedFpIdx.add(tmpRdObj.ifs.lastPlayedFpIdx);
 				}
 			}
 
-			// pick an index in the range [0, rd.ifs.inputFilePaths.size())
-			int tmpNextIx = (int)(Math.random() * rd.ifs.inputFilePathsAsList.size());
-			if (rd.ifs.alreadyPlayedFpIdx.contains(tmpNextIx)) {
+			// pick an index in the range [0, tmpRdObj.ifs.inputFilePaths.size())
+			int tmpNextIx = (int)(Math.random() * tmpRdObj.ifs.inputFilePathsAsList.size());
+			if (tmpRdObj.ifs.alreadyPlayedFpIdx.contains(tmpNextIx)) {
 				continue;
 			}
-			String tmpAbsFn = rd.ifs.inputFilePathsAsList.get(tmpNextIx);
+			String tmpAbsFn = tmpRdObj.ifs.inputFilePathsAsList.get(tmpNextIx);
 			//
 			Path tmpPathObj = Paths.get(tmpAbsFn);
 			if (! tmpPathObj.toFile().exists()) {
 				blacklistFilePath(tmpAbsFn);
 				continue;
 			}
-			rd.ifs.currentFilePath = tmpAbsFn;
-			rd.ifs.alreadyPlayedFpIdx.add(tmpNextIx);
-			rd.ifs.lastPlayedFpIdx = tmpNextIx;
+			tmpRdObj.ifs.currentFilePath = tmpAbsFn;
+			tmpRdObj.ifs.alreadyPlayedFpIdx.add(tmpNextIx);
+			tmpRdObj.ifs.lastPlayedFpIdx = tmpNextIx;
 			//
 			initDemuxer();
 			break;
 		} while (true);
 
-		logDebug(FNC_NAME, "Input file: '" + rd.ifs.currentFilePath + "'");
+		logDebug(FNC_NAME, "Input file: '" + tmpRdObj.ifs.currentFilePath + "'");
 		return true;
 	}
 
 	private void blacklistFilePath(@NonNull String fp) {
+		RuntimeData tmpRdObj = tlRd.get();
+
 		int tmpFpIx = -1;
-		for (int tmpSearchIx = 0; tmpSearchIx < rd.ifs.inputFilePathsAsList.size(); tmpSearchIx++) {
-			if (rd.ifs.inputFilePathsAsList.get(tmpSearchIx).equals(fp)) {
+		for (int tmpSearchIx = 0; tmpSearchIx < tmpRdObj.ifs.inputFilePathsAsList.size(); tmpSearchIx++) {
+			if (tmpRdObj.ifs.inputFilePathsAsList.get(tmpSearchIx).equals(fp)) {
 				tmpFpIx = tmpSearchIx;
 				break;
 			}
 		}
 		if (tmpFpIx >= 0) {
-			rd.ifs.alreadyPlayedFpIdx.remove(tmpFpIx);
-			if (rd.ifs.lastPlayedFpIdx == tmpFpIx) {
-				rd.ifs.lastPlayedFpIdx = -1;
-			} else if (rd.ifs.lastPlayedFpIdx > tmpFpIx) {
-				--rd.ifs.lastPlayedFpIdx;
+			tmpRdObj.ifs.alreadyPlayedFpIdx.remove(tmpFpIx);
+			if (tmpRdObj.ifs.lastPlayedFpIdx == tmpFpIx) {
+				tmpRdObj.ifs.lastPlayedFpIdx = -1;
+			} else if (tmpRdObj.ifs.lastPlayedFpIdx > tmpFpIx) {
+				--tmpRdObj.ifs.lastPlayedFpIdx;
 			}
 		}
 
-		rd.ifs.inputFilePathsAsSet.remove(fp);
-		rd.ifs.inputFilePathsAsList.remove(fp);
-		rd.ifs.blacklistedFilePaths.add(fp);
+		tmpRdObj.ifs.inputFilePathsAsSet.remove(fp);
+		tmpRdObj.ifs.inputFilePathsAsList.remove(fp);
+		tmpRdObj.ifs.blacklistedFilePaths.add(fp);
 	}
 
 	private boolean checkInputCodecInfo(@NonNull FfmpegDmxSubStreamInfoAudio ssInfoAud) {
 		final String FNC_NAME = getClass().getSimpleName() + ".checkInputCodecInfo()";
 
-		if (rd.dyn.ffDemuxerObj == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffDemuxerObj == null) {
 			throw new IllegalStateException(FNC_NAME + ": Demuxer object not initialized");
 		}
-		Optional<FfmpegDmxSubStreamInfoAudio> tmpSsInfo = rd.dyn.ffDemuxerObj.getFfAvSubStreamInfoAudio();
+		Optional<FfmpegDmxSubStreamInfoAudio> tmpSsInfo = tmpRdObj.dyn.ffDemuxerObj.getFfAvSubStreamInfoAudio();
 
 		if (tmpSsInfo.isEmpty()) {
 			logWarn(FNC_NAME, "no audio sub-stream found");
@@ -643,60 +706,56 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	}
 
 	private void initDemuxer() {
-		rd.dyn.closeDemuxer();
+		RuntimeData tmpRdObj = tlRd.get();
 
-		if (rd.ifs.currentFilePath.isBlank()) {
+		tmpRdObj.dyn.closeDemuxer();
+
+		if (tmpRdObj.ifs.currentFilePath.isBlank()) {
 			return;
 		}
 
-		FfmpegDmxSettingsDemux dmxSettingsDemux = new FfmpegDmxSettingsDemux();
-		dmxSettingsDemux.cfgOutputModeAac = FfmpegPktConvModeAac.WITH_ADTS;
-		dmxSettingsDemux.cfgAllowOnlySpecificCodecsVideo = true;
-		dmxSettingsDemux.cfgAllowOnlySpecificCodecsAudio = true;
-		dmxSettingsDemux.cfgAllowedCodecsAudio.addAll(DpConstants.DP_FFMPEG_ALLOWED_CODECS_AUDIO);
-		dmxSettingsDemux.cfgAllowedCodecsAudio.add(FfmpegCodec.A_PCM_S24LE);
-		dmxSettingsDemux.cfgAllowedCodecsAudio.add(FfmpegCodec.A_PCM_S32LE);
-
-		rd.dyn.ffDemuxerObj = FfmpegDemuxer.createForDemuxingOnly(
+		tmpRdObj.dyn.ffDemuxerObj = FfmpegDemuxer.createForDemuxingOnly(
 				null,
-				rd.ifs.currentFilePath,
-				dmxSettingsDemux
+				tmpRdObj.ifs.currentFilePath,
+				tmpRdObj.dyn.dmxSettingsDemux
 			);
 	}
 
 	private void initTranscoder(@NonNull FfmpegDmxSubStreamInfoAudio ssInfoAud) {
-		rd.dyn.closeTranscoder();
+		RuntimeData tmpRdObj = tlRd.get();
 
-		FfmpegTcParamsInpAudio sourceParamsAudio = new FfmpegTcParamsInpAudio();
-		sourceParamsAudio.ffmpegCodec = ssInfoAud.ffmpegCodec;
-		sourceParamsAudio.timeBase.copyFrom(ssInfoAud.timeBasePts);
-		sourceParamsAudio.sampleRate = ssInfoAud.sampleRate;
-		sourceParamsAudio.channelCount = ssInfoAud.channelCount;
-		sourceParamsAudio.extradataHex.copyFrom(ssInfoAud.extradataHex);
+		tmpRdObj.dyn.closeTranscoder();
 
-		rd.dyn.ffmpegTcObj = FfmpegTranscoder.createForAudioOnly(
+		tmpRdObj.dyn.sourceParamsAudio.ffmpegCodec = ssInfoAud.ffmpegCodec;
+		tmpRdObj.dyn.sourceParamsAudio.timeBase.copyFrom(ssInfoAud.timeBasePts);
+		tmpRdObj.dyn.sourceParamsAudio.sampleRate = ssInfoAud.sampleRate;
+		tmpRdObj.dyn.sourceParamsAudio.channelCount = ssInfoAud.channelCount;
+		tmpRdObj.dyn.sourceParamsAudio.extradataHex.copyFrom(ssInfoAud.extradataHex);
+
+		tmpRdObj.dyn.ffmpegTcObj = FfmpegTranscoder.createForAudioOnly(
 				null,
-				sourceParamsAudio,
-				rd.dpm.ffTcSettingsOutAudio
+				tmpRdObj.dyn.sourceParamsAudio,
+				tmpRdObj.dpm.ffTcSettingsOutAudio
 			);
 	}
 
 	private void updateTranscoder(@NonNull FfmpegDmxSubStreamInfoAudio ssInfoAud) {
 		final String FNC_NAME = getClass().getSimpleName() + ".updateTranscoder()";
 
-		if (rd.dyn.ffmpegTcObj == null) {
+		RuntimeData tmpRdObj = tlRd.get();
+
+		if (tmpRdObj.dyn.ffmpegTcObj == null) {
 			initTranscoder(ssInfoAud);
 			return;
 		}
-		FfmpegTcParamsInpAudio sourceParamsAudio = new FfmpegTcParamsInpAudio();
-		sourceParamsAudio.ffmpegCodec = ssInfoAud.ffmpegCodec;
-		sourceParamsAudio.timeBase.copyFrom(ssInfoAud.timeBasePts);
-		sourceParamsAudio.sampleRate = ssInfoAud.sampleRate;
-		sourceParamsAudio.channelCount = ssInfoAud.channelCount;
-		sourceParamsAudio.extradataHex.copyFrom(ssInfoAud.extradataHex);
+		tmpRdObj.dyn.sourceParamsAudio.ffmpegCodec = ssInfoAud.ffmpegCodec;
+		tmpRdObj.dyn.sourceParamsAudio.timeBase.copyFrom(ssInfoAud.timeBasePts);
+		tmpRdObj.dyn.sourceParamsAudio.sampleRate = ssInfoAud.sampleRate;
+		tmpRdObj.dyn.sourceParamsAudio.channelCount = ssInfoAud.channelCount;
+		tmpRdObj.dyn.sourceParamsAudio.extradataHex.copyFrom(ssInfoAud.extradataHex);
 
 		try {
-			rd.dyn.ffmpegTcObj.updateAudioDecoderFromBuffer(sourceParamsAudio);
+			tmpRdObj.dyn.ffmpegTcObj.updateAudioDecoderFromBuffer(tmpRdObj.dyn.sourceParamsAudio);
 		} catch (FfmpegDecoderNotFoundException e) {
 			logError(FNC_NAME, "FfmpegDecoderNotFoundException caught: " + e.getMessage());
 		} catch (FfmpegGenericException e) {
@@ -719,6 +778,8 @@ public final class ThreadInpDmxJb extends RunnableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void updateTrackMetadata(@NonNull Map<@NonNull String, @NonNull String> metaMap) {
+		RuntimeData tmpRdObj = tlRd.get();
+
 		StringBuilder sb = new StringBuilder();
 		for (String tag : metaMap.keySet()) {
 			String tmpVal = metaMap.get(tag);
@@ -732,8 +793,8 @@ public final class ThreadInpDmxJb extends RunnableBase {
 					.append(tmpVal);
 		}
 		String tmpOut = sb.toString();
-		rd.dpm.hasMetadataTagsChanged = (! tmpOut.equals(rd.dpm.metadataTags));
-		rd.dpm.metadataTags = tmpOut;
+		tmpRdObj.dpm.hasMetadataTagsChanged = (! tmpOut.equals(tmpRdObj.dpm.metadataTags));
+		tmpRdObj.dpm.metadataTags = tmpOut;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
