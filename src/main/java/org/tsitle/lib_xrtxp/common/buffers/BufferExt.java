@@ -245,7 +245,10 @@ public final class BufferExt implements Cloneable {
 		if (used > 0) {
 			System.arraycopy(buf, 0, oldBuf, 0, used);
 		}
-		buf = new byte[newSize];
+		if (newSize < 16) {
+			newSize = 16;
+		}
+		buf = new byte[(int)((double)newSize * 1.5)];
 		if (used > 0) {
 			System.arraycopy(oldBuf, 0, buf, 0, used);
 		}
