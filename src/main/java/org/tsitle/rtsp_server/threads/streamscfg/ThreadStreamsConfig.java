@@ -19,9 +19,9 @@ public final class ThreadStreamsConfig extends ThreadBase {
 	private final @NonNull Set<@NonNull String> streamsConfigDirs;
 	private final @NonNull RtspAvailableStreamsSvc availableStreamsSvc;
 
-	private final String threadName;
+	private final @NonNull String threadName;
 	private final ReentrantLock lock = new ReentrantLock();
-	private final List<WatchDir> watchDirs = new ArrayList<>();
+	private final List<@NonNull WatchDir> watchDirs = new ArrayList<>();
 	private boolean isFirstRun = true;
 
 	private final @NonNull StreamsCfgReader streamsCfgReader;
