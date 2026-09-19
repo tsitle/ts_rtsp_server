@@ -36,6 +36,10 @@ public final class FfmpegAvPktBasics {
 	}
 
 	public double ptsUnitsToSeconds() {
+		return FfmpegAvPktBasics.ptsUnitsToSecondsHelper(ptsUnits, timeBase);
+	}
+
+	public static double ptsUnitsToSecondsHelper(@Nullable Long ptsUnits, @NonNull RationalNumber timeBase) {
 		if (ptsUnits == null) {
 			return -1.0;
 		}

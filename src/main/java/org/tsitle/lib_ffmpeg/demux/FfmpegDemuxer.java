@@ -768,10 +768,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		++stats.pktsAndDataVid.countPkt;
 		stats.pktsAndDataVid.countData += cacheAvPkt.size();
 
-		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
-		tmpFfAvPktBas.timeBase.copyFrom(inputSsInfoVid.timeBasePts);
-		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
-		stats.pktsAndDataVid.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
+		long tmpPts = cacheAvPkt.pts();
+		stats.pktsAndDataVid.currentPtsSecs = FfmpegAvPktBasics.ptsUnitsToSecondsHelper(
+				tmpPts == avutil.AV_NOPTS_VALUE ? null : tmpPts,
+				inputSsInfoVid.timeBasePts
+			);
 		/*
 		logDebug(FNC_NAME, "Video frame #" + Integer.toUnsignedString(stats.pktsAndDataVid.countPkt) + ": " +
 				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
@@ -790,10 +791,11 @@ public final class FfmpegDemuxer implements AutoCloseable {
 		++stats.pktsAndDataAud.countPkt;
 		stats.pktsAndDataAud.countData += cacheAvPkt.size();
 
-		FfmpegAvPktBasics tmpFfAvPktBas = new FfmpegAvPktBasics();
-		tmpFfAvPktBas.timeBase.copyFrom(inputSsInfoAud.timeBasePts);
-		tmpFfAvPktBas.ptsUnits = (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? null : cacheAvPkt.pts());
-		stats.pktsAndDataAud.currentPtsSecs = tmpFfAvPktBas.ptsUnitsToSeconds();
+		long tmpPts = cacheAvPkt.pts();
+		stats.pktsAndDataAud.currentPtsSecs = FfmpegAvPktBasics.ptsUnitsToSecondsHelper(
+				tmpPts == avutil.AV_NOPTS_VALUE ? null : tmpPts,
+				inputSsInfoAud.timeBasePts
+			);
 		/*
 		logDebug(FNC_NAME, "Audio frame #" + Integer.toUnsignedString(stats.pktsAndDataAud.countPkt) + ": " +
 				"ptsUnits=" + (cacheAvPkt.pts() == avutil.AV_NOPTS_VALUE ? "NOPTS" : cacheAvPkt.pts()) +
@@ -940,6 +942,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 			stats.pktsAndDataVid.currentPktsPerSec = ((double)deltaPkts * 1000.0) / (double)deltaMs;
 			stats.pktsAndDataVid.pktsPerSecsList.add(stats.pktsAndDataVid.currentPktsPerSec);
+			if (stats.pktsAndDataVid.pktsPerSecsList.size() > 60 * 60 * 4) {  // ^= 4 hours
+				stats.pktsAndDataVid.pktsPerSecsList.removeFirst();
+			}
 		}
 
 		if (stats.pktsAndDataAud.countPkt > 0) {
@@ -948,6 +953,9 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 			stats.pktsAndDataAud.currentPktsPerSec = ((double)deltaPkts * 1000.0) / (double)deltaMs;
 			stats.pktsAndDataAud.pktsPerSecsList.add(stats.pktsAndDataAud.currentPktsPerSec);
+			if (stats.pktsAndDataAud.pktsPerSecsList.size() > 60 * 60 * 4) {  // ^= 4 hours
+				stats.pktsAndDataAud.pktsPerSecsList.removeFirst();
+			}
 		}
 
 		return true;
@@ -976,6 +984,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 	private void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
 	}
+
 	@SuppressWarnings("SameParameterValue")
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {
 		if (logMsgInterface == null) {

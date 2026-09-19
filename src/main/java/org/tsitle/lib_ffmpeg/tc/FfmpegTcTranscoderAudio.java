@@ -376,8 +376,11 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void prepareDecoderCtxFromFile(@NonNull AVFormatContext inputAvFmtCtx, int subStreamIx)
-			throws FfmpegGenericException {
+	private void prepareDecoderCtxFromFile(
+				@NonNull AVCodec avCodecDecoder,
+				@NonNull AVFormatContext inputAvFmtCtx,
+				int subStreamIx
+			) throws FfmpegGenericException {
 		final String FNC_NAME = getClass().getSimpleName() + ".prepareDecoderCtxFromFile()";
 
 		AVCodecParameters inputCodecPar = inputAvFmtCtx.streams(subStreamIx).codecpar();
@@ -385,6 +388,11 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		if (inputCodecPar.codec_id() != sourceFfmpegCodec.getFfmpegId()) {
 			throw new IllegalStateException(FNC_NAME + ": Input codec_id=" + inputCodecPar.codec_id() +
 					" does not match expected codec_id=" + sourceFfmpegCodec.getFfmpegId());
+		}
+
+		decoderCtx = avcodec.avcodec_alloc_context3(avCodecDecoder);
+		if (decoderCtx == null) {
+			throw new RuntimeException(FNC_NAME + ": Cannot allocate Decoder Context");
 		}
 
 		int r = avcodec.avcodec_parameters_to_context(decoderCtx, inputCodecPar);
@@ -444,18 +452,16 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 					sourceFfmpegCodec.getFfmpegId());
 		}
 
-		decoderCtx = avcodec.avcodec_alloc_context3(avCodecDecoder);
-		if (decoderCtx == null) {
-			throw new RuntimeException(FNC_NAME + ": Cannot allocate Decoder Context");
-		}
-
 		if (isFromFile) {
 			if (inputAvFmtCtx == null || subStreamIx == null) {
 				throw new IllegalArgumentException(FNC_NAME + ": inputAvFmtCtx and subStreamIx must be non-null");
 			}
-			prepareDecoderCtxFromFile(inputAvFmtCtx, subStreamIx);
+			prepareDecoderCtxFromFile(avCodecDecoder, inputAvFmtCtx, subStreamIx);
 		} else {
 			prepareDecoderCtxFromStream();
+		}
+		if (decoderCtx == null) {
+			throw new RuntimeException(FNC_NAME + ": no Decoder Context allocated");
 		}
 
 		int r = avcodec.avcodec_open2(decoderCtx, avCodecDecoder, (AVDictionary)null);
@@ -694,13 +700,13 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		recvAllFrames();
 	}
 
-	private void pushFrameToFifo(@NonNull AVFrame src) throws FfmpegGenericException {
+	private void pushFrameToFifo(@NonNull AVFrame src) {
 		final String FNC_NAME = getClass().getSimpleName() + ".pushFrameToFifo()";
 
 		int srcSamples = src.nb_samples();
-		int oldSize = avutil.av_audio_fifo_size(audioFifo);
+		/*int oldSize = avutil.av_audio_fifo_size(audioFifo);
 		int r = avutil.av_audio_fifo_realloc(audioFifo, oldSize + srcSamples);
-		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_audio_fifo_realloc()", r);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_audio_fifo_realloc()", r);*/
 
 		int writeRes = avutil.av_audio_fifo_write(audioFifo, src.extended_data(), srcSamples);
 		if (writeRes < srcSamples) {
@@ -738,6 +744,8 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 
 		r = avcodec.avcodec_send_frame(encoderCtx, fifoReadFrame);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_send_frame()", r);
+
+		avutil.av_frame_unref(fifoReadFrame);
 
 		drainEncoderPackets();
 	}

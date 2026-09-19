@@ -4,8 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
 public final class FfmpegDmxStats implements Cloneable {
 
@@ -14,14 +13,14 @@ public final class FfmpegDmxStats implements Cloneable {
 		public int lastCountPkt = 0;
 		public long countData = 0L;
 		public double currentPktsPerSec = -1.0;
-		public @NonNull List<Double> pktsPerSecsList = new ArrayList<>();
+		public @NonNull LinkedList<Double> pktsPerSecsList = new LinkedList<>();
 		public double currentPtsSecs = -1.0;
 
 		@Override
 		public @NonNull PktsAndData clone() {
 			try {
 				PktsAndData clone = (PktsAndData)super.clone();
-				clone.pktsPerSecsList = new ArrayList<>(pktsPerSecsList);
+				clone.pktsPerSecsList = new LinkedList<>(pktsPerSecsList);
 				return clone;
 			} catch (CloneNotSupportedException e) {
 				throw new AssertionError();

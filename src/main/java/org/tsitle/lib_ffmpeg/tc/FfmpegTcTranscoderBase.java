@@ -305,6 +305,7 @@ abstract class FfmpegTcTranscoderBase {
 			//
 			if (ffmpegReceiveTcAvInterface != null && encodedPacket.data() != null) {
 				if (convertEncodedPacketFormat(encodedPacket)) {
+					avcodec.av_packet_unref(encodedPacket);
 					continue;
 				}
 
@@ -362,7 +363,8 @@ abstract class FfmpegTcTranscoderBase {
 		} else {
 			avcodec.av_packet_unref(cacheInputPkt);
 		}
-		int r = avcodec.av_new_packet(cacheInputPkt, inputPktBasics.pktBe.getUsed());
+		final int requiredSize = inputPktBasics.pktBe.getUsed();
+		int r = avcodec.av_new_packet(cacheInputPkt, requiredSize);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_new_packet()", r);
 
 		BufferView inpPktPayloadBv = new BufferView(inputPktBasics.pktBe);
