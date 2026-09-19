@@ -369,6 +369,9 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		// flush decoder
 		flushOnlyDecoder();
 
+		// flush resampler (samples still buffered inside the SwrContext)
+		flushOnlySwr();
+
 		// flush encoder
 		flushAudioPipelineToEncoder();
 	}
@@ -463,6 +466,8 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		if (decoderCtx == null) {
 			throw new RuntimeException(FNC_NAME + ": no Decoder Context allocated");
 		}
+
+		decoderCtx.flags(decoderCtx.flags() | avcodec.AV_CODEC_FLAG_LOW_DELAY);
 
 		int r = avcodec.avcodec_open2(decoderCtx, avCodecDecoder, (AVDictionary)null);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "avcodec_open2()", r);
@@ -700,6 +705,38 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		recvAllFrames();
 	}
 
+	private void flushOnlySwr() throws FfmpegGenericException {
+		final String FNC_NAME = getClass().getSimpleName() + ".flushOnlySwr()";
+
+		if (! needsAudioConversion || swrCtx == null || convertedFrame == null || encoderCtx == null) {
+			return;
+		}
+
+		int remaining = swresample.swr_get_out_samples(swrCtx, 0);
+		if (remaining <= 0) {
+			return;
+		}
+
+		avutil.av_frame_unref(convertedFrame);
+		convertedFrame.format(encoderCtx.sample_fmt());
+		convertedFrame.sample_rate(encoderCtx.sample_rate());
+		int r = avutil.av_channel_layout_copy(convertedFrame.ch_layout(), encoderCtx.ch_layout());
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_channel_layout_copy()", r);
+		convertedFrame.nb_samples(remaining);
+		r = avutil.av_frame_get_buffer(convertedFrame, 0);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_frame_get_buffer()", r);
+
+		// in=null drains the resampler's internal FIFO/delay
+		//noinspection RedundantCast
+		r = swresample.swr_convert_frame(swrCtx, convertedFrame, (AVFrame)null);
+		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "swr_convert_frame(flush)", r);
+
+		if (convertedFrame.nb_samples() > 0) {
+			pushFrameToFifo(convertedFrame);
+		}
+		avutil.av_frame_unref(convertedFrame);
+	}
+
 	private void pushFrameToFifo(@NonNull AVFrame src) {
 		final String FNC_NAME = getClass().getSimpleName() + ".pushFrameToFifo()";
 
@@ -758,7 +795,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		}
 		int frameSize = encoderCtx.frame_size();
 		if (frameSize <= 0) {
-			frameSize = 1024; // AAC default safety fallback
+			frameSize = 1024;  // AAC default safety fallback
 		}
 
 		while (avutil.av_audio_fifo_size(audioFifo) >= frameSize) {
@@ -801,7 +838,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 			chCount = (decoderCtx != null ? decoderCtx.ch_layout().nb_channels() : 0);
 		}
 		if (chCount <= 0) {
-			chCount = 2; // safe fallback
+			chCount = 2;  // safe fallback
 		}
 
 		// If input frame has unspecified/invalid order, synthesize a default layout from channel count
@@ -941,9 +978,12 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 		outFrame.sample_rate(encoderCtx.sample_rate());
 		r = avutil.av_channel_layout_copy(outFrame.ch_layout(), encoderCtx.ch_layout());
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_channel_layout_copy(retry)", r);
-		outFrame.nb_samples(inFrame.nb_samples());
-		r = avutil.av_frame_get_buffer(outFrame, 0);
-		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_frame_get_buffer(retry)", r);
+		/*
+		 * NOTE: no nb_samples()/av_frame_get_buffer() here on purpose:
+		 * swr_convert_frame() sizes the output via swr_get_out_samples() (incl. its internal FIFO)
+		 * and allocates the buffer itself. Pre-sizing it with the *input* sample count caps the
+		 * output and makes swr buffer the surplus forever when upsampling.
+		 */
 
 		r = swresample.swr_convert_frame(swrCtx, outFrame, inFrame);
 		FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "swr_convert_frame(retry)", r);
@@ -981,10 +1021,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 				convertedFrame.sample_rate(encoderCtx.sample_rate());
 				r = avutil.av_channel_layout_copy(convertedFrame.ch_layout(), encoderCtx.ch_layout());
 				FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_channel_layout_copy()", r);
-
-				convertedFrame.nb_samples(decodedFrame.nb_samples());
-				r = avutil.av_frame_get_buffer(convertedFrame, 0);
-				FfmpegHelperFfError.checkFfmpegResult(FNC_NAME, "av_frame_get_buffer()", r);
+				// buffer is intentionally NOT allocated here - see convertWithSwrRetry()
 
 				convertWithSwrRetry(decodedFrame, convertedFrame);
 				frameForFifo = convertedFrame;
