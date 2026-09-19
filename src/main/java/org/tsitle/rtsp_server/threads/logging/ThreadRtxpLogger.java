@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -34,15 +34,15 @@ public final class ThreadRtxpLogger extends ThreadBase {
 
 	private boolean enableOutputFile = false;
 	private boolean enableOutputConsole = false;
-	private String outputFilename = "rtxp-" + OUTPUT_FN_DATETIME + OUTPUT_FN_EXT;
+	private @NonNull String outputFilename = "rtxp-" + OUTPUT_FN_DATETIME + OUTPUT_FN_EXT;
 
-	private final Queue<@NonNull LogEntry> msgQueue = new ConcurrentLinkedQueue<>();
+	private final Queue<@NonNull LogEntry> msgQueue = new LinkedList<>();
 	private final ReentrantLock lock = new ReentrantLock();
 	/** Condition to signal that a new message has been added to the queue or the thread has been requested to stop */
 	private final Condition stateChanged = lock.newCondition();
 
-	private @Nullable FileOutputStream outpFileFos;
-	private @Nullable PrintStream outpFilePs;
+	private final ThreadLocal<@Nullable FileOutputStream> tlOutpFileFos = ThreadLocal.withInitial(() -> null);
+	private final ThreadLocal<@Nullable PrintStream> tlOutpFilePs = ThreadLocal.withInitial(() -> null);
 
 	public ThreadRtxpLogger() { }
 
@@ -94,8 +94,10 @@ public final class ThreadRtxpLogger extends ThreadBase {
 		if (enableOutputFile) {
 			try {
 				String tmpOutpFn = buildOutputFilename();
-				outpFileFos = new FileOutputStream(tmpOutpFn, true);
-				outpFilePs = new PrintStream(outpFileFos);
+				FileOutputStream tmpOutpFileFosObj = new FileOutputStream(tmpOutpFn, true);
+				PrintStream tmpOutpFilePsObj = new PrintStream(tmpOutpFileFosObj);
+				tlOutpFileFos.set(tmpOutpFileFosObj);
+				tlOutpFilePs.set(tmpOutpFilePsObj);
 			} catch (FileNotFoundException e) {
 				System.err.println(FNC_NAME + ": Failed to open log file for writing: " + e.getMessage());
 				return;
@@ -130,15 +132,19 @@ public final class ThreadRtxpLogger extends ThreadBase {
 					FNC_NAME + ": Thread ended"
 				));
 			//
-			if (outpFilePs != null) {
-				outpFilePs.close();
+			PrintStream tmpOutpFilePsObj = tlOutpFilePs.get();
+			if (tmpOutpFilePsObj != null) {
+				tmpOutpFilePsObj.close();
+				tlOutpFilePs.remove();
 			}
-			if (outpFileFos != null) {
+			FileOutputStream tmpOutpFileFosObj = tlOutpFileFos.get();
+			if (tmpOutpFileFosObj != null) {
 				try {
-					outpFileFos.close();
+					tmpOutpFileFosObj.close();
 				} catch (IOException ignore) {
 					// ignore
 				}
+				tlOutpFileFos.remove();
 			}
 		}
 	}
@@ -218,9 +224,12 @@ public final class ThreadRtxpLogger extends ThreadBase {
 			PrintStream ps = (entry.level == RtxpLogLevel.DEBUG || entry.level == RtxpLogLevel.INFO ? System.out : System.err);
 			ps.print(outpStr);
 		}
-		if (enableOutputFile && outpFilePs != null) {
-			outpFilePs.print(outpStr);
-			outpFilePs.flush();
+		if (enableOutputFile) {
+			PrintStream tmpOutpFilePsObj = tlOutpFilePs.get();
+			if (tmpOutpFilePsObj != null) {
+				tmpOutpFilePsObj.print(outpStr);
+				tmpOutpFilePsObj.flush();
+			}
 		}
 	}
 
