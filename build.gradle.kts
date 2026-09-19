@@ -110,7 +110,10 @@ application {
 	mainClass = "org.tsitle.rtsp_server.RtspServerApp"
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
-	applicationDefaultJvmArgs += "-XX:+UseZGC"
+	applicationDefaultJvmArgs += "-Xms32m"   // initial heap size
+	applicationDefaultJvmArgs += "-Xmx128m"   // maximum heap size
+	applicationDefaultJvmArgs += "-XX:MaxRAM=256m"  // maximum total JVM memory size
+	applicationDefaultJvmArgs += "-XX:+UseZGC"  // available since Java 15
 	//applicationDefaultJvmArgs += "-XX:+ZGenerational"  // this flag was removed in JDK 24
 	applicationDefaultJvmArgs += "--enable-native-access=ALL-UNNAMED"  // for FFmpeg
 }
