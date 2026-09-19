@@ -51,7 +51,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 	private final @NonNull RtspProtoIdEsSource idEsSourceVid = RtspProtoIdEsSource.ofEmpty();
 	private final @NonNull RtspProtoIdEsSource idEsSourceAud = RtspProtoIdEsSource.ofEmpty();
 
-	private final String threadName;
+	private final @NonNull String threadName;
 
 	private @Nullable FfmpegDemuxer ffDemuxerPtr = null;
 	private @Nullable MqInternalPub mqInternalPubVid = null;
