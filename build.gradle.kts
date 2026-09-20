@@ -15,6 +15,11 @@ val propProjName = rootProject.name  // from 'settings.gradle.kts'
 // output directory for distribution files (launchers and installers)
 val confDistPreOutputDir = "distPre"
 
+val jvmMemHeapInit: String = "128m"
+val jvmMemHeapMax: String = "128m"
+//val jvmMemMaxTotalAbs: String = "256m"
+val jvmMemMaxTotalPerc: String = "50"
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 fun getOperatingSystemName() : String {
@@ -110,9 +115,10 @@ application {
 	mainClass = "org.tsitle.rtsp_server.RtspServerApp"
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
-	applicationDefaultJvmArgs += "-Xms32m"   // initial heap size
-	applicationDefaultJvmArgs += "-Xmx128m"   // maximum heap size
-	applicationDefaultJvmArgs += "-XX:MaxRAM=256m"  // maximum total JVM memory size
+	applicationDefaultJvmArgs += "-Xms${jvmMemHeapInit}"   // initial heap size
+	applicationDefaultJvmArgs += "-Xmx${jvmMemHeapMax}"   // maximum heap size
+	//applicationDefaultJvmArgs += "-XX:MaxRAM=${jvmMemMaxTotalAbs}"  // maximum total JVM memory size
+	applicationDefaultJvmArgs += "-XX:MaxRAMPercentage=${jvmMemMaxTotalPerc}"  // maximum total JVM memory size
 	applicationDefaultJvmArgs += "-XX:+UseZGC"  // available since Java 15
 	//applicationDefaultJvmArgs += "-XX:+ZGenerational"  // this flag was removed in JDK 24
 	applicationDefaultJvmArgs += "--enable-native-access=ALL-UNNAMED"  // for FFmpeg
