@@ -8,11 +8,17 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Hostname/IP Helper.
  */
 public final class HostnameHelper {
+
+	private static final Pattern IPV4_MATCHER = Pattern.compile(
+			"(?<![\\d.])(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}"
+					+ "(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?![\\d.])"
+		);
 
 	private HostnameHelper() { }
 
@@ -28,6 +34,10 @@ public final class HostnameHelper {
 	 */
 	public static Optional<InetAddress> firstAvailableLocalIpv4AddressForHostname(@NonNull String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
+		if (IPV4_MATCHER.matcher(hostname).matches()) {
+			return Optional.of(InetAddress.getByName(hostname));
+		}
+
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
 		if (resolved.length == 0) {
 			return Optional.empty();
@@ -49,6 +59,10 @@ public final class HostnameHelper {
 	@SuppressWarnings("unused")
 	public static @NonNull Set<@NonNull InetAddress> allLocalIpv4AddressesForHostname(@NonNull String hostname, boolean allowLoopback)
 			throws UnknownHostException, SocketException {
+		if (IPV4_MATCHER.matcher(hostname).matches()) {
+			return Set.of(InetAddress.getByName(hostname));
+		}
+
 		InetAddress[] resolved = InetAddress.getAllByName(hostname);
 		Set<InetAddress> localInterfaceAddrs = getAllLocalIpv4InterfaceAddresses(allowLoopback);
 		Set<InetAddress> matches = new HashSet<>();
