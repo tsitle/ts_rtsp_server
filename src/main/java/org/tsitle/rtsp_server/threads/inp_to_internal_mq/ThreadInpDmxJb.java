@@ -294,7 +294,6 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 		//
 		for (FfmpegAvPktBasics tcAvPkt : tmpOptAvPktListPtr.get()) {
-			adaptiveScheduler.waitForNextFrame();
 			sendAvPktToMq(adaptiveScheduler, tcAvPkt);
 		}
 
@@ -459,24 +458,19 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 		//
 		boolean isVirtFpsOk = updateMqCodecSettings_spf(tcAvPkt, false);
+		if (! isVirtFpsOk) {
+			return;
+		}
+
+		//
+		double tmpPtsSeconds = tcAvPkt.ptsUnitsToSeconds();
+		if (tmpPtsSeconds < 0.0) {  // tmpPtsSeconds is allowed to be exactly zero or greater
+			return;  // the very first packet of a file often has a negative PTS
+		}
 
 		//
 		if (tmpRdObj.dpm.lastPktTsEpoch.isEmpty()) {
 			tmpRdObj.dpm.lastPktTsEpoch.setToNow();
-		}
-		double tmpPtsSeconds = tcAvPkt.ptsUnitsToSeconds();
-		if (tmpPtsSeconds < 0.0) {  // tmpPtsSeconds is allowed to be exactly zero or greater
-			return;
-		}
-		TimestampEpoch tmpMqPktTsEpoch = TimestampEpoch.ofEpochNsUnsigned64bit(
-				tmpRdObj.dpm.lastPktTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
-						(long)(tmpPtsSeconds * 1_000_000_000.0)
-			);
-		tmpRdObj.dpm.lastPktTsEpoch.copyFrom(tmpMqPktTsEpoch);
-
-		//
-		if (! isVirtFpsOk) {
-			return;
 		}
 
 		//
@@ -486,13 +480,14 @@ public final class ThreadInpDmxJb extends RunnableBase {
 			double asVirtualFps = 1.0 / deltaSecs;
 			adaptiveScheduler.setFps(asVirtualFps);
 		}
+		adaptiveScheduler.waitForNextFrame();
 
 		//
 		MqPacketAv mqPkt = new MqPacketAv(
 				tmpRdObj.dpm.msgNr++,
 				tmpRdObj.dpm.mqCodecSettings.codec,
 				false,
-				tmpMqPktTsEpoch,
+				tmpRdObj.dpm.lastPktTsEpoch,
 				tmpRdObj.dpm.counter++,
 				false,
 				ImageDimensions.ofEmpty(),
@@ -505,6 +500,12 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				tcAvPkt.pktBe
 			);
 		tmpRdObj.dyn.mqInternalPub.sendMessageAv(mqPkt);
+
+		//
+		tmpRdObj.dpm.lastPktTsEpoch.setEpochNsUnsigned64bit(
+				tmpRdObj.dpm.lastPktTsEpoch.getEpochNsUnsigned64bit().orElseThrow() +
+						(long)(tmpPtsSeconds * 1_000_000_000.0)
+			);
 
 		//
 		tmpRdObj.bw.bytesSent += tcAvPkt.pktBe.getUsed();
