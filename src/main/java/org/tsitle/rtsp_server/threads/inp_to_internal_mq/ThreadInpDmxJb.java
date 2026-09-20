@@ -789,12 +789,25 @@ public final class ThreadInpDmxJb extends RunnableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static @NonNull String encodeHtmlChars(@NonNull String input) {
+		return input
+				.replace("&", "&amp;")
+				.replace("'", "&#39;")  // aka '&apos;'
+				.replace("\"", "&quot;")
+				.replace("<", "&lt;").replace(">", "&gt;")
+				.replaceAll("[^\\x20-\\x7E]", "");  // allow printable ASCII chars only
+	}
+
 	private void updateTrackMetadata(@NonNull Map<@NonNull String, @NonNull String> metaMap) {
 		RuntimeData tmpRdObj = tlRd.get();
 
 		StringBuilder sb = new StringBuilder();
 		for (String tag : metaMap.keySet()) {
+			/*
+			 * Note: the characters ' and " are not allowed in the value of RTSP parameters
+			 */
 			String tmpVal = metaMap.get(tag);
+			tmpVal = encodeHtmlChars(tmpVal);
 			if (tag.length() > 999 || tmpVal.isBlank() || tmpVal.length() > 999) {
 				continue;
 			}

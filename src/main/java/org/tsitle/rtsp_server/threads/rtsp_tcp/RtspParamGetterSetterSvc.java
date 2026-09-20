@@ -68,7 +68,9 @@ public final class RtspParamGetterSetterSvc implements RtspProtoParameterGetterI
 		resObj.setContentLang(CONTENT_LANGUAGE);
 
 		/*
-		 * Note: we do not validate the Session ID here to avoid the client having to send a 'SETUP' request.
+		 * Note:
+		 *   - we do not validate the Session ID here to avoid the client having to send a 'SETUP' request.
+		 *   - the characters ' and " are not allowed in the value of RTSP parameters
 		 */
 		Optional<String> tmpOptFileTags = asGetFileTagsInterface.getFileTagsValue(idInputSource);
 		tmpOptFileTags.ifPresent(s -> resObj.putParamKvsEntry(PARAM_KEY_FILETAGS, s));
