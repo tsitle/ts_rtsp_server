@@ -223,6 +223,7 @@ public final class ThreadRtxpLogger extends ThreadBase {
 		if (enableOutputConsole) {
 			PrintStream ps = (entry.level == RtxpLogLevel.DEBUG || entry.level == RtxpLogLevel.INFO ? System.out : System.err);
 			ps.print(outpStr);
+			ps.flush();
 		}
 		if (enableOutputFile) {
 			PrintStream tmpOutpFilePsObj = tlOutpFilePs.get();
