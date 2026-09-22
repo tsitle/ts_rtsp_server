@@ -30,6 +30,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class RtspServerApp {
 
@@ -41,6 +42,7 @@ public final class RtspServerApp {
 	private static final AtomicBoolean doNeedShutdownHandler = new AtomicBoolean(true);
 	private static final AtomicBoolean isShutdownComplete = new AtomicBoolean(false);
 
+	private static final ReentrantLock lockPrint = new ReentrantLock();
 	private static @Nullable ThreadRtxpLogger threadRtxpLogger = null;
 	private static final ThreadLocal<@Nullable RtspThreadMngPlay> tlRtspThreadMngPlay = ThreadLocal.withInitial(() -> null);
 	private static final ThreadLocal<@Nullable RtspThreadMngTci> tlRtspThreadMngTci = ThreadLocal.withInitial(() -> null);
@@ -63,7 +65,7 @@ public final class RtspServerApp {
 
 		//
 		if (argv.length != 1) {
-			System.err.println(FNC_NAME + ": Required argument <config-file> missing");
+			printlnStr(false, FNC_NAME + ": Required argument <config-file> missing");
 			System.exit(1);
 		}
 
@@ -104,7 +106,7 @@ public final class RtspServerApp {
 		stopThreads();
 
 		//
-		System.out.println(FNC_NAME + ": Server terminated");
+		printlnStr(true, FNC_NAME + ": Server terminated");
 		isShutdownComplete.set(true);
 	}
 
@@ -131,8 +133,8 @@ public final class RtspServerApp {
 		// without the Signal handler below, the Shutdown Hook works just fine
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				if (doNeedShutdownHandler.get()) {
-					System.out.println();
-					System.out.println(fncName + ": SDH: Shutting down ...");
+					printlnStr(true, "");
+					printlnStr(true, fncName + ": SDH: Shutting down ...");
 					doStop.set(true);
 					cancelToken.cancelled = true;
 					//
@@ -141,21 +143,21 @@ public final class RtspServerApp {
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
-							System.err.println(fncName + ": SDH: InterruptedException");
+							printlnStr(false, fncName + ": SDH: InterruptedException");
 							Thread.currentThread().interrupt();  // restore flag
 						}
 					}
 					if (isShutdownComplete.get()) {
-						System.out.println(fncName + ": SDH: Shutdown complete");
+						printlnStr(true, fncName + ": SDH: Shutdown complete");
 					} else {
-						System.err.println(fncName + ": SDH: threads still running, forcing shutdown");
+						printlnStr(false, fncName + ": SDH: threads still running, forcing shutdown");
 					}
 				}
 			}));
 		// using the Signal handler here causes the Shutdown Hook to not be called. But System.exit() will then trigger it
 		/*sun.misc.Signal.handle(new sun.misc.Signal("INT"),  // SIGINT
 				signal -> {
-					System.out.println(fncName + ": Interrupted by Ctrl+C");
+					printlnStr(true, fncName + ": Interrupted by Ctrl+C");
 					System.exit(1);
 				});*/
 	}
@@ -246,15 +248,15 @@ public final class RtspServerApp {
 		try {
 			rtspSrvConfig = RtspSrvConfigFileReader.readMainConfigFromFile(configFilePath);
 		} catch (ConfigInvalidException e) {
-			System.err.println(FNC_NAME + ": ConfigInvalidException caught: " + e.getMessage());
+			printlnStr(false, FNC_NAME + ": ConfigInvalidException caught: " + e.getMessage());
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		} catch (IOException e) {
-			System.err.println(FNC_NAME + ": IOException caught: " + e.getMessage());
+			printlnStr(false, FNC_NAME + ": IOException caught: " + e.getMessage());
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		} catch (IllegalArgumentException e) {
-			System.err.println(FNC_NAME + ": IllegalArgumentException caught: " + e.getMessage());
+			printlnStr(false, FNC_NAME + ": IllegalArgumentException caught: " + e.getMessage());
 			doNeedShutdownHandler.set(false);
 			System.exit(1);
 		}
@@ -498,7 +500,7 @@ public final class RtspServerApp {
 			try {
 				threadStreamsConfig.join();
 			} catch (InterruptedException e) {
-				System.err.println(FNC_NAME + ": Interrupted while joining thread StreamsConfig");
+				printlnStr(false, FNC_NAME + ": Interrupted while joining thread StreamsConfig");
 			}
 			threadStreamsConfig = null;
 		}
@@ -511,11 +513,11 @@ public final class RtspServerApp {
 			try {
 				threadRtxpLogger.join();
 			} catch (InterruptedException e) {
-				System.err.println(FNC_NAME + ": Interrupted while joining thread RtxpLogger");
+				printlnStr(false, FNC_NAME + ": Interrupted while joining thread RtxpLogger");
 			}
 		}
 
-		System.err.println(FNC_NAME + ": all threads stopped");
+		printlnStr(false, FNC_NAME + ": all threads stopped");
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -656,6 +658,19 @@ public final class RtspServerApp {
 			tmpAppVersion = "0.0";
 		}
 		return RtspServerConstants.SERVER_NAME + "/" + tmpAppVersion;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void printlnStr(boolean toStdout, @NonNull String outpStr) {
+		lockPrint.lock();
+		try {
+			PrintStream ps = (toStdout ? System.out : System.err);
+			ps.print(outpStr + System.lineSeparator());
+			ps.flush();
+		} finally {
+			lockPrint.unlock();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
