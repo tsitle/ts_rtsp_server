@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.5] - 2026-09-23
+
+### Changed
+
+- in the ThreadInpDmxJb class, a new transcoder context is now created for each input file  
+	to ensure that all samples are being drained before the next file is processed
+
+### Fixed
+
+- fixed some issues in various FFmpeg related classes
+- fixed an issue in the audio transcoder where samples were being buffered incorrectly
+- fixed an issue where IPv4 addresses were being tried to be resolved to an IPv4 address
+
 ## [1.1.4] - 2026-09-18
 
 ### Added
