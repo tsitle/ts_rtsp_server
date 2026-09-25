@@ -68,7 +68,7 @@ public final class RtspSrvConfigStreamInputDmxJb implements Cloneable {
 		void postProcess() {
 			//noinspection ConstantValue
 			if (codec == null) {
-				codec = ConfigTcCodec.AACLC;
+				codec = ConfigTcCodec.AAC;
 			}
 			//noinspection ConstantValue
 			if (audioSamplerateHz == null || audioSamplerateHz < 1) {

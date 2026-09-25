@@ -568,7 +568,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		int nextSpf;
 		final double lastVirtualFps = tmpRdObj.dpm.virtualFps;
 
-		if (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.AACLC) {
+		if (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.AAC) {
 			if (avPkt.duration != DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1) {
 				// this can happen at the end of an input file
 				return false;

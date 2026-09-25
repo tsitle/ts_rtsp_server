@@ -20,7 +20,7 @@ public final class CfgTcCodecToFfCodecHelper {
 
 	public static @NonNull FfmpegCodec convertCfgTcCodecToFfmpegCodec(@NonNull ConfigTcCodec cfgTcCodec) {
 		return switch (cfgTcCodec) {
-				case AACLC -> FfmpegCodec.A_AAC;
+				case AAC -> FfmpegCodec.A_AAC;
 				case AC3 -> FfmpegCodec.A_AC3;
 				case MP2 -> FfmpegCodec.A_MP2;
 				case MP3 -> FfmpegCodec.A_MP3;

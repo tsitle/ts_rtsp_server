@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
  */
 public enum MqPacketCodec {
 
-	AACLC("AACLC"),
+	AAC("AAC"),
 	AC3("AC3"),
 	MP2("MP2"),
 	MP3("MP3"),
@@ -43,7 +43,7 @@ public enum MqPacketCodec {
 	public boolean isVideo() { return (this == H264 || this == H265 || this == MJPEG || this == VP8); }
 
 	public boolean isAudio() {
-		return (isPcmAudio() || this == AACLC || this == AC3 || this == MP2 || this == MP3 || this == OPUS);
+		return (isPcmAudio() || this == AAC || this == AC3 || this == MP2 || this == MP3 || this == OPUS);
 	}
 
 	public boolean isPcmAudio() { return (this == PCMA || this == PCMU || this == LPCM08U || this == LPCM16S); }
@@ -53,7 +53,7 @@ public enum MqPacketCodec {
 				byte audioChannelCount
 			) {
 		return switch (this) {
-				case AACLC -> RtpPacketType.A_AAC;
+				case AAC -> RtpPacketType.A_AAC;
 				case AC3 -> RtpPacketType.A_AC3;
 				case MP2, MP3 -> RtpPacketType.A_MPEG;
 				case OPUS -> RtpPacketType.A_OPUS;

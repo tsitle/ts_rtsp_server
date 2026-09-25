@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.config;
 
 public enum ConfigTcCodec {
 
-	AACLC,
+	AAC,
 	AC3,
 	MP2,
 	MP3,
@@ -25,7 +25,7 @@ public enum ConfigTcCodec {
 
 	public boolean isAudio() {
 		return switch (this) {
-				case AACLC, AC3, MP2, MP3, OPUS, PCMA, PCMU, LPCM16S -> true;
+				case AAC, AC3, MP2, MP3, OPUS, PCMA, PCMU, LPCM16S -> true;
 				default -> false;
 			};
 	}

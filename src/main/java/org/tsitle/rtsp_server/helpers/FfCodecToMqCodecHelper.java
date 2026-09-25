@@ -12,7 +12,7 @@ public final class FfCodecToMqCodecHelper {
 
 	public static Optional<MqPacketCodec> convertFfToMqCodec(@NonNull FfmpegCodec ffCodec) {
 		MqPacketCodec resEn = switch (ffCodec) {
-				case A_AAC -> MqPacketCodec.AACLC;
+				case A_AAC -> MqPacketCodec.AAC;
 				case A_AC3 -> MqPacketCodec.AC3;
 				case A_MP2 -> MqPacketCodec.MP2;
 				case A_MP3 -> MqPacketCodec.MP3;
