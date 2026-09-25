@@ -29,7 +29,7 @@
 			"enabled": true,
 			"rawFile": {
 				"filePath": "samples/raw-audio-aac-mono_16000hz.m4a",
-				"codec": "AACLC",
+				"codec": "AAC",
 				"audioSamplerateHz": 16000,
 				"audioChannelCount": 1
 			}
@@ -38,7 +38,7 @@
 			"enabled": true,
 			"rawFile": {
 				"filePath": "samples/raw-audio-aac-surround_51_44100hz.aac",
-				"codec": "AACLC",
+				"codec": "AAC",
 				"audioSamplerateHz": 44100,
 				"audioChannelCount": 6,
 				"aacSamplesPerFrame": 1024

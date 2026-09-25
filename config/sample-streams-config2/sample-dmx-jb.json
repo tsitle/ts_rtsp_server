@@ -18,7 +18,7 @@
 			"jukebox": {
 				"folder": "samples",
 				"transcode": {
-					"codec": "AACLC",
+					"codec": "AAC",
 					"audioSamplerateHz": 48000,
 					"audioChannelCount": 2,
 					"audioBitrateKbps": 224
