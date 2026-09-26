@@ -5,6 +5,7 @@ plugins {
 	id("com.google.osdetector") version "1.7.3"  // see https://github.com/google/osdetector-gradle-plugin
 	// this plugin will filter the JavaCPP and FFmpeg libraries such that only libs for the current CPU architecture will be included
 	id("org.bytedeco.gradle-javacpp-platform") version "1.5.10"
+	id("com.gradleup.shadow") version "9.6.1"  // for Fat JARs
 }
 
 group = "org.tsitle.rtsp_server"
@@ -12,13 +13,16 @@ version = "1.1.5"
 
 val propProjName = rootProject.name  // from 'settings.gradle.kts'
 
+val confMainClass = "org.tsitle.rtsp_server.RtspServerApp"
+val confAppInfoClass = "org.tsitle.rtsp_server.AppInfo"
+
 // output directory for distribution files (launchers and installers)
 val confDistPreOutputDir = "distPre"
 
 val jvmMemHeapInit: String = "128m"
 val jvmMemHeapMax: String = "128m"
-//val jvmMemMaxTotalAbs: String = "256m"
-val jvmMemMaxTotalPerc: String = "50"
+val jvmMemMaxTotalAbs: String = "256m"
+//val jvmMemMaxTotalPerc: String = "50"
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -112,13 +116,13 @@ tasks.compileJava.configure {
 // ----------------------------------------------------------------
 
 application {
-	mainClass = "org.tsitle.rtsp_server.RtspServerApp"
+	mainClass = confMainClass
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-Xms${jvmMemHeapInit}"   // initial heap size
 	applicationDefaultJvmArgs += "-Xmx${jvmMemHeapMax}"   // maximum heap size
-	//applicationDefaultJvmArgs += "-XX:MaxRAM=${jvmMemMaxTotalAbs}"  // maximum total JVM memory size
-	applicationDefaultJvmArgs += "-XX:MaxRAMPercentage=${jvmMemMaxTotalPerc}"  // maximum total JVM memory size
+	applicationDefaultJvmArgs += "-XX:MaxRAM=${jvmMemMaxTotalAbs}"  // maximum total JVM memory size
+	//applicationDefaultJvmArgs += "-XX:MaxRAMPercentage=${jvmMemMaxTotalPerc}"  // maximum total JVM memory size
 	applicationDefaultJvmArgs += "-XX:+UseZGC"  // available since Java 15
 	//applicationDefaultJvmArgs += "-XX:+ZGenerational"  // this flag was removed in JDK 24
 	applicationDefaultJvmArgs += "--enable-native-access=ALL-UNNAMED"  // for FFmpeg
@@ -126,10 +130,17 @@ application {
 
 // ----------------------------------------------------------------
 
-tasks.jar {
+/*tasks.jar {
 	manifest {
-		attributes["Main-Class"] = "org.tsitle.rtsp_server.RtspServerApp"
+		attributes["Main-Class"] = confMainClass
 	}
+}*/
+
+tasks.shadowJar {
+	manifest {
+		attributes["Main-Class"] = confMainClass
+	}
+	archiveClassifier.set("")   // replaces the regular JAR
 }
 
 // ----------------------------------------------------------------
