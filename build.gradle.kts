@@ -5,6 +5,7 @@ plugins {
 	id("com.google.osdetector") version "1.7.3"  // see https://github.com/google/osdetector-gradle-plugin
 	// this plugin will filter the JavaCPP and FFmpeg libraries such that only libs for the current CPU architecture will be included
 	id("org.bytedeco.gradle-javacpp-platform") version "1.5.10"
+	id("org.graalvm.buildtools.native") version "1.1.12"
 	id("com.gradleup.shadow") version "9.6.1"  // for Fat JARs
 }
 
@@ -313,5 +314,45 @@ tasks.distZip {
 		val tmpFileObjTrg = File(confDistPreOutputDir, tmpFilenTrg)
 		println("Renaming '${tmpFileObjOrg}' to '${tmpFileObjTrg}'")
 		tmpFileObjOrg.renameTo(tmpFileObjTrg)
+	}
+}
+
+// ----------------------------------------------------------------
+
+graalvmNative {
+	binaries {
+		named("main") {
+			imageName = propProjName
+			mainClass = confMainClass
+			buildArgs.add(
+				"-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image-${cpuArch}"
+			)
+			if (cpuArch == "aarch64") {
+				buildArgs.add("-march=compatibility")  // required for RK3308
+			}
+			buildArgs.add("--no-fallback")  // fail if native image can't be fully built
+			//buildArgs.add("--initialize-at-build-time=com.sun.media.sound.JDK13Services")
+
+			buildArgs.add("-DappVersion=${version}")
+			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
+
+			// Default heap settings for the native executable (equivalent of -Xms / -Xmx / -XX:MaxRAM)
+			buildArgs.add("-R:MinHeapSize=${jvmMemHeapInit}")
+			buildArgs.add("-R:MaxHeapSize=${jvmMemHeapMax}")
+			buildArgs.add("-R:MaxRAM=${jvmMemMaxTotalAbs}")
+			//buildArgs.add("-R:MaxRAMPercentage=${jvmMemMaxTotalPerc}")  // can only be used together with the G1 garbage collector
+			// GC is a build-time decision in Native Image; Serial GC is the default and the lowest-footprint choice
+			buildArgs.add("--gc=serial")  // not all Garbage Collectors are supported by GraalVM
+
+			//buildArgs.add("-Os")  // optimize for size
+			buildArgs.add("-O2")  // default. Full optimizations for peak performance without size restrictions.
+
+			buildArgs.add("-H:IncludeLocales=en")
+
+			buildArgs.add("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
+
+			//buildArgs.add("--static")
+			//buildArgs.add("--libc=musl")
+		}
 	}
 }
