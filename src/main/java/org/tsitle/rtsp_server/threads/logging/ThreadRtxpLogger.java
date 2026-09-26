@@ -6,10 +6,8 @@ import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.ThreadBase;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
@@ -94,6 +92,14 @@ public final class ThreadRtxpLogger extends ThreadBase {
 		if (enableOutputFile) {
 			try {
 				String tmpOutpFn = buildOutputFilename();
+
+				//
+				File tmpLogDir = Path.of(tmpOutpFn).toAbsolutePath().getParent().toFile();
+				if (! tmpLogDir.exists()) {
+					System.err.println(FNC_NAME + ": The directory '" + tmpLogDir + "' does not exist. Please create it first");
+					return;
+				}
+				//
 				FileOutputStream tmpOutpFileFosObj = new FileOutputStream(tmpOutpFn, true);
 				PrintStream tmpOutpFilePsObj = new PrintStream(tmpOutpFileFosObj);
 				tlOutpFileFos.set(tmpOutpFileFosObj);
