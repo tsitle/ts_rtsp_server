@@ -146,6 +146,7 @@ public final class RtspServerApp {
 						} catch (InterruptedException e) {
 							printlnStr(false, fncName + ": SDH: InterruptedException");
 							Thread.currentThread().interrupt();  // restore flag
+							break;
 						}
 					}
 					if (isShutdownComplete.get()) {

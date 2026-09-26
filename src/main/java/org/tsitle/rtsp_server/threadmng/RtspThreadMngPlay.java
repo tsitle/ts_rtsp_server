@@ -79,6 +79,7 @@ public final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPl
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();  // restore flag
+				break;
 			}
 		}
 		return rtspPlayThreadMap.get(rtspSessionInfo.getIdSession());
@@ -156,6 +157,7 @@ public final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPl
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();  // restore flag
+					break;
 				}
 			}
 

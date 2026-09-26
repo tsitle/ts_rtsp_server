@@ -137,6 +137,7 @@ public final class RtspThreadMngInpDmxJb extends RtspThreadMngBase {
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();  // restore flag
+					break;
 				}
 			}
 

@@ -220,6 +220,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 					Thread.sleep(50L);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();  // restore flag
+					break;
 				}
 			}
 			// send outstanding packets
