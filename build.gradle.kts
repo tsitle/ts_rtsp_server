@@ -355,8 +355,16 @@ graalvmNative {
 
 			buildArgs.add("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
 
-			buildArgs.add("--static")
 			buildArgs.add("--libc=musl")
+			/*buildArgs.add("--static")
+			buildArgs.add("-H:NativeLinkerOption=-L/opt/ffmpeg/lib")
+			buildArgs.add("-H:NativeLinkerOption=-lavcodec")
+			buildArgs.add("-H:NativeLinkerOption=-lavdevice")
+			buildArgs.add("-H:NativeLinkerOption=-lavfilter")
+			buildArgs.add("-H:NativeLinkerOption=-lavformat")
+			buildArgs.add("-H:NativeLinkerOption=-lavutil")
+			buildArgs.add("-H:NativeLinkerOption=-lswresample")
+			buildArgs.add("-H:NativeLinkerOption=-lswscale")*/
 		}
 	}
 }
