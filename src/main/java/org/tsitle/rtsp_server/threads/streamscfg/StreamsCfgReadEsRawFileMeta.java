@@ -55,11 +55,11 @@ final class StreamsCfgReadEsRawFileMeta {
 		try {
 			RtpPacketType codec = esSourceObj.getCodec().orElseThrow();
 			return switch (codec) {
-					case RtpPacketType.A_AAC -> StreamsCfgReadEsRawFileMeta.readMeta_aac(idEsSource, esSourceObj);
-					case RtpPacketType.A_AC3 -> StreamsCfgReadEsRawFileMeta.readMeta_ac3(idEsSource, esSourceObj);
-					case RtpPacketType.A_MPEG -> StreamsCfgReadEsRawFileMeta.readMeta_mpa(idEsSource, esSourceObj);
-					case RtpPacketType.V_H264 -> StreamsCfgReadEsRawFileMeta.readMeta_h264Header(idEsSource, esSourceObj);
-					case RtpPacketType.V_H265 -> StreamsCfgReadEsRawFileMeta.readMeta_h265Header(idEsSource, esSourceObj);
+					case RtpPacketType.A_AAC -> readMeta_aac(idEsSource, esSourceObj);
+					case RtpPacketType.A_AC3 -> readMeta_ac3(idEsSource, esSourceObj);
+					case RtpPacketType.A_MPEG -> readMeta_mpa(idEsSource, esSourceObj);
+					case RtpPacketType.V_H264 -> readMeta_h264Header(idEsSource, esSourceObj);
+					case RtpPacketType.V_H265 -> readMeta_h265Header(idEsSource, esSourceObj);
 					default -> {
 						if (codec.isVideo()) {
 							yield createEsei_video(
@@ -224,7 +224,7 @@ final class StreamsCfgReadEsRawFileMeta {
 					esSourceObj.getInputUri(),
 					(byte)mpaInfo.channelMode.getChannelCount(),
 					SampleRateEnum.of(mpaInfo.getSampleRateHz()),
-					esSourceObj.getAudioSamplesPerFrame(),
+					mpaInfo.getSamplesPerFrame(),
 					false,
 					ExtradataContainerHex.ofEmpty()
 				);
