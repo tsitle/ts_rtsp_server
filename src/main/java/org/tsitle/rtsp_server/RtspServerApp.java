@@ -653,10 +653,7 @@ public final class RtspServerApp {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private static @NonNull String getAppNameAndVersion() {
-		String tmpAppVersion = System.getProperty(AppConstants.SYSPROP_CSTM_APP_VERSION);
-		if (tmpAppVersion == null) {
-			tmpAppVersion = "0.0";
-		}
+		String tmpAppVersion = AppInfo.getAppVersion().orElse("0.0");
 		return RtspServerConstants.SERVER_NAME + "/" + tmpAppVersion;
 	}
 
