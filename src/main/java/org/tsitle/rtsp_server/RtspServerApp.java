@@ -70,10 +70,28 @@ public final class RtspServerApp {
 		}
 
 		//
+		if (AppInfo.isNativeImage()) {
+			System.setProperty("org.bytedeco.javacpp.cachedir", "/tmp/.javacpp-rtsp/cache");
+
+			// @TODO remove this
+			// force loading the custom-built shared library
+			System.load("/usr/lib/libjniavutil.so");
+		}
+
+		//
 		addShutdownHook(FNC_NAME);
 
 		// set the log level for FFmpeg
-		FfmpegHelperFfLogLevel.muteLogMsgs();
+		try {
+			FfmpegHelperFfLogLevel.muteLogMsgs();
+		} catch (UnsatisfiedLinkError e) {
+			//noinspection CallToPrintStackTrace
+			e.printStackTrace();
+			isShutdownComplete.set(true);
+			doNeedShutdownHandler.set(false);
+			printlnStr(false, "Could not load FFmpeg libraries");
+			System.exit(1);
+		}
 
 		//
 		readMainConfigFile(argv[0]);

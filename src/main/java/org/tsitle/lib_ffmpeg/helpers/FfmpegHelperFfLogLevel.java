@@ -22,7 +22,7 @@ public final class FfmpegHelperFfLogLevel {
 	}
 
 	@SuppressWarnings("unused")
-	public static void muteLogMsgs() {
+	public static void muteLogMsgs() throws UnsatisfiedLinkError {
 		avutil.av_log_set_level(avutil.AV_LOG_QUIET);
 	}
 

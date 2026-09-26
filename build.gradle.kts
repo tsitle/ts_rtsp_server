@@ -337,6 +337,9 @@ graalvmNative {
 			buildArgs.add("-DappVersion=${version}")
 			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
 
+			buildArgs.add("-DcustomIsNativeImage=true")
+			buildArgs.add("-Dorg.bytedeco.javacpp.cachedir=/tmp/.javacpp-rtsp/cache")
+
 			// Default heap settings for the native executable (equivalent of -Xms / -Xmx / -XX:MaxRAM)
 			buildArgs.add("-R:MinHeapSize=${jvmMemHeapInit}")
 			buildArgs.add("-R:MaxHeapSize=${jvmMemHeapMax}")
