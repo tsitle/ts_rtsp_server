@@ -108,6 +108,7 @@ public final class RtspServerApp {
 		//
 		printlnStr(true, FNC_NAME + ": Server terminated");
 		isShutdownComplete.set(true);
+		doNeedShutdownHandler.set(false);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -367,7 +368,7 @@ public final class RtspServerApp {
 				int loopCount = 0;
 				Set<@NonNull RtspProtoIdSession> dbgDeletedSessionIds = new HashSet<>();
 
-				while (! doStop.get()) {
+				while (! doStop.get() && threadRtxpLogger != null && threadRtxpLogger.isRunning()) {
 					if (listenSocketRtsps != null) {
 						try {
 							socketRtspTcp = listenSocketRtsps.accept();  // blocks for setSoTimeout() value
@@ -693,7 +694,7 @@ public final class RtspServerApp {
 				@NonNull String threadId,
 				@NonNull String msg
 			) {
-		if (threadRtxpLogger == null) { return; }
+		if (threadRtxpLogger == null || ! threadRtxpLogger.isRunning()) { return; }
 		RtxpLogLevel minLevel = rtspSrvConfig.getLogLevel();
 		if (logLevel == RtxpLogLevel.DEBUG && minLevel != RtxpLogLevel.DEBUG) { return; }
 		if (logLevel == RtxpLogLevel.INFO && (minLevel == RtxpLogLevel.WARN || minLevel == RtxpLogLevel.ERROR)) { return; }
