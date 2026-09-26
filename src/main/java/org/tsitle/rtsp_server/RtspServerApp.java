@@ -275,6 +275,26 @@ public final class RtspServerApp {
 			);
 		threadRtxpLogger.setDaemon(false);
 		threadRtxpLogger.start();
+
+		//
+		int waitCnt = 0;
+		while (! threadRtxpLogger.isRunning()) {
+			if (++waitCnt > 100) {  // ^= 1 second
+				break;
+			}
+			try {
+				//noinspection BusyWait
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();  // restore flag
+				break;
+			}
+		}
+		try {
+			Thread.sleep(100);  // give thread some additional time for startup
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
