@@ -351,8 +351,8 @@ graalvmNative {
 
 			buildArgs.add("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
 
-			//buildArgs.add("--static")
-			//buildArgs.add("--libc=musl")
+			buildArgs.add("--static")
+			buildArgs.add("--libc=musl")
 		}
 	}
 }
