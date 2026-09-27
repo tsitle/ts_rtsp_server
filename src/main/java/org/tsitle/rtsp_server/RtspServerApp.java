@@ -72,10 +72,6 @@ public final class RtspServerApp {
 		//
 		if (AppInfo.isNativeImage()) {
 			System.setProperty("org.bytedeco.javacpp.cachedir", "/tmp/.javacpp-rtsp/cache");
-
-			// @TODO remove this
-			// force loading the custom-built shared library
-			System.load("/usr/lib/libjniavutil.so");
 		}
 
 		// set the log level for FFmpeg
