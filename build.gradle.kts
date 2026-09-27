@@ -340,7 +340,7 @@ graalvmNative {
 			imageName = propProjName
 			mainClass = confMainClass
 			buildArgs.add(
-				"-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image-${ffmpegVersion}-${cpuArch}"
+				"-H:ReachabilityMetadataConfigurationDirectory=${projectDir}/src/main/resources/META-INF/native-image-${ffmpegVersion}-${cpuArch}"
 			)
 			if (cpuArch == "aarch64") {
 				buildArgs.add("-march=compatibility")  // required for RK3308
