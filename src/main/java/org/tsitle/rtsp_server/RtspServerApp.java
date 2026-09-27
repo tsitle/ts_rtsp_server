@@ -78,20 +78,11 @@ public final class RtspServerApp {
 			System.load("/usr/lib/libjniavutil.so");
 		}
 
+		// set the log level for FFmpeg
+		FfmpegHelperFfLogLevel.muteLogMsgs();
+
 		//
 		addShutdownHook(FNC_NAME);
-
-		// set the log level for FFmpeg
-		try {
-			FfmpegHelperFfLogLevel.muteLogMsgs();
-		} catch (UnsatisfiedLinkError | ExceptionInInitializerError e) {
-			//noinspection CallToPrintStackTrace
-			e.printStackTrace();
-			isShutdownComplete.set(true);
-			doNeedShutdownHandler.set(false);
-			printlnStr(false, "Could not load FFmpeg libraries");
-			System.exit(1);
-		}
 
 		//
 		readMainConfigFile(argv[0]);
