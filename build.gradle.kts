@@ -25,6 +25,11 @@ val jvmMemHeapMax: String = "128m"
 val jvmMemMaxTotalAbs: String = "256m"
 //val jvmMemMaxTotalPerc: String = "50"
 
+// Retrieve the property as a provider (returns null if not provided)
+val argProvider = providers.gradleProperty("FFMPEG_VERSION")
+// Conditionally set [ffmpegVersion] based on the CLI input
+val ffmpegVersion = argProvider.orNull ?: "7.1.1"
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 fun getOperatingSystemName() : String {
@@ -88,9 +93,18 @@ dependencies {
 
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
-	implementation("org.bytedeco:ffmpeg-platform:7.1.1-1.5.12")
-	//implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
-	//implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
+	when (ffmpegVersion) {
+		"7.1.1" -> {
+			implementation("org.bytedeco:ffmpeg-platform:7.1.1-1.5.12")
+		}
+		"8.0.1" -> {
+			implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
+		}
+		"8.1.2" -> {
+			implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
+		}
+		else -> { throw Error("FFmpeg version '${ffmpegVersion}' not supported") }
+	}
 }
 
 // ----------------------------------------------------------------
@@ -326,7 +340,7 @@ graalvmNative {
 			imageName = propProjName
 			mainClass = confMainClass
 			buildArgs.add(
-				"-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image-${cpuArch}"
+				"-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image-${ffmpegVersion}-${cpuArch}"
 			)
 			if (cpuArch == "aarch64") {
 				buildArgs.add("-march=compatibility")  // required for RK3308
@@ -338,7 +352,6 @@ graalvmNative {
 			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
 
 			buildArgs.add("-DcustomIsNativeImage=true")
-			buildArgs.add("-Dorg.bytedeco.javacpp.cachedir=/tmp/.javacpp-rtsp/cache")
 
 			// Default heap settings for the native executable (equivalent of -Xms / -Xmx / -XX:MaxRAM)
 			buildArgs.add("-R:MinHeapSize=${jvmMemHeapInit}")
