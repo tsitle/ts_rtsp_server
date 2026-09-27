@@ -84,7 +84,7 @@ public final class RtspServerApp {
 		// set the log level for FFmpeg
 		try {
 			FfmpegHelperFfLogLevel.muteLogMsgs();
-		} catch (UnsatisfiedLinkError e) {
+		} catch (UnsatisfiedLinkError | ExceptionInInitializerError e) {
 			//noinspection CallToPrintStackTrace
 			e.printStackTrace();
 			isShutdownComplete.set(true);
