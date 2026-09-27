@@ -339,9 +339,6 @@ graalvmNative {
 		named("main") {
 			imageName = propProjName
 			mainClass = confMainClass
-			buildArgs.add(
-				"-H:ReachabilityMetadataConfigurationDirectory=${projectDir}/src/main/resources/META-INF/native-image-${ffmpegVersion}-${cpuArch}"
-			)
 			if (cpuArch == "aarch64") {
 				buildArgs.add("-march=compatibility")  // required for RK3308
 			}
@@ -368,7 +365,8 @@ graalvmNative {
 
 			buildArgs.add("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
 
-			buildArgs.add("--libc=musl")
+			buildArgs.add("--libc=glibc")
+			//buildArgs.add("--libc=musl")
 			/*buildArgs.add("--static")
 			buildArgs.add("-H:NativeLinkerOption=-L/opt/ffmpeg/lib")
 			buildArgs.add("-H:NativeLinkerOption=-lavcodec")
