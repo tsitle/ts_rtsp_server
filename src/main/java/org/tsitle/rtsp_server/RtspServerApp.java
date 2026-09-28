@@ -68,6 +68,14 @@ public final class RtspServerApp {
 			printlnStr(false, FNC_NAME + ": Required argument <config-file> missing");
 			System.exit(1);
 		}
+		if (argv[0].equals("-h") || argv[0].equals("--help")) {
+			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -v | --version] <config-file>");
+			System.exit(0);
+		}
+		if (argv[0].equals("-v") || argv[0].equals("--version")) {
+			printlnStr(true, getAppNameAndVersion());
+			System.exit(0);
+		}
 
 		//
 		if (AppInfo.isNativeImage()) {
