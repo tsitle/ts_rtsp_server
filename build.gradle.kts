@@ -367,8 +367,19 @@ graalvmNative {
 
 			buildArgs.add("--libc=glibc")
 			//buildArgs.add("--libc=musl")
-			/*buildArgs.add("--static")
-			buildArgs.add("-H:NativeLinkerOption=-L/opt/ffmpeg/lib")
+
+			/*
+			 * Compile at least the JRE libs statically into the native executable:
+			 *  - libawt.so
+			 *  - libawt_headless.so
+			 *  - libawt_xawt.so
+			 *  - libjava.so
+			 *  - libjavajpeg.so
+			 *  - libjvm.so
+			 */
+			//buildArgs.add("--static")  // building static executable images is only supported with musl libc ('--libc=musl')
+
+			/*buildArgs.add("-H:NativeLinkerOption=-L/opt/ffmpeg/lib")
 			buildArgs.add("-H:NativeLinkerOption=-lavcodec")
 			buildArgs.add("-H:NativeLinkerOption=-lavdevice")
 			buildArgs.add("-H:NativeLinkerOption=-lavfilter")
