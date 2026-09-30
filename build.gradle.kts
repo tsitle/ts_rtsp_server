@@ -25,10 +25,14 @@ val jvmMemHeapMax: String = "128m"
 val jvmMemMaxTotalAbs: String = "256m"
 //val jvmMemMaxTotalPerc: String = "50"
 
-// Retrieve the property as a provider (returns null if not provided)
-val argProvider = providers.gradleProperty("FFMPEG_VERSION")
+// FFmpeg version
+var tmpArgProvider = providers.gradleProperty("FFMPEG_VERSION")  // returns null if not provided
 // Conditionally set [ffmpegVersion] based on the CLI input
-val ffmpegVersion = argProvider.orNull ?: "7.1.1"
+val ffmpegVersion = tmpArgProvider.orNull ?: "7.1.1"
+
+// do agent test?
+tmpArgProvider = providers.gradleProperty("agent")  // returns null if not provided
+val doAgentTest = tmpArgProvider.isPresent
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -74,6 +78,8 @@ if (osName == "win" && cpuArch != "x64") {
 val lxDistroType: String = getLinuxDistroType()
 
 println("Host: ${osName}-${cpuArch}")
+println("FFmpeg version: $ffmpegVersion")
+if (doAgentTest) { println("--> Do agent test") }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -335,6 +341,34 @@ tasks.distZip {
 // ----------------------------------------------------------------
 
 graalvmNative {
+	agent {
+		enabled.set(doAgentTest)
+
+		defaultMode.set("standard")
+
+		/*
+		 * After all individual agent runs have been completed, the resulting reachability metadata files
+		 * need to be merged using '$ ./gradlew metadataCopy'.
+		 * The custom task 'collectNativeImageMetadata' will run all individual agent runs and then
+		 * execute 'metadataCopy'.
+		 */
+		metadataCopy {
+			inputTaskNames.addAll(
+				"agentDefault"
+			)
+
+			/*
+			 * Note that when compiling the native image, the output directory for the reachability metadata
+			 * must first be copied to 'src/main/resources/META-INF/native-image/'
+			 */
+			outputDirectories.add(
+				"src/main/resources/META-INF/native-image-${osName}-${ffmpegVersion}-${cpuArch}"
+			)
+
+			//mergeWithExisting.set(true)
+		}
+	}
+
 	binaries {
 		named("main") {
 			imageName = propProjName
@@ -389,4 +423,31 @@ graalvmNative {
 			buildArgs.add("-H:NativeLinkerOption=-lswscale")*/
 		}
 	}
+}
+
+tasks.register<JavaExec>("agentDefault") {
+	group = "native-image"
+	description = "Collect Native Image metadata for the app's functionality - specifically the JNI calls for FFmpeg"
+
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set(application.mainClass)
+
+	/*
+	 * Note that we need to terminate the running application gracefully.
+	 * If we simply terminate the app using CTRL-C, the agent won't write the reachability metadata file.
+	 * The CLI arg '--agent-test' will make the application listen for SIGUSR1
+	 * and then shutdown itself down once the signal has been received.
+	 */
+	args(
+		"--agent-test",
+		"config/sample-config-with_ssl.json"
+	)
+}
+
+tasks.register("collectNativeImageMetadata") {
+	group = "native-image"
+	description = "Collect all Native Image reachability metadata"
+
+	dependsOn("agentDefault")
+	finalizedBy("metadataCopy")
 }
