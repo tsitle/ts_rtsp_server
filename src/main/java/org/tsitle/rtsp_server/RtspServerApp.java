@@ -34,6 +34,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public final class RtspServerApp {
 
+	private static class CliArgs {
+		boolean showHelp = false;
+		boolean showVersion = false;
+		boolean doAgentTest = false;
+		@NonNull String configFile = "";
+	}
+
 	private static RtspSrvConfigMain rtspSrvConfig = null;
 
 	private static int clientConnectionCount = 0;
@@ -58,21 +65,18 @@ public final class RtspServerApp {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	/* pre-Java25: public */ static void main(String[] argv) {
+	/* pre-Java25: public */ static void main(String @NonNull [] argv) {
 		final String FNC_NAME = RtspServerApp.class.getSimpleName() + ".main()";
 
 		verifyTlsCryptoProviders();
 
 		//
-		if (argv.length != 1) {
-			printlnStr(false, FNC_NAME + ": Required argument <config-file> missing");
-			System.exit(1);
-		}
-		if (argv[0].equals("-h") || argv[0].equals("--help")) {
+		CliArgs cliArgs = parseCliArgs(argv);
+		if (cliArgs.showHelp) {
 			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -v | --version] <config-file>");
 			System.exit(0);
 		}
-		if (argv[0].equals("-v") || argv[0].equals("--version")) {
+		if (cliArgs.showVersion) {
 			printlnStr(true, getAppNameAndVersion());
 			System.exit(0);
 		}
@@ -86,10 +90,10 @@ public final class RtspServerApp {
 		FfmpegHelperFfLogLevel.muteLogMsgs();
 
 		//
-		addShutdownHook(FNC_NAME);
+		addShutdownHook(FNC_NAME, cliArgs.doAgentTest);
 
 		//
-		readMainConfigFile(argv[0]);
+		readMainConfigFile(cliArgs.configFile);
 
 		//
 		startLoggerThread();
@@ -143,7 +147,34 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static void addShutdownHook(@NonNull String fncName) {
+	private static @NonNull CliArgs parseCliArgs(String @NonNull [] argv) {
+		CliArgs resObj = new CliArgs();
+
+		int argIx = 0;
+		int argLen = argv.length;
+
+		if (argLen > 1 && argv[argIx].equals("--agent-test")) {  // hidden option for native image agent runs
+			resObj.doAgentTest = true;
+			++argIx;
+			--argLen;
+		}
+		if (argLen != 1) {
+			printlnStr(false, "Required argument <config-file> missing");
+			System.exit(1);
+		}
+		if (argv[argIx].equals("-h") || argv[argIx].equals("--help")) {
+			resObj.showHelp = true;
+		} else if (argv[argIx].equals("-v") || argv[argIx].equals("--version")) {
+			resObj.showVersion = true;
+		} else {
+			resObj.configFile = argv[argIx];
+		}
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static void addShutdownHook(@NonNull String fncName, boolean enableSigusr1) {
 		// without the Signal handler below, the Shutdown Hook works just fine
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				if (doNeedShutdownHandler.get()) {
@@ -175,6 +206,14 @@ public final class RtspServerApp {
 					printlnStr(true, fncName + ": Interrupted by Ctrl+C");
 					System.exit(1);
 				});*/
+		//
+		if (enableSigusr1) {
+			sun.misc.Signal.handle(new sun.misc.Signal("USR1"),  // SIGUSR1
+					_ -> {
+						printlnStr(true, fncName + ": Received SIGUSR1");
+						System.exit(0);
+					});
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
