@@ -36,6 +36,7 @@ data/**/*.key
 data/**/*.cnf
 data/**/*.csr
 data/**/*.srl
+!data/rtsps_ssl_keys/keygen-EXAMPLE.sh
 
 config-*.json
 !config-SAMPLE.json
