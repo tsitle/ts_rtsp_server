@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.6] - 2026-10-01
+
+### Added
+
+- added support for building native images (for Linux x64/arm64) using GraalVM
+- added CLI arguments for showing help and version information (`--help` and `--version`)
+- added demo SSL certificate/key generator script in `data/rtsps_ssl_keys/keygen-EXAMPLE.sh`
+
+### Fixed
+
+- fixed an issue where an empty 'config=' entry in the FMTP line of the SDP data for an AAC stream was causing VLC to crash
+
 ## [1.1.5] - 2026-09-23
 
 ### Changed
