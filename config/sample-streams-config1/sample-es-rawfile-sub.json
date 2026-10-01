@@ -37,9 +37,9 @@
 		"sample_input_raw_audio_aac_surround": {
 			"enabled": true,
 			"rawFile": {
-				"filePath": "samples/raw-audio-aac-surround_51_44100hz.aac",
+				"filePath": "samples/raw-audio-aac-surround_51_32000hz.aac",
 				"codec": "AAC",
-				"audioSamplerateHz": 44100,
+				"audioSamplerateHz": 32000,
 				"audioChannelCount": 6,
 				"aacSamplesPerFrame": 1024
 			}

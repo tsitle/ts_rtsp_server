@@ -161,86 +161,86 @@
 		"sample_input_mkv_h264_aac": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/av-h264_aac.mkv"
+				"filePath": "samples/fc-av-h264_aac.mkv"
 			}
 		},
 		"sample_input_mov_h264_lpcm16s": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/av-h264_lpcm16s.mov"
+				"filePath": "samples/fc-av-h264_lpcm16s.mov"
 			}
 		},
 		"sample_input_mp4_h265_ac3": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/av-h265_ac3.mp4"
+				"filePath": "samples/fc-av-h265_ac3.mp4"
 			}
 		},
 		"sample_input_mkv_mjpeg_mp3": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/av-mjpeg_mp3.mkv"
+				"filePath": "samples/fc-av-mjpeg_mp3.mkv"
 			}
 		},
 		"sample_input_webm_vp8_opus": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/av-vp8_opus.webm"
+				"filePath": "samples/fc-av-vp8_opus.webm"
 			}
 		},
 
 		"sample_input_aac": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio.aac"
+				"filePath": "samples/fc-audio.aac"
 			}
 		},
 		"sample_input_ac3": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio.ac3"
+				"filePath": "samples/fc-audio.ac3"
 			}
 		},
 		"sample_input_mp2": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio.mp2"
+				"filePath": "samples/fc-audio.mp2"
 			}
 		},
 		"sample_input_mp3": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio-with_ID3v2_tags.mp3"
+				"filePath": "samples/fc-audio-with_ID3v2_tags.mp3"
 			}
 		},
 		"sample_input_opus": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio.opus"
+				"filePath": "samples/fc-audio.opus"
 			}
 		},
 		"sample_input_wav_pcma_aka_alaw": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio-pcma.wav"
+				"filePath": "samples/fc-audio-pcma.wav"
 			}
 		},
 		"sample_input_wav_pcmu_aka_mulaw": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio-pcmu.wav"
+				"filePath": "samples/fc-audio-pcmu.wav"
 			}
 		},
 		"sample_input_wav_lpcm_u08": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio-lpcm_u08.wav"
+				"filePath": "samples/fc-audio-lpcm_u08.wav"
 			}
 		},
 		"sample_input_wav_lpcm_s16": {
 			"enabled": true,
 			"fileContainer": {
-				"filePath": "samples/audio-lpcm_s16.wav"
+				"filePath": "samples/fc-audio-lpcm_s16.wav"
 			}
 		}
 	}
