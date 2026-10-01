@@ -660,7 +660,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
 				"profile-level-id=%d;" +  // required: e.g. AAC-LC Level 4
 				"mode=AAC-hbr;" +  // required: High Bit Rate mode: One or more complete AAC frames per RTP packet; each frame described by AU headers
-				"config=%s;" +  // required: AudioSpecificConfig, encoded as hex
+				"%s" +  // required: AudioSpecificConfig, encoded as hex
 				"SizeLength=%d;" +  // optional: each RTP AU header contains a 13-bit size field describing the size (in bytes) of the AAC frame
 				"IndexLength=%d;" +  // optional: identifies the order of Access Units within an RTP packet
 				"IndexDeltaLength=%d;" +  // optional: used when multiple AUs are packed in a packet, defaults to 0
@@ -669,7 +669,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
 				RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
 				esInfo.audioAacHexCfg().isEmpty() || ! esInfo.audioAacHexCfg().isCodecAac() ?
-						"" : esInfo.audioAacHexCfg().getEd(),
+						"" : "config=" + esInfo.audioAacHexCfg().getEd() + ";",
 				RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
