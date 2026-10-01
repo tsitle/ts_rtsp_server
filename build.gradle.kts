@@ -77,8 +77,34 @@ if (osName == "win" && cpuArch != "x64") {
 }
 val lxDistroType: String = getLinuxDistroType()
 
+fun getCheckedOutGitCommitHash() : String {
+	if (! File(".git").isDirectory) {
+		return "unknown"
+	}
+	println(
+		"Checking out git commit hash..."
+	)
+	@Suppress("DEPRECATION")
+	val process = ProcessBuilder(
+		"git", "rev-parse", "--verify", "--short", "HEAD"
+	)
+		.redirectErrorStream(true)
+		.start()
+	val resS = process.inputStream
+		.bufferedReader()
+		.readText()
+		.trim()
+	if (resS.isEmpty() || resS.contains("not a git repository", ignoreCase = true)) {
+		return "unknown"
+	}
+	return resS
+}
+
+val gitCommitHash: String = getCheckedOutGitCommitHash()
+
 println("Host: ${osName}-${cpuArch}")
 println("FFmpeg version: $ffmpegVersion")
+println("Git commit: $gitCommitHash")
 if (doAgentTest) { println("--> Do agent test") }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -141,6 +167,7 @@ application {
 	mainClass = confMainClass
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
 	applicationDefaultJvmArgs += "-DffmpegVersion=${ffmpegVersion}"
+	applicationDefaultJvmArgs += "-DgitCommit=${gitCommitHash}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-Xms${jvmMemHeapInit}"   // initial heap size
 	applicationDefaultJvmArgs += "-Xmx${jvmMemHeapMax}"   // maximum heap size
@@ -153,17 +180,22 @@ application {
 
 // ----------------------------------------------------------------
 
-/*tasks.jar {
+tasks.jar {
 	manifest {
 		attributes["Main-Class"] = confMainClass
 	}
-}*/
+}
 
 tasks.shadowJar {
+	dependsOn("jar")
 	manifest {
 		attributes["Main-Class"] = confMainClass
 	}
-	archiveClassifier.set("")   // replaces the regular JAR
+	//archiveClassifier.set("")  // replaces the regular JAR
+}
+
+tasks.installShadowDist {
+	dependsOn("jar")
 }
 
 // ----------------------------------------------------------------
@@ -382,6 +414,7 @@ graalvmNative {
 
 			buildArgs.add("-DappVersion=${version}")
 			buildArgs.add("-DffmpegVersion=${ffmpegVersion}")
+			buildArgs.add("-DgitCommit=${gitCommitHash}")
 			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
 
 			buildArgs.add("-DcustomIsNativeImage=true")
