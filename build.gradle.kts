@@ -140,6 +140,7 @@ tasks.compileJava.configure {
 application {
 	mainClass = confMainClass
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
+	applicationDefaultJvmArgs += "-DffmpegVersion=${ffmpegVersion}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-Xms${jvmMemHeapInit}"   // initial heap size
 	applicationDefaultJvmArgs += "-Xmx${jvmMemHeapMax}"   // maximum heap size
@@ -380,6 +381,7 @@ graalvmNative {
 			//buildArgs.add("--initialize-at-build-time=com.sun.media.sound.JDK13Services")
 
 			buildArgs.add("-DappVersion=${version}")
+			buildArgs.add("-DffmpegVersion=${ffmpegVersion}")
 			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
 
 			buildArgs.add("-DcustomIsNativeImage=true")
