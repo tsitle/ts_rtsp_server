@@ -362,7 +362,7 @@ graalvmNative {
 			 * must first be copied to 'src/main/resources/META-INF/native-image/'
 			 */
 			outputDirectories.add(
-				"src/main/resources/META-INF/native-image-${osName}-${ffmpegVersion}-${cpuArch}"
+				"src/main/resources/META-INF/native-image-${osName}-ff${ffmpegVersion}-${cpuArch}"
 			)
 
 			//mergeWithExisting.set(true)
