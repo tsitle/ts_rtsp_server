@@ -39,7 +39,7 @@ data/**/*.srl
 !data/rtsps_ssl_keys/keygen-EXAMPLE.sh
 
 config-*.json
-!config-SAMPLE.json
+sample-*-PRIV.json
 
 docs/internal/
 
@@ -89,3 +89,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Midnight Commander ###
+.#*
