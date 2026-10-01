@@ -8,6 +8,7 @@ final class AppInfo {
 
 	private static final @Nullable String APP_VERSION = System.getProperty("appVersion");
 	private static final @Nullable String FFMPEG_VERSION = System.getProperty("ffmpegVersion");
+	private static final @Nullable String GIT_COMMIT = System.getProperty("gitCommit");
 	private static final @Nullable String IS_NATIVE_IMAGE = System.getProperty("customIsNativeImage");
 
 	static Optional<String> getAppVersion() {
@@ -16,6 +17,10 @@ final class AppInfo {
 
 	static Optional<String> getFfmpegVersion() {
 		return Optional.ofNullable(FFMPEG_VERSION);
+	}
+
+	static Optional<String> getGitCommit() {
+		return Optional.ofNullable(GIT_COMMIT);
 	}
 
 	static boolean isNativeImage() {

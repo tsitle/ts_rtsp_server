@@ -175,7 +175,8 @@ public final class RtspServerApp {
 			return Optional.of(true);  // exit 0
 		}
 		if (cliArgs.showVersion) {
-			printlnStr(true, getAppNameAndVersion());
+			printlnStr(true, getAppNameAndVersion() +
+					" (commit " + AppInfo.getGitCommit().orElse("?") + ")");
 			printlnStr(true, "FFmpeg/" + AppInfo.getFfmpegVersion().orElse("?"));
 			return Optional.of(true);  // exit 0
 		}
