@@ -70,16 +70,13 @@ public final class RtspServerApp {
 
 		verifyTlsCryptoProviders();
 
-		//
-		CliArgs cliArgs = parseCliArgs(argv);
-		if (cliArgs.showHelp) {
-			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -v | --version] <config-file>");
-			System.exit(0);
+		// parse CLI args and handle them immediately if adequate
+		Optional<CliArgs> tmpOptCliArgs = parseCliArgs(argv);
+		if (tmpOptCliArgs.isEmpty()) {
+			System.exit(1);
 		}
-		if (cliArgs.showVersion) {
-			printlnStr(true, getAppNameAndVersion());
-			System.exit(0);
-		}
+		Optional<Boolean> tmpOptResHandleCa = handleCliArgs(tmpOptCliArgs.get());
+		tmpOptResHandleCa.ifPresent(aBoolean -> System.exit(aBoolean ? 0 : 1));
 
 		//
 		if (AppInfo.isNativeImage()) {
@@ -90,10 +87,10 @@ public final class RtspServerApp {
 		FfmpegHelperFfLogLevel.muteLogMsgs();
 
 		//
-		addShutdownHook(FNC_NAME, cliArgs.doAgentTest);
+		addShutdownHook(FNC_NAME, tmpOptCliArgs.get().doAgentTest);
 
 		//
-		readMainConfigFile(cliArgs.configFile);
+		readMainConfigFile(tmpOptCliArgs.get().configFile);
 
 		//
 		startLoggerThread();
@@ -147,7 +144,7 @@ public final class RtspServerApp {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull CliArgs parseCliArgs(String @NonNull [] argv) {
+	private static Optional<CliArgs> parseCliArgs(String @NonNull [] argv) {
 		CliArgs resObj = new CliArgs();
 
 		int argIx = 0;
@@ -160,7 +157,7 @@ public final class RtspServerApp {
 		}
 		if (argLen != 1) {
 			printlnStr(false, "Required argument <config-file> missing");
-			System.exit(1);
+			return Optional.empty();
 		}
 		if (argv[argIx].equals("-h") || argv[argIx].equals("--help")) {
 			resObj.showHelp = true;
@@ -169,7 +166,20 @@ public final class RtspServerApp {
 		} else {
 			resObj.configFile = argv[argIx];
 		}
-		return resObj;
+		return Optional.of(resObj);
+	}
+
+	private static Optional<Boolean> handleCliArgs(@NonNull CliArgs cliArgs) {
+		if (cliArgs.showHelp) {
+			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -v | --version] <config-file>");
+			return Optional.of(true);  // exit 0
+		}
+		if (cliArgs.showVersion) {
+			printlnStr(true, getAppNameAndVersion());
+			printlnStr(true, "FFmpeg/" + AppInfo.getFfmpegVersion().orElse("?"));
+			return Optional.of(true);  // exit 0
+		}
+		return Optional.empty();  // do not exit
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

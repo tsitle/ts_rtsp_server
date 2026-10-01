@@ -7,10 +7,15 @@ import java.util.Optional;
 final class AppInfo {
 
 	private static final @Nullable String APP_VERSION = System.getProperty("appVersion");
+	private static final @Nullable String FFMPEG_VERSION = System.getProperty("ffmpegVersion");
 	private static final @Nullable String IS_NATIVE_IMAGE = System.getProperty("customIsNativeImage");
 
 	static Optional<String> getAppVersion() {
 		return Optional.ofNullable(APP_VERSION);
+	}
+
+	static Optional<String> getFfmpegVersion() {
+		return Optional.ofNullable(FFMPEG_VERSION);
 	}
 
 	static boolean isNativeImage() {
