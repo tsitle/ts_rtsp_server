@@ -26,8 +26,8 @@ data/**/*.opus
 data/**/*.raw
 data/**/*.wav
 
-!data/samples/audio*
-!data/samples/av-*
+!data/samples/fc-audio*
+!data/samples/fc-av-*
 !data/samples/raw-*
 
 data/**/*.sh
