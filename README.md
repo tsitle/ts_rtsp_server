@@ -100,6 +100,11 @@ You can use symlinks if you prefer to store the directories elsewhere.
 All sample media files are derived from: [blender.org Big Buck Bunny](https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip)
 
 
+## Server Architecture
+
+To learn more about the server's architecture and how the internal multicasting works, please see [here](docs/architecture.md).
+
+
 ## Running the Application
 
 ### From Source

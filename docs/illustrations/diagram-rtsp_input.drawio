@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Seite-1" id="rsTLSoP2ljMM_T2zYava">
+    <mxGraphModel dx="1381" dy="806" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fillWeight=2;hachureGap=8;fillColor=#990000;fillStyle=dots;sketch=1;" value="" vertex="1">
+          <mxGeometry height="60" width="120" x="120" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="IP Camera 1" vertex="1">
+          <mxGeometry height="40" width="130" x="115" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fillWeight=2;hachureGap=8;fillColor=#990000;fillStyle=dots;sketch=1;" value="" vertex="1">
+          <mxGeometry height="60" width="120" x="380" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="IP Camera 2" vertex="1">
+          <mxGeometry height="40" width="130" x="375" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-8" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="250" y="240" as="sourcePoint" />
+            <mxPoint x="180" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-9" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="370" y="240" as="sourcePoint" />
+            <mxPoint x="440" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=14;labelBorderColor=default;textShadow=0;labelBackgroundColor=none;labelPadding=4;" value="(optionally)&lt;div&gt;encrypted connections&lt;/div&gt;&lt;div&gt;(RTSP)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="453" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-12" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=light-dark(#FFFFFF,#7EA6E0);fillStyle=hatch;" value="" vertex="1">
+          <mxGeometry height="80" width="60" x="280" y="297" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-13" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="RTSP Server" vertex="1">
+          <mxGeometry height="40" width="130" x="245" y="247" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-16" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=light-dark(#FFFFFF,#FFD966);" value="" vertex="1">
+          <mxGeometry height="60" width="40" x="140" y="481" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="&lt;div&gt;RTSP Client 1&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="140" x="90" y="561" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-18" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=light-dark(#FFFFFF,#FFD966);" value="" vertex="1">
+          <mxGeometry height="60" width="40" x="290" y="481" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-19" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="RTSP Client 2" vertex="1">
+          <mxGeometry height="40" width="140" x="240" y="561" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-20" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillStyle=hatch;fillColor=light-dark(#FFFFFF,#FFD966);" value="" vertex="1">
+          <mxGeometry height="60" width="40" x="444" y="481" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=19;" value="&lt;div&gt;RTSP Client 3&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="140" x="394" y="561" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-22" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="180" y="467" as="sourcePoint" />
+            <mxPoint x="270" y="387" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-23" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="310" y="467" as="sourcePoint" />
+            <mxPoint x="310" y="387" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-24" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="440" y="467" as="sourcePoint" />
+            <mxPoint x="350" y="387" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=14;labelBorderColor=default;textShadow=0;labelBackgroundColor=none;labelPadding=4;" value="&lt;div&gt;(optionally) encrypted&lt;/div&gt;&lt;div&gt;connections&lt;/div&gt;&lt;div&gt;(RTSP)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="460" y="392" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=14;" value="rtsp://host/camera1" vertex="1">
+          <mxGeometry height="30" width="140" x="90" y="601" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-28" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=14;" value="rtsp://host/camera1" vertex="1">
+          <mxGeometry height="30" width="140" x="240" y="601" as="geometry" />
+        </mxCell>
+        <mxCell id="bt1EQGKMOMdDtvWHh_5d-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;fontSize=14;" value="rtsp://host/camera2" vertex="1">
+          <mxGeometry height="30" width="140" x="394" y="601" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
