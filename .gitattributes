@@ -8,6 +8,8 @@
 
 *.bat text eol=crlf
 
+*.drawio text
+
 # Audio/video files
 *.aac binary
 *.ac3 binary
