@@ -85,161 +85,41 @@ Explainer:
 
 ## Configuration
 
-See the sample configuration files
-
-- [config/sample-config-no_ssl.json](config/sample-config-no_ssl.json) (only `rtsp://` available)
-- [config/sample-config-with_ssl.json](config/sample-config-with_ssl.json) (both `rtsp://` and `rtsps://` available)
-
-and the 'Streams Configuration' files in `config/sample-streams-config1/` and `config/sample-streams-config2/`.
-
-To be able to use the 'with SSL' configuration, you need to generate your own SSL Certificate and Private Key:
-
-- SSL Certificate \[required\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-server.crt`
-- SSL Private Key \[required\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-server-private.key`
-- SSL CA certificate \[optional\]: `data/rtsps_ssl_keys/YOUR_HOSTNAME-ca.crt`
-
-The files in the 'Streams Configuration' directories can be edited while the application is running.  
-The changes will take effect immediately.
-
-There can be multiple 'Streams Configuration' files, each defining a different set of streams.  
-The `streams` and `subStreams` sections can be spread across multiple files or can be defined in a single file.
-
-The entries in the `streams` section define which streams will be available publicly.  
-Each entry in the `streams` section references one or two sub-streams.  
-Each entry in the `subStreams` section defines the input source for one or two sub-streams,  
-depending on the type of the `subStreams` entry:
-
-- file containers (MKV, MP3, MP4, etc.) and other RTSP streams:  
-	can produce one or two sub-streams (audio only, video only or audio+video)
-- raw elementary sub-stream files and proprietary Message Queues:  
-	can produce only one sub-stream (audio or video)
+See [docs/streams_config.md](docs/streams_config.md) for more details.
 
 
 ## Media Files, SSL Certificates & Co.
 
 All media files and server's SSL certificate and key must be either directly in the  
-directory `data/` or inside a subdirectory of `data/`.
-
-
-## Running the Application
-
-The application can be launched with Gradle and requires Java 25 or higher.  
-There is only one argument that needs to be passed: the path to the configuration file:
-
-```
-./gradlew run --args="config/sample-config-no_ssl.json"
-```
-
-
-## RTSP Stream URLs
-
-An URL for an RTSP stream consists of the following parts:
-
-- protocol: either `rtsp://` or `rtsps://` (the latter is encrypted and requires a valid SSL certificate).  
-  **Note** that not every client application supports encrypted RTSPS (`rtsps://`).  
-  See [docs/test_matrix.md](docs/test_matrix.md) for more details.
-- credentials \[optional\]: username and password separated by a colon, followed by an at sign (`@`).  
-	**Note** that credentials should ideally only be used when using encrypted RTSPS (`rtsps://`)
-- host: the hostname or IP address of the server
-- port \[optional\]: the port number of the server  
-	For `rtsp://` the default is 554 and for `rtsps://` the default is 322.  
-	(in the sample configuration file, the ports are set to 1554 and 1322)
-- path: the path to the stream on the server
-- query parameters \[optional\]: the only supported parameter is `?srtp=1` to force SRTP encryption even if the client  
-	application didn't request it correctly (this helps with FFmpeg/FFplay for instance).  
-	See [docs/test_matrix.md](docs/test_matrix.md) for more details.
-
-The TCP ports for `rtsp://` and `rtsps://` can be changed in the configuration file.
-
-The `path` part of the URL is defined by the key of the entries in the `streams` section in the 'Streams Configuration' files.
-
-Example application configuration file:
-
-```
-{
-	"server": {
-		"tcpPortRtsp": 1554,
-		"tcpPortRtsps": 1322,
-		...
-	},
-
-	"logging": { ... },
-
-	"debugging": { ... },
-
-	"userAccounts": {
-		"admin": "ABCDEFGH",
-		"somebody": "thePassword"
-	},
-	"userAccountGroups": {
-		"grp_all_users": [ "admin", "somebody" ],
-		"grp_admin_only": [ "admin" ]
-	},
-
-	"streamConfigDirectories": [ ... ]
-}
-```
-
-Example 'Streams Configuration' file:
-
-```
-{
-	"streams": {
-		"sample-garden_camera.stream": {
-			"enabled": true,
-			"needsAuthentication": true,
-			"allowedUserAccountGroups": [ "grp_admin_only" ],
-			"needsEncryption": true,
-			"subStreamIds": [ "sample_input_garden_camera" ]
-		}
-		"sample-webm_with_vp8_and_opus.stream": {
-			"enabled": true,
-			"needsAuthentication": true,
-			"allowedUserAccountGroups": [ "grp_all_users" ],
-			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_webm_vp8_opus" ]
-		},
-		"sample-h265_and_aac.stream": {
-			"enabled": true,
-			"needsAuthentication": false,
-			"allowedUserAccountGroups": [ ],
-			"needsEncryption": false,
-			"subStreamIds": [ "sample_input_video_h265", "sample_input_audio_aac" ]
-		}
-	},
-	"subStreams": {
-		"sample_input_garden_camera": { ... },
-		"sample_input_webm_vp8_opus": { ... },
-		"sample_input_video_h265": { ... },
-		"sample_input_audio_aac": { ... }
-	}
-}
-```
-
-This will yield the following RTSP URLs:
-
-```
-(allowed users: 'admin')
-rtsp://admin:ABCDEFGH@localhost:1554/sample-garden_camera.stream
-rtsps://admin:ABCDEFGH@localhost:1322/sample-garden_camera.stream
-
-(allowed users: 'admin' and 'somebody')
-rtsp://somebody:thePassword@localhost:1554/sample-webm_with_vp8_and_opus.stream
-rtsps://somebody:thePassword@localhost:1322/sample-webm_with_vp8_and_opus.stream
-
-(anonymous access)
-rtsp://localhost:1554/sample-h265_and_aac.stream
-rtsps://localhost:1322/sample-h265_and_aac.stream
-```
-
-If the TCP ports are set to their default values (RTSP `554` and RTSPS `322`), then the port number can be omitted:
-
-```
-rtsp://admin:ABCDEFGH@localhost/sample-garden_camera.stream
-rtsps://admin:ABCDEFGH@localhost/sample-garden_camera.stream
-```
+directory `data/` or inside a subdirectory of `data/`.  
+You can use symlinks if you prefer to store the directories elsewhere.
 
 
 ## Sample Media Files
 
 All sample media files are derived from: [blender.org Big Buck Bunny](https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip)
+
+
+## Running the Application
+
+### From Source
+
+The application can be launched with Gradle and requires Java 25 or higher.  
+There is only one argument that needs to be passed: the path to the configuration file:
+
+```
+$ ./gradlew run --args="config/sample-config-no_ssl.json"
+```
+
+### From a Binary Release
+
+You can download a binary release from the [Releases](https://github.com/tsitle/ts_rtsp_server/releases) page.  
+The binary releases come with the sample configuration and media files.  
+No external dependencies are required.
+
+Once you have extracted the binary release, you can simply run the application like this:
+
+```
+$ cd ts_rtsp_server-1.1.6-lx-x64-bin
+$ ./ts_rtsp_server.sh config/sample-config-no_ssl.json
+```
