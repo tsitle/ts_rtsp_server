@@ -11,7 +11,7 @@ import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromD
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromRawFile;
 import org.tsitle.lib_dataprov.threads_es.codec_v_h26x.ThreadDataProvEsH265FromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH265;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;

@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtp.params;
+package org.tsitle.rtsp_server.threads.params_rtxp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;

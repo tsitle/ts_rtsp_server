@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.rtp.params;
+package org.tsitle.rtsp_server.threads.params_rtxp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -51,7 +51,7 @@ public final class ParamsThreadRtcp extends ParamsThreadRtxp implements Cloneabl
 
 	@SuppressWarnings("SameParameterValue")
 	private static void requireIsSet(boolean v, String name) {
-		final String errPrefix = ParamsThreadRtpSenderCommon.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtcp.class.getSimpleName() + ": ";
 
 		if (! v) {
 			throw new IllegalStateException(errPrefix + name + " must be set!");
@@ -60,7 +60,7 @@ public final class ParamsThreadRtcp extends ParamsThreadRtxp implements Cloneabl
 
 	@SuppressWarnings("SameParameterValue")
 	private static <X> void requireNonNull(X v, String name) {
-		final String errPrefix = ParamsThreadRtpSenderCommon.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtcp.class.getSimpleName() + ": ";
 
 		if (v == null) {
 			throw new IllegalArgumentException(errPrefix + name + " must not be null");

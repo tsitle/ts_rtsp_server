@@ -14,7 +14,7 @@ import org.tsitle.lib_dataprov.threads_es.codec_v_vpx.ThreadDataProvEsVp8FromMq;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVp8;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 

@@ -10,7 +10,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_dataprov.threads_dmxFc.TdpDemuxFcReadNextAvPacketInterface;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;

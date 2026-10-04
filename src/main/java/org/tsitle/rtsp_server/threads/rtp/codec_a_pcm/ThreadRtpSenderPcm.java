@@ -13,7 +13,7 @@ import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromRaw
 import org.tsitle.lib_dataprov.threads_es.codec_a_pcm.ThreadDataProvEsPcmFromMq;
 import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpPcm;
 
 import java.util.Objects;

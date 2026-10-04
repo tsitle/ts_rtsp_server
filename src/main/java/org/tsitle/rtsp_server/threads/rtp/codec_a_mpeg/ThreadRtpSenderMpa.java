@@ -19,7 +19,7 @@ import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMpa;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 
 import java.util.Objects;
 

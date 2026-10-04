@@ -28,7 +28,7 @@ import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.rtsp_server.threads.AdaptiveScheduler;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;

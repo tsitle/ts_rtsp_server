@@ -17,7 +17,7 @@ import org.tsitle.rtsp_server.threads.rtp.FrameFragmentData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAudioCommon;
-import org.tsitle.rtsp_server.threads.rtp.params.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
 
 import java.util.Objects;
 
