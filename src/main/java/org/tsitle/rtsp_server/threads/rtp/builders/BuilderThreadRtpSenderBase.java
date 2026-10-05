@@ -42,7 +42,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 	public BuilderThreadRtpSenderBase<B, T> comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return this; }
 	public BuilderThreadRtpSenderBase<B, T> comTpClientDestUdpPortRtp(@NonNull RtspProtoSocketPortNr v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return this; }
 	@SuppressWarnings("UnusedReturnValue")
-	public BuilderThreadRtpSenderBase<B, T> comTpSocketUdpRtp(@NonNull DatagramSocket v) { this.threadParamsCommon.setTpSocketUdp(v); return this; }
+	public BuilderThreadRtpSenderBase<B, T> comTpServerSocketUdpRtp(@NonNull DatagramSocket v) { this.threadParamsCommon.setTpServerSocketUdp(v); return this; }
 	public BuilderThreadRtpSenderBase<B, T> comTpClientDestTcpIf(RtspChildThreadsCbRtxpTcpInterface v) { this.threadParamsCommon.setTpClientDestTcpIf(v); return this; }
 	@SuppressWarnings("UnusedReturnValue")
 	public BuilderThreadRtpSenderBase<B, T> comTpClientDestTcpChannRtp(@NonNull RtspProtoTcpChannelNr v) { this.threadParamsCommon.setTpClientDestTcpChann(v); return this; }

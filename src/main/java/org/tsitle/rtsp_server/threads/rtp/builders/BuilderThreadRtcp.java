@@ -38,7 +38,7 @@ public final class BuilderThreadRtcp {
 		public @NonNull Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
 		public @NonNull Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
-		public @NonNull Builder tpSocketUdpRtcp(@NonNull DatagramSocket v) { this.threadParams.setTpSocketUdp(v); return this; }
+		public @NonNull Builder tpServerSocketUdpRtcp(@NonNull DatagramSocket v) { this.threadParams.setTpServerSocketUdp(v); return this; }
 		public @NonNull Builder tpClientDestTcpIf(@NonNull RtspChildThreadsCbRtxpTcpInterface v) { this.threadParams.setTpClientDestTcpIf(v); return this; }
 		@SuppressWarnings("UnusedReturnValue")
 		public @NonNull Builder tpClientDestTcpChannRtcp(@NonNull RtspProtoTcpChannelNr v) { this.threadParams.setTpClientDestTcpChann(v); return this; }

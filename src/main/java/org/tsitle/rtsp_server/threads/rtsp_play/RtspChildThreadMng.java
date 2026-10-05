@@ -361,7 +361,7 @@ final class RtspChildThreadMng {
 		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
 			tmpBuilder
 					.tpClientDestUdpPortRtcp(tmpSiSs.getSubStreamTpPtr().getClientUdpPortRtcpPtr())
-					.tpSocketUdpRtcp(Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtcpPtr()));
+					.tpServerSocketUdpRtcp(Objects.requireNonNull(tmpSiSs.getServerUdpSocketRtcpPtr()));
 		} else {
 			tmpBuilder
 					.tpClientDestTcpIf(rctcbRtpTcp)
@@ -394,7 +394,7 @@ final class RtspChildThreadMng {
 		if (streamInfo.getSubStreamTpPtr().getIsUdp()) {
 			builder
 					.comTpClientDestUdpPortRtp(streamInfo.getSubStreamTpPtr().getClientUdpPortRtpPtr())
-					.comTpSocketUdpRtp(Objects.requireNonNull(streamInfo.getServerUdpSocketRtpPtr()));
+					.comTpServerSocketUdpRtp(Objects.requireNonNull(streamInfo.getServerUdpSocketRtpPtr()));
 		} else {
 			builder
 					.comTpClientDestTcpIf(rctcbRtpTcp)

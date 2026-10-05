@@ -27,8 +27,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		private @NonNull RtspProtoSocketPortNr clientDestUdpPort = RtspProtoSocketPortNr.ofEmpty();
 		private boolean isSetClientDestUdpPort;
 		/** UDP socket for outgoing RTxP packets */
-		private @Nullable DatagramSocket socketUdp;
-		private boolean isSetSocketUdp;
+		private @Nullable DatagramSocket serverSocketUdp;
+		private boolean isSetServerSocketUdp;
 
 		/** Destination TCP write interface for RTP packets (audio and video) */
 		private @Nullable RtspChildThreadsCbRtxpTcpInterface clientDestTcpIf;
@@ -174,10 +174,10 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		transport.isSetClientDestUdpPort = true;
 	}
 
-	public Optional<DatagramSocket> getTpSocketUdp() { return Optional.ofNullable(transport.socketUdp); }
-	public void setTpSocketUdp(@NonNull DatagramSocket value) {
-		this.transport.socketUdp = value;
-		this.transport.isSetSocketUdp = true;
+	public Optional<DatagramSocket> getTpServerSocketUdp() { return Optional.ofNullable(transport.serverSocketUdp); }
+	public void setTpServerSocketUdp(@NonNull DatagramSocket value) {
+		this.transport.serverSocketUdp = value;
+		this.transport.isSetServerSocketUdp = true;
 	}
 
 	public Optional<RtspChildThreadsCbRtxpTcpInterface> getTpClientDestTcpIf() { return Optional.ofNullable(transport.clientDestTcpIf); }
@@ -248,7 +248,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 
 		requireIsSet(transport.isSetClientIpAddr, "transport.clientIpAddr");
 		if (transport.isSetClientDestUdpPort) {
-			requireIsSet(transport.isSetSocketUdp, "transport.socketUdp");
+			requireIsSet(transport.isSetServerSocketUdp, "transport.serverSocketUdp");
 		} else {
 			requireIsSet(transport.isSetClientDestTcpIf, "transport.clientDestTcpIf");
 			requireIsSet(transport.isSetClientDestTcpChann, "transport.clientDestTcpChann");
@@ -289,7 +289,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 			if (transport.clientDestUdpPort.isEmpty()) {
 				throw new IllegalArgumentException(errPrefix + "transport.clientDestUdpPort must be set");
 			}
-			requireNonNull(transport.socketUdp, "transport.socketUdp");
+			requireNonNull(transport.serverSocketUdp, "transport.serverSocketUdp");
 		} else {
 			requireNonNull(transport.clientDestTcpIf, "transport.clientDestTcpIf");
 			if (transport.clientDestTcpChann.isEmpty()) {

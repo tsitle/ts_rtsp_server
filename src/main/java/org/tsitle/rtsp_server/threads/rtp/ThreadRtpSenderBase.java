@@ -132,7 +132,7 @@ public abstract class ThreadRtpSenderBase<
 		this.avStreamIncomingType = avStreamIncomingType;
 		//
 		this.paramsCommon = paramsCommon.clone();
-		this.parComRtpSocketUdp = paramsCommon.getTpSocketUdp().orElse(null);
+		this.parComRtpSocketUdp = paramsCommon.getTpServerSocketUdp().orElse(null);
 		this.parComRtpRwIfTcp = paramsCommon.getTpClientDestTcpIf().orElse(null);
 		//
 		if (rtpPacketType.isVideo() && paramsCommon.getAvFramesPerSecond() < 0.1) {
