@@ -111,7 +111,12 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		this.rtxpTcpReadWrite = new RtxpTcpReadWrite(rtspSocketTcp);
 
 		//
-		this.fromCtorClientIpAddr.setIpAddr(rtspSocketTcp.getInetAddress());
+		java.net.InetAddress tmpRemoteIp = rtspSocketTcp.getInetAddress();
+		if (tmpRemoteIp == null) {
+			throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+					"could not read remote IP address");
+		}
+		this.fromCtorClientIpAddr.setIpAddr(tmpRemoteIp);
 		this.fromCtorClientIpAddr.writeProtect();
 		this.fromCtorIsRtspsConnection = isRtspsConnection;
 
