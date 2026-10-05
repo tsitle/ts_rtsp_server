@@ -33,7 +33,7 @@ public final class BuilderThreadRtcp {
 
 		public @NonNull Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }
 
-		public @NonNull Builder idSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcId(v); return this; }
+		public @NonNull Builder idSsrcOutbound(@NonNull RtspProtoIdXsrc v) { this.threadParams.setSsrcIdOutbound(v); return this; }
 
 		public @NonNull Builder tpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParams.setTpClientIpAddr(v); return this; }
 		public @NonNull Builder tpClientDestUdpPortRtcp(@NonNull RtspProtoSocketPortNr v) { this.threadParams.setTpClientDestUdpPort(v); return this; }

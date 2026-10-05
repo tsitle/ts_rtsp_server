@@ -128,7 +128,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		logDebug(FNC_NAME, String.format("Sending BYE packet (esSrc=%s, SSRC=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
-				params.getSsrcId().toHexString(true)));
+				params.getSsrcIdOutbound().toHexString(true)));
 		BufferExt packetCompoundBuf = new BufferExt();
 		sendBye_buildRtcpCompound(packetCompoundBuf);
 		//
@@ -326,7 +326,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				if (srtcpVarsOutbound.ctxObj != null) {
 					srtcpVarsOutbound.ctxObj.protectRtcpSrCompound(
 							plainPktBuf,
-							params.getSsrcId(),
+							params.getSsrcIdOutbound(),
 							encrPktBuf
 						);
 					outpPacketPtr = encrPktBuf;
@@ -375,7 +375,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				0,
 				0
 			);
-		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getSsrcId(), siBlock, List.of());
+		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getSsrcIdOutbound(), siBlock, List.of());
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
 	}
 
@@ -391,7 +391,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		// SR packet
 		sendBye_buildEmptyRtcpSr(packetCompoundBuf);
 		// BYE packet
-		RtcpPacketBYE packetByeObj = new RtcpPacketBYE(List.of(params.getSsrcId()), null);
+		RtcpPacketBYE packetByeObj = new RtcpPacketBYE(List.of(params.getSsrcIdOutbound()), null);
 		BufferExt packetByeBuf = new BufferExt();
 		packetByeObj.copyRawPacketDataInto(packetByeBuf);
 		// Compound packet
@@ -533,7 +533,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktHd.getItemsCount() == 0) {
 			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC=%s)",
 					params.getIdEsSource().getIdStr().orElse("-unset-"),
-					params.getSsrcId().toHexString(true)));
+					params.getSsrcIdOutbound().toHexString(true)));
 			return;
 		}
 		// read and validate the packet
@@ -583,7 +583,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktHd.getItemsCount() == 0) {
 			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC=%s)",
 					params.getIdEsSource().getIdStr().orElse("-unset-"),
-					params.getSsrcId().toHexString(true)));
+					params.getSsrcIdOutbound().toHexString(true)));
 			return;
 		}
 		// read and validate the packet
@@ -603,12 +603,12 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 		logDebug(FNC_NAME, String.format("received BYE (esSrc=%s, SSRC=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
-				params.getSsrcId().toHexString(true)));
+				params.getSsrcIdOutbound().toHexString(true)));
 		//
 		byePacketHasBeenRcvd.set(true);
 		//
 		if (! byePacketHasBeenSent.get()) {
-			params.getRtcpReceivedByeInterface().orElseThrow().cbRtcpReceivedBye(params.getSsrcId());
+			params.getRtcpReceivedByeInterface().orElseThrow().cbRtcpReceivedBye(params.getSsrcIdOutbound());
 		}
 	}
 

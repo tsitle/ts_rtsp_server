@@ -291,7 +291,7 @@ public abstract class ThreadRtpSenderBase<
 		} finally {
 			// send a BYE packet to let the client know that this stream has ended
 			try {
-				paramsCommon.getCbRtcpAppendByeToOutgoingQueue().orElseThrow().accept(paramsCommon.getSsrcId());
+				paramsCommon.getCbRtcpAppendByeToOutgoingQueue().orElseThrow().accept(paramsCommon.getSsrcIdOutbound());
 			} catch (Exception e) {
 				// ignore
 			}
@@ -447,7 +447,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		cacheParamsBase.reset();
-		cacheParamsBase.ssrcId.copyFrom(paramsCommon.getSsrcId());
+		cacheParamsBase.ssrcId.copyFrom(paramsCommon.getSsrcIdOutbound());
 		cacheParamsBase.sequenceNumber.copyFrom(getRtpSequNr());
 		cacheParamsBase.doSetMarker = cbRtpPacketMarkerBitSupplier(
 				curFragmentData.fragmentOffset(),
@@ -849,7 +849,7 @@ public abstract class ThreadRtpSenderBase<
 			logDebug(FNC_NAME, "siBlock=" + siBlock);
 		}*/
 		RtcpPacketSR packetSrObj = new RtcpPacketSR(
-				paramsCommon.getSsrcId(),
+				paramsCommon.getSsrcIdOutbound(),
 				siBlock,
 				List.of()
 			);
@@ -881,7 +881,7 @@ public abstract class ThreadRtpSenderBase<
 
 		//
 		paramsCommon.getCbRtcpAppendSrToOutgoingQueue().orElseThrow()
-				.accept(paramsCommon.getSsrcId(), packetCompoundBuf);
+				.accept(paramsCommon.getSsrcIdOutbound(), packetCompoundBuf);
 
 		siStats.lastSenderInfoSent = Instant.now();
 	}

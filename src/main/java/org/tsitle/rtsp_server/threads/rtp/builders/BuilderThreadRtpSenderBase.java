@@ -37,7 +37,7 @@ public abstract class BuilderThreadRtpSenderBase<B extends BuilderThreadRtpSende
 
 	public BuilderThreadRtpSenderBase<B, T> comIdSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParamsCommon.setIdSubStream(v); return this; }
 
-	public BuilderThreadRtpSenderBase<B, T> comIdSsrc(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcId(v); return this; }
+	public BuilderThreadRtpSenderBase<B, T> comIdSsrcOutbound(@NonNull RtspProtoIdXsrc v) { this.threadParamsCommon.setSsrcIdOutbound(v); return this; }
 
 	public BuilderThreadRtpSenderBase<B, T> comTpClientIpAddr(@NonNull RtspProtoIpAddr v) { this.threadParamsCommon.setTpClientIpAddr(v); return this; }
 	public BuilderThreadRtpSenderBase<B, T> comTpClientDestUdpPortRtp(@NonNull RtspProtoSocketPortNr v) { this.threadParamsCommon.setTpClientDestUdpPort(v); return this; }

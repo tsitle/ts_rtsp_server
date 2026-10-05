@@ -355,7 +355,7 @@ final class RtspChildThreadMng {
 				.debugIdSession(idSession)
 				.idEsSource(ctfos.idEsSource)
 				.idSubStream(ctfos.idSubStream)
-				.idSsrc(tmpSiSs.getSsrcOutboundPtr())
+				.idSsrcOutbound(tmpSiSs.getSsrcOutboundPtr())
 				.rtcpReceivedByeInterface(rtcpReceivedByeInterface)
 				.tpClientIpAddr(clientIpAddr);
 		if (tmpSiSs.getSubStreamTpPtr().getIsUdp()) {
@@ -408,7 +408,7 @@ final class RtspChildThreadMng {
 				.comDebugIdSession(idSession)
 				.comIdEsSource(idEsSource)
 				.comIdSubStream(streamInfo.getRscUrlSubStreamPtr().idSubStream)
-				.comIdSsrc(streamInfo.getSsrcOutboundPtr())
+				.comIdSsrcOutbound(streamInfo.getSsrcOutboundPtr())
 				.comTpClientIpAddr(clientIpAddr)
 				.comCryptoIsRtxpEncryptionEnabled(streamInfo.getSubStreamTpPtr().getIsEncr())
 				.comCryptoKmdOutboundRtp(streamInfo.getKmdOutboundPtr().getKmd().orElse(null))

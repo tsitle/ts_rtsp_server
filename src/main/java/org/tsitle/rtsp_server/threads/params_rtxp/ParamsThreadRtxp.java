@@ -151,8 +151,8 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 		this.isSetIdSubStream = true;
 	}
 
-	public @NonNull RtspProtoIdXsrc getSsrcId() { return ssrcId.clone(); }
-	public void setSsrcId(@NonNull RtspProtoIdXsrc value) {
+	public @NonNull RtspProtoIdXsrc getSsrcIdOutbound() { return ssrcId.clone(); }
+	public void setSsrcIdOutbound(@NonNull RtspProtoIdXsrc value) {
 		this.ssrcId.copyFrom(value);
 		this.ssrcId.writeProtect();
 		this.isSetSsrcId = true;
