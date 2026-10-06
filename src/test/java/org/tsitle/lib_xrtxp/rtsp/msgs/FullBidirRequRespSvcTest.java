@@ -24,6 +24,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundExcept
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
+import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.*;
@@ -810,6 +811,8 @@ public class FullBidirRequRespSvcTest {
 		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
+
+		assertEquals(RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT, cliPtrSiForCt.ptr().getSessionTimeout32bit().orElseThrow());
 	}
 
 	private void do_checkSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
