@@ -100,7 +100,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		}
 
 		//
-		byte[] rtcpBuf = new byte[1024];
+		byte[] rtcpBuf = new byte[4096];  // needs to be larger than the maximum UDP packet size that can be expected
 		this.cacheDpRecv = new DatagramPacket(rtcpBuf, rtcpBuf.length);
 	}
 
