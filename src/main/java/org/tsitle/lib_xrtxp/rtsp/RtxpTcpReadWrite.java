@@ -221,6 +221,11 @@ public final class RtxpTcpReadWrite {
 
 	public synchronized void setIsRtpRtcpAllowed(boolean value) {
 		isRtpRtcpAllowed.set(value);
+		if (value) {
+			setTcpActivityTimeoutForRtxp();
+		} else {
+			setTcpActivityTimeoutForRtspOnly();
+		}
 	}
 
 	public synchronized void setTcpActivityTimeoutForRtspOnly() {
