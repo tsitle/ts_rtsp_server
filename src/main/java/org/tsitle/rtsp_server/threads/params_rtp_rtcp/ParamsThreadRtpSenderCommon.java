@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.params_rtxp;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -21,7 +21,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtxp implements Cloneable {
+public final class ParamsThreadRtpSenderCommon extends ParamsThreadRtpRtcpBase implements Cloneable {
 
 	public static final class RtpTsT0WithMonoRef implements Cloneable {
 		private @NonNull RtspProtoRtpTimestamp rtpTsT0;

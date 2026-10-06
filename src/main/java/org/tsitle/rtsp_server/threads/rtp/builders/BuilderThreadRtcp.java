@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtcp.ThreadRtcpSendRecv;
-import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtcp;
+import org.tsitle.rtsp_server.threads.params_rtp_rtcp.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;

@@ -17,7 +17,7 @@ import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.rtsp_server.threads.ThreadPausableBase;
-import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtcp;
+import org.tsitle.rtsp_server.threads.params_rtp_rtcp.ParamsThreadRtcp;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 

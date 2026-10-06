@@ -18,7 +18,7 @@ import org.tsitle.lib_dataprov.threads_dmxFc.ThreadDataProvDmxFc;
 import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 import org.tsitle.rtsp_server.threads.rtp.builders.*;
-import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtp_rtcp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;

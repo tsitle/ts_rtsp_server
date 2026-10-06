@@ -11,7 +11,7 @@ import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.rtsp_server.threads.rtp.FrameData;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
-import org.tsitle.rtsp_server.threads.params_rtxp.ParamsThreadRtpSenderCommon;
+import org.tsitle.rtsp_server.threads.params_rtp_rtcp.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
 
 import java.util.*;

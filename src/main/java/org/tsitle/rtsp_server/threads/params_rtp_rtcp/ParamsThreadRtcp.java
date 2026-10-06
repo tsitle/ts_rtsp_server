@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.params_rtxp;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -6,7 +6,7 @@ import org.tsitle.rtsp_server.threads.rtcp.RtcpReceivedByeInterface;
 
 import java.util.Optional;
 
-public final class ParamsThreadRtcp extends ParamsThreadRtxp implements Cloneable {
+public final class ParamsThreadRtcp extends ParamsThreadRtpRtcpBase implements Cloneable {
 
 	private @Nullable RtcpReceivedByeInterface rtcpReceivedByeInterface = null;
 	private boolean isSetRtcpReceivedByeInterface = false;

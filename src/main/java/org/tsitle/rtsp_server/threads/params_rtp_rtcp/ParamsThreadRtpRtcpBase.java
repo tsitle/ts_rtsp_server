@@ -1,4 +1,4 @@
-package org.tsitle.rtsp_server.threads.params_rtxp;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -16,7 +16,7 @@ import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterfa
 import java.net.DatagramSocket;
 import java.util.Optional;
 
-public abstract class ParamsThreadRtxp implements Cloneable {
+public abstract class ParamsThreadRtpRtcpBase implements Cloneable {
 
 	public static class Transport implements Cloneable {
 		/** Client IP address */
@@ -113,7 +113,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	/** RTxP encryption parameters */
 	private @NonNull Crypto crypto = new Crypto();
 
-	protected ParamsThreadRtxp(boolean needInboundParams, boolean needOutboundParams) {
+	protected ParamsThreadRtpRtcpBase(boolean needInboundParams, boolean needOutboundParams) {
 		this.crypto.needInboundParams = needInboundParams;
 		this.crypto.needOutboundParams = needOutboundParams;
 	}
@@ -219,9 +219,9 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	}
 
 	@Override
-	public @NonNull ParamsThreadRtxp clone() {
+	public @NonNull ParamsThreadRtpRtcpBase clone() {
 		try {
-			ParamsThreadRtxp clone = (ParamsThreadRtxp)super.clone();
+			ParamsThreadRtpRtcpBase clone = (ParamsThreadRtpRtcpBase)super.clone();
 			//
 			clone.debugSessionId = debugSessionId.clone();
 			clone.idEsSource = idEsSource.clone();
@@ -299,7 +299,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	}
 
 	private static void requireIsSet(boolean v, String name) {
-		final String errPrefix = ParamsThreadRtxp.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtpRtcpBase.class.getSimpleName() + ": ";
 
 		if (! v) {
 			throw new IllegalStateException(errPrefix + name + " must be set!");
@@ -307,7 +307,7 @@ public abstract class ParamsThreadRtxp implements Cloneable {
 	}
 
 	private static <X> void requireNonNull(X v, String name) {
-		final String errPrefix = ParamsThreadRtxp.class.getSimpleName() + ": ";
+		final String errPrefix = ParamsThreadRtpRtcpBase.class.getSimpleName() + ": ";
 
 		if (v == null) {
 			throw new IllegalArgumentException(errPrefix + name + " must not be null");
