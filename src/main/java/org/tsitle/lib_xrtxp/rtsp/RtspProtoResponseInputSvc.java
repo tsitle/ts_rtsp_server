@@ -247,6 +247,7 @@ public final class RtspProtoResponseInputSvc {
 		//
 		if (! (sessionInfoPtr.ptr().getIdSession().isReadOnly() || dataResp.rrIdSession.isEmpty())) {
 			sessionInfoPtr.ptr().setSessionId(dataResp.rrIdSession);
+			sessionInfoPtr.ptr().setSessionTimeout32bit(dataResp.rrSessionTimeout32bit);
 		}
 		//
 		if (! dataResp.respSuppMessageTypes.isMtsEmpty()) {

@@ -53,6 +53,13 @@ public final class RtspProtoHighMsgStructuredResponse extends RtspProtoHighMsgSt
 		return Optional.of(headers.get(RtspHeaderKey.SESSION).hdValSession.idSession);
 	}
 
+	public Optional<Long> getHeaderSessionTimeout32bit() {
+		if (! headers.containsKey(RtspHeaderKey.SESSION)) {
+			return Optional.empty();
+		}
+		return headers.get(RtspHeaderKey.SESSION).hdValSession.getTimeout32bit();
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override

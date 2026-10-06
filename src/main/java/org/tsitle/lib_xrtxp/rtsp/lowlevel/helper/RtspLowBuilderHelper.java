@@ -163,7 +163,7 @@ public final class RtspLowBuilderHelper {
 		return hdValue.idSession.getIdStr().orElse("-unset-") +
 				(! isForRequest && hdValue.getTimeout32bit().isPresent() ?
 						";" + RtspProtoLowMsgConstants.RTSP_RR_HEADER_PARAM_KEY_SET_TIMEOUT +
-								Integer.toUnsignedString(hdValue.getTimeout32bit().get())
+								Long.toUnsignedString(hdValue.getTimeout32bit().get())
 						: "");
 	}
 

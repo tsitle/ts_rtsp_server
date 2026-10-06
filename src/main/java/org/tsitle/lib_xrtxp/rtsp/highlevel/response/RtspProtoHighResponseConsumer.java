@@ -181,6 +181,9 @@ public final class RtspProtoHighResponseConsumer {
 		if (isResponseFromClient || outputDataResp.rrIdSession.isEmpty()) {
 			if (currentIdSession.isEmpty() && tmpOptSessionId.isPresent()) {
 				outputDataResp.rrIdSession.copyFrom(tmpOptSessionId.get());
+				//
+				Optional<Long> tmpOptSessionTo = inputMsgStc.getHeaderSessionTimeout32bit();
+				outputDataResp.rrSessionTimeout32bit = tmpOptSessionTo.orElse(-1L);
 			} else {
 				outputDataResp.rrIdSession.copyFrom(currentIdSession);
 			}

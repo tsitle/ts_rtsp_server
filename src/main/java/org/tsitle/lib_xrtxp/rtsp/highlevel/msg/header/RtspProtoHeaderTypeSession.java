@@ -1,8 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.highlevel.msg.header;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 
 import java.util.Optional;
 
@@ -24,21 +24,21 @@ public final class RtspProtoHeaderTypeSession {
 		timeout32bit = -1L;
 	}
 
-	public Optional<Integer> getTimeout32bit() {
-		return (timeout32bit < 0L ? Optional.empty() : Optional.of((int)timeout32bit));
+	public Optional<Long> getTimeout32bit() {
+		return (timeout32bit < 0L ? Optional.empty() : Optional.of(timeout32bit));
 	}
 
 	@Override
 	public @NonNull String toString() {
 		return "[" +
 				"idSession=" + idSession +
-				", " + optionalIntToStr("timeout", getTimeout32bit()) +
+				", " + optionalLongToStr("timeout", getTimeout32bit()) +
 				"]";
 	}
 
 	@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "SameParameterValue"})
-	private static @NonNull String optionalIntToStr(@NonNull String desc, @NonNull Optional<Integer> value) {
-		return desc + "=" + value.map(Integer::toUnsignedString).orElse("unset");
+	private static @NonNull String optionalLongToStr(@NonNull String desc, @NonNull Optional<Long> value) {
+		return desc + "=" + value.map(Long::toUnsignedString).orElse("unset");
 	}
 
 }

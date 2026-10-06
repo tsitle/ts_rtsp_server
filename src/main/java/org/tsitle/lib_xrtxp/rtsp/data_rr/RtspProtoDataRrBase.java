@@ -14,6 +14,8 @@ public class RtspProtoDataRrBase {
 
 	/** RTSP Session ID */
 	public final @NonNull RtspProtoIdSession rrIdSession = RtspProtoIdSession.ofEmpty();
+	/** RTSP Session Timeout (32-bit) */
+	public long rrSessionTimeout32bit = -1L;
 
 	/** RTSP message parameters to get */
 	public final @NonNull RtspProtoDataCntGetSetParamNames rrGetParamNames = new RtspProtoDataCntGetSetParamNames();
@@ -102,6 +104,7 @@ public class RtspProtoDataRrBase {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		rrIdSession.copyFrom(other.rrIdSession);
+		rrSessionTimeout32bit = other.rrSessionTimeout32bit;
 		rrGetParamNames.copyFrom(other.rrGetParamNames);
 		rrInvalidParamNames.copyFrom(other.rrInvalidParamNames);
 		rrUnsupportedFeatureName = other.rrUnsupportedFeatureName;
@@ -121,6 +124,7 @@ public class RtspProtoDataRrBase {
 			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
 		}
 		rrIdSession.clear();
+		rrSessionTimeout32bit = -1L;
 		rrGetParamNames.clear();
 		rrInvalidParamNames.clear();
 		rrUnsupportedFeatureName = "";

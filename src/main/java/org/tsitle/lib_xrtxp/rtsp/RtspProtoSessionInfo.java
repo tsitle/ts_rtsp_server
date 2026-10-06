@@ -7,9 +7,9 @@ import org.tsitle.lib_xrtxp.common.helpers.HostnameHelper;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
+import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoCannotFindIpFromRscUrlException;
-import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSessionInfoException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
@@ -24,7 +24,9 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -50,6 +52,8 @@ public final class RtspProtoSessionInfo {
 
 	/** RTSP Session ID */
 	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
+	/** RTSP Session Timeout (32-bit) */
+	private long sessionTimeout32bit = -1L;
 
 	/** Request from remote host: Last received RTSP message Sequence Number */
 	private final @NonNull RtspProtoCseqNr cseqNr_requFromRem_lastRcvd = RtspProtoCseqNr.ofEmpty();
@@ -252,6 +256,18 @@ public final class RtspProtoSessionInfo {
 		theReadLockFields.lock();
 		try {
 			return idSession.clone();
+		} finally {
+			theReadLockFields.unlock();
+		}
+	}
+
+	public Optional<Long> getSessionTimeout32bit() {
+		theReadLockFields.lock();
+		try {
+			if (sessionTimeout32bit < 1L || sessionTimeout32bit > 0xFFFF_FFFFL) {
+				return Optional.empty();
+			}
+			return Optional.of(sessionTimeout32bit);
 		} finally {
 			theReadLockFields.unlock();
 		}
@@ -776,6 +792,15 @@ public final class RtspProtoSessionInfo {
 		try {
 			idSession.copyFrom(value);
 			idSession.writeProtect();
+		} finally {
+			theWriteLockFields.unlock();
+		}
+	}
+
+	void setSessionTimeout32bit(long value) {
+		theWriteLockFields.lock();
+		try {
+			sessionTimeout32bit = value;
 		} finally {
 			theWriteLockFields.unlock();
 		}
