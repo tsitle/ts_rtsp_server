@@ -568,8 +568,8 @@ public abstract class ThreadRtpSenderBase<
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private boolean mainLoop()
-			throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException, UdpSocketIoException, TcpSocketIoException {
+	private boolean mainLoop() throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException,
+			UdpSocketIoException, TcpSocketIoException {
 		if (isPaused.get()) {
 			Thread.sleep(100);
 			return true;
@@ -697,8 +697,10 @@ public abstract class ThreadRtpSenderBase<
 		}
 	}
 
-	private @NonNull Sf_sfasf_Result sendFrame_splitFrameAndSendFragments(final @NonNull FrameData frameData, boolean tmpStoreIs1stPktOfFrame)
-			throws TcpSocketIoException, UdpSocketIoException {
+	private @NonNull Sf_sfasf_Result sendFrame_splitFrameAndSendFragments(
+				final @NonNull FrameData frameData,
+				boolean tmpStoreIs1stPktOfFrame
+			) throws TcpSocketIoException, UdpSocketIoException {
 		if (frameData.rtpPayloadDataViewPtr == null) {
 			throw new IllegalStateException(getClass().getSimpleName() + ".sendFrame_splitFrameAndSendFragments(): " +
 					"frameData.rtpPayloadDataViewPtr == null");
