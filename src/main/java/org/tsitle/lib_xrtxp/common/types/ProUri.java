@@ -147,13 +147,23 @@ public final class ProUri implements Cloneable {
 				@NonNull String query,
 				@NonNull String fragment
 			) throws ProUriInvalidUriException {
+		credUsername = credUsername.replace(":", "%3A").replace("@", "%40");
+		credPassword = credPassword.replace(":", "%3A").replace("@", "%40");
 		if (credUsername.isBlank() && ! credPassword.isBlank()) {
 			credPassword = "";
 		}
-		if (query.startsWith("?")) {
+		host = host.replace(":", "").replace("@", "").replace("/", "");
+		while (path.startsWith("//")) {
+			path = path.substring(1);
+		}
+		while (path.endsWith("//")) {
+			path = path.substring(0, path.length() - 1);
+		}
+		path = path.replace("//", "/");
+		while (query.startsWith("?")) {
 			query = query.substring(1);
 		}
-		if (fragment.startsWith("#")) {
+		while (fragment.startsWith("#")) {
 			fragment = fragment.substring(1);
 		}
 		ProUri resObj = new ProUri("");
@@ -301,6 +311,35 @@ public final class ProUri implements Cloneable {
 
 	public boolean isEmpty() {
 		return (mScheme == Scheme.NONE);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull ProUri addPath(@NonNull ProUri uri, @NonNull String path) {
+		if (uri.isEmpty()) {
+			return uri.clone();
+		}
+		while (path.startsWith("//")) {
+			path = path.substring(1);
+		}
+		String tmpPath = uri.getPath().orElse("") + path;
+		while (tmpPath.startsWith("//")) {
+			tmpPath = tmpPath.substring(1);
+		}
+		try {
+			return ProUri.of(
+					uri.mScheme,
+					uri.getCredentialsUsername().orElse(""),
+					uri.getCredentialsPassword().orElse(""),
+					uri.mHost,
+					uri.mPort,
+					tmpPath,
+					uri.mQuery,
+					uri.mFragment
+				);
+		} catch (ProUriInvalidUriException e) {
+			return ProUri.ofEmpty();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
