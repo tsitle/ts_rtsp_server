@@ -432,12 +432,12 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				break;
 			case RtspProtoMessageType.PLAY:
 				logInfo(FNC_NAME, String.format(
-						"%s playback for IS='%s' (w/%s SRTP, %s, w/%s SSL)",
+						"%s playback for IS='%s' (%s, w/%s SSL, w/%s SRTP)",
 						isPlaybackPaused ? "Resuming" : "Starting",
 						tmpIdIs.getIdStr().orElse("-unset-"),
-						sessionInfoPtr.ptr().getIsTransportSrtpSrtcp() ? "" : "o",
 						sessionInfoPtr.ptr().getIsTransportUdp() ? "UDP" : "TCP",
-						sessionInfoPtr.ptr().getIsRtspsConnection() ? "" : "o"));
+						sessionInfoPtr.ptr().getIsRtspsConnection() ? "" : "o",
+						sessionInfoPtr.ptr().getIsTransportSrtpSrtcp() ? "" : "o"));
 				//
 				updateRtxpTcpRwSettings();
 				//
