@@ -126,7 +126,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 			return;
 		}
 		//
-		logDebug(FNC_NAME, String.format("Sending BYE packet (esSrc=%s, SSRC=%s)",
+		logDebug(FNC_NAME, String.format("Sending BYE packet (esSrc=%s, SSRC.o=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
 				params.getSsrcIdOutbound().toHexString(true)));
 		BufferExt packetCompoundBuf = new BufferExt();
@@ -531,7 +531,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC=%s)",
+			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC.o=%s)",
 					params.getIdEsSource().getIdStr().orElse("-unset-"),
 					params.getSsrcIdOutbound().toHexString(true)));
 			return;
@@ -581,7 +581,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketSDES()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC=%s)",
+			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC.o=%s)",
 					params.getIdEsSource().getIdStr().orElse("-unset-"),
 					params.getSsrcIdOutbound().toHexString(true)));
 			return;
@@ -601,7 +601,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			return;  // only for the linter
 		}
-		logDebug(FNC_NAME, String.format("received BYE (esSrc=%s, SSRC=%s)",
+		logDebug(FNC_NAME, String.format("received BYE (esSrc=%s, SSRC.o=%s)",
 				params.getIdEsSource().getIdStr().orElse("-unset-"),
 				params.getSsrcIdOutbound().toHexString(true)));
 		//
