@@ -599,8 +599,8 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				tmpRdObj.dpm.mqCodecSettings.audioSamplerate
 			);
 		if (tmpVirtFps < 1.0 || tmpVirtFps > RtpConstants.RTP_MAX_FRAMES_PER_SECOND) {
-			logError(FNC_NAME, "Invalid virtual FPS: " + tmpVirtFps + " " +
-					"(codec=" + tmpRdObj.dpm.mqCodecSettings.codec + ", inpFn=" + tmpRdObj.ifs.currentFilePath + ")");
+			/*logError(FNC_NAME, "Invalid virtual FPS: " + tmpVirtFps + " " +
+					"(codec=" + tmpRdObj.dpm.mqCodecSettings.codec + ", inpFn=" + tmpRdObj.ifs.currentFilePath + ")");*/
 			return false;
 		}
 		tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame = nextSpf;
