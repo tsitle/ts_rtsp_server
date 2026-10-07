@@ -19,14 +19,14 @@ public final class RtcpPacketHeader implements Cloneable {
 	/** Item count in the body (for instance, Reception Report Count, 5 bits) */
 	private final byte hdItemCount;
 	/** Payload type (8 bits) */
-	private final RtcpPacketType hdPayloadType;
+	private final @NonNull RtcpPacketType hdPayloadType;
 	/** Payload size */
 	private final int hdPayloadSize;
 
 	/** Original Payload type as byte */
 	private final byte orgPayloadTypeByte;
 	/** Bitstream of header */
-	private BufferExt rawHeader = new BufferExt();
+	private @NonNull BufferExt rawHeader = new BufferExt();
 
 	/**
 	 * Constructor.

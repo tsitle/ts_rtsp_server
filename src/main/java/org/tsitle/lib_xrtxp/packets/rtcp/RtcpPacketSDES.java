@@ -15,10 +15,10 @@ import java.util.Optional;
 public final class RtcpPacketSDES {
 
 	/** SSRC/CSRC Blocks */
-	private final List<RtcpInnerXsrcBlock> xsrcBlocks = new ArrayList<>();
+	private final List<@NonNull RtcpInnerXsrcBlock> xsrcBlocks = new ArrayList<>();
 
 	/** Packet header */
-	private final RtcpPacketHeader mainPktHd;
+	private final @NonNull RtcpPacketHeader mainPktHd;
 	/** Bitstream of the payload */
 	private final BufferExt rawPayload = new BufferExt();
 

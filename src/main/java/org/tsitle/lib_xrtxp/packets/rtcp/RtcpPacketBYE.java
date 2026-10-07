@@ -25,7 +25,7 @@ public final class RtcpPacketBYE {
 	private final @NonNull String bdReasonForLeaving;
 
 	/** Packet header */
-	private final RtcpPacketHeader mainPktHd;
+	private final @NonNull RtcpPacketHeader mainPktHd;
 	/** Bitstream of the payload */
 	private final BufferExt rawPayload = new BufferExt();
 

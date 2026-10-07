@@ -23,10 +23,10 @@ public final class RtcpPacketRR {
 	/** Synchronization Source Identifier of sender (32 bits) */
 	private final @NonNull RtspProtoIdXsrc hdSsrcSender;
 	/** Reception Report Blocks */
-	private final List<RtcpInnerRecpReportBlock> recpReportBlocks = new ArrayList<>();
+	private final List<@NonNull RtcpInnerRecpReportBlock> recpReportBlocks = new ArrayList<>();
 
 	/** Packet header */
-	private final RtcpPacketHeader mainPktHd;
+	private final @NonNull RtcpPacketHeader mainPktHd;
 	/** Bitstream of the payload */
 	private final BufferExt rawPayload = new BufferExt();
 
