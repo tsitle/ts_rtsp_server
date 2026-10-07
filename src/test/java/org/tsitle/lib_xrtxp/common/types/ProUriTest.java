@@ -212,4 +212,89 @@ class ProUriTest {
 		assertTrue(uri.getFragment().isEmpty(), "Fragment should be empty.");
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Test
+	void testAddPath1() throws Exception {
+		// Arrange
+		String uriString = "https://example.com";
+
+		// Act
+		ProUri uriOne = ProUri.of(uriString);
+		ProUri uriTwo = ProUri.addPath(uriOne, "///somewhere");
+
+		// Assert
+		assertEquals(ProUri.Scheme.HTTPS, uriTwo.getScheme().orElse(null), "Scheme should match.");
+		assertEquals(ProUri.HTTPS_TCP_PORT_DEFAULT, uriTwo.getPortOrDefault().orElse(-1), "Port should match.");
+		assertEquals("example.com", uriTwo.getHost().orElse(null), "Host should match.");
+		assertTrue(uriTwo.getPath().isPresent(), "Path should not be empty.");
+		assertEquals("/somewhere", uriTwo.getPath().orElse(""), "Path should match.");
+		assertTrue(uriTwo.getQuery().isEmpty(), "Query should be empty.");
+		assertTrue(uriTwo.getFragment().isEmpty(), "Fragment should be empty.");
+	}
+
+	@Test
+	void testAddPath2() throws Exception {
+		// Arrange
+		String uriString = "https://example.com?arg=gra";
+
+		// Act
+		ProUri uriOne = ProUri.of(uriString);
+		ProUri uriTwo = ProUri.addPath(uriOne, "///somewhere");
+
+		// Assert
+		assertEquals(ProUri.Scheme.HTTPS, uriTwo.getScheme().orElse(null), "Scheme should match.");
+		assertEquals(ProUri.HTTPS_TCP_PORT_DEFAULT, uriTwo.getPortOrDefault().orElse(-1), "Port should match.");
+		assertEquals("example.com", uriTwo.getHost().orElse(null), "Host should match.");
+		assertTrue(uriTwo.getPath().isPresent(), "Path should not be empty.");
+		assertEquals("/somewhere", uriTwo.getPath().orElse(""), "Path should match.");
+		assertTrue(uriTwo.getQuery().isPresent(), "Query should be present.");
+		assertEquals("arg=gra", uriTwo.getQuery().orElse(""), "Query should match.");
+		assertTrue(uriTwo.getFragment().isEmpty(), "Fragment should be empty.");
+	}
+
+	@Test
+	void testAddPath3() throws Exception {
+		// Arrange
+		String uriString = "https://example.com/lejuja/?arg=gra&oiu=tre#fraggy";
+
+		// Act
+		ProUri uriOne = ProUri.of(uriString);
+		ProUri uriTwo = ProUri.addPath(uriOne, "///ha///");
+
+		// Assert
+		assertEquals(ProUri.Scheme.HTTPS, uriTwo.getScheme().orElse(null), "Scheme should match.");
+		assertEquals(ProUri.HTTPS_TCP_PORT_DEFAULT, uriTwo.getPortOrDefault().orElse(-1), "Port should match.");
+		assertEquals("example.com", uriTwo.getHost().orElse(null), "Host should match.");
+		assertTrue(uriTwo.getPath().isPresent(), "Path should not be empty.");
+		assertEquals("/lejuja/ha/", uriTwo.getPath().orElse(""), "Path should match.");
+		assertTrue(uriTwo.getQuery().isPresent(), "Query should be present.");
+		assertEquals("arg=gra&oiu=tre", uriTwo.getQuery().orElse(""), "Query should match.");
+		assertTrue(uriTwo.getFragment().isPresent(), "Fragment should be present.");
+		assertEquals("fraggy", uriTwo.getFragment().orElse(""), "Fragment should match.");
+	}
+
+	@Test
+	void testAddPath4() throws Exception {
+		// Arrange
+		String uriString = "https://user:pass@example.com/lejuja/?arg=gra&oiu=tre#fraggy";
+
+		// Act
+		ProUri uriOne = ProUri.of(uriString);
+		ProUri uriTwo = ProUri.addPath(uriOne, "///ha///");
+
+		// Assert
+		assertEquals(ProUri.Scheme.HTTPS, uriTwo.getScheme().orElse(null), "Scheme should match.");
+		assertEquals("user", uriTwo.getCredentialsUsername().orElse(null), "Credentials username should match.");
+		assertEquals("pass", uriTwo.getCredentialsPassword().orElse(null), "Credentials password should match.");
+		assertEquals(ProUri.HTTPS_TCP_PORT_DEFAULT, uriTwo.getPortOrDefault().orElse(-1), "Port should match.");
+		assertEquals("example.com", uriTwo.getHost().orElse(null), "Host should match.");
+		assertTrue(uriTwo.getPath().isPresent(), "Path should not be empty.");
+		assertEquals("/lejuja/ha/", uriTwo.getPath().orElse(""), "Path should match.");
+		assertTrue(uriTwo.getQuery().isPresent(), "Query should be present.");
+		assertEquals("arg=gra&oiu=tre", uriTwo.getQuery().orElse(""), "Query should match.");
+		assertTrue(uriTwo.getFragment().isPresent(), "Fragment should be present.");
+		assertEquals("fraggy", uriTwo.getFragment().orElse(""), "Fragment should match.");
+	}
+
 }
