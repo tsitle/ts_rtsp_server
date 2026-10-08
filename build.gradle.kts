@@ -34,6 +34,10 @@ val ffmpegVersion = tmpArgProvider.orNull ?: "7.1.1"
 tmpArgProvider = providers.gradleProperty("agent")  // returns null if not provided
 val doAgentTest = tmpArgProvider.isPresent
 
+// do 'private' agent test? (uses a config file that is not included in the Git repository)
+tmpArgProvider = providers.gradleProperty("usePrivConf")  // returns null if not provided
+val usePrivConf = tmpArgProvider.isPresent
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 fun getOperatingSystemName() : String {
@@ -386,9 +390,15 @@ graalvmNative {
 		 * execute 'metadataCopy'.
 		 */
 		metadataCopy {
-			inputTaskNames.addAll(
-				"agentDefault"
-			)
+			if (usePrivConf) {
+				inputTaskNames.addAll(
+						"agentPrivate"
+					)
+			} else {
+				inputTaskNames.addAll(
+						"agentDefault"
+					)
+			}
 
 			/*
 			 * Note that when compiling the native image, the output directory for the reachability metadata
@@ -479,10 +489,27 @@ tasks.register<JavaExec>("agentDefault") {
 	)
 }
 
+tasks.register<JavaExec>("agentPrivate") {
+	group = "native-image"
+	description = "Collect Native Image metadata for the app's functionality - specifically the JNI calls for FFmpeg"
+
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set(application.mainClass)
+
+	args(
+		"--agent-test",
+		"config/sample-config-with_ssl-PRIV.json"
+	)
+}
+
 tasks.register("collectNativeImageMetadata") {
 	group = "native-image"
 	description = "Collect all Native Image reachability metadata"
 
-	dependsOn("agentDefault")
+	if (usePrivConf) {
+		dependsOn("agentPrivate")
+	} else {
+		dependsOn("agentDefault")
+	}
 	finalizedBy("metadataCopy")
 }
