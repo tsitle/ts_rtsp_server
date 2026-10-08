@@ -39,5 +39,9 @@
 	"streamConfigDirectories": [
 		"sample-streams-config1",
 		"sample-streams-config2"
-	]
+	],
+
+	"remoteMqServerSslCertificates": {
+		"192.168.1.1:7777": "mq_server_ssl_certs/MQ_HOSTNAME-server.crt"
+	}
 }

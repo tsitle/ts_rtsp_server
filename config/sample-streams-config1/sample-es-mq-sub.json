@@ -1,0 +1,20 @@
+{
+	"subStreams": {
+		"sample_input_mq_cam1_video": {
+			"enabled": false,
+			"mq": {
+				"userAndPassword": "cameraUser:cameraPw",
+				"hostAndPort": "192.168.1.1:7777",
+				"resourceGroupAndChannel": "cam1:r_video"
+			}
+		},
+		"sample_input_mq_cam1_audio": {
+			"enabled": false,
+			"mq": {
+				"userAndPassword": "cameraUser:cameraPw",
+				"hostAndPort": "192.168.1.1:7777",
+				"resourceGroupAndChannel": "cam1:r_audio"
+			}
+		}
+	}
+}
