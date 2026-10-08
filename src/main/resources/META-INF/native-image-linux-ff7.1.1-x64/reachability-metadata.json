@@ -1189,6 +1189,9 @@
           "name": "logging"
         },
         {
+          "name": "remoteMqServerSslCertificates"
+        },
+        {
           "name": "server"
         },
         {
@@ -1384,7 +1387,24 @@
       ]
     },
     {
-      "type": "org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsMq"
+      "type": "org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsMq",
+      "fields": [
+        {
+          "name": "hostAndPort"
+        },
+        {
+          "name": "resourceGroupAndChannel"
+        },
+        {
+          "name": "userAndPassword"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile",
@@ -1446,6 +1466,9 @@
         },
         {
           "name": "jukebox"
+        },
+        {
+          "name": "mq"
         },
         {
           "name": "rawFile"
