@@ -5,6 +5,8 @@ FROM debian:12 AS ffmpeg-build
 # Add GraalVM
 ARG CF_GRAAL_ARCH=-unknown-
 
+#ADD "files/graalvm-jdk-25_linux-${CF_GRAAL_ARCH}_bin.tar.gz" /opt/
+
 RUN \
 	apt update \
 	&& apt install --no-install-recommends -y \
@@ -12,8 +14,8 @@ RUN \
 		curl
 
 RUN \
-	curl -LO https://download.oracle.com/graalvm/25/latest/graalvm-jdk-25_linux-${CF_GRAAL_ARCH}_bin.tar.gz \
-	&& tar -xf graalvm-jdk-25_linux-${CF_GRAAL_ARCH}_bin.tar.gz -C /opt
+	curl -LO "https://download.oracle.com/graalvm/25/latest/graalvm-jdk-25_linux-${CF_GRAAL_ARCH}_bin.tar.gz" \
+	&& tar -xf "graalvm-jdk-25_linux-${CF_GRAAL_ARCH}_bin.tar.gz" -C /opt
 
 ENV PATH="${PATH}:/opt/graalvm-jdk-25.0.4+7.1/bin"
 ENV JAVA_HOME="/opt/graalvm-jdk-25.0.4+7.1"
@@ -46,12 +48,12 @@ WORKDIR /build
 
 ARG CF_FFMPEG_VERSION=-unknown-
 
-#ADD files/ffmpeg-${CF_FFMPEG_VERSION}.tar.xz /build/
+#ADD "files/ffmpeg-${CF_FFMPEG_VERSION}.tar.xz" /build/
 
 RUN \
-	curl -LO https://ffmpeg.org/releases/ffmpeg-${CF_FFMPEG_VERSION}.tar.xz \
-	&& tar -xf ffmpeg-${CF_FFMPEG_VERSION}.tar.xz \
-	&& rm ffmpeg-${CF_FFMPEG_VERSION}.tar.xz
+	curl -LO "https://ffmpeg.org/releases/ffmpeg-${CF_FFMPEG_VERSION}.tar.xz" \
+	&& tar -xf "ffmpeg-${CF_FFMPEG_VERSION}.tar.xz" \
+	&& rm "ffmpeg-${CF_FFMPEG_VERSION}.tar.xz"
 
 RUN \
 	cd ffmpeg-${CF_FFMPEG_VERSION} \
@@ -75,20 +77,20 @@ ARG CF_JAVACPP_ARCH=-unknown-
 RUN \
 	git clone https://github.com/bytedeco/javacpp-presets.git
 
-#ADD files/javacpp-presets-source-${CF_JAVACPP_VERSION}.tgz /build/
+#ADD "files/javacpp-presets-source-${CF_JAVACPP_VERSION}.tgz" /build/
 #RUN \
 #	cd javacpp-presets \
 #	&& git config --global --add safe.directory /build/javacpp-presets
 
 RUN \
 	cd javacpp-presets \
-	&& git checkout -b customtemp ${CF_JAVACPP_VERSION}
+	&& git checkout -b customtemp "${CF_JAVACPP_VERSION}"
 
 RUN \
 	cd javacpp-presets/ffmpeg \
-	&& mkdir -p cppbuild/linux-${CF_JAVACPP_ARCH} \
-	&& ln -s /opt/ffmpeg/include cppbuild/linux-${CF_JAVACPP_ARCH}/include \
-	&& ln -s /opt/ffmpeg/lib cppbuild/linux-${CF_JAVACPP_ARCH}/lib
+	&& mkdir -p "cppbuild/linux-${CF_JAVACPP_ARCH}" \
+	&& ln -s /opt/ffmpeg/include "cppbuild/linux-${CF_JAVACPP_ARCH}/include" \
+	&& ln -s /opt/ffmpeg/lib "cppbuild/linux-${CF_JAVACPP_ARCH}/lib"
 
 RUN \
 	cd javacpp-presets \
@@ -98,14 +100,14 @@ RUN \
 		-Djavacpp.platform=linux-${CF_JAVACPP_ARCH}
 
 RUN \
-	ln -s javacpp-${CF_JAVACPP_VERSION}.jar \
-		/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.jar \
-	&& ln -s javacpp-${CF_JAVACPP_VERSION}.jar.sha1 \
-		/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.jar.sha1 \
-	&& ln -s javacpp-${CF_JAVACPP_VERSION}.pom \
-		/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.pom \
-	&& ln -s javacpp-${CF_JAVACPP_VERSION}.pom.sha1 \
-		/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.pom.sha1
+	ln -s "javacpp-${CF_JAVACPP_VERSION}.jar" \
+		"/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.jar" \
+	&& ln -s "javacpp-${CF_JAVACPP_VERSION}.jar.sha1" \
+		"/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.jar.sha1" \
+	&& ln -s "javacpp-${CF_JAVACPP_VERSION}.pom" \
+		"/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.pom" \
+	&& ln -s "javacpp-${CF_JAVACPP_VERSION}.pom.sha1" \
+		"/root/.m2/repository/org/bytedeco/javacpp/${CF_JAVACPP_VERSION}/javacpp-${CF_JAVACPP_VERSION}-linux-${CF_JAVACPP_ARCH}.pom.sha1"
 
 # ----------------------------------------------------
 # Create symlinks for FFmpeg and JavaCPP shared libraries
@@ -113,20 +115,20 @@ RUN \
 
 # Copy custom JavaCPP build to /opt/javacpp-ffmpeg/
 RUN \
-	cp -r javacpp-presets/ffmpeg/target/native/org/bytedeco/ffmpeg/linux-${CF_JAVACPP_ARCH} /opt/javacpp-ffmpeg
+	cp -r "javacpp-presets/ffmpeg/target/native/org/bytedeco/ffmpeg/linux-${CF_JAVACPP_ARCH}" /opt/javacpp-ffmpeg
 
 # Create symlinks to custom FFmpeg and JavaCPP shared libraries
 RUN \
 	TMP_TARGET_DIR="/usr/local/lib" \
 	&& for FN in /opt/ffmpeg/lib/*; do \
 		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f ${TMP_TARGET_DIR}/$(basename "${FN}") || \
-			ln -s ${FN} ${TMP_TARGET_DIR}/; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "${FN}" "${TMP_TARGET_DIR}/"; \
 		done \
 	&& for FN in /opt/javacpp-ffmpeg/*; do \
 		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f ${TMP_TARGET_DIR}/$(basename "${FN}") || \
-			ln -s ${FN} ${TMP_TARGET_DIR}/; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "${FN}" "${TMP_TARGET_DIR}/"; \
 		done \
 	&& ldconfig
 
@@ -150,7 +152,7 @@ RUN \
 # Build native image
 RUN \
 	cd ts_rtsp_server-src \
-	&& cp -r src/main/resources/META-INF/native-image-linux-ff${CF_FFMPEG_VERSION}-${CF_GRAAL_ARCH} src/main/resources/META-INF/native-image \
+	&& cp -r "src/main/resources/META-INF/native-image-linux-ff${CF_FFMPEG_VERSION}-${CF_GRAAL_ARCH}" src/main/resources/META-INF/native-image \
 	&& export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" \
 	&& ./gradlew nativeCompile -PFFMPEG_VERSION=${CF_FFMPEG_VERSION}
 
@@ -167,7 +169,9 @@ RUN \
 		openssl
 
 RUN \
-	cd ts_rtsp_server-src/data/rtsps_ssl_keys \
+	cd ts_rtsp_server-src/data/mq_server_ssl_certs \
+	&& ./keygen-EXAMPLE.sh \
+	&& cd ../rtsps_ssl_keys \
 	&& ./keygen-EXAMPLE.sh
 
 
@@ -200,59 +204,59 @@ ENV TMP_BUILD_DIR_JAVA_HOME="/opt/graalvm-jdk-25.0.4+7.1"
 ENV TMP_BUILD_DIR_FFMPEG="/opt/ffmpeg"
 ENV TMP_BUILD_DIR_JAVACPP="/build/javacpp-presets/ffmpeg/target/native/org/bytedeco/ffmpeg/linux-${CF_JAVACPP_ARCH}"
 
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_headless.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_xawt.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/libjava.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/libjavajpeg.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVA_HOME}/lib/server/libjvm.so ${APP_ROOT_PATH}/libs/jre/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_FFMPEG}/lib/ ${APP_ROOT_PATH}/libs/ffmpeg/
-COPY --from=ffmpeg-build ${TMP_BUILD_DIR_JAVACPP}/ ${APP_ROOT_PATH}/libs/javacpp-ffmpeg/
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_headless.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_xawt.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjava.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjavajpeg.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVA_HOME}/lib/server/libjvm.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_FFMPEG}/lib/" "${APP_ROOT_PATH}/libs/ffmpeg/"
+COPY --from=ffmpeg-build "${TMP_BUILD_DIR_JAVACPP}/" "${APP_ROOT_PATH}/libs/javacpp-ffmpeg/"
 
 # Create symlinks to custom FFmpeg and JavaCPP shared libraries
 RUN \
 	TMP_TARGET_DIR="${APP_ROOT_PATH}/bin" \
 	&& mkdir "${TMP_TARGET_DIR}" \
 	# file permissions for JRE libs \
-	&& chmod a+x ${APP_ROOT_PATH}/libs/jre/libjava.so ${APP_ROOT_PATH}/libs/jre/libjvm.so \
+	&& chmod a+x "${APP_ROOT_PATH}/libs/jre/libjava.so" "${APP_ROOT_PATH}/libs/jre/libjvm.so" \
 	# symlinks for JRE libs \
-	&& for FN in ${APP_ROOT_PATH}/libs/jre/*; do \
-		test -f ${TMP_TARGET_DIR}/$(basename "${FN}") || \
-			ln -s "../libs/jre/$(basename "${FN}")" ${TMP_TARGET_DIR}/; \
+	&& for FN in "${APP_ROOT_PATH}/libs/jre"/*; do \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "../libs/jre/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
 		done \
 	# symlinks for FFmpeg libs \
-	&& rm -r ${APP_ROOT_PATH}/libs/ffmpeg/pkgconfig \
-	&& for FN in ${APP_ROOT_PATH}/libs/ffmpeg/*; do \
+	&& rm -r "${APP_ROOT_PATH}/libs/ffmpeg/pkgconfig" \
+	&& for FN in "${APP_ROOT_PATH}/libs/ffmpeg"/*; do \
 		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f ${TMP_TARGET_DIR}/$(basename "${FN}") || \
-			ln -s "../libs/ffmpeg/$(basename "${FN}")" ${TMP_TARGET_DIR}/; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "../libs/ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
 		done \
 	# delete copies of FFmpeg libs in JavaCPP directory \
-	&& for FN in ${APP_ROOT_PATH}/libs/javacpp-ffmpeg/*; do \
+	&& for FN in "${APP_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
 		test -f "${FN}" -o -h "${FN}" || continue; \
 		test -f "${APP_ROOT_PATH}/libs/ffmpeg/$(basename "${FN}")" && rm "${FN}" || echo -y; \
 		done \
 	# symlinks for JavaCPP libs \
-	&& for FN in ${APP_ROOT_PATH}/libs/javacpp-ffmpeg/*; do \
+	&& for FN in "${APP_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
 		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f ${TMP_TARGET_DIR}/$(basename "${FN}") || \
-			ln -s "../libs/javacpp-ffmpeg/$(basename "${FN}")" ${TMP_TARGET_DIR}/; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "../libs/javacpp-ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
 		done
 
 # ----------------------------------------------------
 
 #
-COPY --from=ffmpeg-build /build/ts_rtsp_server-src/config/ ${APP_ROOT_PATH}/config/
-COPY --from=ffmpeg-build /build/ts_rtsp_server-src/data/ ${APP_ROOT_PATH}/data/
-COPY --from=ffmpeg-build /build/app-binary/ts_rtsp_server ${APP_ROOT_PATH}/bin/
-COPY files/ts_rtsp_server-wrapper.sh ${APP_ROOT_PATH}/ts_rtsp_server.sh
+COPY --from=ffmpeg-build /build/ts_rtsp_server-src/config/ "${APP_ROOT_PATH}/config/"
+COPY --from=ffmpeg-build /build/ts_rtsp_server-src/data/ "${APP_ROOT_PATH}/data/"
+COPY --from=ffmpeg-build /build/app-binary/ts_rtsp_server "${APP_ROOT_PATH}/bin/"
+COPY files/ts_rtsp_server-wrapper.sh "${APP_ROOT_PATH}/ts_rtsp_server.sh"
 
 RUN \
-	mkdir ${APP_ROOT_PATH}/logs \
-	&& find ${APP_ROOT_PATH} -name ".gitkeep" -exec rm '{}' \; \
-	&& chmod +x ${APP_ROOT_PATH}/ts_rtsp_server.sh \
-	&& chmod +x ${APP_ROOT_PATH}/bin/ts_rtsp_server \
-	&& ln -s ${APP_ROOT_PATH}/ts_rtsp_server.sh /usr/local/bin/ts_rtsp_server
+	mkdir "${APP_ROOT_PATH}/logs" \
+	&& find "${APP_ROOT_PATH}" -name ".gitkeep" -exec rm '{}' \; \
+	&& chmod +x "${APP_ROOT_PATH}/ts_rtsp_server.sh" \
+	&& chmod +x "${APP_ROOT_PATH}/bin/ts_rtsp_server" \
+	&& ln -s "${APP_ROOT_PATH}/ts_rtsp_server.sh" /usr/local/bin/ts_rtsp_server
 
 # ----------------------------------------------------
 
@@ -267,11 +271,11 @@ RUN \
 
 # ----------------------------------------------------
 
-WORKDIR ${APP_ROOT_PATH}
+WORKDIR "${APP_ROOT_PATH}"
 
-VOLUME ${APP_ROOT_PATH}/data
-VOLUME ${APP_ROOT_PATH}/config
-VOLUME ${APP_ROOT_PATH}/logs
+VOLUME "${APP_ROOT_PATH}/data"
+VOLUME "${APP_ROOT_PATH}/config"
+VOLUME "${APP_ROOT_PATH}/logs"
 
 # ----------------------------------------------------
 
