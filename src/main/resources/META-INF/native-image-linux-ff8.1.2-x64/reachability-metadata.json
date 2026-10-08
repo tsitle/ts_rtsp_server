@@ -217,6 +217,10 @@
       "type": "java.lang.Class",
       "methods": [
         {
+          "name": "getRecordComponents",
+          "parameterTypes": []
+        },
+        {
           "name": "isRecord",
           "parameterTypes": []
         }
@@ -234,6 +238,9 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "java.lang.Record"
     },
     {
       "type": "java.lang.RuntimeException"
@@ -283,7 +290,17 @@
       "type": "java.lang.UnsatisfiedLinkError"
     },
     {
-      "type": "java.lang.reflect.RecordComponent"
+      "type": "java.lang.reflect.RecordComponent",
+      "methods": [
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getType",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "java.nio.Buffer",
@@ -342,6 +359,9 @@
     },
     {
       "type": "java.sql.Date"
+    },
+    {
+      "type": "java.util.ImmutableCollections$Map1"
     },
     {
       "type": "javax.imageio.plugins.jpeg.JPEGHuffmanTable",
@@ -1086,6 +1106,23 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.tsitle.lib_mq.common.httpdata.HttpResponseOpenMq",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String",
+            "int",
+            "java.lang.String",
+            "boolean",
+            "boolean",
+            "java.lang.String"
+          ]
         }
       ]
     },
