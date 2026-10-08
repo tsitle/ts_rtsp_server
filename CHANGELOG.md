@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.7] - 2026-10-08
+
+### Changed
+
+- made some minor changes geared towards usage of the library 'lib_xrtxp' in client-side code
+
+### Fixed
+
+- fixed missing reflection entries in the GraalVM reachability metadata
+
 ## [1.1.6] - 2026-10-01
 
 ### Added
