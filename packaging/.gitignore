@@ -1,3 +1,4 @@
+*-PRIV.sh
 *-MANUAL.sh
 agent_test-*.sh
 !agent_test-localhost.sh
