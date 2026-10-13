@@ -512,8 +512,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		if (tmpRdObj.bw.tsLastChecked.isEmpty()) {
 			tmpRdObj.bw.tsLastChecked.setToNow();
 		} else {
-			long deltaMs = ((TimestampEpoch.ofNow().getEpochNsUnsigned64bit().orElseThrow() -
-					tmpRdObj.bw.tsLastChecked.getEpochNsUnsigned64bit().orElseThrow()) / 1_000_000L);
+			long deltaMs = tmpRdObj.bw.tsLastChecked.getElapsedMs();
 			if (deltaMs > BW_INFO_OUTPUT_INTV_MS) {
 				if (BW_INFO_OUTPUT_ENABLED) {
 					double bytesPerSec = ((double)tmpRdObj.bw.bytesSent / (double)deltaMs) * 1_000.0;
