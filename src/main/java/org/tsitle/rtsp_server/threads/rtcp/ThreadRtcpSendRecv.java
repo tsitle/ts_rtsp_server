@@ -463,11 +463,6 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 						//
 						wasDecr = true;
 						tmpWasDecr = true;
-						//
-						if (srtcpVarsInbound.ctxUpdatePending.get()) {
-							srtcpVarsInbound.ctxUpdatePending.set(false);
-							packetCntInbound.set(0L);
-						}
 					}
 				} catch (SrtxpSecurityException e) {
 					logError(FNC_NAME, "SrtxpSecurityException caught: " + e.getMessage());
@@ -514,6 +509,9 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 			try {
 				srtcpVarsInbound.ctxObjCur = srtcpVarsInbound.ctxObjNext;
 				srtcpVarsInbound.ctxObjNext = null;
+				srtcpVarsInbound.ctxUpdatePending.set(false);
+				// reset inbound packet counter
+				packetCntInbound.set(0L);
 			} finally {
 				srtcpVarsInbound.ctxWriteLock.unlock();
 			}
