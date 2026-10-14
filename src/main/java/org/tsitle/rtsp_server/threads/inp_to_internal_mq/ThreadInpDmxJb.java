@@ -607,9 +607,14 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		if (forceUpdateUpstream ||
 				lastSpf != tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame || lastVirtualFps != tmpRdObj.dpm.virtualFps) {
 			if (! forceUpdateUpstream) {
-				logDebug(FNC_NAME, "update virtual FPS: " + tmpVirtFps + " " +
-						", SPF: " + tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame + " " +
-						"(codec=" + tmpRdObj.dpm.mqCodecSettings.codec + ")");
+				logDebug(FNC_NAME,
+						String.format(
+								"update virtual FPS: %.3f / SPF: %d (codec=%s)",
+								tmpVirtFps,
+								tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame,
+								tmpRdObj.dpm.mqCodecSettings.codec
+							).replace(",", ".")
+					);
 			}
 			codecSettingsChangedInterface.onCodecSettingsChangedFromDmxJb(idEsSource, tmpRdObj.dpm.mqCodecSettings);
 		}
