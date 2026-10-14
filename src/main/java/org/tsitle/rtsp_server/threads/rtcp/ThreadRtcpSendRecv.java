@@ -540,9 +540,11 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		for (int itemNr = 1; itemNr <= rtcpPktHd.getItemsCount(); itemNr++) {
 			RtcpInnerRecpReportBlock innerRb = rtcpPktInner.getRecpReportBlock(itemNr).orElseThrow();
 			/*if (lastRtcpPacketReceived != null) {
-				logDebug(FNC_NAME, String.format("RTT: %dms, FLost: %.3f%%",
-						innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L),
-						innerRb.getFractionLostPercent() * 100.0f));
+				logDebug(FNC_NAME,
+						String.format("RTT: %dms", innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L)) + ", " +
+						String.format("FLost: %.3f%%", innerRb.getFractionLostPercent() * 100.0f).replace(",", ".") + ", " +
+						String.format("CumLost: %d", innerRb.getCumLost())
+					);
 			}*/
 			if (itemNr != 1) {
 				continue;
