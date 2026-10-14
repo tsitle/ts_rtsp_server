@@ -5,6 +5,7 @@ import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -31,7 +32,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	/** Rollover Counter for the highest sequence number received (16 bits) */
 	private final short bdExtHighestSeqNr_rolloverCounter;
 	/** Sequence number for the highest sequence number received (16 bits) */
-	private final short bdExtHighestSeqNr_sequNr;
+	private @NonNull RtspProtoRtpSeqNr bdExtHighestSeqNr_sequNr = RtspProtoRtpSeqNr.ofEmpty();
 	/** Interarrival jitter (32 bits) */
 	private final int bdJitter;
 	/** Last SR (middle 32 bits of the last SR's NTP timestamp that the server (aka Sender) has sent to the client (aka Receiver), 32 bits) */
@@ -57,7 +58,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 				byte fractionLostRaw,
 				int cumLost,
 				short highSeqNrRolloverCounter,
-				short highSeqNrSequNr,
+				@NonNull RtspProtoRtpSeqNr highSeqNrSequNr,
 				int jitter,
 				int lsr,
 				double dlsrInSeconds
@@ -67,7 +68,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		this.bdFractionLostBy = fractionLostRaw;
 		this.bdCumLost = (cumLost & 0x00FF_FFFF);
 		this.bdExtHighestSeqNr_rolloverCounter = highSeqNrRolloverCounter;
-		this.bdExtHighestSeqNr_sequNr = highSeqNrSequNr;
+		this.bdExtHighestSeqNr_sequNr.copyFrom(highSeqNrSequNr);
 		this.bdJitter = jitter;
 		this.bdLsr = lsr;
 		this.bdDlsr = (int)(dlsrInSeconds * DLSR_IN_SECONDS_FACTOR);
@@ -95,7 +96,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public short getExtHighestSeqNr_rolloverCounter() { return bdExtHighestSeqNr_rolloverCounter; }
 	@SuppressWarnings("unused")
-	public short getExtHighestSeqNr_sequNr() { return bdExtHighestSeqNr_sequNr; }
+	public @NonNull RtspProtoRtpSeqNr getExtHighestSeqNr_sequNr() { return bdExtHighestSeqNr_sequNr.clone(); }
 	@SuppressWarnings("unused")
 	public int getJitter() { return bdJitter; }
 	@SuppressWarnings("unused")
@@ -142,7 +143,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		bb.put((byte)((tmpCumLost >> 8) & 0xFF));
 		bb.put((byte)(tmpCumLost & 0xFF));
 		bb.putShort(bdExtHighestSeqNr_rolloverCounter);
-		bb.putShort(bdExtHighestSeqNr_sequNr);
+		bb.putShort(bdExtHighestSeqNr_sequNr.getSeqNr16bit().orElse(0).shortValue());
 		bb.putInt(bdJitter);
 		bb.putInt(bdLsr);
 		bb.putInt(bdDlsr);
@@ -153,7 +154,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		byte fractionLost = bb.get();
 		int cumLost = ((bb.get() << 16) & 0xFF0000) | ((bb.get() << 8) & 0xFF00) | (bb.get() & 0xFF);
 		short ro = bb.getShort();
-		short sn = bb.getShort();
+		short tmpSeqNrShort = bb.getShort();
 		int jitter = bb.getInt();
 		int lsr = bb.getInt();
 		int dlsrRaw = bb.getInt();
@@ -165,13 +166,20 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 			// this will never happen
 		}
 
+		RtspProtoRtpSeqNr tmpSeqNrObj = RtspProtoRtpSeqNr.ofEmpty();
+		try {
+			tmpSeqNrObj.setSeqNr16bit(Short.toUnsignedInt(tmpSeqNrShort));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
+
 		RtcpInnerRecpReportBlock tmpBlock = new RtcpInnerRecpReportBlock(
 				itemNr,
 				tmpSsrcObj,
 				fractionLost,
 				cumLost,
 				ro,
-				sn,
+				tmpSeqNrObj,
 				jitter,
 				lsr,
 				0.0
@@ -191,7 +199,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 				", Fraction Lost %: " + String.format("%.2f", getFractionLostPercent() * 100.0f) +
 				", Cumulative Lost: " + bdCumLost +
 				", Highest Seq Num: ro=" + Integer.toUnsignedString((int)bdExtHighestSeqNr_rolloverCounter & 0xFFFF) +
-					"/sn=" + Integer.toUnsignedString((int)bdExtHighestSeqNr_sequNr & 0xFFFF) +
+					"/sn=" + bdExtHighestSeqNr_sequNr.getSeqNr16bit().orElse(-1) +
 				", Jitter: " + Integer.toUnsignedString(bdJitter) +
 				", LSR: " + String.format("0x%08X", bdLsr) +
 				", DLsr: " + String.format("%.3fs", getDlsrInSeconds()) +
@@ -203,6 +211,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		try {
 			RtcpInnerRecpReportBlock clone = (RtcpInnerRecpReportBlock)super.clone();
 			clone.bdSsrcSource = bdSsrcSource.clone();
+			clone.bdExtHighestSeqNr_sequNr = bdExtHighestSeqNr_sequNr.clone();
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
