@@ -21,7 +21,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	private @NonNull RtspProtoRtpTimestamp bdRtpTs;
 	/** Sender's packet count (32 bits) */
 	private final int bdSendersPktCount;
-	/** Sender's octet count (32 bits) */
+	/** Sender's octet count (not including header or padding, 32 bits) */
 	private final int bdSendersOctCount;
 
 	/**
