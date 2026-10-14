@@ -3,6 +3,8 @@ package org.tsitle.lib_xrtxp.packets.rtcp;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -21,7 +23,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	private final int itemNr;
 
 	/** SSRC of the source stream (32 bits) */
-	private final int bdSsrcSource;
+	private @NonNull RtspProtoIdXsrc bdSsrcSource = RtspProtoIdXsrc.ofEmpty();
 	/** Raw value of the fraction of RTP data packets from sender lost since the previous RR packet was sent (8 bits) */
 	private final byte bdFractionLostBy;
 	/** The total number of RTP data packets from sender that have been lost since the beginning of reception (24 bits) */
@@ -51,7 +53,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	 */
 	public RtcpInnerRecpReportBlock(
 				int itemNr,
-				int ssrcSource,
+				@NonNull RtspProtoIdXsrc ssrcSource,
 				byte fractionLostRaw,
 				int cumLost,
 				short highSeqNrRolloverCounter,
@@ -61,7 +63,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 				double dlsrInSeconds
 			) {
 		this.itemNr = itemNr;
-		this.bdSsrcSource = ssrcSource;
+		this.bdSsrcSource.copyFrom(ssrcSource);
 		this.bdFractionLostBy = fractionLostRaw;
 		this.bdCumLost = (cumLost & 0x00FF_FFFF);
 		this.bdExtHighestSeqNr_rolloverCounter = highSeqNrRolloverCounter;
@@ -76,7 +78,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 
 	public int getItemNr() { return itemNr; }
 	@SuppressWarnings("unused")
-	public int getSsrcSource() { return bdSsrcSource; }
+	public @NonNull RtspProtoIdXsrc getSsrcSource() { return bdSsrcSource.clone(); }
 	/**
 	 * Returns the raw value of the fraction of RTP data packets from sender lost since the previous RR packet was sent
 	 * @return Fraction lost
@@ -133,7 +135,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	}
 
 	public void appendToBuffer(@NonNull ByteBuffer bb) {
-		bb.putInt(bdSsrcSource);
+		bb.putInt(bdSsrcSource.getId32bit().orElse(0L).intValue());
 		bb.put(bdFractionLostBy);
 		int tmpCumLost = (bdCumLost & 0x00FF_FFFF);  // convert to 24-bit signed
 		bb.put((byte)((tmpCumLost >> 16) & 0xFF));
@@ -147,7 +149,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	}
 
 	public static @NonNull RtcpInnerRecpReportBlock decodeFromBuffer(int itemNr, @NonNull ByteBuffer bb) {
-		int ssrc = bb.getInt();
+		int tmpSsrcInt = bb.getInt();
 		byte fractionLost = bb.get();
 		int cumLost = ((bb.get() << 16) & 0xFF0000) | ((bb.get() << 8) & 0xFF00) | (bb.get() & 0xFF);
 		short ro = bb.getShort();
@@ -156,9 +158,16 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 		int lsr = bb.getInt();
 		int dlsrRaw = bb.getInt();
 
+		RtspProtoIdXsrc tmpSsrcObj = RtspProtoIdXsrc.ofEmpty();
+		try {
+			tmpSsrcObj.setId32bit(Integer.toUnsignedLong(tmpSsrcInt));
+		} catch (RtspProtoNumberRangeException e) {
+			// this will never happen
+		}
+
 		RtcpInnerRecpReportBlock tmpBlock = new RtcpInnerRecpReportBlock(
 				itemNr,
-				ssrc,
+				tmpSsrcObj,
 				fractionLost,
 				cumLost,
 				ro,
@@ -178,7 +187,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
 				"ItemNr: " + itemNr +
-				", SSRC: 0x" + String.format("%08X", bdSsrcSource) +
+				", SSRC: " + bdSsrcSource.toHexString(true) +
 				", Fraction Lost %: " + String.format("%.2f", getFractionLostPercent() * 100.0f) +
 				", Cumulative Lost: " + bdCumLost +
 				", Highest Seq Num: ro=" + Integer.toUnsignedString((int)bdExtHighestSeqNr_rolloverCounter & 0xFFFF) +
@@ -192,7 +201,9 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	@Override
 	public @NonNull RtcpInnerRecpReportBlock clone() {
 		try {
-			return (RtcpInnerRecpReportBlock)super.clone();
+			RtcpInnerRecpReportBlock clone = (RtcpInnerRecpReportBlock)super.clone();
+			clone.bdSsrcSource = bdSsrcSource.clone();
+			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
