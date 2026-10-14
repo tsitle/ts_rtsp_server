@@ -609,7 +609,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 			if (! forceUpdateUpstream) {
 				logDebug(FNC_NAME,
 						String.format(
-								"update virtual FPS: %.3f / SPF: %d (codec=%s)",
+								"update virtual FPS: %.3f and SPF: %d (codec=%s)",
 								tmpVirtFps,
 								tmpRdObj.dpm.mqCodecSettings.audioSamplesPerFrame,
 								tmpRdObj.dpm.mqCodecSettings.codec
