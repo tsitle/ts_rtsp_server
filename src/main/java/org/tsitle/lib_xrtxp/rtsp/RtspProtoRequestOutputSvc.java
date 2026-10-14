@@ -4,11 +4,14 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
-import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamNames;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
+import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
@@ -693,6 +696,32 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull SrtxpKmd kmdOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
+
+		return sendRequest_srtxpRekeyOutboundMikey(
+				resourceUrlForSubStream,
+				dummyClientCredentials,
+				kmdOutbound
+			);
+	}
+
+	/**
+	 * Send new Key Management Data (KMD) using MIKEY for re-keying of SRTP/SRTCP.<br />
+	 * This will issue a SET_PARAMETER request.<br />
+	 * <b>Note:</b> This can only work if the remote host supports MIKEY and SET_PARAMETER.
+	 * @param resourceUrlForSubStream The Resource URL for the Sub-Stream
+	 * @param clientCredentials Client credentials (can be empty)
+	 * @param kmdOutbound Key Management Data (KMD) for the Sub-Stream
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
+				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
+				@NonNull RtspProtoClientCredentials clientCredentials,
+				@NonNull SrtxpKmd kmdOutbound
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundMikey()";
 
 		if (resourceUrlForSubStream.idSubStream.isEmpty()) {
@@ -701,8 +730,6 @@ public final class RtspProtoRequestOutputSvc {
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.copyFrom(resourceUrlForSubStream);
-
-		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		if (kmdOutbound.getMetaIsForLegacySdes()) {
 			throw new IllegalArgumentException(FNC_NAME + ": KMD cannot be for legacy SDES");
@@ -718,7 +745,7 @@ public final class RtspProtoRequestOutputSvc {
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.SET_PARAMETER,
-				dummyClientCredentials,
+				clientCredentials,
 				internRequArgs
 			);
 	}
@@ -738,12 +765,36 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
 			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
+
+		return sendRequest_srtxpRekeyOutboundSdes(
+				resourceUrl,
+				dummyClientCredentials,
+				kmdsOutbound
+			);
+	}
+
+	/**
+	 * Send new Key Management Data (KMD) using the legacy SDES format for re-keying of SRTP/SRTCP.<br />
+	 * This will issue an ANNOUNCE request.<br />
+	 * <b>Note:</b> This can only work if the remote host supports the legacy SDES format and ANNOUNCE.
+	 * @param resourceUrl The Resource URL
+	 * @param clientCredentials Client credentials (can be empty)
+	 * @param kmdsOutbound Key Management Data (KMD) for all Sub-Streams
+	 * @return The message type that was sent
+	 * @throws TcpSocketClosedException If the TCP socket is closed
+	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
+	 */
+	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
+				@NonNull String resourceUrl,
+				@NonNull RtspProtoClientCredentials clientCredentials,
+				@NonNull RtspProtoKmdsStream kmdsOutbound
+			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
-
-		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		if (kmdsOutbound.getNumberOfSubStreams() == 0) {
 			throw new IllegalArgumentException("Need KMD for at least one sub-stream");
@@ -758,7 +809,7 @@ public final class RtspProtoRequestOutputSvc {
 		return internalSendRequest(
 				FNC_NAME,
 				RtspProtoMessageType.ANNOUNCE,
-				dummyClientCredentials,
+				clientCredentials,
 				internRequArgs
 			);
 	}
