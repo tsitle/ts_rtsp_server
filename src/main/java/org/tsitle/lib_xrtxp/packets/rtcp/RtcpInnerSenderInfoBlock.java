@@ -20,9 +20,9 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	/** RTP timestamp (32 bits) */
 	private @NonNull RtspProtoRtpTimestamp bdRtpTs;
 	/** Sender's packet count (32 bits) */
-	private final int bdSendersPktCount;
+	private final long bdSendersPktCount;
 	/** Sender's octet count (not including header or padding, 32 bits) */
-	private final int bdSendersOctCount;
+	private final long bdSendersOctCount;
 
 	/**
 	 * Constructor.
@@ -34,8 +34,8 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	public RtcpInnerSenderInfoBlock(
 				@NonNull NtpTimestamp ntpTsFull,
 				@NonNull RtspProtoRtpTimestamp rtpTs,
-				int sendersPktCount,
-				int sendersOctCount
+				long sendersPktCount,
+				long sendersOctCount
 			) {
 		this(
 				ntpTsFull.getSeconds32bit().orElseThrow().intValue(),
@@ -58,8 +58,8 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 				int ntpTsMsw,
 				int ntpTsLsw,
 				@NonNull RtspProtoRtpTimestamp rtpTs,
-				int sendersPktCount,
-				int sendersOctCount
+				long sendersPktCount,
+				long sendersOctCount
 			) {
 		this.bdNtpTsMsw = ntpTsMsw;
 		this.bdNtpTsLsw = ntpTsLsw;
@@ -86,16 +86,16 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	@SuppressWarnings("unused")
 	public @NonNull RtspProtoRtpTimestamp getRtpTs() { return bdRtpTs.clone(); }
 	@SuppressWarnings("unused")
-	public int getSendersPktCount() { return bdSendersPktCount; }
+	public long getSendersPktCount() { return bdSendersPktCount; }
 	@SuppressWarnings("unused")
-	public int getSendersOctCount() { return bdSendersOctCount; }
+	public long getSendersOctCount() { return bdSendersOctCount; }
 
 	public void appendToBuffer(@NonNull ByteBuffer bb) {
 		bb.putInt(bdNtpTsMsw);
 		bb.putInt(bdNtpTsLsw);
 		bb.putInt(bdRtpTs.getTs32bit().orElse(0L).intValue());
-		bb.putInt(bdSendersPktCount);
-		bb.putInt(bdSendersOctCount);
+		bb.putInt(Long.valueOf(bdSendersPktCount).intValue());
+		bb.putInt(Long.valueOf(bdSendersOctCount).intValue());
 	}
 
 	public static @NonNull RtcpInnerSenderInfoBlock decodeFromBuffer(@NonNull ByteBuffer bb) {
@@ -116,8 +116,8 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 				tmpNtpTsMsw,
 				tmpNtpTsLsw,
 				tmpTs,  // rtpTs
-				tmpSenderPktCount,
-				tmpSenderOctCount
+				Integer.toUnsignedLong(tmpSenderPktCount),
+				Integer.toUnsignedLong(tmpSenderOctCount)
 			);
 	}
 
@@ -126,8 +126,8 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 		return getClass().getSimpleName() + " [" +
 				"NTPTS: " + getNtpTsFull().toInstant() +
 				", RTPTS: " + bdRtpTs +
-				", SendersPktCount: " + Integer.toUnsignedString(bdSendersPktCount) +
-				", SendersOctCount: " + Integer.toUnsignedString(bdSendersOctCount) +
+				", SendersPktCount: " + Long.toUnsignedString(bdSendersPktCount) +
+				", SendersOctCount: " + Long.toUnsignedString(bdSendersOctCount) +
 				"]";
 	}
 
