@@ -17,11 +17,11 @@ public final class RtspProtoContentLength extends RtspProtoBaseNumberNonNeg32bit
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoContentLength ofEmpty() {
+	public static @NonNull RtspProtoContentLength ofEmpty() {
 		return new RtspProtoContentLength();
 	}
 
-	public static RtspProtoContentLength ofZero() {
+	public static @NonNull RtspProtoContentLength ofZero() {
 		RtspProtoContentLength resObj = new RtspProtoContentLength();
 		resObj.theNumber = 0L;
 		return resObj;

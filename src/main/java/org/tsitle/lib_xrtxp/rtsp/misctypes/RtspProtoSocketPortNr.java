@@ -21,11 +21,11 @@ public final class RtspProtoSocketPortNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoSocketPortNr ofEmpty() {
+	public static @NonNull RtspProtoSocketPortNr ofEmpty() {
 		return new RtspProtoSocketPortNr();
 	}
 
-	public static RtspProtoSocketPortNr of(int value16bit) throws RtspProtoNumberRangeException {
+	public static @NonNull RtspProtoSocketPortNr of(int value16bit) throws RtspProtoNumberRangeException {
 		RtspProtoSocketPortNr resObj = new RtspProtoSocketPortNr();
 		resObj.setPort16bit(value16bit);
 		return resObj;

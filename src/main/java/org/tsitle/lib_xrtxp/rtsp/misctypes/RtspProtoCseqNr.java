@@ -17,11 +17,11 @@ public final class RtspProtoCseqNr extends RtspProtoBaseNumberNonNeg32bit<RtspPr
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoCseqNr ofEmpty() {
+	public static @NonNull RtspProtoCseqNr ofEmpty() {
 		return new RtspProtoCseqNr();
 	}
 
-	public static RtspProtoCseqNr ofZero() {
+	public static @NonNull RtspProtoCseqNr ofZero() {
 		RtspProtoCseqNr resObj = new RtspProtoCseqNr();
 		resObj.theNumber = 0L;
 		return resObj;

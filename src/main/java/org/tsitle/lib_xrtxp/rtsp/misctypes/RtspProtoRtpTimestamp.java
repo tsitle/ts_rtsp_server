@@ -17,23 +17,23 @@ public final class RtspProtoRtpTimestamp extends RtspProtoBaseNumberNonNeg32bit<
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoRtpTimestamp ofEmpty() {
+	public static @NonNull RtspProtoRtpTimestamp ofEmpty() {
 		return new RtspProtoRtpTimestamp();
 	}
 
-	public static RtspProtoRtpTimestamp ofZero() {
+	public static @NonNull RtspProtoRtpTimestamp ofZero() {
 		RtspProtoRtpTimestamp resObj = new RtspProtoRtpTimestamp();
 		resObj.theNumber = 0L;
 		return resObj;
 	}
 
-	public static RtspProtoRtpTimestamp of(long value32bit) throws RtspProtoNumberRangeException {
+	public static @NonNull RtspProtoRtpTimestamp of(long value32bit) throws RtspProtoNumberRangeException {
 		RtspProtoRtpTimestamp resObj = new RtspProtoRtpTimestamp();
 		resObj.setTs32bit(value32bit);
 		return resObj;
 	}
 
-	public static RtspProtoRtpTimestamp withOverflow(long value64bit) {
+	public static @NonNull RtspProtoRtpTimestamp withOverflow(long value64bit) {
 		RtspProtoRtpTimestamp resObj = new RtspProtoRtpTimestamp();
 		int tmpInt = (int)value64bit;
 		resObj.theNumber = Integer.toUnsignedLong(tmpInt);

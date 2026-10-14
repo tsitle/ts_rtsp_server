@@ -21,11 +21,11 @@ public final class RtspProtoTcpChannelNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoTcpChannelNr ofEmpty() {
+	public static @NonNull RtspProtoTcpChannelNr ofEmpty() {
 		return new RtspProtoTcpChannelNr();
 	}
 
-	public static RtspProtoTcpChannelNr of(int value8bit) throws RtspProtoNumberRangeException {
+	public static @NonNull RtspProtoTcpChannelNr of(int value8bit) throws RtspProtoNumberRangeException {
 		RtspProtoTcpChannelNr resObj = new RtspProtoTcpChannelNr();
 		resObj.setChannel8bit(value8bit);
 		return resObj;

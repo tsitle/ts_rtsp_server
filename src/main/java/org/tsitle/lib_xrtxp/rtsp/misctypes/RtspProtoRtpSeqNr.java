@@ -21,17 +21,17 @@ public final class RtspProtoRtpSeqNr implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public static RtspProtoRtpSeqNr ofEmpty() {
+	public static @NonNull RtspProtoRtpSeqNr ofEmpty() {
 		return new RtspProtoRtpSeqNr();
 	}
 
-	public static RtspProtoRtpSeqNr of(int value16bit) throws RtspProtoNumberRangeException {
+	public static @NonNull RtspProtoRtpSeqNr of(int value16bit) throws RtspProtoNumberRangeException {
 		RtspProtoRtpSeqNr resObj = new RtspProtoRtpSeqNr();
 		resObj.setSeqNr16bit(value16bit);
 		return resObj;
 	}
 
-	public static RtspProtoRtpSeqNr withOverflow(int value32bit) {
+	public static @NonNull RtspProtoRtpSeqNr withOverflow(int value32bit) {
 		RtspProtoRtpSeqNr resObj = new RtspProtoRtpSeqNr();
 		short tmpShort = (short)value32bit;
 		resObj.seqNr = Short.toUnsignedInt(tmpShort);
