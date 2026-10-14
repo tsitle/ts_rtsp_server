@@ -90,7 +90,7 @@ public final class RtcpInnerRecpReportBlock implements Cloneable {
 	 * Returns the fraction of RTP data packets from sender lost since the previous RR packet was sent
 	 * @return Fraction lost (range 0.0 .. 1.0)
 	 */
-	public double getFractionLostPercent() { return ((double)(bdFractionLostBy & 0xFF) / 256.0f); }
+	public double getFractionLostPercent() { return ((double)(bdFractionLostBy & 0xFF) / 255.0f); }
 	@SuppressWarnings("unused")
 	public int getCumLost() { return bdCumLost; }
 	@SuppressWarnings("unused")
