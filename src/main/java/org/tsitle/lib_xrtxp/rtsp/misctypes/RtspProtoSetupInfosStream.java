@@ -35,8 +35,8 @@ public final class RtspProtoSetupInfosStream implements Cloneable {
 				rscUrlSubStream,
 				null,
 				ssrcOutbound,
-				RtspProtoRtpSeqNr.withOverflow(RandomHelper.getRandomUint16()),
-				RtspProtoRtpTimestamp.withOverflow(RandomHelper.getRandomUint32(true)),
+				RtspProtoRtpSeqNr.withOverflow(RandomHelper.getRandomUint16()),  // generate random Sequence Number
+				RtspProtoRtpTimestamp.withOverflow(RandomHelper.getRandomUint32(true)),  // generate random Timestamp
 				TimestampMonotonic.ofNow(),
 				null,
 				kmdOutbound
