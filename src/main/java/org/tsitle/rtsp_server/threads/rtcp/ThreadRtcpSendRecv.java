@@ -372,8 +372,8 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		RtcpInnerSenderInfoBlock siBlock = new RtcpInnerSenderInfoBlock(
 				NtpTimestamp.ofNow(),
 				RtspProtoRtpTimestamp.ofZero(),
-				0,
-				0
+				0L,
+				0L
 			);
 		RtcpPacketSR packetSrObj = new RtcpPacketSR(params.getSsrcIdOutbound(), siBlock, List.of());
 		packetSrObj.copyRawPacketDataInto(packetSrBuf);
@@ -568,7 +568,9 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 	}
 
 	private void handleRtcpPacketSR(@NonNull RtcpPacketHeader rtcpPktHd, @NonNull BufferExt rawPktBe) {
-		// read and validate the packet
+		/*
+		 * we should not actually receive SR packets
+		 */
 		RtcpPacketSR rtcpPktInner = new RtcpPacketSR(rtcpPktHd, rawPktBe);
 		if (rtcpPktInner.getRawPacketSize() == 0) {
 			throw new IllegalStateException();  // only for the linter

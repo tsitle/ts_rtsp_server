@@ -2,6 +2,9 @@ package org.tsitle.lib_xrtxp.packets.rtcp;
 
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 
 import java.util.Optional;
 
@@ -11,18 +14,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RrRoundTripTimeTest {
 
 	@Test
-	void decodeRoundTripTime2_ffmpeg() {
+	void decodeRoundTripTime2_ffmpeg() throws RtspProtoNumberRangeException {
 		final int bdLsr = 0x194a15df;
 		final int bdDlsr = 0x00002f68;
 		final double DLSR_IN_SECONDS_FACTOR = 65536.0;
 
 		RtcpInnerRecpReportBlock rrBlock = new RtcpInnerRecpReportBlock(
 				1,
-				0x4005b90d,
+				RtspProtoIdXsrc.of( 0x4005b90d),
 				(byte)0x00,
 				0x00000000,
 				(short)0x0000,
-				(short)0x247b,
+				RtspProtoRtpSeqNr.withOverflow(0x247b),
 				0x00000009,
 				bdLsr,
 				bdDlsr / DLSR_IN_SECONDS_FACTOR

@@ -12,7 +12,7 @@ final class SenderInfoStats {
 	@Nullable Instant lastSenderInfoSent = null;
 	final @NonNull NtpTimestamp timestampNtpWallclock = NtpTimestamp.ofEmpty();
 	final @NonNull RtspProtoRtpTimestamp rtpTimestamp = RtspProtoRtpTimestamp.ofZero();
-	int rtpPacketsSent;
-	int rtpPayloadBytesSent;
+	long rtpPacketsSent;
+	long rtpPayloadBytesSent;
 
 }
