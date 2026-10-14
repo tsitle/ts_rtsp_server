@@ -74,20 +74,32 @@ public final class TimestampEpoch implements Cloneable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public long getElapsedMs() {
+		if (! isSet) {
+			return -1L;
+		}
 		return (Instant.now().toEpochMilli() - (epochNs / 1_000_000L));
 	}
 
 	public long getElapsedNs() {
+		if (! isSet) {
+			return -1L;
+		}
 		return (TimestampEpoch.ofNow().getEpochNsUnsigned64bit().orElseThrow() - epochNs);
 	}
 
 	@SuppressWarnings("unused")
 	public boolean isElapsedMs(long ms) {
+		if (! isSet) {
+			return false;
+		}
 		return (getElapsedMs() > ms);
 	}
 
 	@SuppressWarnings("unused")
 	public boolean isElapsedNs(long ns) {
+		if (! isSet) {
+			return false;
+		}
 		return (getElapsedNs() > ns);
 	}
 
