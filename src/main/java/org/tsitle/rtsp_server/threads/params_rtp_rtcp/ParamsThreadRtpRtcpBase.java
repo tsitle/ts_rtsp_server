@@ -137,14 +137,14 @@ public abstract class ParamsThreadRtpRtcpBase implements Cloneable {
 		this.isSetDebugSessionId = true;
 	}
 
-	public @NonNull RtspProtoIdEsSource getIdEsSource() { return idEsSource; }
+	public @NonNull RtspProtoIdEsSource getIdEsSource() { return idEsSource.clone(); }
 	public void setIdEsSource(@NonNull RtspProtoIdEsSource value) {
 		this.idEsSource.copyFrom(value);
 		this.idEsSource.writeProtect();
 		this.isSetIdEsSource = true;
 	}
 
-	public @NonNull RtspProtoIdSubStream getIdSubStream() { return idSubStream; }
+	public @NonNull RtspProtoIdSubStream getIdSubStream() { return idSubStream.clone(); }
 	public void setIdSubStream(@NonNull RtspProtoIdSubStream value) {
 		this.idSubStream.copyFrom(value);
 		this.idSubStream.writeProtect();
