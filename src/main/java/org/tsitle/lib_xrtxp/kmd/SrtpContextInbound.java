@@ -1,13 +1,14 @@
 package org.tsitle.lib_xrtxp.kmd;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpSeqNr;
 
@@ -34,7 +35,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt an SRTP packet
+	 * Decrypt a SRTP packet
 	 * @param srtpPacket SRTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
 	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
@@ -55,7 +56,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	}
 
 	/**
-	 * Decrypt an SRTP packet buffer
+	 * Decrypt a SRTP packet buffer
 	 * @param srtpPacketBuf SRTP packet buffer
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
@@ -75,7 +76,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	}
 
 	/**
-	 * Decrypt an SRTP packet buffer
+	 * Decrypt a SRTP packet buffer
 	 * @param srtpPacketBufView SRTP packet buffer view
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
@@ -143,6 +144,33 @@ public final class SrtpContextInbound extends SrtpContextBase {
 		if (tmpSeqLong == 0xFFFFL) {
 			ctxStateSrtpRocInbound++;
 		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Extract the MKI from a SRTP packet buffer
+	 * @param srtpPacketBuf SRTP packet buffer
+	 * @return MKI
+	 * @throws SrtxpSecurityException If any kind of error occurred
+	 */
+	public @NonNull SrtxpMki extractMkiFromSrtpPacket(@NonNull BufferExt srtpPacketBuf) throws SrtxpSecurityException {
+		if (srtpPacketBuf.getUsed() < RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) {
+			throw new SrtxpSecurityException("Invalid SRTP packet length: " +
+					srtpPacketBuf.getUsed() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
+		}
+
+		//
+		if (ctxKmd.mki().isEmpty()) {
+			return SrtxpMki.ofEmpty();
+		}
+
+		//
+		final BufferView encrPktView = new BufferView(srtpPacketBuf);
+
+		// extract MKI
+		encrPktView.setOffset(encrPktView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
+		return extractMkiFromPkt(encrPktView);
 	}
 
 }

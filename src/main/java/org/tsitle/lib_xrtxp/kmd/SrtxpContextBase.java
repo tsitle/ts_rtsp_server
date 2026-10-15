@@ -4,13 +4,13 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
-import org.tsitle.lib_xrtxp.kmd.constants.KeySizes;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpSessionKeys;
-import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import javax.crypto.*;
@@ -341,6 +341,9 @@ public abstract class SrtxpContextBase {
 	}
 
 	protected void validateMki(@NonNull BufferView bufView, @NonNull String packetDesc) throws SrtxpInvalidMkiException {
+		if (ctxKmd.mki().isEmpty()) {
+			return;
+		}
 		final int orgLen = bufView.getLength();
 		bufView.setLength(ctxKmd.mki().getSizeBytes());
 		bufView.copyViewIntoBe(cacheValidateMkiBuf);
@@ -349,6 +352,21 @@ public abstract class SrtxpContextBase {
 					"is=" + cacheValidateMkiBuf.toHexString() + ", exp=" + ctxKmd.mki().toBufferExtBigEndian().toHexString());
 		}
 		bufView.setLength(orgLen);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	protected @NonNull SrtxpMki extractMkiFromPkt(@NonNull BufferView bufView) {
+		if (ctxKmd.mki().isEmpty()) {
+			return SrtxpMki.ofEmpty();
+		}
+		BufferExt tmpMkiBe = new BufferExt();
+		final int orgLen = bufView.getLength();
+		bufView.setLength(ctxKmd.mki().getSizeBytes());
+		bufView.copyViewIntoBe(tmpMkiBe);
+		bufView.setLength(orgLen);
+
+		return SrtxpMki.ofBufferBigEndian(tmpMkiBe);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

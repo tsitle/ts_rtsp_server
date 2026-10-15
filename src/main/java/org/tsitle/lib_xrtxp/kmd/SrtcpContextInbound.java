@@ -1,13 +1,14 @@
 package org.tsitle.lib_xrtxp.kmd;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidAuthTagException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpInvalidMkiException;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
+import org.tsitle.lib_xrtxp.kmd.types.SrtxpMki;
+import org.tsitle.lib_xrtxp.packets.rtcp.RtcpPacketHeader;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
@@ -34,7 +35,7 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt an SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
+	 * Decrypt a SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @param outputDecryptedPacketBuf Decrypted RTCP packet buffer
 	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
@@ -120,6 +121,37 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 				cacheIvBuf,
 				outputDecryptedPacketBuf
 			);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Extract the MKI from a SRTCP packet buffer
+	 * @param srtcpPacketBuf SRTCP packet buffer
+	 * @throws SrtxpSecurityException If any kind of error occurred
+	 */
+	public @NonNull SrtxpMki extractMkiFromSrtcpPacket(@NonNull BufferExt srtcpPacketBuf) throws SrtxpSecurityException {
+		if (srtcpPacketBuf.getUsed() < RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) {
+			throw new SrtxpSecurityException("Invalid SRTCP packet length: " +
+					srtcpPacketBuf.getUsed() + " < " + (RTCP_PLAIN_HEADER_SIZE + getSrtcpExtraPacketLength()) + " bytes");
+		}
+
+		//
+		if (ctxKmd.mki().isEmpty()) {
+			return SrtxpMki.ofEmpty();
+		}
+
+		//
+		final BufferView encrPktView = new BufferView(srtcpPacketBuf);
+
+		// SRTCP index
+		encrPktView.setLength(encrPktView.getInternalBeLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
+		encrPktView.setOffset(encrPktView.getLength() - SRTCP_INDEX_FIELD_SIZE);
+		encrPktView.setLength(encrPktView.getInternalBeLength());
+
+		// extract MKI
+		encrPktView.setOffset(encrPktView.getLength() - ctxKmd.authTagLen() - ctxKmd.mki().getSizeBytes());
+		return extractMkiFromPkt(encrPktView);
 	}
 
 }
