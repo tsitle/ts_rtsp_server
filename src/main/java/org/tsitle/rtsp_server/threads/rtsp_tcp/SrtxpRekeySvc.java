@@ -31,7 +31,7 @@ import java.util.Optional;
  * However, it is RECOMMENDED that automated key management allows easy and efficient
  * rekeying at intervals far smaller than 2^31 packets given today's media rates or even HDTV media rates.
  */
-final class SrtxpRekeySvc extends RtspSrvToCntSvcBase {
+final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 
 	SrtxpRekeySvc(
 				@NonNull LogMsgInterface logMsgInterface,

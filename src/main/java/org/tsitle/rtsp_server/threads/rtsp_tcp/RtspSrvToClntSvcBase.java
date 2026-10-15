@@ -23,7 +23,7 @@ import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsGetRunning;
 /**
  * Base class for services that send RTSP requests to the client.
  */
-class RtspSrvToCntSvcBase {
+class RtspSrvToClntSvcBase {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	protected final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
@@ -35,7 +35,7 @@ class RtspSrvToCntSvcBase {
 	protected boolean haveRequestedOptions = false;
 	protected boolean areClientOptionsOk = false;
 
-	protected RtspSrvToCntSvcBase(
+	protected RtspSrvToClntSvcBase(
 				@NonNull LogMsgInterface logMsgInterface,
 				@NonNull RtspSrvConfigMain rtspSrvConfig,
 				@NonNull String cfgServerNameAndVersion,

@@ -24,7 +24,7 @@ import java.util.Optional;
 /**
  * Service for sending 'File Tags' to the client.
  */
-final class UpdateClientFileTagsSvc extends RtspSrvToCntSvcBase {
+final class UpdateClientFileTagsSvc extends RtspSrvToClntSvcBase {
 
 	private final @NonNull AsGetFileTagsInterface asGetFileTagsInterface;
 
