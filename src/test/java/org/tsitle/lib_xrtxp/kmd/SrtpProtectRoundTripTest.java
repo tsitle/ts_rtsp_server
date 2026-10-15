@@ -227,6 +227,7 @@ class SrtpProtectRoundTripTest {
 		senderCtx.protectRtp(plainBuf, false, false, hdSeqNrDoesntWrap, hdSenderSsrc, encryptedBuf);
 
 		BufferExt decryptedBuf = new BufferExt();
+		assertEquals(mki, receiverCtx.extractMkiFromSrtpPacket(encryptedBuf));
 		receiverCtx.unprotectSrtp(encryptedBuf, hdSeqNrDoesntWrap, hdSenderSsrc, decryptedBuf);
 
 		byte[] decrypted = new byte[decryptedBuf.getUsed()];
