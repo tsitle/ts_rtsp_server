@@ -174,7 +174,7 @@ final class SrtxpRekeySvc extends RtspSrvToCntSvcBase {
 		//
 		if (ctfos.rtcpThreadSendRecv != null) {
 			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
-			logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
+			logDebug(FNC_NAME, logMsgPrefix + "SRTxP inbound re-keying in progress");
 			ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
 		}
 
@@ -254,7 +254,7 @@ final class SrtxpRekeySvc extends RtspSrvToCntSvcBase {
 		}
 
 		//
-		logInfo(FNC_NAME, logMsgPrefix + "SRTxP re-keying in progress");
+		logDebug(FNC_NAME, logMsgPrefix + "SRTxP outbound re-keying in progress");
 		srtxpRekeyOutbound_updateThreads(ctfos, tmpNextKmdOutbound);
 		return true;
 	}
@@ -298,7 +298,7 @@ final class SrtxpRekeySvc extends RtspSrvToCntSvcBase {
 		}
 
 		//
-		logInfo(FNC_NAME, "SRTxP re-keying in progress");
+		logDebug(FNC_NAME, "SRTxP outbound re-keying in progress");
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
 			Optional<SrtxpKmd> tmpOptNextKmdOutbound = kmdsOutbound.getKmdBySubStreamId(ctfos.idSubStream);
 			if (tmpOptNextKmdOutbound.isEmpty()) {
