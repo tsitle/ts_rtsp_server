@@ -117,9 +117,10 @@ class RtspSrvToCntSvcBase {
 			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
 		int timeoutCnt = 0;
 		RtspResponseBasics respBasics = null;
-		while (++timeoutCnt < 100) {
+		while (++timeoutCnt < 100) {  // ^= 1 sec
 			try {
 				respBasics = rtspProtoResponseInputSvc.receiveResponse();
+				break;
 			} catch (RtspProtoTcpSocketNotReadyException ignored) {
 				// ignore
 			}
@@ -134,10 +135,6 @@ class RtspSrvToCntSvcBase {
 
 	protected void logDebug(@NonNull String fncName, @NonNull String msg) {
 		internalLog(RtxpLogLevel.DEBUG, fncName, msg);
-	}
-
-	protected void logInfo(@NonNull String fncName, @NonNull String msg) {
-		internalLog(RtxpLogLevel.INFO, fncName, msg);
 	}
 
 	protected void logError(@NonNull String fncName, @NonNull String msg) {
