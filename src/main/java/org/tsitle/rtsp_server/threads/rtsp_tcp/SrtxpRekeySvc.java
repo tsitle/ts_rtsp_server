@@ -126,12 +126,17 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 			return true;
 		}
 
+		// retrieve RTSP methods supported by the client
+		if (! haveRequestedOptions && ! retrieveClientAllowedMethods()) {
+			return false;  // shutdown the session
+		}
+
 		// generate new KMDs for all sub-streams
 		boolean rekeyingProtoIsMikey = true;
 		RtspProtoKmdsStream kmdsOutbound = new RtspProtoKmdsStream();
 		for (ChildThreadsForOneStream ctfos : childThreadsGetRunningInterface.getCtfosMapValuesOnlyRunning()) {
 			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
-			//
+
 			SrtxpKmd tmpNextKmdOutbound;
 			try {
 				tmpNextKmdOutbound = RtspProtoRequestOutputSvc.generateNewOutboundKmdForRekeying(
@@ -204,23 +209,14 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 
 		final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 
-		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getRequestResourceUrl_subStream(ctfos.idSubStream);
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = getRscUrlForSubStream(ctfos);
 		if (tmpOptRscUrl.isEmpty()) {
 			logError(FNC_NAME, logMsgPrefix + "SRTxP re-keying failed - no Resource URL found for Sub-Stream ID: '" +
 					ctfos.idSubStream.getIdStr().orElse("-unset-") + "'");
 			return false;
 		}
 		RtspProtoRscUrl tmpRscUrl = tmpOptRscUrl.get();
-		final String resourceUrlForSs = tmpRscUrl.getUrlStr();
-		if (! tmpRscUrl.idSubStream.equals(ctfos.idSubStream)) {
-			logError(FNC_NAME, logMsgPrefix + "Resource URL object contains invalid Sub-Stream ID");
-			return false;
-		}
 
-		if (! haveRequestedOptions &&
-				! requestOptionsFromClient(FNC_NAME, "SRTxP re-keying failed", resourceUrlForSs, true)) {
-			return false;
-		}
 		if (! areClientOptionsOk) {
 			return false;
 		}
@@ -309,6 +305,43 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 			srtxpRekeyOutbound_updateThreads(ctfos, tmpOptNextKmdOutbound.get());
 		}
 		return true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private boolean retrieveClientAllowedMethods()
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
+		final String FNC_NAME = getClass().getSimpleName() + ".retrieveClientAllowedMethods()";
+
+		if (haveRequestedOptions) {
+			return areClientOptionsOk;
+		}
+		final String logMsgPrefix = "SRTxP outbound re-keying failed";
+
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getLastRequestResourceUrl_mainStream();
+		if (tmpOptRscUrl.isEmpty()) {
+			logError(FNC_NAME, logMsgPrefix + " - no Resource URL found for main-stream");
+			return false;
+		}
+		final String resourceUrlForSs = tmpOptRscUrl.get().getUrlStr();
+		return requestOptionsFromClient(
+				FNC_NAME,
+				logMsgPrefix,
+				resourceUrlForSs,
+				true
+			);
+	}
+
+	private Optional<RtspProtoRscUrl> getRscUrlForSubStream(@NonNull ChildThreadsForOneStream ctfos) {
+		Optional<RtspProtoRscUrl> tmpOptRscUrl = sessionInfoPtr.ptr().getRequestResourceUrl_subStream(ctfos.idSubStream);
+		if (tmpOptRscUrl.isEmpty()) {
+			return Optional.empty();
+		}
+		RtspProtoRscUrl tmpRscUrl = tmpOptRscUrl.get();
+		if (! tmpRscUrl.idSubStream.equals(ctfos.idSubStream)) {
+			return Optional.empty();
+		}
+		return Optional.of(tmpRscUrl);
 	}
 
 }
