@@ -19,7 +19,6 @@ public final class ChildThreadsForOneStream {
 	public @Nullable ThreadRtcpSendRecv rtcpThreadSendRecv = null;
 	public int rtcpLastTargetCongestionLevel = -1;
 
-	public boolean srtxpInboundRekeyingInProgress = false;
 	public boolean srtxpOutboundRekeyingInProgress = false;
 
 	ChildThreadsForOneStream(

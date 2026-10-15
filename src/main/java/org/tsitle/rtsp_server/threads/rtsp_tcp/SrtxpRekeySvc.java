@@ -68,13 +68,6 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 			if (ctfos.rtcpThreadSendRecv == null) {
 				continue;
 			}
-			if (ctfos.srtxpInboundRekeyingInProgress) {
-				boolean tmpHasBeenCompleted = ctfos.rtcpThreadSendRecv.hasSrtcpInboundRekeyingBeenCompleted();
-				if (tmpHasBeenCompleted) {
-					ctfos.srtxpInboundRekeyingInProgress = false;
-				}
-				continue;
-			}
 			//
 			srtxpRekeyInbound_oneStream(ctfos);
 		}
@@ -180,12 +173,10 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 		if (ctfos.rtcpThreadSendRecv != null) {
 			final String logMsgPrefix = "esSrc=" + ctfos.idEsSource.getIdStr().orElse("-unset-") + ": ";
 			logDebug(FNC_NAME, logMsgPrefix + "SRTxP inbound re-keying in progress");
-			ctfos.rtcpThreadSendRecv.setNextSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
+			ctfos.rtcpThreadSendRecv.addSrtcpKmdInbound(tmpNextKmdInbound.orElseThrow());
 		}
 
 		sessionInfoPtr.ptr().clearDescrSetupInfoNextKmdInboundForSubStreamId(ctfos.idSubStream);
-
-		ctfos.srtxpInboundRekeyingInProgress = true;
 	}
 
 	private void srtxpRekeyOutbound_updateThreads(
