@@ -78,7 +78,7 @@ class SrtpProtectRoundTripTest {
 		assertArrayEquals(pkt1, decPkt1, "Packet with SEQ=0xFFFF should decrypt correctly");
 
 		assertEquals(1, Common.srtpCtxOutboundReadStateRtpRocOutbound(senderCtx), "Sender ROC should increment after SEQ wrap");
-		assertEquals(1, Common.srtpCtxInboundReadStateSrtpRocInbound(receiverCtx), "Receiver ROC should increment after SEQ wrap");
+		assertEquals(0, Common.srtpCtxInboundReadStateSrtpRocInbound(receiverCtx), "Receiver ROC should not yet have incremented");
 
 		// Packet 2: post-wrap sequence (0x0000), must use ROC=1
 		final RtspProtoRtpSeqNr hdSeqNr2 = RtspProtoRtpSeqNr.of(0x0000);
@@ -92,6 +92,8 @@ class SrtpProtectRoundTripTest {
 
 		senderCtx.protectRtp(in2, false, false, hdSeqNr2, hdSsrc, enc2);
 		receiverCtx.unprotectSrtp(enc2, hdSeqNr2, hdSsrc, dec2);
+
+		assertEquals(1, Common.srtpCtxInboundReadStateSrtpRocInbound(receiverCtx), "Receiver ROC should have incremented after SEQ wrap");
 
 		final byte[] decPkt2 = new byte[dec2.getUsed()];
 		dec2.copyInto(0, decPkt2, 0, decPkt2.length);
