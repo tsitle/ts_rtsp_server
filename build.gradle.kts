@@ -440,6 +440,9 @@ graalvmNative {
 			//buildArgs.add("-Os")  // optimize for size
 			buildArgs.add("-O2")  // default. Full optimizations for peak performance without size restrictions.
 
+			buildArgs.add("-Dfile.encoding=UTF-8")
+			buildArgs.add("-Dstdout.encoding=UTF-8")  // Java 17+
+			buildArgs.add("-Dstderr.encoding=UTF-8")  // Java 17+
 			buildArgs.add("-H:IncludeLocales=en")
 
 			buildArgs.add("--enable-native-access=ALL-UNNAMED")  // for FFmpeg
