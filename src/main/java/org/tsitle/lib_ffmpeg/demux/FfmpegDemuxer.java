@@ -24,6 +24,7 @@ import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -435,7 +436,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 
 			String tmpCodecName;
 			try (BytePointer bp = avcodec.avcodec_get_name(par.codec_id())) {
-				tmpCodecName = bp.getString();
+				tmpCodecName = bp.getString(StandardCharsets.UTF_8);
 			}
 			FfmpegCodec tmpFfmpegCodec = FfmpegCodec.of(par.codec_id());
 			/*logDebug(FNC_NAME, "Codec ID: " + par.codec_id());
@@ -512,7 +513,7 @@ public final class FfmpegDemuxer implements AutoCloseable {
 			}
 			try (BytePointer valBp = entry.value()) {
 				if (valBp != null && valBp.getString() != null) {
-					String tmpTagValue = sanitizeTagString(valBp.getString());
+					String tmpTagValue = sanitizeTagString(valBp.getString(StandardCharsets.UTF_8));
 					metaMap.put(tag, tmpTagValue);
 				}
 			}

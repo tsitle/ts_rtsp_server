@@ -24,6 +24,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -511,7 +512,7 @@ final class FfmpegTcTranscoderVideo extends FfmpegTcTranscoderBase implements Au
 		// try default encoder
 		AVCodec resCod = avcodec.avcodec_find_encoder(tcSettingsVid.cfgFfmpegCodec.getFfmpegId());
 		String tmpEncName = (resCod != null && resCod.name() != null ?
-				resCod.name().getString() : "-unknown-");
+				resCod.name().getString(StandardCharsets.UTF_8) : "-unknown-");
 		if (tcSettingsVid.cfgDisabledEncodersList.contains(tmpEncName.toLowerCase())) {
 			throw new FfmpegGenericException(FNC_NAME + ": default encoder '" + tmpEncName + "' is disabled");
 		}
@@ -526,7 +527,9 @@ final class FfmpegTcTranscoderVideo extends FfmpegTcTranscoderBase implements Au
 		if (avCodecEncoder == null) {
 			throw new FfmpegEncoderNotFoundException(FNC_NAME + ": Encoder not found (id=" + tcSettingsVid.cfgFfmpegCodec + ")");
 		}
-		final String avEncName = (avCodecEncoder.name() != null ? avCodecEncoder.name().getString() : "-unknown-");
+		final String avEncName = (avCodecEncoder.name() != null ?
+				avCodecEncoder.name().getString(StandardCharsets.UTF_8)
+				: "-unknown-");
 
 		encoderCtx = avcodec.avcodec_alloc_context3(avCodecEncoder);
 		if (encoderCtx == null) {

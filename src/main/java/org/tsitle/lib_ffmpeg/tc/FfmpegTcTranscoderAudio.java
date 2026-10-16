@@ -23,6 +23,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.RationalNumber;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -546,7 +547,7 @@ final class FfmpegTcTranscoderAudio extends FfmpegTcTranscoderBase implements Au
 				if (encoderCtx.sample_fmt() != avutil.AV_SAMPLE_FMT_NONE) {
 					try (BytePointer tmpBp = avutil.av_get_sample_fmt_name(encoderCtx.sample_fmt())) {
 						tmpSampleFmtStr = (tmpSampleFmt == avutil.AV_SAMPLE_FMT_NONE ? tmpSampleFmtStr + "(" : "") +
-								tmpBp.getString() +
+								tmpBp.getString(StandardCharsets.UTF_8) +
 								(tmpSampleFmt == avutil.AV_SAMPLE_FMT_NONE ? tmpSampleFmtStr + ")" : "");
 					}
 				}

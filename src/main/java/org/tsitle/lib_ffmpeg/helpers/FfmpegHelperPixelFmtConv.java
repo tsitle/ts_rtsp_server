@@ -6,6 +6,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegPixelFmt;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
+import java.nio.charset.StandardCharsets;
+
 public final class FfmpegHelperPixelFmtConv {
 
 	private FfmpegHelperPixelFmtConv() { }
@@ -32,7 +34,7 @@ public final class FfmpegHelperPixelFmtConv {
 				default -> {
 					String pixFmtName;
 					try (BytePointer bp = avutil.av_get_pix_fmt_name(pixelFmt)) {
-						pixFmtName = (bp != null ? bp.getString() : "-unknown-");
+						pixFmtName = (bp != null ? bp.getString(StandardCharsets.UTF_8) : "-unknown-");
 					}
 					throw new FfmpegGenericException(fncName + ": unsupported PixelFmt: " + pixFmtName + " (#" + pixelFmt + ")");
 				}

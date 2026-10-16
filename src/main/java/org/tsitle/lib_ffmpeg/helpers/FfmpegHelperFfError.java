@@ -5,6 +5,8 @@ import org.bytedeco.javacpp.BytePointer;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Helper class for handling FFmpeg errors.
  */
@@ -17,7 +19,7 @@ public final class FfmpegHelperFfError {
 			avutil.av_strerror(errCode, errBuf, 256);
 			long slen = avutil.av_strnlen(errBuf, 256);
 			return filterNonPrintableCharacters(
-					errBuf.getString().substring(0, (int)slen) + " (" + errCode + ")"
+					errBuf.getString(StandardCharsets.UTF_8).substring(0, (int)slen) + " (" + errCode + ")"
 				);
 		}
 	}
