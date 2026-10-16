@@ -9,6 +9,7 @@ import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * (Muxed) RTSP Stream Source.
@@ -75,7 +76,7 @@ public final class RtspSrvConfigStreamInputDmxRtsp implements Cloneable {
 		checkPostProcessed();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			baos.write(url.getBytes());
+			baos.write(url.getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			// ignore
 		}

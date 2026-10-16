@@ -15,6 +15,7 @@ import org.tsitle.rtsp_server.threads.rtp.RtpConstants;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -164,7 +165,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		checkPostProcessed();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			baos.write(filePath.getBytes());
+			baos.write(filePath.getBytes(StandardCharsets.UTF_8));
 			baos.write(codec == null ? -1 : codec.ordinal());
 			baos.write(String.format("%.5f", videoFps).getBytes());
 			baos.write(audioSamplerateHz);

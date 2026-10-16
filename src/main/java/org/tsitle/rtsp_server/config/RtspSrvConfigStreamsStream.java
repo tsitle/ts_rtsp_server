@@ -7,6 +7,7 @@ import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -137,8 +138,8 @@ public final class RtspSrvConfigStreamsStream implements Cloneable {
 		try {
 			baos.write(enabled ? 1 : 0);
 			baos.write(needsAuthentication ? 1 : 0);
-			baos.write(String.join(",", allowedUserAccountGroups).getBytes());
-			baos.write(String.join(",", subStreamIds).getBytes());
+			baos.write(String.join(",", allowedUserAccountGroups).getBytes(StandardCharsets.UTF_8));
+			baos.write(String.join(",", subStreamIds).getBytes(StandardCharsets.UTF_8));
 			baos.write(needsEncryption ? 1 : 0);
 			//noinspection ConstantValue
 			if (tags != null) { baos.write(tags.hashSum().getBytes()); }

@@ -7,6 +7,7 @@ import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * RTSP Stream Tags.
@@ -61,8 +62,8 @@ public final class RtspSrvConfigStreamTags implements Cloneable {
 		checkPostProcessed();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			baos.write(streamName.getBytes());
-			baos.write(streamDesc.getBytes());
+			baos.write(streamName.getBytes(StandardCharsets.UTF_8));
+			baos.write(streamDesc.getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			// ignore
 		}

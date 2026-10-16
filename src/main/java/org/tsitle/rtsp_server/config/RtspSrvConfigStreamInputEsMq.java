@@ -10,6 +10,7 @@ import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Message Queue Elementary-Stream Source.
@@ -107,9 +108,9 @@ public final class RtspSrvConfigStreamInputEsMq implements Cloneable {
 		checkPostProcessed();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			baos.write(userAndPassword.getBytes());
-			baos.write(hostAndPort.getBytes());
-			baos.write(resourceGroupAndChannel.getBytes());
+			baos.write(userAndPassword.getBytes(StandardCharsets.UTF_8));
+			baos.write(hostAndPort.getBytes(StandardCharsets.UTF_8));
+			baos.write(resourceGroupAndChannel.getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			// ignore
 		}
