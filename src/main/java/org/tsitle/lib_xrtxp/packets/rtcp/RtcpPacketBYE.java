@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +69,7 @@ public final class RtcpPacketBYE {
 		}
 		if (additionalPayloadSize > 0) {
 			bb.put((byte)lenRfl);
-			bb.put(optionalReasonForLeaving.getBytes());
+			bb.put(optionalReasonForLeaving.getBytes(StandardCharsets.UTF_8));
 			// padding
 			additionalPayloadSize -= (lenRfl + 1);
 			while (additionalPayloadSize-- > 0) {
@@ -117,7 +118,7 @@ public final class RtcpPacketBYE {
 			}
 			byte[] tmpBufRfl = new byte[tmpLenRfl];
 			bb.get(tmpBufRfl);
-			tmpRflStr = new String(tmpBufRfl);
+			tmpRflStr = new String(tmpBufRfl, StandardCharsets.UTF_8);
 		}
 		this.bdReasonForLeaving = tmpRflStr;
 	}

@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implements CodecInfoInterface<I> {
 
@@ -73,7 +74,7 @@ public abstract class CodecInfoH26xBase<I extends CodecInfoH26xBase<I>> implemen
 
 		baos.write(isValid ? 1 : 0);
 		try {
-			baos.write(validationErrorMsg.getBytes());
+			baos.write(validationErrorMsg.getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			// ignore
 		}

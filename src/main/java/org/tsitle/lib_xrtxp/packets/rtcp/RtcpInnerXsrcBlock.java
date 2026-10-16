@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdXsrc;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -169,11 +170,11 @@ public final class RtcpInnerXsrcBlock implements Cloneable {
 				bb.put((byte)tmpPrefix.length());
 				++totalBytesWritten;
 				// prefix value
-				bb.put(tmpPrefix.getBytes());
+				bb.put(tmpPrefix.getBytes(StandardCharsets.UTF_8));
 				totalBytesWritten += tmpPrefix.length();
 			}
 			String tmpValue = entry.getValue();
-			bb.put(tmpValue.getBytes());
+			bb.put(tmpValue.getBytes(StandardCharsets.UTF_8));
 			totalBytesWritten += tmpValue.length();
 		}
 		// add 0x00 termination byte and optional padding
@@ -210,13 +211,13 @@ public final class RtcpInnerXsrcBlock implements Cloneable {
 				byte[] tmpPrefixValueBa = new byte[tmpPrefixLen];
 				bb.get(tmpPrefixValueBa);
 				totalBytesRead += tmpPrefixLen;
-				tmpPrefixValueStr = new String(tmpPrefixValueBa);
+				tmpPrefixValueStr = new String(tmpPrefixValueBa, StandardCharsets.UTF_8);
 			}
 			byte tmpValueLen = (byte)(tmpEntryLen - tmpPrefixValueStr.length());
 			byte[] tmpValueBa = new byte[tmpValueLen];
 			bb.get(tmpValueBa);
 			totalBytesRead += tmpValueLen;
-			String tmpValueStr = new String(tmpValueBa);
+			String tmpValueStr = new String(tmpValueBa, StandardCharsets.UTF_8);
 			//
 			BlockEntry entry = new BlockEntry(BlockType.of(tmpEntryType), tmpPrefixValueStr, tmpValueStr);
 			blockEntries.add(entry);
