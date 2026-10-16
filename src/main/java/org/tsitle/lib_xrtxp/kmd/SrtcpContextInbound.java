@@ -35,7 +35,8 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt a SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4
+	 * Decrypt a SRTCP packet buffer (containing a compound SR/RR packet) according to RFC-3711 Section 3.4.<br />
+	 * Note that SRTCP packets need to be decrypted in the order in which they were encrypted.
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @param outputDecryptedPacketBuf Decrypted RTCP packet buffer
 	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
@@ -126,7 +127,7 @@ public final class SrtcpContextInbound extends SrtcpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Extract the MKI from a SRTCP packet buffer
+	 * Extract the MKI from a SRTCP packet buffer.
 	 * @param srtcpPacketBuf SRTCP packet buffer
 	 * @throws SrtxpSecurityException If any kind of error occurred
 	 */

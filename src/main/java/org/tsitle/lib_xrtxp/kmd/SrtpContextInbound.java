@@ -37,7 +37,8 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Decrypt a SRTP packet
+	 * Decrypt a SRTP packet.<br />
+	 * Note that SRTP packets need to be decrypted in order (by Sequence Number).
 	 * @param srtpPacket SRTP packet
 	 * @param outputDecryptedPacketBuf Decrypted RTP packet buffer
 	 * @throws SrtxpInvalidAuthTagException If the Authentication Tag is invalid
@@ -58,7 +59,8 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	}
 
 	/**
-	 * Decrypt a SRTP packet buffer
+	 * Decrypt a SRTP packet buffer.<br />
+	 * Note that SRTP packets need to be decrypted in order (by Sequence Number).
 	 * @param srtpPacketBuf SRTP packet buffer
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
@@ -78,7 +80,8 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	}
 
 	/**
-	 * Decrypt a SRTP packet buffer
+	 * Decrypt a SRTP packet buffer.<br />
+	 * Note that SRTP packets need to be decrypted in order (by Sequence Number).
 	 * @param srtpPacketBufView SRTP packet buffer view
 	 * @param hdSeqNr Sequence number of the RTP packet
 	 * @param hdSsrcId SSRC ID of the RTP packet
@@ -157,7 +160,7 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * Extract the MKI from a SRTP packet buffer
+	 * Extract the MKI from a SRTP packet buffer.
 	 * @param srtpPacketBuf SRTP packet buffer
 	 * @return MKI
 	 * @throws SrtxpSecurityException If any kind of error occurred
