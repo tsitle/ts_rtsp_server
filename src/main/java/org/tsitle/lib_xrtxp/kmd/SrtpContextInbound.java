@@ -22,6 +22,8 @@ public final class SrtpContextInbound extends SrtpContextBase {
 	/** For SRTP decryption: Last packet index */
 	private long ctxStateSrtpLastIndex = -1;
 
+	private boolean ctxHadSeqNrHigh = false;
+
 	/**
 	 * Constructor.
 	 * @param kmd Key Management Data
@@ -100,6 +102,17 @@ public final class SrtpContextInbound extends SrtpContextBase {
 					srtpPacketBufView.getLength() + " < " + (RTP_PLAIN_HEADER_SIZE + getSrtpExtraPacketLength()) + " bytes");
 		}
 
+		// update ROC if sequence wrapped
+		{
+			int tmpCurSeqNr = hdSeqNr.getSeqNr16bit().orElse(0);
+			if (tmpCurSeqNr > 0xC000) {
+				ctxHadSeqNrHigh = true;
+			} else if (tmpCurSeqNr < 0x1000 && ctxHadSeqNrHigh) {
+				++ctxStateSrtpRocInbound;
+				ctxHadSeqNrHigh = false;
+			}
+		}
+
 		// SRTP packet index
 		long tmpSeqLong = (long)hdSeqNr.getSeqNr16bit().orElse(0);
 		final long srtpPacketIndex = (((long)ctxStateSrtpRocInbound << 16) | (tmpSeqLong & 0xFFFFL));
@@ -139,11 +152,6 @@ public final class SrtpContextInbound extends SrtpContextBase {
 				cacheIvBuf,
 				outputDecryptedPacketBuf
 			);
-
-		// update ROC if sequence wrapped
-		if (tmpSeqLong == 0xFFFFL) {
-			ctxStateSrtpRocInbound++;
-		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
