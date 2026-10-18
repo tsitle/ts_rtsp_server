@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.8] - 2026-10-18
+
+### Changed
+
+- improved handling of inbound SRTxP KMDs for re-keying
+- improved support for UTF-8 strings, especially in FFmpeg-related methods
+
+### Fixed
+
+- fixed calculation of the 'fraction lost' value of RTCP RR (and SR) packets
+- fixed an issue where the server would be stuck in a reception loop for longer than necessary
+- fixed missing retrieval of the RTSP methods that the client supports when doing outbound SRTxP re-keying
+
 ## [1.1.7] - 2026-10-08
 
 ### Changed
