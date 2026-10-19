@@ -2,6 +2,9 @@ package org.tsitle.lib_xrtxp.rtsp.sdp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacParser;
+import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
@@ -655,6 +658,14 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				@NonNull RtspProtoEsSourceExpandedInfo esInfo,
 				@NonNull List<@NonNull String> outputList
 			) {
+		ExtradataContainerHex aacHexCfg;
+		if (esInfo.audioAacHexCfg().isEmpty() || ! esInfo.audioAacHexCfg().isCodecAac()) {
+			aacHexCfg = AudioAacParser.buildDefaultAudioSpecificConfig(
+					AudioAacInfo.Samplerate.ofHz(esInfo.audioSampleRate().getSrHz())
+				);
+		} else {
+			aacHexCfg = esInfo.audioAacHexCfg();
+		}
 		String s = String.format(
 				"a=fmtp:%d " +
 				"streamtype=%d;" +  // required: ISO/IEC 14496-1 'streamType'
@@ -668,8 +679,7 @@ public final class RtspProtoSdpProducer implements RtspProtoSdpProducerInterface
 				esInfo.codec().getValue(),
 				RtspProtoSdpPrivateConstants.IsoIec14496_1_StreamType.AUDIOSTREAM.value,
 				RtspProtoSdpPrivateConstants.IsoIec14496_3_AudioProfilesAndLevels.HQ_LEV2.value,
-				esInfo.audioAacHexCfg().isEmpty() || ! esInfo.audioAacHexCfg().isCodecAac() ?
-						"" : "config=" + esInfo.audioAacHexCfg().getEd() + ";",
+				aacHexCfg.isEmpty() ? "" : "config=" + aacHexCfg.getEd() + ";",
 				RtspProtoSdpConstants.AAC_HEADER_FLD_SIZE_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEX_LENGTH_BITS,
 				RtspProtoSdpConstants.AAC_HEADER_FLD_INDEXDELTA_LENGTH_BITS,
