@@ -105,7 +105,7 @@ public final class AudioAacParser {
 
 			AudioAacInfo.AacAudioSpecificConfigInfo resObj = new AudioAacInfo.AacAudioSpecificConfigInfo();
 			resObj.audioObjectType = AudioAacInfo.AudioObjectType.of(tmpAudioObjectTypeIndex);
-			resObj.samplerate = AudioAacInfo.Samplerate.of(tmpSamplingFrequencyIndex);
+			resObj.samplerate = AudioAacInfo.Samplerate.ofIndex(tmpSamplingFrequencyIndex);
 			resObj.channelConfiguration = tmpChannelConfig;
 			return resObj;
 		} catch (BitReaderEosException e) {
@@ -167,7 +167,7 @@ public final class AudioAacParser {
 
 			// sampling_frequency_index: bits 18-21 (4 bits)
 			int tmpSamplingFrequIndex = bitReader.readBits(4);
-			resObj.samplerate = AudioAacInfo.Samplerate.of(tmpSamplingFrequIndex);
+			resObj.samplerate = AudioAacInfo.Samplerate.ofIndex(tmpSamplingFrequIndex);
 			if (resObj.samplerate == AudioAacInfo.Samplerate.UNKNOWN) {
 				throw new AvInvalidCodecDataException(FNC_NAME + ": Invalid samplerate (index=" + tmpSamplingFrequIndex + ")");
 			}
@@ -248,6 +248,21 @@ public final class AudioAacParser {
 				resObj.sdpFmtpConfigHex
 			);
 
+		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public static @NonNull ExtradataContainerHex buildDefaultAudioSpecificConfig(
+				AudioAacInfo.@NonNull Samplerate samplingFrequency
+			) {
+		ExtradataContainerHex resObj = ExtradataContainerHex.ofEmpty();
+		buildAacAudioSpecificConfig(
+				AudioAacInfo.AudioObjectType.AAC_LC,
+				samplingFrequency,
+				2,
+				resObj
+			);
 		return resObj;
 	}
 

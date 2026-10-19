@@ -108,13 +108,31 @@ public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Clo
 		Samplerate(int index) {
 			this.index = index;
 		}
-		public static @NonNull Samplerate of(int index) {
+		public static @NonNull Samplerate ofIndex(int index) {
 			for (Samplerate rate : Samplerate.values()) {
 				if (rate.index == index) {
 					return rate;
 				}
 			}
 			return UNKNOWN;
+		}
+		public static @NonNull Samplerate ofHz(int hz) {
+			return switch (hz) {
+					case 96_000 -> SR96000;
+					case 88_200 -> SR88200;
+					case 64_000 -> SR64000;
+					case 48_000 -> SR48000;
+					case 44_100 -> SR44100;
+					case 32_000 -> SR32000;
+					case 24_000 -> SR24000;
+					case 22_050 -> SR22050;
+					case 16_000 -> SR16000;
+					case 12_000 -> SR12000;
+					case 11_025 -> SR11025;
+					case 8_000 -> SR08000;
+					case 7_350 -> SR07350;
+					default -> UNKNOWN;
+				};
 		}
 		public int getHz() {
 			return switch (this) {
