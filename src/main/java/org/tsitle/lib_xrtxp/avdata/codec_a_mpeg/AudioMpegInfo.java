@@ -165,7 +165,6 @@ public final class AudioMpegInfo implements CodecInfoInterface<AudioMpegInfo>, C
 			};
 	}
 
-	@SuppressWarnings("unused")
 	public int getSamplesPerFrame() {
 		if ((mpegAudioVersion == MpegAudioVersion.V1 && mpegLayer == MpegLayer.L3) ||
 				mpegLayer == MpegLayer.L2) {

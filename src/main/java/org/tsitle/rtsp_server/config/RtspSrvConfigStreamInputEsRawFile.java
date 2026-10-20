@@ -4,6 +4,8 @@ import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.DpConstants;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
+import org.tsitle.lib_xrtxp.avdata.codec_a_ac3.AudioAc3Info;
 import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
@@ -58,7 +60,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		this.audioChannelCount = -1;
 		this.isPcmAudioBigEndian = false;
 
-		this.aacSamplesPerFrame = DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
+		this.aacSamplesPerFrame = AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
 
 		this.internalHasBeenPostProcessed = false;
 	}
@@ -122,7 +124,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 			return aacSamplesPerFrame;
 		}
 		if (internalCodec == RtpPacketType.A_AC3) {
-			return DpConstants.DP_SAMPLES_PER_FRAME_AC3_AUDIO;
+			return AudioAc3Info.SAMPLES_PER_FRAME_AC3_AUDIO;
 		}
 		if (internalCodec.isPcmAudio()) {
 			double tmpSampleIntvMs = 1000.0 / (double)getAudioSamplerate().getSrHz();
@@ -218,7 +220,7 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		}
 		//noinspection ConstantValue
 		if (aacSamplesPerFrame == null) {
-			aacSamplesPerFrame = DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
+			aacSamplesPerFrame = AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1;
 		}
 	}
 
@@ -290,16 +292,16 @@ public final class RtspSrvConfigStreamInputEsRawFile implements Cloneable {
 		//
 		if (internalCodec == RtpPacketType.A_AAC) {
 			switch (aacSamplesPerFrame) {
-				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
-				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
-				case DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
+				case AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1:
+				case AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2:
+				case AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD:
 					break;
 				default:
 					throw new ConfigInvalidException(FNC_NAME + ": Invalid AAC Samples Per Frame" +
 							errMsgSuffix + " (allowed values: " +
-							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
-							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
-							DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
+							AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 + ", " +
+							AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 + ", " +
+							AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD + ")");
 			}
 		}
 	}

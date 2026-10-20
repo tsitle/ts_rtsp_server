@@ -17,6 +17,7 @@ import org.tsitle.lib_mq.common.mqdata.MqCodecSettings;
 import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
 import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
@@ -568,7 +569,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 		final double lastVirtualFps = tmpRdObj.dpm.virtualFps;
 
 		if (tmpRdObj.dpm.mqCodecSettings.codec == MqPacketCodec.AAC) {
-			if (avPkt.duration != DpConstants.DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1) {
+			if (avPkt.duration != AudioAacInfo.SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1) {
 				// this can happen at the end of an input file
 				return false;
 			}

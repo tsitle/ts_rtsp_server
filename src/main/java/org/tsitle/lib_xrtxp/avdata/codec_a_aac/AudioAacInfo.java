@@ -11,6 +11,13 @@ import java.nio.charset.StandardCharsets;
 
 public final class AudioAacInfo implements CodecInfoInterface<AudioAacInfo>, Cloneable {
 
+	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
+	public static final int SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
+	/** Samples per frame for AAC-LC audio -- Default Type 2 */
+	public static final int SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 960;
+	/** Samples per frame for AAC-LC audio -- Low Delay */
+	public static final int SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
+
 	public static class InternalInfo implements Cloneable {
 		public boolean idBit;
 		public int layer2Bits;

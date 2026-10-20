@@ -8,6 +8,9 @@ import java.io.ByteArrayOutputStream;
 
 public final class AudioAc3Info implements CodecInfoInterface<AudioAc3Info>, Cloneable {
 
+	/** Samples per frame for AC-3 audio */
+	public static final int SAMPLES_PER_FRAME_AC3_AUDIO = 1536;
+
 	/** Sampling rates according to ATSC A/52:2015 Table 5.6 */
 	public enum Samplerate {
 		SR48000(0),
@@ -169,6 +172,11 @@ public final class AudioAc3Info implements CodecInfoInterface<AudioAc3Info>, Clo
 	@Override
 	public int getPayloadLength() {
 		return samplesLength;
+	}
+
+	@SuppressWarnings("unused")
+	public int getSamplesPerFrame() {
+		return SAMPLES_PER_FRAME_AC3_AUDIO;
 	}
 
 	@Override

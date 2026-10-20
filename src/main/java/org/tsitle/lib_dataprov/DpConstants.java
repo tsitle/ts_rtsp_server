@@ -2,7 +2,6 @@ package org.tsitle.lib_dataprov;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_xrtxp.avdata.codec_a_aac.AudioAacInfo;
 import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 
 import java.util.HashSet;
@@ -12,17 +11,6 @@ public final class DpConstants {
 
 	private DpConstants() { }
 
-	/** Samples per frame for AAC-LC audio -- Default Type 1 (most common) */
-	public static final int DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF1 = 1024;
-	/** Samples per frame for AAC-LC audio -- Default Type 2 */
-	public static final int DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_DEF2 = 960;
-	/**
-	 * Samples per frame for AAC-LC audio -- Low Delay<br />
-	 * See note in {@link AudioAacInfo}
-	 */
-	public static final int DP_SAMPLES_PER_FRAME_AAC_LC_AUDIO_LD = 512;
-	/** Samples per frame for AC-3 audio */
-	public static final int DP_SAMPLES_PER_FRAME_AC3_AUDIO = 1536;
 	/** Maximum channel count for audio */
 	public static final int DP_PCM_AUDIO_CHANNELS_MAX = AudioPcmInfo.AUDIO_CHANNELS_MAX;
 	/** Maximum channel count for Opus audio */
