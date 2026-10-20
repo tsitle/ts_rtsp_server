@@ -40,6 +40,17 @@ RUN \
 		xz-utils \
 		maven
 
+# Install en.utf-8 so we can use UTF-8 without restrictions (see 'java.nio.file.Path') in the native image compiled with GraalVM
+RUN \
+	apt install --no-install-recommends -y \
+		locales \
+	&& sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+	&& locale-gen
+
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
 # ----------------------------------------------------
 # Build FFmpeg libraries
 # ----------------------------------------------------
@@ -191,6 +202,18 @@ RUN \
 		ca-certificates \
 		sudo
 
+# Install en.utf-8 so we can use UTF-8 without restrictions (see 'java.nio.file.Path') in the native image compiled with GraalVM
+RUN \
+	apt install --no-install-recommends -y \
+		locales \
+	&& sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+	&& locale-gen
+
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+#
 ENV APP_ROOT_PATH=/opt/ts_rtsp_server
 
 RUN \
