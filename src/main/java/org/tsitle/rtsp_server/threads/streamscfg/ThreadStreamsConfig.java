@@ -230,7 +230,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 			return;
 		}
 		if (! tmpOptHaveChanges.get()) {
-			logInfo(FNC_NAME, "updated available streams (no changes)");
+			//logInfo(FNC_NAME, "updated available streams (no changes)");
 			return;
 		}
 
