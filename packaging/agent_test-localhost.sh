@@ -90,3 +90,6 @@ done
 
 # this will gracefully shutdown the server if it was launched with '--agent-test'
 pkill --signal USR1 -f "ts_rtsp_server/build/native"
+
+#
+echo "${VAR_MYNAME}: done."
