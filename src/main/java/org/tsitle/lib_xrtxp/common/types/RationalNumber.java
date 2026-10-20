@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Rational number.
  */
-public final class RationalNumber {
+public final class RationalNumber implements Cloneable {
 
 	private boolean sign;
 	private int num;
@@ -149,6 +149,15 @@ public final class RationalNumber {
 		return (sign ? "" : "-") + num + "/" + den + " (" +
 				String.format(fmt, toDouble()).replace(",", ".") +
 				")";
+	}
+
+	@Override
+	public @NonNull RationalNumber clone() {
+		try {
+			return (RationalNumber)super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException();
+		}
 	}
 
 	@Override
