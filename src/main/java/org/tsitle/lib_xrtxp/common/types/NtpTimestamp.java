@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * Container for 64-bit NTP timestamps
  */
-public final class NtpTimestamp implements Cloneable {
+public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 
 	/** Offset in seconds between the NTP epoch (1900-01-01) and the Unix epoch (1970-01-01) */
 	public static final long NTP_EPOCH_OFFSET_SECONDS = 2_208_988_800L;
@@ -239,6 +239,17 @@ public final class NtpTimestamp implements Cloneable {
 		} catch (CloneNotSupportedException e) {
 			throw new AssertionError();
 		}
+	}
+
+	@Override
+	public int compareTo(@NonNull NtpTimestamp other) {
+		if (ntpSecondsSince1900_32bit < other.ntpSecondsSince1900_32bit) {
+			return -1;
+		}
+		if (ntpSecondsSince1900_32bit > other.ntpSecondsSince1900_32bit) {
+			return 1;
+		}
+		return Long.compare(ntpFraction_32bit, other.ntpFraction_32bit);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
