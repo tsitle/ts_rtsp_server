@@ -15,7 +15,7 @@ class NtpTimestampTest {
 	void ntp_test1() {
 		Instant expInstant = Instant.parse("2023-01-01T00:00:00.000Z");
 		NtpTimestamp ntp1 = NtpTimestamp.ofInstant(expInstant);
-		Instant actualInstant1 = ntp1.toInstant();
+		Instant actualInstant1 = ntp1.toInstant().orElseThrow();
 
 		assertEquals(expInstant, actualInstant1);
 
@@ -33,7 +33,7 @@ class NtpTimestampTest {
 	void ntp_test2() {
 		Instant expInstant = Instant.now();
 		NtpTimestamp ntp1 = NtpTimestamp.ofInstant(expInstant);
-		Instant actualInstant1 = ntp1.toInstant();
+		Instant actualInstant1 = ntp1.toInstant().orElseThrow();
 
 		Duration delta = Duration.between(expInstant, actualInstant1);
 		assertTrue(delta.toMillis() < 1);
@@ -59,7 +59,7 @@ class NtpTimestampTest {
 		long delta2 = ntp1.diffNanos(ntp3);
 		assertEquals(45_102_030L + 1032L, delta2);  // 1ns less than expected due to a rounding error
 
-		Instant actualInstant = ntp3.toInstant();
+		Instant actualInstant = ntp3.toInstant().orElseThrow();
 		Duration delta = Duration.between(expInstant, actualInstant);
 		assertTrue(delta.toMillis() >= 45 && delta.toMillis() <= 46);
 		assertTrue(delta.toNanos() >= 45_102_030L + 1032L && delta.toNanos() <= 45_102_030L + 1033L);
@@ -92,7 +92,7 @@ class NtpTimestampTest {
 
 		// ---------------------------------------------------
 
-		Instant javaTsActual = ntpActual.toInstant();
+		Instant javaTsActual = ntpActual.toInstant().orElseThrow();
 		assertEquals(2026, javaTsActual.atZone(ZoneOffset.UTC).getYear());
 		assertEquals(3, javaTsActual.atZone(ZoneOffset.UTC).getMonthValue());
 		assertEquals(26, javaTsActual.atZone(ZoneOffset.UTC).getDayOfMonth());
@@ -110,7 +110,7 @@ class NtpTimestampTest {
 		assertEquals(javaTsActual, reconvertedJavaTs);
 
 		NtpTimestamp reconvertedNtp = NtpTimestamp.ofInstant(reconvertedJavaTs);
-		Instant javaTsFinal = reconvertedNtp.toInstant();
+		Instant javaTsFinal = reconvertedNtp.toInstant().orElseThrow();
 		assertEquals(2026, javaTsFinal.atZone(ZoneOffset.UTC).getYear());
 		assertEquals(3, javaTsFinal.atZone(ZoneOffset.UTC).getMonthValue());
 		assertEquals(26, javaTsFinal.atZone(ZoneOffset.UTC).getDayOfMonth());
