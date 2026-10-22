@@ -22,7 +22,6 @@ import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.rtsp_server.exceptions.*;
-import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
 import org.tsitle.lib_xrtxp.kmd.types.SrtxpKmd;
 import org.tsitle.rtsp_server.threads.AdaptiveScheduler;
@@ -256,7 +255,7 @@ public abstract class ThreadRtpSenderBase<
 			waitForParallelThreadToStart();
 
 			//
-			timeNtpTsInfo.timeSessionStartNtpWc.copyFrom(NtpTimestamp.ofNow());
+			timeNtpTsInfo.timeSessionStartNtpWc.setToNow();
 
 			// update SenderInfo NTP and RTP timestamp
 			siStats.timestampNtpWallclock.copyFrom(timeNtpTsInfo.timeSessionStartNtpWc);
@@ -677,7 +676,7 @@ public abstract class ThreadRtpSenderBase<
 		//
 		rtpTsCurrent.copyFrom(getRtpTimestampAsInt_t0adj_forFrameNr(frameData.rtpFrameNr));
 		// update SenderInfo NTP and RTP timestamp
-		siStats.timestampNtpWallclock.copyFrom(NtpTimestamp.ofNow());
+		siStats.timestampNtpWallclock.setToNow();
 		siStats.rtpTimestamp.copyFrom(rtpTsCurrent);
 		//
 		isFirstPktOfFrame = false;
@@ -748,7 +747,7 @@ public abstract class ThreadRtpSenderBase<
 		isFirstPktOfFrame = true;
 		isMainLoopStateA = false;
 		//
-		long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.diffNanos(NtpTimestamp.ofNow());
+		long tmpDeltaSendFrameNs = siStats.timestampNtpWallclock.getElapsedNs();
 		if (adaptiveScheduler.getIsWaitForNextFrameEnabled() &&
 				tmpDeltaSendFrameNs > adaptiveScheduler.getSendIntervalNs() - 1_000_000L) {
 			logDebug(fncName, String.format("send frame/AU took %.3f us", tmpDeltaSendFrameNs / 1000.0));

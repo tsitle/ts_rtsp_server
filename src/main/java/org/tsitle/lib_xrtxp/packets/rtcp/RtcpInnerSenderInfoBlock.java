@@ -7,6 +7,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoRtpTimestamp;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Optional;
 
 public final class RtcpInnerSenderInfoBlock implements Cloneable {
 
@@ -82,7 +83,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 			);
 	}
 	@SuppressWarnings("unused")
-	public @NonNull Instant getNtpTsAsInstant() { return getNtpTsFull().toInstant(); }
+	public Optional<Instant> getNtpTsAsInstant() { return getNtpTsFull().toInstant(); }
 	@SuppressWarnings("unused")
 	public @NonNull RtspProtoRtpTimestamp getRtpTs() { return bdRtpTs.clone(); }
 	@SuppressWarnings("unused")
@@ -124,7 +125,7 @@ public final class RtcpInnerSenderInfoBlock implements Cloneable {
 	@Override
 	public @NonNull String toString() {
 		return getClass().getSimpleName() + " [" +
-				"NTPTS: " + getNtpTsFull().toInstant() +
+				"NTPTS: " + getNtpTsFull().toIso8601StyleString() +
 				", RTPTS: " + bdRtpTs +
 				", SendersPktCount: " + Long.toUnsignedString(bdSendersPktCount) +
 				", SendersOctCount: " + Long.toUnsignedString(bdSendersOctCount) +

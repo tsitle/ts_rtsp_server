@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -21,6 +23,7 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 
 	private long ntpSecondsSince1900_32bit = -1L;
 	private long ntpFraction_32bit = -1L;
+	private boolean isSet = false;
 
 	private NtpTimestamp() { }
 
@@ -37,6 +40,7 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 		NtpTimestamp resObj = new NtpTimestamp();
 		resObj.ntpSecondsSince1900_32bit = ntpSeconds32bit;
 		resObj.ntpFraction_32bit = ntpFraction32bit;
+		resObj.isSet = true;
 		return resObj;
 	}
 
@@ -70,7 +74,84 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 		resObj.ntpSecondsSince1900_32bit = Integer.toUnsignedLong(tmpSecInt);
 		int tmpFracInt = (int)ntpFraction32bit;
 		resObj.ntpFraction_32bit = Integer.toUnsignedLong(tmpFracInt);
+		resObj.isSet = true;
 		return resObj;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void setToNow() {
+		setToInstant(Instant.now());
+	}
+
+	public void setToInstant(@NonNull Instant value) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		copyFrom(NtpTimestamp.ofInstant(value));
+	}
+
+	public Optional<Long> getSeconds32bit() {
+		if (isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(ntpSecondsSince1900_32bit);
+	}
+
+	public Optional<Long> getFraction32bit() {
+		if (isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(ntpFraction_32bit);
+	}
+
+	public Optional<Long> getTsAsUnsigned64bit() {
+		if (isEmpty()) {
+			return Optional.empty();
+		}
+		long tmpRes = (((ntpSecondsSince1900_32bit << 32) & 0xFFFF_FFFF_0000_0000L) |
+				(ntpFraction_32bit & 0xFFFF_FFFFL));
+		return Optional.of(tmpRes);
+	}
+	public void setTsAsUnsigned64bit(long value64bit) {
+		if (isWriteProtected) {
+			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
+		}
+		ntpSecondsSince1900_32bit = ((value64bit >>> 32) & 0xFFFF_FFFFL);
+		ntpFraction_32bit = (value64bit & 0xFFFF_FFFFL);
+		isSet = true;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public long getElapsedMs() {
+		if (isEmpty()) {
+			return -1L;
+		}
+		return (getElapsedNs() / 1_000_000L);
+	}
+
+	public long getElapsedNs() {
+		if (isEmpty()) {
+			return -1L;
+		}
+		return diffNanos(NtpTimestamp.ofNow());
+	}
+
+	@SuppressWarnings("unused")
+	public boolean isElapsedMs(long ms) {
+		if (isEmpty()) {
+			return false;
+		}
+		return (getElapsedMs() > ms);
+	}
+
+	@SuppressWarnings("unused")
+	public boolean isElapsedNs(long ns) {
+		if (isEmpty()) {
+			return false;
+		}
+		return (getElapsedNs() > ns);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -79,17 +160,21 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 	 * Converts this timestamp to an Instant.
 	 * @return The timestamp as an Instant
 	 */
-	public @NonNull Instant toInstant() {
+	public Optional<Instant> toInstant() {
 		if (isEmpty()) {
-			throw new IllegalArgumentException("timestamp is empty");
+			return Optional.empty();
 		}
 		long unixSeconds = (ntpSecondsSince1900_32bit - NTP_EPOCH_OFFSET_SECONDS);
 
 		// nanos = fraction * 1e9 / 2^32
 		long nanos = ((ntpFraction_32bit * 1_000_000_000L) >>> 32);
 
-		return Instant.ofEpochSecond(unixSeconds, nanos);
+		return Optional.of(
+				Instant.ofEpochSecond(unixSeconds, nanos)
+			);
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * Adds nanoseconds to this timestamp.
@@ -151,39 +236,8 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public Optional<Long> getSeconds32bit() {
-		if (isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(ntpSecondsSince1900_32bit);
-	}
-
-	public Optional<Long> getFraction32bit() {
-		if (isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(ntpFraction_32bit);
-	}
-
-	public Optional<Long> getTsAsUnsigned64bit() {
-		if (isEmpty()) {
-			return Optional.empty();
-		}
-		long tmpRes = (ntpSecondsSince1900_32bit << 32) | (ntpFraction_32bit & 0xFFFF_FFFFL);
-		return Optional.of(tmpRes);
-	}
-	public void setTsAsUnsigned64bit(long value64bit) {
-		if (isWriteProtected) {
-			throw new IllegalStateException(getClass().getSimpleName() + ": Object is write protected");
-		}
-		ntpSecondsSince1900_32bit = (value64bit >>> 32) & 0xFFFF_FFFFL;
-		ntpFraction_32bit = (value64bit & 0xFFFF_FFFFL);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
 	public boolean isEmpty() {
-		return (ntpSecondsSince1900_32bit < 0L || ntpFraction_32bit < 0L);
+		return (! isSet || ntpSecondsSince1900_32bit < 0L || ntpFraction_32bit < 0L);
 	}
 
 	public void clear() {
@@ -192,6 +246,7 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 		}
 		ntpSecondsSince1900_32bit = -1L;
 		ntpFraction_32bit = -1L;
+		isSet = false;
 	}
 
 	public void copyFrom(@NonNull NtpTimestamp other) {
@@ -203,6 +258,7 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 		}
 		ntpSecondsSince1900_32bit = other.ntpSecondsSince1900_32bit;
 		ntpFraction_32bit = other.ntpFraction_32bit;
+		isSet = other.isSet;
 	}
 
 	public void writeProtect() {
@@ -216,12 +272,33 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 		if (! (o instanceof NtpTimestamp that)) {
 			return false;
 		}
-		return (ntpSecondsSince1900_32bit == that.ntpSecondsSince1900_32bit && ntpFraction_32bit == that.ntpFraction_32bit);
+		return (ntpSecondsSince1900_32bit == that.ntpSecondsSince1900_32bit &&
+				ntpFraction_32bit == that.ntpFraction_32bit &&
+				isSet == that.isSet);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ntpSecondsSince1900_32bit, ntpFraction_32bit);
+		return Objects.hash(ntpSecondsSince1900_32bit, ntpFraction_32bit, isSet);
+	}
+
+	public @NonNull String toIso8601StyleString() {
+		if (isEmpty()) {
+			return "unset";
+		}
+		//
+		Instant tmpInst = toInstant().orElseThrow();
+		ZonedDateTime tmpZdt = tmpInst.atZone(ZoneOffset.UTC);
+		int fldYear = tmpZdt.getYear();
+		int fldMonth = tmpZdt.getMonthValue();
+		int fldDay = tmpZdt.getDayOfMonth();
+		int fldHour = tmpZdt.getHour();
+		int fldMinute = tmpZdt.getMinute();
+		int fldSecond = tmpZdt.getSecond();
+		int fldNano = tmpZdt.getNano();
+		// 2026-03-27T19:54:50.975Z
+		return String.format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+				fldYear, fldMonth, fldDay, fldHour, fldMinute, fldSecond, fldNano / 1_000_000);
 	}
 
 	@Override
@@ -243,6 +320,12 @@ public final class NtpTimestamp implements Cloneable, Comparable<NtpTimestamp> {
 
 	@Override
 	public int compareTo(@NonNull NtpTimestamp other) {
+		if (! isSet) {
+			return -1;
+		}
+		if (! other.isSet) {
+			return 1;
+		}
 		if (ntpSecondsSince1900_32bit < other.ntpSecondsSince1900_32bit) {
 			return -1;
 		}
