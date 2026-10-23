@@ -76,6 +76,7 @@ public final class RtspProtoDataCntStreamTpMain {
 	public boolean isSrtpRequired() {
 		return (
 				(! isRtspsConnection && isRtpRtcpEncryptionRequired) ||
+				(isRtspsConnection && isRtpRtcpEncryptionRequired && isTransportUdp) ||
 				forceRtpRtcpEncryption
 			);
 	}
