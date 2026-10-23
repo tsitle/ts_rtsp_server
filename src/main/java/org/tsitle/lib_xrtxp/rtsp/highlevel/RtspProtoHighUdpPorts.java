@@ -10,7 +10,7 @@ import java.net.SocketException;
 
 public final class RtspProtoHighUdpPorts {
 
-	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 50;
+	private static final int SOCKET_UDP_RTP_TIMEOUT_MS = 1;
 	private static final int SOCKET_UDP_RTCP_TIMEOUT_MS = 2;
 
 	private RtspProtoHighUdpPorts() { }
