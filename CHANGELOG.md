@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed missing UTF-8 support in Docker image when building native images
+- missing UTF-8 support in Docker image when building native images
 
 ## [1.1.8] - 2026-10-18
 
@@ -20,9 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed calculation of the 'fraction lost' value of RTCP RR (and SR) packets
-- fixed an issue where the server would be stuck in a reception loop for longer than necessary
-- fixed missing retrieval of the RTSP methods that the client supports when doing outbound SRTxP re-keying
+- calculation of the 'fraction lost' value of RTCP RR (and SR) packets
+- an issue where the server would be stuck in a reception loop for longer than necessary
+- missing retrieval of the RTSP methods that the client supports when doing outbound SRTxP re-keying
 
 ## [1.1.7] - 2026-10-08
 
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed missing reflection entries in the GraalVM reachability metadata
+- missing reflection entries in the GraalVM reachability metadata
 
 ## [1.1.6] - 2026-10-01
 
@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed an issue where an empty 'config=' entry in the FMTP line of the SDP data for an AAC stream was causing VLC to crash
+- an issue where an empty 'config=' entry in the FMTP line of the SDP data for an AAC stream was causing VLC to crash
 
 ## [1.1.5] - 2026-09-23
 
@@ -55,9 +55,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed some issues in various FFmpeg related classes
-- fixed an issue in the audio transcoder where samples were being buffered incorrectly
-- fixed an issue where IPv4 addresses were being tried to be resolved to an IPv4 address
+- some issues in various FFmpeg related classes
+- an issue in the audio transcoder where samples were being buffered incorrectly
+- an issue where IPv4 addresses were being tried to be resolved to an IPv4 address
 
 ## [1.1.4] - 2026-09-18
 
@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed an issue in RtspProtoHighResponseConsumer where a Session ID in the response headers was unnecessarily expected
+- an issue in RtspProtoHighResponseConsumer where a Session ID in the response headers was unnecessarily expected
 
 ## [1.1.3] - 2026-09-18
 
@@ -84,17 +84,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed several issues in the client-side code of RTP packet parsers
-- fixed an issue in the client-side code of RtspProtoHighRequestProducer regarding authentication parameters
-- fixed an issue in the client-side code of RtspProtoHighResponseConsumer regarding parsing of DESCRIBE bodies
-- fixed an issue in the client-side code of RtxpTcpReadWrite
-- fixed an issue in ThreadRtspPlay when the client didn't call SETUP for all sub-streams
+- several issues in the client-side code of RTP packet parsers
+- an issue in the client-side code of RtspProtoHighRequestProducer regarding authentication parameters
+- an issue in the client-side code of RtspProtoHighResponseConsumer regarding parsing of DESCRIBE bodies
+- an issue in the client-side code of RtxpTcpReadWrite
+- an issue in ThreadRtspPlay when the client didn't call SETUP for all sub-streams
 
 ## [1.1.2] - 2026-09-07
 
 ### Fixed
 
-- fixed memory leak in FfmpegTcTranscoderBase
+- memory leak in FfmpegTcTranscoderBase
 
 ## [1.1] - 2026-08-25
 
@@ -110,7 +110,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed AvStreamIncoming not being closed when ThreadDataProvEsBase is stopped
+- AvStreamIncoming not being closed when ThreadDataProvEsBase is stopped
 
 ## [1.0] - 2026-08-18
 
