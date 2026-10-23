@@ -41,6 +41,8 @@ public final class RtspServerApp {
 		@NonNull String configFile = "";
 	}
 
+	private static final int TCP_TIMEOUT_READ_MS = 10;
+
 	private static RtspSrvConfigMain rtspSrvConfig = null;
 
 	private static int clientConnectionCount = 0;
@@ -551,7 +553,7 @@ public final class RtspServerApp {
 		if (tlRtspThreadMngPlay.get() == null || (tmpRtspThreadMngTciObj = tlRtspThreadMngTci.get()) == null) {
 			return;
 		}
-		socketRtspTcp.setSoTimeout(10);  // only for read()
+		socketRtspTcp.setSoTimeout(TCP_TIMEOUT_READ_MS);  // only for read()
 
 		//
 		tmpRtspThreadMngTciObj.startNewTciThread(
