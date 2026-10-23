@@ -66,6 +66,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 	public ThreadRtcpSendRecv(@NonNull ParamsThreadRtcp params) {
 		super(params.getLogMsgInterface().orElseThrow());
 
+		params.validate();
 		this.params = params.clone();
 		this.parRtcpSocketUdp = params.getTpServerSocketUdp().orElse(null);
 		this.parRtcpRwIfTcp = params.getTpClientDestTcpIf().orElse(null);
