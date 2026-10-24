@@ -82,10 +82,10 @@ if [ -z "${2}" ]; then
 fi
 
 # ----------------------------------------------------------
-
-cd build-ctx || exit 1
-
+# - GraalVM + FFmpeg + JavaCPP base image ------------------
 # ----------------------------------------------------------
+
+cd build-ctx-gfj-base || exit 1
 
 LVAR_DEBIAN_DIST="$(_getCpuArch debian_dist)"
 
@@ -94,19 +94,50 @@ LVAR_FFMPEG_VERSION="8.1.2"
 LVAR_JAVACPP_VERSION="1.5.14"
 LVAR_JAVACPP_ARCH="$(_getCpuArch javacpp)"
 
-LVAR_IMAGE_NAME="app-ts_rtsp_server-${LVAR_DEBIAN_DIST}"
-LVAR_IMAGE_VER="${1}"
+LVAR_IMAGE_GFJ_BASE_NAME="app-ts_rtsp_server-gfj_base-${LVAR_DEBIAN_DIST}"
+LVAR_IMAGE_GFJ_BASE_VER="g25_f${LVAR_FFMPEG_VERSION}_j${LVAR_JAVACPP_VERSION}"
+
+docker image inspect "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" >/dev/null 2>&1 || {
+	echo -e "\n${VAR_MYNAME}: ---------------------------------------------------------------------------"
+	echo -e "${VAR_MYNAME}: building base image '${LVAR_IMAGE_GFJ_BASE_NAME}:${LVAR_IMAGE_GFJ_BASE_VER}'...\n"
+	docker build \
+		-t "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" \
+		--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
+		--build-arg CF_FFMPEG_VERSION="${LVAR_FFMPEG_VERSION}" \
+		--build-arg CF_JAVACPP_VERSION="${LVAR_JAVACPP_VERSION}" \
+		--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
+		. \
+		|| exit 1
+}
+
+# ----------------------------------------------------------
+# - App image ----------------------------------------------
+# ----------------------------------------------------------
+
+cd ../build-ctx-app || exit 1
+
+LVAR_IMAGE_APP_NAME="app-ts_rtsp_server-${LVAR_DEBIAN_DIST}"
+LVAR_IMAGE_APP_VER="${1}"
 
 LVAR_APP_GIT_BRANCH_OR_COMMIT="${2}"
 
+docker image inspect "${LVAR_IMAGE_APP_NAME}":"latest" >/dev/null 2>&1 && {
+	docker image rm "${LVAR_IMAGE_APP_NAME}:latest"
+}
+docker image inspect "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" >/dev/null 2>&1 && {
+	docker image rm "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}"
+}
+
+echo -e "\n${VAR_MYNAME}: ---------------------------------------------------------------------------"
+echo -e "${VAR_MYNAME}: building app image '${LVAR_IMAGE_APP_NAME}:${LVAR_IMAGE_APP_VER}'...\n"
 docker build \
-	-t "${LVAR_IMAGE_NAME}":"${LVAR_IMAGE_VER}" \
+	-t "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" \
+	--build-arg CF_BASE_IMAGE="${LVAR_IMAGE_GFJ_BASE_NAME}:${LVAR_IMAGE_GFJ_BASE_VER}" \
 	--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
 	--build-arg CF_FFMPEG_VERSION="${LVAR_FFMPEG_VERSION}" \
-	--build-arg CF_JAVACPP_VERSION="${LVAR_JAVACPP_VERSION}" \
 	--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
 	--build-arg CF_APP_GIT_BRANCH_OR_COMMIT="${LVAR_APP_GIT_BRANCH_OR_COMMIT}" \
 	. \
 	|| exit 1
 
-docker tag "${LVAR_IMAGE_NAME}":"${LVAR_IMAGE_VER}" "${LVAR_IMAGE_NAME}":latest
+docker tag "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" "${LVAR_IMAGE_APP_NAME}":latest
