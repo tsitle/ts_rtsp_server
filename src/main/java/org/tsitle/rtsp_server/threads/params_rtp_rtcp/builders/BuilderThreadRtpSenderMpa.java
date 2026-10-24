@@ -1,36 +1,36 @@
-package org.tsitle.rtsp_server.threads.rtp.builders;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.threads.rtp.codec_a_opus.ThreadRtpSenderOpus;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
+import org.tsitle.rtsp_server.threads.rtp.codec_a_mpeg.ThreadRtpSenderMpa;
 
-public final class BuilderThreadRtpSenderOpus {
+public final class BuilderThreadRtpSenderMpa {
 
-	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderOpus<?>> {
+	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderMpa<?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadDpOpus threadParamsOpus = new ParamsThreadDpOpus();
+		private final ParamsThreadDpMpa threadParamsMpa = new ParamsThreadDpMpa();
 
 		// Fluent setters
 		/*
-		 * Future Opus-only fields go here, e.g.,
-		 * public @NonNull Builder opusQuality(int q) { ...; return self(); }
+		 * Future MPEG Audio fields go here, e.g.,
+		 * public @NonNull Builder mpaQuality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public @NonNull ThreadRtpSenderOpus<?> build() {
+		public @NonNull ThreadRtpSenderMpa<?> build() {
 			validateCommon();
 			validateAudioCommon();
-			threadParamsOpus.validate();
+			threadParamsMpa.validate();
 
 			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
-			return new ThreadRtpSenderOpus<>(
+			return new ThreadRtpSenderMpa<>(
 					BuilderThreadRtpSenderHelper.getAvStreamIncomingType(esSourceType),
 					threadParamsCommon,
 					threadParamsAudio,
-					threadParamsOpus
+					threadParamsMpa
 				);
 		}
 

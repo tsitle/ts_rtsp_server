@@ -1,36 +1,36 @@
-package org.tsitle.rtsp_server.threads.rtp.builders;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH265;
-import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH265;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMjpeg;
+import org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg.ThreadRtpSenderMjpeg;
 
-public final class BuilderThreadRtpSenderH265 {
+public final class BuilderThreadRtpSenderMjpeg {
 
-	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderH265<?>> {
+	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderMjpeg<?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadDpH265 threadParamsH265 = new ParamsThreadDpH265();
+		private final ParamsThreadDpMjpeg threadParamsMjpeg = new ParamsThreadDpMjpeg();
 
 		// Fluent setters
 		/*
-		 * Future H265-only fields go here, e.g.,
-		 * public @NonNull Builder h265Quality(int q) { ...; return self(); }
+		 * Future MJPEG-only fields go here, e.g.,
+		 * public @NonNull Builder mjpegQuality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public @NonNull ThreadRtpSenderH265<?> build() {
+		public @NonNull ThreadRtpSenderMjpeg<?> build() {
 			validateCommon();
 			validateVideoCommon();
-			threadParamsH265.validate();
+			threadParamsMjpeg.validate();
 
 			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
-			return new ThreadRtpSenderH265<>(
+			return new ThreadRtpSenderMjpeg<>(
 					BuilderThreadRtpSenderHelper.getAvStreamIncomingType(esSourceType),
 					threadParamsCommon,
 					threadParamsVideo,
-					threadParamsH265
+					threadParamsMjpeg
 				);
 		}
 

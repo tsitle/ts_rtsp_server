@@ -1,36 +1,36 @@
-package org.tsitle.rtsp_server.threads.rtp.builders;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.threads.rtp.codec_a_ac3.ThreadRtpSenderAc3;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAc3;
+import org.tsitle.rtsp_server.threads.rtp.codec_a_opus.ThreadRtpSenderOpus;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpOpus;
 
-public final class BuilderThreadRtpSenderAc3 {
+public final class BuilderThreadRtpSenderOpus {
 
-	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAc3<?>> {
+	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderOpus<?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadDpAc3 threadParamsAc3 = new ParamsThreadDpAc3();
+		private final ParamsThreadDpOpus threadParamsOpus = new ParamsThreadDpOpus();
 
 		// Fluent setters
 		/*
-		 * Future AC3-only fields go here, e.g.,
-		 * public @NonNull Builder ac3Quality(int q) { ...; return self(); }
+		 * Future Opus-only fields go here, e.g.,
+		 * public @NonNull Builder opusQuality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public @NonNull ThreadRtpSenderAc3<?> build() {
+		public @NonNull ThreadRtpSenderOpus<?> build() {
 			validateCommon();
 			validateAudioCommon();
-			threadParamsAc3.validate();
+			threadParamsOpus.validate();
 
 			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
-			return new ThreadRtpSenderAc3<>(
+			return new ThreadRtpSenderOpus<>(
 					BuilderThreadRtpSenderHelper.getAvStreamIncomingType(esSourceType),
 					threadParamsCommon,
 					threadParamsAudio,
-					threadParamsAc3
+					threadParamsOpus
 				);
 		}
 

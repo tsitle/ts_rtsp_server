@@ -1,36 +1,36 @@
-package org.tsitle.rtsp_server.threads.rtp.builders;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.threads.rtp.codec_a_mpeg.ThreadRtpSenderMpa;
+import org.tsitle.rtsp_server.threads.rtp.codec_a_ac3.ThreadRtpSenderAc3;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpAc3;
 
-public final class BuilderThreadRtpSenderMpa {
+public final class BuilderThreadRtpSenderAc3 {
 
-	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderMpa<?>> {
+	public static final class Builder extends BuilderThreadRtpSenderAudioBase<Builder, ThreadRtpSenderAc3<?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadDpMpa threadParamsMpa = new ParamsThreadDpMpa();
+		private final ParamsThreadDpAc3 threadParamsAc3 = new ParamsThreadDpAc3();
 
 		// Fluent setters
 		/*
-		 * Future MPEG Audio fields go here, e.g.,
-		 * public @NonNull Builder mpaQuality(int q) { ...; return self(); }
+		 * Future AC3-only fields go here, e.g.,
+		 * public @NonNull Builder ac3Quality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public @NonNull ThreadRtpSenderMpa<?> build() {
+		public @NonNull ThreadRtpSenderAc3<?> build() {
 			validateCommon();
 			validateAudioCommon();
-			threadParamsMpa.validate();
+			threadParamsAc3.validate();
 
 			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
-			return new ThreadRtpSenderMpa<>(
+			return new ThreadRtpSenderAc3<>(
 					BuilderThreadRtpSenderHelper.getAvStreamIncomingType(esSourceType),
 					threadParamsCommon,
 					threadParamsAudio,
-					threadParamsMpa
+					threadParamsAc3
 				);
 		}
 

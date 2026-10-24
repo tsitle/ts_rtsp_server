@@ -1,36 +1,36 @@
-package org.tsitle.rtsp_server.threads.rtp.builders;
+package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
-import org.tsitle.rtsp_server.threads.rtp.codec_v_vpx.ThreadRtpSenderVp8;
-import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVp8;
+import org.tsitle.rtsp_server.threads.rtp.codec_v_h26x.ThreadRtpSenderH264;
+import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpH264;
 
-public final class BuilderThreadRtpSenderVp8 {
+public final class BuilderThreadRtpSenderH264 {
 
-	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderVp8<?>> {
+	public static final class Builder extends BuilderThreadRtpSenderVideoBase<Builder, ThreadRtpSenderH264<?>> {
 
 		// Thread-specific fields
-		private final ParamsThreadDpVp8 threadParamsVp8 = new ParamsThreadDpVp8();
+		private final ParamsThreadDpH264 threadParamsH264 = new ParamsThreadDpH264();
 
 		// Fluent setters
 		/*
-		 * Future MJPEG-only fields go here, e.g.,
-		 * public @NonNull Builder mjpegQuality(int q) { ...; return this; }
+		 * Future H264-only fields go here, e.g.,
+		 * public @NonNull Builder h264Quality(int q) { ...; return self(); }
 		 */
 
 		//
 		@Override
-		public @NonNull ThreadRtpSenderVp8<?> build() {
+		public @NonNull ThreadRtpSenderH264<?> build() {
 			validateCommon();
 			validateVideoCommon();
-			threadParamsVp8.validate();
+			threadParamsH264.validate();
 
 			RtspProtoEsSourceType esSourceType = threadParamsCommon.getEsSourceType().orElseThrow();
-			return new ThreadRtpSenderVp8<>(
+			return new ThreadRtpSenderH264<>(
 					BuilderThreadRtpSenderHelper.getAvStreamIncomingType(esSourceType),
 					threadParamsCommon,
 					threadParamsVideo,
-					threadParamsVp8
+					threadParamsH264
 				);
 		}
 
