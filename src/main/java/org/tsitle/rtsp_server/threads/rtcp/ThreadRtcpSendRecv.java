@@ -202,12 +202,13 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				}
 				try {
 					//noinspection BusyWait
-					Thread.sleep(50L);
+					Thread.sleep(0L, 100_000);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();  // restore flag
 					break;
 				}
 			}
+
 			// send outstanding packets
 			if (! (byePacketHasBeenRcvd.get() || queueSend.isEmpty())) {
 				logDebug(FNC_NAME, "Sending outstanding RTCP packets");
@@ -492,9 +493,9 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleRtcpPacketRR()";
 
 		if (rtcpPktHd.getItemsCount() == 0) {
-			logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC.o=%s)",
+			/*logDebug(FNC_NAME, String.format("RTCP packet without items (esSrc=%s, SSRC.o=%s)",
 					params.getIdEsSource().getIdStr().orElse("-unset-"),
-					params.getSsrcIdOutbound().toHexString(true)));
+					params.getSsrcIdOutbound().toHexString(true)));*/
 			return;
 		}
 		// read and validate the packet
@@ -502,13 +503,17 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		//
 		for (int itemNr = 1; itemNr <= rtcpPktHd.getItemsCount(); itemNr++) {
 			RtcpInnerRecpReportBlock innerRb = rtcpPktInner.getRecpReportBlock(itemNr).orElseThrow();
-			/*if (lastRtcpPacketReceived != null) {
+			if (lastRtcpPacketReceived != null && params.getDebugPrintRtcpRrStats()) {
 				logDebug(FNC_NAME,
-						String.format("RTT: %dms", innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L)) + ", " +
-						String.format("FLost: %.3f%%", innerRb.getFractionLostPercent() * 100.0f).replace(",", ".") + ", " +
-						String.format("CumLost: %d", innerRb.getCumLost())
+						String.format("item#%d: SSRC.i=%s, RTT=%d ms, FLost=%s %%, CumLost=%d packets",
+								itemNr,
+								innerRb.getSsrcSource().toHexString(true),
+								innerRb.getRoundTripTimeMillis(lastRtcpPacketReceived).orElse(-1L),
+								dblToString(innerRb.getFractionLostPercent() * 100.0f),
+								innerRb.getCumLost()
+							)
 					);
-			}*/
+			}
 			if (itemNr != 1) {
 				continue;
 			}
@@ -575,6 +580,10 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 		if (! byePacketHasBeenSent.get()) {
 			params.getRtcpReceivedByeInterface().orElseThrow().cbRtcpReceivedBye(params.getSsrcIdOutbound());
 		}
+	}
+
+	private static @NonNull String dblToString(double value) {
+		return String.format("%.3f", value).replace(",", ".");
 	}
 
 }

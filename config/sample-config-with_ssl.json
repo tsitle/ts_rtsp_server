@@ -27,7 +27,8 @@
 	"debugging": {
 		"debugPrintRtspRcvd": false,
 		"debugPrintRtspSent": false,
-		"debugPrintRtspSdpSent": false
+		"debugPrintRtspSdpSent": false,
+		"debugPrintRtcpRrStats": false
 	},
 
 	"userAccounts": {

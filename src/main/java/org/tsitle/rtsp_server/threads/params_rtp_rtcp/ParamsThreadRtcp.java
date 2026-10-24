@@ -11,6 +11,8 @@ public final class ParamsThreadRtcp extends ParamsThreadRtpRtcpBase implements C
 	private @Nullable RtcpReceivedByeInterface rtcpReceivedByeInterface = null;
 	private boolean isSetRtcpReceivedByeInterface = false;
 
+	private boolean debugPrintRtcpRrStats = false;
+
 	public ParamsThreadRtcp() {
 		super(true, true);
 	}
@@ -22,6 +24,11 @@ public final class ParamsThreadRtcp extends ParamsThreadRtpRtcpBase implements C
 	public void setRtcpReceivedByeInterface(@NonNull RtcpReceivedByeInterface value) {
 		this.rtcpReceivedByeInterface = value;
 		this.isSetRtcpReceivedByeInterface = true;
+	}
+
+	public boolean getDebugPrintRtcpRrStats() { return debugPrintRtcpRrStats; }
+	public void setDebugPrintRtcpRrStats(boolean value) {
+		this.debugPrintRtcpRrStats = value;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

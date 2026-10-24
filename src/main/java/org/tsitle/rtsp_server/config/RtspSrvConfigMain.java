@@ -160,11 +160,15 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 		/** Debugging: print the RTSP SDP description that has been sent to the client? */
 		@Expose
 		private final boolean debugPrintRtspSdpSent;
+		/** Debugging: print RTCP Receiver Report statistics? */
+		@Expose
+		private final boolean debugPrintRtcpRrStats;
 
 		public SectionDebugging() {
 			this.debugPrintRtspRcvd = false;
 			this.debugPrintRtspSent = false;
 			this.debugPrintRtspSdpSent = false;
+			this.debugPrintRtcpRrStats = false;
 		}
 	}
 
@@ -330,29 +334,38 @@ public final class RtspSrvConfigMain extends RtspSrvConfigFileBase {
 
 	/**
 	 * Get if printing the incoming RTSP messages is enabled for debugging.
-	 * @return True if printing the incoming RTSP messages is enabled, false otherwise
+	 * @return True if is enabled, false otherwise
 	 */
-	public boolean getIsDebugPrintRtspRcvd() {
+	public boolean getIsEnabledDebugPrintRtspRcvd() {
 		checkPostProcessed();
 		return debugging.debugPrintRtspRcvd;
 	}
 
 	/**
 	 * Get if printing the outgoing RTSP messages is enabled for debugging.
-	 * @return True if printing the outgoing RTSP messages is enabled, false otherwise
+	 * @return True if is enabled, false otherwise
 	 */
-	public boolean getIsDebugPrintRtspSent() {
+	public boolean getIsEnabledDebugPrintRtspSent() {
 		checkPostProcessed();
 		return debugging.debugPrintRtspSent;
 	}
 
 	/**
 	 * Get if printing the SDP description is enabled for debugging.
-	 * @return True if printing the SDP description is enabled, false otherwise
+	 * @return True if is enabled, false otherwise
 	 */
-	public boolean getIsDebugPrintRtspSdpSent() {
+	public boolean getIsEnabledDebugPrintRtspSdpSent() {
 		checkPostProcessed();
 		return debugging.debugPrintRtspSdpSent;
+	}
+
+	/**
+	 * Get if printing RTCP Receiver Report statistics is enabled for debugging.
+	 * @return True if is enabled, false otherwise
+	 */
+	public boolean getIsEnabledDebugPrintRtcpRrStats() {
+		checkPostProcessed();
+		return debugging.debugPrintRtcpRrStats;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -167,6 +167,7 @@ This can be handy for FFmpeg-based clients which do not request SRTP encryption 
 		"debugPrintRtspRcvd": false,                                   | If the log level is "debug", print received RTSP messages?
 		"debugPrintRtspSent": false,                                   | If the log level is "debug", print sent RTSP messages?
 		"debugPrintRtspSdpSent": false                                 | If the log level is "debug", print sent RTSP SDP data?
+		"debugPrintRtcpRrStats": false                                 | If the log level is "debug", print RTCP Receiver Report statistics?
 	},
 
 	"userAccounts": {                                                  | Dictionary of User Accounts

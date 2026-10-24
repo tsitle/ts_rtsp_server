@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 final class RtspChildThreadMng {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
+	private final boolean cfgDebugPrintRtcpRrStats;
 	private final @NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds = new HashSet<>();
 	private final @NonNull RtspProtoIdSession idSession = RtspProtoIdSession.ofEmpty();
 	private final @NonNull RtspProtoIpAddr clientIpAddr = RtspProtoIpAddr.ofLoopback();
@@ -57,6 +58,7 @@ final class RtspChildThreadMng {
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
+	 * @param cfgDebugPrintRtcpRrStats Print RTCP RR stats for debugging?
 	 * @param subStreamIds Sub-Stream IDs
 	 * @param idSession Session ID
 	 * @param clientIpAddr Client IP address
@@ -70,6 +72,7 @@ final class RtspChildThreadMng {
 	 */
 	RtspChildThreadMng(
 				@NonNull LogMsgInterface logMsgInterface,
+				boolean cfgDebugPrintRtcpRrStats,
 				@NonNull Set<@NonNull RtspProtoIdSubStream> subStreamIds,
 				@NonNull RtspProtoIdSession idSession,
 				@NonNull RtspProtoIpAddr clientIpAddr,
@@ -91,6 +94,7 @@ final class RtspChildThreadMng {
 			throw new IllegalArgumentException("clientIpAddr is empty");
 		}
 		this.logMsgInterface = logMsgInterface;
+		this.cfgDebugPrintRtcpRrStats = cfgDebugPrintRtcpRrStats;
 		for (RtspProtoIdSubStream tmpIdSs : subStreamIds){
 			this.subStreamIds.add(tmpIdSs.clone());
 		}
@@ -353,6 +357,7 @@ final class RtspChildThreadMng {
 		BuilderThreadRtcp.Builder tmpBuilder = BuilderThreadRtcp.builder()
 				.logMsgInterface(Objects.requireNonNull(logMsgInterface))
 				.debugIdSession(idSession)
+				.debugPrintRtcpRrStats(cfgDebugPrintRtcpRrStats)
 				.idEsSource(ctfos.idEsSource)
 				.idSubStream(ctfos.idSubStream)
 				.idSsrcOutbound(tmpSiSs.getSsrcOutboundPtr())

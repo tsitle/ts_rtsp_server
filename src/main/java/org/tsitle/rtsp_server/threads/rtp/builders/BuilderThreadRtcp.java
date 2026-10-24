@@ -29,6 +29,8 @@ public final class BuilderThreadRtcp {
 
 		public @NonNull Builder debugIdSession(@NonNull RtspProtoIdSession v) { this.threadParams.setDebugSessionId(v); return this; }
 
+		public @NonNull Builder debugPrintRtcpRrStats(boolean v) { this.threadParams.setDebugPrintRtcpRrStats(v); return this; }
+
 		public @NonNull Builder idEsSource(@NonNull RtspProtoIdEsSource v) { this.threadParams.setIdEsSource(v); return this; }
 
 		public @NonNull Builder idSubStream(@NonNull RtspProtoIdSubStream v) { this.threadParams.setIdSubStream(v); return this; }

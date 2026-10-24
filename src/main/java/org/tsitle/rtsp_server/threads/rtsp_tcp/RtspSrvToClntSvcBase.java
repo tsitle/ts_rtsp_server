@@ -57,8 +57,8 @@ class RtspSrvToClntSvcBase {
 				cfgServerNameAndVersion,
 				RtspConnectionPolicy.KEEPALIVE,
 				cfgContentLanguage,
-				rtspSrvConfig.getIsDebugPrintRtspSdpSent(),
-				rtspSrvConfig.getIsDebugPrintRtspSent(),
+				rtspSrvConfig.getIsEnabledDebugPrintRtspSdpSent(),
+				rtspSrvConfig.getIsEnabledDebugPrintRtspSent(),
 				sessionInfoPtr,
 				rtxpTcpReadWrite,
 				availableStreamsInterface,
@@ -67,7 +67,7 @@ class RtspSrvToClntSvcBase {
 		this.rtspProtoResponseInputSvc = new RtspProtoResponseInputSvc(
 				logMsgInterface,
 				true,
-				rtspSrvConfig.getIsDebugPrintRtspRcvd(),
+				rtspSrvConfig.getIsEnabledDebugPrintRtspRcvd(),
 				sessionInfoPtr,
 				rtxpTcpReadWrite
 			);
