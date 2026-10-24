@@ -1259,6 +1259,9 @@
         },
         {
           "name": "debugPrintRtspSent"
+        },
+        {
+          "name": "debugPrintRtcpRrStats"
         }
       ],
       "methods": [
