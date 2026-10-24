@@ -1,6 +1,7 @@
 package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
@@ -158,11 +159,9 @@ public final class RtspProtoRequAuthSvc {
 		}
 		//
 		if (unauthCnt > 1) {
+			// make the client wait a bit before retrying
 			for (int i = 0; i < unauthCnt; i++) {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException ignored) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(100L)) {
 					break;
 				}
 			}

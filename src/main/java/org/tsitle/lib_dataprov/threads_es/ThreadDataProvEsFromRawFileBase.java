@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -327,7 +328,9 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 					return false;
 				}
 				if (needAvailFrame && queueAvail.get() == 0) {
-					Thread.sleep(1);
+					if (! SleepHelper.sleep(1L)) {
+						throw new InterruptedException();
+					}
 					continue;
 				}
 				queueBlockedState.set(true);

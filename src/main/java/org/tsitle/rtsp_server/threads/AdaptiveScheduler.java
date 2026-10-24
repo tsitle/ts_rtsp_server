@@ -1,10 +1,9 @@
 package org.tsitle.rtsp_server.threads;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-
-import java.util.concurrent.locks.LockSupport;
 
 public final class AdaptiveScheduler {
 
@@ -86,7 +85,6 @@ public final class AdaptiveScheduler {
 	 * Uses a hybrid approach: Thread.sleep() for coarse waiting, then busy-waiting
 	 * for high precision without overshooting.
 	 * @param targetTimeNanos The target time in nanoseconds (System.nanoTime() format)
-	 * @throws IllegalArgumentException if targetTimeNanos is in the past
 	 */
 	public void sleepUntilNanos(long targetTimeNanos) {
 		sleepUntilNanos(targetTimeNanos, true);
@@ -98,58 +96,26 @@ public final class AdaptiveScheduler {
 	 * for high precision without overshooting.
 	 * @param targetTimeNanos The target time in nanoseconds (System.nanoTime() format)
 	 * @param warnIfInPast If true, logs a warning if the target time is in the past
-	 * @throws IllegalArgumentException if targetTimeNanos is in the past
 	 */
 	public void sleepUntilNanos(long targetTimeNanos, boolean warnIfInPast) {
-		final String FNC_NAME = getClass().getSimpleName() + ".sleepUntilNanos()";
+		if (warnIfInPast) {
+			final String FNC_NAME = getClass().getSimpleName() + ".sleepUntilNanos()";
 
-		long currentTime = System.nanoTime();
-
-		if (targetTimeNanos <= currentTime) {
-			double tmpDeltaUs = (((double)targetTimeNanos - currentTime) / 1_000.0);
-			if (warnIfInPast && Math.abs(tmpDeltaUs) >= 100.0) {
-				logWarn(FNC_NAME,
-						String
-								.format("Target time is in the past (%.3f us, r=%d)", tmpDeltaUs, curFrameNr)
-								.replace(",", ".")
-					);
-			}
-			return;
-		}
-
-		long remainingNanos = targetTimeNanos - currentTime;
-
-		// Phase 1: Coarse waiting using Thread.sleep() for milliseconds
-		// Leave a buffer to avoid overshooting
-		long sleepBufferNanos = 2_000_000; // 2ms buffer
-
-		if (remainingNanos > sleepBufferNanos) {
-			long sleepMillis = (remainingNanos - sleepBufferNanos) / 1_000_000;
-			if (sleepMillis > 0) {
-				try {
-					Thread.sleep(sleepMillis);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
-					return;
+			long currentTime = System.nanoTime();
+			if (targetTimeNanos <= currentTime) {
+				double tmpDeltaUs = (((double)targetTimeNanos - currentTime) / 1_000.0);
+				if (Math.abs(tmpDeltaUs) >= 100.0) {
+					logWarn(FNC_NAME,
+							String
+									.format("Target time is in the past (%.3f us, r=%d)", tmpDeltaUs, curFrameNr)
+									.replace(",", ".")
+						);
 				}
+				return;
 			}
 		}
 
-		// Phase 2: Medium precision using LockSupport.parkNanos()
-		// For microsecond-level precision
-		currentTime = System.nanoTime();
-		remainingNanos = targetTimeNanos - currentTime;
-		final long parkBufferNanos = 100_000; // 100µs buffer
-
-		if (remainingNanos > parkBufferNanos) {
-			LockSupport.parkNanos(remainingNanos - parkBufferNanos);
-		}
-
-		// Phase 3: High precision busy-waiting for the final nanoseconds
-		while (System.nanoTime() < targetTimeNanos) {
-			// Busy wait - yields CPU but maintains high precision
-			Thread.onSpinWait(); // JDK 9+ hint for busy waiting
-		}
+		SleepHelper.sleepUntilNanos(targetTimeNanos);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

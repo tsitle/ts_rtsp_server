@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threads.streamscfg;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.availstreams.RtspAsSvcInputData;
 import org.tsitle.rtsp_server.config.*;
@@ -69,7 +70,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 
 		//
 		try {
-			while (! doStop.get()) {
+			while (! hasBeenRequestedToStop()) {
 				mainLoop();
 			}
 		} catch (InterruptedException e) {
@@ -139,7 +140,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 		lock.lock();
 		try {
 			if (watchDirs.isEmpty()) {
-				Thread.sleep(1000);
+				sleepLongAndProsper(1000L);
 				return;
 			}
 			final boolean bckpIsFirstRun = isFirstRun;
@@ -147,9 +148,18 @@ public final class ThreadStreamsConfig extends ThreadBase {
 			if (bckpIsFirstRun || checkForChanges()) {
 				updateStreams();
 			}
-			Thread.sleep(500);
+			sleepLongAndProsper(500L);
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	private void sleepLongAndProsper(long ms) throws InterruptedException {
+		while (ms > 0L && ! hasBeenRequestedToStop()) {
+			if (! SleepHelper.sleep(10L)) {
+				throw new InterruptedException();
+			}
+			ms -= 10L;
 		}
 	}
 

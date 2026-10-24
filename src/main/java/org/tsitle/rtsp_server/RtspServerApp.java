@@ -3,6 +3,7 @@ package org.tsitle.rtsp_server;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
@@ -197,12 +198,8 @@ public final class RtspServerApp {
 					cancelToken.cancelled = true;
 					//
 					int loopCnt = 0;
-					while (! isShutdownComplete.get() && loopCnt++ < 60) {
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							printlnStr(false, fncName + ": SDH: InterruptedException");
-							Thread.currentThread().interrupt();  // restore flag
+					while (! isShutdownComplete.get() && loopCnt++ < 10 * 60) {  // ^= 60s
+						if (! SleepHelper.sleep(100L)) {
 							break;
 						}
 					}
@@ -347,19 +344,11 @@ public final class RtspServerApp {
 			if (++waitCnt > 100) {  // ^= 1 second
 				break;
 			}
-			try {
-				//noinspection BusyWait
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
+			if (! SleepHelper.sleep(10L)) {
 				break;
 			}
 		}
-		try {
-			Thread.sleep(100);  // give thread some additional time for startup
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
-		}
+		SleepHelper.sleep(100L);  // give thread some additional time for startup
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -378,11 +367,7 @@ public final class RtspServerApp {
 
 	private static void waitUntilLogQueueIsEmpty() {
 		while (threadRtxpLogger != null && threadRtxpLogger.havePendingMessages()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+			if (! SleepHelper.sleep(100L)) {
 				break;
 			}
 		}
@@ -632,7 +617,7 @@ public final class RtspServerApp {
 		RtspThreadMngInpDmxJb tmpRtspThreadMngInpDmxJbObj;
 		if ((tmpRtspThreadMngInpDmxJbObj = tlRtspThreadMngInpDmxJb.get()) != null) { tmpRtspThreadMngInpDmxJbObj.shutdownThreadsForIsIds(stopIsIds); }
 
-		sleepLongAndProsper();
+		sleepLongAndProsper_1sec();
 
 		//
 		availableStreamsSvc.performStreamsUpdate();
@@ -643,16 +628,13 @@ public final class RtspServerApp {
 		startDmxJbThreads();
 	}
 
-	private static void sleepLongAndProsper() {
-		try {
-			int ms = 1000;
-			while (ms > 0 && ! doStop.get()) {
-				//noinspection BusyWait
-				Thread.sleep(100L);
-				ms -= 100;
+	private static void sleepLongAndProsper_1sec() {
+		long ms = 1000L;
+		while (ms > 0L && ! doStop.get()) {
+			if (! SleepHelper.sleep(50L)) {
+				return;
 			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
+			ms -= 50L;
 		}
 	}
 

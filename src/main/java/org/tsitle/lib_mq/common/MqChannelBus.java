@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelId;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelName;
 import org.tsitle.lib_mq.exceptions.MqException;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.SocketType;
@@ -159,10 +160,8 @@ public final class MqChannelBus {
 
 			final String endpoint = mapIdToEndpoint.get(id);
 			zmqSocket.connect(endpoint);
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
+			if (! SleepHelper.sleep(100L)) {
+				throw new MqException("InterruptedException");
 			}
 
 			return zmqSocket;

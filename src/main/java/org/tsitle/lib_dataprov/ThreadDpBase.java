@@ -2,6 +2,7 @@ package org.tsitle.lib_dataprov;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
@@ -39,12 +40,13 @@ public abstract class ThreadDpBase extends Thread {
 		}
 		doStop.set(true);
 		stopThreadHook();
+
+		int waitCnt = 0;
 		while (isRunning.get()) {
-			try {
-				//noinspection BusyWait
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
+			if (! SleepHelper.sleep(10L)) {
+				break;
+			}
+			if (++waitCnt >= 100 * 5) {  // ^= 5 secs
 				break;
 			}
 		}

@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 
@@ -54,15 +55,12 @@ public abstract class RunnableBase implements Runnable {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void sleepLongAndProsper(@NonNull CancelToken localCancelToken, int secs) throws InterruptedException {
-		try {
-			int ms = secs * 1000;
-			while (ms > 0 && ! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
-				//noinspection BusyWait
-				Thread.sleep(100L);
-				ms -= 100;
+		long ms = secs * 1000L;
+		while (ms > 0L && ! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
+			if (! SleepHelper.sleep(10L)) {
+				throw new InterruptedException();
 			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
+			ms -= 10L;
 		}
 	}
 

@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp.lowlevel.network;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -119,7 +120,7 @@ public final class RtspProtoLowMsgReader {
 		 */
 
 		String headerLine;
-		final int MAX_TIMEOUT_CNT = 2;
+		final int MAX_TIMEOUT_CNT = 3;
 		int timeoutCnt = 0;
 		do {
 			try {
@@ -138,14 +139,10 @@ public final class RtspProtoLowMsgReader {
 					outputMsg.headerLines.add(headerLine);
 				}
 			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
-				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
+				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
 					break;
 				}
-				try {
-					//noinspection BusyWait
-					Thread.sleep(50);
-				} catch (InterruptedException e2) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(50L)) {
 					break;
 				}
 				headerLine = "xxx";  // keep the loop going
@@ -177,7 +174,7 @@ public final class RtspProtoLowMsgReader {
 
 		String bodyLine;
 		StringBuilder bodySb = new StringBuilder();
-		final int MAX_TIMEOUT_CNT = 2;
+		final int MAX_TIMEOUT_CNT = 3;
 		int timeoutCnt = 0;
 		do {
 			try {
@@ -185,14 +182,10 @@ public final class RtspProtoLowMsgReader {
 				timeoutCnt = 0;
 				bodySb.append(bodyLine).append(RtspProtoLowMsgConstants.CRLF);
 			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
-				if (timeoutCnt++ >= MAX_TIMEOUT_CNT) {
+				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
 					break;
 				}
-				try {
-					//noinspection BusyWait
-					Thread.sleep(50);
-				} catch (InterruptedException e2) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(50L)) {
 					break;
 				}
 				bodyLine = "xxx";  // keep the loop going

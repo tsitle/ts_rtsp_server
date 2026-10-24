@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -617,7 +618,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			}
 			return (handleSuccessfulRequest(rtspRequestBasics) ? MainLoopResult.OK : MainLoopResult.ERROR);
 		} catch (RtspProtoTcpSocketNotReadyException e1) {
-			Thread.sleep(100 - 15);
+			if (! SleepHelper.sleep(100L - 15L)) {
+				throw new InterruptedException();
+			}
 			return MainLoopResult.OK;
 		}
 	}

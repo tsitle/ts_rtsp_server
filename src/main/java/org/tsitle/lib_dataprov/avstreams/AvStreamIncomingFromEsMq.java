@@ -3,6 +3,7 @@ package org.tsitle.lib_dataprov.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -77,11 +78,7 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 					//
 					break;
 				}
-				try {
-					//noinspection BusyWait
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(0L, 100_000)) {
 					break;
 				}
 			}

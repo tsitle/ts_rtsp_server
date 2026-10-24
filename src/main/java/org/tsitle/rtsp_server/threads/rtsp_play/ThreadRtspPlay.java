@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
@@ -364,7 +365,9 @@ public final class ThreadRtspPlay extends RunnableBase
 		}
 
 		//
-		Thread.sleep(50);
+		if (! SleepHelper.sleep(50L)) {
+			throw new InterruptedException();
+		}
 
 		return true;
 	}

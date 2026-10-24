@@ -23,6 +23,7 @@ import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -235,8 +236,9 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				if (! mainLoop(tmpAdaptiveSchedulerObj)) {
 					break;
 				}
-				//noinspection BusyWait
-				Thread.sleep(1);
+				if (! SleepHelper.sleep(0L, 100_000)) {
+					throw new InterruptedException();
+				}
 			}
 		} catch (InterruptedException e) {
 			logError(FNC_NAME, "InterruptedException caught");

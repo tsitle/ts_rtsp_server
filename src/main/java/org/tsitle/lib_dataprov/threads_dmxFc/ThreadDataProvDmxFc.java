@@ -12,6 +12,7 @@ import org.tsitle.lib_ffmpeg.demux.FfmpegDmxSettingsDemux;
 import org.tsitle.lib_ffmpeg.exceptions.FfmpegGenericException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -241,7 +242,9 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 			checkCacheNotEmpty(haveInputVideo.get(), cacheVid);
 			checkCacheNotEmpty(haveInputAudio.get(), cacheAud);
 			//
-			Thread.sleep(1);
+			if (! SleepHelper.sleep(0L, 250_000)) {
+				throw new InterruptedException();
+			}
 		}
 
 		return true;
@@ -317,10 +320,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 		// wait until we have read the stream info in the main loop
 		int loopCnt = 0;
 		while (++loopCnt <= 1000 && ! haveInputSi.get()) {
-			try {
-				Thread.sleep(5);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
+			if (! SleepHelper.sleep(5L)) {
 				throw new InputStreamEosException();
 			}
 		}

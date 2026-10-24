@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -200,11 +201,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				try {
-					//noinspection BusyWait
-					Thread.sleep(0L, 100_000);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(0L, 100_000)) {
 					break;
 				}
 			}

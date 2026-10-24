@@ -2,6 +2,7 @@ package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.client.types.MqElementaryStreamSourceSettings;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -108,10 +109,7 @@ public final class RtspThreadMngInpMqExt extends RtspThreadMngBase {
 			final int MAX_TIMEOUT_CNT = 100;
 			int timeoutCnt = 0;
 			while (! threadMqExt.isRunning() && ++timeoutCnt <= MAX_TIMEOUT_CNT) {
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(10L)) {
 					break;
 				}
 			}

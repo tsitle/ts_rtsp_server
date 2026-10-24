@@ -1,6 +1,7 @@
 package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
@@ -133,10 +134,7 @@ public final class RtspThreadMngInpDmxJb extends RtspThreadMngBase {
 			final int MAX_TIMEOUT_CNT = 100;
 			int timeoutCnt = 0;
 			while (! threadDmx.isRunning() && ++timeoutCnt <= MAX_TIMEOUT_CNT) {
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();  // restore flag
+				if (! SleepHelper.sleep(10L)) {
 					break;
 				}
 			}

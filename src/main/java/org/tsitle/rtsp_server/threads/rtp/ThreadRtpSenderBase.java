@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerSenderInfoBlock;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpPacketSDES;
@@ -321,8 +322,9 @@ public abstract class ThreadRtpSenderBase<
 		int loopCnt = 0;
 		while (! doStop.get() && threadDataProv != null &&
 				(! (threadDataProv.isRunning() && threadDataProv.haveFullInputQueue()))) {
-			//noinspection BusyWait
-			Thread.sleep(10);
+			if (! SleepHelper.sleep(10L)) {
+				throw new InterruptedException();
+			}
 			if (++loopCnt % 50 == 0) {
 				logDebug(FNC_NAME, "Waiting for input queue to fill up: have " + threadDataProv.getInputQueueSize());
 			}
@@ -557,7 +559,9 @@ public abstract class ThreadRtpSenderBase<
 				isReady = true;
 				break;
 			}
-			Thread.sleep(Duration.ofNanos(100_000L));
+			if (! SleepHelper.sleep(0L, 100_000)) {
+				throw new InterruptedException();
+			}
 		}
 		if (! isReady) {
 			throw new RtpThreadsDidNotStartException(FNC_NAME + ": Timeout waiting for parallel thread to start");
@@ -570,7 +574,9 @@ public abstract class ThreadRtpSenderBase<
 	private boolean mainLoop() throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException,
 			UdpSocketIoException, TcpSocketIoException {
 		if (isPaused.get()) {
-			Thread.sleep(100);
+			if (! SleepHelper.sleep(100L)) {
+				throw new InterruptedException();
+			}
 			return true;
 		}
 

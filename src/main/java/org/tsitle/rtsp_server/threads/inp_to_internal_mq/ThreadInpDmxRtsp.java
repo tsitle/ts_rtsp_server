@@ -18,6 +18,7 @@ import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_mq.exceptions.MqException;
 import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.*;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
@@ -182,8 +183,9 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				//noinspection BusyWait
-				Thread.sleep(1);
+				if (! SleepHelper.sleep(0L, 100_000)) {
+					throw new InterruptedException();
+				}
 			}
 		} finally {
 			ffDemuxerPtr = null;
@@ -207,7 +209,9 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		} else if (! ffPktCacheEntry.ffPktObj.isVideo && mqInternalPubAud != null) {
 			sendAvPktToMq(mqInternalPubAud, dataPerMqAud);
 		} else {
-			Thread.sleep(100);
+			if (! SleepHelper.sleep(100L)) {
+				throw new InterruptedException();
+			}
 		}
 		return true;
 	}

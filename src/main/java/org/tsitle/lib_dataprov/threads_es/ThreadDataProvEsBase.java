@@ -8,6 +8,7 @@ import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_xrtxp.avdata.CodecInfoInterface;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
@@ -96,8 +97,9 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 		try {
 			while (! doStop.get() && ! haveEos()) {
 				mainLoop();
-				//noinspection BusyWait
-				Thread.sleep(0L, 100_000);
+				if (! SleepHelper.sleep(0L, 100_000)) {
+					throw new InterruptedException();
+				}
 			}
 		} catch (InterruptedException e) {
 			logError(fncName, "InterruptedException caught");
@@ -133,7 +135,9 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected void mainLoop() throws InterruptedException {
-		Thread.sleep(50);
+		if (! SleepHelper.sleep(50L)) {
+			throw new InterruptedException();
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
