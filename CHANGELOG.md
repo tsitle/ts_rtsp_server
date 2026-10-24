@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.2.0] - 2026-10-24
+
+### Added
+
+- option in the main config file to enable/disable printing debug messages for RTCP Receiver Report statistics
+
+### Changed
+
+- consolidated all timing-related code to use a common timer class
+
 ## [1.1.9] - 2026-10-20
 
 ### Fixed
@@ -55,7 +65,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- some issues in various FFmpeg related classes
+- some issues in various FFmpeg-related classes
 - an issue in the audio transcoder where samples were being buffered incorrectly
 - an issue where IPv4 addresses were being tried to be resolved to an IPv4 address
 
