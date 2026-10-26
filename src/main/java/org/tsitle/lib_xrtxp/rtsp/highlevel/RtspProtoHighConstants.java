@@ -1,6 +1,6 @@
 package org.tsitle.lib_xrtxp.rtsp.highlevel;
 
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 
 public final class RtspProtoHighConstants {
 
@@ -20,7 +20,7 @@ public final class RtspProtoHighConstants {
 
 	/**
 	 * RTSP Session Timeout in seconds -- this value will be announced to the client.<br />
-	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link RtxpTcpReadWrite}
+	 * If TCP transport is being used, the timeout will be ignored. Instead, the {@link RtxpTcpCommsInterface}
 	 * instance will check for a timeout.
 	 */
 	public static final int DEFAULT_RTSP_SESSION_TIMEOUT = 20;

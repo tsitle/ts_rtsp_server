@@ -538,12 +538,11 @@ public final class RtspServerApp {
 		if (tlRtspThreadMngPlay.get() == null || (tmpRtspThreadMngTciObj = tlRtspThreadMngTci.get()) == null) {
 			return;
 		}
-		socketRtspTcp.setSoTimeout(TCP_TIMEOUT_READ_MS);  // only for read()
 
-		//
 		tmpRtspThreadMngTciObj.startNewTciThread(
 				++clientConnectionCount,
 				socketRtspTcp,
+				TCP_TIMEOUT_READ_MS,
 				isRtspsConn
 			);
 	}

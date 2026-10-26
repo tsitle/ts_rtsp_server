@@ -9,7 +9,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoRequestOutputSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoResponseInputSvc;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoSendRequestFailedException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
@@ -42,7 +42,7 @@ class RtspSrvToClntSvcBase {
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@NonNull RtspChildThreadsGetRunning childThreadsGetRunningInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
@@ -60,7 +60,7 @@ class RtspSrvToClntSvcBase {
 				rtspSrvConfig.getIsEnabledDebugPrintRtspSdpSent(),
 				rtspSrvConfig.getIsEnabledDebugPrintRtspSent(),
 				sessionInfoPtr,
-				rtxpTcpReadWrite,
+				rtxpTcpComms,
 				availableStreamsInterface,
 				globalSessionInfoInterface
 			);
@@ -69,7 +69,7 @@ class RtspSrvToClntSvcBase {
 				true,
 				rtspSrvConfig.getIsEnabledDebugPrintRtspRcvd(),
 				sessionInfoPtr,
-				rtxpTcpReadWrite
+				rtxpTcpComms
 			);
 	}
 

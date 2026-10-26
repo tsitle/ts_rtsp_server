@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
 import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketEosException;
@@ -24,16 +24,16 @@ public final class RtspProtoLowMsgReader {
 	private static final int MAX_BODY_SIZE = 1024 * 16;  // 16 kB
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final boolean isDebugPrintRtspRcvd;
 
 	public RtspProtoLowMsgReader(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				boolean isDebugPrintRtspRcvd
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 		this.isDebugPrintRtspRcvd = isDebugPrintRtspRcvd;
 	}
 
@@ -229,10 +229,10 @@ public final class RtspProtoLowMsgReader {
 	private @NonNull String readOneLine(boolean isFirst)
 			throws RtspProtoTcpSocketNotReadyException, RtspProtoTcpSocketEosException,
 					TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		if (! rtxpTcpReadWrite.canReadRtsp()) {
+		if (! rtxpTcpComms.canReadRtsp()) {
 			throw new RtspProtoTcpSocketNotReadyException();
 		}
-		Optional<String> optLine = rtxpTcpReadWrite.readRtspLine();
+		Optional<String> optLine = rtxpTcpComms.readRtspLine();
 		if (optLine.isEmpty()) {
 			throw new RtspProtoTcpSocketEosException();
 		}

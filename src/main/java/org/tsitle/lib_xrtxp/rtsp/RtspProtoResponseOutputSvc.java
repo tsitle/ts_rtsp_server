@@ -39,7 +39,7 @@ public final class RtspProtoResponseOutputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final boolean isResponseFromClient;
 
 	private final RtspProtoHighResponseProducer rtspProtoHighResponseProducer;
@@ -61,7 +61,7 @@ public final class RtspProtoResponseOutputSvc {
 	 * @param globalSessionInfoInterface Global session info instance (only required for responses from the server)
 	 * @param parameterGetterInterface Parameter getter instance (can be null)
 	 * @param srtxpKmdsTypeDeciderInterface SRTxP KMDs type decider instance (can be null)
-	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param rtxpTcpComms RTxP TCP read/write instance
 	 */
 	public RtspProtoResponseOutputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -77,7 +77,7 @@ public final class RtspProtoResponseOutputSvc {
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterGetterInterface parameterGetterInterface,
 				@Nullable RtspProtoDescribeRespSrtxpTypeDeciderInterface srtxpKmdsTypeDeciderInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms
 			) {
 		if (cfgSenderAppNameAndVersion.isBlank()) {
 			throw new IllegalArgumentException("cfgSenderAppNameAndVersion cannot be blank");
@@ -96,7 +96,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 		this.isResponseFromClient = isResponseFromClient;
 
 		// check if the supported message types are valid
@@ -133,7 +133,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
-				this.rtxpTcpReadWrite,
+				this.rtxpTcpComms,
 				cfgIsDebugPrintRtspSent
 			);
 	}
@@ -153,7 +153,7 @@ public final class RtspProtoResponseOutputSvc {
 			throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException, RtspProtoSendResponseFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
 
-		if (rtxpTcpReadWrite.isSocketClosed()) {
+		if (rtxpTcpComms.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 

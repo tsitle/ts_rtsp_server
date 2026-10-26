@@ -3,8 +3,8 @@ package org.tsitle.lib_xrtxp.rtsp.msgs;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 
@@ -22,6 +22,8 @@ class RtspProtoLowMsgReaderTest {
 			System.out.println(logLevel + " - " + threadId + ": " + msg);
 		}
 	}
+
+	private static final int SOCKET_TIMEOUT_MS = 5;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -205,11 +207,11 @@ class RtspProtoLowMsgReaderTest {
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
 
-			tcpSocket.setSoTimeout(50);  // only for read()
+			peerSocket.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
 			//
 			TestLogs logMsgIf = new TestLogs();
-			RtxpTcpReadWrite rw = new RtxpTcpReadWrite(tcpSocket);
+			RtxpTcpCommsImpl rw = new RtxpTcpCommsImpl(tcpSocket, SOCKET_TIMEOUT_MS);
 
 			//
 			peerSocket.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));

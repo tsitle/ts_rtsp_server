@@ -46,7 +46,7 @@ public final class RtspProtoResponseInputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isResponseFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowResponseConsumer rtspProtoLowResponseConsumer;
@@ -58,19 +58,19 @@ public final class RtspProtoResponseInputSvc {
 	 * @param isResponseFromClient Is this a response sent by the client?
 	 * @param cfgIsDebugPrintRtspRcvd Enable printing received RTSP lines for debugging?
 	 * @param sessionInfoPtr Session Info pointer
-	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param rtxpTcpComms RTxP TCP read/write instance
 	 */
 	public RtspProtoResponseInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
 				boolean isResponseFromClient,
 				boolean cfgIsDebugPrintRtspRcvd,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms
 			) {
 		this.logMsgInterface = logMsgInterface;
 		this.isResponseFromClient = isResponseFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 
 		//
 		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
@@ -78,7 +78,7 @@ public final class RtspProtoResponseInputSvc {
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
-				this.rtxpTcpReadWrite,
+				this.rtxpTcpComms,
 				cfgIsDebugPrintRtspRcvd
 			);
 		this.rtspProtoLowResponseConsumer = new RtspProtoLowResponseConsumer(logMsgInterface);
@@ -104,7 +104,7 @@ public final class RtspProtoResponseInputSvc {
 					RtspProtoTcpSocketNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
 
-		if (rtxpTcpReadWrite.isSocketClosed()) {
+		if (rtxpTcpComms.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 

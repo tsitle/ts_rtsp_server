@@ -40,7 +40,7 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@NonNull RtspChildThreadsGetRunning childThreadsGetRunningInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
@@ -51,7 +51,7 @@ final class SrtxpRekeySvc extends RtspSrvToClntSvcBase {
 				cfgContentLanguage,
 				sessionInfoPtr,
 				childThreadsGetRunningInterface,
-				rtxpTcpReadWrite,
+				rtxpTcpComms,
 				availableStreamsInterface,
 				globalSessionInfoInterface
 			);

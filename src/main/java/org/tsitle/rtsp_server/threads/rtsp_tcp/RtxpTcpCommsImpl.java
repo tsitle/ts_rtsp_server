@@ -1,4 +1,4 @@
-package org.tsitle.lib_xrtxp.rtsp;
+package org.tsitle.rtsp_server.threads.rtsp_tcp;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * TCP Socket wrapper for reading/writing RTxP messages from/to a single TCP socket.<br />
+ * TCP Socket wrapper that reads/writes RTxP messages over a single TCP socket.<br />
  * If the transport mode for the RTSP session that owns this TCP socket is 'TCP with interleaved RTP/RTCP',
  * then this class can handle RTSP/RTP/RTCP messages in the same TCP connection.<br />
  * If the transport mode for the RTSP session that owns this TCP socket is 'UDP',
@@ -35,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <br />
  * See <a href="https://datatracker.ietf.org/doc/html//rfc2326.html#section-10.12">RFC-2326 Section 10.12</a> for more information.
  */
-public final class RtxpTcpReadWrite {
+public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface {
 
 	private enum Flag { SOCKET_READ, SOCKET_WRITE, QUEUE_RTSP_RCVD, QUEUE_RTP_RTCP_RCVD}
 
@@ -139,12 +140,16 @@ public final class RtxpTcpReadWrite {
 	/**
 	 * Constructor.
 	 * @param socketTcp TCP socket used to send/receive RTxP messages
+	 * @param timeoutSocketReadMs Timeout for TCP socket read operations in milliseconds
 	 */
-	public RtxpTcpReadWrite(@NonNull Socket socketTcp) {
+	public RtxpTcpCommsImpl(@NonNull Socket socketTcp, int timeoutSocketReadMs) {
 		try {
-			if (socketTcp.getSoTimeout() <= 0) {
-				throw new IllegalArgumentException("socketTcp.getSoTimeout() must be positive");
+			if (timeoutSocketReadMs < 1) {
+				throw new IllegalArgumentException(getClass().getSimpleName() + ".ctor(): " +
+						"timeoutSocketReadMs must be positive");
 			}
+			socketTcp.setTcpNoDelay(true);
+			socketTcp.setSoTimeout(timeoutSocketReadMs);
 		} catch (SocketException e) {
 			throw new RuntimeException(e);
 		}

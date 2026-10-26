@@ -7,7 +7,7 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoRequestInputSvc;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -75,6 +75,8 @@ public class ClientRequestInputSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static final int SOCKET_TIMEOUT_MS = 5;
+
 	private @Nullable Socket socketPeer = null;
 	private final @NonNull RtspProtoPtrSessionInfo cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 	private @Nullable RtspProtoRequestInputSvc inputSvc;
@@ -108,15 +110,15 @@ public class ClientRequestInputSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @NonNull RtxpTcpReadWrite buildRtxpTcpReadWrite() throws IOException {
+	private @NonNull RtxpTcpCommsImpl buildRtxpTcpComms() throws IOException {
 		@SuppressWarnings("resource")
 		ServerSocket socketServer = new ServerSocket(0);
 		Socket socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
 
-		socketClient.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
+		socketPeer.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
-		return new RtxpTcpReadWrite(socketClient);
+		return new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
 	}
 
 	private void initObjs() throws IOException {
@@ -141,7 +143,7 @@ public class ClientRequestInputSvcTest {
 				null,
 				null,
 				new ParameterSetter(),
-				buildRtxpTcpReadWrite()
+				buildRtxpTcpComms()
 			);
 	}
 

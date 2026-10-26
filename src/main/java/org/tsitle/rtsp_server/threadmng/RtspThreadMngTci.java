@@ -64,6 +64,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 	public void startNewTciThread(
 				int clientConnectionNr,
 				@NonNull Socket rtspSocketTcp,
+				int timeoutSocketReadMs,
 				boolean isRtspsConnection
 			) {
 		final String FNC_NAME = getClass().getSimpleName() + ".startNewTciThread()";
@@ -88,6 +89,7 @@ public final class RtspThreadMngTci extends RtspThreadMngBase {
 				playThreadMngInterface,
 				clientConnectionNr,
 				rtspSocketTcp,
+				timeoutSocketReadMs,
 				isRtspsConnection
 			);
 

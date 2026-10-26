@@ -49,7 +49,7 @@ public final class RtspProtoRequestOutputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final RtspProtoHighRequestProducer rtspProtoHighRequestProducer;
@@ -66,7 +66,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * @param cfgIsDebugPrintRtspSdpSent Enable printing sent SDP data for debugging?
 	 * @param cfgIsDebugPrintRtspSent Enable printing sent RTSP lines for debugging?
 	 * @param sessionInfoPtr Session Info pointer
-	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param rtxpTcpComms RTxP TCP read/write instance
 	 * @param availableStreamsInterface Available streams instance (only required for requests from the server)
 	 * @param globalSessionInfoInterface Global session info instance (only required for requests from the server)
 	 */
@@ -79,7 +79,7 @@ public final class RtspProtoRequestOutputSvc {
 				boolean cfgIsDebugPrintRtspSdpSent,
 				boolean cfgIsDebugPrintRtspSent,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface
 			) {
@@ -96,7 +96,7 @@ public final class RtspProtoRequestOutputSvc {
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 
 		//
@@ -120,7 +120,7 @@ public final class RtspProtoRequestOutputSvc {
 		this.rtspProtoLowRequestProducer = new RtspProtoLowRequestProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
-				this.rtxpTcpReadWrite,
+				this.rtxpTcpComms,
 				cfgIsDebugPrintRtspSent
 			);
 	}
@@ -956,7 +956,7 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull InternRequArgs internRequArgs
 			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
-		if (rtxpTcpReadWrite.isSocketClosed()) {
+		if (rtxpTcpComms.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 

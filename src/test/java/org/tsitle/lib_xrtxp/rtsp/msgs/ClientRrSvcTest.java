@@ -22,6 +22,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -87,7 +88,9 @@ public class ClientRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private @Nullable RtxpTcpReadWrite rtxpTcpReadWrite = null;
+	private static final int SOCKET_TIMEOUT_MS = 5;
+
+	private @Nullable RtxpTcpCommsImpl rtxpTcpComms = null;
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
@@ -103,7 +106,7 @@ public class ClientRrSvcTest {
 
 	@BeforeEach
 	void setUp() throws IOException {
-		initRtxpTcpReadWrite();
+		initRtxpTcpComms();
 		cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 		parameterGetterSetter = new ParameterGetterSetter();
 		initObjsInput();
@@ -280,21 +283,20 @@ public class ClientRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void initRtxpTcpReadWrite() throws IOException {
+	private void initRtxpTcpComms() throws IOException {
 		socketServer = new ServerSocket(0);
 		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
 
-		socketPeer.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
-		socketClient.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
+		socketPeer.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
-		rtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
+		rtxpTcpComms = new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
 	}
 
 	private void initObjsInput() {
 		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(cliPtrSessionInfo);
-		Objects.requireNonNull(rtxpTcpReadWrite);
+		Objects.requireNonNull(rtxpTcpComms);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
@@ -317,14 +319,14 @@ public class ClientRrSvcTest {
 				null,
 				null,
 				parameterGetterSetter,
-				rtxpTcpReadWrite
+				rtxpTcpComms
 			);
 	}
 
 	private void initObjsOutput() {
 		Objects.requireNonNull(cliPtrSessionInfo);
 		Objects.requireNonNull(cliPtrSessionInfo);
-		Objects.requireNonNull(rtxpTcpReadWrite);
+		Objects.requireNonNull(rtxpTcpComms);
 
 		RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
@@ -346,7 +348,7 @@ public class ClientRrSvcTest {
 				null,
 				parameterGetterSetter,
 				null,
-				rtxpTcpReadWrite
+				rtxpTcpComms
 			);
 	}
 

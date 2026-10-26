@@ -3,7 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp.lowlevel.network;
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgConstants;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
@@ -14,22 +14,22 @@ import java.util.List;
 public final class RtspProtoLowMsgWriter {
 
 	private final @NonNull LogMsgInterface logMsgInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final boolean isDebugPrintRtspSent;
 
 	/**
 	 * Constructor.
 	 * @param logMsgInterface Functional interface for logging messages
-	 * @param rtxpTcpReadWrite RTxP TCP socket handler
+	 * @param rtxpTcpComms RTxP TCP socket handler
 	 * @param isDebugPrintRtspSent If true, then outgoing RTSP messages are logged
 	 */
 	public RtspProtoLowMsgWriter(
 				@NonNull LogMsgInterface logMsgInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				boolean isDebugPrintRtspSent
 			) {
 		this.logMsgInterface = logMsgInterface;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 		this.isDebugPrintRtspSent = isDebugPrintRtspSent;
 	}
 
@@ -84,7 +84,7 @@ public final class RtspProtoLowMsgWriter {
 				logDebug(FNC_NAME, "-------- " + tmpLine.replace(RtspProtoLowMsgConstants.CRLF, "<CRLF>"));
 			}
 		}
-		rtxpTcpReadWrite.writeRtspLines(outputLines);
+		rtxpTcpComms.writeRtspLines(outputLines);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

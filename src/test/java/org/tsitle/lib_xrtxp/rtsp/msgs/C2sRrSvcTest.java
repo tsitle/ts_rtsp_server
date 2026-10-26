@@ -20,6 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
+import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -224,6 +225,8 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private static final int SOCKET_TIMEOUT_MS = 5;
+
 	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
 	private final @NonNull TestLogs logger = new TestLogs();
@@ -247,7 +250,7 @@ public class C2sRrSvcTest {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		initRtxpTcpReadWrite();
+		initRtxpTcpComms();
 		initObjsServer();
 		initObjsClient();
 	}
@@ -779,19 +782,16 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void initRtxpTcpReadWrite() throws Exception {
+	private void initRtxpTcpComms() throws Exception {
 		socketServer = new ServerSocket(0);
 		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
-
-		socketPeer.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
-		socketClient.setSoTimeout(5); // must be > 0 for RtxpTcpReadWrite
 	}
 
 	private void initObjsServer() throws Exception {
 		Objects.requireNonNull(socketPeer);
 
-		RtxpTcpReadWrite srvRtxpTcpReadWrite = new RtxpTcpReadWrite(socketPeer);
+		RtxpTcpCommsImpl srvRtxpTcpComms = new RtxpTcpCommsImpl(socketPeer, SOCKET_TIMEOUT_MS);
 
 		srvPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 		srvParameterGetterSetter = new ParameterGetterSetterServerSide(srvPtrSessionInfo);
@@ -824,7 +824,7 @@ public class C2sRrSvcTest {
 				srvAvailableStreams,
 				srvGlobalSessionInfoSvc,
 				srvParameterGetterSetter,
-				srvRtxpTcpReadWrite
+				srvRtxpTcpComms
 			);
 
 		srvOutputSvc = new RtspProtoResponseOutputSvc(
@@ -841,14 +841,14 @@ public class C2sRrSvcTest {
 				srvGlobalSessionInfoSvc,
 				srvParameterGetterSetter,
 				null,
-				srvRtxpTcpReadWrite
+				srvRtxpTcpComms
 			);
 	}
 
 	private void initObjsClient() {
 		Objects.requireNonNull(socketClient);
 
-		RtxpTcpReadWrite cliRtxpTcpReadWrite = new RtxpTcpReadWrite(socketClient);
+		RtxpTcpCommsImpl cliRtxpTcpComms = new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
 
 		cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 
@@ -861,7 +861,7 @@ public class C2sRrSvcTest {
 				false,
 				true,
 				cliPtrSessionInfo,
-				cliRtxpTcpReadWrite,
+				cliRtxpTcpComms,
 				null,
 				null
 			);
@@ -871,7 +871,7 @@ public class C2sRrSvcTest {
 				false,
 				false,
 				cliPtrSessionInfo,
-				cliRtxpTcpReadWrite
+				cliRtxpTcpComms
 			);
 	}
 

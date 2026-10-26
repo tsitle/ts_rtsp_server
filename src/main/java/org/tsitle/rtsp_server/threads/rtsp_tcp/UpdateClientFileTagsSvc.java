@@ -6,7 +6,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
-import org.tsitle.lib_xrtxp.rtsp.RtxpTcpReadWrite;
+import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoSessionState;
@@ -39,7 +39,7 @@ final class UpdateClientFileTagsSvc extends RtspSrvToClntSvcBase {
 				@NonNull String cfgContentLanguage,
 				@NonNull RtspProtoPtrSessionInfo sessionInfoPtr,
 				@NonNull RtspChildThreadsGetRunning childThreadsGetRunningInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite,
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms,
 				@NonNull RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@NonNull RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@NonNull AsGetFileTagsInterface asGetFileTagsInterface
@@ -51,7 +51,7 @@ final class UpdateClientFileTagsSvc extends RtspSrvToClntSvcBase {
 				cfgContentLanguage,
 				sessionInfoPtr,
 				childThreadsGetRunningInterface,
-				rtxpTcpReadWrite,
+				rtxpTcpComms,
 				availableStreamsInterface,
 				globalSessionInfoInterface
 			);

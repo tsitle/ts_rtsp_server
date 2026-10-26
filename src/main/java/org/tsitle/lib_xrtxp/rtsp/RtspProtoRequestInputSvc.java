@@ -44,7 +44,7 @@ public final class RtspProtoRequestInputSvc {
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
-	private final @NonNull RtxpTcpReadWrite rtxpTcpReadWrite;
+	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 
 	private final @Nullable RtspProtoRequAuthSvc requAuthSvc;
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
@@ -65,7 +65,7 @@ public final class RtspProtoRequestInputSvc {
 	 * @param availableStreamsInterface Available streams instance (only required for requests from the client)
 	 * @param globalSessionInfoInterface Global session info instance (only required for requests from the client)
 	 * @param parameterSetterInterface Parameter setter instance (can be null)
-	 * @param rtxpTcpReadWrite RTxP TCP read/write instance
+	 * @param rtxpTcpComms RTxP TCP read/write instance
 	 */
 	public RtspProtoRequestInputSvc(
 				@NonNull LogMsgInterface logMsgInterface,
@@ -80,7 +80,7 @@ public final class RtspProtoRequestInputSvc {
 				@Nullable RtspProtoAvailableStreamsInterface availableStreamsInterface,
 				@Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface,
 				@Nullable RtspProtoParameterSetterInterface parameterSetterInterface,
-				@NonNull RtxpTcpReadWrite rtxpTcpReadWrite
+				@NonNull RtxpTcpCommsInterface rtxpTcpComms
 			) {
 		if (isRequestFromClient && userAuthInterface == null) {
 			throw new IllegalArgumentException("userAuthInterface must be set for requests from the client");
@@ -95,7 +95,7 @@ public final class RtspProtoRequestInputSvc {
 		this.isRequestFromClient = isRequestFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
-		this.rtxpTcpReadWrite = rtxpTcpReadWrite;
+		this.rtxpTcpComms = rtxpTcpComms;
 
 		//
 		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
@@ -116,7 +116,7 @@ public final class RtspProtoRequestInputSvc {
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
-				this.rtxpTcpReadWrite,
+				this.rtxpTcpComms,
 				cfgIsDebugPrintRtspRcvd
 			);
 		this.rtspProtoLowRequestConsumer = new RtspProtoLowRequestConsumer(logMsgInterface);
@@ -187,7 +187,7 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
 					RtspProtoTcpSocketNotReadyException {
-		if (rtxpTcpReadWrite.isSocketClosed()) {
+		if (rtxpTcpComms.isSocketClosed()) {
 			throw new TcpSocketClosedException();
 		}
 
