@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoRequestOutputSvc;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoResponseInputSvc;
@@ -24,6 +25,8 @@ import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsGetRunning;
  * Base class for services that send RTSP requests to the client.
  */
 class RtspSrvToClntSvcBase {
+
+	private static final long RECEIVE_RESPONSE_TIMEOUT_MS = 5000L;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	protected final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
@@ -115,9 +118,9 @@ class RtspSrvToClntSvcBase {
 
 	protected @NonNull RtspProtoStatusCode recvResponseFromClient()
 			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
-		int timeoutCnt = 0;
 		RtspResponseBasics respBasics = null;
-		while (++timeoutCnt < 100) {  // ^= 1 sec
+		TimestampEpoch tmpNow = TimestampEpoch.ofNow();
+		while (! tmpNow.isElapsedMs(RECEIVE_RESPONSE_TIMEOUT_MS)) {
 			try {
 				respBasics = rtspProtoResponseInputSvc.receiveResponse();
 				break;
