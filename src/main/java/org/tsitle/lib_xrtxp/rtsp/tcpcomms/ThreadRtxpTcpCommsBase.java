@@ -117,7 +117,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 				if (! mainLoop()) {
 					break;
 				}
-				if (! SleepHelper.sleep(0L, 250_000)) {
+				if (! SleepHelper.basicSleep(0L, 250_000)) {
 					throw new InterruptedException();
 				}
 			}

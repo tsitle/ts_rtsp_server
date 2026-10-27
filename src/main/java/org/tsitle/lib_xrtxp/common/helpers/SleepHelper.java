@@ -70,4 +70,16 @@ public final class SleepHelper {
 		return true;
 	}
 
+	public static boolean basicSleep(long millis, int nanos) {
+		if (millis < 0L || nanos < 0 || (millis == 0L && nanos == 0)) {
+			return true;
+		}
+		try {
+			Thread.sleep(millis, nanos);
+		} catch (InterruptedException e) {
+			return false;
+		}
+		return true;
+	}
+
 }
