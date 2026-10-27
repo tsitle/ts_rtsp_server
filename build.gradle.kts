@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.tsitle.rtsp_server"
-version = "1.2.0"
+version = "1.2.1"
 
 val propProjName = rootProject.name  // from 'settings.gradle.kts'
 
