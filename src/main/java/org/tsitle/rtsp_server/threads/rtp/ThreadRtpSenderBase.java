@@ -556,7 +556,7 @@ public abstract class ThreadRtpSenderBase<
 				isReady = true;
 				break;
 			}
-			if (! SleepHelper.sleep(0L, 100_000)) {
+			if (! SleepHelper.sleep(0L, 250_000)) {
 				throw new InterruptedException();
 			}
 		}

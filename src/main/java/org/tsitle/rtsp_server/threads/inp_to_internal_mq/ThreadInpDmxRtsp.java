@@ -183,7 +183,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				if (! SleepHelper.sleep(0L, 100_000)) {
+				if (! SleepHelper.sleep(0L, 500_000)) {
 					throw new InterruptedException();
 				}
 			}

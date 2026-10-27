@@ -97,7 +97,7 @@ public abstract class ThreadDataProvEsBase<I extends CodecInfoInterface<I>> exte
 		try {
 			while (! doStop.get() && ! haveEos()) {
 				mainLoop();
-				if (! SleepHelper.sleep(0L, 100_000)) {
+				if (! SleepHelper.sleep(0L, 250_000)) {
 					throw new InterruptedException();
 				}
 			}

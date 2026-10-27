@@ -236,7 +236,7 @@ public final class ThreadInpDmxJb extends RunnableBase {
 				if (! mainLoop(tmpAdaptiveSchedulerObj)) {
 					break;
 				}
-				if (! SleepHelper.sleep(0L, 100_000)) {
+				if (! SleepHelper.sleep(0L, 500_000)) {
 					throw new InterruptedException();
 				}
 			}
