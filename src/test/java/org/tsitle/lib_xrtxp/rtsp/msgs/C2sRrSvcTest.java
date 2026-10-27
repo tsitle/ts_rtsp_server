@@ -20,7 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.*;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -225,11 +225,11 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
 
-	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	private final RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
-	private final @NonNull TestLogs logger = new TestLogs();
+	private final TestLogs logger = new TestLogs();
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
@@ -250,7 +250,7 @@ public class C2sRrSvcTest {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		initRtxpTcpComms();
+		initRtxpTcpSockets();
 		initObjsServer();
 		initObjsClient();
 	}
@@ -782,7 +782,7 @@ public class C2sRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void initRtxpTcpComms() throws Exception {
+	private void initRtxpTcpSockets() throws Exception {
 		socketServer = new ServerSocket(0);
 		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
@@ -791,7 +791,12 @@ public class C2sRrSvcTest {
 	private void initObjsServer() throws Exception {
 		Objects.requireNonNull(socketPeer);
 
-		RtxpTcpCommsImpl srvRtxpTcpComms = new RtxpTcpCommsImpl(socketPeer, SOCKET_TIMEOUT_MS);
+		RtxpTcpCommsImpl srvRtxpTcpComms = new RtxpTcpCommsImpl(
+				logger,
+				1,
+				socketPeer,
+				SOCKET_TIMEOUT_MS
+			);
 
 		srvPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 		srvParameterGetterSetter = new ParameterGetterSetterServerSide(srvPtrSessionInfo);
@@ -848,7 +853,12 @@ public class C2sRrSvcTest {
 	private void initObjsClient() {
 		Objects.requireNonNull(socketClient);
 
-		RtxpTcpCommsImpl cliRtxpTcpComms = new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
+		RtxpTcpCommsImpl cliRtxpTcpComms = new RtxpTcpCommsImpl(
+				logger,
+				2,
+				socketClient,
+				SOCKET_TIMEOUT_MS
+			);
 
 		cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 

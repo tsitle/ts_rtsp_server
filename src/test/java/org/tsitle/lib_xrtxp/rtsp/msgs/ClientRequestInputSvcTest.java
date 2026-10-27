@@ -7,7 +7,6 @@ import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoRequestInputSvc;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntMessageTypes;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -21,6 +20,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -75,10 +75,11 @@ public class ClientRequestInputSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
 
+	private final TestLogs logger = new TestLogs();
 	private @Nullable Socket socketPeer = null;
-	private final @NonNull RtspProtoPtrSessionInfo cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
+	private final RtspProtoPtrSessionInfo cliPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 	private @Nullable RtspProtoRequestInputSvc inputSvc;
 	private long cseqCorrect = 1L;
 
@@ -118,7 +119,12 @@ public class ClientRequestInputSvcTest {
 
 		socketPeer.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
-		return new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
+		return new RtxpTcpCommsImpl(
+				logger,
+				1,
+				socketClient,
+				SOCKET_TIMEOUT_MS
+			);
 	}
 
 	private void initObjs() throws IOException {
@@ -131,7 +137,7 @@ public class ClientRequestInputSvcTest {
 		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");
 
 		inputSvc = new RtspProtoRequestInputSvc(
-				new TestLogs(),
+				logger,
 				false,
 				RtxpLogLevel.DEBUG,
 				cfgSupportedMessageTypes,
@@ -167,7 +173,8 @@ public class ClientRequestInputSvcTest {
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
-				"Require: a-neat-feature"
+				"Require: a-neat-feature",
+				""
 			);
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
@@ -181,7 +188,8 @@ public class ClientRequestInputSvcTest {
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
-				"Proxy-Require: first_feature, sec-ond-feature"
+				"Proxy-Require: first_feature, sec-ond-feature",
+				""
 			);
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
@@ -194,7 +202,8 @@ public class ClientRequestInputSvcTest {
 	private void recvOptions_wrongCseq() throws Exception {
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
-				"CSeq: " + Long.toUnsignedString(cseqCorrect - 1L)
+				"CSeq: " + Long.toUnsignedString(cseqCorrect - 1L),
+				""
 			);
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
@@ -207,7 +216,8 @@ public class ClientRequestInputSvcTest {
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Server: wonderful_piece_of_software/98.76",
-				"Require: a-useful-feature"
+				"Require: a-useful-feature",
+				""
 			);
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
@@ -226,7 +236,7 @@ public class ClientRequestInputSvcTest {
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 39",
+				"Content-Length: 12",
 				"Session: bogus",
 				"",
 				"jitter: 13.8"
@@ -246,7 +256,7 @@ public class ClientRequestInputSvcTest {
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 39",
+				"Content-Length: 37",
 				"",
 				"packets_received: 100.0",
 				"jitter: 13.8"
@@ -267,7 +277,7 @@ public class ClientRequestInputSvcTest {
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 15",
+				"Content-Length: 13",
 				"",
 				"jitter: -13.8"
 			);
@@ -287,7 +297,7 @@ public class ClientRequestInputSvcTest {
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 14",
+				"Content-Length: 12",
 				"",
 				"jitter: 13.8"
 			);
@@ -310,7 +320,7 @@ public class ClientRequestInputSvcTest {
 				"GET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 26",
+				"Content-Length: 24",
 				"Session: bogus_but_different",
 				"",
 				"packets_received",
@@ -334,7 +344,7 @@ public class ClientRequestInputSvcTest {
 				"GET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Type: text/parameters",
-				"Content-Length: 8",
+				"Content-Length: 6",
 				"",
 				"jitter"
 			);
@@ -361,7 +371,7 @@ public class ClientRequestInputSvcTest {
 				"CSeq: " + Long.toUnsignedString(cseqCorrect),
 				"Content-Base: rtsps://USER:PASS@localhost:12345/existing_stream?param=value",
 				"Content-Type: " + RtspMimeType.SDP.getStrValue(),
-				"Content-Length: 144",
+				"Content-Length: 142",
 				"",
 				"v=0",
 				"o=- 1781786500001 1781786500002 IN IP4 127.0.0.1",

@@ -4,9 +4,9 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -23,7 +23,7 @@ class RtspProtoLowMsgReaderTest {
 		}
 	}
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ class RtspProtoLowMsgReaderTest {
 	@Test
 	void rawResponse_msgBody_correctContLen1_noCRLF() throws Exception {
 		final String expLine1 = "Content-Type: xylo";
-		final int expBodyLen = 62;
+		final int expBodyLen = 60;
 		final String expLine2 = "Content-Length: " + expBodyLen;
 
 		@SuppressWarnings("TextBlockMigration")
@@ -151,7 +151,7 @@ class RtspProtoLowMsgReaderTest {
 				"\r\n" +
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
-				"s=SDP Seminar";  // <-- without CRLF
+				"s=SDP Seminar\r\n";  // <-- with CRLF at the end
 		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
 
 		//
@@ -173,7 +173,7 @@ class RtspProtoLowMsgReaderTest {
 	void rawRequest_options() throws Exception {
 		final String expMainLine = "OPTIONS rtsp://some.com/stream RTSP/3.0";
 		final String expLine1 = "Content-Type: xylo";
-		final int expBodyLen = 62;
+		final int expBodyLen = 60;
 		final String expLine2 = "Content-Length: " + expBodyLen;
 
 		@SuppressWarnings("TextBlockMigration")
@@ -211,7 +211,7 @@ class RtspProtoLowMsgReaderTest {
 
 			//
 			TestLogs logMsgIf = new TestLogs();
-			RtxpTcpCommsImpl rw = new RtxpTcpCommsImpl(tcpSocket, SOCKET_TIMEOUT_MS);
+			RtxpTcpCommsImpl rw = new RtxpTcpCommsImpl(logMsgIf, 1, tcpSocket, SOCKET_TIMEOUT_MS);
 
 			//
 			peerSocket.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));

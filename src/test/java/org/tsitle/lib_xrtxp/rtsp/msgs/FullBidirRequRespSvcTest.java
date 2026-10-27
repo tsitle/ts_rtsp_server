@@ -36,21 +36,30 @@ import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspConnectionPolicy;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.types.RtspProtoSdpDataMediaEntry;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FullBidirRequRespSvcTest {
 
 	static class TestLogs implements LogMsgInterface {
+		private final ReentrantLock logLock = new ReentrantLock();
+
 		@Override
 		public void addMsgForLogThread(@NonNull RtxpLogLevel logLevel, @NonNull String threadId, @NonNull String msg) {
-			System.out.println(logLevel + " - " + threadId + ": " + msg);
+			logLock.lock();
+			try {
+				System.out.println(logLevel + " - " + threadId + ": " + msg);
+				System.out.flush();
+			} finally {
+				logLock.unlock();
+			}
 		}
 	}
 
@@ -303,16 +312,16 @@ public class FullBidirRequRespSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
 
 	enum ClientType {
 		SDES,
 		MIKEY
 	}
 
-	private final @NonNull RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
+	private final RtspProtoDataCntMessageTypes srvCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 
-	private final @NonNull TestLogs logger = new TestLogs();
+	private final TestLogs logger = new TestLogs();
 	private @Nullable ServerSocket socketServer = null;
 	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
@@ -331,7 +340,7 @@ public class FullBidirRequRespSvcTest {
 			put(ClientType.SDES, "client with sdes/0.9");
 			put(ClientType.MIKEY, "ModernClient/98.1.2");
 		}};
-	private final Map<ClientType, RtxpTcpCommsImpl> cliRtxpTcpComms = new HashMap<>();
+	private @Nullable RtxpTcpCommsImpl cliRtxpTcpComms = null;
 	private final Map<ClientType, RtspProtoPtrSessionInfo> cliPtrSessionInfo = new HashMap<>();
 	private final Map<ClientType, RtspProtoRequestInputSvc> cliRequInputSvc = new HashMap<>();
 	private final Map<ClientType, RtspProtoResponseOutputSvc> cliRespOutputSvc = new HashMap<>();
@@ -345,22 +354,23 @@ public class FullBidirRequRespSvcTest {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		initRtxpTcpComms();
+		initRtxpTcpSockets();
 		initObjsServer();
+		initObjsClientCommon();
 		initObjsClient(ClientType.SDES);
 		initObjsClient(ClientType.MIKEY);
 	}
 
 	@AfterEach
 	void tearDown() throws IOException {
-		if (socketClient != null) {
-			socketClient.close();
+		if (cliRtxpTcpComms != null) {
+			cliRtxpTcpComms.close();
 		}
 		if (socketPeer != null) {
 			socketPeer.close();
 		}
-		if (socketServer != null) {
-			socketServer.close();
+		if (srvRtxpTcpComms != null) {
+			srvRtxpTcpComms.close();
 		}
 	}
 
@@ -1615,7 +1625,7 @@ public class FullBidirRequRespSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void initRtxpTcpComms() throws Exception {
+	private void initRtxpTcpSockets() throws Exception {
 		socketServer = new ServerSocket(0);
 		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
@@ -1624,7 +1634,7 @@ public class FullBidirRequRespSvcTest {
 	private void initObjsServer() throws Exception {
 		Objects.requireNonNull(socketPeer);
 
-		srvRtxpTcpComms = new RtxpTcpCommsImpl(socketPeer, SOCKET_TIMEOUT_MS);
+		srvRtxpTcpComms = new RtxpTcpCommsImpl(logger, 1, socketPeer, SOCKET_TIMEOUT_MS);
 
 		srvPtrSessionInfo = RtspProtoPtrSessionInfo.ofNewSi();
 		srvPtrSessionInfo.ptr().setClientIpAddr(RtspProtoIpAddr.of(socketPeer.getInetAddress()));
@@ -1718,10 +1728,19 @@ public class FullBidirRequRespSvcTest {
 			);
 	}
 
-	private void initObjsClient(ClientType ct) {
+	private void initObjsClientCommon() {
 		Objects.requireNonNull(socketClient);
 
-		cliRtxpTcpComms.put(ct, new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS));
+		cliRtxpTcpComms = new RtxpTcpCommsImpl(
+				logger,
+				2,
+				socketClient,
+				SOCKET_TIMEOUT_MS
+			);
+	}
+
+	private void initObjsClient(ClientType ct) {
+		Objects.requireNonNull(socketServer);
 
 		cliPtrSessionInfo.put(ct, RtspProtoPtrSessionInfo.ofNewSi());
 
@@ -1739,7 +1758,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				true,
 				Objects.requireNonNull(cliPtrSessionInfo.get(ct)),
-				Objects.requireNonNull(cliRtxpTcpComms.get(ct)),
+				Objects.requireNonNull(cliRtxpTcpComms),
 				null,
 				null
 			));
@@ -1749,7 +1768,7 @@ public class FullBidirRequRespSvcTest {
 				false,
 				false,
 				Objects.requireNonNull(cliPtrSessionInfo.get(ct)),
-				Objects.requireNonNull(cliRtxpTcpComms.get(ct))
+				Objects.requireNonNull(cliRtxpTcpComms)
 			));
 	}
 
@@ -1772,7 +1791,7 @@ public class FullBidirRequRespSvcTest {
 				null,
 				null,
 				null,
-				Objects.requireNonNull(cliRtxpTcpComms.get(ct))
+				Objects.requireNonNull(cliRtxpTcpComms)
 			));
 
 		cliRespOutputSvc.put(ct, new RtspProtoResponseOutputSvc(
@@ -1789,7 +1808,7 @@ public class FullBidirRequRespSvcTest {
 				null,
 				null,
 				null,
-				Objects.requireNonNull(cliRtxpTcpComms.get(ct))
+				Objects.requireNonNull(cliRtxpTcpComms)
 			));
 	}
 

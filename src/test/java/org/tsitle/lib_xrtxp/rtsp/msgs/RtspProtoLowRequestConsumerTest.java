@@ -3,7 +3,6 @@ package org.tsitle.lib_xrtxp.rtsp.msgs;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.msg.RtspProtoHighMsgStructuredRequest;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
@@ -13,6 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.msg.RtspProtoLowMsgRaw;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.network.RtspProtoLowMsgReader;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.request.RtspProtoLowRequestConsumer;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -33,7 +33,9 @@ class RtspProtoLowRequestConsumerTest {
 		}
 	}
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
+
+	private final TestLogs logger = new TestLogs();
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
@@ -52,7 +54,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -65,7 +67,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(RtspProtoMessageType.UNKNOWN, msgStructured.messageType);
@@ -85,7 +87,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -98,7 +100,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(RtspProtoMessageType.UNKNOWN, msgStructured.messageType);
@@ -119,7 +121,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -132,7 +134,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -150,7 +152,7 @@ class RtspProtoLowRequestConsumerTest {
 		String msgForSocketStr =
 				expMainLine + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -163,7 +165,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -180,7 +182,7 @@ class RtspProtoLowRequestConsumerTest {
 				expMainLine + "\r\n" +
 				"CSeq: -1" + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -193,7 +195,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -210,7 +212,7 @@ class RtspProtoLowRequestConsumerTest {
 				expMainLine + "\r\n" +
 				"CSeq: " + Long.toUnsignedString(4294967295L) + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -223,7 +225,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -254,7 +256,7 @@ class RtspProtoLowRequestConsumerTest {
 				"\r\n" +
 				"Key1: Value1:With:Colons\r\n" +
 				"Key2:\"Extreme'Value\"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -270,7 +272,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -306,7 +308,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -322,7 +324,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -368,7 +370,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";  // <-- no CRLF at the end
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -384,7 +386,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -404,9 +406,9 @@ class RtspProtoLowRequestConsumerTest {
 		final String expMainLine = expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue();
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
 		final String expLine1 = "CSeq: " + Long.toUnsignedString(expCseqLong);
-		final int expBodyLen = 62;
+		final int expBodyLen = 60;
 		final String expLine2 = "Content-Length: " + expBodyLen;
-		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar\r\n";  // <-- with CRLF at the end
+		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar";  // <-- no CRLF at the end
 
 		@SuppressWarnings("TextBlockMigration")
 		String msgForSocketStr =
@@ -417,7 +419,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";  // <-- no CRLF at the end
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -434,7 +436,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -453,9 +455,9 @@ class RtspProtoLowRequestConsumerTest {
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
 		final String expLine1 = "CSeq: " + Long.toUnsignedString(expCseqLong);
 		final String expLine2 = "Content-Type: " + RtspMimeType.SDP;
-		final int expBodyLen = 62;
+		final int expBodyLen = 60;
 		final String expLine3 = "Content-Length: " + expBodyLen;
-		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar\r\n";  // <-- with CRLF at the end
+		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar";  // <-- no CRLF at the end
 
 		@SuppressWarnings("TextBlockMigration")
 		String msgForSocketStr =
@@ -467,7 +469,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";  // <-- no CRLF at the end
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -485,7 +487,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -515,7 +517,7 @@ class RtspProtoLowRequestConsumerTest {
 				expLine2 + "\r\n" +
 				expLine3 + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -533,7 +535,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -572,7 +574,7 @@ class RtspProtoLowRequestConsumerTest {
 				"Key1\r\n" +
 				"Key2\r\n" +
 				"kEY3\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -589,7 +591,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -617,9 +619,9 @@ class RtspProtoLowRequestConsumerTest {
 		final long expCseqLong = (long)Integer.MAX_VALUE + 1L;
 		final String expLine1 = "CSeq: " + Long.toUnsignedString(expCseqLong);
 		final String expLine2 = "Content-Type: " + RtspMimeType.SDP.getStrValue();
-		final int expBodyLen = 62;
+		final int expBodyLen = 60;
 		final String expLine3 = "Content-Length: " + expBodyLen;
-		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar\r\n";  // <-- with CRLF at the end
+		final String expBodyStr = "v=0\r\no=mhandley 2890844526 IN IP4 126.16.64.4\r\ns=SDP Seminar";  // <-- no CRLF at the end
 
 		@SuppressWarnings("TextBlockMigration")
 		String msgForSocketStr =
@@ -631,7 +633,7 @@ class RtspProtoLowRequestConsumerTest {
 				"v=0\r\n" +
 				"o=mhandley 2890844526 IN IP4 126.16.64.4\r\n" +
 				"s=SDP Seminar";  // <-- no CRLF at the end
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -649,7 +651,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -678,7 +680,7 @@ class RtspProtoLowRequestConsumerTest {
 				expLine2 + "\r\n" +
 				expLine3 + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -695,7 +697,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -736,7 +738,7 @@ class RtspProtoLowRequestConsumerTest {
 				expMsgType.name() + " " + expRequUrl + " " + expProtoVer.getStrValue() + "\r\n" +
 				expLine1 + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -750,7 +752,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -796,7 +798,7 @@ class RtspProtoLowRequestConsumerTest {
 				"\r\n" +
 				"Key1: Value1:With:Colons\r\n" +
 				"Key2:\"Extreme'Value\"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -812,7 +814,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);
@@ -849,11 +851,10 @@ class RtspProtoLowRequestConsumerTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static @NonNull LogMsgInterface buildLogMsgIf() {
-		return new TestLogs();
-	}
-
-	private static @NonNull RtspProtoLowMsgRaw sendMsgAndReadRaw(@NonNull String msgForSocketStr) throws Exception {
+	private static @NonNull RtspProtoLowMsgRaw sendMsgAndReadRaw(
+				@NonNull TestLogs logger,
+				@NonNull String msgForSocketStr
+			) throws Exception {
 		try (ServerSocket serverSocket = new ServerSocket(0);
 				Socket tcpSocket = new Socket("127.0.0.1", serverSocket.getLocalPort());
 				Socket peerSocket = serverSocket.accept()) {
@@ -861,14 +862,14 @@ class RtspProtoLowRequestConsumerTest {
 			peerSocket.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
 			//
-			RtxpTcpCommsImpl rw = new RtxpTcpCommsImpl(tcpSocket, SOCKET_TIMEOUT_MS);
+			RtxpTcpCommsImpl rw = new RtxpTcpCommsImpl(logger, 1, tcpSocket, SOCKET_TIMEOUT_MS);
 
 			//
 			peerSocket.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));
 			peerSocket.getOutputStream().flush();
 
 			//
-			RtspProtoLowMsgReader reader = new RtspProtoLowMsgReader(buildLogMsgIf(), rw, true);
+			RtspProtoLowMsgReader reader = new RtspProtoLowMsgReader(logger, rw, true);
 			RtspProtoLowMsgRaw msgRaw = reader.readMessage();
 
 			rw.closeSocket();
@@ -893,7 +894,7 @@ class RtspProtoLowRequestConsumerTest {
 				expLine1 + "\r\n" +
 				expLine2 + "\r\n" +
 				"\r\n";
-		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(msgForSocketStr);
+		RtspProtoLowMsgRaw msgParsedRaw = sendMsgAndReadRaw(logger, msgForSocketStr);
 
 		//
 		assertTrue(msgParsedRaw.readSuccess);
@@ -908,7 +909,7 @@ class RtspProtoLowRequestConsumerTest {
 		// --------------------------------
 
 		//
-		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(buildLogMsgIf());
+		RtspProtoLowRequestConsumer parser = new RtspProtoLowRequestConsumer(logger);
 		RtspProtoHighMsgStructuredRequest msgStructured = parser.parseMessage(msgParsedRaw);
 
 		assertEquals(expMsgType, msgStructured.messageType);

@@ -100,6 +100,8 @@ class RtspProtoHighRequestConsumerTest {
 
 	private static final String TEST_SUB_STREAM_ID_PREFIX = "test_sub_stream_id_prefix";
 
+	private final TestLogs logger = new TestLogs();
+
 	private RtspProtoIdSubStream generatedSubStreamId = RtspProtoIdSubStream.ofEmpty();
 	private final RtspProtoGlobalSessionInfoSvc globalSessionInfoSvc = buildGlobalSessionInfoSvc();
 
@@ -1150,7 +1152,7 @@ class RtspProtoHighRequestConsumerTest {
 		cfgSrvSuppIncomingMts.writeProtect();
 
 		return new RtspProtoHighRequestConsumer(
-				new TestLogs(),
+				logger,
 				true,
 				cfgSrvSuppIncomingMts,
 				Set.of(),

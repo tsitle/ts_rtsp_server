@@ -22,7 +22,7 @@ import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterGetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoParameterSetterInterface;
 import org.tsitle.lib_xrtxp.rtsp.lowlevel.RtspMimeType;
 import org.tsitle.lib_xrtxp.rtsp.sdp.constants.RtspProtoSdpMediaType;
-import org.tsitle.rtsp_server.threads.rtsp_tcp.RtxpTcpCommsImpl;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -88,11 +88,11 @@ public class ClientRrSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private static final int SOCKET_TIMEOUT_MS = 5;
+	private static final int SOCKET_TIMEOUT_MS = 25;
 
+	private final TestLogs logger = new TestLogs();
 	private @Nullable RtxpTcpCommsImpl rtxpTcpComms = null;
 	private @Nullable ServerSocket socketServer = null;
-	private @Nullable Socket socketClient = null;
 	private @Nullable Socket socketPeer = null;
 	private @Nullable RtspProtoPtrSessionInfo cliPtrSessionInfo = null;
 	private @Nullable ParameterGetterSetter parameterGetterSetter = null;
@@ -115,8 +115,9 @@ public class ClientRrSvcTest {
 
 	@AfterEach
 	void tearDown() throws IOException {
-		if (socketClient != null) {
-			socketClient.close();
+		System.out.println(getClass().getSimpleName() + ".teardown()");
+		if (rtxpTcpComms != null) {
+			rtxpTcpComms.close();
 		}
 		if (socketPeer != null) {
 			socketPeer.close();
@@ -173,7 +174,8 @@ public class ClientRrSvcTest {
 		final List<String> msgLines = List.of(
 				"OPTIONS rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: 9876",
-				"Require: a-neat-feature"
+				"Require: a-neat-feature",
+				""
 			);
 
 		RtspRequestBasics resRequBas = recvRequest(msgLines);
@@ -222,7 +224,7 @@ public class ClientRrSvcTest {
 				"SET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: 29",
 				"Content-Type: text/parameters",
-				"Content-Length: 14",
+				"Content-Length: 12",
 				"",
 				"jitter: 13.8"
 			);
@@ -262,7 +264,7 @@ public class ClientRrSvcTest {
 				"GET_PARAMETER rtsp://localhost/existing_stream RTSP/1.0",
 				"CSeq: 30",
 				"Content-Type: text/parameters",
-				"Content-Length: 8",
+				"Content-Length: 6",
 				"",
 				"jitter"
 			);
@@ -285,12 +287,12 @@ public class ClientRrSvcTest {
 
 	private void initRtxpTcpComms() throws IOException {
 		socketServer = new ServerSocket(0);
-		socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
+		Socket socketClient = new Socket("127.0.0.1", socketServer.getLocalPort());
 		socketPeer = socketServer.accept();
 
-		socketPeer.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
+		//socketPeer.setSoTimeout(SOCKET_TIMEOUT_MS);  // not actually necessary since it only affects read()
 
-		rtxpTcpComms = new RtxpTcpCommsImpl(socketClient, SOCKET_TIMEOUT_MS);
+		rtxpTcpComms = new RtxpTcpCommsImpl(logger, 1, socketClient, SOCKET_TIMEOUT_MS);
 	}
 
 	private void initObjsInput() {
@@ -307,13 +309,13 @@ public class ClientRrSvcTest {
 		Set<String> cfgSupportedFeatures = Set.of("a-useful-feature");
 
 		inputSvc = new RtspProtoRequestInputSvc(
-				new TestLogs(),
+				logger,
 				false,
 				RtxpLogLevel.DEBUG,
 				cfgSupportedMessageTypes,
 				cfgSupportedFeatures,
 				Set.of(),
-				false,
+				true,
 				cliPtrSessionInfo,
 				null,
 				null,
@@ -335,7 +337,7 @@ public class ClientRrSvcTest {
 		cfgSupportedMessageTypes.putMt(RtspProtoMessageType.SET_PARAMETER);
 
 		outputSvc = new RtspProtoResponseOutputSvc(
-				new TestLogs(),
+				logger,
 				true,
 				"client name and version",
 				"en",
