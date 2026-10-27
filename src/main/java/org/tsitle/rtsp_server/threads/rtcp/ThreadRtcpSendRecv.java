@@ -242,7 +242,8 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean mainLoop() throws UdpSocketIoException, TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
+	private boolean mainLoop()
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		try {
@@ -294,7 +295,8 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sendFromQueue() throws TcpSocketIoException, UdpSocketIoException, TcpSocketClosedException {
+	private void sendFromQueue()
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException, UdpSocketIoException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendFromQueue()";
 
 		BufferExt plainPktBuf = queueSend.poll();

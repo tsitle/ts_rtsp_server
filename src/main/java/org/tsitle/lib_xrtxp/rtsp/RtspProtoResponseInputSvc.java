@@ -46,7 +46,6 @@ public final class RtspProtoResponseInputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isResponseFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
 	private final RtspProtoLowResponseConsumer rtspProtoLowResponseConsumer;
@@ -70,7 +69,6 @@ public final class RtspProtoResponseInputSvc {
 		this.logMsgInterface = logMsgInterface;
 		this.isResponseFromClient = isResponseFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpComms = rtxpTcpComms;
 
 		//
 		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
@@ -78,7 +76,7 @@ public final class RtspProtoResponseInputSvc {
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
-				this.rtxpTcpComms,
+				rtxpTcpComms,
 				cfgIsDebugPrintRtspRcvd
 			);
 		this.rtspProtoLowResponseConsumer = new RtspProtoLowResponseConsumer(logMsgInterface);
@@ -103,10 +101,6 @@ public final class RtspProtoResponseInputSvc {
 			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
 					RtspProtoTcpSocketNotReadyException {
 		final String FNC_NAME = getClass().getSimpleName() + ".receiveResponse()";
-
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
 
 		//
 		Optional<RtspProtoMessageType> tmpOptLastMsgTp = loadFromSessionInfo_onlyLastMsgType();

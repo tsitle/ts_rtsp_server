@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
@@ -49,7 +50,6 @@ public final class RtspProtoRequestOutputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
 
 	private final RtspProtoHighRequestProducer rtspProtoHighRequestProducer;
@@ -96,7 +96,6 @@ public final class RtspProtoRequestOutputSvc {
 		this.logMsgInterface = logMsgInterface;
 		this.isRequestFromClient = isRequestFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpComms = rtxpTcpComms;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
 
 		//
@@ -120,7 +119,7 @@ public final class RtspProtoRequestOutputSvc {
 		this.rtspProtoLowRequestProducer = new RtspProtoLowRequestProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
-				this.rtxpTcpComms,
+				rtxpTcpComms,
 				cfgIsDebugPrintRtspSent
 			);
 	}
@@ -135,10 +134,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If there is an I/O exception
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_announce(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_announce()";
 
 		if (isRequestFromClient) {
@@ -162,10 +163,12 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_describe(@NonNull String resourceUrl)
-			throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_describe(resourceUrl, dummyClientCredentials);
@@ -179,12 +182,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_describe(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_describe()";
 
 		if (! isRequestFromClient) {
@@ -205,11 +210,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_getParameter(resourceUrl, dummyClientCredentials);
@@ -222,12 +229,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		return internalSendRequest(
@@ -246,12 +255,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_getParameter(resourceUrl, dummyClientCredentials, getParameterNames);
@@ -266,13 +277,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_getParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamNames getParameterNames
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_getParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -295,11 +308,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_options(resourceUrl, dummyClientCredentials, Set.of(), Set.of());
@@ -312,12 +327,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		return sendRequest_options(resourceUrl, clientCredentials, Set.of(), Set.of());
 	}
 
@@ -329,13 +346,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
 				@NonNull String resourceUrl,
 				@NonNull Set<@NonNull String> requiredFeatures,
 				@NonNull Set<@NonNull String> proxyRequiredFeatures
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_options(
@@ -355,6 +374,7 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_options(
@@ -362,7 +382,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull Set<@NonNull String> requiredFeatures,
 				@NonNull Set<@NonNull String> proxyRequiredFeatures
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_options()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -387,11 +408,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_pause(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_pause(resourceUrl, dummyClientCredentials);
@@ -405,12 +428,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_pause(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_pause()";
 
 		if (! isRequestFromClient) {
@@ -432,11 +457,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_play(
@@ -454,13 +481,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	@SuppressWarnings("unused")
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoPlaybackRange playbackRange
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_play(
@@ -478,13 +507,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	@SuppressWarnings("unused")
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		return sendRequest_play(
 				resourceUrl,
 				clientCredentials,
@@ -501,13 +532,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_play(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoPlaybackRange playbackRange
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_play()";
 
 		if (! isRequestFromClient) {
@@ -538,12 +571,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_setParameter(resourceUrl, dummyClientCredentials, setParameterKvs);
@@ -557,13 +592,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setParameter(
 				@NonNull RtspProtoRscUrl resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoDataCntGetSetParamKvs setParameterKvs
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setParameter()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -589,12 +626,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				boolean useTransportUdp
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_setup(
@@ -613,13 +652,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_setup(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				boolean useTransportUdp
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_setup()";
 
 		if (! isRequestFromClient) {
@@ -653,11 +694,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpInitialOutboundSdes(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpInitialOutboundSdes()";
 
 		if (! isRequestFromClient) {
@@ -690,12 +733,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull SrtxpKmd kmdOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_srtxpRekeyOutboundMikey(
@@ -715,13 +760,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundMikey(
 				@NonNull RtspProtoRscUrl resourceUrlForSubStream,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull SrtxpKmd kmdOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundMikey()";
 
 		if (resourceUrlForSubStream.idSubStream.isEmpty()) {
@@ -759,12 +806,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_srtxpRekeyOutboundSdes(
@@ -784,13 +833,15 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_srtxpRekeyOutboundSdes(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull RtspProtoKmdsStream kmdsOutbound
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_srtxpRekeyOutboundSdes()";
 
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
@@ -823,11 +874,13 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_teardown(
 				@NonNull String resourceUrl
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoClientCredentials dummyClientCredentials = RtspProtoClientCredentials.ofEmpty();
 
 		return sendRequest_teardown(resourceUrl, dummyClientCredentials);
@@ -843,12 +896,14 @@ public final class RtspProtoRequestOutputSvc {
 	 * @return The message type that was sent
 	 * @throws TcpSocketClosedException If the TCP socket is closed
 	 * @throws TcpSocketIoException If an I/O error occurs
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
 	 * @throws RtspProtoSendRequestFailedException If the sending the request has failed
 	 */
 	public @NonNull RtspProtoMessageType sendRequest_teardown(
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendRequest_teardown()";
 
 		if (! isRequestFromClient) {
@@ -936,7 +991,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull String resourceUrl,
 				@NonNull RtspProtoClientCredentials clientCredentials
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		RtspProtoDataRequest inputDataRequ = new RtspProtoDataRequest();
 		inputDataRequ.rrRscUrl.setUrlStr(resourceUrl);
 
@@ -955,12 +1011,8 @@ public final class RtspProtoRequestOutputSvc {
 				@NonNull RtspProtoMessageType requestMessageType,
 				@NonNull RtspProtoClientCredentials clientCredentials,
 				@NonNull InternRequArgs internRequArgs
-			) throws TcpSocketClosedException, TcpSocketIoException, RtspProtoSendRequestFailedException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
-
-		//
+			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				RtspProtoSendRequestFailedException {
 		if (internRequArgs.inputDataRequ.rrRscUrl.getUrlStr().isEmpty()) {
 			throw new IllegalArgumentException(fncName + ": Resource URL is empty");
 		}

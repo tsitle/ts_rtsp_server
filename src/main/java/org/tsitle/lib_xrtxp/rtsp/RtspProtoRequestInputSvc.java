@@ -44,7 +44,6 @@ public final class RtspProtoRequestInputSvc {
 	private final boolean isRequestFromClient;
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
 	private final @Nullable RtspProtoGlobalSessionInfoInterface globalSessionInfoInterface;
-	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 
 	private final @Nullable RtspProtoRequAuthSvc requAuthSvc;
 	private final RtspProtoLowMsgReader rtspProtoLowMsgReader;
@@ -95,7 +94,6 @@ public final class RtspProtoRequestInputSvc {
 		this.isRequestFromClient = isRequestFromClient;
 		this.sessionInfoPtr = sessionInfoPtr;
 		this.globalSessionInfoInterface = globalSessionInfoInterface;
-		this.rtxpTcpComms = rtxpTcpComms;
 
 		//
 		RtspProtoSdpConsumer sdpConsumer = new RtspProtoSdpConsumer();
@@ -116,7 +114,7 @@ public final class RtspProtoRequestInputSvc {
 		//
 		this.rtspProtoLowMsgReader = new RtspProtoLowMsgReader(
 				logMsgInterface,
-				this.rtxpTcpComms,
+				rtxpTcpComms,
 				cfgIsDebugPrintRtspRcvd
 			);
 		this.rtspProtoLowRequestConsumer = new RtspProtoLowRequestConsumer(logMsgInterface);
@@ -187,11 +185,6 @@ public final class RtspProtoRequestInputSvc {
 				@NonNull RtspProtoIpAddr clientIpAddr
 			) throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
 					RtspProtoTcpSocketNotReadyException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
-
-		//
 		RtspProtoDataRequest outputDataRequ = new RtspProtoDataRequest();
 
 		// read the raw request from the TCP socket

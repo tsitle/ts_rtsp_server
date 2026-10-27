@@ -205,14 +205,14 @@ public final class RtspProtoLowMsgReader {
 					Integer.toUnsignedString(outputMsg.body.length()), Long.toUnsignedString(parsedContentLen)));
 		}
 		// add CRLF to the end of the body
-		if (! outputMsg.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
+		/*if (! outputMsg.body.endsWith(RtspProtoLowMsgConstants.CRLF)) {
 			outputMsg.body += RtspProtoLowMsgConstants.CRLF;
 			// silently update the 'Content-Length' header
 			outputMsg.headerLines.set(
 					contentLenHlIx,
 					RtspHeaderKey.CONTENT_LEN.getStrValue() + ": " + Integer.toUnsignedString(outputMsg.body.length())
 				);
-		}
+		}*/
 		// if the 'Content-Length' header was wrong all along, update it now
 		if (outputMsg.body.length() != parsedContentLen) {
 			logDebug(FNC_NAME, "Updating Content-Length in msg headers to " +

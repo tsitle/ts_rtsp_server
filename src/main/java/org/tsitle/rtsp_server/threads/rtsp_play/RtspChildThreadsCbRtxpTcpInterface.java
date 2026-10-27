@@ -20,7 +20,7 @@ public interface RtspChildThreadsCbRtxpTcpInterface {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	void cbSendRtpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException;
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 	// -----------------------------------------------------------------------------------------------------------------
 
@@ -30,6 +30,6 @@ public interface RtspChildThreadsCbRtxpTcpInterface {
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 	void cbNotifyRcvdRtcpRrPacketOverTcp(@NonNull Instant time);
 	void cbSendRtcpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException;
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 }

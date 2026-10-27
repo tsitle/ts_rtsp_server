@@ -2,6 +2,7 @@ package org.tsitle.lib_xrtxp.rtsp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
@@ -39,7 +40,6 @@ public final class RtspProtoResponseOutputSvc {
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtspProtoDataCntMessageTypes cfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 	private final @NonNull RtspProtoPtrSessionInfo sessionInfoPtr;
-	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
 	private final boolean isResponseFromClient;
 
 	private final RtspProtoHighResponseProducer rtspProtoHighResponseProducer;
@@ -96,7 +96,6 @@ public final class RtspProtoResponseOutputSvc {
 		this.cfgSupportedMessageTypes.copyFrom(cfgSupportedMessageTypes);
 		this.cfgSupportedMessageTypes.writeProtect();
 		this.sessionInfoPtr = sessionInfoPtr;
-		this.rtxpTcpComms = rtxpTcpComms;
 		this.isResponseFromClient = isResponseFromClient;
 
 		// check if the supported message types are valid
@@ -133,7 +132,7 @@ public final class RtspProtoResponseOutputSvc {
 		this.rtspProtoLowResponseProducer = new RtspProtoLowResponseProducer(logMsgInterface);
 		this.rtspProtoLowMsgWriter = new RtspProtoLowMsgWriter(
 				logMsgInterface,
-				this.rtxpTcpComms,
+				rtxpTcpComms,
 				cfgIsDebugPrintRtspSent
 			);
 	}
@@ -145,17 +144,15 @@ public final class RtspProtoResponseOutputSvc {
 	 * Send a response.
 	 * @param rtspRequestBasics Basic information about the request that this response is for
 	 * @throws TcpSocketClosedException If the TCP socket is closed
-	 * @throws UdpSocketIoException If an I/O error occurs on the UDP socket
 	 * @throws TcpSocketIoException If an I/O error occurs on the TCP socket
+	 * @throws TcpSocketActivityTimeoutException If the TCP socket activity timeout has been reached
+	 * @throws UdpSocketIoException If an I/O error occurs on the UDP socket
 	 * @throws RtspProtoSendResponseFailedException If sending the response has failed
 	 */
 	public void sendResponse(@NonNull RtspRequestBasics rtspRequestBasics)
-			throws TcpSocketClosedException, UdpSocketIoException, TcpSocketIoException, RtspProtoSendResponseFailedException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException,
+				UdpSocketIoException, RtspProtoSendResponseFailedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".sendResponse()";
-
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
 
 		// build the outgoing message
 		RtspProtoHighMsgStructuredResponse msgStructured;

@@ -6,6 +6,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
+import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import java.util.*;
@@ -20,15 +21,18 @@ public interface RtxpTcpCommsInterface {
 	void closeSocket();
 
 	@SuppressWarnings("unused")
-	int getSocketLocalPort();
+	@NonNull RtspProtoSocketPortNr getSocketLocalPort();
 
-	int getSocketRemotePort();
+	@NonNull RtspProtoSocketPortNr getSocketRemotePort();
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	@SuppressWarnings("unused")
 	boolean getIsRtpRtcpAllowed();
 
 	void setIsRtpRtcpAllowed(boolean value);
+
+	// -----------------------------------------------------------------------------------------------------------------
 
 	void setTcpActivityTimeoutForRtspOnly();
 
@@ -38,20 +42,24 @@ public interface RtxpTcpCommsInterface {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean canReadRtsp() throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
+	boolean canReadRtsp()
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
-	Optional<String> readRtspLine();
+	Optional<String> readRtspLine()
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
-	void writeRtspLines(@NonNull List<@NonNull String> lines) throws TcpSocketIoException;
+	void writeRtspLines(@NonNull List<@NonNull String> lines)
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr, boolean ignoreEmpty)
+	boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 	boolean readRtpOrRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
-	void writeRtpOrRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr) throws TcpSocketIoException;
+	void writeRtpOrRtcpBinary(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 }

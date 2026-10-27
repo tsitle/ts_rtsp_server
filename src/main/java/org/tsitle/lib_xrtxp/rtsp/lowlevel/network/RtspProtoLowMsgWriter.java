@@ -1,6 +1,8 @@
 package org.tsitle.lib_xrtxp.rtsp.lowlevel.network;
 
 import org.jspecify.annotations.NonNull;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
+import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
@@ -36,7 +38,8 @@ public final class RtspProtoLowMsgWriter {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void writeMessage(@NonNull RtspProtoLowMsgRaw msgRaw) throws TcpSocketIoException {
+	public void writeMessage(@NonNull RtspProtoLowMsgRaw msgRaw)
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".writeMessage()";
 
 		List<String> outputLines = new ArrayList<>();

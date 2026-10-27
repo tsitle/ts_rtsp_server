@@ -12,6 +12,7 @@ import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoGlobalSessionInfoInterface;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.*;
+import org.tsitle.lib_xrtxp.rtsp.tcpcomms.RtxpTcpCommsImpl;
 import org.tsitle.rtsp_server.availstreams.AsGetFileTagsInterface;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
@@ -117,7 +118,12 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		this.asGetFileTagsInterface = asGetFileTagsInterface;
 		this.playThreadMngInterface = playThreadMngInterface;
 
-		this.rtxpTcpComms = new RtxpTcpCommsImpl(rtspSocketTcp, timeoutSocketReadMs);
+		this.rtxpTcpComms = new RtxpTcpCommsImpl(
+				logMsgInterface,
+				clientConnectionNr,
+				rtspSocketTcp,
+				timeoutSocketReadMs
+			);
 
 		//
 		java.net.InetAddress tmpRemoteIp = rtspSocketTcp.getInetAddress();
@@ -201,12 +207,13 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		isRunning.set(true);
 		logInfo(FNC_NAME, String.format("Serving RTSP%s to %s:%d",
 				sessionInfoPtr.ptr().getIsRtspsConnection() ? "S" : "",
-				sessionInfoPtr.ptr().getClientIpAddr().getIpAddrStr().orElseThrow(), rtxpTcpComms.getSocketRemotePort()));
+				sessionInfoPtr.ptr().getClientIpAddr().getIpAddrStr().orElseThrow(),
+				rtxpTcpComms.getSocketRemotePort().getPort16bit().orElse(0)));
 
 		//
 		try {
 			MainLoopResult mlr = MainLoopResult.OK;
-			while (! (hasBeenRequestedToStop() || rtxpTcpComms.isSocketClosed() || localCancelToken.cancelled)) {
+			while (! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
 				if ((mlr = mainLoop()) != MainLoopResult.OK) {
 					break;
 				}
@@ -236,7 +243,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		} finally {
 			logInfo(FNC_NAME, String.format("Closing RTSP%s for %s:%d",
 					sessionInfoPtr.ptr().getIsRtspsConnection() ? "S" : "",
-					sessionInfoPtr.ptr().getClientIpAddr().getIpAddrStr().orElseThrow(), rtxpTcpComms.getSocketRemotePort()));
+					sessionInfoPtr.ptr().getClientIpAddr().getIpAddrStr().orElseThrow(),
+					rtxpTcpComms.getSocketRemotePort().getPort16bit().orElse(0)));
 			// close RTSP client socket and stream reader/writer
 			rtxpTcpComms.closeSocket();
 			//
@@ -258,37 +266,25 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	@Override
 	public void cbSendRtpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		rtxpTcpComms.writeRtpOrRtcpBinary(bufView, channNr);
 	}
 
 	@Override
 	public boolean cbCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
-		return rtxpTcpComms.canReadRtpOrRtcp(channNr, rtxpTcpComms.getIsRtpRtcpAllowed());
+		return rtxpTcpComms.canReadRtpOrRtcp(channNr);
 	}
 
 	@Override
 	public boolean cbReadRtcpBinaryOverTcp(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
 		return rtxpTcpComms.readRtpOrRtcpBinary(buf, channNr);
 	}
 
 	@Override
 	public void cbSendRtcpBinaryOverTcp(@NonNull BufferView bufView, @NonNull RtspProtoTcpChannelNr channNr)
-			throws TcpSocketIoException, TcpSocketClosedException {
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
+			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
 		rtxpTcpComms.writeRtpOrRtcpBinary(bufView, channNr);
 	}
 
@@ -385,12 +381,8 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		}
 	}
 
-	private boolean handleSuccessfulRequest(@NonNull RtspRequestBasics rtspRequestBasics) throws TcpSocketClosedException {
+	private boolean handleSuccessfulRequest(@NonNull RtspRequestBasics rtspRequestBasics) {
 		final String FNC_NAME = getClass().getSimpleName() + ".handleSuccessfulRequest()";
-
-		if (rtxpTcpComms.isSocketClosed()) {
-			throw new TcpSocketClosedException();
-		}
 
 		// sanity checks
 		if (rtspRequestBasics.rscUrl.getUrlStr().isEmpty()) {

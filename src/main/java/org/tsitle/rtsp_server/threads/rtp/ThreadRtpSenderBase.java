@@ -4,10 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
+import org.tsitle.lib_xrtxp.common.exceptions.*;
 import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
 import org.tsitle.lib_xrtxp.packets.rtcp.RtcpInnerSenderInfoBlock;
@@ -820,7 +817,7 @@ public abstract class ThreadRtpSenderBase<
 				);
 			try {
 				parComRtpRwIfTcp.cbSendRtpBinaryOverTcp(tmpBv, paramsCommon.getTpClientDestTcpChann());
-			} catch (TcpSocketClosedException e) {
+			} catch (TcpSocketClosedException | TcpSocketActivityTimeoutException e) {
 				// fail silently
 				return false;
 			}
