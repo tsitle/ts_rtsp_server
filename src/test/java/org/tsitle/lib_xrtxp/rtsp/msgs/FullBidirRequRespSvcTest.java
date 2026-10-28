@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -1003,7 +1002,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
@@ -1043,7 +1042,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
@@ -1119,7 +1118,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
@@ -1163,7 +1162,7 @@ public class FullBidirRequRespSvcTest {
 
 			// ----------------------------------------------------
 
-			RtspResponseBasics resRespBas = srvRespInputSvc.receiveResponse();
+			RtspResponseBasics resRespBas = receiveResponseFromClient();
 			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 			assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 		}
@@ -1632,7 +1631,6 @@ public class FullBidirRequRespSvcTest {
 				return cliRequInputSvc.get(ct).receiveRequestFromServer();
 			} catch (RtspProtoTcpSocketNotReadyException e) {
 				++failCount;
-				SleepHelper.basicSleep(1L);
 			}
 		}
 		throw new RtspProtoTcpSocketNotReadyException();
@@ -1647,7 +1645,6 @@ public class FullBidirRequRespSvcTest {
 				return cliRespInputSvc.get(ct).receiveResponse();
 			} catch (RtspProtoTcpSocketNotReadyException e) {
 				++failCount;
-				SleepHelper.basicSleep(1L);
 			}
 		}
 		throw new RtspProtoTcpSocketNotReadyException();
@@ -1662,7 +1659,20 @@ public class FullBidirRequRespSvcTest {
 				return srvRequInputSvc.receiveRequestFromClient();
 			} catch (RtspProtoTcpSocketNotReadyException e) {
 				++failCount;
-				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
+	}
+
+	private @NonNull RtspResponseBasics receiveResponseFromClient() throws Exception {
+		Objects.requireNonNull(srvRespInputSvc);
+
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return srvRespInputSvc.receiveResponse();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
 			}
 		}
 		throw new RtspProtoTcpSocketNotReadyException();

@@ -5,7 +5,6 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.*;
@@ -288,7 +287,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		assertTrue(srvPtrSessionInfo.ptr().getRhGetParamNames().isPresent());
@@ -326,7 +325,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -362,7 +361,7 @@ public class C2sRrSvcTest {
 				setParamKvs
 			);
 
-		resRequBas = srvInputSvc.receiveRequestFromClient();
+		resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		srvOutputSvc.sendResponse(resRequBas);
@@ -402,7 +401,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		resRequBas = srvInputSvc.receiveRequestFromClient();
+		resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		assertTrue(srvPtrSessionInfo.ptr().getRhGetParamNames().isPresent());
@@ -438,7 +437,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -467,7 +466,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OPTION_NOT_SUPPORTED, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -497,7 +496,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		assertEquals("client name and version", srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
@@ -537,7 +536,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);  // <-- the server doesn't check the credentials for OPTIONS requests
 
 		// ----------------------------------------------------
@@ -564,7 +563,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -591,7 +590,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -618,7 +617,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.METHOD_NOT_VALID_IN_THIS_STATE, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -650,7 +649,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
 		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvPtrSessionInfo.ptr().getRhSetParamValues();
@@ -688,7 +687,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.INVALID_PARAMETER, resRequBas.statusCode);
 
 		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvPtrSessionInfo.ptr().getRhSetParamValues();
@@ -727,7 +726,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.UNAUTHORIZED, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -759,7 +758,7 @@ public class C2sRrSvcTest {
 
 		// ----------------------------------------------------
 
-		resRequBas = srvInputSvc.receiveRequestFromClient();
+		resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		Optional<RtspProtoDataCntGetSetParamKvs> tmpOptKvs = srvPtrSessionInfo.ptr().getRhSetParamValues();
@@ -792,7 +791,20 @@ public class C2sRrSvcTest {
 				return cliInputSvc.receiveResponse();
 			} catch (RtspProtoTcpSocketNotReadyException e) {
 				++failCount;
-				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
+	}
+
+	private @NonNull RtspRequestBasics receiveRequestFromClient() throws Exception {
+		Objects.requireNonNull(srvInputSvc);
+
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return srvInputSvc.receiveRequestFromClient();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
 			}
 		}
 		throw new RtspProtoTcpSocketNotReadyException();

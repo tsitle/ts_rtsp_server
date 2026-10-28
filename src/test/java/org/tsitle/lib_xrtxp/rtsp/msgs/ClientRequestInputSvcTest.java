@@ -3,7 +3,6 @@ package org.tsitle.lib_xrtxp.rtsp.msgs;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
@@ -172,7 +171,6 @@ public class ClientRequestInputSvcTest {
 				return inputSvc.receiveRequestFromServer();
 			} catch (RtspProtoTcpSocketNotReadyException e) {
 				++failCount;
-				SleepHelper.basicSleep(1L);
 			}
 		}
 		throw new RtspProtoTcpSocketNotReadyException();
