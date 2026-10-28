@@ -6,9 +6,7 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import java.io.IOException;
@@ -17,10 +15,16 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 
+	private static final long WAIT_UNTIL_WRITTEN_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1L);
+
 	private final @NonNull OutputStream socketOs;
+	private final Object writeStateMonitor = new Object();
+	private final AtomicBoolean hasThreadEnded = new AtomicBoolean(false);
 
 	/**
 	 * Constructor.
@@ -53,6 +57,22 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public void run() {
+		try {
+			super.run();
+		} finally {
+			hasThreadEnded.set(true);
+			notifyWriteStateChanged();
+		}
+	}
+
+	@Override
+	public void stopThread() {
+		super.stopThread();
+		notifyWriteStateChanged();
+	}
 
 	@Override
 	void closeIoStream() {
@@ -89,16 +109,8 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 			blockedState.unblock(BlockedState.Flag.BUFFER_WRITE);
 		}
 
-		// wait until send buffer is empty
-		TimestampEpoch tmpNow = TimestampEpoch.ofNow();
-		while (! (hasBeenRequestedToStop() || textDataRingBuf.isEmpty())) {
-			if (tmpNow.isElapsedMs(1000)) {
-				throw new RuntimeException(FNC_NAME + ": Timeout waiting for send buffer to empty");
-			}
-			if (! SleepHelper.precSleep(0L, 250_000)) {
-				break;
-			}
-		}
+		notifyWriteStateChanged();
+		waitUntilWritten(FNC_NAME, this::isTextDataRingBufEmpty);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -144,16 +156,8 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 			blockedState.unblock(BlockedState.Flag.BUFFER_WRITE);
 		}
 
-		// wait until send buffer is empty
-		int waitCnt = 0;
-		while (! (hasBeenRequestedToStop() || rbPtr.isEmpty())) {
-			if (++waitCnt > 1000) {
-				throw new RuntimeException(FNC_NAME + ": Timeout waiting for send buffer to empty");
-			}
-			if (! SleepHelper.basicSleep(1L)) {
-				break;
-			}
-		}
+		notifyWriteStateChanged();
+		waitUntilWritten(FNC_NAME, rbPtr::isEmpty);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -161,7 +165,7 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 
 	@Override
 	protected boolean mainLoop()
-			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InterruptedException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
 		if (rtspSocketTcp.isClosed()) {
@@ -171,23 +175,13 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 			return false;  // stop the thread
 		}
 
-		try {
-			blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.SOCKET_WRITE);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
-			return false;  // stop the thread
-		}
+		blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.SOCKET_WRITE);
 		try {
 			tcpActivityInterface.checkTcpActivityTimeout();
 
 			boolean haveWrittenSomething = false;
 
-			try {
-				blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.BUFFER_WRITE);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
-				return false;  // stop the thread
-			}
+			blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.BUFFER_WRITE);
 			try {
 				// RTSP lines
 				if (! textDataRingBuf.isEmpty()) {
@@ -214,15 +208,98 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 
 			if (haveWrittenSomething) {
 				tcpActivityInterface.resetTcpActivityTimeoutTimer();
+				notifyWriteStateChanged();
 			}
 		} finally {
 			blockedState.unblock(BlockedState.Flag.SOCKET_WRITE);
 		}
 
+		sleepForSomeTime();
 		return true;  // all good - continue the thread
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * The write-thread is explicitly woken when data is queued, so polling sleeps are not needed here.
+	 */
+	private void sleepForSomeTime() throws InterruptedException {
+		synchronized (writeStateMonitor) {
+			while (! hasBeenRequestedToStop() && ! hasThreadEnded.get() && ! hasPendingWriteData()) {
+				writeStateMonitor.wait();
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@FunctionalInterface
+	private interface BufferEmptyCheck {
+		boolean isEmpty();
+	}
+
+	private void notifyWriteStateChanged() {
+		synchronized (writeStateMonitor) {
+			writeStateMonitor.notifyAll();
+		}
+	}
+
+	private void waitUntilWritten(@NonNull String fncName, @NonNull BufferEmptyCheck bufferEmptyCheck)
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
+		long remainingNs = WAIT_UNTIL_WRITTEN_TIMEOUT_NS;
+		final long deadlineNs = System.nanoTime() + remainingNs;
+
+		while (! (hasBeenRequestedToStop() || hasThreadEnded.get() || bufferEmptyCheck.isEmpty())) {
+			raiseForErrorState();
+			if (remainingNs <= 0L) {
+				throw new RuntimeException(fncName + ": Timeout waiting for send buffer to empty");
+			}
+
+			synchronized (writeStateMonitor) {
+				if (! (hasBeenRequestedToStop() || hasThreadEnded.get() || bufferEmptyCheck.isEmpty())) {
+					try {
+						TimeUnit.NANOSECONDS.timedWait(writeStateMonitor, remainingNs);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();  // restore flag
+						return;
+					}
+				}
+			}
+			remainingNs = deadlineNs - System.nanoTime();
+		}
+
+		raiseForErrorState();
+	}
+
+	private boolean isTextDataRingBufEmpty() {
+		return textDataRingBuf.isEmpty();
+	}
+
+	private boolean hasPendingWriteData() {
+		try {
+			blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.BUFFER_WRITE);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
+			return true;
+		}
+		try {
+			if (! textDataRingBuf.isEmpty()) {
+				return true;
+			}
+			if (isRtpRtcpAllowed.get()) {
+				for (BinaryPktRingBuf rbPtr : mapBinaryDataRbs.values()) {
+					if (! rbPtr.isEmpty()) {
+						return true;
+					}
+				}
+			}
+			return false;
+		} finally {
+			blockedState.unblock(BlockedState.Flag.BUFFER_WRITE);
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void writeTextToSocket() throws IOException {

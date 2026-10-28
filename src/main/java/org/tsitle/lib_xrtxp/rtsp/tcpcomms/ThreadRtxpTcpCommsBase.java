@@ -5,7 +5,6 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
@@ -121,7 +120,6 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 				if (! mainLoop()) {
 					break;
 				}
-				sleepForSomeTime();
 			}
 		} catch (TcpSocketClosedException e) {
 			errorMsg = "TcpSocketClosedException caught";
@@ -195,7 +193,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	protected abstract boolean mainLoop()
-			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException;
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InterruptedException;
 
 	protected void closeIoStream(BlockedState.@NonNull Flag flag, @Nullable InputStream is, @Nullable OutputStream os) {
 		try {
@@ -241,15 +239,6 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------------
-
-	protected void sleepForSomeTime() throws InterruptedException {
-		if ((isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(0L, 250_000)) ||
-				(! isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(1L))) {
-			throw new InterruptedException();
-		}
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {

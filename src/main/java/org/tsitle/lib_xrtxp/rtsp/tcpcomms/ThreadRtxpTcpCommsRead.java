@@ -55,7 +55,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 	private final ReentrantLock lockDataAvail = new ReentrantLock();
 	private final Condition condDataAvail = lockDataAvail.newCondition();
 	/** Gets incremented whenever new data is available or the thread state has changed. Guarded by lockDataAvail */
-	private long dataAvailSeqNr = 0L;
+	private long dataAvailCounter = 0L;
 	private final AtomicBoolean hasThreadEnded = new AtomicBoolean(false);
 
 	/**
@@ -152,7 +152,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 	/**
 	 * Wait until an RTSP line is available for reading.
 	 * @param timeoutMs Max. time to wait in milliseconds
-	 * @return true if an RTSP line is available
+	 * @return True if an RTSP line is available
 	 */
 	boolean waitUntilCanReadRtsp(long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
@@ -223,7 +223,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 	 * Wait until an RTP/RTCP packet is available for reading on the given channel.
 	 * @param channNr TCP channel number
 	 * @param timeoutMs Max. time to wait in milliseconds
-	 * @return true if an RTP/RTCP packet is available
+	 * @return True if an RTP/RTCP packet is available
 	 */
 	boolean waitUntilCanReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr, long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
@@ -263,7 +263,8 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected boolean mainLoop() throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
+	protected boolean mainLoop()
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException, InterruptedException {
 		if (rtspSocketTcp.isClosed()) {
 			if (! (hasBeenRequestedToStop() || hasSocketBeenImplicitlyClosed.get())) {
 				throw new TcpSocketClosedException();
@@ -283,12 +284,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 			return (haveText || haveBin);  // continue or stop the thread
 		}
 
-		try {
-			blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.SOCKET_READ);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();  // restore flag
-			return false;  // stop the thread
-		}
+		blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.SOCKET_READ);
 		try {
 			tcpActivityInterface.checkTcpActivityTimeout();
 
@@ -298,12 +294,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 			}
 
 			final boolean haveNewEntries;
-			try {
-				blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.BUFFER_READ);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();  // restore flag
-				return false;  // stop the thread
-			}
+			blockedState.waitForUnblockedAndThenBlock(BlockedState.Flag.BUFFER_READ);
 			try {
 				haveNewEntries = parseCachedData();
 			} finally {
@@ -321,28 +312,23 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 		return true;  // all good - continue the thread
 	}
 
-	/** The socket read blocks for up to timeoutSocketReadMs, so there is no need for an additional sleep */
-	@Override
-	protected void sleepForSomeTime() {
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void notifyDataAvailable() {
 		lockDataAvail.lock();
 		try {
-			++dataAvailSeqNr;
+			++dataAvailCounter;
 			condDataAvail.signalAll();
 		} finally {
 			lockDataAvail.unlock();
 		}
 	}
 
-	private long getDataAvailSeqNr() {
+	private long getDataAvailCounter() {
 		lockDataAvail.lock();
 		try {
-			return dataAvailSeqNr;
+			return dataAvailCounter;
 		} finally {
 			lockDataAvail.unlock();
 		}
@@ -353,7 +339,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 		long remainingNs = TimeUnit.MILLISECONDS.toNanos(Math.max(timeoutMs, 0L));
 		while (true) {
 			// fetch the sequence number before checking, so that no notification can get lost in between
-			final long lastSeqNr = getDataAvailSeqNr();
+			final long lastDataAvailCounter = getDataAvailCounter();
 			if (dataCheck.check()) {
 				return true;
 			}
@@ -362,7 +348,7 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 			}
 			lockDataAvail.lock();
 			try {
-				while (dataAvailSeqNr == lastSeqNr && remainingNs > 0L) {
+				while (dataAvailCounter == lastDataAvailCounter && remainingNs > 0L) {
 					remainingNs = condDataAvail.awaitNanos(remainingNs);
 				}
 			} catch (InterruptedException e) {
