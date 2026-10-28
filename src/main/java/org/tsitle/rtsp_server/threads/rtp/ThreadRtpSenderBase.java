@@ -319,7 +319,7 @@ public abstract class ThreadRtpSenderBase<
 		int loopCnt = 0;
 		while (! doStop.get() && threadDataProv != null &&
 				(! (threadDataProv.isRunning() && threadDataProv.haveFullInputQueue()))) {
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				throw new InterruptedException();
 			}
 			if (++loopCnt % 50 == 0) {
@@ -556,7 +556,7 @@ public abstract class ThreadRtpSenderBase<
 				isReady = true;
 				break;
 			}
-			if (! SleepHelper.sleep(0L, 250_000)) {
+			if (! SleepHelper.basicSleep(0L, 250_000)) {
 				throw new InterruptedException();
 			}
 		}
@@ -571,7 +571,7 @@ public abstract class ThreadRtpSenderBase<
 	private boolean mainLoop() throws InterruptedException, InputStreamEosException, RtpFrameDataAcquException,
 			UdpSocketIoException, TcpSocketIoException {
 		if (isPaused.get()) {
-			if (! SleepHelper.sleep(100L)) {
+			if (! SleepHelper.basicSleep(100L)) {
 				throw new InterruptedException();
 			}
 			return true;

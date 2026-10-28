@@ -124,7 +124,7 @@ public final class RtspThreadMngInpDmxRtsp extends RtspThreadMngBase {
 			final int MAX_TIMEOUT_CNT = 100;
 			int timeoutCnt = 0;
 			while (! threadDmx.isRunning() && ++timeoutCnt <= MAX_TIMEOUT_CNT) {
-				if (! SleepHelper.sleep(10L)) {
+				if (! SleepHelper.basicSleep(10L)) {
 					break;
 				}
 			}

@@ -57,7 +57,7 @@ public abstract class RunnableBase implements Runnable {
 	protected void sleepLongAndProsper(@NonNull CancelToken localCancelToken, int secs) throws InterruptedException {
 		long ms = secs * 1000L;
 		while (ms > 0L && ! (hasBeenRequestedToStop() || localCancelToken.cancelled)) {
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				throw new InterruptedException();
 			}
 			ms -= 10L;

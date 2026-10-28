@@ -199,7 +199,7 @@ public final class RtspServerApp {
 					//
 					int loopCnt = 0;
 					while (! isShutdownComplete.get() && loopCnt++ < 10 * 60) {  // ^= 60s
-						if (! SleepHelper.sleep(100L)) {
+						if (! SleepHelper.basicSleep(100L)) {
 							break;
 						}
 					}
@@ -344,11 +344,11 @@ public final class RtspServerApp {
 			if (++waitCnt > 100) {  // ^= 1 second
 				break;
 			}
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				break;
 			}
 		}
-		SleepHelper.sleep(100L);  // give thread some additional time for startup
+		SleepHelper.basicSleep(100L);  // give thread some additional time for startup
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -367,7 +367,7 @@ public final class RtspServerApp {
 
 	private static void waitUntilLogQueueIsEmpty() {
 		while (threadRtxpLogger != null && threadRtxpLogger.havePendingMessages()) {
-			if (! SleepHelper.sleep(100L)) {
+			if (! SleepHelper.basicSleep(100L)) {
 				break;
 			}
 		}
@@ -630,7 +630,7 @@ public final class RtspServerApp {
 	private static void sleepLongAndProsper_1sec() {
 		long ms = 1000L;
 		while (ms > 0L && ! doStop.get()) {
-			if (! SleepHelper.sleep(50L)) {
+			if (! SleepHelper.basicSleep(50L)) {
 				return;
 			}
 			ms -= 50L;

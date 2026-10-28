@@ -156,7 +156,7 @@ public final class ThreadStreamsConfig extends ThreadBase {
 
 	private void sleepLongAndProsper(long ms) throws InterruptedException {
 		while (ms > 0L && ! hasBeenRequestedToStop()) {
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				throw new InterruptedException();
 			}
 			ms -= 10L;

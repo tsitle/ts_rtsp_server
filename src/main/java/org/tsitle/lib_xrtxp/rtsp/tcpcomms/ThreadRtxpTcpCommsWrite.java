@@ -95,7 +95,7 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 			if (++waitCnt > 1000) {
 				throw new RuntimeException(FNC_NAME + ": Timeout waiting for send buffer to empty");
 			}
-			if (! SleepHelper.sleep(1L)) {
+			if (! SleepHelper.basicSleep(1L)) {
 				break;
 			}
 		}
@@ -150,7 +150,7 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 			if (++waitCnt > 1000) {
 				throw new RuntimeException(FNC_NAME + ": Timeout waiting for send buffer to empty");
 			}
-			if (! SleepHelper.sleep(1L)) {
+			if (! SleepHelper.basicSleep(1L)) {
 				break;
 			}
 		}

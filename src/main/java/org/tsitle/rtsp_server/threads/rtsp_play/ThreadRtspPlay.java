@@ -365,7 +365,7 @@ public final class ThreadRtspPlay extends RunnableBase
 		}
 
 		//
-		if (! SleepHelper.sleep(50L)) {
+		if (! SleepHelper.basicSleep(50L)) {
 			throw new InterruptedException();
 		}
 

@@ -638,7 +638,7 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			}
 			return (handleSuccessfulRequest(rtspRequestBasics) ? MainLoopResult.OK : MainLoopResult.ERROR);
 		} catch (RtspProtoTcpSocketNotReadyException e1) {
-			if (! SleepHelper.sleep(100L - 15L)) {
+			if (! SleepHelper.basicSleep(100L - 15L)) {
 				throw new InterruptedException();
 			}
 			return MainLoopResult.OK;

@@ -328,7 +328,7 @@ public abstract class ThreadDataProvEsFromRawFileBase<I extends CodecInfoInterfa
 					return false;
 				}
 				if (needAvailFrame && queueAvail.get() == 0) {
-					if (! SleepHelper.sleep(1L)) {
+					if (! SleepHelper.basicSleep(1L)) {
 						throw new InterruptedException();
 					}
 					continue;

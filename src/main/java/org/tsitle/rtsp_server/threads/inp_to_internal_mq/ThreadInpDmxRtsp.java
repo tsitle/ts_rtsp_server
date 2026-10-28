@@ -183,7 +183,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				if (! SleepHelper.sleep(0L, 500_000)) {
+				if (! SleepHelper.basicSleep(0L, 500_000)) {
 					throw new InterruptedException();
 				}
 			}
@@ -209,7 +209,7 @@ public final class ThreadInpDmxRtsp extends RunnableBase {
 		} else if (! ffPktCacheEntry.ffPktObj.isVideo && mqInternalPubAud != null) {
 			sendAvPktToMq(mqInternalPubAud, dataPerMqAud);
 		} else {
-			if (! SleepHelper.sleep(100L)) {
+			if (! SleepHelper.basicSleep(100L)) {
 				throw new InterruptedException();
 			}
 		}

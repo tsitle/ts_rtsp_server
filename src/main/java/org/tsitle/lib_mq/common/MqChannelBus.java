@@ -160,7 +160,7 @@ public final class MqChannelBus {
 
 			final String endpoint = mapIdToEndpoint.get(id);
 			zmqSocket.connect(endpoint);
-			if (! SleepHelper.sleep(100L)) {
+			if (! SleepHelper.basicSleep(100L)) {
 				throw new MqException("InterruptedException");
 			}
 

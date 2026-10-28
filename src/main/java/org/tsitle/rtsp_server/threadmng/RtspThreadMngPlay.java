@@ -76,7 +76,7 @@ public final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPl
 		final int MAX_TIMEOUT_CNT = 5000;
 		int timeoutCnt = 0;
 		while (! rtspPlayThreadMap.containsKey(rtspSessionInfo.getIdSession()) && ++timeoutCnt <= MAX_TIMEOUT_CNT) {
-			if (! SleepHelper.sleep(1L)) {
+			if (! SleepHelper.basicSleep(1L)) {
 				break;
 			}
 		}
@@ -151,7 +151,7 @@ public final class RtspThreadMngPlay extends RtspThreadMngBase implements RtspPl
 			final int MAX_TIMEOUT_CNT = 100;
 			int timeoutCnt = 0;
 			while (! threadRtspPlay.isRunning() && ++timeoutCnt <= MAX_TIMEOUT_CNT) {
-				if (! SleepHelper.sleep(10L)) {
+				if (! SleepHelper.basicSleep(10L)) {
 					break;
 				}
 			}

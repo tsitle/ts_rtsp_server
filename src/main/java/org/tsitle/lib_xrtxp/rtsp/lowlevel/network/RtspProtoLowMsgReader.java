@@ -142,7 +142,7 @@ public final class RtspProtoLowMsgReader {
 				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
 					break;
 				}
-				if (! SleepHelper.sleep(50L)) {
+				if (! SleepHelper.basicSleep(50L)) {
 					break;
 				}
 				headerLine = "xxx";  // keep the loop going
@@ -185,7 +185,7 @@ public final class RtspProtoLowMsgReader {
 				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
 					break;
 				}
-				if (! SleepHelper.sleep(50L)) {
+				if (! SleepHelper.basicSleep(50L)) {
 					break;
 				}
 				bodyLine = "xxx";  // keep the loop going

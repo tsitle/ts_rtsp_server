@@ -242,7 +242,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 			checkCacheNotEmpty(haveInputVideo.get(), cacheVid);
 			checkCacheNotEmpty(haveInputAudio.get(), cacheAud);
 			//
-			if (! SleepHelper.sleep(0L, 250_000)) {
+			if (! SleepHelper.basicSleep(0L, 250_000)) {
 				throw new InterruptedException();
 			}
 		}
@@ -320,7 +320,7 @@ public final class ThreadDataProvDmxFc extends ThreadDpBase implements TdpDemuxF
 		// wait until we have read the stream info in the main loop
 		int loopCnt = 0;
 		while (++loopCnt <= 1000 && ! haveInputSi.get()) {
-			if (! SleepHelper.sleep(5L)) {
+			if (! SleepHelper.basicSleep(5L)) {
 				throw new InputStreamEosException();
 			}
 		}

@@ -115,7 +115,7 @@ public final class AdaptiveScheduler {
 			}
 		}
 
-		SleepHelper.sleepUntilNanos(targetTimeNanos);
+		SleepHelper.precSleepUntilNanos(targetTimeNanos);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

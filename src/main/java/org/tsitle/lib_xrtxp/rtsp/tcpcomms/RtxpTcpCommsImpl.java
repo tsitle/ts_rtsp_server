@@ -134,7 +134,7 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 			if (++waitCnt > 100 * 5) {  // ^= 5 secs
 				break;
 			}
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				break;
 			}
 		}
@@ -174,7 +174,7 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 				if (++waitCnt > 100 * 5) {  // ^= 5 secs
 					break;
 				}
-				if (! SleepHelper.sleep(10L)) {
+				if (! SleepHelper.basicSleep(10L)) {
 					break;
 				}
 			}

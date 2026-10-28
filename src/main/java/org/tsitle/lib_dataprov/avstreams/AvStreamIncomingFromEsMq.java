@@ -78,7 +78,7 @@ public final class AvStreamIncomingFromEsMq extends AvStreamIncomingBase {
 					//
 					break;
 				}
-				if (! SleepHelper.sleep(0L, 250_000)) {
+				if (! SleepHelper.basicSleep(0L, 250_000)) {
 					break;
 				}
 			}

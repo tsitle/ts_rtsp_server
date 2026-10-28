@@ -161,7 +161,7 @@ public final class RtspProtoRequAuthSvc {
 		if (unauthCnt > 1) {
 			// make the client wait a bit before retrying
 			for (int i = 0; i < unauthCnt; i++) {
-				if (! SleepHelper.sleep(100L)) {
+				if (! SleepHelper.basicSleep(100L)) {
 					break;
 				}
 			}

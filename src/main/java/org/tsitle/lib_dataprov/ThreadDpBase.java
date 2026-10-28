@@ -43,7 +43,7 @@ public abstract class ThreadDpBase extends Thread {
 
 		int waitCnt = 0;
 		while (isRunning.get()) {
-			if (! SleepHelper.sleep(10L)) {
+			if (! SleepHelper.basicSleep(10L)) {
 				break;
 			}
 			if (++waitCnt >= 100 * 5) {  // ^= 5 secs
