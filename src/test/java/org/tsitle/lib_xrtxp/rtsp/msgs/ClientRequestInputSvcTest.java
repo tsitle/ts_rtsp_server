@@ -3,6 +3,7 @@ package org.tsitle.lib_xrtxp.rtsp.msgs;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_xrtxp.rtsp.RtspProtoPtrSessionInfo;
@@ -13,6 +14,7 @@ import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoTcpSocketNotReadyException;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
@@ -164,7 +166,16 @@ public class ClientRequestInputSvcTest {
 		socketPeer.getOutputStream().write(msgForSocketStr.getBytes(StandardCharsets.UTF_8));
 		socketPeer.getOutputStream().flush();
 
-		return inputSvc.receiveRequestFromServer();
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return inputSvc.receiveRequestFromServer();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
+				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

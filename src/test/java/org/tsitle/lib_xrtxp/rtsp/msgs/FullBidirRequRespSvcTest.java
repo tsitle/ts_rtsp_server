@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
 import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
 import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
 import org.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
@@ -20,10 +21,7 @@ import org.tsitle.lib_xrtxp.rtsp.*;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.*;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoMessageType;
 import org.tsitle.lib_xrtxp.rtsp.enums.RtspProtoStatusCode;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdInputSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoIdEsSourceNotFoundException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamInvalidValueException;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoRtspParamUnknownException;
+import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspProtoHighConstants;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspRequestBasics;
 import org.tsitle.lib_xrtxp.rtsp.highlevel.RtspResponseBasics;
@@ -569,7 +567,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -578,7 +576,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 	}
 
@@ -742,7 +740,7 @@ public class FullBidirRequRespSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void do_c2s_Describe(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	private void do_c2s_Describe(@NonNull ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -756,7 +754,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 		assertEquals(RtspConnectionPolicy.CLOSE, srvPtrSessionInfo.ptr().getRhConnectionPolicy().orElseThrow());
@@ -773,7 +771,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
@@ -781,7 +779,7 @@ public class FullBidirRequRespSvcTest {
 		assertEquals(2, cliPtrSiForCt.ptr().getDescrAvailableSubStreamIds().size());
 	}
 
-	private void do_c2s_Setup(ClientType ct, @NonNull RtspProtoRscUrl rscUrlForSs, boolean useTransportUdp) throws Exception {
+	private void do_c2s_Setup(@NonNull ClientType ct, @NonNull RtspProtoRscUrl rscUrlForSs, boolean useTransportUdp) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -809,7 +807,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 
@@ -821,14 +819,14 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		assertEquals("server name and version", cliPtrSiForCt.ptr().getServerSoftware().orElseThrow());
 
 		assertEquals(RtspProtoHighConstants.DEFAULT_RTSP_SESSION_TIMEOUT, cliPtrSiForCt.ptr().getSessionTimeout32bit().orElseThrow());
 	}
 
-	private void do_checkSetupClientSide(ClientType ct, boolean useTransportUdp) throws Exception {
+	private void do_checkSetupClientSide(@NonNull ClientType ct, boolean useTransportUdp) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 
 		RtspProtoPtrSessionInfo cliPtrSiForCt = cliPtrSessionInfo.get(ct);
@@ -937,7 +935,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -946,7 +944,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
 		// ----------------------------------------------------
@@ -980,7 +978,7 @@ public class FullBidirRequRespSvcTest {
 		}
 	}
 
-	private void do_s2c_Options(ClientType ct) throws Exception {
+	private void do_s2c_Options(@NonNull ClientType ct) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -995,7 +993,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
+		RtspRequestBasics resRequBas = receiveRequestFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1010,7 +1008,7 @@ public class FullBidirRequRespSvcTest {
 		assertEquals(cliUserAgent.get(ct), srvPtrSessionInfo.ptr().getClientUserAgent().orElseThrow());
 	}
 
-	private void do_s2c_Announce_noCrypto(ClientType ct) throws Exception {
+	private void do_s2c_Announce_noCrypto(@NonNull ClientType ct) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1025,7 +1023,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
+		RtspRequestBasics resRequBas = receiveRequestFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 		assertTrue(cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().isPresent());
 		RtspProtoDataCntSdpStructured requAnnouncedSdpStc = cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().orElseThrow();
@@ -1083,7 +1081,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
+		RtspRequestBasics resRequBas = receiveRequestFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		assertTrue(cliPtrSiForCt.ptr().getRhAnnouncedSdpStc().isPresent());
@@ -1151,7 +1149,7 @@ public class FullBidirRequRespSvcTest {
 
 			// ----------------------------------------------------
 
-			RtspRequestBasics resRequBas = cliRequInputSvc.get(ct).receiveRequestFromServer();
+			RtspRequestBasics resRequBas = receiveRequestFromServer(ct);
 			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 			RtspProtoSetupInfoForSubStream tmpSiForSsClient = cliPtrSiForCt.ptr().getDescrSetupInfoBySubStreamsId(tmpIdSubStream);
@@ -1171,7 +1169,7 @@ public class FullBidirRequRespSvcTest {
 		}
 	}
 
-	private void do_checkKeys_afterSrvRekeying_clientAndServer(ClientType ct) throws Exception {
+	private void do_checkKeys_afterSrvRekeying_clientAndServer(@NonNull ClientType ct) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1241,7 +1239,7 @@ public class FullBidirRequRespSvcTest {
 		}
 	}
 
-	private void do_c2s_Options(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	private void do_c2s_Options(@NonNull ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1252,7 +1250,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1261,7 +1259,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 	}
 
@@ -1293,7 +1291,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1302,7 +1300,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 	}
 
@@ -1330,7 +1328,7 @@ public class FullBidirRequRespSvcTest {
 
 			// ----------------------------------------------------
 
-			RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+			RtspRequestBasics resRequBas = receiveRequestFromClient();
 			assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 			// ----------------------------------------------------
@@ -1339,12 +1337,12 @@ public class FullBidirRequRespSvcTest {
 
 			// ----------------------------------------------------
 
-			RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+			RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 			assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 		}
 	}
 
-	private void do_checkKeys_afterClientRekeying_clientAndServer(ClientType ct) throws Exception {
+	private void do_checkKeys_afterClientRekeying_clientAndServer(@NonNull ClientType ct) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1380,7 +1378,7 @@ public class FullBidirRequRespSvcTest {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void do_c2s_SetParam_noCrypto(
-				ClientType ct,
+				@NonNull ClientType ct,
 				boolean isUrlStream,
 				boolean isUrlSubStreamVideo,
 				boolean isUrlSubStreamAudio,
@@ -1420,7 +1418,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1429,7 +1427,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1455,7 +1453,7 @@ public class FullBidirRequRespSvcTest {
 	}
 
 	private void do_c2s_GetParam_noCrypto(
-				ClientType ct,
+				@NonNull ClientType ct,
 				boolean isUrlStream,
 				boolean isUrlSubStreamVideo,
 				boolean isUrlSubStreamAudio,
@@ -1497,7 +1495,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1506,7 +1504,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1527,7 +1525,7 @@ public class FullBidirRequRespSvcTest {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void do_c2s_Play(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	private void do_c2s_Play(@NonNull ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1540,7 +1538,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		assertEquals("npt=0-", srvPtrSessionInfo.ptr().getClientPlaybackRangeValue().orElseThrow().toNptString_secs());
@@ -1553,7 +1551,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 
 		assertEquals("npt=0-", cliPtrSiForCt.ptr().getServerPlaybackRangeValue().orElseThrow().toNptString_secs());
@@ -1569,7 +1567,7 @@ public class FullBidirRequRespSvcTest {
 		}
 	}
 
-	private void do_c2s_Pause(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	private void do_c2s_Pause(@NonNull ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1580,7 +1578,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1591,11 +1589,11 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
 	}
 
-	private void do_c2s_Teardown(ClientType ct, @NonNull String resourceUrl) throws Exception {
+	private void do_c2s_Teardown(@NonNull ClientType ct, @NonNull String resourceUrl) throws Exception {
 		Objects.requireNonNull(cliPtrSessionInfo.get(ct));
 		Objects.requireNonNull(srvPtrSessionInfo);
 
@@ -1606,7 +1604,7 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspRequestBasics resRequBas = srvRequInputSvc.receiveRequestFromClient();
+		RtspRequestBasics resRequBas = receiveRequestFromClient();
 		assertEquals(RtspProtoStatusCode.OK, resRequBas.statusCode);
 
 		// ----------------------------------------------------
@@ -1619,8 +1617,55 @@ public class FullBidirRequRespSvcTest {
 
 		// ----------------------------------------------------
 
-		RtspResponseBasics resRespBas = cliRespInputSvc.get(ct).receiveResponse();
+		RtspResponseBasics resRespBas = receiveResponseFromServer(ct);
 		assertEquals(RtspProtoStatusCode.OK, resRespBas.statusCode);
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private @NonNull RtspRequestBasics receiveRequestFromServer(@NonNull ClientType ct) throws Exception {
+		Objects.requireNonNull(cliRequInputSvc.get(ct));
+
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return cliRequInputSvc.get(ct).receiveRequestFromServer();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
+				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
+	}
+
+	private @NonNull RtspResponseBasics receiveResponseFromServer(@NonNull ClientType ct) throws Exception {
+		Objects.requireNonNull(cliRespInputSvc.get(ct));
+
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return cliRespInputSvc.get(ct).receiveResponse();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
+				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
+	}
+
+	private @NonNull RtspRequestBasics receiveRequestFromClient() throws Exception {
+		Objects.requireNonNull(srvRequInputSvc);
+
+		int failCount = 0;
+		while (failCount < 5) {
+			try {
+				return srvRequInputSvc.receiveRequestFromClient();
+			} catch (RtspProtoTcpSocketNotReadyException e) {
+				++failCount;
+				SleepHelper.basicSleep(1L);
+			}
+		}
+		throw new RtspProtoTcpSocketNotReadyException();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -1739,7 +1784,7 @@ public class FullBidirRequRespSvcTest {
 			);
 	}
 
-	private void initObjsClient(ClientType ct) {
+	private void initObjsClient(@NonNull ClientType ct) {
 		Objects.requireNonNull(socketServer);
 
 		cliPtrSessionInfo.put(ct, RtspProtoPtrSessionInfo.ofNewSi());
@@ -1748,7 +1793,7 @@ public class FullBidirRequRespSvcTest {
 		initObjsClient_fromServer(ct);
 	}
 
-	private void initObjsClient_toServer(ClientType ct) {
+	private void initObjsClient_toServer(@NonNull ClientType ct) {
 		cliRequOutputSvc.put(ct, new RtspProtoRequestOutputSvc(
 				logger,
 				true,
@@ -1772,7 +1817,7 @@ public class FullBidirRequRespSvcTest {
 			));
 	}
 
-	private void initObjsClient_fromServer(ClientType ct) {
+	private void initObjsClient_fromServer(@NonNull ClientType ct) {
 		RtspProtoDataCntMessageTypes cliCfgSupportedMessageTypes = new RtspProtoDataCntMessageTypes();
 		cliCfgSupportedMessageTypes.putMt(RtspProtoMessageType.ANNOUNCE);
 		cliCfgSupportedMessageTypes.putMt(RtspProtoMessageType.OPTIONS);
