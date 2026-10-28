@@ -117,10 +117,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 				if (! mainLoop()) {
 					break;
 				}
-				if ((isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(0L, 250_000)) ||
-						(! isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(1L))) {
-					throw new InterruptedException();
-				}
+				sleepForSomeTime();
 			}
 		} catch (TcpSocketClosedException e) {
 			errorMsg = "TcpSocketClosedException caught";
@@ -230,6 +227,15 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private void sleepForSomeTime() throws InterruptedException {
+		if ((isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(0L, 250_000)) ||
+				(! isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(1L))) {
+			throw new InterruptedException();
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private void internalLog(@NonNull RtxpLogLevel logLevel, @NonNull String fncName, @NonNull String msg) {

@@ -8,6 +8,7 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import java.io.IOException;
@@ -90,12 +91,12 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 		}
 
 		// wait until send buffer is empty
-		int waitCnt = 0;
+		TimestampEpoch tmpNow = TimestampEpoch.ofNow();
 		while (! (hasBeenRequestedToStop() || textDataRingBuf.isEmpty())) {
-			if (++waitCnt > 1000) {
+			if (tmpNow.isElapsedMs(1000)) {
 				throw new RuntimeException(FNC_NAME + ": Timeout waiting for send buffer to empty");
 			}
-			if (! SleepHelper.basicSleep(1L)) {
+			if (! SleepHelper.precSleep(0L, 250_000)) {
 				break;
 			}
 		}
@@ -160,11 +161,15 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected boolean mainLoop() throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
+	protected boolean mainLoop()
+			throws TcpSocketClosedException, TcpSocketIoException, TcpSocketActivityTimeoutException {
 		final String FNC_NAME = getClass().getSimpleName() + ".mainLoop()";
 
-		if (rtspSocketTcp.isClosed() && ! hasSocketBeenImplicitlyClosed.get()) {
-			throw new TcpSocketClosedException();
+		if (rtspSocketTcp.isClosed()) {
+			if (! (hasBeenRequestedToStop() || hasSocketBeenImplicitlyClosed.get())) {
+				throw new TcpSocketClosedException();
+			}
+			return false;  // stop the thread
 		}
 
 		try {
@@ -214,6 +219,7 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 		} finally {
 			blockedState.unblock(BlockedState.Flag.SOCKET_WRITE);
 		}
+
 		return true;  // all good - continue the thread
 	}
 

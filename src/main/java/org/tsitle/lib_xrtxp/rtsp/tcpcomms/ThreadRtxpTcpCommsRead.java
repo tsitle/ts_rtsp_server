@@ -269,12 +269,9 @@ final class ThreadRtxpTcpCommsRead extends ThreadRtxpTcpCommsBase {
 		final String FNC_NAME = getClass().getSimpleName() + ".readFromSocket()";
 
 		try {
-			if (rtspSocketTcp.isClosed()) {
-				return false;
-			}
 			final int curOffs = cacheSockBuf.getUsed();
 			cacheSockBuf.increaseSize(curOffs + SOCKET_READ_FRAG_SIZE);
-			int tmpRd = socketIs.read(cacheSockBuf.getBaPtr(), curOffs, SOCKET_READ_FRAG_SIZE);
+			int tmpRd = socketIs.read(cacheSockBuf.getBaPtr(), curOffs, SOCKET_READ_FRAG_SIZE);  // blocks for setSoTimeout() value
 			if (tmpRd == -1) {
 				if (hasBeenRequestedToStop()) {
 					return false;
