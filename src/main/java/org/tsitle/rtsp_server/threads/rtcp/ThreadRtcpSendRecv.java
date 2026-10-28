@@ -201,7 +201,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				if (! SleepHelper.precSleep(0L, 250_000)) {
+				if (! SleepHelper.basicSleep(1L)) {
 					break;
 				}
 			}
