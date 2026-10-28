@@ -42,7 +42,14 @@ public interface RtxpTcpCommsInterface {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean canReadRtsp()
+	/**
+	 * Wait until an RTSP line is available for reading or the timeout has elapsed.<br />
+	 * Returns early if the connection gets closed.
+	 * @param timeoutMs Max. time to wait in milliseconds
+	 * @return true if an RTSP line is available
+	 */
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	boolean waitUntilCanReadRtsp(long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 	Optional<String> readRtspLine()
@@ -53,7 +60,14 @@ public interface RtxpTcpCommsInterface {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr)
+	/**
+	 * Wait until an RTP/RTCP packet is available for reading on the given channel or the timeout has elapsed.<br />
+	 * Returns early if the connection gets closed.
+	 * @param channNr TCP channel number
+	 * @param timeoutMs Max. time to wait in milliseconds
+	 * @return true if an RTP/RTCP packet is available
+	 */
+	boolean waitUntilCanReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr, long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 
 	boolean readRtpOrRtcpBinary(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)

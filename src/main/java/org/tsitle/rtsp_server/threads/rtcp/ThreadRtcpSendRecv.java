@@ -8,7 +8,6 @@ import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
 import org.tsitle.lib_xrtxp.common.exceptions.UdpSocketIoException;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.kmd.SrtcpContextInbound;
 import org.tsitle.lib_xrtxp.kmd.exceptions.SrtxpSecurityException;
@@ -36,6 +35,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ThreadRtcpSendRecv extends ThreadPausableBase {
+
+	/**
+	 * Max. time to wait for an incoming RTCP packet over TCP per main loop iteration.<br />
+	 * Kept short since outgoing packets are only sent between receive attempts.
+	 */
+	private static final long TCP_RECV_TIMEOUT_MS = 2L;
 
 	private final @NonNull ParamsThreadRtcp params;
 	private final @Nullable DatagramSocket parRtcpSocketUdp;
@@ -201,9 +206,7 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				if (! mainLoop()) {
 					break;
 				}
-				if (! SleepHelper.basicSleep(1L)) {
-					break;
-				}
+				// no sleep needed here: receiving from the UDP socket or the TCP connection blocks for some time
 			}
 
 			// send outstanding packets
@@ -257,8 +260,8 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 						parRtcpSocketUdp.getLocalPort() + " from port " + cacheDpRecv.getPort());*/
 				cacheRecvBuf1.copyOf(cacheDpRecv.getData(), cacheDpRecv.getOffset(), cacheDpRecv.getLength());
 			} else if (parRtcpRwIfTcp != null) {
-				if (! parRtcpRwIfTcp.cbCanReadRtcpOverTcp(params.getTpClientDestTcpChann())) {
-					return true;
+				if (! parRtcpRwIfTcp.cbWaitUntilCanReadRtcpOverTcp(params.getTpClientDestTcpChann(), TCP_RECV_TIMEOUT_MS)) {
+					return (! Thread.currentThread().isInterrupted());
 				}
 				boolean tmResB = parRtcpRwIfTcp.cbReadRtcpBinaryOverTcp(cacheRecvBuf1, params.getTpClientDestTcpChann());
 				if (! tmResB) {

@@ -2,7 +2,6 @@ package org.tsitle.lib_xrtxp.rtsp.lowlevel.network;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
 import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
@@ -22,6 +21,8 @@ public final class RtspProtoLowMsgReader {
 	private static final Pattern PATTERN_ILLEGAL_CHARS = Pattern.compile("[\\P{Print}$]");
 	private static final int MAX_HEADER_LINES = 1024;
 	private static final int MAX_BODY_SIZE = 1024 * 16;  // 16 kB
+	/** Max. time to wait for the next RTSP line to become available */
+	private static final long WAIT_FOR_LINE_TIMEOUT_MS = 50L;
 
 	private final @NonNull LogMsgInterface logMsgInterface;
 	private final @NonNull RtxpTcpCommsInterface rtxpTcpComms;
@@ -139,10 +140,7 @@ public final class RtspProtoLowMsgReader {
 					outputMsg.headerLines.add(headerLine);
 				}
 			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
-				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
-					break;
-				}
-				if (! SleepHelper.basicSleep(50L)) {
+				if (++timeoutCnt >= MAX_TIMEOUT_CNT || Thread.currentThread().isInterrupted()) {
 					break;
 				}
 				headerLine = "xxx";  // keep the loop going
@@ -182,10 +180,7 @@ public final class RtspProtoLowMsgReader {
 				timeoutCnt = 0;
 				bodySb.append(bodyLine).append(RtspProtoLowMsgConstants.CRLF);
 			} catch (RtspProtoTcpSocketNotReadyException | RtspProtoTcpSocketEosException e) {
-				if (++timeoutCnt >= MAX_TIMEOUT_CNT) {
-					break;
-				}
-				if (! SleepHelper.basicSleep(50L)) {
+				if (++timeoutCnt >= MAX_TIMEOUT_CNT || Thread.currentThread().isInterrupted()) {
 					break;
 				}
 				bodyLine = "xxx";  // keep the loop going
@@ -229,7 +224,7 @@ public final class RtspProtoLowMsgReader {
 	private @NonNull String readOneLine(boolean isFirst)
 			throws RtspProtoTcpSocketNotReadyException, RtspProtoTcpSocketEosException,
 					TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		if (! rtxpTcpComms.canReadRtsp()) {
+		if (! rtxpTcpComms.waitUntilCanReadRtsp(WAIT_FOR_LINE_TIMEOUT_MS)) {
 			throw new RtspProtoTcpSocketNotReadyException();
 		}
 		Optional<String> optLine = rtxpTcpComms.readRtspLine();

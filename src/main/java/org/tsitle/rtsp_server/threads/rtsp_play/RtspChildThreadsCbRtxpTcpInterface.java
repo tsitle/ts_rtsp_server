@@ -24,7 +24,13 @@ public interface RtspChildThreadsCbRtxpTcpInterface {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	boolean cbCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr)
+	/**
+	 * Wait until an RTCP packet is available for reading or the timeout has elapsed.
+	 * @param channNr TCP channel number
+	 * @param timeoutMs Max. time to wait in milliseconds
+	 * @return true if an RTCP packet is available
+	 */
+	boolean cbWaitUntilCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr, long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;
 	boolean cbReadRtcpBinaryOverTcp(@NonNull BufferExt buf, @NonNull RtspProtoTcpChannelNr channNr)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException;

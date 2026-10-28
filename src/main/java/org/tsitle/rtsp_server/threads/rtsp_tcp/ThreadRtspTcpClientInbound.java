@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.*;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.data_rr.RtspProtoDataCntGetSetParamKvs;
 import org.tsitle.lib_xrtxp.rtsp.exceptions.*;
@@ -42,6 +41,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 		ERROR,
 		TIMEOUT
 	}
+
+	/** Max. time to wait for an incoming RTSP request per main loop iteration */
+	private static final long WAIT_FOR_RTSP_REQUEST_TIMEOUT_MS = 100L;
 
 	private final @NonNull String threadName;
 
@@ -271,9 +273,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 	}
 
 	@Override
-	public boolean cbCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr)
+	public boolean cbWaitUntilCanReadRtcpOverTcp(@NonNull RtspProtoTcpChannelNr channNr, long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		return rtxpTcpComms.canReadRtpOrRtcp(channNr);
+		return rtxpTcpComms.waitUntilCanReadRtpOrRtcp(channNr, timeoutMs);
 	}
 
 	@Override
@@ -630,7 +632,13 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			}
 		}
 
-		//
+		// wait outside of receiveClientRequestAndRespond(), which holds the session's global write lock
+		if (! rtxpTcpComms.waitUntilCanReadRtsp(WAIT_FOR_RTSP_REQUEST_TIMEOUT_MS)) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException();
+			}
+			return MainLoopResult.OK;
+		}
 		try {
 			RtspRequestBasics rtspRequestBasics = receiveClientRequestAndRespond();
 			if (rtspRequestBasics.statusCode != RtspProtoStatusCode.OK) {
@@ -638,9 +646,6 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 			}
 			return (handleSuccessfulRequest(rtspRequestBasics) ? MainLoopResult.OK : MainLoopResult.ERROR);
 		} catch (RtspProtoTcpSocketNotReadyException e1) {
-			if (! SleepHelper.basicSleep(100L - 15L)) {
-				throw new InterruptedException();
-			}
 			return MainLoopResult.OK;
 		}
 	}

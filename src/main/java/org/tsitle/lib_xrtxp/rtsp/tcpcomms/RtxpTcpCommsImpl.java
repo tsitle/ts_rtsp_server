@@ -6,7 +6,6 @@ import org.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
 import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
 import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.tsitle.lib_xrtxp.rtsp.RtxpTcpCommsInterface;
@@ -17,6 +16,7 @@ import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -83,6 +83,8 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 		}
 	}
 
+	private static final long THREADS_START_STOP_TIMEOUT_MS = 5000L;
+
 	private final @NonNull Socket rtspSocketTcp;
 
 	private final TcpActivityTimeoutChecker tcpActivityTimeoutChecker = new TcpActivityTimeoutChecker();
@@ -129,14 +131,13 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 			);
 		this.threadWrite.setDaemon(false);
 		this.threadWrite.start();
-		int waitCnt = 0;
-		while (! (threadRead.isRunning() && threadWrite.isRunning())) {
-			if (++waitCnt > 100 * 5) {  // ^= 5 secs
-				break;
+		final long deadlineNs = getDeadlineNs();
+		try {
+			if (this.threadRead.waitUntilStarted(THREADS_START_STOP_TIMEOUT_MS)) {
+				this.threadWrite.waitUntilStarted(getRemainingMs(deadlineNs));
 			}
-			if (! SleepHelper.basicSleep(10L)) {
-				break;
-			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();  // restore flag
 		}
 		//
 		this.tcpActivityTimeoutChecker.resetTcpActivityTimeoutTimer();
@@ -169,14 +170,12 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 			//
 			threadRead.stopThread();
 			threadWrite.stopThread();
-			int waitCnt = 0;
-			while (threadRead.isRunning() || threadWrite.isRunning()) {
-				if (++waitCnt > 100 * 5) {  // ^= 5 secs
-					break;
-				}
-				if (! SleepHelper.basicSleep(10L)) {
-					break;
-				}
+			final long deadlineNs = getDeadlineNs();
+			try {
+				joinThread(threadRead, deadlineNs);
+				joinThread(threadWrite, deadlineNs);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();  // restore flag
 			}
 		} finally {
 			try { rtspSocketTcp.close(); } catch (IOException e) { /* ignore */ }
@@ -277,15 +276,10 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean canReadRtsp()
+	public boolean waitUntilCanReadRtsp(long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		lockOpsRead.lock();
-		try {
-			return threadRead.canReadRtsp();
-		} finally {
-			lockOpsRead.unlock();
-		}
+		// don't hold lockOpsRead while waiting, otherwise RTP/RTCP readers would be blocked as well
+		return threadRead.waitUntilCanReadRtsp(timeoutMs);
 	}
 
 	@Override
@@ -313,14 +307,10 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public boolean canReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr)
+	public boolean waitUntilCanReadRtpOrRtcp(@NonNull RtspProtoTcpChannelNr channNr, long timeoutMs)
 			throws TcpSocketIoException, TcpSocketClosedException, TcpSocketActivityTimeoutException {
-		lockOpsRead.lock();
-		try {
-			return threadRead.canReadRtpOrRtcp(channNr);
-		} finally {
-			lockOpsRead.unlock();
-		}
+		// don't hold lockOpsRead while waiting, otherwise other readers would be blocked as well
+		return threadRead.waitUntilCanReadRtpOrRtcp(channNr, timeoutMs);
 	}
 
 	@Override
@@ -342,6 +332,24 @@ public final class RtxpTcpCommsImpl implements RtxpTcpCommsInterface, AutoClosea
 			threadWrite.writeRtpOrRtcpBinary(bufView, channNr);
 		} finally {
 			lockOpsWrite.unlock();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------------
+
+	private static long getDeadlineNs() {
+		return System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(THREADS_START_STOP_TIMEOUT_MS);
+	}
+
+	private static long getRemainingMs(long deadlineNs) {
+		return Math.max(TimeUnit.NANOSECONDS.toMillis(deadlineNs - System.nanoTime()), 0L);
+	}
+
+	private static void joinThread(@NonNull Thread thread, long deadlineNs) throws InterruptedException {
+		final long remainingMs = getRemainingMs(deadlineNs);
+		if (remainingMs > 0L) {  // join(0) would wait forever
+			thread.join(remainingMs);
 		}
 	}
 

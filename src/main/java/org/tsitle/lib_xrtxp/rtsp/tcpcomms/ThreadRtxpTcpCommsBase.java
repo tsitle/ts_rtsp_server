@@ -17,6 +17,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 abstract class ThreadRtxpTcpCommsBase extends Thread {
@@ -42,6 +44,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 
 	private final @NonNull String threadName;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
+	private final CountDownLatch latchStarted = new CountDownLatch(1);
 	private final AtomicBoolean doStop = new AtomicBoolean(false);
 	protected final AtomicBoolean hasSocketBeenImplicitlyClosed = new AtomicBoolean(false);
 	protected final BlockedState blockedState = new BlockedState();
@@ -109,6 +112,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 
 		//
 		isRunning.set(true);
+		latchStarted.countDown();
 		logDebug(FNC_NAME, "Thread started");
 
 		//
@@ -152,6 +156,16 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 
 	public boolean isRunning() {
 		return isRunning.get();
+	}
+
+	/**
+	 * Wait until the thread has been started.
+	 * @param timeoutMs Max. time to wait in milliseconds
+	 * @return true if the thread has been started within the given time
+	 * @throws InterruptedException if the calling thread has been interrupted
+	 */
+	boolean waitUntilStarted(long timeoutMs) throws InterruptedException {
+		return latchStarted.await(timeoutMs, TimeUnit.MILLISECONDS);
 	}
 
 	public void stopThread() {
@@ -229,7 +243,7 @@ abstract class ThreadRtxpTcpCommsBase extends Thread {
 	// -----------------------------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private void sleepForSomeTime() throws InterruptedException {
+	protected void sleepForSomeTime() throws InterruptedException {
 		if ((isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(0L, 250_000)) ||
 				(! isRtpRtcpAllowed.get() && ! SleepHelper.basicSleep(1L))) {
 			throw new InterruptedException();
