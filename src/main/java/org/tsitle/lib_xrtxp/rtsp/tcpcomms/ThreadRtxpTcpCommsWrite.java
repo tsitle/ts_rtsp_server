@@ -82,7 +82,6 @@ final class ThreadRtxpTcpCommsWrite extends ThreadRtxpTcpCommsBase {
 				if (lastEntryPtr.isEmpty()) {
 					break;
 				}
-				line = line.strip() + CRLF;
 				lastEntryPtr.get().text = line;
 				textDataRingBuf.advanceWritePointer();
 			}
