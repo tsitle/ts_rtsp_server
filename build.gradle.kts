@@ -2,7 +2,6 @@ plugins {
 	id("java")
 	id("application")
 	id("org.beryx.runtime") version "2.0.1"  // see https://badass-runtime-plugin.beryx.org/releases/latest/
-	id("com.google.osdetector") version "1.7.3"  // see https://github.com/google/osdetector-gradle-plugin
 	// this plugin will filter the JavaCPP and FFmpeg libraries such that only libs for the current CPU architecture will be included
 	id("org.bytedeco.gradle-javacpp-platform") version "1.5.10"
 	id("org.graalvm.buildtools.native") version "1.1.12"
@@ -60,26 +59,11 @@ fun getCpuArchitecture() : String {
 	}
 }
 
-fun getLinuxDistroType() : String {
-	if (getOperatingSystemName() != "linux") {
-		return "none"
-	}
-	val tmpRel = osdetector.release
-	if (tmpRel.isLike("debian")) {
-		return "debian"
-	}
-	if (tmpRel.isLike("redhat") || tmpRel.isLike("fedora")) {
-		return "redhat"
-	}
-	throw Error("Linux distribution type '${tmpRel}' not supported")
-}
-
 val osName: String = getOperatingSystemName()
 val cpuArch: String = getCpuArchitecture()
 if (osName == "win" && cpuArch != "x64") {
 	throw Error("Cannot build for ${osName}-${cpuArch}")
 }
-val lxDistroType: String = getLinuxDistroType()
 
 fun getCheckedOutGitCommitHash() : String {
 	if (! File(".git").isDirectory) {
