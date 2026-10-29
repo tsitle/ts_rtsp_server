@@ -119,10 +119,13 @@ repositories {
 }
 
 dependencies {
-	testImplementation(platform("org.junit:junit-bom:5.10.0"))
+	// for Unit Tests
+	val depsVersionOrgJunitJunitBom = project.findProperty("depsVersionOrgJunitJunitBom")!! as String
+	testImplementation(platform("org.junit:junit-bom:${depsVersionOrgJunitJunitBom}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+	//
 	implementation("org.jspecify:jspecify:1.0.0")
 
 	implementation("com.google.code.gson:gson:2.13.2")  // for JSON deserialization
@@ -145,6 +148,18 @@ dependencies {
 
 // ----------------------------------------------------------------
 
+java {
+	/*
+	 * Show auto-detectable JDKs:
+	 *   $ ./gradlew -q javaToolchains
+	 */
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	/*toolchain {
+		languageVersion.set(JavaLanguageVersion.of(25))
+	}*/
+}
+
 /*
  * see https://docs.gradle.org/current/userguide/java_testing.html
  */
@@ -157,8 +172,6 @@ tasks.test {
 		events("passed")
 	}
 }
-
-// ----------------------------------------------------------------
 
 tasks.compileJava.configure {
 	options.encoding = "UTF-8"
