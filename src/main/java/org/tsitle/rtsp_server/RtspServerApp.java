@@ -178,9 +178,18 @@ public final class RtspServerApp {
 			return Optional.of(true);  // exit 0
 		}
 		if (cliArgs.showVersion) {
-			printlnStr(true, getAppNameAndVersion() +
-					" (commit " + AppInfo.getGitCommit().orElse("?") + ")");
-			printlnStr(true, "FFmpeg/" + AppInfo.getFfmpegVersion().orElse("?"));
+			printlnStr(true, getAppNameAndVersion() + " (" +
+					"commit " + AppInfo.getGitCommit().orElse("?") +
+					")");
+			printlnStr(true, "LibTsXrtxp/" +
+					org.tsitle.lib_xrtxp.LibInfo.getLibVersion().orElse("?") + " (" +
+					"commit: " + org.tsitle.lib_xrtxp.LibInfo.getGitCommit().orElse("?") +
+					")");
+			printlnStr(true, "LibTsFFmpeg/" +
+					org.tsitle.lib_ffmpeg.LibInfo.getLibVersion().orElse("?") + " (" +
+					"commit: " + org.tsitle.lib_ffmpeg.LibInfo.getGitCommit().orElse("?") +
+					", ffmpeg: " + org.tsitle.lib_ffmpeg.LibInfo.getFfmpegVersion().orElse("?") +
+					")");
 			return Optional.of(true);  // exit 0
 		}
 		return Optional.empty();  // do not exit
