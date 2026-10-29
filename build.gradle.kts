@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "org.tsitle.rtsp_server"
-version = "1.2.1"
+version = project.findProperty("appVersion")!! as String
 
 val propProjName = rootProject.name  // from 'settings.gradle.kts'
 
@@ -24,18 +24,17 @@ val jvmMemHeapMax: String = "128m"
 val jvmMemMaxTotalAbs: String = "256m"
 //val jvmMemMaxTotalPerc: String = "50"
 
-// FFmpeg version
-var tmpArgProvider = providers.gradleProperty("FFMPEG_VERSION")  // returns null if not provided
-// Conditionally set [ffmpegVersion] based on the CLI input
-val ffmpegVersion = tmpArgProvider.orNull ?: "7.1.1"
-
 // do agent test?
-tmpArgProvider = providers.gradleProperty("agent")  // returns null if not provided
+var tmpArgProvider = providers.gradleProperty("agent")  // returns null if not provided
 val doAgentTest = tmpArgProvider.isPresent
 
 // do 'private' agent test? (uses a config file that is not included in the Git repository)
 tmpArgProvider = providers.gradleProperty("usePrivConf")  // returns null if not provided
 val usePrivConf = tmpArgProvider.isPresent
+
+//
+val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
+val depsVersionTsLibFfmpeg = project.findProperty("depsVersionTsLibFfmpeg")!! as String
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -65,35 +64,33 @@ if (osName == "win" && cpuArch != "x64") {
 	throw Error("Cannot build for ${osName}-${cpuArch}")
 }
 
-fun getCheckedOutGitCommitHash() : String {
-	if (! File(".git").isDirectory) {
-		return "unknown"
+val gitCommitHashProvider = if (!layout.projectDirectory.dir(".git").asFile.isDirectory) {
+	providers.provider { "unknown" }
+} else {
+	providers.exec {
+		commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
+		isIgnoreExitValue = true
+	}.standardOutput.asText.map { output ->
+		output.trim().ifEmpty { "unknown" }
 	}
-	println(
-		"Checking out git commit hash..."
-	)
-	@Suppress("DEPRECATION")
-	val process = ProcessBuilder(
-		"git", "rev-parse", "--verify", "--short", "HEAD"
-	)
-		.redirectErrorStream(true)
-		.start()
-	val resS = process.inputStream
-		.bufferedReader()
-		.readText()
-		.trim()
-	if (resS.isEmpty() || resS.contains("not a git repository", ignoreCase = true)) {
-		return "unknown"
-	}
-	return resS
 }
 
-val gitCommitHash: String = getCheckedOutGitCommitHash()
-
 println("Host: ${osName}-${cpuArch}")
-println("FFmpeg version: $ffmpegVersion")
-println("Git commit: $gitCommitHash")
 if (doAgentTest) { println("--> Do agent test") }
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+java {
+	/*
+	 * Show auto-detectable JDKs:
+	 *   $ ./gradlew -q javaToolchains
+	 */
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	/*toolchain {
+		languageVersion.set(JavaLanguageVersion.of(25))
+	}*/
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -101,7 +98,10 @@ repositories {
 	mavenLocal()
 	mavenCentral()
 	// for local development:
-	flatDir { dirs("../libs/lib-rtsp_xrtxp/build/libs") }
+	flatDir { dirs(
+			"../libs/lib-rtsp_xrtxp/build/libs",
+			"../libs/lib-rtsp_ffmpeg/build/libs"
+		) }
 }
 
 dependencies {
@@ -118,37 +118,20 @@ dependencies {
 
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
-	when (ffmpegVersion) {
-		"7.1.1" -> {
-			implementation("org.bytedeco:ffmpeg-platform:7.1.1-1.5.12")
-		}
-		"8.0.1" -> {
-			implementation("org.bytedeco:ffmpeg-platform:8.0.1-1.5.13")  // requires Linux package 'libva-drm2'
-		}
-		"8.1.2" -> {
-			implementation("org.bytedeco:ffmpeg-platform:8.1.2-1.5.14")  // requires Linux package 'libva-drm2'
-		}
-		else -> { throw Error("FFmpeg version '${ffmpegVersion}' not supported") }
-	}
-
 	// TS lib xrtxp
-	val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
 	//implementation("io.github.tsitle:lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
 	implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
+
+	// TS lib ffmpeg
+	//implementation("io.github.tsitle:lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")  // use official release
+	implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
 }
 
 // ----------------------------------------------------------------
 
-java {
-	/*
-	 * Show auto-detectable JDKs:
-	 *   $ ./gradlew -q javaToolchains
-	 */
-
-	sourceCompatibility = JavaVersion.VERSION_25
-	/*toolchain {
-		languageVersion.set(JavaLanguageVersion.of(25))
-	}*/
+tasks.compileJava.configure {
+	options.encoding = "UTF-8"
+	options.compilerArgs.add("-Xlint:deprecation")
 }
 
 /*
@@ -164,18 +147,12 @@ tasks.test {
 	}
 }
 
-tasks.compileJava.configure {
-	options.encoding = "UTF-8"
-	options.compilerArgs.add("-Xlint:deprecation")
-}
-
 // ----------------------------------------------------------------
 
 application {
 	mainClass = confMainClass
 	applicationDefaultJvmArgs += "-DappVersion=${version}"
-	applicationDefaultJvmArgs += "-DffmpegVersion=${ffmpegVersion}"
-	applicationDefaultJvmArgs += "-DgitCommit=${gitCommitHash}"
+	applicationDefaultJvmArgs += "-DgitCommit=${gitCommitHashProvider.get()}"
 	//applicationDefaultJvmArgs += "-Djavax.net.debug=all"  // to enable full SSL debug output
 	applicationDefaultJvmArgs += "-Xms${jvmMemHeapInit}"   // initial heap size
 	applicationDefaultJvmArgs += "-Xmx${jvmMemHeapMax}"   // maximum heap size
@@ -409,7 +386,7 @@ graalvmNative {
 			 * must first be copied to 'src/main/resources/META-INF/native-image/'
 			 */
 			outputDirectories.add(
-				"src/main/resources/META-INF/native-image-${osName}-ff${ffmpegVersion}-${cpuArch}"
+				"src/main/resources/META-INF/native-image-${osName}-xrtxp${depsVersionTsLibXrtxp}-ff${depsVersionTsLibFfmpeg}-${cpuArch}"
 			)
 
 			//mergeWithExisting.set(true)
@@ -427,8 +404,7 @@ graalvmNative {
 			//buildArgs.add("--initialize-at-build-time=com.sun.media.sound.JDK13Services")
 
 			buildArgs.add("-DappVersion=${version}")
-			buildArgs.add("-DffmpegVersion=${ffmpegVersion}")
-			buildArgs.add("-DgitCommit=${gitCommitHash}")
+			buildArgs.add("-DgitCommit=${gitCommitHashProvider.get()}")
 			buildArgs.add("--initialize-at-build-time=${confAppInfoClass}")
 
 			buildArgs.add("-DcustomIsNativeImage=true")
