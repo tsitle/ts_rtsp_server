@@ -116,6 +116,8 @@ if (doAgentTest) { println("--> Do agent test") }
 repositories {
 	mavenLocal()
 	mavenCentral()
+	// for local development:
+	flatDir { dirs("../libs/lib-rtsp_xrtxp/build/libs") }
 }
 
 dependencies {
@@ -144,6 +146,11 @@ dependencies {
 		}
 		else -> { throw Error("FFmpeg version '${ffmpegVersion}' not supported") }
 	}
+
+	// TS lib xrtxp
+	val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
+	//implementation("io.github.tsitle:lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
+	implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
 }
 
 // ----------------------------------------------------------------
