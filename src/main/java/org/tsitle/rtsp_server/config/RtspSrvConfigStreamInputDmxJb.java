@@ -2,10 +2,10 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
-import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
-import org.tsitle.lib_xrtxp.common.types.ProUri;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import io.github.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import io.github.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import io.github.tsitle.lib_xrtxp.common.types.ProUri;
+import io.github.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;

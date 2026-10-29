@@ -2,9 +2,9 @@ package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 import org.tsitle.rtsp_server.threads.rtcp.ThreadRtcpSendRecv;
 import org.tsitle.rtsp_server.threads.rtp.ThreadRtpSenderBase;
 

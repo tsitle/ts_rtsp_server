@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import io.github.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.io.ByteArrayOutputStream;

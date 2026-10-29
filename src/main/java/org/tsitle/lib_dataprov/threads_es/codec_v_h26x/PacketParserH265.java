@@ -1,11 +1,11 @@
 package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Parser;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Parser;
+import io.github.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 final class PacketParserH265 {
 

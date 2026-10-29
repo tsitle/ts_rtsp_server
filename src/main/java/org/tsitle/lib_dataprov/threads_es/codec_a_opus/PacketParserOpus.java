@@ -1,10 +1,10 @@
 package org.tsitle.lib_dataprov.threads_es.codec_a_opus;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
-import org.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusInfo;
+import io.github.tsitle.lib_xrtxp.avdata.codec_a_opus.AudioOpusParser;
+import io.github.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 final class PacketParserOpus {
 

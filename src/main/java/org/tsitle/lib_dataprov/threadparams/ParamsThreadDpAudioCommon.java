@@ -1,7 +1,7 @@
 package org.tsitle.lib_dataprov.threadparams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import io.github.tsitle.lib_xrtxp.common.types.SampleRateEnum;
 
 public class ParamsThreadDpAudioCommon implements Cloneable {
 

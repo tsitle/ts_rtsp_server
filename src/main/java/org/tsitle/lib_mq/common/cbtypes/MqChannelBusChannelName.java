@@ -1,7 +1,7 @@
 package org.tsitle.lib_mq.common.cbtypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoBaseIdString;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoBaseIdString;
 
 /**
  * Channel Name for usage with the Channel Bus.

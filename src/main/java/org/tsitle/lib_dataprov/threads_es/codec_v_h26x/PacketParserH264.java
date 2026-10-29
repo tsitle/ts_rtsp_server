@@ -2,14 +2,14 @@ package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Parser;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PictureBoundaryInfo;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PpsContext;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264SpsContext;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Info;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH264Parser;
+import io.github.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PictureBoundaryInfo;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264PpsContext;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.subinfo.H264SpsContext;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.helpers;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_ffmpeg.FfmpegCodec;
+import io.github.tsitle.lib_ffmpeg.FfmpegCodec;
 import org.tsitle.rtsp_server.config.ConfigTcCodec;
 
 public final class CfgTcCodecToFfCodecHelper {

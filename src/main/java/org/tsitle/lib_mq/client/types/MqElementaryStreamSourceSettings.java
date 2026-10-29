@@ -2,11 +2,11 @@ package org.tsitle.lib_mq.client.types;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_mq.common.constants.MqConstants;
-import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
-import org.tsitle.lib_xrtxp.common.types.ProUri;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
+import io.github.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import io.github.tsitle.lib_xrtxp.common.types.ProUri;
+import io.github.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoClientCredentials;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoSocketPortNr;
 
 /**
  * Message Queue settings for an Elementary-Stream Source.

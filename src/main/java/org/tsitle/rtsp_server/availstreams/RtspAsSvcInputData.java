@@ -1,11 +1,11 @@
 package org.tsitle.rtsp_server.availstreams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoElementaryStreamSource;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceExpandedInfo;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoInputSource;
 
 import java.util.HashMap;
 import java.util.HashSet;

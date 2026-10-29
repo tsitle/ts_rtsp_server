@@ -2,23 +2,23 @@ package org.tsitle.rtsp_server;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import io.github.tsitle.lib_ffmpeg.helpers.FfmpegHelperFfLogLevel;
+import io.github.tsitle.lib_xrtxp.common.helpers.SleepHelper;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import io.github.tsitle.lib_xrtxp.ssl.SslException;
+import io.github.tsitle.lib_xrtxp.ssl.SslContextFactory;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import io.github.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;
 import org.tsitle.rtsp_server.config.RtspSrvConfigFileReader;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
-import org.tsitle.lib_xrtxp.ssl.SslException;
 import org.tsitle.rtsp_server.threadmng.*;
 import org.tsitle.rtsp_server.threads.CancelToken;
-import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.threads.logging.ThreadRtxpLogger;
 import org.tsitle.rtsp_server.threads.rtsp_tcp.RtspServerConstants;
-import org.tsitle.lib_xrtxp.rtsp.RtspProtoGlobalSessionInfoSvc;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.tsitle.rtsp_server.threads.streamscfg.ThreadStreamsConfig;
 
 import javax.net.ssl.SSLContext;
@@ -182,13 +182,13 @@ public final class RtspServerApp {
 					"commit " + AppInfo.getGitCommit().orElse("?") +
 					")");
 			printlnStr(true, "LibTsXrtxp/" +
-					org.tsitle.lib_xrtxp.LibInfo.getLibVersion().orElse("?") + " (" +
-					"commit: " + org.tsitle.lib_xrtxp.LibInfo.getGitCommit().orElse("?") +
+					io.github.tsitle.lib_xrtxp.LibInfo.getLibVersion().orElse("?") + " (" +
+					"commit: " + io.github.tsitle.lib_xrtxp.LibInfo.getGitCommit().orElse("?") +
 					")");
 			printlnStr(true, "LibTsFFmpeg/" +
-					org.tsitle.lib_ffmpeg.LibInfo.getLibVersion().orElse("?") + " (" +
-					"commit: " + org.tsitle.lib_ffmpeg.LibInfo.getGitCommit().orElse("?") +
-					", ffmpeg: " + org.tsitle.lib_ffmpeg.LibInfo.getFfmpegVersion().orElse("?") +
+					io.github.tsitle.lib_ffmpeg.LibInfo.getLibVersion().orElse("?") + " (" +
+					"commit: " + io.github.tsitle.lib_ffmpeg.LibInfo.getGitCommit().orElse("?") +
+					", ffmpeg: " + io.github.tsitle.lib_ffmpeg.LibInfo.getFfmpegVersion().orElse("?") +
 					")");
 			return Optional.of(true);  // exit 0
 		}

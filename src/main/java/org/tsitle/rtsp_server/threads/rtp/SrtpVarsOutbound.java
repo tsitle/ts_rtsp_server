@@ -1,8 +1,8 @@
 package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
-import org.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
+import io.github.tsitle.lib_xrtxp.packets.srtp.RtpEncryptedPacket;
+import io.github.tsitle.lib_xrtxp.kmd.SrtpContextOutbound;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;

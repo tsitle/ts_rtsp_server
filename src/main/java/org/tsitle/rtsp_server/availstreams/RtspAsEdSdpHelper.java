@@ -1,10 +1,10 @@
 package org.tsitle.rtsp_server.availstreams;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
-import org.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import io.github.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerHex;
+import io.github.tsitle.lib_xrtxp.avdata.extradata.ExtradataContainerSdp;
+import io.github.tsitle.lib_xrtxp.avdata.extradata.ExtradataForSdpHelper;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 public final class RtspAsEdSdpHelper {
 

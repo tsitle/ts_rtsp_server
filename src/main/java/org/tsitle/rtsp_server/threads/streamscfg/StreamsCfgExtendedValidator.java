@@ -1,9 +1,9 @@
 package org.tsitle.rtsp_server.threads.streamscfg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsMq;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamInputEsRawFile;
 import org.tsitle.rtsp_server.config.RtspSrvConfigStreamsSs;

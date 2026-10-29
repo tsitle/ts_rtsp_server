@@ -2,8 +2,8 @@ package org.tsitle.lib_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.helpers.HashCrc8Helper;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.helpers.HashCrc8Helper;
 import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_mq.exceptions.MqException;
 import org.zeromq.ZMQ;

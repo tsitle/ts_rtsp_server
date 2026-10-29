@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_mq.client.types.MqElementaryStreamSourceSettings;
 import org.tsitle.lib_mq.common.MqMsgHandlerFactory;
 import org.tsitle.lib_mq.common.httpdata.HttpResponseOpenMq;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_mq.common.MqReceiverSubBase;
 import org.tsitle.lib_mq.exceptions.MqException;
 import org.zeromq.SocketType;

@@ -2,7 +2,7 @@ package org.tsitle.rtsp_server.threads.params_rtp_rtcp.builders;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 import org.tsitle.rtsp_server.threads.rtp.codec_a_mpeg.ThreadRtpSenderMpa;
 
 public final class BuilderThreadRtpSenderMpa {

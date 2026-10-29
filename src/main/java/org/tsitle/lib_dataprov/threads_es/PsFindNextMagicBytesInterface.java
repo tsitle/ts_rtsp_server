@@ -1,7 +1,7 @@
 package org.tsitle.lib_dataprov.threads_es;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 interface PsFindNextMagicBytesInterface {
 

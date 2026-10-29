@@ -3,9 +3,9 @@ package org.tsitle.rtsp_server.config;
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
-import org.tsitle.lib_xrtxp.common.types.ProUri;
+import io.github.tsitle.lib_xrtxp.common.exceptions.ProUriInvalidUriException;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import io.github.tsitle.lib_xrtxp.common.types.ProUri;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.nio.file.InvalidPathException;

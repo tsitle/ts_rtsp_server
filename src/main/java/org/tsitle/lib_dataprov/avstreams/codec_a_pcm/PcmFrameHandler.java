@@ -1,8 +1,8 @@
 package org.tsitle.lib_dataprov.avstreams.codec_a_pcm;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 
 final class PcmFrameHandler {
 

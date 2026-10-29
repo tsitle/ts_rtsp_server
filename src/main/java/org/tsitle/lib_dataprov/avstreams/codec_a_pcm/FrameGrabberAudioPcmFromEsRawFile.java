@@ -3,13 +3,13 @@ package org.tsitle.lib_dataprov.avstreams.codec_a_pcm;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.DpConstants;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import io.github.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.FrameGrabberAvFromEsRawFileBase;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 public final class FrameGrabberAudioPcmFromEsRawFile extends FrameGrabberAvFromEsRawFileBase {
 

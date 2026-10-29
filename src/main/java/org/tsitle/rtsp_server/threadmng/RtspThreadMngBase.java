@@ -2,8 +2,8 @@ package org.tsitle.rtsp_server.threadmng;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.rtsp_server.config.RtspSrvConfigMain;
 import org.tsitle.rtsp_server.threads.CancelToken;
 

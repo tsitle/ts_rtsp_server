@@ -2,9 +2,9 @@ package org.tsitle.rtsp_server.threads.rtsp_tcp;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
-import org.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
+import io.github.tsitle.lib_xrtxp.rtsp.RtspProtoSessionInfo;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSession;
+import io.github.tsitle.lib_xrtxp.rtsp.interfaces.RtspProtoAvailableStreamsInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.RtspChildThreadsCbRtxpTcpInterface;
 import org.tsitle.rtsp_server.threads.rtsp_play.ThreadRtspPlay;
 

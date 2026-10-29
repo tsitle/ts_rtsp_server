@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtp;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.types.NtpTimestamp;
+import io.github.tsitle.lib_xrtxp.common.types.NtpTimestamp;
 
 final class TimeNtpTsInfo {
 

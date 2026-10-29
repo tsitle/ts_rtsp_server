@@ -1,8 +1,8 @@
 package org.tsitle.rtsp_server.threads.streamscfg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.SleepHelper;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.helpers.SleepHelper;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.rtsp_server.availstreams.RtspAsSvcInputData;
 import org.tsitle.rtsp_server.config.*;
 import org.tsitle.rtsp_server.availstreams.RtspAvailableStreamsSvc;

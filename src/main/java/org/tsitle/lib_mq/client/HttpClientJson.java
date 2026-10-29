@@ -3,8 +3,8 @@ package org.tsitle.lib_mq.client;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.ssl.SslContextFactory;
-import org.tsitle.lib_xrtxp.ssl.SslException;
+import io.github.tsitle.lib_xrtxp.ssl.SslContextFactory;
+import io.github.tsitle.lib_xrtxp.ssl.SslException;
 
 import java.io.IOException;
 import java.lang.reflect.Type;

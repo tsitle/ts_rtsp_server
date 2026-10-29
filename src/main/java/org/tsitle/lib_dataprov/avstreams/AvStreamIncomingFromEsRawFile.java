@@ -3,11 +3,11 @@ package org.tsitle.lib_dataprov.avstreams;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.exceptions.AvCannotOpenInputException;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import io.github.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
 import org.tsitle.lib_dataprov.exceptions.InputStreamIoException;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.types.ProUri;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.types.ProUri;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 
 import java.io.*;
 import java.util.Optional;

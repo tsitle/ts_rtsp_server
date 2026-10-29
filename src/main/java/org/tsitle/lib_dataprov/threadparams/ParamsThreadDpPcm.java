@@ -2,7 +2,7 @@ package org.tsitle.lib_dataprov.threadparams;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.DpConstants;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 public final class ParamsThreadDpPcm implements Cloneable {
 

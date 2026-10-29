@@ -4,9 +4,9 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelId;
 import org.tsitle.lib_mq.common.cbtypes.MqChannelBusChannelName;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 import org.tsitle.lib_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
 import org.zeromq.ZMQ;
 
 /**

@@ -1,9 +1,9 @@
 package org.tsitle.lib_dataprov.threads_dmxFc;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
-import org.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.exceptions.InputStreamEosException;
+import io.github.tsitle.lib_xrtxp.common.types.TimestampMonotonic;
 import org.tsitle.lib_dataprov.exceptions.InputStreamThreadEndedException;
 
 public interface TdpDemuxFcReadNextAvPacketInterface {

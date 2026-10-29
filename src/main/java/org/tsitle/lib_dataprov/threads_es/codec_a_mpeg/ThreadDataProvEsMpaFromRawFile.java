@@ -5,10 +5,10 @@ import org.tsitle.lib_dataprov.avstreams.codec_a_mpeg.FrameGrabberAudioMpegFromE
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMpa;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromRawFileBase;
-import org.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.avdata.codec_a_mpeg.AudioMpegInfo;
+import io.github.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 
 public final class ThreadDataProvEsMpaFromRawFile extends ThreadDataProvEsFromRawFileBase<AudioMpegInfo> {
 

@@ -5,7 +5,7 @@ import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingBase;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromDmxFc;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsRawFile;
 import org.tsitle.lib_dataprov.avstreams.AvStreamIncomingFromEsMq;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoEsSourceType;
 
 final class BuilderThreadRtpSenderHelper {
 

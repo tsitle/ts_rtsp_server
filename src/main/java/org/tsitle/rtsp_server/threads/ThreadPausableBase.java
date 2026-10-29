@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

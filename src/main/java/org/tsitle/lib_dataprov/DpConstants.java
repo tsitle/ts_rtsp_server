@@ -1,8 +1,8 @@
 package org.tsitle.lib_dataprov;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
+import io.github.tsitle.lib_ffmpeg.FfmpegCodec;
+import io.github.tsitle.lib_xrtxp.avdata.codec_a_pcm.AudioPcmInfo;
 
 import java.util.HashSet;
 import java.util.Set;

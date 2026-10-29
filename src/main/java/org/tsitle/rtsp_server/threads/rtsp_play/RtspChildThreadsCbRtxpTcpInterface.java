@@ -1,12 +1,12 @@
 package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
-import org.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.common.exceptions.TcpSocketActivityTimeoutException;
+import io.github.tsitle.lib_xrtxp.common.exceptions.TcpSocketClosedException;
+import io.github.tsitle.lib_xrtxp.common.exceptions.TcpSocketIoException;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoTcpChannelNr;
 
 import java.time.Instant;
 

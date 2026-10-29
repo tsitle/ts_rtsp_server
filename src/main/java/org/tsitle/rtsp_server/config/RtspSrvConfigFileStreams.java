@@ -2,8 +2,8 @@ package org.tsitle.rtsp_server.config;
 
 import com.google.gson.annotations.Expose;
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 import org.tsitle.rtsp_server.exceptions.ConfigInvalidException;
 
 import java.nio.file.Path;

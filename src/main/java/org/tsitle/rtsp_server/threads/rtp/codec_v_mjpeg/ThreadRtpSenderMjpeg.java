@@ -3,9 +3,9 @@ package org.tsitle.rtsp_server.threads.rtp.codec_v_mjpeg;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.tsitle.lib_dataprov.avstreams.*;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
-import org.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketContainerBase;
+import io.github.tsitle.lib_xrtxp.packets.rtp.codecs.RtpPacketMjpeg;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsBase;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromDmxFc;
 import org.tsitle.lib_dataprov.threads_es.codec_v_mjpeg.ThreadDataProvEsMjpegFromRawFile;
@@ -14,7 +14,7 @@ import org.tsitle.rtsp_server.threads.rtp.*;
 import org.tsitle.rtsp_server.threads.params_rtp_rtcp.params.ParamsThreadRtpSenderCommon;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpMjpeg;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpVideoCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_mjpeg.VideoJpegInfo;
 
 public final class ThreadRtpSenderMjpeg<AVSTRIC extends AvStreamIncomingBase>
 		extends ThreadRtpSenderBase<VideoJpegInfo, AVSTRIC, ThreadDataProvEsBase<VideoJpegInfo>> {

@@ -1,9 +1,9 @@
 package org.tsitle.rtsp_server.threads.streamscfg;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
+import io.github.tsitle.lib_xrtxp.common.helpers.HashMd5Helper;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdEsSource;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdInputSource;
 
 final class StreamsCfgIdMapperHelper {
 

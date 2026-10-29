@@ -2,12 +2,12 @@ package org.tsitle.lib_dataprov.threads_es.codec_v_h26x;
 
 import org.jspecify.annotations.NonNull;
 import org.tsitle.lib_dataprov.threadparams.ParamsThreadDpCommon;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
-import org.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
-import org.tsitle.lib_xrtxp.common.buffers.BufferView;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.MagicBytesH26xHelper;
+import io.github.tsitle.lib_xrtxp.avdata.codec_v_h26x.VideoH265Info;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferView;
 import org.tsitle.lib_dataprov.avstreams.codec_v_h26x.FrameGrabberVideoH26xFromEsMq;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
-import org.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.avdata.exceptions.AvInvalidCodecDataException;
 import org.tsitle.lib_dataprov.threads_es.ThreadDataProvEsFromMqBase;
 
 public final class ThreadDataProvEsH265FromMq extends ThreadDataProvEsFromMqBase<VideoH265Info> {

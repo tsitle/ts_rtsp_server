@@ -2,14 +2,14 @@ package org.tsitle.lib_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
 import org.tsitle.lib_mq.common.mqdata.MqPacketCodec;
 import org.tsitle.lib_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.common.types.FrameRateEnum;
-import org.tsitle.lib_xrtxp.common.types.ImageDimensions;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
+import io.github.tsitle.lib_xrtxp.common.types.FrameRateEnum;
+import io.github.tsitle.lib_xrtxp.common.types.ImageDimensions;
+import io.github.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import io.github.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.zeromq.ZMQ;
 
 import java.nio.ByteBuffer;

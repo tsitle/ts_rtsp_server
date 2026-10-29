@@ -1,8 +1,8 @@
 package org.tsitle.rtsp_server.config;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import io.github.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 public enum ConfigEsRawFileCodec {
 

@@ -1,7 +1,7 @@
 package org.tsitle.rtsp_server.threads.rtsp_play;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
+import io.github.tsitle.lib_xrtxp.rtsp.ids.RtspProtoIdSubStream;
 
 /**
  * Callback interface for RTSP child threads.

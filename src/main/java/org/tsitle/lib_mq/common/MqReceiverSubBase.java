@@ -2,12 +2,12 @@ package org.tsitle.lib_mq.common;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.tsitle.lib_xrtxp.common.buffers.BufferExt;
+import io.github.tsitle.lib_xrtxp.common.buffers.BufferExt;
 import org.tsitle.lib_mq.common.mqdata.MqPacketAv;
-import org.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
-import org.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.LogMsgInterface;
+import io.github.tsitle.lib_xrtxp.common.logmsgs.RtxpLogLevel;
 import org.tsitle.lib_mq.exceptions.MqException;
-import org.tsitle.lib_xrtxp.common.types.TimestampEpoch;
+import io.github.tsitle.lib_xrtxp.common.types.TimestampEpoch;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 

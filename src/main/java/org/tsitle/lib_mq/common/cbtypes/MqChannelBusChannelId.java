@@ -1,8 +1,8 @@
 package org.tsitle.lib_mq.common.cbtypes;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
-import org.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoBaseNumberNonNeg32bit;
+import io.github.tsitle.lib_xrtxp.rtsp.exceptions.RtspProtoNumberRangeException;
+import io.github.tsitle.lib_xrtxp.rtsp.misctypes.RtspProtoBaseNumberNonNeg32bit;
 
 import java.util.Optional;
 

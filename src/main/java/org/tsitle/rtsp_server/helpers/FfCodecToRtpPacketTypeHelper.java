@@ -1,9 +1,9 @@
 package org.tsitle.rtsp_server.helpers;
 
 import org.jspecify.annotations.NonNull;
-import org.tsitle.lib_ffmpeg.FfmpegCodec;
-import org.tsitle.lib_xrtxp.common.types.SampleRateEnum;
-import org.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
+import io.github.tsitle.lib_ffmpeg.FfmpegCodec;
+import io.github.tsitle.lib_xrtxp.common.types.SampleRateEnum;
+import io.github.tsitle.lib_xrtxp.packets.rtp.RtpPacketType;
 
 import java.util.Optional;
 
