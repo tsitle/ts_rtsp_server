@@ -44,6 +44,10 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 
 	/** Max. time to wait for an incoming RTSP request per main loop iteration */
 	private static final long WAIT_FOR_RTSP_REQUEST_TIMEOUT_MS = 100L;
+	/** Client app name for FFplay/FFmpeg-based clients */
+	private static final String CLIENT_APP_NAME__FFMPEG = "Lavf";
+	/** Client app name for 'ts_lib_rtsp_client_be' unit tests */
+	private static final String CLIENT_APP_NAME__TS_LIB_RTSP_CLIENT_BE___FOR_LEGACY_SDES = "UT_rtsp_client_be_legacySDES";
 
 	private final @NonNull String threadName;
 
@@ -182,7 +186,9 @@ public final class ThreadRtspTcpClientInbound extends RunnableBase implements Rt
 				availableStreamsInterface,
 				globalSessionInfoInterface,
 				this.rtspParamGetterSetterSvc,
-				(@NonNull String clientUserAgent) -> clientUserAgent.startsWith("Lavf"),  // FFplay doesn't support MIKEY
+				(@NonNull String clientUserAgent) ->
+						clientUserAgent.startsWith(CLIENT_APP_NAME__FFMPEG) ||  // FFplay (or rather FFmpeg) doesn't support MIKEY
+								clientUserAgent.startsWith(CLIENT_APP_NAME__TS_LIB_RTSP_CLIENT_BE___FOR_LEGACY_SDES + "/"),
 				this.rtxpTcpComms
 			);
 	}
