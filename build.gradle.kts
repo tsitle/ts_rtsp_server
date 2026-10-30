@@ -118,11 +118,11 @@ dependencies {
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
 	// TS lib xrtxp
-	//implementation("io.github.tsitle:lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
+	//implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
 	implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
 
 	// TS lib ffmpeg
-	//implementation("io.github.tsitle:lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")  // use official release
+	//implementation("io.github.tsitle:ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")  // use official release
 	implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
 }
 
