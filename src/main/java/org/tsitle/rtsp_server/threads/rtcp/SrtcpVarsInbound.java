@@ -49,6 +49,15 @@ final class SrtcpVarsInbound {
 		}
 	}
 
+	boolean haveAnySrtcpContextInbound() {
+		ctxReadLock.lock();
+		try {
+			return (! ctxObjList.isEmpty());
+		} finally {
+			ctxReadLock.unlock();
+		}
+	}
+
 	Optional<SrtcpContextInbound> getSrtcpContextInboundForPkt(@NonNull BufferExt srtpPacketBuf) {
 		ctxReadLock.lock();
 		try {

@@ -439,11 +439,12 @@ public final class ThreadRtcpSendRecv extends ThreadPausableBase {
 				logWarn(FNC_NAME, "Discarded packet: 0x" + cacheRecvBuf1.toHexString());
 				logWarn(FNC_NAME, "Discarded packet: " + rtcpPktHd);
 				cacheRecvBuf1.clear();
+				outputRawPackets.clear();
 				break;
 			}
 
 			boolean tmpWasDecr = false;
-			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled()) {
+			if (! wasDecr && params.getCryptoIsRtxpEncryptionEnabled() && srtcpVarsInbound.haveAnySrtcpContextInbound()) {
 				try {
 					decryptRtcpPacket(tmpPktSz);
 					wasDecr = true;
