@@ -179,7 +179,7 @@ public final class RtspServerApp {
 		}
 		if (cliArgs.showVersion) {
 			printlnStr(true, getAppNameAndVersion() + " (" +
-					"commit " + AppInfo.getGitCommit().orElse("?") +
+					"commit: " + AppInfo.getGitCommit().orElse("?") +
 					")");
 			printlnStr(true, "LibTsXrtxp/" +
 					io.github.tsitle.lib_xrtxp.LibInfo.getLibVersion().orElse("?") + " (" +
