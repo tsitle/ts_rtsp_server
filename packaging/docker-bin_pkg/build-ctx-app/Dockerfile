@@ -30,7 +30,7 @@ RUN \
 # Clone the 'TS Lib FFmpeg' repository and build the library
 RUN \
 	if [ "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" != "true" ]; then \
-		mkdir libs \
+		test -d libs || mkdir libs \
 		&& cd libs \
 		&& git clone https://github.com/tsitle/ts_java_lib_ffmpeg.git lib-rtsp_ffmpeg \
 		&& cd lib-rtsp_ffmpeg \
@@ -38,7 +38,7 @@ RUN \
 		if [ -n "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" ]; then \
 			git checkout "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" || exit 1; \
 		else echo -n; fi; \
-		./gradlew shaodwJar \
+		./gradlew shadowJar \
 		|| exit 1; \
 	else echo -n; fi
 
