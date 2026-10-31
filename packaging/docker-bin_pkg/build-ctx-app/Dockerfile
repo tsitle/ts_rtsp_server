@@ -7,10 +7,42 @@ FROM ${CF_BASE_IMAGE} AS graalvm-ffmpeg-javacpp-base
 # ----------------------------------------------------
 
 ARG CF_GRAAL_ARCH=-unknown-
-ARG CF_FFMPEG_VERSION=-unknown-
+ARG CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT=-none-
+ARG CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT=-none-
+ARG CF_USE_CUSTOM_LIBS_FROM_MAVEN=-invalidArg
 ARG CF_APP_GIT_BRANCH_OR_COMMIT=-none-
 
-#
+# Clone the 'TS Lib XRTXP' repository and build the library
+RUN \
+	if [ "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" != "true" ]; then \
+		mkdir libs \
+		&& cd libs \
+		&& git clone https://github.com/tsitle/ts_java_lib_xrtxp.git lib-rtsp_xrtxp \
+		&& cd lib-rtsp_xrtxp \
+		|| exit 1; \
+		if [ -n "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" ]; then \
+			git checkout "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" || exit 1; \
+		else echo -n; fi; \
+		./gradlew jar \
+		|| exit 1; \
+	else echo -n; fi
+
+# Clone the 'TS Lib FFmpeg' repository and build the library
+RUN \
+	if [ "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" != "true" ]; then \
+		mkdir libs \
+		&& cd libs \
+		&& git clone https://github.com/tsitle/ts_java_lib_ffmpeg.git lib-rtsp_ffmpeg \
+		&& cd lib-rtsp_ffmpeg \
+		|| exit 1; \
+		if [ -n "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" ]; then \
+			git checkout "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" || exit 1; \
+		else echo -n; fi; \
+		./gradlew shaodwJar \
+		|| exit 1; \
+	else echo -n; fi
+
+# Clone the app repository
 RUN \
 	git clone https://github.com/tsitle/ts_rtsp_server.git ts_rtsp_server-src \
 	&& cd ts_rtsp_server-src \
@@ -18,10 +50,14 @@ RUN \
 
 # Build native image
 RUN \
+	TMP_GRADLE_ARG_UCLFM="" \
+	test "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" = "true" && TMP_GRADLE_ARG_UCLFM="-PuseCustomLibsFromMaven" || echo -n; \
 	cd ts_rtsp_server-src \
-	&& cp -r "src/main/resources/META-INF/native-image-linux-ff${CF_FFMPEG_VERSION}-${CF_GRAAL_ARCH}" src/main/resources/META-INF/native-image \
+	&& cp -r \
+		"src/main/resources/META-INF/native-image-linux-${CF_GRAAL_ARCH}" \
+		src/main/resources/META-INF/native-image \
 	&& export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" \
-	&& ./gradlew nativeCompile -PFFMPEG_VERSION=${CF_FFMPEG_VERSION}
+	&& ./gradlew nativeCompile ${TMP_GRADLE_ARG_UCLFM}
 
 RUN \
 	mkdir app-binary \

@@ -31,6 +31,10 @@ val doAgentTest = tmpArgProvider.isPresent
 tmpArgProvider = providers.gradleProperty("usePrivConf")  // returns null if not provided
 val usePrivConf = tmpArgProvider.isPresent
 
+// use custom libraries from Maven repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibsFromMaven")  // returns null if not provided
+val doUseCustomLibsFromMaven: Boolean = tmpArgProvider.isPresent
+
 //
 val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
 val depsVersionTsLibFfmpeg = project.findProperty("depsVersionTsLibFfmpeg")!! as String
@@ -63,19 +67,21 @@ if (osName == "win" && cpuArch != "x64") {
 	throw Error("Cannot build for ${osName}-${cpuArch}")
 }
 
-val gitCommitHashProvider = if (!layout.projectDirectory.dir(".git").asFile.isDirectory) {
-	providers.provider { "unknown" }
-} else {
-	providers.exec {
-		commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
-		isIgnoreExitValue = true
-	}.standardOutput.asText.map { output ->
-		output.trim().ifEmpty { "unknown" }
-	}
-}
-
 println("Host: ${osName}-${cpuArch}")
 if (doAgentTest) { println("--> Do agent test") }
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+val gitCommitHashProvider = if (! layout.projectDirectory.dir(".git").asFile.isDirectory) {
+		providers.provider { "unknown" }
+	} else {
+		providers.exec {
+			commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
+			isIgnoreExitValue = true
+		}.standardOutput.asText.map { output ->
+			output.trim().ifEmpty { "unknown" }
+		}
+	}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -94,13 +100,15 @@ java {
 // ---------------------------------------------------------------------------------------------------------------------
 
 repositories {
-	mavenLocal()
+	mavenLocal()  // for the locally built JavaCPP library (see Docker base image)
 	mavenCentral()
-	// for local development:
-	flatDir { dirs(
-			"../libs/lib-rtsp_xrtxp/build/libs",
-			"../libs/lib-rtsp_ffmpeg/build/libs"
-		) }
+	if (! doUseCustomLibsFromMaven) {
+		// for local development:
+		flatDir { dirs(
+				"../libs/lib-rtsp_xrtxp/build/libs",
+				"../libs/lib-rtsp_ffmpeg/build/libs"
+			) }
+	}
 }
 
 dependencies {
@@ -117,13 +125,16 @@ dependencies {
 
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
-	// TS lib xrtxp
-	//implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
-	implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
-
-	// TS lib ffmpeg
-	//implementation("io.github.tsitle:ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")  // use official release
-	implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
+	// custom libraries
+	if (! doUseCustomLibsFromMaven) {
+		// for local development
+		implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")
+		implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")
+	} else {
+		// use official release
+		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")
+		implementation("io.github.tsitle:ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")
+	}
 }
 
 // ----------------------------------------------------------------
@@ -168,14 +179,12 @@ tasks.jar {
 	manifest {
 		attributes["Main-Class"] = confMainClass
 	}
+	archiveClassifier.set("slim")  // adds the suffix '-slim'
 }
 
 tasks.shadowJar {
 	dependsOn("jar")
-	manifest {
-		attributes["Main-Class"] = confMainClass
-	}
-	//archiveClassifier.set("")  // replaces the regular JAR
+	archiveClassifier.set("full-${osName}-${cpuArch}")  // an empty classifier replaces the regular JAR
 }
 
 tasks.installShadowDist {
@@ -385,7 +394,7 @@ graalvmNative {
 			 * must first be copied to 'src/main/resources/META-INF/native-image/'
 			 */
 			outputDirectories.add(
-				"src/main/resources/META-INF/native-image-${osName}-xrtxp${depsVersionTsLibXrtxp}-ff${depsVersionTsLibFfmpeg}-${cpuArch}"
+				"src/main/resources/META-INF/native-image-${osName}-${cpuArch}"
 			)
 
 			//mergeWithExisting.set(true)
