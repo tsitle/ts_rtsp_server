@@ -62,13 +62,16 @@ _getCpuArch debian_dist >/dev/null || exit 1
 
 # ----------------------------------------------------------
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ] || [ $# -gt 4 ]; then
 	{
 		echo "${VAR_MYNAME}: invalid number of arguments"
 		echo
-		echo "Usage: ${VAR_MYNAME} <APP_VERSION> <COMMIT_OR_BRANCH>"
+		echo "Usage: ${VAR_MYNAME} <APP_VERSION> <COMMIT_OR_BRANCH> [lib_xrtxp:<COMMIT_OR_BRANCH>] [lib_ffmpeg:<COMMIT_OR_BRANCH>]"
 		echo "Examples: ${VAR_MYNAME} 1.0-SNAPSHOT testing"
 		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3"
+		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4"
+		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_ffmpeg:8c5d2e6c"
+		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4 lib_ffmpeg:8c5d2e6c"
 	} >/dev/stderr
 	exit 1
 fi
@@ -80,6 +83,31 @@ if [ -z "${2}" ]; then
 	echo "${VAR_MYNAME}: empty <COMMIT_OR_BRANCH>" >/dev/stderr
 	exit 1
 fi
+
+LOPT_APP_VERSION="${1}"
+shift
+LOPT_APP_COMMIT_OR_BRANCH="${2}"
+shift
+LOPT_LIB_XRTXP_COMMIT_OR_BRANCH=""
+LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH=""
+
+while [ $# -gt 0 ]; do
+	if ! echo -n "${1}" | grep -q ":"; then
+		echo "${VAR_MYNAME}: invalid arg '${1}'" >/dev/stderr
+		exit 1
+	fi
+	TMP_ARG_K="$(echo -n "${1}" | cut -f1 -d:)"
+	TMP_ARG_V="$(echo -n "${1}" | cut -f2 -d:)"
+	if [ "${TMP_ARG_K}" = "lib_xrtxp" ]; then
+		LOPT_LIB_XRTXP_COMMIT_OR_BRANCH="${TMP_ARG_V}"
+	elif [ "${TMP_ARG_K}" = "lib_ffmpeg" ]; then
+		LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH="${TMP_ARG_V}"
+	else
+		echo "${VAR_MYNAME}: invalid arg '${1}'" >/dev/stderr
+		exit 1
+	fi
+	shift
+done
 
 # ----------------------------------------------------------
 # - GraalVM + FFmpeg + JavaCPP base image ------------------
@@ -117,13 +145,12 @@ docker image inspect "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" 
 cd ../build-ctx-app || exit 1
 
 LVAR_IMAGE_APP_NAME="app-ts_rtsp_server-${LVAR_DEBIAN_DIST}"
-LVAR_IMAGE_APP_VER="${1}"
+LVAR_IMAGE_APP_VER="${LOPT_APP_VERSION}"
 
-LVAR_APP_GIT_BRANCH_OR_COMMIT="${2}"
-
-LVAR_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT=""
-LVAR_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT=""
-LVAR_USE_CUSTOM_LIBS_FROM_MAVEN="false"
+LVAR_USE_CUSTOM_LIBS_FROM_MAVEN="true"
+if [ -n "${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" ] || [ -n "${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" ]; then
+	LVAR_USE_CUSTOM_LIBS_FROM_MAVEN="false"
+fi
 
 docker image inspect "${LVAR_IMAGE_APP_NAME}":"latest" >/dev/null 2>&1 && {
 	docker image rm "${LVAR_IMAGE_APP_NAME}:latest"
@@ -138,11 +165,11 @@ docker build \
 	-t "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" \
 	--build-arg CF_BASE_IMAGE="${LVAR_IMAGE_GFJ_BASE_NAME}:${LVAR_IMAGE_GFJ_BASE_VER}" \
 	--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
-	--build-arg CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT="${LVAR_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" \
-	--build-arg CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT="${LVAR_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" \
+	--build-arg CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" \
+	--build-arg CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" \
 	--build-arg CF_USE_CUSTOM_LIBS_FROM_MAVEN="${LVAR_USE_CUSTOM_LIBS_FROM_MAVEN}" \
 	--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
-	--build-arg CF_APP_GIT_BRANCH_OR_COMMIT="${LVAR_APP_GIT_BRANCH_OR_COMMIT}" \
+	--build-arg CF_APP_GIT_BRANCH_OR_COMMIT="${LOPT_APP_COMMIT_OR_BRANCH}" \
 	. \
 	|| exit 1
 
