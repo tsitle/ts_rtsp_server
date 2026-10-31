@@ -133,7 +133,7 @@ dependencies {
 	} else {
 		// use official release
 		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")
-		implementation("io.github.tsitle:ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-${osName}-${cpuArch}")
+		//implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${depsVersionTsLibFfmpeg}")
 	}
 }
 
