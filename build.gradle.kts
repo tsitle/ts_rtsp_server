@@ -179,7 +179,6 @@ tasks.jar {
 	manifest {
 		attributes["Main-Class"] = confMainClass
 	}
-	archiveClassifier.set("slim")  // adds the suffix '-slim'
 }
 
 tasks.shadowJar {
@@ -196,6 +195,24 @@ tasks.installShadowDist {
 distributions {
 	main {
 		distributionBaseName = "${propProjName}-${osName}"  // the version will autom. be appended
+	}
+}
+
+// copy the shadow JAR to the filename that the 'runtime' plugin expects
+tasks.named("jre") {
+	dependsOn(tasks.shadowJar)
+
+	doFirst {
+		val shadowJarFile = tasks.shadowJar.get().archiveFile.get().asFile
+		val expectedJarFile = layout.buildDirectory
+			.file("libs/${propProjName}-${version}-all.jar")
+			.get()
+			.asFile
+
+		if (! expectedJarFile.exists()) {
+			expectedJarFile.parentFile.mkdirs()
+			shadowJarFile.copyTo(expectedJarFile, overwrite = true)
+		}
 	}
 }
 
