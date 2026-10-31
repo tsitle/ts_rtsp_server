@@ -79,8 +79,6 @@ LVAR_GRAAL_ARCH="$(_getCpuArch graal)"
 
 LCFG_JAVA_HOME="/opt/graalvm-jdk-25.0.4-${LVAR_OS}_${LVAR_GRAAL_ARCH}"
 
-LCFG_FFMPEG_VERSION="8.1.2"
-
 # ----------------------------------------------------------
 
 if [ ! -d "src" ]; then
@@ -106,4 +104,4 @@ echo "-----------------------------------------------------"
 echo "-----------------------------------------------------"
 
 export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED"
-./gradlew -PFFMPEG_VERSION=${LCFG_FFMPEG_VERSION} -Pagent collectNativeImageMetadata
+./gradlew -Pagent collectNativeImageMetadata
