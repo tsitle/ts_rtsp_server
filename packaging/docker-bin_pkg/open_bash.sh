@@ -55,6 +55,6 @@ docker run \
 	--name app-ts_rtsp_server \
 	-e "USER_ID=$(id -u)" \
 	-e "GROUP_ID=$(id -g)" \
-	-e "TZ=America/Bogota" \
+	-e "TZ=Europe/Berlin" \
 	--entrypoint "/bin/sh" \
 	"${LCFG_IMAGE_NAME}:latest"
