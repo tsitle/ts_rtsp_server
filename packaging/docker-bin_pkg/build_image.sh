@@ -86,7 +86,7 @@ fi
 
 LOPT_APP_VERSION="${1}"
 shift
-LOPT_APP_COMMIT_OR_BRANCH="${2}"
+LOPT_APP_COMMIT_OR_BRANCH="${1}"
 shift
 LOPT_LIB_XRTXP_COMMIT_OR_BRANCH=""
 LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH=""
@@ -118,12 +118,13 @@ cd build-ctx-gfj-base || exit 1
 LVAR_DEBIAN_DIST="$(_getCpuArch debian_dist)"
 
 LVAR_GRAAL_ARCH="$(_getCpuArch graal)"
+LVAR_GRAAL_VERSION_MAJOR="25"
 LVAR_FFMPEG_VERSION="8.1.2"
 LVAR_JAVACPP_VERSION="1.5.14"
 LVAR_JAVACPP_ARCH="$(_getCpuArch javacpp)"
 
 LVAR_IMAGE_GFJ_BASE_NAME="app-ts_rtsp_server-gfj_base-${LVAR_DEBIAN_DIST}"
-LVAR_IMAGE_GFJ_BASE_VER="g25_f${LVAR_FFMPEG_VERSION}_j${LVAR_JAVACPP_VERSION}"
+LVAR_IMAGE_GFJ_BASE_VER="g${LVAR_GRAAL_VERSION_MAJOR}_f${LVAR_FFMPEG_VERSION}_j${LVAR_JAVACPP_VERSION}"
 
 docker image inspect "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" >/dev/null 2>&1 || {
 	echo -e "\n${VAR_MYNAME}: ---------------------------------------------------------------------------"
