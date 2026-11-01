@@ -9,36 +9,29 @@ FROM ${CF_BASE_IMAGE} AS graalvm-ffmpeg-javacpp-base
 ARG CF_GRAAL_ARCH=-unknown-
 ARG CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT=-none-
 ARG CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT=-none-
-ARG CF_USE_CUSTOM_LIBS_FROM_MAVEN=-invalidArg
 ARG CF_APP_GIT_BRANCH_OR_COMMIT=-none-
 
 # Clone the 'TS Lib XRTXP' repository and build the library
 RUN \
-	if [ "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" != "true" ]; then \
+	if [ -n "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" ]; then \
 		mkdir libs \
 		&& cd libs \
 		&& git clone https://github.com/tsitle/ts_java_lib_xrtxp.git lib-rtsp_xrtxp \
 		&& cd lib-rtsp_xrtxp \
-		|| exit 1; \
-		if [ -n "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" ]; then \
-			git checkout "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" || exit 1; \
-		else echo -n; fi; \
-		./gradlew jar \
+		&& git checkout "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" \
+		&& ./gradlew jar \
 		|| exit 1; \
 	else echo -n; fi
 
 # Clone the 'TS Lib FFmpeg' repository and build the library
 RUN \
-	if [ "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" != "true" ]; then \
+	if [ -n "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" ]; then \
 		test -d libs || mkdir libs \
 		&& cd libs \
 		&& git clone https://github.com/tsitle/ts_java_lib_ffmpeg.git lib-rtsp_ffmpeg \
 		&& cd lib-rtsp_ffmpeg \
-		|| exit 1; \
-		if [ -n "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" ]; then \
-			git checkout "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" || exit 1; \
-		else echo -n; fi; \
-		./gradlew shadowJar \
+		&& git checkout "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" \
+		&& ./gradlew shadowJar \
 		|| exit 1; \
 	else echo -n; fi
 
@@ -50,14 +43,16 @@ RUN \
 
 # Build native image
 RUN \
-	TMP_GRADLE_ARG_UCLFM="" \
-	test "${CF_USE_CUSTOM_LIBS_FROM_MAVEN}" = "true" && TMP_GRADLE_ARG_UCLFM="-PuseCustomLibsFromMaven" || echo -n; \
+	TMP_GRADLE_ARG_UCLFM_XRTXP="" \
+	test -z "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" && TMP_GRADLE_ARG_UCLFM_XRTXP="-PuseCustomLibFromMaven_xrtxp" || echo -n; \
+	TMP_GRADLE_ARG_UCLFM_FFMPEG="" \
+	test -z "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" && TMP_GRADLE_ARG_UCLFM_FFMPEG="-PuseCustomLibFromMaven_ffmpeg" || echo -n; \
 	cd ts_rtsp_server-src \
 	&& cp -r \
 		"src/main/resources/META-INF/native-image-linux-${CF_GRAAL_ARCH}" \
 		src/main/resources/META-INF/native-image \
 	&& export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" \
-	&& ./gradlew nativeCompile ${TMP_GRADLE_ARG_UCLFM}
+	&& ./gradlew nativeCompile ${TMP_GRADLE_ARG_UCLFM_XRTXP} ${TMP_GRADLE_ARG_UCLFM_FFMPEG}
 
 RUN \
 	mkdir app-binary \
@@ -105,19 +100,16 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-#
+# ----------------------------------------------------
+# Add JRE shared libraries
+# ----------------------------------------------------
+
 ENV APP_ROOT_PATH=/opt/ts_rtsp_server
 
 RUN \
 	mkdir -p "${APP_ROOT_PATH}/libs"
 
-# ----------------------------------------------------
-# Add JRE, custom FFmpeg and custom JavaCPP shared libraries
-# ----------------------------------------------------
-
 ENV TMP_BUILD_DIR_JAVA_HOME="/opt/graalvm-jdk-25.0.4+7.1"
-ENV TMP_BUILD_DIR_FFMPEG="/opt/ffmpeg"
-ENV TMP_BUILD_DIR_JAVACPP="/build/javacpp-presets/ffmpeg/target/native/org/bytedeco/ffmpeg/linux-${CF_JAVACPP_ARCH}"
 
 COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt.so" "${APP_ROOT_PATH}/libs/jre/"
 COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_headless.so" "${APP_ROOT_PATH}/libs/jre/"
@@ -125,10 +117,8 @@ COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_x
 COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjava.so" "${APP_ROOT_PATH}/libs/jre/"
 COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjavajpeg.so" "${APP_ROOT_PATH}/libs/jre/"
 COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/server/libjvm.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_FFMPEG}/lib/" "${APP_ROOT_PATH}/libs/ffmpeg/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVACPP}/" "${APP_ROOT_PATH}/libs/javacpp-ffmpeg/"
 
-# Create symlinks to custom FFmpeg and JavaCPP shared libraries
+# Create symlinks to JRE shared libraries
 RUN \
 	TMP_TARGET_DIR="${APP_ROOT_PATH}/bin" \
 	&& mkdir "${TMP_TARGET_DIR}" \
@@ -138,24 +128,6 @@ RUN \
 	&& for FN in "${APP_ROOT_PATH}/libs/jre"/*; do \
 		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
 			ln -s "../libs/jre/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
-		done \
-	# symlinks for FFmpeg libs \
-	&& rm -r "${APP_ROOT_PATH}/libs/ffmpeg/pkgconfig" \
-	&& for FN in "${APP_ROOT_PATH}/libs/ffmpeg"/*; do \
-		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
-			ln -s "../libs/ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
-		done \
-	# delete copies of FFmpeg libs in JavaCPP directory \
-	&& for FN in "${APP_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
-		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f "${APP_ROOT_PATH}/libs/ffmpeg/$(basename "${FN}")" && rm "${FN}" || echo -y; \
-		done \
-	# symlinks for JavaCPP libs \
-	&& for FN in "${APP_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
-		test -f "${FN}" -o -h "${FN}" || continue; \
-		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
-			ln -s "../libs/javacpp-ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
 		done
 
 # ----------------------------------------------------

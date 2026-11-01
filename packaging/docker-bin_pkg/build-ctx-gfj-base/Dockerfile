@@ -143,3 +143,40 @@ RUN \
 			ln -s "${FN}" "${TMP_TARGET_DIR}/"; \
 		done \
 	&& ldconfig
+
+# ----------------------------------------------------
+# Additionally copy the custom-built FFmpeg and JavaCPP shared libraries to a common base directory.
+# This is not required for using the libraries though.
+# ----------------------------------------------------
+
+ENV COPIED_LIBS_ROOT_PATH=/build/custom_ffmpeg_and_javacpp_ready_for_deployment
+
+ENV TMP_BUILD_DIR_FFMPEG="/opt/ffmpeg"
+ENV TMP_BUILD_DIR_JAVACPP="/build/javacpp-presets/ffmpeg/target/native/org/bytedeco/ffmpeg/linux-${CF_JAVACPP_ARCH}"
+
+#
+RUN \
+	mkdir -p "${COPIED_LIBS_ROOT_PATH}/libs" \
+	&& mkdir "${COPIED_LIBS_ROOT_PATH}/bin" \
+	&& cp -r "${TMP_BUILD_DIR_FFMPEG}/lib/" "${COPIED_LIBS_ROOT_PATH}/libs/ffmpeg/" \
+	&& cp -r "${TMP_BUILD_DIR_JAVACPP}/" "${COPIED_LIBS_ROOT_PATH}/libs/javacpp-ffmpeg/" \
+	# \
+	&& TMP_TARGET_DIR="${COPIED_LIBS_ROOT_PATH}/bin" \
+	# symlinks for FFmpeg libs \
+	&& rm -r "${COPIED_LIBS_ROOT_PATH}/libs/ffmpeg/pkgconfig" \
+	&& for FN in "${COPIED_LIBS_ROOT_PATH}/libs/ffmpeg"/*; do \
+		test -f "${FN}" -o -h "${FN}" || continue; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "../libs/ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
+		done \
+	# delete copies of FFmpeg libs in JavaCPP directory \
+	&& for FN in "${COPIED_LIBS_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
+		test -f "${FN}" -o -h "${FN}" || continue; \
+		test -f "${COPIED_LIBS_ROOT_PATH}/libs/ffmpeg/$(basename "${FN}")" && rm "${FN}" || echo -y; \
+		done \
+	# symlinks for JavaCPP libs \
+	&& for FN in "${COPIED_LIBS_ROOT_PATH}/libs/javacpp-ffmpeg"/*; do \
+		test -f "${FN}" -o -h "${FN}" || continue; \
+		test -f "${TMP_TARGET_DIR}/$(basename "${FN}")" || \
+			ln -s "../libs/javacpp-ffmpeg/$(basename "${FN}")" "${TMP_TARGET_DIR}/"; \
+		done

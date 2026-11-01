@@ -148,11 +148,6 @@ cd ../build-ctx-app || exit 1
 LVAR_IMAGE_APP_NAME="app-ts_rtsp_server-${LVAR_DEBIAN_DIST}"
 LVAR_IMAGE_APP_VER="${LOPT_APP_VERSION}"
 
-LVAR_USE_CUSTOM_LIBS_FROM_MAVEN="true"
-if [ -n "${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" ] || [ -n "${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" ]; then
-	LVAR_USE_CUSTOM_LIBS_FROM_MAVEN="false"
-fi
-
 docker image inspect "${LVAR_IMAGE_APP_NAME}":"latest" >/dev/null 2>&1 && {
 	docker image rm "${LVAR_IMAGE_APP_NAME}:latest"
 }
@@ -168,7 +163,6 @@ docker build \
 	--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
 	--build-arg CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" \
 	--build-arg CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" \
-	--build-arg CF_USE_CUSTOM_LIBS_FROM_MAVEN="${LVAR_USE_CUSTOM_LIBS_FROM_MAVEN}" \
 	--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
 	--build-arg CF_APP_GIT_BRANCH_OR_COMMIT="${LOPT_APP_COMMIT_OR_BRANCH}" \
 	. \

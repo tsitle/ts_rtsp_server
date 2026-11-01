@@ -56,5 +56,5 @@ docker run \
 	-e "USER_ID=$(id -u)" \
 	-e "GROUP_ID=$(id -g)" \
 	-e "TZ=Europe/Berlin" \
-	--entrypoint "/bin/sh" \
+	--entrypoint "/bin/bash" \
 	"${LCFG_IMAGE_NAME}:latest"

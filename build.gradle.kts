@@ -31,9 +31,12 @@ val doAgentTest = tmpArgProvider.isPresent
 tmpArgProvider = providers.gradleProperty("usePrivConf")  // returns null if not provided
 val usePrivConf = tmpArgProvider.isPresent
 
-// use custom libraries from Maven repository?
-tmpArgProvider = providers.gradleProperty("useCustomLibsFromMaven")  // returns null if not provided
-val doUseCustomLibsFromMaven: Boolean = tmpArgProvider.isPresent
+// use custom library 'TS Lib Xrtxp' from Maven repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibFromMaven_xrtxp")  // returns null if not provided
+val doUseCustomLibFromMavenXrtxp: Boolean = tmpArgProvider.isPresent
+// use custom library 'TS Lib FFmpeg' from Maven repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibFromMaven_ffmpeg")  // returns null if not provided
+val doUseCustomLibFromMavenFfmpeg: Boolean = tmpArgProvider.isPresent
 
 //
 val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
@@ -102,10 +105,15 @@ java {
 repositories {
 	mavenLocal()  // for the locally built JavaCPP library (see Docker base image)
 	mavenCentral()
-	if (! doUseCustomLibsFromMaven) {
+	if (! doUseCustomLibFromMavenXrtxp) {
 		// for local development:
 		flatDir { dirs(
-				"../libs/lib-rtsp_xrtxp/build/libs",
+				"../libs/lib-rtsp_xrtxp/build/libs"
+			) }
+	}
+	if (! doUseCustomLibFromMavenFfmpeg) {
+		// for local development:
+		flatDir { dirs(
 				"../libs/lib-rtsp_ffmpeg/build/libs"
 			) }
 	}
@@ -126,14 +134,15 @@ dependencies {
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
 	// custom libraries
-	if (! doUseCustomLibsFromMaven) {
-		// for local development
-		implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")
-		implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")
+	if (! doUseCustomLibFromMavenXrtxp) {
+		implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
 	} else {
-		// use official release
-		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")
-		//implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${depsVersionTsLibFfmpeg}")
+		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
+	}
+	if (! doUseCustomLibFromMavenFfmpeg) {
+		implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
+	} else {
+		implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${depsVersionTsLibFfmpeg}")  // use official release
 	}
 }
 
