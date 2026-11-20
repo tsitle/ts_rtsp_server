@@ -38,9 +38,22 @@ val doUseCustomLibFromMavenXrtxp: Boolean = tmpArgProvider.isPresent
 tmpArgProvider = providers.gradleProperty("useCustomLibFromMaven_ffmpeg")  // returns null if not provided
 val doUseCustomLibFromMavenFfmpeg: Boolean = tmpArgProvider.isPresent
 
+// use 'custom JavaCPP+FFmpeg build'?
+tmpArgProvider = providers.gradleProperty("useCustomBuiltJavaCppAndFfmpeg")  // returns null if not provided
+val doUseCustomBuiltJavaCppAndFfmpeg: Boolean = tmpArgProvider.isPresent
+// was 'custom JavaCPP+FFmpeg build' built with Rockchip hardware accelerated video en-/decoders support?
+tmpArgProvider = providers.gradleProperty("withRkmpp")  // returns null if not provided
+val doesHaveRkmpp: Boolean = tmpArgProvider.isPresent
+
 //
 val depsVersionTsLibXrtxp = project.findProperty("depsVersionTsLibXrtxp")!! as String
 val depsVersionTsLibFfmpeg = project.findProperty("depsVersionTsLibFfmpeg")!! as String
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+if (! doUseCustomBuiltJavaCppAndFfmpeg && doesHaveRkmpp) {
+	throw Error("RKMPP support can only be used with custom-built JavaCPP+FFmpeg")
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -70,7 +83,13 @@ if (osName == "win" && cpuArch != "x64") {
 	throw Error("Cannot build for ${osName}-${cpuArch}")
 }
 
+if (doesHaveRkmpp && (osName != "linux" || cpuArch != "aarch64")) {
+	throw Error("RKMPP can only be used on Linux/aarch64")
+}
+
 println("Host: ${osName}-${cpuArch}")
+println("Use custom-built JavaCPP/FFmpeg: ${doUseCustomBuiltJavaCppAndFfmpeg} " +
+		"(with RKMPP: ${doesHaveRkmpp})")
 if (doAgentTest) { println("--> Do agent test") }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -103,7 +122,9 @@ java {
 // ---------------------------------------------------------------------------------------------------------------------
 
 repositories {
-	mavenLocal()  // for the locally built JavaCPP library (see Docker base image)
+	if (doUseCustomBuiltJavaCppAndFfmpeg) {
+		mavenLocal()  // for the locally built JavaCPP/FFmpeg libraries (see Docker base image)
+	}
 	mavenCentral()
 	if (! doUseCustomLibFromMavenXrtxp) {
 		// for local development:
@@ -139,10 +160,14 @@ dependencies {
 	} else {
 		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
 	}
+	var tmpVersionTsLibFfmpeg = depsVersionTsLibFfmpeg
+	if (doUseCustomBuiltJavaCppAndFfmpeg) {
+		tmpVersionTsLibFfmpeg += "-cb_javacpp_ffmpeg" + (if (doesHaveRkmpp) "-rkmpp" else "")
+	}
 	if (! doUseCustomLibFromMavenFfmpeg) {
-		implementation(":ts_lib_ffmpeg:${depsVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
+		implementation(":ts_lib_ffmpeg:${tmpVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
 	} else {
-		implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${depsVersionTsLibFfmpeg}")  // use official release
+		implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${tmpVersionTsLibFfmpeg}")  // use official release
 	}
 }
 
