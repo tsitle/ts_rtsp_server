@@ -164,7 +164,7 @@ public final class RtspServerApp {
 		}
 		if (argv[argIx].equals("-h") || argv[argIx].equals("--help")) {
 			resObj.showHelp = true;
-		} else if (argv[argIx].equals("-v") || argv[argIx].equals("--version")) {
+		} else if (argv[argIx].equals("-V") || argv[argIx].equals("--version")) {
 			resObj.showVersion = true;
 		} else {
 			resObj.configFile = argv[argIx];
@@ -174,7 +174,7 @@ public final class RtspServerApp {
 
 	private static Optional<Boolean> handleCliArgs(@NonNull CliArgs cliArgs) {
 		if (cliArgs.showHelp) {
-			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -v | --version] <config-file>");
+			printlnStr(true, "Usage: ts_rtsp_server [-h | --help | -V | --version] <config-file>");
 			return Optional.of(true);  // exit 0
 		}
 		if (cliArgs.showVersion) {
