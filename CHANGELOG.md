@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- moved packages 'lib_xrtxp' and 'lib_ffmpeg' into their own repositories
+- moved packages 'lib_xrtxp' and 'lib_ffmpeg' into their own repositories (now available on Maven Central Repository)
+- simplified the Docker image to use the images from TsLibFfmpeg as base images
 
 ### Fixed
 
