@@ -62,19 +62,36 @@ _getCpuArch debian_dist >/dev/null || exit 1
 
 # ----------------------------------------------------------
 
-if [ $# -lt 2 ] || [ $# -gt 4 ]; then
-	{
-		echo "${VAR_MYNAME}: invalid number of arguments"
-		echo
-		echo "Usage: ${VAR_MYNAME} <APP_VERSION> <COMMIT_OR_BRANCH> [lib_xrtxp:<COMMIT_OR_BRANCH>] [lib_ffmpeg:<COMMIT_OR_BRANCH>]"
-		echo "Examples: ${VAR_MYNAME} 1.0-SNAPSHOT testing"
-		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3"
-		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4"
-		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_ffmpeg:8c5d2e6c"
-		echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4 lib_ffmpeg:8c5d2e6c"
-	} >/dev/stderr
+function printUsage() {
+	echo "Usage: ${VAR_MYNAME} <APP_VERSION> <COMMIT_OR_BRANCH>"
+	echo "           [lib_xrtxp:<COMMIT_OR_BRANCH>] [lib_ffmpeg:<COMMIT_OR_BRANCH>|localMaven]"
+	echo "           [cb_javacpp_ffmpeg [rkmpp]]"
+	echo "Examples: ${VAR_MYNAME} 1.0-SNAPSHOT testing"
+	echo "          ${VAR_MYNAME} 1.1.4 ce3991c3"
+	echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4"
+	echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_ffmpeg:8c5d2e6c"
+	echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_ffmpeg:localMaven cb_javacpp_ffmpeg rkmpp"
+	echo "          ${VAR_MYNAME} 1.1.4 ce3991c3 lib_xrtxp:a1c2e3g4 lib_ffmpeg:8c5d2e6c"
+	echo ""
+	echo "Options:"
+	echo "  'lib_xrtxp:<COMMIT_OR_BRANCH>' : build ts_lib_xrtxp from source code (instead of using Maven Central Repository version)"
+	echo "  'lib_ffmpeg:<COMMIT_OR_BRANCH>': build ts_lib_ffmpeg from source code (instead of using Maven Central/Local Repository version)"
+	echo "  'lib_ffmpeg:localMaven'        : use ts_lib_ffmpeg version from the local Maven Repository"
+	echo "  'cb_javacpp_ffmpeg'            : Use ts_lib_ffmpeg version with custom-built JavaCPP/FFmpeg"
+	echo "  'rkmpp'                        : Use ts_lib_ffmpeg version with custom-built JavaCPP/FFmpeg and ARM64 RKMPP support"
+	echo "                                   (Rockchip hardware accelerated video en-/decoders)"
+}
+
+if [ $# -gt 0 ] && [ "${1}" = "--help" ]; then
+	printUsage
+	exit 0
+fi
+if [ $# -lt 2 ] || [ $# -gt 6 ]; then
+	echo -e "${VAR_MYNAME}: invalid number of arguments\n" >/dev/stderr
+	printUsage >/dev/stderr
 	exit 1
 fi
+
 if [ -z "${1}" ]; then
 	echo "${VAR_MYNAME}: empty <APP_VERSION>" >/dev/stderr
 	exit 1
@@ -90,8 +107,22 @@ LOPT_APP_COMMIT_OR_BRANCH="${1}"
 shift
 LOPT_LIB_XRTXP_COMMIT_OR_BRANCH=""
 LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH=""
+LOPT_LIB_FFMPEG_FROM_MAVEN_LOCAL=false
+LOPT_DO_CUSTOM_BUILD_JAVACPP_FFMPEG=false
+LOPT_DO_RKMPP=false
 
 while [ $# -gt 0 ]; do
+	if [ "${1}" = "cb_javacpp_ffmpeg" ]; then
+		LOPT_DO_CUSTOM_BUILD_JAVACPP_FFMPEG=true
+		shift
+		continue
+	fi
+	if [ "${1}" = "rkmpp" ]; then
+		LOPT_DO_RKMPP=true
+		shift
+		continue
+	fi
+	#
 	if ! echo -n "${1}" | grep -q ":"; then
 		echo "${VAR_MYNAME}: invalid arg '${1}'" >/dev/stderr
 		exit 1
@@ -101,7 +132,11 @@ while [ $# -gt 0 ]; do
 	if [ "${TMP_ARG_K}" = "lib_xrtxp" ]; then
 		LOPT_LIB_XRTXP_COMMIT_OR_BRANCH="${TMP_ARG_V}"
 	elif [ "${TMP_ARG_K}" = "lib_ffmpeg" ]; then
-		LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH="${TMP_ARG_V}"
+		if [ "${TMP_ARG_V}" = "localMaven" ]; then
+			LOPT_LIB_FFMPEG_FROM_MAVEN_LOCAL=true
+		else
+			LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH="${TMP_ARG_V}"
+		fi
 	else
 		echo "${VAR_MYNAME}: invalid arg '${1}'" >/dev/stderr
 		exit 1
@@ -110,42 +145,40 @@ while [ $# -gt 0 ]; do
 done
 
 # ----------------------------------------------------------
-# - GraalVM + FFmpeg + JavaCPP base image ------------------
+# - TsLibFfmpeg base image ---------------------------------
 # ----------------------------------------------------------
-
-cd build-ctx-gfj-base || exit 1
 
 LVAR_DEBIAN_DIST="$(_getCpuArch debian_dist)"
 
 LVAR_GRAAL_ARCH="$(_getCpuArch graal)"
 LVAR_GRAAL_VERSION_MAJOR="25"
-LVAR_FFMPEG_VERSION="8.1.2"
-LVAR_JAVACPP_VERSION="1.5.14"
-LVAR_JAVACPP_ARCH="$(_getCpuArch javacpp)"
 
-LVAR_IMAGE_GFJ_BASE_NAME="app-ts_rtsp_server-gfj_base-${LVAR_DEBIAN_DIST}"
-LVAR_IMAGE_GFJ_BASE_VER="g${LVAR_GRAAL_VERSION_MAJOR}_f${LVAR_FFMPEG_VERSION}_j${LVAR_JAVACPP_VERSION}"
+LVAR_IMAGE_BASE_GRAAL_NAME="lib-ts_ffmpeg-gfj_base-${LVAR_DEBIAN_DIST}"
+LVAR_IMAGE_BASE_GRAAL_VER="g${LVAR_GRAAL_VERSION_MAJOR}"
 
-docker image inspect "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" >/dev/null 2>&1 || {
-	echo -e "\n${VAR_MYNAME}: ---------------------------------------------------------------------------"
-	echo -e "${VAR_MYNAME}: building base image '${LVAR_IMAGE_GFJ_BASE_NAME}:${LVAR_IMAGE_GFJ_BASE_VER}'...\n"
-	docker build \
-		-t "${LVAR_IMAGE_GFJ_BASE_NAME}":"${LVAR_IMAGE_GFJ_BASE_VER}" \
-		--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
-		--build-arg CF_FFMPEG_VERSION="${LVAR_FFMPEG_VERSION}" \
-		--build-arg CF_JAVACPP_VERSION="${LVAR_JAVACPP_VERSION}" \
-		--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
-		. \
-		|| exit 1
+LVAR_EXTRA_IMAGE_NAME_QUALIFIER=""
+[ "${LOPT_DO_CUSTOM_BUILD_JAVACPP_FFMPEG}" = "true" ] && LVAR_EXTRA_IMAGE_NAME_QUALIFIER+="-cb_javacpp_ffmpeg"
+[ "${LOPT_DO_RKMPP}" = "true" ] && LVAR_EXTRA_IMAGE_NAME_QUALIFIER+="-rkmpp"
+
+LVAR_IMAGE_LIB_TS_FFMPEG_NAME="lib-ts_ffmpeg${LVAR_EXTRA_IMAGE_NAME_QUALIFIER}-${LVAR_DEBIAN_DIST}"
+LVAR_IMAGE_LIB_TS_FFMPEG_VER="latest"
+
+docker image inspect "${LVAR_IMAGE_BASE_GRAAL_NAME}":"${LVAR_IMAGE_BASE_GRAAL_VER}" >/dev/null 2>&1 || {
+	echo -e "${VAR_MYNAME}: base image '${LVAR_IMAGE_BASE_GRAAL_NAME}:${LVAR_IMAGE_BASE_GRAAL_VER}' not found" >/dev/stderr
+	exit 1
+}
+docker image inspect "${LVAR_IMAGE_LIB_TS_FFMPEG_NAME}":"${LVAR_IMAGE_LIB_TS_FFMPEG_VER}" >/dev/null 2>&1 || {
+	echo -e "${VAR_MYNAME}: TsLibFfmpeg image '${LVAR_IMAGE_LIB_TS_FFMPEG_NAME}:${LVAR_IMAGE_LIB_TS_FFMPEG_VER}' not found" >/dev/stderr
+	exit 1
 }
 
 # ----------------------------------------------------------
 # - App image ----------------------------------------------
 # ----------------------------------------------------------
 
-cd ../build-ctx-app || exit 1
+cd build-ctx-app || exit 1
 
-LVAR_IMAGE_APP_NAME="app-ts_rtsp_server-${LVAR_DEBIAN_DIST}"
+LVAR_IMAGE_APP_NAME="app-ts_rtsp_server${LVAR_EXTRA_IMAGE_NAME_QUALIFIER}-${LVAR_DEBIAN_DIST}"
 LVAR_IMAGE_APP_VER="${LOPT_APP_VERSION}"
 
 docker image inspect "${LVAR_IMAGE_APP_NAME}":"latest" >/dev/null 2>&1 && {
@@ -157,14 +190,26 @@ docker image inspect "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" >/dev/null
 
 echo -e "\n${VAR_MYNAME}: ---------------------------------------------------------------------------"
 echo -e "${VAR_MYNAME}: building app image '${LVAR_IMAGE_APP_NAME}:${LVAR_IMAGE_APP_VER}'...\n"
+
+TMP_GRADLE_EXTRA_ARGS=""
+test -z "${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" && TMP_GRADLE_EXTRA_ARGS+=" -PuseCustomLibFromMavenCentral_xrtxp"
+if [ "${LOPT_LIB_FFMPEG_FROM_MAVEN_LOCAL}" = "true" ]; then
+	TMP_GRADLE_EXTRA_ARGS+=" -PuseCustomLibFromMavenLocal_ffmpeg"
+elif [ -z "${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" ]; then
+	TMP_GRADLE_EXTRA_ARGS+=" -PuseCustomLibFromMavenCentral_ffmpeg"
+fi
+test "${LOPT_DO_CUSTOM_BUILD_JAVACPP_FFMPEG}" = "true" && TMP_GRADLE_EXTRA_ARGS+=" -PuseCustomBuiltJavaCppAndFfmpeg"
+test "${LOPT_DO_RKMPP}" = "true" && TMP_GRADLE_EXTRA_ARGS+=" -PwithRkmpp"
+
 docker build \
 	-t "${LVAR_IMAGE_APP_NAME}":"${LVAR_IMAGE_APP_VER}" \
-	--build-arg CF_BASE_IMAGE="${LVAR_IMAGE_GFJ_BASE_NAME}:${LVAR_IMAGE_GFJ_BASE_VER}" \
+	--build-arg CF_GRAAL_IMAGE="${LVAR_IMAGE_BASE_GRAAL_NAME}:${LVAR_IMAGE_BASE_GRAAL_VER}" \
 	--build-arg CF_GRAAL_ARCH="${LVAR_GRAAL_ARCH}" \
+	--build-arg CF_TSLIBFFMPEG_IMAGE="${LVAR_IMAGE_LIB_TS_FFMPEG_NAME}:${LVAR_IMAGE_LIB_TS_FFMPEG_VER}" \
 	--build-arg CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_XRTXP_COMMIT_OR_BRANCH}" \
 	--build-arg CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT="${LOPT_LIB_FFMPEG_COMMIT_OR_BRANCH}" \
-	--build-arg CF_JAVACPP_ARCH="${LVAR_JAVACPP_ARCH}" \
 	--build-arg CF_APP_GIT_BRANCH_OR_COMMIT="${LOPT_APP_COMMIT_OR_BRANCH}" \
+	--build-arg CF_GRADLE_EXTRA_ARGS="${TMP_GRADLE_EXTRA_ARGS}" \
 	. \
 	|| exit 1
 

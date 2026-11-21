@@ -1,6 +1,49 @@
-ARG CF_BASE_IMAGE=none
+ARG CF_TSLIBFFMPEG_IMAGE=none
+ARG CF_GRAAL_IMAGE=none
 
-FROM ${CF_BASE_IMAGE} AS graalvm-ffmpeg-javacpp-base
+FROM ${CF_TSLIBFFMPEG_IMAGE} AS lib-ts-ffmpeg-base
+
+FROM ${CF_GRAAL_IMAGE} AS build-base
+
+# ----------------------------------------------------
+# Install dependencies for GraalVM Native Image building
+# ----------------------------------------------------
+
+RUN \
+	apt update \
+	&& apt install --no-install-recommends -y \
+		build-essential \
+		yasm \
+		nasm \
+		pkgconf \
+		autoconf \
+		automake \
+		libtool \
+		git \
+		tar \
+		xz-utils \
+		maven \
+		zlib1g-dev
+
+# Install en.utf-8 so we can use UTF-8 without restrictions (see 'java.nio.file.Path') in the native image compiled with GraalVM
+RUN \
+	apt install --no-install-recommends -y \
+		locales \
+	&& sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+	&& locale-gen
+
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# ----------------------------------------------------
+# Copy the local Maven repository directory for the custom-built version of TsLibFfmpeg (and JavaCPP and FFmpeg)
+# ----------------------------------------------------
+
+RUN \
+	mkdir -p /root/.m2
+
+COPY --from=lib-ts-ffmpeg-base /root/.m2/repository /root/.m2/repository
 
 # ----------------------------------------------------
 # Compile the Java app
@@ -10,6 +53,7 @@ ARG CF_GRAAL_ARCH=-unknown-
 ARG CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT=-none-
 ARG CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT=-none-
 ARG CF_APP_GIT_BRANCH_OR_COMMIT=-none-
+ARG CF_GRADLE_EXTRA_ARGS=-none-
 
 # Clone the 'TS Lib XRTXP' repository and build the library
 RUN \
@@ -19,21 +63,28 @@ RUN \
 		&& git clone https://github.com/tsitle/ts_java_lib_xrtxp.git lib-rtsp_xrtxp \
 		&& cd lib-rtsp_xrtxp \
 		&& git checkout "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" \
-		&& ./gradlew jar \
+		&& ./gradlew jar --no-daemon \
 		|| exit 1; \
 	else echo -n; fi
+
+# Copy the pre-built 'TS Lib FFmpeg' library
+#COPY --from=lib-ts-ffmpeg-base /build/lib/ts_lib_ffmpeg-*.jar libs/lib-rtsp_ffmpeg/build/libs/
+# --> the pre-built 'TS Lib FFmpeg' library is now in the local Maven repository
 
 # Clone the 'TS Lib FFmpeg' repository and build the library
 RUN \
 	if [ -n "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" ]; then \
+		# delete the pre-built 'TS Lib FFmpeg' library \
+		test -d libs/lib-rtsp_ffmpeg && rm -r libs/lib-rtsp_ffmpeg || echo -n; \
+		# build the 'TS Lib FFmpeg' library \
 		test -d libs || mkdir libs \
 		&& cd libs \
 		&& git clone https://github.com/tsitle/ts_java_lib_ffmpeg.git lib-rtsp_ffmpeg \
 		&& cd lib-rtsp_ffmpeg \
 		&& git checkout "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" \
-		&& ./gradlew shadowJar \
+		&& ./gradlew shadowJar --no-daemon ${CF_GRADLE_EXTRA_ARGS} \
 		|| exit 1; \
-	else echo -n; fi
+	fi
 
 # Clone the app repository
 RUN \
@@ -43,16 +94,12 @@ RUN \
 
 # Build native image
 RUN \
-	TMP_GRADLE_ARG_UCLFM_XRTXP="" \
-	test -z "${CF_TS_LIB_XRTXP_GIT_BRANCH_OR_COMMIT}" && TMP_GRADLE_ARG_UCLFM_XRTXP="-PuseCustomLibFromMaven_xrtxp" || echo -n; \
-	TMP_GRADLE_ARG_UCLFM_FFMPEG="" \
-	test -z "${CF_TS_LIB_FFMPEG_GIT_BRANCH_OR_COMMIT}" && TMP_GRADLE_ARG_UCLFM_FFMPEG="-PuseCustomLibFromMaven_ffmpeg" || echo -n; \
 	cd ts_rtsp_server-src \
 	&& cp -r \
 		"src/main/resources/META-INF/native-image-linux-${CF_GRAAL_ARCH}" \
 		src/main/resources/META-INF/native-image \
 	&& export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED" \
-	&& ./gradlew nativeCompile ${TMP_GRADLE_ARG_UCLFM_XRTXP} ${TMP_GRADLE_ARG_UCLFM_FFMPEG}
+	&& ./gradlew nativeCompile --no-daemon ${CF_GRADLE_EXTRA_ARGS}
 
 RUN \
 	mkdir app-binary \
@@ -78,9 +125,9 @@ RUN \
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ---- Runtime stage ----
-FROM debian
-
-ARG CF_JAVACPP_ARCH=-unknown-
+# We use an slightly outdated Debian version here to have some backward compatibility.
+# The current Debian's image uses Glibc 2.38, which is not compatible e.g. with Ubuntu 22.04 (which allows for <= 2.35)
+FROM debian:12
 
 #
 RUN \
@@ -111,12 +158,12 @@ RUN \
 
 ENV TMP_BUILD_DIR_JAVA_HOME="/opt/graalvm-jdk-25.0.4+7.1"
 
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_headless.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_xawt.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjava.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjavajpeg.so" "${APP_ROOT_PATH}/libs/jre/"
-COPY --from=graalvm-ffmpeg-javacpp-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/server/libjvm.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_headless.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libawt_xawt.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjava.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/libjavajpeg.so" "${APP_ROOT_PATH}/libs/jre/"
+COPY --from=build-base "${TMP_BUILD_DIR_JAVA_HOME}/lib/server/libjvm.so" "${APP_ROOT_PATH}/libs/jre/"
 
 # Create symlinks to JRE shared libraries
 RUN \
@@ -133,9 +180,9 @@ RUN \
 # ----------------------------------------------------
 
 #
-COPY --from=graalvm-ffmpeg-javacpp-base /build/ts_rtsp_server-src/config/ "${APP_ROOT_PATH}/config/"
-COPY --from=graalvm-ffmpeg-javacpp-base /build/ts_rtsp_server-src/data/ "${APP_ROOT_PATH}/data/"
-COPY --from=graalvm-ffmpeg-javacpp-base /build/app-binary/ts_rtsp_server "${APP_ROOT_PATH}/bin/"
+COPY --from=build-base /build/ts_rtsp_server-src/config/ "${APP_ROOT_PATH}/config/"
+COPY --from=build-base /build/ts_rtsp_server-src/data/ "${APP_ROOT_PATH}/data/"
+COPY --from=build-base /build/app-binary/ts_rtsp_server "${APP_ROOT_PATH}/bin/"
 COPY files/ts_rtsp_server-wrapper.sh "${APP_ROOT_PATH}/ts_rtsp_server.sh"
 
 RUN \
