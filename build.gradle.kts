@@ -31,12 +31,15 @@ val doAgentTest = tmpArgProvider.isPresent
 tmpArgProvider = providers.gradleProperty("usePrivConf")  // returns null if not provided
 val usePrivConf = tmpArgProvider.isPresent
 
-// use custom library 'TS Lib Xrtxp' from Maven repository?
-tmpArgProvider = providers.gradleProperty("useCustomLibFromMaven_xrtxp")  // returns null if not provided
-val doUseCustomLibFromMavenXrtxp: Boolean = tmpArgProvider.isPresent
-// use custom library 'TS Lib FFmpeg' from Maven repository?
-tmpArgProvider = providers.gradleProperty("useCustomLibFromMaven_ffmpeg")  // returns null if not provided
-val doUseCustomLibFromMavenFfmpeg: Boolean = tmpArgProvider.isPresent
+// use custom library 'TS Lib Xrtxp' from Maven Central repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibFromMavenCentral_xrtxp")  // returns null if not provided
+val doUseCustomLibFromMavenCentralXrtxp: Boolean = tmpArgProvider.isPresent
+// use custom library 'TS Lib FFmpeg' from Maven Central repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibFromMavenCentral_ffmpeg")  // returns null if not provided
+val doUseCustomLibFromMavenCentralFfmpeg: Boolean = tmpArgProvider.isPresent
+// use custom library 'TS Lib FFmpeg' from local Maven repository?
+tmpArgProvider = providers.gradleProperty("useCustomLibFromMavenLocal_ffmpeg")  // returns null if not provided
+val doUseCustomLibFromMavenLocalFfmpeg: Boolean = tmpArgProvider.isPresent
 
 // use 'custom JavaCPP+FFmpeg build'?
 tmpArgProvider = providers.gradleProperty("useCustomBuiltJavaCppAndFfmpeg")  // returns null if not provided
@@ -51,6 +54,9 @@ val depsVersionTsLibFfmpeg = project.findProperty("depsVersionTsLibFfmpeg")!! as
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+if (doUseCustomLibFromMavenCentralFfmpeg && doUseCustomLibFromMavenLocalFfmpeg) {
+	throw Error("TsLibFfmpeg can only be used from Maven Central or from local Maven repo")
+}
 if (! doUseCustomBuiltJavaCppAndFfmpeg && doesHaveRkmpp) {
 	throw Error("RKMPP support can only be used with custom-built JavaCPP+FFmpeg")
 }
@@ -88,7 +94,10 @@ if (doesHaveRkmpp && (osName != "linux" || cpuArch != "aarch64")) {
 }
 
 println("Host: ${osName}-${cpuArch}")
-println("Use custom-built JavaCPP/FFmpeg: ${doUseCustomBuiltJavaCppAndFfmpeg} " +
+println("Use ts_lib_xrtxp from Maven Central: $doUseCustomLibFromMavenCentralXrtxp")
+println("Use ts_lib_ffmpeg from Maven Central: ${doUseCustomLibFromMavenCentralFfmpeg}, " +
+		"from local Maven: $doUseCustomLibFromMavenLocalFfmpeg")
+println("Use ts_lib_ffmpeg with custom-built JavaCPP/FFmpeg: ${doUseCustomBuiltJavaCppAndFfmpeg} " +
 		"(with RKMPP: ${doesHaveRkmpp})")
 if (doAgentTest) { println("--> Do agent test") }
 
@@ -122,17 +131,17 @@ java {
 // ---------------------------------------------------------------------------------------------------------------------
 
 repositories {
-	if (doUseCustomBuiltJavaCppAndFfmpeg) {
-		mavenLocal()  // for the locally built JavaCPP/FFmpeg libraries (see Docker base image)
+	if (doUseCustomLibFromMavenLocalFfmpeg) {
+		mavenLocal()  // for the locally built TsLibFfmpeg/JavaCPP/FFmpeg libraries (see Docker base image)
 	}
 	mavenCentral()
-	if (! doUseCustomLibFromMavenXrtxp) {
+	if (! doUseCustomLibFromMavenCentralXrtxp) {
 		// for local development:
 		flatDir { dirs(
 				"../libs/lib-rtsp_xrtxp/build/libs"
 			) }
 	}
-	if (! doUseCustomLibFromMavenFfmpeg) {
+	if (! (doUseCustomLibFromMavenCentralFfmpeg || doUseCustomLibFromMavenLocalFfmpeg)) {
 		// for local development:
 		flatDir { dirs(
 				"../libs/lib-rtsp_ffmpeg/build/libs"
@@ -155,7 +164,7 @@ dependencies {
 	implementation("org.zeromq:jeromq:0.6.0")  // for ZeroMQ
 
 	// custom libraries
-	if (! doUseCustomLibFromMavenXrtxp) {
+	if (! doUseCustomLibFromMavenCentralXrtxp) {
 		implementation(":ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // for local development
 	} else {
 		implementation("io.github.tsitle:ts_lib_xrtxp:${depsVersionTsLibXrtxp}")  // use official release
@@ -164,7 +173,7 @@ dependencies {
 	if (doUseCustomBuiltJavaCppAndFfmpeg) {
 		tmpVersionTsLibFfmpeg += "-cb_javacpp_ffmpeg" + (if (doesHaveRkmpp) "-rkmpp" else "")
 	}
-	if (! doUseCustomLibFromMavenFfmpeg) {
+	if (! (doUseCustomLibFromMavenCentralFfmpeg || doUseCustomLibFromMavenLocalFfmpeg)) {
 		implementation(":ts_lib_ffmpeg:${tmpVersionTsLibFfmpeg}-full-${osName}-${cpuArch}")  // for local development
 	} else {
 		implementation("io.github.tsitle:ts_lib_ffmpeg_${osName}_${cpuArch}:${tmpVersionTsLibFfmpeg}")  // use official release
